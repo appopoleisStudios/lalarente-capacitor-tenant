@@ -3,32 +3,11 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
-import { ProtectedRoute } from '@/components/ProtectedRoute'
+import ProtectedRoute from '@/components/ProtectedRoute'
 
 export default function OwnerDashboardPage() {
   const router = useRouter()
-  const { user, profile, isLoading, isInitialized } = useAuthStore()
-
-  useEffect(() => {
-    if (isInitialized && !isLoading && !user) {
-      router.push('/auth/login')
-    }
-  }, [user, isLoading, isInitialized, router])
-
-  if (isLoading || !isInitialized) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <i className="fas fa-spinner fa-spin text-3xl text-blue-600 mb-4"></i>
-          <p className="text-gray-600">Loading dashboard...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!user) {
-    return null
-  }
+  const { user, profile } = useAuthStore()
 
   return (
     <ProtectedRoute allowedRoles={['owner']}>

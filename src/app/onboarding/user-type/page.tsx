@@ -9,7 +9,7 @@ export default function UserTypeSelection() {
 
   const selectUserType = (userType: UserRole) => {
     if (userType === 'tenant') {
-      router.push('/auth/register?type=tenant')
+      router.push('/auth/register/tenant')
     } else if (userType === 'owner') {
       router.push('/auth/register/owner')  // ✅ Updated to navigate to dedicated owner page
     }
@@ -29,7 +29,7 @@ export default function UserTypeSelection() {
       <div className="flex flex-col items-center justify-center min-h-screen p-6 relative z-10">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-green-800 rounded-full flex items-center justify-center mx-auto mb-4">
             <i className="fas fa-home text-white text-2xl"></i>
           </div>
           <h1 className="text-3xl font-bold text-gray-800 mb-3">Choose Your Experience</h1>
@@ -90,7 +90,7 @@ export default function UserTypeSelection() {
                 </div>
                 
                 {/* Selection Button */}
-                <Button className="w-full bg-green-600 text-white py-3 rounded-lg font-medium group-hover:bg-green-700 transition-colors">
+                <Button className="w-full bg-green-800 text-white py-3 rounded-lg font-medium group-hover:bg-green-700 transition-colors">
                   Continue as Tenant
                 </Button>
               </div>
