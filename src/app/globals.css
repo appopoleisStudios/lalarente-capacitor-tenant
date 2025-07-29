@@ -24,3 +24,75 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* globals.css - Add these mobile-specific styles */
+
+/* Mobile app specific styles */
+.mobile-app {
+  /* Remove default margins and padding for mobile */
+  margin: 0;
+  padding: 0;
+  
+  /* Handle safe areas for iOS devices with notches */
+  padding-top: var(--safe-area-inset-top, 0);
+  padding-bottom: var(--safe-area-inset-bottom, 0);
+  padding-left: var(--safe-area-inset-left, 0);
+  padding-right: var(--safe-area-inset-right, 0);
+  
+  /* Prevent overscroll bounce on iOS */
+  overscroll-behavior: none;
+  
+  /* Improve touch performance */
+  touch-action: manipulation;
+}
+
+/* Mobile-specific container adjustments */
+@media (max-width: 768px) {
+  .mobile-app .max-w-md {
+    max-width: 100vw;
+    margin: 0;
+    border-radius: 0;
+  }
+  
+  .mobile-app .shadow-xl {
+    box-shadow: none;
+  }
+}
+
+/* Safe area handling for mobile */
+.mobile-app .min-h-screen {
+  min-height: calc(100vh - var(--safe-area-inset-top, 0) - var(--safe-area-inset-bottom, 0));
+}
+
+/* Disable text selection for better mobile UX */
+.mobile-app * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Re-enable text selection for input fields */
+.mobile-app input,
+.mobile-app textarea,
+.mobile-app [contenteditable="true"] {
+  -webkit-user-select: text;
+  -khtml-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+/* Remove tap highlight on mobile */
+.mobile-app * {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Improve button touch targets on mobile */
+.mobile-app button {
+  min-height: 44px;
+  min-width: 44px;
+}
+

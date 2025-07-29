@@ -23,7 +23,7 @@ interface PropertyState {
   searchProperties: (query: string) => Promise<void>
 }
 
-export const usePropertyStore = create<PropertyState>((set, get) => ({
+export const usePropertyStore = create<PropertyState>((set) => ({
   properties: [],
   selectedProperty: null,
   isLoading: false,
@@ -57,8 +57,8 @@ export const usePropertyStore = create<PropertyState>((set, get) => ({
       
       if (error) throw error
       set({ properties: data || [], isLoading: false })
-    } catch (err: any) {
-      set({ error: err.message, isLoading: false })
+    } catch (err: unknown) {
+      set({ error: err instanceof Error ? err.message : 'An error occurred', isLoading: false })
     }
   },
 
@@ -73,8 +73,8 @@ export const usePropertyStore = create<PropertyState>((set, get) => ({
       
       if (error) throw error
       set({ properties: data || [], isLoading: false })
-    } catch (err: any) {
-      set({ error: err.message, isLoading: false })
+    } catch (err: unknown) {
+      set({ error: err instanceof Error ? err.message : 'An error occurred', isLoading: false })
     }
   },
 
@@ -90,8 +90,8 @@ export const usePropertyStore = create<PropertyState>((set, get) => ({
       
       if (error) throw error
       set({ properties: data || [], isLoading: false })
-    } catch (err: any) {
-      set({ error: err.message, isLoading: false })
+    } catch (err: unknown) {
+      set({ error: err instanceof Error ? err.message : 'An error occurred', isLoading: false })
     }
   }
 }))

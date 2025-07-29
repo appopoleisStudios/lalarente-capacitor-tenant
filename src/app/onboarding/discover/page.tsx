@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
+import Image from 'next/image'
 
 export default function DiscoverPage() {
   const router = useRouter()
@@ -10,9 +11,9 @@ export default function DiscoverPage() {
     router.push('/onboarding/payments')
   }
 
-  const goBack = () => {
-    router.push('/')
-  }
+  // const goBack = () => {
+  //   router.push('/')
+  // }
 
   return (
     <div className="max-w-md mx-auto min-h-screen shadow-xl bg-gradient-to-b from-green-50 to-white relative overflow-hidden">
@@ -51,9 +52,11 @@ export default function DiscoverPage() {
                 <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
                   <div className="h-20 relative overflow-hidden">
                     {/* Sandton Apartment Image */}
-                    <img 
+                    <Image 
                       src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=300&h=200&fit=crop&crop=center" 
                       alt="Modern Sandton Apartment"
+                      width={300}
+                      height={200}
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute top-2 right-2 w-6 h-6 bg-white rounded-full flex items-center justify-center">
@@ -80,9 +83,11 @@ export default function DiscoverPage() {
                 <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
                   <div className="h-20 relative overflow-hidden">
                     {/* Cape Town Townhouse Image */}
-                    <img 
+                    <Image 
                       src="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=300&h=200&fit=crop&crop=center" 
                       alt="Cape Town Townhouse"
+                      width={300}
+                      height={200}
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute top-2 right-2 w-6 h-6 bg-white rounded-full flex items-center justify-center">
@@ -109,11 +114,13 @@ export default function DiscoverPage() {
                 <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
                   <div className="h-20 relative overflow-hidden">
                     {/* Durban Beachfront Image */}
-                    <img 
-                      src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=300&h=200&fit=crop&crop=center" 
-                      alt="Durban Beachfront Apartment"
-                      className="w-full h-full object-cover"
-                    />
+                    <Image 
+                    src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=300&h=200&fit=crop&crop=center" 
+                    alt="Durban Beachfront Apartment"
+                    width={300}
+                    height={200}
+                    className="w-full h-full object-cover"
+                  />
                     <div className="absolute top-2 right-2 w-6 h-6 bg-white rounded-full flex items-center justify-center">
                       <i className="far fa-heart text-gray-400 text-xs"></i>
                     </div>
@@ -179,7 +186,7 @@ export default function DiscoverPage() {
         {/* Continue Button */}
         <Button 
           onClick={continueTo}
-          className="bg-green-800 text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg hover:bg-green-700 transition-colors mb-8"
+          className="bg-gradient-to-r from-blue-600 to-green-600 text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg hover:from-blue-700 hover:to-green-700 transition-all mb-8"
         >
           Continue
         </Button>

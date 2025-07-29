@@ -8,8 +8,18 @@ const config: CapacitorConfig = {
     androidScheme: 'https'
   },
   plugins: {
-    PushNotifications: {
-      presentationOptions: ["badge", "sound", "alert"]
+    SplashScreen: {
+      launchShowDuration: 2000,
+      backgroundColor: "#16a34a",
+      showSpinner: false
+    },
+    StatusBar: {
+      style: 'dark',
+      backgroundColor: '#16a34a'
+    },
+    Keyboard: {
+      resize: 'body',
+      style: 'dark'
     }
   }
 };

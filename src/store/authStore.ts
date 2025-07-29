@@ -15,6 +15,15 @@ interface AuthState {
   setInitialized: (initialized: boolean) => void
   signIn: (email: string, password: string) => Promise<{ success: boolean; redirectTo?: string }>
   signUp: (email: string, password: string, fullName: string, role: UserRole) => Promise<{ success: boolean }>
+  signUpOwner: (ownerData: {
+    email: string
+    password: string
+    fullName: string
+    idNumber: string
+    phone: string
+    portfolioSize: string
+    ficaDocuments: File
+  }) => Promise<{ success: boolean }>
   signOut: () => Promise<void>
   fetchProfile: (userId: string) => Promise<void>
   initialize: () => Promise<void>
@@ -70,8 +79,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       set({ isLoading: false })
       return { success: true, redirectTo }
-    } catch (err: any) {
-      set({ error: err.message, isLoading: false })
+    } catch (error: unknown) {
+      set({ error: error instanceof Error ? error.message : 'An unknown error occurred', isLoading: false })
       return { success: false }
     }
   },
@@ -119,8 +128,91 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       })
       
       return { success: true }
-    } catch (err: any) {
-      set({ error: err.message, isLoading: false })
+    } catch (error: unknown) {
+      set({ error: error instanceof Error ? error.message : 'An unknown error occurred', isLoading: false })
+      return { success: false }
+    }
+  },
+
+  signUpOwner: async (ownerData: {
+    email: string
+    password: string
+    fullName: string
+    idNumber: string
+    phone: string
+    portfolioSize: string
+    ficaDocuments: File
+  }) => {
+    set({ isLoading: true, error: null })
+    try {
+      // 1. Create auth user
+      const { data, error } = await supabase.auth.signUp({ 
+        email: ownerData.email, 
+        password: ownerData.password 
+      })
+      
+      if (error) throw error
+      if (!data.user) throw new Error('No user returned')
+
+      // 2. Upload FICA document
+      const fileName = `fica-documents/${data.user.id}/${ownerData.ficaDocuments.name}`
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(fileName, ownerData.ficaDocuments)
+      
+      if (uploadError) throw uploadError
+
+      // 3. Get public URL for the uploaded file
+      const { data: urlData } = supabase.storage
+        .from('documents')
+        .getPublicUrl(fileName)
+
+      // 4. Insert into profiles table with owner-specific data
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([{
+          id: data.user.id,
+          full_name: ownerData.fullName,
+          role: 'owner',
+          phone: ownerData.phone,
+          verification_status: false,
+          fica_documents: {
+            id_number: ownerData.idNumber,
+            portfolio_size: ownerData.portfolioSize,
+            document_url: urlData.publicUrl,
+            uploaded_at: new Date().toISOString()
+          }
+        }])
+      
+      if (profileError) throw profileError
+
+      const newProfile: Profile = {
+        id: data.user.id,
+        full_name: ownerData.fullName,
+        role: 'owner',
+        phone: ownerData.phone,
+        avatar_url: null,
+        verification_status: false,
+        fica_documents: {
+          id_number: ownerData.idNumber,
+          portfolio_size: ownerData.portfolioSize,
+          document_url: urlData.publicUrl,
+          uploaded_at: new Date().toISOString()
+        },
+        bank_details: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+
+      set({ 
+        user: data.user, 
+        profile: newProfile, 
+        isLoading: false 
+      })
+      
+      return { success: true }
+    } catch (error: unknown) {
+      set({ error: error instanceof Error ? error.message : 'An unknown error occurred', isLoading: false })
       return { success: false }
     }
   },
@@ -136,8 +228,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false,
         isInitialized: false 
       })
-    } catch (err: any) {
-      set({ error: err.message, isLoading: false })
+    } catch (error: unknown) {
+      set({ error: error instanceof Error ? error.message : 'An unknown error occurred', isLoading: false })
     }
   },
 
@@ -151,8 +243,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       if (profileError) throw profileError
       set({ profile: profileData })
-    } catch (err: any) {
-      set({ error: err.message })
+    } catch (error: unknown) {
+      set({ error: error instanceof Error ? error.message : 'An unknown error occurred' })
     }
   },
 
@@ -169,8 +261,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
       
       set({ isInitialized: true, isLoading: false })
-    } catch (err: any) {
-      set({ error: err.message, isInitialized: true, isLoading: false })
+    } catch (error: unknown) {
+      set({ error: error instanceof Error ? error.message : 'An unknown error occurred', isInitialized: true, isLoading: false })
     }
   }
 }))
