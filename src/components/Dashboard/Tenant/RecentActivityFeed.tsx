@@ -1,5 +1,8 @@
 interface Activity { text: string; date: string; icon: string; color: string; amount?: string; detail?: string }
-interface Props { recentActivity: Activity[] }
+interface Props { 
+  recentActivity: Activity[]
+  onSeeAll?: () => void
+}
 
 // Color mapping for predefined Tailwind classes
 const colorClasses = {
@@ -24,7 +27,7 @@ const colorClasses = {
   stone: 'bg-stone-100 text-stone-600'
 } as const
 
-const RecentActivityFeed: React.FC<Props> = ({ recentActivity }) => {
+const RecentActivityFeed: React.FC<Props> = ({ recentActivity, onSeeAll }) => {
   // Helper function to get color classes
   const getColorClasses = (color: string) => {
     const colorKey = color.toLowerCase() as keyof typeof colorClasses
@@ -36,6 +39,7 @@ const RecentActivityFeed: React.FC<Props> = ({ recentActivity }) => {
     <div className="flex items-center justify-between mb-2">
       <h3 id="activity-heading" className="font-semibold text-gray-800">Recent Activity</h3>
       <button 
+        onClick={onSeeAll}
         className="text-sm text-emerald-600 hover:text-emerald-700 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1 rounded px-2 py-1 transition-colors"
         aria-label="View all recent activity"
       >

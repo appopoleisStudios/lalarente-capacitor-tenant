@@ -1,7 +1,56 @@
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Database } from '@/types/supabase'
 
-export const supabase = createClientComponentClient<Database>()
+// Extend the Database type to include the exec_sql RPC function and migrations table
+type ExtendedDatabase = Database & {
+  public: Database['public'] & {
+    Tables: Database['public']['Tables'] & {
+      migrations: {
+        Row: {
+          id: number
+          migration_id: string
+          name: string
+          executed_at: string
+          success: boolean
+          error_message: string | null
+          execution_time_ms: number | null
+        }
+        Insert: {
+          id?: number
+          migration_id: string
+          name: string
+          executed_at?: string
+          success?: boolean
+          error_message?: string | null
+          execution_time_ms?: number | null
+        }
+        Update: {
+          id?: number
+          migration_id?: string
+          name?: string
+          executed_at?: string
+          success?: boolean
+          error_message?: string | null
+          execution_time_ms?: number | null
+        }
+        Relationships: []
+      }
+    }
+    Functions: {
+      exec_sql: {
+        Args: {
+          sql: string
+        }
+        Returns: {
+          error?: string
+          count?: number
+        }
+      }
+    }
+  }
+}
+
+export const supabase = createClientComponentClient<ExtendedDatabase>()
 
 // Export helper types for easier use
 export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row']

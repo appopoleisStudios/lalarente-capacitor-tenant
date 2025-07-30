@@ -43,7 +43,7 @@ export default function UnauthorizedPage() {
         {/* Message */}
         <div className="text-center mb-8">
           <p className="text-gray-600 mb-2">
-            You don't have permission to access this page.
+            You don&apos;t have permission to access this page.
           </p>
           {profile && (
             <p className="text-sm text-gray-500">

@@ -20,11 +20,22 @@ interface MigrationStatus {
   migrationId: string
   executed: boolean
   executedAt?: Date
-  error?: string
+  error?: string | null
+}
+
+// Type for the migrations table row
+interface MigrationRow {
+  id: number
+  migration_id: string
+  name: string
+  executed_at: string
+  success: boolean
+  error_message: string | null
+  execution_time_ms: number | null
 }
 
 class MigrationRunner {
-  private migrationsTable = 'migrations'
+  private migrationsTable = 'migrations' as const
 
   constructor() {
     this.ensureMigrationsTable()
@@ -91,7 +102,7 @@ class MigrationRunner {
         .eq('migration_id', migrationId)
         .single()
 
-      if (existing && existing.success) {
+      if (existing && (existing as MigrationRow).success) {
         return {
           success: true,
           message: `Migration ${migrationId} already executed successfully`
@@ -178,11 +189,12 @@ class MigrationRunner {
 
       if (error) return null
 
+      const migrationData = data as MigrationRow
       return {
-        migrationId: data.migration_id,
-        executed: data.success,
-        executedAt: data.executed_at ? new Date(data.executed_at) : undefined,
-        error: data.error_message
+        migrationId: migrationData.migration_id,
+        executed: migrationData.success,
+        executedAt: migrationData.executed_at ? new Date(migrationData.executed_at) : undefined,
+        error: migrationData.error_message
       }
     } catch (error) {
       return null
@@ -201,7 +213,7 @@ class MigrationRunner {
 
       if (error) return []
 
-      return data.map(row => ({
+      return (data as MigrationRow[]).map(row => ({
         migrationId: row.migration_id,
         executed: row.success,
         executedAt: row.executed_at ? new Date(row.executed_at) : undefined,

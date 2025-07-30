@@ -45,7 +45,7 @@ export default function OwnerDashboardPage() {
               <div>
                 <h2 className="text-xl font-bold mb-2">Welcome to Lala Rente</h2>
                 <p className="text-blue-100 text-sm">
-                  Your account is being verified. You'll be able to list properties soon.
+                  Your account is being verified. You&apos;ll be able to list properties soon.
                 </p>
               </div>
               <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">

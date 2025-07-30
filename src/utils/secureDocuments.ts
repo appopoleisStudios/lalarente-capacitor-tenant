@@ -110,7 +110,7 @@ export async function uploadSecureDocument(
     }
 
     // Check file type
-    if (!DOCUMENT_CONFIG.ALLOWED_TYPES.includes(file.type)) {
+    if (!DOCUMENT_CONFIG.ALLOWED_TYPES.includes(file.type as typeof DOCUMENT_CONFIG.ALLOWED_TYPES[number])) {
       return { filePath: null, error: 'File type not allowed' }
     }
 

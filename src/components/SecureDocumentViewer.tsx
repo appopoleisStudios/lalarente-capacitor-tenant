@@ -114,7 +114,7 @@ const SecureDocumentViewer: React.FC<SecureDocumentViewerProps> = ({
   // Handle image display
   const renderImage = () => (
     <img
-      src={signedUrl}
+      src={signedUrl || undefined}
       alt={fileName || 'Document'}
       className="w-full h-full object-contain"
       onLoad={() => setIsLoading(false)}

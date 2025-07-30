@@ -1,7 +1,18 @@
 import { useState } from 'react'
 
-export default function AutoPayToggle() {
-  const [enabled, setEnabled] = useState(false)
+interface AutoPayToggleProps {
+  enabled?: boolean
+  onToggle?: (enabled: boolean) => void
+}
+
+export default function AutoPayToggle({ enabled: initialEnabled = false, onToggle }: AutoPayToggleProps) {
+  const [enabled, setEnabled] = useState(initialEnabled)
+
+  const handleToggle = () => {
+    const newEnabled = !enabled
+    setEnabled(newEnabled)
+    onToggle?.(newEnabled)
+  }
 
   return (
     <div className="flex items-center justify-between my-5 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -24,7 +35,7 @@ export default function AutoPayToggle() {
         type="button"
         className={`relative w-12 h-7 transition-colors duration-300 rounded-full 
           ${enabled ? 'bg-emerald-600' : 'bg-gray-300'}`}
-        onClick={() => setEnabled(!enabled)}
+        onClick={handleToggle}
       >
         <span
           className={`absolute left-1 top-1 transition-transform duration-300 rounded-full bg-white shadow-md h-5 w-5 border 
