@@ -96,3 +96,14 @@ body {
   min-width: 44px;
 }
 
+/* Mobile safe area support */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Ensure content doesn't get hidden behind navbar */
+.pb-navbar {
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+}
+
+

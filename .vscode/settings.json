@@ -1,0 +1,16 @@
+// .vscode/settings.json
+{
+    "coderabbit.autoReview": false,
+    "coderabbit.reviewOnSave": false,
+    "coderabbit.focusMode": "critical-only",
+    "coderabbit.maxSuggestions": 5,
+    "coderabbit.categories": {
+      "security": true,
+      "performance": true,
+      "bugs": true,
+      "style": false,
+      "formatting": false,
+      "documentation": false
+    }
+  }
+  

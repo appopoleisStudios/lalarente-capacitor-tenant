@@ -1,0 +1,77 @@
+# .coderabbit.yaml
+reviews:
+  # Focus on high-impact issues only
+  request_changes_workflow: false
+  high_level_summary: true
+  
+  # Limit scope to prevent thousands of comments
+  max_files_to_review: 10
+  max_comments_per_file: 5
+  
+  # Focus areas for your React/Next.js app
+  focus_areas:
+    - security
+    - performance
+    - bugs
+    - maintainability
+  
+  # Skip low-value comments
+  skip_review_drafts: true
+  skip_style_issues: true
+  skip_formatting: true
+
+# Language-specific rules for your stack
+rules:
+  typescript:
+    # Critical issues only
+    strict_null_checks: true
+    unused_variables: error
+    missing_types: warn
+    
+  react:
+    # Focus on React best practices
+    hooks_rules: error
+    component_naming: warn
+    prop_types: error
+    
+  security:
+    # Essential for user registration forms
+    sql_injection: error
+    xss_prevention: error
+    sensitive_data: error
+
+# Files to focus on (your most critical files)
+include_patterns:
+  - "src/app/auth/**"
+  - "src/store/**" 
+  - "src/app/onboarding/**"
+  - "capacitor.config.ts"
+  - "next.config.js"
+
+# Skip files that generate noise
+exclude_patterns:
+  - "*.css"
+  - "*.scss"
+  - "public/**"
+  - "node_modules/**"
+  - ".next/**"
+  - "out/**"
+
+# triggers:
+#   # Review only on specific branches
+#   branches:
+#     - "owner-registration-feature"
+#     - "main"
+#     - "develop"
+  
+  # Review only specific file changes
+  file_changes:
+    - "**/*.tsx"
+    - "**/*.ts" 
+    - "**/*.js"
+  
+  # Skip minor changes
+  ignore_changes:
+    - "package-lock.json"
+    - "*.md"
+    - "*.txt"
