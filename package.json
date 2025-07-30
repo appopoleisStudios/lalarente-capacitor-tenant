@@ -6,9 +6,13 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "migrate": "tsx scripts/runMigration.ts",
+    "migrate:status": "tsx scripts/runMigration.ts --status",
+    "migrate:rollback": "tsx scripts/runMigration.ts --rollback"
   },
   "dependencies": {
+    "@capacitor-community/keep-awake": "^7.1.0",
     "@capacitor/android": "^7.4.2",
     "@capacitor/camera": "^7.0.1",
     "@capacitor/cli": "^7.4.2",

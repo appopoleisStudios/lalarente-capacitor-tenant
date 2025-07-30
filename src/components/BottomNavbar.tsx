@@ -11,6 +11,12 @@ export default function BottomNavbar({ userRole }: BottomNavbarProps) {
   const router = useRouter()
   const pathname = usePathname()
 
+  // Color mapping for active states
+  const activeColorClasses = {
+    emerald: 'text-emerald-600 bg-emerald-600',
+    blue: 'text-blue-600 bg-blue-600'
+  } as const
+
   const tenantTabs = [
     {
       id: 'home',
@@ -117,7 +123,7 @@ export default function BottomNavbar({ userRole }: BottomNavbarProps) {
                 <i 
                   className={`${tab.icon} text-lg mb-1 ${
                     isActive 
-                      ? `text-${activeColor}-600` 
+                      ? activeColorClasses[activeColor as keyof typeof activeColorClasses]?.split(' ')[0] || 'text-gray-600'
                       : 'text-gray-400'
                   }`}
                 ></i>
@@ -126,7 +132,7 @@ export default function BottomNavbar({ userRole }: BottomNavbarProps) {
                 <span 
                   className={`text-xs font-medium ${
                     isActive 
-                      ? `text-${activeColor}-600` 
+                      ? activeColorClasses[activeColor as keyof typeof activeColorClasses]?.split(' ')[0] || 'text-gray-600'
                       : 'text-gray-400'
                   }`}
                 >
@@ -136,7 +142,9 @@ export default function BottomNavbar({ userRole }: BottomNavbarProps) {
                 {/* Active Indicator */}
                 {isActive && (
                   <div 
-                    className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-0.5 bg-${activeColor}-600 rounded-full`}
+                    className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-0.5 rounded-full ${
+                      activeColorClasses[activeColor as keyof typeof activeColorClasses]?.split(' ')[1] || 'bg-gray-600'
+                    }`}
                   ></div>
                 )}
               </button>

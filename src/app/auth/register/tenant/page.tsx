@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
+import { validateIdDocumentFile, formatFileSize } from '@/utils/fileValidation'
+import { validateSAIDNumber, validateSAPhoneNumber, formatSAIDNumber } from '@/utils/saValidation'
 
 export default function TenantRegistrationPage() {
   const router = useRouter()
@@ -28,6 +30,7 @@ export default function TenantRegistrationPage() {
       ...prev,
       [name]: value
     }))
+    
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
@@ -35,11 +38,44 @@ export default function TenantRegistrationPage() {
         [name]: ''
       }))
     }
+    
+    // Real-time validation for ID number
+    if (name === 'idNumber' && value.trim()) {
+      const validation = validateSAIDNumber(value)
+      if (!validation.isValid) {
+        setErrors(prev => ({
+          ...prev,
+          idNumber: validation.error || 'Invalid SA ID number'
+        }))
+      }
+    }
+    
+    // Real-time validation for phone number
+    if (name === 'phone' && value.trim()) {
+      const validation = validateSAPhoneNumber(value)
+      if (!validation.isValid) {
+        setErrors(prev => ({
+          ...prev,
+          phone: validation.error || 'Invalid SA phone number'
+        }))
+      }
+    }
   }
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
+      // Validate file size and type
+      const validation = validateIdDocumentFile(file)
+      
+      if (!validation.isValid) {
+        setErrors(prev => ({ ...prev, idUpload: validation.error || 'Invalid file' }))
+        // Clear the file input
+        e.target.value = ''
+        setUploadedFile(null)
+        return
+      }
+      
       setUploadedFile(file)
       if (errors.idUpload) {
         setErrors(prev => ({
@@ -64,8 +100,11 @@ export default function TenantRegistrationPage() {
 
     if (!formData.idNumber.trim()) {
       newErrors.idNumber = 'Please enter a valid SA ID number'
-    } else if (!/^\d{13}$/.test(formData.idNumber.replace(/\s/g, ''))) {
-      newErrors.idNumber = 'Please enter a valid 13-digit SA ID number'
+    } else {
+      const idValidation = validateSAIDNumber(formData.idNumber)
+      if (!idValidation.isValid) {
+        newErrors.idNumber = idValidation.error || 'Invalid SA ID number'
+      }
     }
 
     if (!formData.email.trim()) {
@@ -76,6 +115,11 @@ export default function TenantRegistrationPage() {
 
     if (!formData.phone.trim()) {
       newErrors.phone = 'Please enter a valid SA phone number'
+    } else {
+      const phoneValidation = validateSAPhoneNumber(formData.phone)
+      if (!phoneValidation.isValid) {
+        newErrors.phone = phoneValidation.error || 'Invalid SA phone number'
+      }
     }
 
     if (!formData.password.trim()) {
@@ -95,11 +139,8 @@ export default function TenantRegistrationPage() {
     if (!termsConsent) {
       newErrors.termsConsent = 'Please accept the terms and privacy policy'
     }
-
-    console.log('Validation errors:', newErrors)
     setErrors(newErrors)
     const isValid = Object.keys(newErrors).length === 0
-    console.log('Form is valid:', isValid)
     return isValid
   }
 
@@ -133,17 +174,13 @@ export default function TenantRegistrationPage() {
         idDocument: uploadedFile
       })
       
-      console.log('Registration result:', result)
       
       if (result.success) {
-        console.log('Registration successful, redirecting to tenant dashboard...')
         router.push('/dashboard/tenant')
       } else {
-        console.log('Registration failed, result:', result)
         setErrors(prev => ({ ...prev, submit: 'Registration failed. Please try again.' }))
       }
     } catch (error) {
-      console.error('Registration failed with error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Registration failed. Please try again.'
       setErrors(prev => ({ ...prev, submit: errorMessage }))
     }
@@ -203,7 +240,7 @@ export default function TenantRegistrationPage() {
               name="fullName"
               value={formData.fullName}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-800 focus:border-transparent placeholder-gray-300" 
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-800 focus:border-transparent placeholder-gray-300 text-gray-900" 
               placeholder="Enter your full name"
             />
             {errors.fullName && (
@@ -221,15 +258,15 @@ export default function TenantRegistrationPage() {
               name="idNumber"
               value={formData.idNumber}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-800 focus:border-transparent placeholder-gray-300" 
-              placeholder="0000000000000"
-              maxLength={13}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-800 focus:border-transparent placeholder-gray-300 text-gray-900" 
+              placeholder="YYMMDD 0000 000 0 0"
+              maxLength={19}
             />
             {errors.idNumber && (
               <div className="text-red-500 text-sm mt-1">{errors.idNumber}</div>
             )}
             <div className="text-gray-500 text-xs mt-1">
-              Your ID is used for identity verification and credit checks
+              Format: YYMMDD 0000 000 0 0 (13 digits) • Used for identity verification
             </div>
           </div>
           
@@ -243,7 +280,7 @@ export default function TenantRegistrationPage() {
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-800 focus:border-transparent placeholder-gray-300" 
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-800 focus:border-transparent placeholder-gray-300 text-gray-900" 
               placeholder="your.email@example.com"
             />
             {errors.email && (
@@ -258,20 +295,23 @@ export default function TenantRegistrationPage() {
             </label>
             <div className="flex">
               <div className="flex items-center px-3 py-3 bg-gray-50 border border-r-0 border-gray-200 rounded-l-lg">
-                <span className="text-gray-300 text-sm">🇿🇦 +27</span>
+                <span className="text-gray-500 text-sm">🇿🇦 +27</span>
               </div>
               <input 
                 type="tel" 
                 name="phone"
                 value={formData.phone}
                 onChange={handleInputChange}
-                className="flex-1 px-4 py-3 border border-gray-200 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-green-800 focus:border-transparent placeholder-gray-300" 
+                className="flex-1 px-4 py-3 border border-gray-200 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-green-800 focus:border-transparent placeholder-gray-300 text-gray-900" 
                 placeholder="81 234 5678"
               />
             </div>
             {errors.phone && (
               <div className="text-red-500 text-sm mt-1">{errors.phone}</div>
             )}
+            <div className="text-gray-500 text-xs mt-1">
+              Format: 081 234 5678 or +27 81 234 5678
+            </div>
           </div>
           
           {/* Password */}
@@ -285,7 +325,7 @@ export default function TenantRegistrationPage() {
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 pr-12 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-800 focus:border-transparent placeholder-gray-300" 
+                className="w-full px-4 py-3 pr-12 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-800 focus:border-transparent placeholder-gray-300 text-gray-900" 
                 placeholder="Create a strong password"
               />
               <button 
@@ -372,7 +412,12 @@ export default function TenantRegistrationPage() {
               <p className="text-gray-700 font-medium mb-1">
                 {uploadedFile ? uploadedFile.name : 'Upload SA ID Document'}
               </p>
-              <p className="text-gray-500 text-sm">Take a photo or upload a clear image of your ID</p>
+              <p className="text-gray-500 text-sm">
+                {uploadedFile 
+                  ? `File size: ${formatFileSize(uploadedFile.size)}`
+                  : 'Take a photo or upload a clear image of your ID (Max 5MB)'
+                }
+              </p>
               <input 
                 type="file" 
                 id="tenantIdUpload" 

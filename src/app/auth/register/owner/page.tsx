@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
+import { validateIdDocumentFile, formatFileSize } from '@/utils/fileValidation'
+import { validateSAIDNumber, validateSAPhoneNumber, formatSAIDNumber } from '@/utils/saValidation'
 
 export default function OwnerRegistrationPage() {
   const router = useRouter()
@@ -27,6 +29,7 @@ export default function OwnerRegistrationPage() {
       ...prev,
       [name]: value
     }))
+    
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
@@ -34,11 +37,44 @@ export default function OwnerRegistrationPage() {
         [name]: ''
       }))
     }
+    
+    // Real-time validation for ID number
+    if (name === 'idNumber' && value.trim()) {
+      const validation = validateSAIDNumber(value)
+      if (!validation.isValid) {
+        setErrors(prev => ({
+          ...prev,
+          idNumber: validation.error || 'Invalid SA ID number'
+        }))
+      }
+    }
+    
+    // Real-time validation for phone number
+    if (name === 'phone' && value.trim()) {
+      const validation = validateSAPhoneNumber(value)
+      if (!validation.isValid) {
+        setErrors(prev => ({
+          ...prev,
+          phone: validation.error || 'Invalid SA phone number'
+        }))
+      }
+    }
   }
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
+      // Validate file size and type
+      const validation = validateIdDocumentFile(file)
+      
+      if (!validation.isValid) {
+        setErrors(prev => ({ ...prev, idUpload: validation.error || 'Invalid file' }))
+        // Clear the file input
+        e.target.value = ''
+        setUploadedFile(null)
+        return
+      }
+      
       setUploadedFile(file)
       if (errors.idUpload) {
         setErrors(prev => ({
@@ -63,6 +99,11 @@ export default function OwnerRegistrationPage() {
 
     if (!formData.idNumber.trim()) {
       newErrors.idNumber = 'Please enter a valid ID or registration number'
+    } else {
+      const idValidation = validateSAIDNumber(formData.idNumber)
+      if (!idValidation.isValid) {
+        newErrors.idNumber = idValidation.error || 'Invalid SA ID number'
+      }
     }
 
     if (!formData.email.trim()) {
@@ -73,6 +114,11 @@ export default function OwnerRegistrationPage() {
 
     if (!formData.phone.trim()) {
       newErrors.phone = 'Please enter a valid SA phone number'
+    } else {
+      const phoneValidation = validateSAPhoneNumber(formData.phone)
+      if (!phoneValidation.isValid) {
+        newErrors.phone = phoneValidation.error || 'Invalid SA phone number'
+      }
     }
 
     if (!formData.password.trim()) {
@@ -203,7 +249,7 @@ export default function OwnerRegistrationPage() {
               name="fullName"
               value={formData.fullName}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder-gray-300" 
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder-gray-300 text-gray-900" 
               placeholder="Enter your name or company name"
             />
             {errors.fullName && (
@@ -221,7 +267,7 @@ export default function OwnerRegistrationPage() {
               name="idNumber"
               value={formData.idNumber}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder-gray-300" 
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder-gray-300 text-gray-900" 
               placeholder="SA ID or Company Registration Number"
             />
             {errors.idNumber && (
@@ -242,7 +288,7 @@ export default function OwnerRegistrationPage() {
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder-gray-300" 
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder-gray-300 text-gray-900" 
               placeholder="your.email@example.com"
             />
             {errors.email && (
@@ -264,7 +310,7 @@ export default function OwnerRegistrationPage() {
                 name="phone"
                 value={formData.phone}
                 onChange={handleInputChange}
-                className="flex-1 px-4 py-3 border border-gray-200 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder-gray-300" 
+                className="flex-1 px-4 py-3 border border-gray-200 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder-gray-300 text-gray-900" 
                 placeholder="81 234 5678"
               />
             </div>
@@ -284,7 +330,7 @@ export default function OwnerRegistrationPage() {
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 pr-12 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder-gray-300" 
+                className="w-full px-4 py-3 pr-12 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder-gray-300 text-gray-900" 
                 placeholder="Create a strong password"
               />
               <button 
@@ -308,12 +354,11 @@ export default function OwnerRegistrationPage() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
                 Property Portfolio Size *
             </label>
-            <select
-                name="portfolioSize"
-                value={formData.portfolioSize}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
-                style={{ color: formData.portfolioSize === '' ? '#6b7280' : '#111827' }}
+                        <select
+              name="portfolioSize"
+              value={formData.portfolioSize}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
             >
                 <option value="" disabled className="text-gray-600">
                 Select portfolio size
@@ -345,7 +390,12 @@ export default function OwnerRegistrationPage() {
               <p className="text-gray-700 font-medium mb-1">
                 {uploadedFile ? uploadedFile.name : 'Upload ID or Registration Document'}
               </p>
-              <p className="text-gray-500 text-sm">Clear image of your ID or company registration</p>
+              <p className="text-gray-500 text-sm">
+                {uploadedFile 
+                  ? `File size: ${formatFileSize(uploadedFile.size)}`
+                  : 'Clear image of your ID or company registration (Max 5MB)'
+                }
+              </p>
               <input 
                 type="file" 
                 id="ownerIdUpload" 

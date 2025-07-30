@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { User } from '@supabase/supabase-js'
 import { supabase, type Profile, type UserRole } from '@/lib/supabase'
+import { validateIdDocumentFile } from '@/utils/fileValidation'
+import { uploadSecureDocument, FicaDocumentData } from '@/utils/secureDocuments'
 
 interface AuthState {
   user: User | null
@@ -154,6 +156,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     console.log('signUpOwner called with data:', ownerData)
     set({ isLoading: true, error: null })
     try {
+      // 0. Validate file before processing
+      const fileValidation = validateIdDocumentFile(ownerData.ficaDocuments)
+      if (!fileValidation.isValid) {
+        throw new Error(fileValidation.error || 'Invalid file provided')
+      }
+
       // 1. Create auth user
       console.log('Creating auth user...')
       const { data, error } = await supabase.auth.signUp({ 
@@ -172,22 +180,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       console.log('Auth user created successfully:', data.user.id)
 
-      // 2. Upload FICA document
-      console.log('Uploading FICA document...')
-      const fileName = `fica-documents/${data.user.id}/${ownerData.ficaDocuments.name}`
-      const { error: uploadError } = await supabase.storage
-        .from('documents')
-        .upload(fileName, ownerData.ficaDocuments)
+      // 2. Upload FICA document securely
+      console.log('Uploading FICA document securely...')
+      const uploadResult = await uploadSecureDocument(
+        ownerData.ficaDocuments,
+        data.user.id,
+        'owner'
+      )
       
-      if (uploadError) {
-        console.error('File upload error:', uploadError)
-        throw uploadError
+      if (uploadResult.error) {
+        console.error('Secure file upload error:', uploadResult.error)
+        throw new Error(uploadResult.error)
       }
 
-      // 3. Get public URL for the uploaded file
-      const { data: urlData } = supabase.storage
-        .from('documents')
-        .getPublicUrl(fileName)
+      const filePath = uploadResult.filePath
 
       // 4. Insert into profiles table with owner-specific data
       console.log('Creating profile...')
@@ -202,7 +208,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           fica_documents: {
             id_number: ownerData.idNumber,
             portfolio_size: ownerData.portfolioSize,
-            document_url: urlData.publicUrl,
+            document_path: filePath,
             uploaded_at: new Date().toISOString()
           }
         }])
@@ -222,7 +228,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         fica_documents: {
           id_number: ownerData.idNumber,
           portfolio_size: ownerData.portfolioSize,
-          document_url: urlData.publicUrl,
+          document_path: filePath,
           uploaded_at: new Date().toISOString()
         },
         bank_details: null,
@@ -254,6 +260,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     console.log('signUpTenant called with data:', tenantData)
     set({ isLoading: true, error: null })
     try {
+      // 0. Validate file before processing
+      const fileValidation = validateIdDocumentFile(tenantData.idDocument)
+      if (!fileValidation.isValid) {
+        throw new Error(fileValidation.error || 'Invalid file provided')
+      }
+
       // 1. Create auth user
       console.log('Creating auth user...')
       const { data, error } = await supabase.auth.signUp({ 
@@ -272,22 +284,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       console.log('Auth user created successfully:', data.user.id)
 
-      // 2. Upload ID document
-      console.log('Uploading ID document...')
-      const fileName = `tenant-documents/${data.user.id}/${tenantData.idDocument.name}`
-      const { error: uploadError } = await supabase.storage
-        .from('documents')
-        .upload(fileName, tenantData.idDocument)
+      // 2. Upload ID document securely
+      console.log('Uploading ID document securely...')
+      const uploadResult = await uploadSecureDocument(
+        tenantData.idDocument,
+        data.user.id,
+        'tenant'
+      )
       
-      if (uploadError) {
-        console.error('File upload error:', uploadError)
-        throw uploadError
+      if (uploadResult.error) {
+        console.error('Secure file upload error:', uploadResult.error)
+        throw new Error(uploadResult.error)
       }
 
-      // 3. Get public URL for the uploaded file
-      const { data: urlData } = supabase.storage
-        .from('documents')
-        .getPublicUrl(fileName)
+      const filePath = uploadResult.filePath
 
       // 4. Insert into profiles table with tenant-specific data
       console.log('Creating profile...')
@@ -303,7 +313,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             id_number: tenantData.idNumber,
             monthly_income: null,
             employment_status: null,
-            document_url: urlData.publicUrl,
+            document_path: filePath,
             uploaded_at: new Date().toISOString()
           }
         }])
@@ -324,7 +334,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           id_number: tenantData.idNumber,
           monthly_income: null,
           employment_status: null,
-          document_url: urlData.publicUrl,
+          document_path: filePath,
           uploaded_at: new Date().toISOString()
         },
         bank_details: null,
@@ -367,24 +377,57 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       console.log('Fetching profile for user:', userId)
       
-      // First try to get just the basic profile data without the JSON fields
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, full_name, role, phone, avatar_url, verification_status, created_at, updated_at')
-        .eq('id', userId)
-        .single()
+      // Add retry mechanism for profile fetch
+      let retries = 3
+      let profileData = null
+      let profileError = null
       
-      if (profileError) {
-        console.error('Profile fetch error:', profileError)
-        // If profile doesn't exist, don't set an error, just log it
-        if (profileError.code === 'PGRST116') {
-          console.log('Profile not found for user:', userId)
-          return
+      while (retries > 0 && !profileData) {
+        try {
+          // First try to get just the basic profile data without the JSON fields
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('id, full_name, role, phone, avatar_url, verification_status, created_at, updated_at')
+            .eq('id', userId)
+            .single()
+          
+          if (error) {
+            profileError = error
+            if (error.code === 'PGRST116') {
+              console.log(`Profile not found for user: ${userId}, retries left: ${retries - 1}`)
+              if (retries > 1) {
+                // Wait a bit before retrying (exponential backoff)
+                await new Promise(resolve => setTimeout(resolve, 1000 * (4 - retries)))
+                retries--
+                continue
+              } else {
+                console.log('Profile not found after all retries - this is normal for new registrations')
+                return
+              }
+            }
+            throw error
+          }
+          
+          profileData = data
+          console.log('Basic profile fetched successfully:', profileData)
+          break
+          
+        } catch (error) {
+          profileError = error
+          if (retries > 1) {
+            console.log(`Profile fetch failed, retrying... (${retries - 1} retries left)`)
+            await new Promise(resolve => setTimeout(resolve, 1000 * (4 - retries)))
+            retries--
+          } else {
+            throw error
+          }
         }
-        throw profileError
       }
       
-      console.log('Basic profile fetched successfully:', profileData)
+      if (!profileData) {
+        console.log('Could not fetch profile after all retries')
+        return
+      }
       
       // Now try to get the JSON fields separately to avoid 406 errors
       try {
@@ -419,7 +462,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
       
     } catch (error: unknown) {
-      console.error('fetchProfile error:', error)
+      // Only log non-PGRST116 errors as they're more serious
+      if (error && typeof error === 'object' && 'code' in error && error.code !== 'PGRST116') {
+        console.error('fetchProfile error:', error)
+      }
       // Don't set error state for profile fetch failures as they're not critical
       // set({ error: error instanceof Error ? error.message : 'An unknown error occurred' })
     }

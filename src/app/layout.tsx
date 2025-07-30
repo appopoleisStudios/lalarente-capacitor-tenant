@@ -33,7 +33,15 @@ export default function RootLayout({
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         setUser(session.user)
-        await fetchProfile(session.user.id)
+        
+        // Check if profile is already set (from registration)
+        const currentProfile = useAuthStore.getState().profile
+        if (!currentProfile || currentProfile.id !== session.user.id) {
+          // Add a small delay to allow profile to be created in database
+          setTimeout(async () => {
+            await fetchProfile(session.user.id)
+          }, 1000)
+        }
       } else if (event === 'SIGNED_OUT') {
         setUser(null)
         setProfile(null)

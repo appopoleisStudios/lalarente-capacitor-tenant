@@ -3,15 +3,19 @@
 
 import { useAuthStore } from '@/store/authStore'
 import BottomNavbar from './BottomNavbar'
+import { getValidUserRole, ValidUserRole } from '@/utils/roleValidation'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
-  userRole?: 'tenant' | 'owner'
+  userRole?: ValidUserRole
 }
 
 export default function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
   const { profile } = useAuthStore()
-  const role = userRole || profile?.role
+  
+  // Safely extract and validate the role
+  const backendRole = profile?.role
+  const role: ValidUserRole | undefined = getValidUserRole(userRole, backendRole)
 
   return (
     <div className="min-h-screen relative">
@@ -21,7 +25,7 @@ export default function DashboardLayout({ children, userRole }: DashboardLayoutP
       </div>
       
       {/* Bottom Navigation */}
-      {role && <BottomNavbar userRole={role as 'tenant' | 'owner'} />}
+      {role && <BottomNavbar userRole={role} />}
     </div>
   )
 }
