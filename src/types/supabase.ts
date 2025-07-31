@@ -347,6 +347,7 @@ export type Database = {
           avatar_url: string | null
           bank_details: Json | null
           created_at: string | null
+          email: string | null
           fica_documents: Json | null
           full_name: string
           id: string
@@ -359,6 +360,7 @@ export type Database = {
           avatar_url?: string | null
           bank_details?: Json | null
           created_at?: string | null
+          email?: string | null
           fica_documents?: Json | null
           full_name: string
           id: string
@@ -371,6 +373,7 @@ export type Database = {
           avatar_url?: string | null
           bank_details?: Json | null
           created_at?: string | null
+          email?: string | null
           fica_documents?: Json | null
           full_name?: string
           id?: string

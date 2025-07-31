@@ -37,6 +37,8 @@ interface AuthState {
   signOut: () => Promise<void>
   fetchProfile: (userId: string) => Promise<void>
   initialize: () => Promise<void>
+  checkEmailExists: (email: string) => Promise<boolean>
+  checkIdNumberExists: (idNumber: string) => Promise<boolean>
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -57,7 +59,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ 
         email, 
-        password 
+        password
       })
       
       if (error) throw error
@@ -123,6 +125,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         full_name: fullName,
         role: role,
         phone: null,
+        email: null,
         avatar_url: null,
         verification_status: false,
         fica_documents: null,
@@ -156,7 +159,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     console.log('signUpOwner called with data:', ownerData)
     set({ isLoading: true, error: null })
     try {
-      // 0. Validate file before processing
+      // 0. Check for duplicate email and ID number
+      const emailExists = await get().checkEmailExists(ownerData.email)
+      if (emailExists) {
+        throw new Error('This email address is already registered. Please use a different email or try signing in.')
+      }
+
+      const idNumberExists = await get().checkIdNumberExists(ownerData.idNumber)
+      if (idNumberExists) {
+        throw new Error('This ID number is already registered. Please use a different ID number or contact support if this is an error.')
+      }
+
+      // 1. Validate file before processing
       const fileValidation = validateIdDocumentFile(ownerData.ficaDocuments)
       if (!fileValidation.isValid) {
         throw new Error(fileValidation.error || 'Invalid file provided')
@@ -172,7 +186,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (error) {
         console.error('Auth signup error:', error)
         if (error.message.includes('already registered') || error.message.includes('already exists')) {
-          throw new Error('This email is already registered. Please use a different email or try signing in.')
+          throw new Error('This email address is already registered in our system. Please use a different email address or try signing in with your existing account.')
         }
         throw error
       }
@@ -204,6 +218,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           full_name: ownerData.fullName,
           role: 'owner',
           phone: ownerData.phone,
+          email: ownerData.email,
           verification_status: false,
           fica_documents: {
             id_number: ownerData.idNumber,
@@ -215,6 +230,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       if (profileError) {
         console.error('Profile creation error:', profileError)
+        
+        // Check if this is a duplicate ID number error from the database trigger
+        if (profileError.message && profileError.message.includes('already registered by another user')) {
+          throw new Error('This ID number is already registered by another user. Please use a different ID number or contact support if this is an error.')
+        }
+        
+        // Check if this is a duplicate email error
+        if (profileError.message && (profileError.message.includes('duplicate key') || profileError.message.includes('already exists'))) {
+          throw new Error('This email address is already registered. Please use a different email or try signing in.')
+        }
+        
         throw profileError
       }
 
@@ -223,6 +249,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         full_name: ownerData.fullName,
         role: 'owner',
         phone: ownerData.phone,
+        email: ownerData.email,
         avatar_url: null,
         verification_status: false,
         fica_documents: {
@@ -260,7 +287,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     console.log('signUpTenant called with data:', tenantData)
     set({ isLoading: true, error: null })
     try {
-      // 0. Validate file before processing
+      // 0. Check for duplicate email and ID number
+      const emailExists = await get().checkEmailExists(tenantData.email)
+      if (emailExists) {
+        throw new Error('This email address is already registered. Please use a different email or try signing in.')
+      }
+
+      const idNumberExists = await get().checkIdNumberExists(tenantData.idNumber)
+      if (idNumberExists) {
+        throw new Error('This ID number is already registered. Please use a different ID number or contact support if this is an error.')
+      }
+
+      // 1. Validate file before processing
       const fileValidation = validateIdDocumentFile(tenantData.idDocument)
       if (!fileValidation.isValid) {
         throw new Error(fileValidation.error || 'Invalid file provided')
@@ -276,7 +314,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (error) {
         console.error('Auth signup error:', error)
         if (error.message.includes('already registered') || error.message.includes('already exists')) {
-          throw new Error('This email is already registered. Please use a different email or try signing in.')
+          throw new Error('This email address is already registered in our system. Please use a different email address or try signing in with your existing account.')
         }
         throw error
       }
@@ -308,6 +346,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           full_name: tenantData.fullName,
           role: 'tenant',
           phone: tenantData.phone,
+          email: tenantData.email,
           verification_status: false,
           fica_documents: {
             id_number: tenantData.idNumber,
@@ -320,6 +359,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       if (profileError) {
         console.error('Profile creation error:', profileError)
+        
+        // Check if this is a duplicate ID number error from the database trigger
+        if (profileError.message && profileError.message.includes('already registered by another user')) {
+          throw new Error('This ID number is already registered by another user. Please use a different ID number or contact support if this is an error.')
+        }
+        
+        // Check if this is a duplicate email error
+        if (profileError.message && (profileError.message.includes('duplicate key') || profileError.message.includes('already exists'))) {
+          throw new Error('This email address is already registered. Please use a different email or try signing in.')
+        }
+        
         throw profileError
       }
 
@@ -328,6 +378,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         full_name: tenantData.fullName,
         role: 'tenant',
         phone: tenantData.phone,
+        email: tenantData.email,
         avatar_url: null,
         verification_status: false,
         fica_documents: {
@@ -501,5 +552,69 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.error('Auth store initialization error:', error)
       set({ error: error instanceof Error ? error.message : 'An unknown error occurred', isInitialized: true, isLoading: false })
     }
+  },
+
+  checkEmailExists: async (email: string) => {
+    try {
+      console.log('Checking for existing email:', email)
+      
+      // Check profiles table for email field
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle()
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error checking email existence:', error)
+        return false
+      }
+      
+      // If we found a profile with this email, it exists
+      if (data) {
+        console.log('Email found in profiles table')
+        return true
+      }
+
+      // For now, we'll rely on Supabase auth to handle email uniqueness
+      // The auth.signUp will fail if email already exists, and we'll catch that error
+      console.log('Email not found in profiles, allowing registration')
+      return false
+    } catch (error) {
+      console.error('Error checking email existence:', error)
+      return false
+    }
+  },
+
+  checkIdNumberExists: async (idNumber: string) => {
+    try {
+      console.log('🔍 Checking for existing ID number (RPC):', idNumber)
+      
+      // Use the simple RPC function we just created
+      const { data, error } = await supabase.rpc('check_id_exists', {
+        id_num: idNumber.trim()
+      })
+
+      if (error) {
+        console.error('❌ Error in RPC ID number check:', error)
+        console.log('⚠️ RPC error occurred, blocking registration for safety.')
+        return true
+      }
+
+      console.log('📊 RPC check_id_exists returned:', data)
+      
+      if (data === true) {
+        console.log('🚨 DUPLICATE ID DETECTED via RPC! Blocking registration.')
+        return true
+      }
+      
+      console.log('✅ ID number is unique (RPC), allowing registration.')
+      return false
+    } catch (error) {
+      console.error('❌ Error in RPC ID number check:', error)
+      console.log('⚠️ Error occurred during RPC check, blocking registration for safety.')
+      return true
+    }
   }
 }))
+

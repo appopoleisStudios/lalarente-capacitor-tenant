@@ -87,11 +87,6 @@ export default function TenantRegistrationPage() {
   }
 
   const validateForm = () => {
-    console.log('Validating form data:', formData)
-    console.log('Uploaded file:', uploadedFile)
-    console.log('Credit consent:', creditConsent)
-    console.log('Terms consent:', termsConsent)
-    
     const newErrors: {[key: string]: string} = {}
 
     if (!formData.fullName.trim()) {
@@ -145,15 +140,15 @@ export default function TenantRegistrationPage() {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log('Form submit triggered')
     e.preventDefault()
     
-    console.log('Validating form...')
+    if (isLoading) {
+      return;
+    }
+    
     const isValid = validateForm()
-    console.log('Form validation result:', isValid)
     
     if (!isValid) {
-      console.log('Form validation failed, errors:', errors)
       // Show validation errors to user
       return
     }
@@ -164,7 +159,6 @@ export default function TenantRegistrationPage() {
     }
 
     try {
-      console.log('Starting tenant registration...')
       const result = await signUpTenant({
         email: formData.email,
         password: formData.password,
@@ -193,7 +187,6 @@ export default function TenantRegistrationPage() {
   const showSignIn = () => {
     router.push('/auth/login')
   }
-
   return (
     <div className="max-w-md mx-auto min-h-screen shadow-xl bg-gradient-to-b from-gray-50 to-white relative overflow-hidden">
       {/* Background Pattern */}
