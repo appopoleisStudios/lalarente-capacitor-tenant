@@ -38,7 +38,7 @@ interface AuthState {
   fetchProfile: (userId: string) => Promise<void>
   initialize: () => Promise<void>
   checkEmailExists: (email: string) => Promise<boolean>
-  checkIdNumberExists: (idNumber: string) => Promise<boolean>
+  checkIdNumberExists: (idNumber: string, role: UserRole) => Promise<boolean>
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -125,7 +125,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         full_name: fullName,
         role: role,
         phone: null,
-        email: null,
+        email: email,
         avatar_url: null,
         verification_status: false,
         fica_documents: null,
@@ -165,7 +165,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw new Error('This email address is already registered. Please use a different email or try signing in.')
       }
 
-      const idNumberExists = await get().checkIdNumberExists(ownerData.idNumber)
+      const idNumberExists = await get().checkIdNumberExists(ownerData.idNumber, 'owner')
       if (idNumberExists) {
         throw new Error('This ID number is already registered. Please use a different ID number or contact support if this is an error.')
       }
@@ -293,7 +293,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw new Error('This email address is already registered. Please use a different email or try signing in.')
       }
 
-      const idNumberExists = await get().checkIdNumberExists(tenantData.idNumber)
+      const idNumberExists = await get().checkIdNumberExists(tenantData.idNumber, 'tenant')
       if (idNumberExists) {
         throw new Error('This ID number is already registered. Please use a different ID number or contact support if this is an error.')
       }
@@ -558,41 +558,41 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       console.log('Checking for existing email:', email)
       
-      // Check profiles table for email field
+      // Check both auth users and profiles table
       const { data, error } = await supabase
         .from('profiles')
         .select('id')
         .eq('email', email)
         .maybeSingle()
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error checking email existence:', error)
-        return false
+        // Return true to block registration on database errors for safety
+        return true
       }
       
-      // If we found a profile with this email, it exists
       if (data) {
         console.log('Email found in profiles table')
         return true
       }
 
-      // For now, we'll rely on Supabase auth to handle email uniqueness
-      // The auth.signUp will fail if email already exists, and we'll catch that error
       console.log('Email not found in profiles, allowing registration')
       return false
     } catch (error) {
       console.error('Error checking email existence:', error)
-      return false
+      // Return true to block registration on errors for safety
+      return true
     }
   },
 
-  checkIdNumberExists: async (idNumber: string) => {
+  checkIdNumberExists: async (idNumber: string, role: UserRole) => {
     try {
-      console.log('🔍 Checking for existing ID number (RPC):', idNumber)
+      console.log(`🔍 Checking for existing ID number (RPC) for role ${role}:`, idNumber)
       
-      // Use the simple RPC function we just created
-      const { data, error } = await supabase.rpc('check_id_exists', {
-        id_num: idNumber.trim()
+      // Use the role-based RPC function
+      const { data, error } = await supabase.rpc('check_id_exists_for_role', {
+        id_num: idNumber.trim(),
+        user_role: role
       })
 
       if (error) {
@@ -601,14 +601,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return true
       }
 
-      console.log('📊 RPC check_id_exists returned:', data)
+      console.log(`📊 RPC check_id_exists_for_role returned for ${role}:`, data)
       
       if (data === true) {
-        console.log('🚨 DUPLICATE ID DETECTED via RPC! Blocking registration.')
+        console.log(`🚨 DUPLICATE ID DETECTED for role ${role} via RPC! Blocking registration.`)
         return true
       }
       
-      console.log('✅ ID number is unique (RPC), allowing registration.')
+      console.log(`✅ ID number is unique for role ${role} (RPC), allowing registration.`)
       return false
     } catch (error) {
       console.error('❌ Error in RPC ID number check:', error)
