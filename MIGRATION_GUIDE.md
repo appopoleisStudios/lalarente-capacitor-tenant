@@ -233,6 +233,25 @@ After migration, verify:
 - ✅ Access controls are enforced
 - ✅ Validation triggers prevent insecure data
 - ✅ Error messages don't expose internal paths
+- ✅ SQL validation prevents dangerous operations
+- ✅ Audit logging captures all migration activities
+- ✅ User authentication required for migrations
+- ✅ Migration files are properly secured
+
+## Security Considerations
+
+⚠️ **Important**: The migration system uses the `exec_sql` RPC function which poses significant security risks if not properly secured.
+
+**Security measures implemented:**
+- SQL validation prevents dangerous operations
+- Authentication required for all migrations
+- Audit logging tracks all activities
+- Pattern matching blocks malicious SQL
+- User identification for accountability
+
+**For detailed security information, see:**
+- `SECURITY_MIGRATION_GUIDE.md` - Comprehensive security documentation
+- `src/lib/migrations/migrationRunner.ts` - Security implementation
 
 ## Support
 
