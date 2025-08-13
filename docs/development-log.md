@@ -4,6 +4,32 @@ This log tracks all development work, challenges, and solutions for the Lala Ren
 
 ---
 
+## [2025-08-13] – Owner Contract Detail UI refinements (steps, activity, footer) and lint hygiene
+**Status:** Completed  
+**Description:** Refined the Owner Contract Detail page to exactly match the design and UX rules. Implemented dynamic step ordering, robust Recent Activity with accurate actor mapping, privacy filtering for self-view events, sticky footer theming/enablement rules, and cleared TypeScript/ESLint issues in source.  
+**Changes:**
+- `src/app/contracts/page.tsx`:
+  - Progress timeline: Tenant is the default 3rd step; if Owner signs first, steps 3 and 4 swap (Owner then Tenant) with correct “Waiting for signature” highlights.
+  - Recent Activity: write “viewed” on open via SECURITY DEFINER RPCs; query `event, created_at, actor_id`; map actor by comparing to `owner_id/tenant_id/vendor_id`; hide “Viewed by <role>” when the current viewer is the same role.
+  - Sticky Footer: always visible; Sign button uses role primary color (Owner blue, Tenant green, Vendor indigo); enabled only when consent + signature input is valid; hidden disabled state for non-signers or after signing.
+  - Signature pad: fixed passive event warning; DPR-correct drawing with pointer math.
+  - General: removed `@ts-ignore`, added safe touch typing; no linter errors.
+- `src/app/dashboard/owner/contracts/page.tsx`:
+  - Tenant search: typed RPC result handling; localized disable for `any` on RPC; resolved TS2769 and `length` errors.
+- `eslint.config.mjs`: added `ignores` to exclude build artifacts (`.next`, `out`, `dist`, `android`) from linting.
+**Problems:**
+- Activity card showed “Viewed by tenant” incorrectly due to text parsing; owner saw self-view events.
+- Timeline didn’t switch positions when Owner signed first; footer sign button theming inconsistent; massive ESLint noise from build output.
+**Solutions:**
+- Actor attribution now uses `actor_id` vs party ids; filter self-view events in the UI.
+- Timeline logic swapped steps conditionally; footer themed per role and gated by consent/input.
+- Moved ignores into flat ESLint config; cleaned source lints and TS in both pages.
+**Lessons:** Always derive actor from stable ids, not strings; avoid linting build artifacts; keep UX rules encoded in small pure functions for clarity.
+**Next Steps:**
+- Tenant/Vendor pages: mirror footer theming; wire “Request changes” flow; add click-to-copy for document hash; adapter spike for DocuSeal/SignRequest.
+
+---
+
 ## [2025-08-13] – Contract Templates with Dynamic Variables
 **Status:** Started  
 **Description:** Introduced `contract_templates` and compiled fields on contracts to support dynamic placeholders (e.g., {{owner.full_name}}, {{tenant.full_name}}, {{property.address}}) populated at creation time, stored alongside the contract, and used for PDF generation.  

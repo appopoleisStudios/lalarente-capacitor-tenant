@@ -20,3 +20,5 @@ revoke all on function public.search_tenants_by_name(text) from public;
 grant execute on function public.search_tenants_by_name(text) to authenticated;
 
 
+
+

@@ -230,7 +230,7 @@ export default function OwnerContractsPage() {
     }
   }
 
-  const resolveTenantByName = async () => {
+		const resolveTenantByName = async () => {
     setMsg('')
     setResolvedTenant(null)
     try {
@@ -238,13 +238,15 @@ export default function OwnerContractsPage() {
         setMsg('Enter at least 3 characters of tenant name')
         return
       }
-      const { data, error } = await supabase.rpc('search_tenants_by_name' as never, { q: tenantName } as never)
-      if (error) throw error
-      if (!Array.isArray(data) || data.length === 0) {
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				const res = await (supabase as any).rpc('search_tenants_by_name', { q: tenantName })
+				if (res.error) throw res.error
+				const list = Array.isArray(res.data) ? (res.data as { id: string; full_name: string }[]) : []
+				if (list.length === 0) {
         setMsg('No tenant found for that name')
         return
       }
-      const first = data[0] as { id: string; full_name: string }
+				const first = list[0]
       setResolvedTenant({ id: first.id, full_name: first.full_name })
       setNewTenancy(s => ({ ...s, tenant_id: first.id }))
     } catch (err) {
