@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      inspection_audit_logs: {
+        Row: {
+          actor_id: string | null
+          created_at: string | null
+          data: Json | null
+          event: string
+          id: string
+          inspection_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string | null
+          data?: Json | null
+          event: string
+          id?: string
+          inspection_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string | null
+          data?: Json | null
+          event?: string
+          id?: string
+          inspection_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_audit_logs_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspection_audit_logs_inspection_id_fkey"
+            columns: ["inspection_id"]
+            isOneToOne: false
+            referencedRelation: "inspections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inspections: {
         Row: {
           completed_date: string | null
@@ -23,6 +65,7 @@ export type Database = {
           inspection_type: Database["public"]["Enums"]["inspection_type"]
           inspector_id: string | null
           inspector_signature: string | null
+          owner_signature: string | null
           property_id: string | null
           report_data: Json | null
           report_url: string | null
@@ -38,6 +81,7 @@ export type Database = {
           inspection_type: Database["public"]["Enums"]["inspection_type"]
           inspector_id?: string | null
           inspector_signature?: string | null
+          owner_signature?: string | null
           property_id?: string | null
           report_data?: Json | null
           report_url?: string | null
@@ -53,6 +97,7 @@ export type Database = {
           inspection_type?: Database["public"]["Enums"]["inspection_type"]
           inspector_id?: string | null
           inspector_signature?: string | null
+          owner_signature?: string | null
           property_id?: string | null
           report_data?: Json | null
           report_url?: string | null
@@ -529,35 +574,591 @@ export type Database = {
           },
         ]
       }
+      service_categories: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      service_contract_audit_logs: {
+        Row: {
+          actor_id: string | null
+          contract_id: string
+          created_at: string | null
+          data: Json | null
+          event: string
+          id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          contract_id: string
+          created_at?: string | null
+          data?: Json | null
+          event: string
+          id?: string
+        }
+        Update: {
+          actor_id?: string | null
+          contract_id?: string
+          created_at?: string | null
+          data?: Json | null
+          event?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_contract_audit_logs_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_contract_audit_logs_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "service_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_contract_signatures: {
+        Row: {
+          contract_id: string
+          id: string
+          ip_address: unknown | null
+          signature_image_url: string
+          signed_at: string
+          signer_id: string
+          signer_role: string
+          user_agent: string | null
+        }
+        Insert: {
+          contract_id: string
+          id?: string
+          ip_address?: unknown | null
+          signature_image_url: string
+          signed_at: string
+          signer_id: string
+          signer_role: string
+          user_agent?: string | null
+        }
+        Update: {
+          contract_id?: string
+          id?: string
+          ip_address?: unknown | null
+          signature_image_url?: string
+          signed_at?: string
+          signer_id?: string
+          signer_role?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_contract_signatures_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "service_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_contract_signatures_signer_id_fkey"
+            columns: ["signer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_contracts: {
+        Row: {
+          created_at: string | null
+          id: string
+          maintenance_request_id: string | null
+          owner_id: string
+          pdf_sha256: string | null
+          pdf_url: string | null
+          property_id: string
+          requires_tenant_signature: boolean | null
+          status: string
+          tenant_id: string | null
+          terms: Json | null
+          title: string
+          updated_at: string | null
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          maintenance_request_id?: string | null
+          owner_id: string
+          pdf_sha256?: string | null
+          pdf_url?: string | null
+          property_id: string
+          requires_tenant_signature?: boolean | null
+          status?: string
+          tenant_id?: string | null
+          terms?: Json | null
+          title: string
+          updated_at?: string | null
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          maintenance_request_id?: string | null
+          owner_id?: string
+          pdf_sha256?: string | null
+          pdf_url?: string | null
+          property_id?: string
+          requires_tenant_signature?: boolean | null
+          status?: string
+          tenant_id?: string | null
+          terms?: Json | null
+          title?: string
+          updated_at?: string | null
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_contracts_maintenance_request_id_fkey"
+            columns: ["maintenance_request_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_contracts_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_contracts_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_contracts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_contracts_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenancy_contract_audit_logs: {
+        Row: {
+          actor_id: string | null
+          contract_id: string
+          created_at: string | null
+          data: Json | null
+          event: string
+          id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          contract_id: string
+          created_at?: string | null
+          data?: Json | null
+          event: string
+          id?: string
+        }
+        Update: {
+          actor_id?: string | null
+          contract_id?: string
+          created_at?: string | null
+          data?: Json | null
+          event?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenancy_contract_audit_logs_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenancy_contract_audit_logs_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "tenancy_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenancy_contract_signatures: {
+        Row: {
+          contract_id: string
+          id: string
+          ip_address: unknown | null
+          signature_image_url: string
+          signed_at: string
+          signer_id: string
+          signer_role: string
+          user_agent: string | null
+        }
+        Insert: {
+          contract_id: string
+          id?: string
+          ip_address?: unknown | null
+          signature_image_url: string
+          signed_at: string
+          signer_id: string
+          signer_role: string
+          user_agent?: string | null
+        }
+        Update: {
+          contract_id?: string
+          id?: string
+          ip_address?: unknown | null
+          signature_image_url?: string
+          signed_at?: string
+          signer_id?: string
+          signer_role?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenancy_contract_signatures_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "tenancy_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenancy_contract_signatures_signer_id_fkey"
+            columns: ["signer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenancy_contracts: {
+        Row: {
+          created_at: string | null
+          id: string
+          lease_id: string | null
+          owner_id: string
+          pdf_sha256: string | null
+          pdf_url: string | null
+          property_id: string
+          requires_owner_signature: boolean | null
+          requires_tenant_signature: boolean | null
+          status: string
+          tenant_id: string
+          terms: Json | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          lease_id?: string | null
+          owner_id: string
+          pdf_sha256?: string | null
+          pdf_url?: string | null
+          property_id: string
+          requires_owner_signature?: boolean | null
+          requires_tenant_signature?: boolean | null
+          status?: string
+          tenant_id: string
+          terms?: Json | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          lease_id?: string | null
+          owner_id?: string
+          pdf_sha256?: string | null
+          pdf_url?: string | null
+          property_id?: string
+          requires_owner_signature?: boolean | null
+          requires_tenant_signature?: boolean | null
+          status?: string
+          tenant_id?: string
+          terms?: Json | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenancy_contracts_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "leases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenancy_contracts_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenancy_contracts_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenancy_contracts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_availability_slots: {
+        Row: {
+          created_at: string | null
+          effective_from: string | null
+          effective_to: string | null
+          end_time: string
+          id: string
+          is_recurring: boolean | null
+          start_time: string
+          vendor_id: string
+          weekday: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          effective_from?: string | null
+          effective_to?: string | null
+          end_time: string
+          id?: string
+          is_recurring?: boolean | null
+          start_time: string
+          vendor_id: string
+          weekday?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          effective_from?: string | null
+          effective_to?: string | null
+          end_time?: string
+          id?: string
+          is_recurring?: boolean | null
+          start_time?: string
+          vendor_id?: string
+          weekday?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_availability_slots_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_documents: {
+        Row: {
+          doc_type: string
+          file_url: string
+          id: string
+          notes: string | null
+          reviewed_at: string | null
+          status: string
+          uploaded_at: string | null
+          vendor_id: string
+        }
+        Insert: {
+          doc_type: string
+          file_url: string
+          id?: string
+          notes?: string | null
+          reviewed_at?: string | null
+          status?: string
+          uploaded_at?: string | null
+          vendor_id: string
+        }
+        Update: {
+          doc_type?: string
+          file_url?: string
+          id?: string
+          notes?: string | null
+          reviewed_at?: string | null
+          status?: string
+          uploaded_at?: string | null
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_documents_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_service_areas: {
+        Row: {
+          city: string | null
+          created_at: string | null
+          id: string
+          postal_codes: string[] | null
+          province: string | null
+          vendor_id: string
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string | null
+          id?: string
+          postal_codes?: string[] | null
+          province?: string | null
+          vendor_id: string
+        }
+        Update: {
+          city?: string | null
+          created_at?: string | null
+          id?: string
+          postal_codes?: string[] | null
+          province?: string | null
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_service_areas_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_services: {
+        Row: {
+          base_price: number
+          category_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          min_callout_fee: number | null
+          pricing_unit: string | null
+          title: string
+          updated_at: string | null
+          vendor_id: string
+        }
+        Insert: {
+          base_price?: number
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          min_callout_fee?: number | null
+          pricing_unit?: string | null
+          title: string
+          updated_at?: string | null
+          vendor_id: string
+        }
+        Update: {
+          base_price?: number
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          min_callout_fee?: number | null
+          pricing_unit?: string | null
+          title?: string
+          updated_at?: string | null
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_services_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "service_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_services_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      check_email_exists: {
-        Args: {
-          email_to_check: string
-        }
+      check_duplicate_id_number: {
+        Args: { new_id_number: string; exclude_user_id?: string }
         Returns: boolean
       }
-      check_id_exists_for_role: {
-        Args: {
-          id_num: string
-          user_role: string
-        }
+      check_email_exists: {
+        Args: { email_to_check: string }
         Returns: boolean
       }
       check_id_exists: {
-        Args: {
-          id_num: string
-        }
+        Args: { id_num: string }
         Returns: boolean
       }
+      check_id_exists_for_role: {
+        Args: { id_num: string; user_role: string }
+        Returns: boolean
+      }
+      check_id_number_exists_normalized: {
+        Args: { id_num: string }
+        Returns: {
+          id_exists: boolean
+          profile_count: number
+          profile_details: Json
+        }[]
+      }
       get_profiles_by_id_and_role: {
-        Args: {
-          id_num: string
-          user_role: string
-        }
+        Args: { id_num: string; user_role: string }
         Returns: {
           id: string
           full_name: string
@@ -566,6 +1167,21 @@ export type Database = {
           id_number: string
           created_at: string
         }[]
+      }
+      get_profiles_by_id_number: {
+        Args: { id_num: string }
+        Returns: {
+          id: string
+          full_name: string
+          email: string
+          role: string
+          id_number: string
+          created_at: string
+        }[]
+      }
+      validate_email_format: {
+        Args: { email: string }
+        Returns: boolean
       }
     }
     Enums: {

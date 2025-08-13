@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { useAuthStore } from '@/store/authStore'
 import { supabase } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
 
 type NewServiceForm = {
   title: string
@@ -20,7 +21,8 @@ type NewContractForm = {
 }
 
 export default function VendorDashboardPage() {
-  const { user } = useAuthStore()
+  const { user, signOut } = useAuthStore()
+  const router = useRouter()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb: any = supabase
 
@@ -137,7 +139,15 @@ export default function VendorDashboardPage() {
   return (
     <ProtectedRoute allowedRoles={['vendor']}>
       <div className="p-4 max-w-5xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4">Vendor Dashboard</h1>
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl font-bold">Vendor Dashboard</h1>
+          <button
+            onClick={async ()=>{ await signOut(); router.push('/auth/login') }}
+            className="text-sm px-3 py-2 rounded border border-gray-200 hover:bg-gray-50"
+          >
+            Sign out
+          </button>
+        </div>
         {msg && (
           <div className="mb-4 p-3 rounded border border-gray-200 bg-gray-50 text-gray-700">{msg}</div>
         )}

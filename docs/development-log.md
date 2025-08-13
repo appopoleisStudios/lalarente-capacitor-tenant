@@ -4,6 +4,30 @@ This log tracks all development work, challenges, and solutions for the Lala Ren
 
 ---
 
+## [2025-08-13] – Owner/Tenant Countersign UIs, Contract Detail (Static Export Safe), Vendor Sign Out
+**Status:** Completed  
+**Description:** Added owner and tenant contract countersign pages and a shared contract detail page compatible with `output: 'export'`. Implemented Sign out on vendor dashboard. Fixed dashboard loading spinner logic on auth.  
+**Changes:**  
+- New: `src/app/dashboard/owner/contracts/page.tsx` – lists owner’s service and tenancy contracts, supports file upload to sign.  
+- New: `src/app/dashboard/tenant/contracts/page.tsx` – lists tenant’s service and tenancy contracts, supports file upload to sign.  
+- New: `src/app/contracts/page.tsx` – contract detail via `?id=<uuid>` to avoid dynamic routes with static export.  
+- Removed: `src/app/contracts/[id]/page.tsx`.  
+- Updated: `src/components/ProtectedRoute.tsx` – spinner only blocks when no user and not initialized.  
+- Updated: `src/app/dashboard/vendor/page.tsx` – added Sign out button (calls `signOut()` and redirects to `/auth/login`).  
+**Problems:**  
+- Dashboard hung on first load until manual refresh.  
+- Contract detail dynamic route failed: missing `generateStaticParams()` under static export.  
+**Solutions:**  
+- Guard now renders when user exists; only blocks prior to initialization without a user.  
+- Replaced dynamic route with query-param page and updated links to `/contracts?id=<uuid>`.  
+**Lessons:** With `output: 'export'`, avoid dynamic segments for data-driven routes; prefer query params or pre-generate static params. Auth guards must not gate rendering when a user is already present.  
+**Next Steps:**  
+- Integrate finalized PDF generation and hashing, then display download in contract detail.  
+- Implement owner/tenant signature completeness checks and auto-activate contract on all signatures.  
+- Remove temporary casts in vendor dashboard now that Supabase types are up to date.
+
+---
+
 ## [2025-08-13] – Vendor Registration, Dashboard Scaffold, Contracts, Auth & Recovery
 **Status:** Completed  
 **Description:** Implemented vendor public signup page, vendor dashboard scaffold for services and service contracts, password recovery flow, role guard updates, and sign-out UX. Added DB schema for vendor marketplace and service contracts with RLS.

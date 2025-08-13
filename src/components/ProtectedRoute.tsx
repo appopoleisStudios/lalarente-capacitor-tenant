@@ -36,7 +36,7 @@ export default function ProtectedRoute({
     }
   }, [user, profile, isLoading, isInitialized, allowedRoles, redirectTo, router])
 
-  if (!isInitialized || isLoading) {
+  if ((!isInitialized || isLoading) && !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-sa-green-500"></div>
