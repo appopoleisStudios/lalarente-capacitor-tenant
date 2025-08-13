@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 import { validateIdDocumentFile, formatFileSize } from '@/utils/fileValidation'
 import { validateSAIDNumber, validateSAPhoneNumber, formatSAIDNumber } from '@/utils/saValidation'
+import { validatePasswordStrength } from '@/utils/password'
 
 export default function TenantRegistrationPage() {
   const router = useRouter()
@@ -119,8 +120,11 @@ export default function TenantRegistrationPage() {
 
     if (!formData.password.trim()) {
       newErrors.password = 'Password must be at least 8 characters'
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters'
+    } else {
+      const pw = validatePasswordStrength(formData.password)
+      if (!pw.isValid) {
+        newErrors.password = pw.message || 'Weak password'
+      }
     }
 
     if (!uploadedFile) {

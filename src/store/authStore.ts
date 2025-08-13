@@ -3,6 +3,7 @@ import { User } from '@supabase/supabase-js'
 import { supabase, type Profile, type UserRole } from '@/lib/supabase'
 import { validateIdDocumentFile } from '@/utils/fileValidation'
 import { uploadSecureDocument, FicaDocumentData } from '@/utils/secureDocuments'
+import { validatePasswordStrength } from '@/utils/password'
 
 interface AuthState {
   user: User | null
@@ -100,6 +101,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signUp: async (email: string, password: string, fullName: string, role: UserRole) => {
     set({ isLoading: true, error: null })
     try {
+      // Basic duplicate checks already handled server-side; enforce password policy client-side
+      const pw = validatePasswordStrength(password)
+      if (!pw.isValid) {
+        throw new Error(pw.message || 'Weak password')
+      }
       const { data, error } = await supabase.auth.signUp({ 
         email, 
         password 
@@ -125,7 +131,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         full_name: fullName,
         role: role,
         phone: null,
-        email: email,
+        email: null,
         avatar_url: null,
         verification_status: false,
         fica_documents: null,
@@ -159,6 +165,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     console.log('signUpOwner called with data:', ownerData)
     set({ isLoading: true, error: null })
     try {
+      const pw = validatePasswordStrength(ownerData.password)
+      if (!pw.isValid) {
+        throw new Error(pw.message || 'Weak password')
+      }
       // 0. Check for duplicate email and ID number
       const emailExists = await get().checkEmailExists(ownerData.email)
       if (emailExists) {
@@ -287,6 +297,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     console.log('signUpTenant called with data:', tenantData)
     set({ isLoading: true, error: null })
     try {
+      const pw = validatePasswordStrength(tenantData.password)
+      if (!pw.isValid) {
+        throw new Error(pw.message || 'Weak password')
+      }
       // 0. Check for duplicate email and ID number
       const emailExists = await get().checkEmailExists(tenantData.email)
       if (emailExists) {
@@ -438,7 +452,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           // First try to get just the basic profile data without the JSON fields
           const { data, error } = await supabase
             .from('profiles')
-            .select('id, full_name, role, phone, avatar_url, verification_status, created_at, updated_at')
+            .select('id, full_name, role, phone, email, avatar_url, verification_status, created_at, updated_at') // Added email here
             .eq('id', userId)
             .single()
           
@@ -491,26 +505,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         if (!fullProfileError && fullProfileData) {
           console.log('Full profile fetched successfully:', fullProfileData)
           set({ profile: fullProfileData })
-        } else {
-          console.log('Using basic profile data due to JSON field issues')
-          // Add missing fields with null values to satisfy TypeScript
-          const basicProfileWithDefaults = {
-            ...profileData,
-            fica_documents: null,
-            bank_details: null
-          }
-          set({ profile: basicProfileWithDefaults })
-        }
-      } catch (jsonError) {
-        console.log('JSON fields fetch failed, using basic profile:', jsonError)
-        // Add missing fields with null values to satisfy TypeScript
-        const basicProfileWithDefaults = {
-          ...profileData,
-          fica_documents: null,
-          bank_details: null
-        }
-        set({ profile: basicProfileWithDefaults })
-      }
+                 } else {
+           console.log('Using basic profile data due to JSON field issues')
+           // Add missing fields with null values to satisfy TypeScript
+           const basicProfileWithDefaults = {
+             ...profileData,
+             email: null,
+             fica_documents: null,
+             bank_details: null
+           }
+           set({ profile: basicProfileWithDefaults })
+         }
+             } catch (jsonError) {
+         console.log('JSON fields fetch failed, using basic profile:', jsonError)
+         // Add missing fields with null values to satisfy TypeScript
+         const basicProfileWithDefaults = {
+           ...profileData,
+           email: null,
+           fica_documents: null,
+           bank_details: null
+         }
+         set({ profile: basicProfileWithDefaults })
+       }
       
     } catch (error: unknown) {
       // Only log non-PGRST116 errors as they're more serious
@@ -521,6 +537,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // set({ error: error instanceof Error ? error.message : 'An unknown error occurred' })
     }
   },
+  
 
   initialize: async () => {
     set({ isLoading: true })
@@ -556,31 +573,31 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   checkEmailExists: async (email: string) => {
     try {
-      console.log('Checking for existing email:', email)
+      console.log('🔍 Checking for existing email (RPC):', email)
       
-      // Check both auth users and profiles table
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', email)
-        .maybeSingle()
+      // Use RPC function to check if email exists
+      const { data, error } = await supabase.rpc('check_email_exists', {
+        email_to_check: email.trim()
+      })
 
       if (error) {
-        console.error('Error checking email existence:', error)
-        // Return true to block registration on database errors for safety
-        return true
-      }
-      
-      if (data) {
-        console.log('Email found in profiles table')
+        console.error('❌ Error in RPC email check:', error)
+        console.log('⚠️ RPC error occurred, blocking registration for safety.')
         return true
       }
 
-      console.log('Email not found in profiles, allowing registration')
+      console.log('📊 RPC check_email_exists returned:', data)
+      
+      if (data === true) {
+        console.log('🚨 DUPLICATE EMAIL DETECTED via RPC! Blocking registration.')
+        return true
+      }
+      
+      console.log('✅ Email is unique (RPC), allowing registration.')
       return false
     } catch (error) {
-      console.error('Error checking email existence:', error)
-      // Return true to block registration on errors for safety
+      console.error('❌ Error in RPC email check:', error)
+      console.log('⚠️ Error occurred during RPC check, blocking registration for safety.')
       return true
     }
   },

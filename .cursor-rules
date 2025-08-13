@@ -1,0 +1,60 @@
+# Lala Rente Project - Cursor Rules
+
+## High-level Architecture
+- Next.js App Router app in lalarente-app
+- Mobile via Capacitor (Android project present)
+- Supabase backend, strongly typed via src/types/supabase.ts
+- Supabase client in src/lib/supabase.ts
+
+## Coding/Architecture Guidelines
+- DB-first approach - respect Supabase schema and RLS
+- UI components live under src/components (keep outside route folders)
+- Routes in src/app
+- Global auth and mobile UX hooks initialized in src/app/layout.tsx
+- ESLint uses Next core-web-vitals + TS
+- Tailwind configured with brand palette
+
+## UI/UX Standards
+- Tailwind theme with Indian-inspired palette (sa-green, sa-gold, sa-blue)
+- Mobile-hardening in layout (viewport lock, safe-area, selection disabled for native)
+- Follow existing component patterns and file locations
+
+## Tools/MCP Requirements
+- Use Supabase MCP to read tables, functions, RLS, advisors before any change
+- Validate queries against Supabase JS SDK patterns
+- Provide GitBash commands for user to run; do not auto-execute
+
+## Development Workflow
+- Phase tasks per roadmap (when present)
+- For new features: scaffold UI (outside app), mock data, then wire backend
+- Run dev server locally, resolve TS/lint before deployment
+
+## Testing/QA
+- Type-safe calls via supabase client and Database types
+- Prefer exact types (no any)
+- Add indices for FKs if needed
+- Avoid perf anti-patterns in RLS policies
+- Keep code readable and consistent
+
+## Security/Privacy
+- RLS enabled; add missing policies before exposing features
+- Avoid mutable function search_path; enable leaked password protection
+- Public signup allowed with verification and duplicate checks (email/ID); enforce business validations during registration
+
+## Assistant Behavior Rules
+- Never deviate from these rules or phased goals without explicit confirmation
+- Reference existing files/components before proposing code
+- Break complex tasks into small, actionable plans and seek approval before edits
+- Keep responses concise; avoid generic suggestions
+- Check prior work to avoid regressions
+
+## Key Schema Facts
+**Tables:** profiles, properties, property_assignments, leases, payments, maintenance_requests, inspections, messages
+**Enums:** user_role, property_status, payment_status, maintenance_status, inspection_type
+**Storage:** buckets/objects present
+
+## Known Issues to Address
+- RLS policies missing for: inspections, leases, maintenance_requests, messages, property_assignments
+- Multiple permissive policies and initplan issues on profiles, properties, payments
+- Many unindexed FKs flagged (need indexes on FK columns)
+- Several public functions flagged for mutable search_path (set stable search_path)

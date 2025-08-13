@@ -534,7 +534,39 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_email_exists: {
+        Args: {
+          email_to_check: string
+        }
+        Returns: boolean
+      }
+      check_id_exists_for_role: {
+        Args: {
+          id_num: string
+          user_role: string
+        }
+        Returns: boolean
+      }
+      check_id_exists: {
+        Args: {
+          id_num: string
+        }
+        Returns: boolean
+      }
+      get_profiles_by_id_and_role: {
+        Args: {
+          id_num: string
+          user_role: string
+        }
+        Returns: {
+          id: string
+          full_name: string
+          email: string
+          role: string
+          id_number: string
+          created_at: string
+        }[]
+      }
     }
     Enums: {
       inspection_type: "move_in" | "routine" | "move_out"
