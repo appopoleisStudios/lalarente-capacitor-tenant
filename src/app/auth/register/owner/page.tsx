@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 import { validateIdDocumentFile, formatFileSize } from '@/utils/fileValidation'
-import { validateSAIDNumber, validateSAPhoneNumber, formatSAIDNumber } from '@/utils/saValidation'
+import { validateSAIDNumber, validateSAPhoneNumber } from '@/utils/saValidation'
 import { validatePasswordStrength } from '@/utils/password'
 
 export default function OwnerRegistrationPage() {

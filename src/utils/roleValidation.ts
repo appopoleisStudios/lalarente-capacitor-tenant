@@ -6,7 +6,7 @@
 /**
  * Valid user roles that are supported by the frontend components
  */
-export type ValidUserRole = 'tenant' | 'owner'
+export type ValidUserRole = 'tenant' | 'owner' | 'vendor' | 'admin'
 
 /**
  * All possible user roles from the database
@@ -19,7 +19,7 @@ export type DatabaseUserRole = 'tenant' | 'owner' | 'vendor' | 'admin'
  * @returns True if the role is valid for frontend use
  */
 export function isValidUserRole(role: string | null | undefined): role is ValidUserRole {
-  return role === 'tenant' || role === 'owner'
+  return role === 'tenant' || role === 'owner' || role === 'vendor' || role === 'admin'
 }
 
 /**
@@ -97,6 +97,14 @@ export function hasPermission(role: ValidUserRole, permission: string): boolean 
       'manage_maintenance',
       'view_income',
       'edit_profile'
+    ],
+    vendor: [
+      'manage_vendor_services',
+      'manage_service_contracts',
+      'edit_profile'
+    ],
+    admin: [
+      'admin_all'
     ]
   }
   
@@ -123,6 +131,15 @@ export function getNavigationItems(role: ValidUserRole) {
       { id: 'tenants', label: 'Tenants', path: '/owner/tenants', icon: 'fas fa-users' },
       { id: 'income', label: 'Income', path: '/owner/income', icon: 'fas fa-chart-line' },
       { id: 'profile', label: 'Profile', path: '/owner/profile', icon: 'fas fa-user' }
+    ],
+    vendor: [
+      { id: 'home', label: 'Home', path: '/dashboard/vendor', icon: 'fas fa-home' },
+      { id: 'services', label: 'Services', path: '/dashboard/vendor', icon: 'fas fa-cogs' },
+      { id: 'contracts', label: 'Contracts', path: '/dashboard/vendor', icon: 'fas fa-file-signature' },
+      { id: 'profile', label: 'Profile', path: '/dashboard/vendor', icon: 'fas fa-user' }
+    ],
+    admin: [
+      { id: 'home', label: 'Admin', path: '/admin', icon: 'fas fa-shield-alt' }
     ]
   }
   
@@ -153,7 +170,7 @@ export function safeCastToUserRole(value: string | null | undefined): ValidUserR
  * @returns Color scheme object
  */
 export function getRoleColorScheme(role: ValidUserRole) {
-  const colorSchemes = {
+  const colorSchemes: Record<ValidUserRole, { primary: string; secondary: string; accent: string }> = {
     tenant: {
       primary: 'emerald',
       secondary: 'green',
@@ -163,6 +180,16 @@ export function getRoleColorScheme(role: ValidUserRole) {
       primary: 'blue',
       secondary: 'indigo',
       accent: 'cyan'
+    },
+    vendor: {
+      primary: 'amber',
+      secondary: 'yellow',
+      accent: 'orange'
+    },
+    admin: {
+      primary: 'rose',
+      secondary: 'red',
+      accent: 'pink'
     }
   }
   
@@ -191,7 +218,9 @@ export function canAccess(userRole: ValidUserRole, requiredRole: ValidUserRole |
 export function getRoleHierarchyLevel(role: ValidUserRole): number {
   const hierarchy = {
     tenant: 1,
-    owner: 2
+    owner: 2,
+    vendor: 2,
+    admin: 3
   }
   
   return hierarchy[role] || 0

@@ -19,7 +19,7 @@ const DocumentsCenter: React.FC<Props> = ({ docs, onOpen, onSeeAll }) => (
       </button>
     </div>
     <div className="grid grid-cols-3 gap-3" role="grid" aria-label="Document grid">
-      {docs.map((doc, idx) => (
+      {docs.map((doc) => (
         <button
           key={doc.id}
           aria-label={`Open ${doc.name} document from ${doc.date}`}

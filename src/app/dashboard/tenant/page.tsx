@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
+// import Image from 'next/image'
 import { useAuthStore } from '@/store/authStore'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import BottomNavbar from '@/components/BottomNavbar'
@@ -24,9 +24,9 @@ import { createDocument } from '@/utils/documentUtils'
 
 export default function TenantDashboardPage() {
   const router = useRouter()
-  const { user, profile, signOut } = useAuthStore()
-  const [currentRent] = useState(12500)
-  const [nextPaymentDate] = useState('1 March 2024')
+  const { profile } = useAuthStore()
+  // const [currentRent] = useState(12500)
+  // const [nextPaymentDate] = useState('1 March 2024')
   const [activeMaintenance] = useState([
     {
       title: 'Kitchen Tap Repair',
@@ -56,20 +56,20 @@ export default function TenantDashboardPage() {
   ])
   const [showSupport, setShowSupport] = useState(false)
 
-  const handleSignOut = async () => {
-    await signOut()
-    router.push('/')
-  }
+  // const handleSignOut = async () => {
+  //   await signOut()
+  //   router.push('/')
+  // }
 
   // Navigation handlers
-  const NAV = {
-    search: () => router.push('/properties/search'),
-    payments: () => router.push('/tenant/payments'),
-    maintenance: () => router.push('/tenant/maintenance'),
-    applications: () => router.push('/tenant/applications'),
-    docs: () => router.push('/tenant/documents'),
-    chat: () => setShowSupport(true)
-  }
+  // const NAV = {
+  //   search: () => router.push('/properties/search'),
+  //   payments: () => router.push('/tenant/payments'),
+  //   maintenance: () => router.push('/tenant/maintenance'),
+  //   applications: () => router.push('/tenant/applications'),
+  //   docs: () => router.push('/tenant/documents'),
+  //   chat: () => setShowSupport(true)
+  // }
 
   return (
     <ProtectedRoute allowedRoles={['tenant']}>

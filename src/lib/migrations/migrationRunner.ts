@@ -146,7 +146,7 @@ class MigrationRunner {
       if (error && error.code === '42P01') { // Table doesn't exist
         await this.createMigrationsTable()
       }
-    } catch (error) {
+    } catch {
       console.log('Migrations table check failed, creating...')
       await this.createMigrationsTable()
     }
@@ -184,8 +184,8 @@ class MigrationRunner {
       } else {
         console.log('Migrations table created successfully')
       }
-    } catch (error) {
-      console.error('Error creating migrations table:', error)
+    } catch {
+      console.error('Error creating migrations table')
     }
   }
 
@@ -255,9 +255,9 @@ class MigrationRunner {
         affectedRows: count || 0
       }
 
-    } catch (error) {
+    } catch {
       const executionTime = Date.now() - startTime
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const errorMessage = 'Unknown error'
 
       // Record failed migration
       await this.recordMigration(
@@ -307,8 +307,8 @@ class MigrationRunner {
       if (error) {
         console.error('Failed to record migration:', error)
       }
-    } catch (error) {
-      console.error('Error recording migration:', error)
+    } catch {
+      console.error('Error recording migration')
     }
   }
 
@@ -406,11 +406,11 @@ class MigrationRunner {
         message: `Migration ${migrationId} rolled back successfully`
       }
 
-    } catch (error) {
+    } catch {
       return {
         success: false,
         message: `Rollback failed for migration ${migrationId}`,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: 'Unknown error'
       }
     }
   }

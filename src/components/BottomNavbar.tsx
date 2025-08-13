@@ -1,15 +1,16 @@
 'use client'
 
 import { useRouter, usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useAuthStore } from '@/store/authStore'
 
 interface BottomNavbarProps {
-  userRole: 'tenant' | 'owner'
+  userRole: 'tenant' | 'owner' | 'vendor' | 'admin'
 }
 
 export default function BottomNavbar({ userRole }: BottomNavbarProps) {
   const router = useRouter()
   const pathname = usePathname()
+  const { signOut } = useAuthStore()
 
   // Color mapping for active states
   const activeColorClasses = {
@@ -93,7 +94,59 @@ export default function BottomNavbar({ userRole }: BottomNavbarProps) {
     }
   ]
 
-  const tabs = userRole === 'tenant' ? tenantTabs : ownerTabs
+  const vendorTabs = [
+    {
+      id: 'home',
+      label: 'Home',
+      icon: 'fas fa-home',
+      path: '/dashboard/vendor',
+      badge: null
+    },
+    {
+      id: 'services',
+      label: 'Services',
+      icon: 'fas fa-cogs',
+      path: '/dashboard/vendor',
+      badge: null
+    },
+    {
+      id: 'contracts',
+      label: 'Contracts',
+      icon: 'fas fa-file-signature',
+      path: '/dashboard/vendor',
+      badge: null
+    },
+    {
+      id: 'profile',
+      label: 'Profile',
+      icon: 'fas fa-user',
+      path: '/dashboard/vendor',
+      badge: null
+    }
+  ]
+
+  const adminTabs = [
+    {
+      id: 'home',
+      label: 'Admin',
+      icon: 'fas fa-shield-alt',
+      path: '/admin',
+      badge: null
+    }
+  ]
+
+  const baseTabs = userRole === 'tenant' ? tenantTabs : userRole === 'owner' ? ownerTabs : userRole === 'vendor' ? vendorTabs : adminTabs
+
+  const tabs = [
+    ...baseTabs,
+    {
+      id: 'signout',
+      label: 'Sign out',
+      icon: 'fas fa-sign-out-alt',
+      path: '/auth/login',
+      badge: null
+    }
+  ]
   const activeColor = userRole === 'tenant' ? 'emerald' : 'blue'
 
   const handleTabPress = (path: string) => {
@@ -109,7 +162,14 @@ export default function BottomNavbar({ userRole }: BottomNavbarProps) {
             return (
               <button
                 key={tab.id}
-                onClick={() => handleTabPress(tab.path)}
+                onClick={async () => {
+                  if (tab.id === 'signout') {
+                    await signOut();
+                    router.push('/auth/login');
+                  } else {
+                    handleTabPress(tab.path)
+                  }
+                }}
                 className="flex flex-col items-center py-2 px-3 min-w-0 flex-1 relative"
               >
                 {/* Badge */}

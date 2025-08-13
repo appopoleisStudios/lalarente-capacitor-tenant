@@ -4,6 +4,34 @@ This log tracks all development work, challenges, and solutions for the Lala Ren
 
 ---
 
+## [2025-08-13] – Vendor Registration, Dashboard Scaffold, Contracts, Auth & Recovery
+**Status:** Completed  
+**Description:** Implemented vendor public signup page, vendor dashboard scaffold for services and service contracts, password recovery flow, role guard updates, and sign-out UX. Added DB schema for vendor marketplace and service contracts with RLS.
+**Problems:**
+- NPM EPERM on Windows/OneDrive during `npm ci` unlink.  
+- Parse error in `password.ts` due to stray semicolon.  
+- Unauthorized redirect after vendor signup (role guard recognized only tenant/owner).  
+- TS errors: Supabase types missing new tables (`vendor_services`, `service_contracts`, `service_contract_signatures`) causing overload/type narrowing errors.  
+- ESLint warnings for unused vars across dashboards and missing deps.
+**Solutions:**
+- Recommended `npm install` (not `npm ci`), close locked processes, or move repo out of OneDrive/exclude `node_modules`.  
+- Fixed `password.ts` object literal; added `validatePasswordStrength` and enforced in `authStore` and registration pages.  
+- Extended `roleValidation` and `ProtectedRoute` to include `vendor`/`admin`; added sign-out in `BottomNavbar`; added optional role selector on login.  
+- Created vendor registration page `src/app/auth/register/vendor/page.tsx`; vendor dashboard `src/app/dashboard/vendor/page.tsx` with service create/list and contract create/sign; signature upload to `contracts` bucket.  
+- Added migrations: `003_vendor_profile.sql` (service categories, services, areas, availability, documents + RLS) and `004_service_contracts.sql` (contracts, signatures, audit logs + RLS).  
+- Resolved TS by loosening vendor dashboard types minimally and casting table names; cleaned unused vars and warnings across files; fixed `migrationRunner` catch param errors.  
+- Password recovery: `/auth/forgot-password` (reset email) and `/auth/reset-password` (update password).
+**Lessons:** Keep role guards aligned with DB roles; update Supabase TS types when adding tables; avoid `npm ci` on OneDrive; always run `tsc --noEmit` and `npm run lint` before build. With `output: 'export'`, use `npx serve out` to run locally.
+**Next Steps:**
+- Generate updated Supabase types to include new vendor/contract tables (replace `src/types/supabase.ts`):  
+  - GitBash: `npx supabase gen types typescript --project-id <PROJECT_REF> --schema public > src/types/supabase.ts`  
+- Owner/Tenant contract countersign UI and contract detail view (integrate `service_contracts` + `service_contract_signatures`).  
+- PDF generation for contracts (hashing) and receipt PDFs; admin review flows for vendor KYC.  
+- Marketplace discovery (Phase 5): owner/tenant browse vendor services; request-to-job pipeline; quotes and scheduling.  
+- UI/UX polish for vendor dashboard and login/register pages.
+
+---
+
 ## [2025-08-13] – Policy Update: Public Signup Allowed
 **Status:** Completed  
 **Description:** Updated project rules and roadmap to reflect that public signup is allowed (with verification and duplicate checks).  

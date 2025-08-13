@@ -9,7 +9,7 @@ export function validatePasswordStrength(password: string): PasswordValidationRe
   if (!password || password.length < MIN_LENGTH) {
     return {
       isValid: false,
-      message: `Password must be at least ${MIN_LENGTH} characters`;
+      message: `Password must be at least ${MIN_LENGTH} characters`
     }
   }
 

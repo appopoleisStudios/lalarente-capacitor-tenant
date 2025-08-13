@@ -177,7 +177,7 @@ export default function OwnerDashboardPage() {
     </button>
   </div>
   <div className="grid grid-cols-3 gap-3">
-  {documents.map((doc, i) => (
+  {documents.map((doc) => (
     <button
       key={doc.type}
       className="bg-white rounded-lg border border-gray-100 p-3 flex flex-col items-center shadow-sm hover:shadow h-28"
