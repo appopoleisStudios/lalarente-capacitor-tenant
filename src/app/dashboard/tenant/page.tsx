@@ -46,7 +46,7 @@ export default function TenantDashboardPage() {
     }
   ])
   const [docs] = useState([
-    createDocument('Lease Agreement', '15 Jan 2024', 'fas fa-file-signature', { type: 'pdf' }),
+    createDocument('Lease Agreement', 'Active', 'fas fa-file-signature', { type: 'pdf' }),
     createDocument('Inventory Report', '10 Jan 2024', 'fas fa-file-invoice', { type: 'pdf' }),
     createDocument('Payment Receipts', 'Today', 'fas fa-receipt', { type: 'pdf' })
   ])
@@ -109,7 +109,18 @@ export default function TenantDashboardPage() {
           <VerificationStatus verified={profile?.verification_status || false} />
 
           {/* Documents Center */}
-          <DocumentsCenter docs={docs} onOpen={() => router.push('/tenant/documents')} onSeeAll={() => router.push('/tenant/documents')} />
+          <DocumentsCenter 
+            docs={docs} 
+            onOpen={(name) => {
+              if (name.toLowerCase().includes('lease')) {
+                // Tenant has at most one active or pending agreement; open list filtered for tenancy
+                router.push('/dashboard/tenant/contracts')
+              } else {
+                router.push('/tenant/documents')
+              }
+            }} 
+            onSeeAll={() => router.push('/tenant/documents')} 
+          />
 
           {/* Recent Activity */}
           <RecentActivityFeed recentActivity={recentActivity} onSeeAll={() => router.push('/tenant/activity')} />

@@ -136,6 +136,12 @@ export default function OwnerDashboardPage() {
               >
                 Earnings Report
               </button>
+              <button
+                onClick={() => router.push('/contracts')}
+                className="bg-white/90 text-blue-700 rounded-lg px-3 py-2 text-sm font-semibold shadow hover:bg-blue-50 transition"
+              >
+                Lease Contracts
+              </button>
             </div>
           </div>
 

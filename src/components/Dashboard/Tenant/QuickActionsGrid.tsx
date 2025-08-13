@@ -27,20 +27,7 @@ const quickActions: QuickAction[] = [
     color: 'orange', 
     ariaLabel: 'Create new maintenance request' 
   },
-  { 
-    route: '/tenant/documents', 
-    label: 'My Docs', 
-    icon: 'fas fa-file-alt', 
-    color: 'blue', 
-    ariaLabel: 'View my documents' 
-  },
-  { 
-    route: '/tenant/profile', 
-    label: 'Profile', 
-    icon: 'fas fa-user', 
-    color: 'purple', 
-    ariaLabel: 'View my profile' 
-  },
+  // Lease and Profile removed per requirement
 ]
 
 const QuickActionsGrid: FC<Props> = ({ onNavigate }) => (

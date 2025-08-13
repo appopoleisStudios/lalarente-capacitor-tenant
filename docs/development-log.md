@@ -4,6 +4,41 @@ This log tracks all development work, challenges, and solutions for the Lala Ren
 
 ---
 
+## [2025-08-13] – Contract Templates with Dynamic Variables
+**Status:** Started  
+**Description:** Introduced `contract_templates` and compiled fields on contracts to support dynamic placeholders (e.g., {{owner.full_name}}, {{tenant.full_name}}, {{property.address}}) populated at creation time, stored alongside the contract, and used for PDF generation.  
+**Changes:**  
+- Migration `007_contract_templates.sql`:  
+  - `contract_templates` table with `title`, `role_scope ('tenancy'|'service')`, `content_html`, `variables_json`, `is_active`, `created_by`, timestamps, and RLS (authenticated read, admin manage).  
+  - Added `template_id`, `compiled_html`, `compiled_variables` to `tenancy_contracts` and `service_contracts`.  
+  - Seeded two example templates (tenancy, maintenance).  
+**Next Steps:**  
+- UI: Template picker + live preview for Owner Tenancy creation and Vendor Service creation.  
+- Compile placeholders from party/property/lease data before insert; save compiled snapshot.  
+- Later: Edge Function to produce final PDF + SHA256 and attach to contract.
+
+---
+
+## [2025-08-13] – E‑Sign Strategy (DocuSign vs. Free Alternatives) and Minimal Contracts UI Plan
+**Status:** Completed  
+**Description:** Decided on a pragmatic e‑sign path. Keep current signature image MVP, add a simple in‑app signature pad, and design an adapter to integrate external providers. Prioritize a free/self‑hosted option (DocuSeal/OpenSign) or a SaaS free tier (SignRequest/SignWell) for MVP; retain a clean upgrade path to DocuSign for enterprise.  
+**Plan:**  
+- Phase 1.2: Maintain image‑upload signing; add countersign UIs (done).  
+- Phase 1.3: Implement an e‑sign adapter interface with a first provider:  
+  - Option A: DocuSeal/OpenSign (self‑hosted).  
+  - Option B: SignRequest/SignWell (SaaS free tier).  
+  - Backend via Supabase Edge Functions: create envelope/session, return embedded signing URL, receive webhook, store final PDF in Storage, compute SHA256, update contract status and audit logs.  
+  - Schema: add `envelope_id`, `envelope_status` to contracts tables.  
+- Later: Add DocuSign implementation to the adapter for enterprise needs.  
+**Problems:** Cost and complexity of DocuSign at MVP stage; need legally sound audit trail.  
+**Solutions:** Start with free/self‑hosted or free‑tier SaaS; design adapter to avoid vendor lock‑in; preserve audit with PDFs and hashes.  
+**Next Steps:**  
+- Build minimal owner tenancy‑contract creation form; keep vendor service‑contract create flow.  
+- Show signatures list on contract detail; auto‑activate when required parties sign.  
+- Add simple in‑app signature pad as a UX improvement over file upload.
+
+---
+
 ## [2025-08-13] – Owner/Tenant Countersign UIs, Contract Detail (Static Export Safe), Vendor Sign Out
 **Status:** Completed  
 **Description:** Added owner and tenant contract countersign pages and a shared contract detail page compatible with `output: 'export'`. Implemented Sign out on vendor dashboard. Fixed dashboard loading spinner logic on auth.  

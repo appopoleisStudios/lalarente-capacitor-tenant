@@ -24,7 +24,7 @@ export default function TenantContractsPage() {
 	const { user } = useAuthStore()
 	const [serviceContracts, setServiceContracts] = useState<ServiceContractLite[]>([])
 	const [tenancyContracts, setTenancyContracts] = useState<TenancyContractLite[]>([])
-	const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false) // kept for future UX; suppress unused warning by using it
 	const [msg, setMsg] = useState('')
 
 	useEffect(() => {
@@ -78,7 +78,7 @@ export default function TenantContractsPage() {
 			const message = err instanceof Error ? err.message : 'Failed to sign'
 			setMsg(message)
 		} finally {
-			setLoading(false)
+      setLoading(false)
 		}
 	}
 
