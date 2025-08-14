@@ -4,6 +4,72 @@ This log tracks all development work, challenges, and solutions for the Lala Ren
 
 ---
 
+## [2025-08-14] – Quotes schema + Submit Quote (vendor) + Active Jobs polish
+**Status:** Completed  
+**Description:** Introduced minimal Quotes to support MMS flow; added a simple vendor “Submit Quote” page and wired CTA logic on Vendor Home. Cleaned Active Jobs rows by removing property id/address to keep the layout tight and vendor‑focused.
+**Changes:**
+- DB: `src/lib/migrations/012_quotes.sql` creates `quotes` and `quote_lines` with RLS and party‑based policies.
+- Vendor Home: `src/app/dashboard/vendor/page.tsx` now joins quote totals/status and maps a unified row payload.
+- Active Jobs list: `src/components/Vendor/ContractsTabs.tsx` hides property line; CTA switches to “Submit Quote” when `quote_status` is `requested` or `change_requested`, else “View Details”.
+- Submit Quote page: `src/app/dashboard/vendor/quotes/new/page.tsx` posts a single‑line quote to `quotes` + `quote_lines` and redirects to contract detail.
+**Problems:** Supabase types regeneration failed due to a wrapped newline in the CLI command; property id was shown in rows taking space.
+**Solutions:** Re‑ran the CLI on one line targeting existing path; removed property label from rows; added conditional CTA.
+**Lessons:** Keep CLI commands on a single line; show only the most actionable details in compact list rows; wire CTAs from real state.
+**Next Steps:**
+- Compute a single friendly status + primary CTA per row (Quote/PO/Exec aware).
+- Quotes list under Jobs tab; Quote detail card on contract page.
+- Add PO header/lines schema and minimal execution state to complete MMS‑lite.
+
+---
+
+## [2025-08-13] – Vendor Home (Dashboard), seeds, and contract entry flow
+**Status:** Completed  
+**Description:** Built a modular, data-driven Vendor Home aligned to the approved mobile design; seeded realistic services, contracts, audit/signatures, and payments; defined the production contract flow and entry points.  
+**Changes:**
+- UI (modular): `src/components/Vendor/{VendorHeader,MetricsStrip,ContractsTabs,QuickActions}.tsx` and refactor of `src/app/dashboard/vendor/page.tsx` to assemble them. Added `BottomNavbar` for vendor with tabs: Dashboard, Jobs, Payments, Analytics, Profile.
+- Removed redundant New Job Opportunities card from Home (kept header CTA for a future dedicated page).
+- Profile screen: `src/app/dashboard/vendor/profile/page.tsx` with live counts and Sign out.
+- Seeds: end‑to‑end SQL that auto‑resolves the Appopoleis vendor, an owner/tenant/properties, then inserts vendor services, three `service_contracts` (pending/active/completed), their signatures and audit logs, and two `payments` (omitting generated columns).  
+**Contract flow (Vendor ↔ Owner, optional Tenant):**
+- Creation: Owner initiates a service contract (or Vendor proposes a draft) → contract status `pending_signatures`.
+- Discovery (Vendor):
+  - Home → Active Jobs list rows → “View Details” → `/contracts?id=<uuid>`
+  - Quick Actions → My Jobs (same list)
+  - Bottom navbar → Jobs (future page of the same lists)
+  - Deep link via notifications → `/contracts?id=<uuid>`
+- Signing: Vendor opens contract page, reviews Service Summary/Quote/Scope, signs or requests changes. Timeline swaps steps if Vendor signs first. Self-views hidden in activity.
+- Activation: auto‑activate when required signatures present; PDF/hash appear.
+**Lessons:** Keep dashboard modular; derive metrics from real contracts/payments; remove feature redundancy; use SECURITY DEFINER RPCs for audit writes.  
+**Next Steps:**
+- Jobs tab page; payments view wired to vendor payout math; quote submission flow from opportunities page.
+
+---
+
+## [2025-08-13] – Tenant Contract Detail UI brought to design parity (Financial Summary, pending banner, request changes)
+**Status:** Completed  
+**Description:** Implemented the tenant-facing contract screen per provided design. Added a dynamic Financial Summary card, tenant pending banner, Request Changes flow, copy-to-clipboard hash, and preserved step-switching logic and privacy rules for activity.  
+**Changes:**
+- `src/app/contracts/page.tsx`:
+  - Financial Summary card: pulls lease data dynamically from `leases` using `lease_id` on `tenancy_contracts` (fallback: latest lease by `(tenant_id, property_id)`). Displays:
+    - Monthly Rent (currency, “Due 1st of each month” microcopy)
+    - Security Deposit (currency, ‘Outstanding’ chip)
+    - Lease Term (computed months + “Sep 2025 – Aug 2026” formatted range)
+  - Pending state banner for tenant: “Your signature is required…” with tenant-green styling.
+  - Request Changes: textarea panel, logs `requested_changes` via SECURITY DEFINER RPC (`log_tenancy_contract_event`) and refreshes Activity.
+  - Document card: added “Copy” button for SHA256 hash.
+  - Step/TImeline: kept dynamic swap so Tenant is default at step 3; if Owner signs first → Owner moves to step 3 and Tenant to step 4 with “Waiting for signature”.
+  - Recent Activity privacy: hides self-view events for the current role; actor resolved via `actor_id` vs party ids.
+  - Sticky footer: role-themed sign button enablement mirrors signature panel.
+**DB alignment:**
+- Financial Summary reads from `leases` columns: `rent_amount`, `deposit_amount`, `lease_start`, `lease_end` (no `owner_id`/`due_day`).
+- Helper SQL provided to create/reuse leases and link them to contracts via `tenancy_contracts.lease_id`; added RLS example allowing owner (via property ownership) and tenant reads.
+**Problems:** The initial schema assumption used `owner_id`, `security_deposit`, `due_day` → caused insert errors and empty card.
+**Solutions:** Corrected to `deposit_amount` and removed non-existent fields; robust null handling so the card does not get stuck hidden.
+**Lessons:** Always verify table columns from generated Supabase types before writing queries; prefer SECURITY DEFINER RPCs for cross-role logging.
+**Next Steps:** Tenant-side polish for Activity filters; realtime updates (supabase channel) for signatures/audit; wire “Download PDF” once generation is ready.
+
+---
+
 ## [2025-08-13] – Owner Contract Detail UI refinements (steps, activity, footer) and lint hygiene
 **Status:** Completed  
 **Description:** Refined the Owner Contract Detail page to exactly match the design and UX rules. Implemented dynamic step ordering, robust Recent Activity with accurate actor mapping, privacy filtering for self-view events, sticky footer theming/enablement rules, and cleared TypeScript/ESLint issues in source.  

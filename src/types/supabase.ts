@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      contract_templates: {
+        Row: {
+          content_html: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          role_scope: string
+          title: string
+          updated_at: string
+          variables_json: Json | null
+        }
+        Insert: {
+          content_html: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          role_scope: string
+          title: string
+          updated_at?: string
+          variables_json?: Json | null
+        }
+        Update: {
+          content_html?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          role_scope?: string
+          title?: string
+          updated_at?: string
+          variables_json?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inspection_audit_logs: {
         Row: {
           actor_id: string | null
@@ -574,6 +618,131 @@ export type Database = {
           },
         ]
       }
+      quote_lines: {
+        Row: {
+          description: string
+          id: string
+          qty: number
+          quote_id: string
+          tax_rate: number | null
+          unit: string | null
+          unit_price: number
+        }
+        Insert: {
+          description: string
+          id?: string
+          qty?: number
+          quote_id: string
+          tax_rate?: number | null
+          unit?: string | null
+          unit_price: number
+        }
+        Update: {
+          description?: string
+          id?: string
+          qty?: number
+          quote_id?: string
+          tax_rate?: number | null
+          unit?: string | null
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_lines_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotes: {
+        Row: {
+          contract_id: string | null
+          created_at: string | null
+          discount_amount: number | null
+          id: string
+          notes: string | null
+          owner_id: string
+          property_id: string
+          request_id: string | null
+          status: string
+          subtotal: number | null
+          total_amount: number | null
+          updated_at: string | null
+          vat_amount: number | null
+          vendor_id: string
+        }
+        Insert: {
+          contract_id?: string | null
+          created_at?: string | null
+          discount_amount?: number | null
+          id?: string
+          notes?: string | null
+          owner_id: string
+          property_id: string
+          request_id?: string | null
+          status?: string
+          subtotal?: number | null
+          total_amount?: number | null
+          updated_at?: string | null
+          vat_amount?: number | null
+          vendor_id: string
+        }
+        Update: {
+          contract_id?: string | null
+          created_at?: string | null
+          discount_amount?: number | null
+          id?: string
+          notes?: string | null
+          owner_id?: string
+          property_id?: string
+          request_id?: string | null
+          status?: string
+          subtotal?: number | null
+          total_amount?: number | null
+          updated_at?: string | null
+          vat_amount?: number | null
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "service_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_categories: {
         Row: {
           created_at: string | null
@@ -696,6 +865,8 @@ export type Database = {
       }
       service_contracts: {
         Row: {
+          compiled_html: string | null
+          compiled_variables: Json | null
           created_at: string | null
           id: string
           maintenance_request_id: string | null
@@ -705,6 +876,7 @@ export type Database = {
           property_id: string
           requires_tenant_signature: boolean | null
           status: string
+          template_id: string | null
           tenant_id: string | null
           terms: Json | null
           title: string
@@ -712,6 +884,8 @@ export type Database = {
           vendor_id: string
         }
         Insert: {
+          compiled_html?: string | null
+          compiled_variables?: Json | null
           created_at?: string | null
           id?: string
           maintenance_request_id?: string | null
@@ -721,6 +895,7 @@ export type Database = {
           property_id: string
           requires_tenant_signature?: boolean | null
           status?: string
+          template_id?: string | null
           tenant_id?: string | null
           terms?: Json | null
           title: string
@@ -728,6 +903,8 @@ export type Database = {
           vendor_id: string
         }
         Update: {
+          compiled_html?: string | null
+          compiled_variables?: Json | null
           created_at?: string | null
           id?: string
           maintenance_request_id?: string | null
@@ -737,6 +914,7 @@ export type Database = {
           property_id?: string
           requires_tenant_signature?: boolean | null
           status?: string
+          template_id?: string | null
           tenant_id?: string | null
           terms?: Json | null
           title?: string
@@ -763,6 +941,13 @@ export type Database = {
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_contracts_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "contract_templates"
             referencedColumns: ["id"]
           },
           {
@@ -873,6 +1058,8 @@ export type Database = {
       }
       tenancy_contracts: {
         Row: {
+          compiled_html: string | null
+          compiled_variables: Json | null
           created_at: string | null
           id: string
           lease_id: string | null
@@ -883,12 +1070,15 @@ export type Database = {
           requires_owner_signature: boolean | null
           requires_tenant_signature: boolean | null
           status: string
+          template_id: string | null
           tenant_id: string
           terms: Json | null
           title: string
           updated_at: string | null
         }
         Insert: {
+          compiled_html?: string | null
+          compiled_variables?: Json | null
           created_at?: string | null
           id?: string
           lease_id?: string | null
@@ -899,12 +1089,15 @@ export type Database = {
           requires_owner_signature?: boolean | null
           requires_tenant_signature?: boolean | null
           status?: string
+          template_id?: string | null
           tenant_id: string
           terms?: Json | null
           title: string
           updated_at?: string | null
         }
         Update: {
+          compiled_html?: string | null
+          compiled_variables?: Json | null
           created_at?: string | null
           id?: string
           lease_id?: string | null
@@ -915,6 +1108,7 @@ export type Database = {
           requires_owner_signature?: boolean | null
           requires_tenant_signature?: boolean | null
           status?: string
+          template_id?: string | null
           tenant_id?: string
           terms?: Json | null
           title?: string
@@ -940,6 +1134,13 @@ export type Database = {
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenancy_contracts_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "contract_templates"
             referencedColumns: ["id"]
           },
           {
@@ -1157,6 +1358,14 @@ export type Database = {
           profile_details: Json
         }[]
       }
+      get_profile_minimal: {
+        Args: { uid: string }
+        Returns: {
+          id: string
+          full_name: string
+          email: string
+        }[]
+      }
       get_profiles_by_id_and_role: {
         Args: { id_num: string; user_role: string }
         Returns: {
@@ -1177,6 +1386,21 @@ export type Database = {
           role: string
           id_number: string
           created_at: string
+        }[]
+      }
+      log_service_contract_event: {
+        Args: { p_contract_id: string; p_event: string; p_data?: Json }
+        Returns: undefined
+      }
+      log_tenancy_contract_event: {
+        Args: { p_contract_id: string; p_event: string; p_data?: Json }
+        Returns: undefined
+      }
+      search_tenants_by_name: {
+        Args: { q: string }
+        Returns: {
+          id: string
+          full_name: string
         }[]
       }
       validate_email_format: {

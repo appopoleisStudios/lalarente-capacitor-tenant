@@ -515,3 +515,127 @@ WHERE p.status = 'pending'
 
 **Estimated Timeline**: 6 weeks for complete implementation
 **Resource Requirements**: Full-stack developer, UI/UX designer, database specialist
+
+---
+
+## 7. Maintenance Management System (MMS)
+
+Based on the client’s MMS flow (diagram: Raising a Notification → Acknowledging the notification → Push to Dedicated Vendors → Issue Purchase Order → Execute Work → Close Work), we are adding an explicit maintenance workflow that complements our existing `maintenance_requests` and vendor service contracts.
+
+### 7.1 Process Flow (DB-first)
+
+1) Raising a Notification
+- Triggered by tenant/owner (or IoT/sensor later) to create a maintenance signal.
+- Creates a `maintenance_requests` row and a `notifications` row for the owner/PM.
+
+2) Acknowledging the Notification
+- Owner/PM acknowledges the request; writes audit and sets request status to `acknowledged`.
+
+3) Push to Dedicated Vendors
+- Route the request to a configured set of preferred vendors by category and service area.
+- Vendors get in‑app/email. Vendors can respond with a quote or accept a pre‑defined rate.
+
+4) Issue Purchase Order (PO)
+- After owner selects a vendor/quote, the system issues a PO capturing line items, taxes (if VAT‑registered), and platform fee.
+- PO PDF is generated and attached; status becomes `po_issued`.
+
+5) Execute Work
+- Vendor starts/stops execution window; attaches proof (photos/docs), logs time/materials if applicable; status `in_progress`.
+
+6) Close Work
+- Vendor submits closure report. Owner (and optionally tenant) approves/acknowledges; status `closed`.
+- Invoice/receipt generated from PO; payouts processed.
+
+### 7.2 Minimal Schema Additions
+
+```sql
+-- Dedicated vendor routing
+create table if not exists public.dedicated_vendors (
+  id uuid primary key default gen_random_uuid(),
+  property_id uuid not null references public.properties(id) on delete cascade,
+  category_id uuid null references public.service_categories(id) on delete set null,
+  vendor_id uuid not null references public.profiles(id) on delete cascade,
+  priority smallint default 1,
+  created_at timestamptz default now()
+);
+
+-- Purchase Orders (header)
+create table if not exists public.purchase_orders (
+  id uuid primary key default gen_random_uuid(),
+  contract_id uuid not null references public.service_contracts(id) on delete cascade,
+  po_number text not null unique,
+  currency text default 'ZAR',
+  subtotal numeric,
+  vat_amount numeric,
+  platform_fee_amount numeric,
+  total_amount numeric,
+  status text not null default 'po_issued', -- po_issued|in_progress|closed|void
+  pdf_url text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table if not exists public.purchase_order_lines (
+  id uuid primary key default gen_random_uuid(),
+  po_id uuid not null references public.purchase_orders(id) on delete cascade,
+  description text not null,
+  qty numeric not null default 1,
+  unit_price numeric not null,
+  unit text null,
+  tax_rate numeric null
+);
+
+-- Execution & closure
+create table if not exists public.job_executions (
+  id uuid primary key default gen_random_uuid(),
+  contract_id uuid not null references public.service_contracts(id) on delete cascade,
+  status text not null default 'not_started', -- not_started|in_progress|paused|completed
+  start_at timestamptz null,
+  end_at timestamptz null,
+  sla_window_start timestamptz null,
+  sla_window_end timestamptz null,
+  notes text null,
+  created_at timestamptz default now()
+);
+
+create table if not exists public.job_attachments (
+  id uuid primary key default gen_random_uuid(),
+  execution_id uuid not null references public.job_executions(id) on delete cascade,
+  url text not null,
+  kind text not null -- photo|pdf|other
+);
+
+create table if not exists public.closure_reports (
+  id uuid primary key default gen_random_uuid(),
+  contract_id uuid not null references public.service_contracts(id) on delete cascade,
+  vendor_notes text null,
+  owner_accept_at timestamptz null,
+  tenant_ack_at timestamptz null,
+  closed_at timestamptz null
+);
+```
+
+Security/RLS: All new tables follow party‑based visibility (owner, vendor, and tenant if present). Writes are restricted to the acting party. Audit events logged via SECURITY DEFINER RPCs.
+
+### 7.3 UI Impacts
+
+- Owner:
+  - Acknowledge notification; push to dedicated vendors; review quotes; issue PO (number + lines + totals).  
+  - Approve closure report; convert to invoice; review payouts.
+
+- Vendor (Home/Jobs):
+  - See PO section on the contract page; Start/End execution; add attachments; submit closure; see status pills (PO Issued/In Progress/Awaiting Closure/Closed).
+
+- Tenant (optional):
+  - View read‑only contract; acknowledge closure where required; rate the service.
+
+### 7.4 Alignment With Existing Build
+
+- Our `service_contracts` remain the agreement backbone. We insert PO and Execution/Closure between signatures and completion.
+- Existing audit, signatures, and document integrity (PDF/hash) continue unchanged.
+
+### 7.5 Roadmap Adjustments
+
+- Phase 1.2: Notifications/Acknowledgment + Dedicated Vendors; basic PO header (single total); minimal Execute/Close (start/end + single attachment); status pills and audit.
+- Phase 1.3: Full PO (lines, VAT/platform fee math), Execution with time/materials + attachments, Closure approvals, invoice generation, payouts integration.
+

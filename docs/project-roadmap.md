@@ -42,7 +42,7 @@ Note: DB-first approach; public signup allowed with verification and duplicate c
 ## Phase 5 – Maintenance & Job Marketplace (Week 5)
 - Modeled after Urban Company [link](https://www.urbancompany.com/)
 - **5.1 Requests→Jobs**: Convert `maintenance_requests` into job pipeline: request → quote → assign → in-progress → complete → review.
-- **5.2 Quotes & SLAs**: Vendor quotes, ETA, cost approvals, attachments.
+- **5.2 Quotes & SLAs**: Vendor quotes, ETA, cost approvals, attachments. (Quotes schema added in 1.2 to unblock vendor flow.)
 - **5.3 Scheduling**: Use vendor availability; calendar holds; reschedule/cancel.
 - **5.4 Reviews & Ratings**: Post-completion rating, comments.
 - **Schema Adds**: `jobs` (or extend `maintenance_requests`), `job_quotes`, `job_activities`, `reviews`.
@@ -84,6 +84,7 @@ Note: DB-first approach; public signup allowed with verification and duplicate c
 - Type-safe Supabase usage with `src/types/supabase.ts`.
 - UI outside `app/` except route components; Tailwind with Indian palette.
 - Public signup allowed; enforce duplicate checks and verification during onboarding.
+ - MMS alignment: Dedicated vendors, Quotes → PO → Execution → Closure incorporated where relevant; show a single friendly status and CTA to vendors.
 
 ## Dependencies & Sequencing
 - Phase 0 must be completed before any user-facing rollout.

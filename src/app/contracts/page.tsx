@@ -50,6 +50,11 @@ export default function ContractDetailPage() {
 	const [statusPill, setStatusPill] = useState<'pending_signatures' | 'active' | 'completed' | string>('pending_signatures')
 	const [sigs, setSigs] = useState<{ signer_role: string; signed_at: string }[]>([])
 	const [audit, setAudit] = useState<{ action: string; timestamp: string; actor_role: string | null }[]>([])
+	// Financial summary (tenant)
+	const [financial, setFinancial] = useState<{ rentAmount?: number; depositAmount?: number; leaseStart?: string; leaseEnd?: string } | null>(null)
+	// Request changes UI
+	const [showChanges, setShowChanges] = useState(false)
+	const [changesText, setChangesText] = useState('')
 
 	// Signature UI (tabs like draw/type/upload; MVP: upload + basic draw placeholder)
 	const [activeTab, setActiveTab] = useState<'draw' | 'type' | 'upload'>('draw')
@@ -176,6 +181,42 @@ export default function ContractDetailPage() {
 			const prop = await supabase.from('properties').select('address,city').eq('id', row.property_id).maybeSingle()
 			const addr = prop.data ? [prop.data.address, prop.data.city].filter(Boolean).join(', ') : String(row.property_id)
 			setPropertyLine(addr)
+
+			// Financial Summary (tenancy only)
+			if (kind === 'tenancy') {
+				let leaseMonthly: string | undefined
+				let leaseDeposit: string | undefined
+				let leaseDueDay: string | undefined
+				let leaseTerm: string | undefined
+				try {
+					const tnc = row as TenancyContract
+					let leaseRes
+					if (tnc.lease_id) {
+						leaseRes = await supabase.from('leases').select('rent_amount,deposit_amount,lease_start,lease_end').eq('id', tnc.lease_id).maybeSingle()
+					} else {
+						leaseRes = await supabase
+							.from('leases')
+							.select('rent_amount,deposit_amount,lease_start,lease_end')
+							.eq('tenant_id', tnc.tenant_id)
+							.eq('property_id', tnc.property_id)
+							.order('created_at', { ascending: false })
+							.limit(1)
+					}
+                    const lease = (leaseRes.data as unknown as { rent_amount?: number | null; deposit_amount?: number | null; lease_start?: string | null; lease_end?: string | null } | null) || null
+                    if (lease) {
+                        setFinancial({
+                            rentAmount: typeof lease.rent_amount === 'number' ? lease.rent_amount : undefined,
+                            depositAmount: typeof lease.deposit_amount === 'number' ? lease.deposit_amount : undefined,
+                            leaseStart: lease.lease_start || undefined,
+                            leaseEnd: lease.lease_end || undefined,
+                        })
+                    } else {
+                        setFinancial(null)
+                    }
+                } catch {
+                    setFinancial(null)
+                }
+			}
 			// Signatures list
 			const sigTable = kind === 'service' ? 'service_contract_signatures' : 'tenancy_contract_signatures'
 			const sigRes = await supabase.from(sigTable).select('signer_role,signed_at').eq('contract_id', row.id).order('signed_at', { ascending: true })
@@ -378,6 +419,9 @@ export default function ContractDetailPage() {
 							)
 						})()}
 						<PartiesCard ownerName={ownerName} tenantName={tenantName} vendorName={vendorName} ownerEmail={ownerEmail} tenantEmail={tenantEmail} vendorEmail={vendorEmail} />
+						{financial && (
+							<FinancialSummaryCard rentAmount={financial.rentAmount} depositAmount={financial.depositAmount} leaseStart={financial.leaseStart} leaseEnd={financial.leaseEnd} />
+						)}
 						<ProgressCard status={statusPill} sigs={sigs} />
 						{statusPill === 'pending_signatures' && !hasSigned(currentParty || undefined) && (
 							<SignatureRequiredCard
@@ -399,7 +443,27 @@ export default function ContractDetailPage() {
 								canSign={canSignInline()}
 								onSign={handleSign}
 								role={role}
+								onRequestChanges={() => setShowChanges(true)}
 							/>
+						)}
+						{showChanges && (
+							<div className="bg-white rounded-xl border p-4">
+								<div className="text-lg font-semibold text-gray-900 mb-3">Request Changes</div>
+								<textarea value={changesText} onChange={(e)=> setChangesText(e.target.value)} rows={3} className="w-full p-3 border border-gray-300 rounded-lg" placeholder="Describe the changes you'd like to request..." />
+								<div className="flex gap-3 mt-3">
+									<button onClick={async()=>{
+										try{
+											if(!contractId||!changesText.trim()) return
+											if(isService){ await (supabase as any).rpc('log_service_contract_event',{ p_contract_id: contractId, p_event:'requested_changes', p_data:{ note: changesText }}) }
+											else { await (supabase as any).rpc('log_tenancy_contract_event',{ p_contract_id: contractId, p_event:'requested_changes', p_data:{ note: changesText }}) }
+											setShowChanges(false); setChangesText('')
+											if(contract) await loadAncillary(isService?'service':'tenancy', contract as any)
+											setMsg('Change request sent')
+										}catch(e){ setMsg(e instanceof Error? e.message : 'Failed to send change request') }
+									}} className={`px-4 py-2 rounded-lg text-white ${role==='owner' ? 'bg-blue-600 hover:bg-blue-700' : role==='tenant' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}>Send Request</button>
+									<button onClick={()=>{ setShowChanges(false); setChangesText('') }} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">Cancel</button>
+								</div>
+							</div>
 						)}
 						<DocumentCard contract={contract} status={statusPill} />
 					<ActivityCard items={audit} role={role || null} />
@@ -414,6 +478,8 @@ export default function ContractDetailPage() {
 		</div>
 	)
 }
+
+// removed duplicate function block
 
 function Signatures({ contractId, isService }: { contractId: string; isService: boolean }) {
   const [sigs, setSigs] = useState<{ signer_role: string; signed_at: string }[]>([])
@@ -444,6 +510,36 @@ function Signatures({ contractId, isService }: { contractId: string; isService: 
           <li key={idx}>{s.signer_role} • {new Date(s.signed_at).toLocaleString()}</li>
         ))}
       </ul>
+    </div>
+  )
+}
+
+function FinancialSummaryCard({ rentAmount, depositAmount, leaseStart, leaseEnd }: { rentAmount?: number; depositAmount?: number; leaseStart?: string; leaseEnd?: string }) {
+  const hasAny = typeof rentAmount === 'number' || typeof depositAmount === 'number' || (leaseStart && leaseEnd)
+  if (!hasAny) return null
+  const currency = (n?: number) => (typeof n === 'number' ? `R ${n.toLocaleString()}` : '')
+  const termReadable = leaseStart && leaseEnd ? `${new Date(leaseStart).toLocaleString(undefined,{month:'short',year:'numeric'})} - ${new Date(leaseEnd).toLocaleString(undefined,{month:'short',year:'numeric'})}` : ''
+  const months = leaseStart && leaseEnd ? Math.max(1, Math.round((new Date(leaseEnd).getTime() - new Date(leaseStart).getTime())/(1000*60*60*24*30))) : null
+  return (
+    <div className="bg-white rounded-xl border p-4">
+      <div className="text-lg font-semibold text-gray-900 mb-3">Financial Summary</div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <div className="text-sm text-gray-600">Monthly Rent</div>
+          <div className="text-xl font-bold text-gray-900">{currency(rentAmount)}</div>
+          <div className="text-xs text-gray-500 mt-1">Due 1st of each month</div>
+        </div>
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <div className="text-sm text-gray-600">Security Deposit</div>
+          <div className="text-xl font-bold text-gray-900">{currency(depositAmount)}</div>
+          <div className="flex items-center gap-1 mt-1 text-xs text-amber-700"><span className="w-2 h-2 rounded-full bg-amber-500"></span> Outstanding</div>
+        </div>
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <div className="text-sm text-gray-600">Lease Term</div>
+          <div className="text-xl font-bold text-gray-900">{months ? `${months} months` : ''}</div>
+          <div className="text-xs text-gray-500 mt-1">{termReadable}</div>
+        </div>
+      </div>
     </div>
   )
 }
@@ -653,6 +749,7 @@ function SignatureRequiredCard({
   canSign,
   onSign,
   role,
+  onRequestChanges,
 }: {
   activeTab: 'draw' | 'type' | 'upload'
   setActiveTab: (t: 'draw' | 'type' | 'upload') => void
@@ -672,6 +769,7 @@ function SignatureRequiredCard({
   canSign: boolean
   onSign: () => void
   role?: string
+  onRequestChanges?: () => void
 }) {
   return (
     <div className="bg-white rounded-xl border p-4">
@@ -757,7 +855,7 @@ function SignatureRequiredCard({
             <button disabled={!canSign} onClick={onSign} className={`flex-1 py-3 px-6 rounded-lg font-medium ${cls}`}>Sign Contract</button>
           )
         })()}
-        <button className="flex-1 border border-gray-300 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-50">Request Changes</button>
+        <button onClick={onRequestChanges} className="flex-1 border border-gray-300 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-50">Request Changes</button>
       </div>
     </div>
   )
@@ -765,6 +863,7 @@ function SignatureRequiredCard({
 
 function DocumentCard({ contract, status }: { contract: { pdf_url: string | null; pdf_sha256: string | null }; status: string }) {
   const isReady = status === 'active' || status === 'completed'
+  const copy = async (text: string) => { try { await navigator.clipboard.writeText(text) } catch { /* no-op */ } }
   return (
     <div className="bg-white rounded-xl border p-4">
       <div className="text-lg font-semibold text-gray-900 mb-3">Contract Document</div>
@@ -775,7 +874,10 @@ function DocumentCard({ contract, status }: { contract: { pdf_url: string | null
           <a href={contract.pdf_url || '#'} target="_blank" rel="noreferrer" className="block text-center w-full bg-[#2E5BFF] hover:brightness-95 text-white py-3 rounded-lg font-medium mb-4">Download PDF Contract</a>
           {contract.pdf_sha256 && (
             <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="text-sm font-medium text-gray-700 mb-1">Document Hash (SHA256)</div>
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-sm font-medium text-gray-700">Document Hash (SHA256)</div>
+                <button onClick={()=> copy(contract.pdf_sha256 || '')} className="text-sm text-blue-600 hover:text-blue-700">Copy</button>
+              </div>
               <div className="text-xs text-gray-600 break-all">{contract.pdf_sha256}</div>
               <div className="text-xs text-gray-500 mt-2">Use this hash to verify document integrity</div>
             </div>

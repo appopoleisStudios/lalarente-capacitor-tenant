@@ -15,7 +15,8 @@ export default function BottomNavbar({ userRole }: BottomNavbarProps) {
   // Color mapping for active states
   const activeColorClasses = {
     emerald: 'text-emerald-600 bg-emerald-600',
-    blue: 'text-blue-600 bg-blue-600'
+    blue: 'text-blue-600 bg-blue-600',
+    indigo: 'text-indigo-600 bg-indigo-600',
   } as const
 
   const tenantTabs = [
@@ -95,34 +96,11 @@ export default function BottomNavbar({ userRole }: BottomNavbarProps) {
   ]
 
   const vendorTabs = [
-    {
-      id: 'home',
-      label: 'Home',
-      icon: 'fas fa-home',
-      path: '/dashboard/vendor',
-      badge: null
-    },
-    {
-      id: 'services',
-      label: 'Services',
-      icon: 'fas fa-cogs',
-      path: '/dashboard/vendor',
-      badge: null
-    },
-    {
-      id: 'contracts',
-      label: 'Contracts',
-      icon: 'fas fa-file-signature',
-      path: '/dashboard/vendor',
-      badge: null
-    },
-    {
-      id: 'profile',
-      label: 'Profile',
-      icon: 'fas fa-user',
-      path: '/dashboard/vendor',
-      badge: null
-    }
+    { id: 'dashboard', label: 'Dashboard', icon: 'fas fa-home', path: '/dashboard/vendor', badge: null },
+    { id: 'jobs', label: 'Jobs', icon: 'fas fa-briefcase', path: '/dashboard/vendor/jobs', badge: null },
+    { id: 'payments', label: 'Payments', icon: 'fas fa-credit-card', path: '/dashboard/vendor/payments', badge: null },
+    { id: 'analytics', label: 'Analytics', icon: 'fas fa-chart-line', path: '/dashboard/vendor/analytics', badge: null },
+    { id: 'profile', label: 'Profile', icon: 'fas fa-user', path: '/dashboard/vendor/profile', badge: null },
   ]
 
   const adminTabs = [
@@ -137,25 +115,16 @@ export default function BottomNavbar({ userRole }: BottomNavbarProps) {
 
   const baseTabs = userRole === 'tenant' ? tenantTabs : userRole === 'owner' ? ownerTabs : userRole === 'vendor' ? vendorTabs : adminTabs
 
-  const tabs = [
-    ...baseTabs,
-    {
-      id: 'signout',
-      label: 'Sign out',
-      icon: 'fas fa-sign-out-alt',
-      path: '/auth/login',
-      badge: null
-    }
-  ]
-  const activeColor = userRole === 'tenant' ? 'emerald' : 'blue'
+  const tabs = [...baseTabs]
+  const activeColor = userRole === 'tenant' ? 'emerald' : userRole === 'vendor' ? 'indigo' : 'blue'
 
   const handleTabPress = (path: string) => {
     router.push(path)
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 safe-area-bottom">
-      <div className="max-w-md mx-auto">
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 safe-area-bottom overflow-hidden">
+      <div className="max-w-sm mx-auto">
         <div className="flex items-center justify-around py-2">
           {tabs.map((tab) => {
             const isActive = pathname === tab.path
@@ -163,12 +132,7 @@ export default function BottomNavbar({ userRole }: BottomNavbarProps) {
               <button
                 key={tab.id}
                 onClick={async () => {
-                  if (tab.id === 'signout') {
-                    await signOut();
-                    router.push('/auth/login');
-                  } else {
-                    handleTabPress(tab.path)
-                  }
+                  handleTabPress(tab.path)
                 }}
                 className="flex flex-col items-center py-2 px-3 min-w-0 flex-1 relative"
               >
