@@ -4,6 +4,36 @@ This log tracks all development work, challenges, and solutions for the Lala Ren
 
 ---
 
+## [2025-08-14] – Vendor Jobs page, collapsible sections, deep-links, Quick Actions cleanup
+**Status:** Completed  
+**Description:** Built a dedicated Jobs page with two sections – Current Jobs and All Open Jobs – each collapsible. Added deep-links: Dashboard “Available Jobs” → opens All Open Jobs; Active Jobs “View All” → opens Current Jobs. Cleaned redundant Quick Actions.
+**Changes:**
+- New: `src/app/dashboard/vendor/jobs/page.tsx` with dual sections, filters, anchor navigation, and auto-expand behavior based on hash.
+- New: `src/components/Vendor/JobsList.tsx` shared list renderer.
+- Updated: `src/app/dashboard/vendor/page.tsx` header CTA deep-link wiring; Quick Actions trimmed (removed My Jobs/Profile; added Earnings, Reviews, Documents, Support).
+- Updated: `src/components/Vendor/ContractsTabs.tsx` “View All” now links to Current Jobs.
+- Updated: `src/components/Vendor/MetricsStrip.tsx` used `onAvailableJobs` to link to All Open Jobs.
+- DB migrations added earlier for MMS-lite: `013_purchase_orders.sql`, `014_execution_closure.sql` (no UI blockers).
+**Problems:**
+- Deep-links initially scrolled both header CTAs to the same section and auto-expanded incorrectly.
+- Jobs “All” filter didn’t clearly separate engaged vs. open items; screen felt redundant.
+- ESLint/TS: implicit `any` in Jobs mapping.
+**Solutions:**
+- Switched to native anchor IDs (`#current-jobs`, `#open-jobs`) and expand-on-hash logic (expand only the addressed section).
+- Split layout into two clear sections with independent collapsibles; kept default collapsed unless linked.
+- Typed callback params and row mappers to eliminate implicit `any`.
+**Lessons:** Keep navigation predictable with native anchors; avoid redundant entry points (header vs. quick action); provide single CTA per job.
+**Next Steps:**
+- Source “All Open Jobs” from `maintenance_requests` vendor routing (dedicated vendors/category+area) instead of pending contracts.
+- Add per-item microcopy (window/SLA), and richer filters (Quote Requested, PO Issued, In Progress).
+
+---
+
+## TDCP – Test • Document • Commit • Push
+**Policy:** Before any push: 1) run typecheck and lint, 2) update `docs/development-log.md`, 3) commit with scoped message, 4) push branch. Applies on all feature branches.
+
+---
+
 ## [2025-08-14] – Quotes schema + Submit Quote (vendor) + Active Jobs polish
 **Status:** Completed  
 **Description:** Introduced minimal Quotes to support MMS flow; added a simple vendor “Submit Quote” page and wired CTA logic on Vendor Home. Cleaned Active Jobs rows by removing property id/address to keep the layout tight and vendor‑focused.

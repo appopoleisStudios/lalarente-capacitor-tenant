@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      closure_reports: {
+        Row: {
+          closed_at: string | null
+          contract_id: string
+          id: string
+          owner_accept_at: string | null
+          tenant_ack_at: string | null
+          vendor_notes: string | null
+        }
+        Insert: {
+          closed_at?: string | null
+          contract_id: string
+          id?: string
+          owner_accept_at?: string | null
+          tenant_ack_at?: string | null
+          vendor_notes?: string | null
+        }
+        Update: {
+          closed_at?: string | null
+          contract_id?: string
+          id?: string
+          owner_accept_at?: string | null
+          tenant_ack_at?: string | null
+          vendor_notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "closure_reports_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "service_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contract_templates: {
         Row: {
           content_html: string
@@ -169,6 +204,79 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_attachments: {
+        Row: {
+          execution_id: string
+          id: string
+          kind: string
+          url: string
+        }
+        Insert: {
+          execution_id: string
+          id?: string
+          kind: string
+          url: string
+        }
+        Update: {
+          execution_id?: string
+          id?: string
+          kind?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_attachments_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "job_executions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_executions: {
+        Row: {
+          contract_id: string
+          created_at: string | null
+          end_at: string | null
+          id: string
+          notes: string | null
+          sla_window_end: string | null
+          sla_window_start: string | null
+          start_at: string | null
+          status: string
+        }
+        Insert: {
+          contract_id: string
+          created_at?: string | null
+          end_at?: string | null
+          id?: string
+          notes?: string | null
+          sla_window_end?: string | null
+          sla_window_start?: string | null
+          start_at?: string | null
+          status?: string
+        }
+        Update: {
+          contract_id?: string
+          created_at?: string | null
+          end_at?: string | null
+          id?: string
+          notes?: string | null
+          sla_window_end?: string | null
+          sla_window_start?: string | null
+          start_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_executions_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "service_contracts"
             referencedColumns: ["id"]
           },
         ]
@@ -614,6 +722,97 @@ export type Database = {
             columns: ["vendor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_order_lines: {
+        Row: {
+          description: string
+          id: string
+          po_id: string
+          qty: number
+          tax_rate: number | null
+          unit: string | null
+          unit_price: number
+        }
+        Insert: {
+          description: string
+          id?: string
+          po_id: string
+          qty?: number
+          tax_rate?: number | null
+          unit?: string | null
+          unit_price: number
+        }
+        Update: {
+          description?: string
+          id?: string
+          po_id?: string
+          qty?: number
+          tax_rate?: number | null
+          unit?: string | null
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_order_lines_po_id_fkey"
+            columns: ["po_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_orders: {
+        Row: {
+          contract_id: string
+          created_at: string | null
+          currency: string | null
+          id: string
+          pdf_url: string | null
+          platform_fee_amount: number | null
+          po_number: string
+          status: string
+          subtotal: number | null
+          total_amount: number | null
+          updated_at: string | null
+          vat_amount: number | null
+        }
+        Insert: {
+          contract_id: string
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          pdf_url?: string | null
+          platform_fee_amount?: number | null
+          po_number: string
+          status?: string
+          subtotal?: number | null
+          total_amount?: number | null
+          updated_at?: string | null
+          vat_amount?: number | null
+        }
+        Update: {
+          contract_id?: string
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          pdf_url?: string | null
+          platform_fee_amount?: number | null
+          po_number?: string
+          status?: string
+          subtotal?: number | null
+          total_amount?: number | null
+          updated_at?: string | null
+          vat_amount?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_orders_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "service_contracts"
             referencedColumns: ["id"]
           },
         ]

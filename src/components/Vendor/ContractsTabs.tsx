@@ -12,6 +12,8 @@ export type VendorContractRow = {
   po_status?: 'po_issued' | 'none' | 'closed' | string
   exec_status?: 'not_started' | 'in_progress' | 'paused' | 'completed' | string | null
   quote_status?: 'requested' | 'submitted' | 'approved' | 'change_requested' | 'rejected' | string | null
+  friendly_status?: string
+  cta?: { label: string; href: string } | null
 }
 
 function StatusPill({ status }: { status: string }) {
@@ -27,7 +29,7 @@ export default function ContractsTabs({ pending, active, completed }: { pending:
 		<div className="bg-white rounded-lg shadow">
 			<div className="p-4 border-b border-gray-100 flex items-center justify-between">
 				<h3 className="font-semibold text-gray-900">Active Jobs</h3>
-				<Link href="#" className="text-blue-600 text-sm font-medium">View All</Link>
+				<Link href="/dashboard/vendor/jobs#current-jobs" className="text-blue-600 text-sm font-medium">View All</Link>
 			</div>
 			<div className="divide-y divide-gray-100">
 				{[...pending, ...active].slice(0,2).map((c)=> (
@@ -36,7 +38,7 @@ export default function ContractsTabs({ pending, active, completed }: { pending:
 							<div className="flex-1">
 								<h4 className="font-medium text-gray-900">{c.title}</h4>
 							</div>
-							<StatusPill status={c.status} />
+						<StatusPill status={c.friendly_status || c.status} />
 						</div>
 						<div className="flex items-center justify-between">
 							<div className="flex items-center space-x-4">
@@ -50,12 +52,16 @@ export default function ContractsTabs({ pending, active, completed }: { pending:
                 {c.exec_status && (
                   <span className={`text-[10px] px-2 py-0.5 rounded-full ${c.exec_status==='in_progress' ? 'bg-blue-50 text-blue-700' : c.exec_status==='completed' ? 'bg-emerald-50 text-emerald-700' : c.exec_status==='paused' ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-600'}`}>{c.exec_status==='in_progress' ? 'In Progress' : c.exec_status==='completed' ? 'Completed' : c.exec_status==='paused' ? 'Paused' : 'Not Started'}</span>
                 )}
-							{(() => {
-								const needsQuote = c.quote_status === 'requested' || c.quote_status === 'change_requested'
-								const href = needsQuote ? `/dashboard/vendor/quotes/new?contract_id=${c.id}` : `/contracts?id=${c.id}`
-								const label = needsQuote ? 'Submit Quote' : 'View Details'
-								return <Link href={href} className="bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-lg font-medium">{label}</Link>
-							})()}
+							{c.cta ? (
+								<Link href={c.cta.href} className="bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-lg font-medium">{c.cta.label}</Link>
+							) : (
+								(() => {
+									const needsQuote = c.quote_status === 'requested' || c.quote_status === 'change_requested'
+									const href = needsQuote ? `/dashboard/vendor/quotes/new?contract_id=${c.id}` : `/contracts?id=${c.id}`
+									const label = needsQuote ? 'Submit Quote' : 'View Details'
+									return <Link href={href} className="bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-lg font-medium">{label}</Link>
+								})()
+							)}
               </div>
 						</div>
 					</div>

@@ -68,17 +68,38 @@ export default function VendorDashboardPage() {
         ;(quoteRows||[] as QuoteRow[]).forEach((q: QuoteRow)=>{ quoteByContract.set(q.contract_id, { status: q.status || 'requested', total: q.total_amount ?? null }) })
 
         type ServiceContractRow = { id: string; title: string | null; status: string | null; property_id: string; terms?: { total?: number; due_text?: string } | null }
-        const mapRow = (r: ServiceContractRow): VendorContractRow => ({
-          id: r.id,
-          title: r.title || 'Service Contract',
-          status: r.status || 'pending_signatures',
-          property_label: r.property_id,
-          total_amount: (quoteByContract.get(r.id)?.total ?? r.terms?.total) || null,
-          due_text: r.terms?.due_text || null,
-          po_status: poByContract.get(r.id) || 'none',
-          exec_status: execByContract.get(r.id) || 'not_started',
-          quote_status: quoteByContract.get(r.id)?.status || null,
-        })
+        const mapRow = (r: ServiceContractRow): VendorContractRow => {
+          const quoteStatus = quoteByContract.get(r.id)?.status || null
+          const poStatus = poByContract.get(r.id) || 'none'
+          const execStatus = execByContract.get(r.id) || 'not_started'
+          // Friendly status + CTA
+          let friendly = r.status || 'pending_signatures'
+          let cta = { label: 'View Details', href: `/contracts?id=${r.id}` }
+          if (quoteStatus === 'requested' || quoteStatus === 'change_requested') {
+            friendly = 'Quote Requested'
+            cta = { label: 'Submit Quote', href: `/dashboard/vendor/quotes/new?contract_id=${r.id}` }
+          } else if (poStatus === 'po_issued') {
+            friendly = 'PO Issued'
+          } else if (execStatus === 'in_progress') {
+            friendly = 'In Progress'
+          } else if (execStatus === 'completed') {
+            friendly = 'Completed'
+          }
+
+          return {
+            id: r.id,
+            title: r.title || 'Service Contract',
+            status: r.status || 'pending_signatures',
+            property_label: r.property_id,
+            total_amount: (quoteByContract.get(r.id)?.total ?? r.terms?.total) || null,
+            due_text: r.terms?.due_text || null,
+            po_status: poStatus,
+            exec_status: execStatus,
+            quote_status: quoteStatus,
+            friendly_status: friendly,
+            cta,
+          }
+        }
         const rows: VendorContractRow[] = ((ctr || []) as ServiceContractRow[]).map(mapRow)
         setPending(rows.filter((r: VendorContractRow)=> r.status==='pending_signatures'))
         setActiveRows(rows.filter((r: VendorContractRow)=> r.status==='active'))
@@ -195,7 +216,7 @@ export default function VendorDashboardPage() {
             }).length}
             earnings={completedRows.reduce((a,b)=> a + (b.total_amount || 0), 0)}
             rating={4.8}
-            onAvailableJobs={()=>{}}
+            onAvailableJobs={()=>{ router.push('/dashboard/vendor/jobs#open-jobs') }}
             onSchedule={()=>{}}
           />
 
@@ -235,12 +256,10 @@ export default function VendorDashboardPage() {
           </div>
 
           <QuickActions actions={[
-            { key:'jobs', label:'My Jobs', emoji:'📋', onClick:()=>{} },
-            { key:'earn', label:'Earnings', emoji:'💰', onClick:()=>{} },
+            { key:'earn', label:'Earnings', emoji:'💰', onClick:()=>{ router.push('/dashboard/vendor/payments') } },
             { key:'reviews', label:'Reviews', emoji:'⭐', onClick:()=>{} },
             { key:'docs', label:'Documents', emoji:'📄', onClick:()=>{} },
             { key:'support', label:'Support', emoji:'📞', onClick:()=>{} },
-            { key:'profile', label:'Profile', emoji:'⚙️', onClick:()=>{} },
           ]} />
 
           <ContractsTabs pending={pending} active={activeRows} completed={completedRows} />
