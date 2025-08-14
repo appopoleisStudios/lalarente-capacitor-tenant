@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/src/lib/supabase'
-import ProtectedRoute from '@/src/components/ProtectedRoute'
+import { supabase as client, UserRole } from '@/lib/supabase'
+import ProtectedRoute from '@/components/ProtectedRoute'
 
 export default function NewQuotePage() {
   const search = useSearchParams()
@@ -20,8 +20,7 @@ export default function NewQuotePage() {
     // Optional: fetch contract title
     const fetchTitle = async () => {
       if (!contractId) return
-      const sb = createClient()
-      const { data } = await sb.from('service_contracts' as string).select('title').eq('id', contractId).maybeSingle()
+      const { data } = await client.from('service_contracts').select('title').eq('id', contractId).maybeSingle()
       setTitle(data?.title || '')
     }
     fetchTitle()
@@ -31,19 +30,19 @@ export default function NewQuotePage() {
     setLoading(true)
     setError(null)
     try {
-      const sb = createClient()
+      const sb = client
       // get current vendor_id
       const { data: { user } } = await sb.auth.getUser()
       if (!user) throw new Error('Not authenticated')
-      const { data: profile } = await sb.from('profiles' as string).select('id').eq('id', user.id).maybeSingle()
+      const { data: profile } = await sb.from('profiles').select('id').eq('id', user.id).maybeSingle()
       if (!profile) throw new Error('Profile not found')
 
       // fetch contract owner/property
-      const { data: ctr } = await sb.from('service_contracts' as string).select('owner_id,property_id').eq('id', contractId).maybeSingle()
+      const { data: ctr } = await sb.from('service_contracts').select('owner_id,property_id').eq('id', contractId).maybeSingle()
       if (!ctr) throw new Error('Contract not found')
 
       const subtotal = qty * unitPrice
-      const { data: q, error: qe } = await sb.from('quotes' as string).insert({
+      const { data: q, error: qe } = await sb.from('quotes').insert({
         vendor_id: user.id,
         owner_id: ctr.owner_id,
         property_id: ctr.property_id,
@@ -55,7 +54,7 @@ export default function NewQuotePage() {
       if (qe) throw qe
       if (!q) throw new Error('Failed to create quote')
 
-      const { error: le } = await sb.from('quote_lines' as string).insert({
+      const { error: le } = await sb.from('quote_lines').insert({
         quote_id: q.id,
         description: title || 'Service',
         qty,
@@ -65,15 +64,16 @@ export default function NewQuotePage() {
       if (le) throw le
 
       router.push(`/contracts?id=${contractId}`)
-    } catch (e: any) {
-      setError(e.message || 'Failed to submit quote')
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Failed to submit quote'
+      setError(message)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <ProtectedRoute roles={['vendor']}>
+    <ProtectedRoute allowedRoles={['vendor' as UserRole]}>
       <div className="p-4 max-w-lg mx-auto">
         <div className="mb-4 flex items-center gap-2">
           <Link href="/dashboard/vendor" className="text-blue-600 text-sm">Back</Link>

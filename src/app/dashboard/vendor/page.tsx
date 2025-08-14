@@ -55,14 +55,20 @@ export default function VendorDashboardPage() {
         const { data: poRows } = await sb.from('purchase_orders' as string).select('id,contract_id,status')
         const { data: execRows } = await sb.from('job_executions' as string).select('id,contract_id,status')
         const { data: quoteRows } = await sb.from('quotes' as string).select('id,contract_id,status,total_amount')
-        const poByContract = new Map<string,string>()
-        ;(poRows||[]).forEach((p:any)=>{ poByContract.set(p.contract_id, p.status || 'po_issued') })
-        const execByContract = new Map<string,string>()
-        ;(execRows||[]).forEach((e:any)=>{ execByContract.set(e.contract_id, e.status || 'not_started') })
-        const quoteByContract = new Map<string, { status: string; total: number|null }>()
-        ;(quoteRows||[]).forEach((q:any)=>{ quoteByContract.set(q.contract_id, { status: q.status || 'requested', total: q.total_amount ?? null }) })
 
-        const mapRow = (r: any): VendorContractRow => ({
+        type PurchaseOrderRow = { id: string; contract_id: string; status: string | null }
+        type JobExecutionRow = { id: string; contract_id: string; status: string | null }
+        type QuoteRow = { id: string; contract_id: string; status: string | null; total_amount: number | null }
+
+        const poByContract = new Map<string,string>()
+        ;(poRows||[] as PurchaseOrderRow[]).forEach((p: PurchaseOrderRow)=>{ poByContract.set(p.contract_id, p.status || 'po_issued') })
+        const execByContract = new Map<string,string>()
+        ;(execRows||[] as JobExecutionRow[]).forEach((e: JobExecutionRow)=>{ execByContract.set(e.contract_id, e.status || 'not_started') })
+        const quoteByContract = new Map<string, { status: string; total: number|null }>()
+        ;(quoteRows||[] as QuoteRow[]).forEach((q: QuoteRow)=>{ quoteByContract.set(q.contract_id, { status: q.status || 'requested', total: q.total_amount ?? null }) })
+
+        type ServiceContractRow = { id: string; title: string | null; status: string | null; property_id: string; terms?: { total?: number; due_text?: string } | null }
+        const mapRow = (r: ServiceContractRow): VendorContractRow => ({
           id: r.id,
           title: r.title || 'Service Contract',
           status: r.status || 'pending_signatures',
@@ -73,10 +79,10 @@ export default function VendorDashboardPage() {
           exec_status: execByContract.get(r.id) || 'not_started',
           quote_status: quoteByContract.get(r.id)?.status || null,
         })
-        const rows = (ctr || []).map(mapRow)
-        setPending(rows.filter(r=> r.status==='pending_signatures'))
-        setActiveRows(rows.filter(r=> r.status==='active'))
-        setCompletedRows(rows.filter(r=> r.status==='completed'))
+        const rows: VendorContractRow[] = ((ctr || []) as ServiceContractRow[]).map(mapRow)
+        setPending(rows.filter((r: VendorContractRow)=> r.status==='pending_signatures'))
+        setActiveRows(rows.filter((r: VendorContractRow)=> r.status==='active'))
+        setCompletedRows(rows.filter((r: VendorContractRow)=> r.status==='completed'))
 
         // Opportunities (MVP: open maintenance_requests)
         // opportunities feed removed from Home screen; keep for future page
@@ -132,13 +138,12 @@ export default function VendorDashboardPage() {
       if (error) throw error
       setContractForm({ property_id: '', owner_id: '', tenant_id: '', title: '' })
       const { data: ctr } = await sb.from('service_contracts' as string).select('id,title,status,property_id,terms').eq('vendor_id', user.id).order('created_at', { ascending: false })
-      const mapRow = (r: any): VendorContractRow => ({
-        id: r.id, title: r.title || 'Service Contract', status: r.status || 'pending_signatures', property_label: r.property_id, total_amount: r.terms?.total || null, due_text: r.terms?.due_text || null,
-      })
-      const rows = (ctr || []).map(mapRow)
-      setPending(rows.filter(r=> r.status==='pending_signatures'))
-      setActiveRows(rows.filter(r=> r.status==='active'))
-      setCompletedRows(rows.filter(r=> r.status==='completed'))
+      type ServiceContractRow2 = { id: string; title: string | null; status: string | null; property_id: string; terms?: { total?: number; due_text?: string } | null }
+      const mapRow = (r: ServiceContractRow2): VendorContractRow => ({ id: r.id, title: r.title || 'Service Contract', status: r.status || 'pending_signatures', property_label: r.property_id, total_amount: r.terms?.total || null, due_text: r.terms?.due_text || null })
+      const rows: VendorContractRow[] = ((ctr || []) as ServiceContractRow2[]).map(mapRow)
+      setPending(rows.filter((r: VendorContractRow)=> r.status==='pending_signatures'))
+      setActiveRows(rows.filter((r: VendorContractRow)=> r.status==='active'))
+      setCompletedRows(rows.filter((r: VendorContractRow)=> r.status==='completed'))
       setMsg('Contract created')
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create contract'
