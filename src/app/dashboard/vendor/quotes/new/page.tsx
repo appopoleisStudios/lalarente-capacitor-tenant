@@ -10,6 +10,7 @@ function NewQuotePageInner() {
   const search = useSearchParams()
   const router = useRouter()
   const contractId = search.get('contract_id') || ''
+  const requestId = search.get('request_id') || ''
   const [title, setTitle] = useState('')
   const [qty, setQty] = useState<number>(1)
   const [unitPrice, setUnitPrice] = useState<number>(0)
@@ -17,36 +18,57 @@ function NewQuotePageInner() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Optional: fetch contract title
+    // Optional: fetch title from contract or maintenance request
     const fetchTitle = async () => {
-      if (!contractId) return
-      const { data } = await client.from('service_contracts').select('title').eq('id', contractId).maybeSingle()
-      setTitle(data?.title || '')
+      if (contractId) {
+        const { data } = await client.from('service_contracts').select('title').eq('id', contractId).maybeSingle()
+        setTitle(data?.title || '')
+      } else if (requestId) {
+        const { data } = await client.from('maintenance_requests').select('title').eq('id', requestId).maybeSingle()
+        setTitle(data?.title || '')
+      }
     }
     fetchTitle()
-  }, [contractId])
+  }, [contractId, requestId])
 
   const submit = async () => {
     setLoading(true)
     setError(null)
     try {
-      const sb = client
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sb: any = client
       // get current vendor_id
       const { data: { user } } = await sb.auth.getUser()
       if (!user) throw new Error('Not authenticated')
       const { data: profile } = await sb.from('profiles').select('id').eq('id', user.id).maybeSingle()
       if (!profile) throw new Error('Profile not found')
 
-      // fetch contract owner/property
-      const { data: ctr } = await sb.from('service_contracts').select('owner_id,property_id').eq('id', contractId).maybeSingle()
-      if (!ctr) throw new Error('Contract not found')
+      let owner_id: string
+      let property_id: string
+
+      if (contractId) {
+        // Quote for existing service contract
+        const { data: ctr } = await sb.from('service_contracts').select('owner_id,property_id').eq('id', contractId).maybeSingle()
+        if (!ctr) throw new Error('Contract not found')
+        owner_id = ctr.owner_id
+        property_id = ctr.property_id
+      } else if (requestId) {
+        // Quote for maintenance request
+        const { data: req } = await sb.from('maintenance_requests').select('owner_id,property_id').eq('id', requestId).maybeSingle()
+        if (!req) throw new Error('Maintenance request not found')
+        owner_id = (req as { owner_id: string }).owner_id
+        property_id = (req as { property_id: string }).property_id
+      } else {
+        throw new Error('No contract or request ID provided')
+      }
 
       const subtotal = qty * unitPrice
       const { data: q, error: qe } = await sb.from('quotes').insert({
         vendor_id: user.id,
-        owner_id: ctr.owner_id,
-        property_id: ctr.property_id,
-        contract_id: contractId,
+        owner_id,
+        property_id,
+        contract_id: contractId || null,
+        request_id: requestId || null,
         status: 'submitted',
         subtotal,
         total_amount: subtotal
@@ -63,7 +85,20 @@ function NewQuotePageInner() {
       })
       if (le) throw le
 
-      router.push(`/contracts?id=${contractId}`)
+      // Update vendor quote request status if this is for a maintenance request
+      if (requestId) {
+        await sb.from('vendor_quote_requests' as string)
+          .update({ status: 'responded', responded_at: new Date().toISOString(), quote_id: q.id })
+          .eq('request_id', requestId)
+          .eq('vendor_id', user.id)
+      }
+
+      // Redirect based on context
+      if (contractId) {
+        router.push(`/contracts?id=${contractId}`)
+      } else {
+        router.push('/dashboard/vendor/jobs')
+      }
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Failed to submit quote'
       setError(message)
@@ -95,7 +130,7 @@ function NewQuotePageInner() {
             </div>
           </div>
           {error && <div className="text-sm text-red-600">{error}</div>}
-          <button disabled={loading || !contractId || !title || unitPrice<=0 || qty<=0} onClick={submit} className={`w-full ${loading? 'opacity-60': ''} bg-indigo-600 text-white rounded-lg py-2 text-sm font-medium`}>
+          <button disabled={loading || (!contractId && !requestId) || !title || unitPrice<=0 || qty<=0} onClick={submit} className={`w-full ${loading? 'opacity-60': ''} bg-indigo-600 text-white rounded-lg py-2 text-sm font-medium`}>
             {loading ? 'Submitting...' : 'Submit Quote'}
           </button>
         </div>

@@ -437,6 +437,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false,
         isInitialized: false 
       })
+      // after sign-out, redirect to login
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/login'
+      }
     } catch (error: unknown) {
       set({ error: error instanceof Error ? error.message : 'An unknown error occurred', isLoading: false })
     }

@@ -124,7 +124,7 @@ export default function BottomNavbar({ userRole }: BottomNavbarProps) {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 safe-area-bottom overflow-hidden">
-      <div className="max-w-sm mx-auto">
+      <div className="w-full">
         <div className="flex items-center justify-around py-2">
           {tabs.map((tab) => {
             const isActive = pathname === tab.path

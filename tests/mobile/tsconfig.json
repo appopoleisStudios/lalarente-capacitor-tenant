@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "types": ["node", "webdriverio/async", "@wdio/mocha-framework"],
+    "target": "ES2020",
+    "module": "commonjs",
+    "skipLibCheck": true
+  },
+  "include": ["./**/*.ts"]
+}
+
+

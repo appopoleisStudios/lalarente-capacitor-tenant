@@ -14,6 +14,21 @@ export default function LoginPage() {
   const { signIn, isLoading, error, user, profile } = useAuthStore()
   const router = useRouter()
 
+  const getRoleBtnClasses = (role: UserRole | '') => {
+    switch (role) {
+      case 'tenant':
+        return 'bg-emerald-600 hover:bg-emerald-700'
+      case 'owner':
+        return 'bg-blue-600 hover:bg-blue-700'
+      case 'vendor':
+        return 'bg-indigo-600 hover:bg-indigo-700'
+      case 'admin':
+        return 'bg-red-600 hover:bg-red-700'
+      default:
+        return 'bg-green-600 hover:bg-green-700'
+    }
+  }
+
   // Redirect if already logged in
   useEffect(() => {
     if (user && profile) {
@@ -93,7 +108,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sa-green-500"
+                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sa-green-500 text-gray-900 placeholder-gray-500"
                 required
                 disabled={isLoading}
                 data-testid="login-email"
@@ -106,14 +121,21 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sa-green-500"
+                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sa-green-500 text-gray-900 placeholder-gray-500"
                 required
                 disabled={isLoading}
                 data-testid="login-password"
               />
             </div>
             
-            <Button type="submit" disabled={isLoading} className="w-full" data-testid="login-submit">
+            <Button
+              type="submit"
+              disabled={isLoading}
+              variant="default"
+              size="lg"
+              className={`w-full h-12 text-base text-white ${getRoleBtnClasses(selectedRole)}`}
+              data-testid="login-submit"
+            >
               {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>

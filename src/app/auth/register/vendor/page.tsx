@@ -124,31 +124,31 @@ export default function VendorRegistrationPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Full Name / Business Name *</label>
-            <input type="text" name="fullName" value={formData.fullName} onChange={handleInputChange} className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder-gray-300 text-gray-900" placeholder="Enter your name or business name" />
+            <input type="text" name="fullName" value={formData.fullName} onChange={handleInputChange} className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder-gray-500 text-gray-900" placeholder="Enter your name or business name" />
             {errors.fullName && <div className="text-red-500 text-sm mt-1" style={{display: errors.fullName ? 'block':'none'}}>{errors.fullName}</div>}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">South African ID Number *</label>
-            <input type="text" name="idNumber" value={formData.idNumber} onChange={handleInputChange} className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder-gray-300 text-gray-900" placeholder="YYMMDD 0000 000 0 0" maxLength={19} />
+            <input type="text" name="idNumber" value={formData.idNumber} onChange={handleInputChange} className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder-gray-500 text-gray-900" placeholder="YYMMDD 0000 000 0 0" maxLength={19} />
             {errors.idNumber && <div className="text-red-500 text-sm mt-1" style={{display: errors.idNumber ? 'block':'none'}}>{errors.idNumber}</div>}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
-            <input type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder-gray-300 text-gray-900" placeholder="your.email@example.com" />
+            <input type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder-gray-500 text-gray-900" placeholder="your.email@example.com" />
             {errors.email && <div className="text-red-500 text-sm mt-1" style={{display: errors.email ? 'block':'none'}}>{errors.email}</div>}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
             <div className="flex">
               <div className="flex items-center px-3 py-3 bg-gray-50 border border-r-0 border-gray-200 rounded-l-lg"><span className="text-gray-600 text-sm">🇿🇦 +27</span></div>
-              <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="flex-1 px-4 py-3 border border-gray-200 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder-gray-300 text-gray-900" placeholder="81 234 5678" />
+              <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="flex-1 px-4 py-3 border border-gray-200 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder-gray-500 text-gray-900" placeholder="81 234 5678" />
             </div>
             {errors.phone && <div className="text-red-500 text-sm mt-1" style={{display: errors.phone ? 'block':'none'}}>{errors.phone}</div>}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Password *</label>
             <div className="relative">
-              <input type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={handleInputChange} className="w-full px-4 py-3 pr-12 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder-gray-300 text-gray-900" placeholder="Create a strong password" />
+              <input type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={handleInputChange} className="w-full px-4 py-3 pr-12 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder-gray-500 text-gray-900" placeholder="Create a strong password" />
               <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"><i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i></button>
             </div>
             {errors.password && <div className="text-red-500 text-sm mt-1" style={{display: errors.password ? 'block':'none'}}>{errors.password}</div>}

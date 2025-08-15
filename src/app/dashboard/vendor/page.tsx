@@ -205,7 +205,7 @@ export default function VendorDashboardPage() {
 
   return (
     <ProtectedRoute allowedRoles={['vendor']}>
-      <div className="max-w-sm mx-auto bg-white min-h-screen pb-20" data-testid="vendor-dashboard">
+      <div className="mobile-app w-[100vw] max-w-[100vw] mx-0 bg-white min-h-screen pb-20 overflow-x-hidden" data-testid="vendor-dashboard">
         <VendorHeader />
         {msg && <div className="m-4 p-3 rounded border border-gray-200 bg-gray-50 text-gray-700">{msg}</div>}
         <main className="px-4 py-4 space-y-4">

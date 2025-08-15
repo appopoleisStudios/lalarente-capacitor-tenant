@@ -10,6 +10,13 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  /* App palette (used by Button and auth inputs) */
+  --color-sa-green-500: #16a34a; /* tailwind green-600-ish */
+  --color-sa-green-600: #15803d;
+  --color-sa-blue-500: #3b82f6;
+  --color-sa-blue-600: #2563eb;
+  --color-sa-gold-500: #f59e0b;
+  --color-sa-gold-600: #d97706;
 }
 
 @media (prefers-color-scheme: dark) {

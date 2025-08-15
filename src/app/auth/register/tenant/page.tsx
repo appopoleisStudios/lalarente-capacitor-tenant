@@ -237,7 +237,7 @@ export default function TenantRegistrationPage() {
               name="fullName"
               value={formData.fullName}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-800 focus:border-transparent placeholder-gray-300 text-gray-900" 
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-800 focus:border-transparent placeholder-gray-500 text-gray-900" 
               placeholder="Enter your full name"
             />
             {errors.fullName && (
@@ -255,7 +255,7 @@ export default function TenantRegistrationPage() {
               name="idNumber"
               value={formData.idNumber}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-800 focus:border-transparent placeholder-gray-300 text-gray-900" 
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-800 focus:border-transparent placeholder-gray-500 text-gray-900" 
               placeholder="YYMMDD 0000 000 0 0"
               maxLength={19}
             />
@@ -277,7 +277,7 @@ export default function TenantRegistrationPage() {
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-800 focus:border-transparent placeholder-gray-300 text-gray-900" 
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-800 focus:border-transparent placeholder-gray-500 text-gray-900" 
               placeholder="your.email@example.com"
             />
             {errors.email && (
@@ -299,7 +299,7 @@ export default function TenantRegistrationPage() {
                 name="phone"
                 value={formData.phone}
                 onChange={handleInputChange}
-                className="flex-1 px-4 py-3 border border-gray-200 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-green-800 focus:border-transparent placeholder-gray-300 text-gray-900" 
+                className="flex-1 px-4 py-3 border border-gray-200 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-green-800 focus:border-transparent placeholder-gray-500 text-gray-900" 
                 placeholder="81 234 5678"
               />
             </div>
@@ -322,7 +322,7 @@ export default function TenantRegistrationPage() {
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 pr-12 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-800 focus:border-transparent placeholder-gray-300 text-gray-900" 
+                className="w-full px-4 py-3 pr-12 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-800 focus:border-transparent placeholder-gray-500 text-gray-900" 
                 placeholder="Create a strong password"
               />
               <button 

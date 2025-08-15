@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { useAuthStore } from '@/store/authStore'
 import { supabase } from '@/lib/supabase'
-import ContractsTabs, { VendorContractRow } from '@/components/Vendor/ContractsTabs'
+import { VendorContractRow } from '@/components/Vendor/ContractsTabs'
 import JobsList from '@/components/Vendor/JobsList'
 import BottomNavbar from '@/components/BottomNavbar'
 
@@ -30,8 +30,62 @@ export default function VendorJobsPage() {
       const { data: poRows } = await sb.from('purchase_orders' as string).select('id,contract_id,status')
       const { data: execRows } = await sb.from('job_executions' as string).select('id,contract_id,status')
       const { data: quoteRows } = await sb.from('quotes' as string).select('id,contract_id,status,total_amount')
-      // Available: simplified placeholder (later: maintenance_requests routed to vendor)
-      const { data: availCtr } = await sb.from('service_contracts' as string).select('id,title,status,property_id,terms').eq('status', 'pending_signatures').order('created_at', { ascending: false })
+      
+      // Determine request IDs visible to this vendor via vendor_quote_requests (invited jobs)
+      const { data: myVqrs, error: vqrErr } = await sb
+        .from('vendor_quote_requests' as string)
+        .select('request_id')
+        .eq('vendor_id', user.id)
+
+      if (vqrErr) {
+        console.error('VQR load error', vqrErr)
+      }
+
+      type VQR = { request_id: string }
+      const requestIds = ((myVqrs || []) as VQR[]).map((r: VQR) => r.request_id)
+
+      // Current Jobs = invited to quote OR selected_vendor_id = me
+      type MR = { id: string; title: string | null; description: string; priority: string | null; mms_status: string; created_at: string; selected_vendor_id: string | null; property?: { title: string; address: string } | null }
+      let invitedMR: MR[] = []
+      if (requestIds.length > 0) {
+        const { data: mrInvited, error: mrErr } = await sb
+          .from('maintenance_requests' as string)
+          .select(`
+            id,
+            title,
+            description,
+            priority,
+            mms_status,
+            created_at,
+            selected_vendor_id,
+            property:properties!maintenance_requests_property_id_fkey(title, address)
+          `)
+          .in('id', requestIds)
+          .order('created_at', { ascending: false })
+        if (mrErr) console.error('MR invited load error', mrErr)
+        invitedMR = (mrInvited || []) as MR[]
+      }
+
+      const { data: mrSelected, error: mrSelErr } = await sb
+        .from('maintenance_requests' as string)
+        .select(`
+          id,
+          title,
+          description,
+          priority,
+          mms_status,
+          created_at,
+          selected_vendor_id,
+          property:properties!maintenance_requests_property_id_fkey(title, address)
+        `)
+        .eq('selected_vendor_id', user.id)
+        .order('created_at', { ascending: false })
+      if (mrSelErr) console.error('MR selected load error', mrSelErr)
+
+      // Merge and de-duplicate current MR
+      const currentMRMap = new Map<string, MR>()
+      ;[...(invitedMR||[]), ...((mrSelected||[]) as MR[])].forEach((r: MR) => currentMRMap.set(r.id, r))
+      const currentMR = Array.from(currentMRMap.values())
 
       const poByContract = new Map<string,string>()
       ;(poRows||[] as PurchaseOrderRow[]).forEach((p: PurchaseOrderRow)=>{ poByContract.set(p.contract_id, p.status || 'po_issued') })
@@ -70,11 +124,57 @@ export default function VendorJobsPage() {
           cta,
         }
       })
-      setRows(mapped)
-      // Available jobs: those not yet assigned to this vendor (for now, pending_signatures not owned by vendor)
-      const availMapped: VendorContractRow[] = ((availCtr||[]) as ServiceContractRow[])
-        .filter((r)=> !(ctr||[]).some((mine: ServiceContractRow)=> mine.id === r.id))
-        .map(r => ({ id: r.id, title: r.title || 'Service Contract', status: r.status || 'pending_signatures', property_label: r.property_id, total_amount: r.terms?.total || null, due_text: r.terms?.due_text || null, po_status: 'none', exec_status: 'not_started', quote_status: 'requested', friendly_status: 'Quote Requested', cta: { label: 'Submit Quote', href: `/dashboard/vendor/quotes/new?contract_id=${r.id}` } }))
+      // Append current maintenance requests to current jobs list
+      const currentMRMapped: VendorContractRow[] = (currentMR||[]).map((req: MR) => ({
+        id: req.id,
+        title: req.title || 'Maintenance Request',
+        status: 'maintenance_request',
+        property_label: req.property?.title || 'Unknown Property',
+        total_amount: null,
+        due_text: `Priority: ${req.priority}`,
+        po_status: 'none',
+        exec_status: 'not_started',
+        quote_status: 'requested',
+        friendly_status: req.selected_vendor_id ? 'Assigned' : 'Quote Requested',
+        cta: req.selected_vendor_id ? { label: 'View Details', href: `/dashboard/vendor/jobs` } : { label: 'Submit Quote', href: `/dashboard/vendor/quotes/new?request_id=${req.id}` }
+      }))
+
+      setRows([...mapped, ...currentMRMapped])
+      
+      // All Open Jobs: public visibility, not already invited/assigned to me
+      const { data: publicMR, error: pubErr } = await sb
+        .from('maintenance_requests' as string)
+        .select(`
+          id,
+          title,
+          description,
+          priority,
+          mms_status,
+          created_at,
+          selected_vendor_id,
+          property:properties!maintenance_requests_property_id_fkey(title, address)
+        `)
+        .eq('visibility', 'public')
+        .eq('mms_status', 'vendor_routed')
+        .order('created_at', { ascending: false })
+      if (pubErr) console.error('Public MR load error', pubErr)
+
+      const invitedSet = new Set(requestIds)
+      const publicFiltered = ((publicMR || []) as MR[]).filter((r: MR) => r.selected_vendor_id !== user.id && !invitedSet.has(r.id))
+
+      const availMapped: VendorContractRow[] = (publicFiltered as MR[]).map((req: MR) => ({
+        id: req.id,
+        title: req.title || 'Maintenance Request',
+        status: 'maintenance_request',
+        property_label: req.property?.title || 'Unknown Property',
+        total_amount: null,
+        due_text: `Priority: ${req.priority}`,
+        po_status: 'none',
+        exec_status: 'not_started',
+        quote_status: 'requested',
+        friendly_status: 'Quote Requested',
+        cta: { label: 'Submit Quote', href: `/dashboard/vendor/quotes/new?request_id=${req.id}` }
+      }))
       setAvailable(availMapped)
     }
     load()
@@ -99,7 +199,7 @@ export default function VendorJobsPage() {
 
   return (
     <ProtectedRoute allowedRoles={['vendor']}>
-      <div className="max-w-sm mx-auto bg-white min-h-screen pb-20">
+      <div className="mobile-app w-[100vw] max-w-[100vw] mx-0 bg-white min-h-screen pb-20 overflow-x-hidden">
         <div className="px-4 py-4 flex items-center justify-between">
           <h1 className="font-semibold text-gray-900">Jobs</h1>
           <div className="flex items-center gap-2 text-xs">
