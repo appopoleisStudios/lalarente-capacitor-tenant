@@ -5,6 +5,7 @@ import ProtectedRoute from '@/components/ProtectedRoute'
 import { useAuthStore } from '@/store/authStore'
 import { supabase, type TablesInsert } from '@/lib/supabase'
 import { compileTemplate } from '@/utils/template'
+import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useRef } from 'react'
 import Link from 'next/link'
@@ -26,7 +27,7 @@ type TenancyContractLite = {
 	requires_tenant_signature: boolean | null
 }
 
-export default function OwnerContractsPage() {
+function OwnerContractsPageInner() {
 	const { user } = useAuthStore()
   const params = useSearchParams()
 	const [serviceContracts, setServiceContracts] = useState<ServiceContractLite[]>([])
@@ -369,6 +370,14 @@ export default function OwnerContractsPage() {
 			</div>
 		</ProtectedRoute>
 	)
+}
+
+export default function OwnerContractsPage() {
+  return (
+    <Suspense fallback={<div className="p-4 text-sm text-gray-500">Loading…</div>}>
+      <OwnerContractsPageInner />
+    </Suspense>
+  )
 }
 
 

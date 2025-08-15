@@ -1,9 +1,10 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import ProtectedRoute from '@/components/ProtectedRoute'
 
-export default function OwnerDocumentsPage() {
+function OwnerDocumentsPageInner() {
   const router = useRouter()
   const params = useSearchParams()
   const doc = (params.get('doc') || '').toLowerCase()
@@ -47,6 +48,14 @@ export default function OwnerDocumentsPage() {
         </div>
       </div>
     </ProtectedRoute>
+  )
+}
+
+export default function OwnerDocumentsPage() {
+  return (
+    <Suspense fallback={<div className="p-4 text-sm text-gray-500">Loading…</div>}>
+      <OwnerDocumentsPageInner />
+    </Suspense>
   )
 }
 

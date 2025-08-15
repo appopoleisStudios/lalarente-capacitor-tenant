@@ -1,7 +1,7 @@
 'use client'
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/authStore'
@@ -30,7 +30,7 @@ type TenancyContract = {
 	pdf_sha256: string | null
 }
 
-export default function ContractDetailPage() {
+function ContractDetailPageInner() {
 	const params = useSearchParams()
 	const contractId = params.get('id') || ''
 	const [serviceContract, setServiceContract] = useState<ServiceContract | null>(null)
@@ -476,6 +476,14 @@ export default function ContractDetailPage() {
 				)}
 			</div>
 		</div>
+	)
+}
+
+export default function ContractDetailPage() {
+	return (
+		<Suspense fallback={<div className="p-4 text-sm text-gray-500">Loading…</div>}>
+			<ContractDetailPageInner />
+		</Suspense>
 	)
 }
 

@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase as client, UserRole } from '@/lib/supabase'
 import ProtectedRoute from '@/components/ProtectedRoute'
 
-export default function NewQuotePage() {
+function NewQuotePageInner() {
   const search = useSearchParams()
   const router = useRouter()
   const contractId = search.get('contract_id') || ''
@@ -101,6 +101,14 @@ export default function NewQuotePage() {
         </div>
       </div>
     </ProtectedRoute>
+  )
+}
+
+export default function NewQuotePage() {
+  return (
+    <Suspense fallback={<div className="p-4 text-sm text-gray-500">Loading…</div>}>
+      <NewQuotePageInner />
+    </Suspense>
   )
 }
 

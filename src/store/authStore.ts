@@ -69,20 +69,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ user: data.user })
       await get().fetchProfile(data.user.id)
       
-      // Determine redirect based on role
-      const profile = get().profile
+      // Determine redirect based on role and onboarding flags
+      const profile = get().profile as (Profile & {
+        onboarding_owner_done?: boolean
+        onboarding_tenant_done?: boolean
+        onboarding_vendor_done?: boolean
+      }) | null
       let redirectTo = '/dashboard'
       
       if (profile?.role) {
         switch (profile.role) {
           case 'tenant':
-            redirectTo = '/dashboard/tenant'
+            redirectTo = profile.onboarding_tenant_done ? '/dashboard/tenant' : '/onboarding/user-type'
             break
           case 'owner':
-            redirectTo = '/dashboard/owner'
+            redirectTo = profile.onboarding_owner_done ? '/dashboard/owner' : '/onboarding/user-type'
             break
           case 'vendor':
-            redirectTo = '/dashboard/vendor'
+            redirectTo = profile.onboarding_vendor_done ? '/dashboard/vendor' : '/onboarding/user-type'
             break
           case 'admin':
             redirectTo = '/admin'

@@ -78,6 +78,7 @@ export default function LoginPage() {
                 onChange={(e) => setSelectedRole(e.target.value as UserRole | '')}
                 className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sa-green-500 text-gray-900"
                 disabled={isLoading}
+                data-testid="login-role-select"
               >
                 <option value="">Choose role (auto-detect if empty)</option>
                 <option value="tenant">Tenant</option>
@@ -95,6 +96,7 @@ export default function LoginPage() {
                 className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sa-green-500"
                 required
                 disabled={isLoading}
+                data-testid="login-email"
               />
             </div>
             
@@ -107,10 +109,11 @@ export default function LoginPage() {
                 className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sa-green-500"
                 required
                 disabled={isLoading}
+                data-testid="login-password"
               />
             </div>
             
-            <Button type="submit" disabled={isLoading} className="w-full">
+            <Button type="submit" disabled={isLoading} className="w-full" data-testid="login-submit">
               {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>

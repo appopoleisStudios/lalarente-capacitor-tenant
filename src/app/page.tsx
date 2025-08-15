@@ -9,7 +9,12 @@ export default function WelcomePage() {
   const router = useRouter()
 
   useEffect(() => {
-    if (isInitialized && user && profile) {
+    if (!isInitialized) return
+    if (!user) {
+      router.replace('/auth/login')
+      return
+    }
+    if (user && profile) {
       switch (profile.role) {
         case 'tenant':
           router.push('/dashboard/tenant')
