@@ -294,3 +294,4 @@ CREATE SEQUENCE IF NOT EXISTS public.po_sequence START 1;
 -- Grant execute permissions
 GRANT EXECUTE ON FUNCTION public.route_maintenance_request_to_vendors(uuid, integer) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.approve_quote_and_generate_po(uuid) TO authenticated;
+

@@ -3,10 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test:mobile": "wdio run tests/mobile/wdio.conf.ts",
+    "test:mobile:debug": "wdio run tests/mobile/wdio.conf.ts --logLevel debug",
+    "test:mobile:single": "wdio run tests/mobile/wdio.conf.ts --spec tests/mobile/specs/basic-app-test.e2e.ts",
+    "test:mobile:comprehensive": "wdio run tests/mobile/wdio.conf.ts --spec tests/mobile/specs/comprehensive-auth-test.e2e.ts",
+    "test:mobile:maintenance": "wdio run tests/mobile/wdio.conf.ts --spec tests/mobile/specs/maintenance-workflow-test.e2e.ts",
+    "test:mobile:vendors": "wdio run tests/mobile/wdio.conf.ts --spec tests/mobile/specs/dedicated-vendors-test.e2e.ts",
+    "test:mobile:profile": "wdio run tests/mobile/wdio.conf.ts --spec tests/mobile/specs/profile-navigation-test.e2e.ts",
+    "test:mobile:all": "wdio run tests/mobile/wdio.conf.ts --spec tests/mobile/specs/comprehensive-auth-test.e2e.ts tests/mobile/specs/maintenance-workflow-test.e2e.ts tests/mobile/specs/dedicated-vendors-test.e2e.ts tests/mobile/specs/profile-navigation-test.e2e.ts",
     "migrate": "tsx scripts/runMigration.ts",
     "migrate:status": "tsx scripts/runMigration.ts --status",
     "migrate:rollback": "tsx scripts/runMigration.ts --rollback"
@@ -43,6 +51,7 @@
     "zustand": "^5.0.6"
   },
   "devDependencies": {
+    "@appium/doctor": "^2.1.15",
     "@eslint/eslintrc": "^3",
     "@playwright/test": "^1.54.2",
     "@tailwindcss/postcss": "^4",
@@ -56,6 +65,7 @@
     "@wdio/spec-reporter": "^9.19.1",
     "appium": "^2.19.0",
     "appium-uiautomator2-driver": "^4.2.8",
+    "chai": "^5.2.1",
     "dotenv": "^17.2.1",
     "eslint": "^9",
     "eslint-config-next": "15.4.4",

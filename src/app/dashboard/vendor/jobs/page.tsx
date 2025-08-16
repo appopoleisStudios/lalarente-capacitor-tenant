@@ -26,29 +26,48 @@ export default function VendorJobsPage() {
   useEffect(() => {
     if (!user) return
     const load = async () => {
-      const { data: ctr } = await sb.from('service_contracts' as string).select('id,title,status,property_id,terms').eq('vendor_id', user.id).order('created_at', { ascending: false })
-      const { data: poRows } = await sb.from('purchase_orders' as string).select('id,contract_id,status')
-      const { data: execRows } = await sb.from('job_executions' as string).select('id,contract_id,status')
-      const { data: quoteRows } = await sb.from('quotes' as string).select('id,contract_id,status,total_amount')
-      
-      // Determine request IDs visible to this vendor via vendor_quote_requests (invited jobs)
-      const { data: myVqrs, error: vqrErr } = await sb
-        .from('vendor_quote_requests' as string)
-        .select('request_id')
-        .eq('vendor_id', user.id)
+      // parallelize independent queries
+      const [ctrRes, poRes, execRes, quoteRes, vqrRes] = await Promise.all([
+        sb.from('service_contracts' as string)
+          .select('id,title,status,property_id,terms')
+          .eq('vendor_id', user.id)
+          .order('created_at', { ascending: false }),
+        sb.from('purchase_orders' as string).select('id,contract_id,status'),
+        sb.from('job_executions' as string).select('id,contract_id,status'),
+        sb.from('quotes' as string).select('id,contract_id,status,total_amount'),
+        sb.from('vendor_quote_requests' as string).select('request_id').eq('vendor_id', user.id),
+      ])
 
-      if (vqrErr) {
-        console.error('VQR load error', vqrErr)
-      }
+      const ctr = ctrRes.data as ServiceContractRow[] | null
+      const poRows = poRes.data as PurchaseOrderRow[] | null
+      const execRows = execRes.data as JobExecutionRow[] | null
+      const quoteRows = quoteRes.data as QuoteRow[] | null
+      const myVqrs = vqrRes.data as { request_id: string }[] | null
 
-      type VQR = { request_id: string }
-      const requestIds = ((myVqrs || []) as VQR[]).map((r: VQR) => r.request_id)
+      if (vqrRes.error) console.error('VQR load error', vqrRes.error)
 
-      // Current Jobs = invited to quote OR selected_vendor_id = me
+      const requestIds = (myVqrs || []).map(r => r.request_id)
+
+      // Current Jobs = invited to quote OR selected_vendor_id = me (run in parallel)
       type MR = { id: string; title: string | null; description: string; priority: string | null; mms_status: string; created_at: string; selected_vendor_id: string | null; property?: { title: string; address: string } | null }
-      let invitedMR: MR[] = []
-      if (requestIds.length > 0) {
-        const { data: mrInvited, error: mrErr } = await sb
+      const [invitedRes, selectedRes] = await Promise.all([
+        requestIds.length > 0
+          ? sb
+              .from('maintenance_requests' as string)
+              .select(`
+                id,
+                title,
+                description,
+                priority,
+                mms_status,
+                created_at,
+                selected_vendor_id,
+                property:properties!maintenance_requests_property_id_fkey(title, address)
+              `)
+              .in('id', requestIds)
+              .order('created_at', { ascending: false })
+          : Promise.resolve({ data: [] as MR[] }),
+        sb
           .from('maintenance_requests' as string)
           .select(`
             id,
@@ -60,39 +79,26 @@ export default function VendorJobsPage() {
             selected_vendor_id,
             property:properties!maintenance_requests_property_id_fkey(title, address)
           `)
-          .in('id', requestIds)
-          .order('created_at', { ascending: false })
-        if (mrErr) console.error('MR invited load error', mrErr)
-        invitedMR = (mrInvited || []) as MR[]
-      }
+          .eq('selected_vendor_id', user.id)
+          .order('created_at', { ascending: false }),
+      ])
 
-      const { data: mrSelected, error: mrSelErr } = await sb
-        .from('maintenance_requests' as string)
-        .select(`
-          id,
-          title,
-          description,
-          priority,
-          mms_status,
-          created_at,
-          selected_vendor_id,
-          property:properties!maintenance_requests_property_id_fkey(title, address)
-        `)
-        .eq('selected_vendor_id', user.id)
-        .order('created_at', { ascending: false })
-      if (mrSelErr) console.error('MR selected load error', mrSelErr)
+      const invitedMR = (invitedRes.data || []) as MR[]
+      if (invitedRes.error) console.error('MR invited load error', invitedRes.error)
+      const mrSelected = (selectedRes.data || []) as MR[]
+      if (selectedRes.error) console.error('MR selected load error', selectedRes.error)
 
       // Merge and de-duplicate current MR
       const currentMRMap = new Map<string, MR>()
-      ;[...(invitedMR||[]), ...((mrSelected||[]) as MR[])].forEach((r: MR) => currentMRMap.set(r.id, r))
+      ;[...invitedMR, ...mrSelected].forEach((r: MR) => currentMRMap.set(r.id, r))
       const currentMR = Array.from(currentMRMap.values())
 
       const poByContract = new Map<string,string>()
-      ;(poRows||[] as PurchaseOrderRow[]).forEach((p: PurchaseOrderRow)=>{ poByContract.set(p.contract_id, p.status || 'po_issued') })
+      ;(poRows||[]).forEach((p)=>{ poByContract.set(p.contract_id, p.status || 'po_issued') })
       const execByContract = new Map<string,string>()
-      ;(execRows||[] as JobExecutionRow[]).forEach((e: JobExecutionRow)=>{ execByContract.set(e.contract_id, e.status || 'not_started') })
+      ;(execRows||[]).forEach((e)=>{ execByContract.set(e.contract_id, e.status || 'not_started') })
       const quoteByContract = new Map<string, { status: string; total: number|null }>()
-      ;(quoteRows||[] as QuoteRow[]).forEach((q: QuoteRow)=>{ quoteByContract.set(q.contract_id, { status: q.status || 'requested', total: q.total_amount ?? null }) })
+      ;(quoteRows||[]).forEach((q)=>{ quoteByContract.set(q.contract_id, { status: q.status || 'requested', total: q.total_amount ?? null }) })
 
       const mapped: VendorContractRow[] = ((ctr||[]) as ServiceContractRow[]).map(r => {
         const quoteStatus = quoteByContract.get(r.id)?.status || null
@@ -142,7 +148,7 @@ export default function VendorJobsPage() {
       setRows([...mapped, ...currentMRMapped])
       
       // All Open Jobs: public visibility, not already invited/assigned to me
-      const { data: publicMR, error: pubErr } = await sb
+      const publicRes = await sb
         .from('maintenance_requests' as string)
         .select(`
           id,
@@ -157,11 +163,11 @@ export default function VendorJobsPage() {
         .eq('visibility', 'public')
         .eq('mms_status', 'vendor_routed')
         .order('created_at', { ascending: false })
-      if (pubErr) console.error('Public MR load error', pubErr)
+      if (publicRes.error) console.error('Public MR load error', publicRes.error)
 
       const invitedSet = new Set(requestIds)
-      const publicFiltered = ((publicMR || []) as MR[]).filter((r: MR) => r.selected_vendor_id !== user.id && !invitedSet.has(r.id))
-
+      const publicFiltered = ((publicRes.data || []) as MR[]).filter((r: MR) => r.selected_vendor_id !== user.id && !invitedSet.has(r.id))
+      
       const availMapped: VendorContractRow[] = (publicFiltered as MR[]).map((req: MR) => ({
         id: req.id,
         title: req.title || 'Maintenance Request',

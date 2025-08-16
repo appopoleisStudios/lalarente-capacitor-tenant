@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
@@ -87,6 +87,58 @@ export type Database = {
           {
             foreignKeyName: "contract_templates_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dedicated_vendors: {
+        Row: {
+          category_id: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          priority: number | null
+          property_id: string
+          vendor_id: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          priority?: number | null
+          property_id: string
+          vendor_id: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          priority?: number | null
+          property_id?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dedicated_vendors_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "service_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dedicated_vendors_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dedicated_vendors_vendor_id_fkey"
+            columns: ["vendor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -335,61 +387,168 @@ export type Database = {
           },
         ]
       }
+      maintenance_request_audit_logs: {
+        Row: {
+          actor_id: string | null
+          created_at: string | null
+          data: Json | null
+          event: string
+          id: string
+          request_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string | null
+          data?: Json | null
+          event: string
+          id?: string
+          request_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string | null
+          data?: Json | null
+          event?: string
+          id?: string
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_request_audit_logs_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_request_audit_logs_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maintenance_requests: {
         Row: {
+          acknowledged_at: string | null
           actual_cost: number | null
+          category_id: string | null
           completed_date: string | null
           created_at: string | null
           description: string
           estimated_cost: number | null
           id: string
           images: string[] | null
+          mms_status: string | null
+          owner_id: string | null
+          po_id: string | null
           priority: string | null
           property_id: string | null
+          quote_deadline: string | null
           scheduled_date: string | null
+          selected_quote_id: string | null
+          selected_vendor_id: string | null
           status: Database["public"]["Enums"]["maintenance_status"] | null
           tenant_id: string | null
           title: string
           vendor_id: string | null
+          vendor_routed_at: string | null
+          visibility: string | null
         }
         Insert: {
+          acknowledged_at?: string | null
           actual_cost?: number | null
+          category_id?: string | null
           completed_date?: string | null
           created_at?: string | null
           description: string
           estimated_cost?: number | null
           id?: string
           images?: string[] | null
+          mms_status?: string | null
+          owner_id?: string | null
+          po_id?: string | null
           priority?: string | null
           property_id?: string | null
+          quote_deadline?: string | null
           scheduled_date?: string | null
+          selected_quote_id?: string | null
+          selected_vendor_id?: string | null
           status?: Database["public"]["Enums"]["maintenance_status"] | null
           tenant_id?: string | null
           title: string
           vendor_id?: string | null
+          vendor_routed_at?: string | null
+          visibility?: string | null
         }
         Update: {
+          acknowledged_at?: string | null
           actual_cost?: number | null
+          category_id?: string | null
           completed_date?: string | null
           created_at?: string | null
           description?: string
           estimated_cost?: number | null
           id?: string
           images?: string[] | null
+          mms_status?: string | null
+          owner_id?: string | null
+          po_id?: string | null
           priority?: string | null
           property_id?: string | null
+          quote_deadline?: string | null
           scheduled_date?: string | null
+          selected_quote_id?: string | null
+          selected_vendor_id?: string | null
           status?: Database["public"]["Enums"]["maintenance_status"] | null
           tenant_id?: string | null
           title?: string
           vendor_id?: string | null
+          vendor_routed_at?: string | null
+          visibility?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "maintenance_requests_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "service_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_requests_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_requests_po_id_fkey"
+            columns: ["po_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "maintenance_requests_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_requests_selected_quote_id_fkey"
+            columns: ["selected_quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_requests_selected_vendor_id_fkey"
+            columns: ["selected_vendor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -548,6 +707,9 @@ export type Database = {
           fica_documents: Json | null
           full_name: string
           id: string
+          onboarding_owner_done: boolean
+          onboarding_tenant_done: boolean
+          onboarding_vendor_done: boolean
           phone: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string | null
@@ -561,6 +723,9 @@ export type Database = {
           fica_documents?: Json | null
           full_name: string
           id: string
+          onboarding_owner_done?: boolean
+          onboarding_tenant_done?: boolean
+          onboarding_vendor_done?: boolean
           phone?: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
@@ -574,6 +739,9 @@ export type Database = {
           fica_documents?: Json | null
           full_name?: string
           id?: string
+          onboarding_owner_done?: boolean
+          onboarding_tenant_done?: boolean
+          onboarding_vendor_done?: boolean
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
@@ -1436,6 +1604,61 @@ export type Database = {
           },
         ]
       }
+      vendor_quote_requests: {
+        Row: {
+          created_at: string | null
+          id: string
+          quote_id: string | null
+          request_id: string
+          responded_at: string | null
+          response_deadline: string
+          status: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          quote_id?: string | null
+          request_id: string
+          responded_at?: string | null
+          response_deadline: string
+          status?: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          quote_id?: string | null
+          request_id?: string
+          responded_at?: string | null
+          response_deadline?: string
+          status?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_quote_requests_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_quote_requests_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_quote_requests_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendor_service_areas: {
         Row: {
           city: string | null
@@ -1533,8 +1756,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_quote_and_generate_po: {
+        Args: { quote_id: string }
+        Returns: string
+      }
       check_duplicate_id_number: {
-        Args: { new_id_number: string; exclude_user_id?: string }
+        Args: { exclude_user_id?: string; new_id_number: string }
         Returns: boolean
       }
       check_email_exists: {
@@ -1557,49 +1784,91 @@ export type Database = {
           profile_details: Json
         }[]
       }
+      get_owner_maintenance_requests: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          acknowledged_at: string | null
+          actual_cost: number | null
+          category_id: string | null
+          completed_date: string | null
+          created_at: string | null
+          description: string
+          estimated_cost: number | null
+          id: string
+          images: string[] | null
+          mms_status: string | null
+          owner_id: string | null
+          po_id: string | null
+          priority: string | null
+          property_id: string | null
+          quote_deadline: string | null
+          scheduled_date: string | null
+          selected_quote_id: string | null
+          selected_vendor_id: string | null
+          status: Database["public"]["Enums"]["maintenance_status"] | null
+          tenant_id: string | null
+          title: string
+          vendor_id: string | null
+          vendor_routed_at: string | null
+          visibility: string | null
+        }[]
+      }
       get_profile_minimal: {
         Args: { uid: string }
         Returns: {
-          id: string
-          full_name: string
           email: string
+          full_name: string
+          id: string
         }[]
       }
       get_profiles_by_id_and_role: {
         Args: { id_num: string; user_role: string }
         Returns: {
-          id: string
-          full_name: string
-          email: string
-          role: string
-          id_number: string
           created_at: string
+          email: string
+          full_name: string
+          id: string
+          id_number: string
+          role: string
         }[]
       }
       get_profiles_by_id_number: {
         Args: { id_num: string }
         Returns: {
-          id: string
-          full_name: string
-          email: string
-          role: string
-          id_number: string
           created_at: string
+          email: string
+          full_name: string
+          id: string
+          id_number: string
+          role: string
         }[]
       }
       log_service_contract_event: {
-        Args: { p_contract_id: string; p_event: string; p_data?: Json }
+        Args: { p_contract_id: string; p_data?: Json; p_event: string }
         Returns: undefined
       }
       log_tenancy_contract_event: {
-        Args: { p_contract_id: string; p_event: string; p_data?: Json }
+        Args: { p_contract_id: string; p_data?: Json; p_event: string }
+        Returns: undefined
+      }
+      route_maintenance_request_to_vendors: {
+        Args: { p_quote_deadline_hours?: number; p_request_id: string }
         Returns: undefined
       }
       search_tenants_by_name: {
         Args: { q: string }
         Returns: {
-          id: string
           full_name: string
+          id: string
+        }[]
+      }
+      search_vendors_minimal: {
+        Args: { p_limit?: number; p_term: string }
+        Returns: {
+          email: string
+          full_name: string
+          id: string
+          phone: string
         }[]
       }
       validate_email_format: {

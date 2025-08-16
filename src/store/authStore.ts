@@ -141,7 +141,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         fica_documents: null,
         bank_details: null,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        onboarding_owner_done: false,
+        onboarding_tenant_done: false,
+        onboarding_vendor_done: false
       }
 
       set({ 
@@ -274,7 +277,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         },
         bank_details: null,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        onboarding_owner_done: false,
+        onboarding_tenant_done: false,
+        onboarding_vendor_done: false
       }
 
       set({ 
@@ -408,7 +414,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         },
         bank_details: null,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        onboarding_owner_done: false,
+        onboarding_tenant_done: false,
+        onboarding_vendor_done: false
       }
 
       console.log('Profile created successfully, setting user state...')
@@ -516,22 +525,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                  } else {
            console.log('Using basic profile data due to JSON field issues')
            // Add missing fields with null values to satisfy TypeScript
-           const basicProfileWithDefaults = {
+           const basicProfileWithDefaults: Profile = {
              ...profileData,
              email: null,
              fica_documents: null,
-             bank_details: null
+             bank_details: null,
+             onboarding_owner_done: false,
+             onboarding_tenant_done: false,
+             onboarding_vendor_done: false
            }
            set({ profile: basicProfileWithDefaults })
          }
              } catch (jsonError) {
          console.log('JSON fields fetch failed, using basic profile:', jsonError)
          // Add missing fields with null values to satisfy TypeScript
-         const basicProfileWithDefaults = {
+         const basicProfileWithDefaults: Profile = {
            ...profileData,
            email: null,
            fica_documents: null,
-           bank_details: null
+           bank_details: null,
+           onboarding_owner_done: false,
+           onboarding_tenant_done: false,
+           onboarding_vendor_done: false
          }
          set({ profile: basicProfileWithDefaults })
        }

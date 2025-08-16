@@ -50,6 +50,10 @@ function ContractDetailPageInner() {
 	const [statusPill, setStatusPill] = useState<'pending_signatures' | 'active' | 'completed' | string>('pending_signatures')
 	const [sigs, setSigs] = useState<{ signer_role: string; signed_at: string }[]>([])
 	const [audit, setAudit] = useState<{ action: string; timestamp: string; actor_role: string | null }[]>([])
+	// Service pricing & MMS (service contracts)
+	const [svcQuote, setSvcQuote] = useState<{ subtotal: number | null; total: number | null; status: string | null } | null>(null)
+	const [svcPO, setSvcPO] = useState<{ po_number?: string | null; status?: string | null; subtotal?: number | null; vat_amount?: number | null; platform_fee_amount?: number | null; total_amount?: number | null } | null>(null)
+	const [svcExec, setSvcExec] = useState<{ status: string | null } | null>(null)
 	// Financial summary (tenant)
 	const [financial, setFinancial] = useState<{ rentAmount?: number; depositAmount?: number; leaseStart?: string; leaseEnd?: string } | null>(null)
 	// Request changes UI
@@ -192,9 +196,9 @@ function ContractDetailPageInner() {
 					const tnc = row as TenancyContract
 					let leaseRes
 					if (tnc.lease_id) {
-						leaseRes = await supabase.from('leases').select('rent_amount,deposit_amount,lease_start,lease_end').eq('id', tnc.lease_id).maybeSingle()
+						leaseRes = await (supabase as any).from('leases').select('rent_amount,deposit_amount,lease_start,lease_end').eq('id', tnc.lease_id).maybeSingle()
 					} else {
-						leaseRes = await supabase
+						leaseRes = await (supabase as any)
 							.from('leases')
 							.select('rent_amount,deposit_amount,lease_start,lease_end')
 							.eq('tenant_id', tnc.tenant_id)
@@ -216,6 +220,38 @@ function ContractDetailPageInner() {
                 } catch {
                     setFinancial(null)
                 }
+			} else if (kind === 'service') {
+				// Service pricing & MMS cards: latest Quote, PO, Execution
+				try {
+					const [qRes, poRes, exRes] = await Promise.all([
+						(supabase as any)
+							.from('quotes')
+							.select('id,status,subtotal,total_amount,created_at')
+							.eq('contract_id', (row as ServiceContract).id)
+							.order('created_at', { ascending: false })
+							.limit(1),
+						(supabase as any)
+							.from('purchase_orders')
+							.select('id,po_number,status,subtotal,vat_amount,platform_fee_amount,total_amount,created_at')
+							.eq('contract_id', (row as ServiceContract).id)
+							.order('created_at', { ascending: false })
+							.limit(1),
+						(supabase as any)
+							.from('job_executions')
+							.select('id,status,created_at')
+							.eq('contract_id', (row as ServiceContract).id)
+							.order('created_at', { ascending: false })
+							.limit(1),
+					])
+					const q = Array.isArray(qRes?.data) ? qRes.data[0] : null
+					setSvcQuote(q ? { subtotal: q.subtotal ?? null, total: q.total_amount ?? null, status: q.status ?? null } : null)
+					const po = Array.isArray(poRes?.data) ? poRes.data[0] : null
+					setSvcPO(po ? { po_number: po.po_number ?? null, status: po.status ?? null, subtotal: po.subtotal ?? null, vat_amount: po.vat_amount ?? null, platform_fee_amount: po.platform_fee_amount ?? null, total_amount: po.total_amount ?? null } : null)
+					const ex = Array.isArray(exRes?.data) ? exRes.data[0] : null
+					setSvcExec(ex ? { status: ex.status ?? null } : null)
+				} catch {
+					setSvcQuote(null); setSvcPO(null); setSvcExec(null)
+				}
 			}
 			// Signatures list
 			const sigTable = kind === 'service' ? 'service_contract_signatures' : 'tenancy_contract_signatures'
@@ -385,9 +421,9 @@ function ContractDetailPageInner() {
 	}
 
 	return (
-		<div className={`${role === 'owner' ? 'bg-gradient-to-b from-blue-50 to-white' : role === 'tenant' ? 'bg-gradient-to-b from-green-50 to-white' : ''}`}>
+		<div className={"mobile-app w-[100vw] max-w-[100vw] mx-0 min-h-screen pb-24 overflow-x-hidden bg-white"}>
 			{/* Header */}
-			<div className={`px-4 py-4 ${role === 'owner' ? 'bg-gradient-to-r from-blue-700 to-blue-600' : role === 'tenant' ? 'bg-gradient-to-r from-emerald-600 to-emerald-500' : 'bg-slate-800'}`}>
+			<div className={`px-4 py-4 ${role === 'owner' ? 'bg-gradient-to-r from-blue-700 to-blue-600' : role === 'tenant' ? 'bg-gradient-to-r from-emerald-600 to-emerald-500' : 'bg-gradient-to-r from-indigo-600 to-indigo-500'}`}>
 				<div className="max-w-3xl mx-auto text-white">
 					<div className="text-xl font-bold">Contract Details</div>
 					<div className="mt-1 text-xs opacity-90">
@@ -397,7 +433,7 @@ function ContractDetailPageInner() {
 			</div>
 
 			{/* Body */}
-			<div className="max-w-3xl mx-auto p-4 space-y-4">
+			<div className="max-w-sm mx-auto p-4 space-y-4">
 				{loading && <div>Loading...</div>}
 				{msg && <div className="p-3 rounded border border-gray-200 bg-gray-50 text-gray-700">{msg}</div>}
 				{!contractId && <div className="text-gray-600">No contract selected. Append ?id=&lt;uuid&gt; to the URL.</div>}
@@ -422,7 +458,13 @@ function ContractDetailPageInner() {
 						{financial && (
 							<FinancialSummaryCard rentAmount={financial.rentAmount} depositAmount={financial.depositAmount} leaseStart={financial.leaseStart} leaseEnd={financial.leaseEnd} />
 						)}
-						<ProgressCard status={statusPill} sigs={sigs} />
+						{isService && (
+							<ServicePriceBreakdownCard quote={svcQuote} po={svcPO} />
+						)}
+						{isService && (
+							<POExecutionStatusCard po={svcPO} exec={svcExec} />
+						)}
+						<ProgressCard status={statusPill} sigs={sigs} isService={isService} />
 						{statusPill === 'pending_signatures' && !hasSigned(currentParty || undefined) && (
 							<SignatureRequiredCard
 								activeTab={activeTab}
@@ -552,6 +594,53 @@ function FinancialSummaryCard({ rentAmount, depositAmount, leaseStart, leaseEnd 
   )
 }
 
+function ServicePriceBreakdownCard({ quote, po }: { quote: { subtotal: number | null; total: number | null; status: string | null } | null; po: { po_number?: string | null; status?: string | null; subtotal?: number | null; vat_amount?: number | null; platform_fee_amount?: number | null; total_amount?: number | null } | null }) {
+  const currency = (n?: number | null) => (typeof n === 'number' ? `R ${Number(n).toLocaleString()}` : '-')
+  const isVatShown = typeof (po?.vat_amount ?? null) === 'number' && Number(po?.vat_amount) > 0
+  return (
+    <div className="bg-white rounded-xl border p-4">
+      <div className="text-lg font-semibold text-gray-900 mb-3">Price Breakdown</div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <div className="text-sm text-gray-600">Latest Quote</div>
+          <div className="text-xs text-gray-500 mb-1">Status: {quote?.status || '—'}</div>
+          <div className="flex items-center justify-between text-sm text-gray-700"><span>Subtotal</span><span>{currency(quote?.subtotal)}</span></div>
+          <div className="flex items-center justify-between text-sm text-gray-700"><span>Total</span><span className="font-semibold text-gray-900">{currency(quote?.total)}</span></div>
+        </div>
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <div className="text-sm text-gray-600">Purchase Order</div>
+          <div className="text-xs text-gray-500 mb-1">{po?.po_number ? `PO ${po.po_number}` : 'Not issued yet'}</div>
+          <div className="flex items-center justify-between text-sm text-gray-700"><span>Subtotal</span><span>{currency(po?.subtotal)}</span></div>
+          {isVatShown && (
+            <div className="flex items-center justify-between text-sm text-gray-700"><span>VAT</span><span>{currency(po?.vat_amount || 0)}</span></div>
+          )}
+          <div className="flex items-center justify-between text-sm text-gray-700"><span>Platform Fee</span><span>{currency(po?.platform_fee_amount || 0)}</span></div>
+          <div className="flex items-center justify-between text-sm text-gray-700"><span>Total</span><span className="font-semibold text-gray-900">{currency(po?.total_amount)}</span></div>
+        </div>
+      </div>
+      {!isVatShown && (
+        <div className="text-xs text-gray-500 mt-2">Vendor not VAT‑registered; VAT line hidden.</div>
+      )}
+    </div>
+  )
+}
+
+function POExecutionStatusCard({ po, exec }: { po: { status?: string | null } | null; exec: { status: string | null } | null }) {
+  const statusChip = (label: string, c: string) => (<span className={`px-2 py-1 rounded-full text-xs font-medium ${c}`}>{label}</span>)
+  const poStatus = po?.status || 'none'
+  const execStatus = exec?.status || 'not_started'
+  return (
+    <div className="bg-white rounded-xl border p-4">
+      <div className="text-lg font-semibold text-gray-900 mb-3">Job Status</div>
+      <div className="flex items-center gap-2 text-xs">
+        {poStatus === 'po_issued' ? statusChip('PO Issued', 'bg-indigo-100 text-indigo-800') : statusChip('PO Not Issued', 'bg-gray-100 text-gray-600')}
+        {execStatus === 'in_progress' && statusChip('In Progress', 'bg-emerald-100 text-emerald-800')}
+        {execStatus === 'completed' && statusChip('Completed', 'bg-slate-100 text-slate-700')}
+      </div>
+    </div>
+  )
+}
+
 function InlineSign({ contractId, isService, status }: { contractId: string; isService: boolean; status: string }) {
   const { profile } = useAuthStore()
   const isOwner = profile?.role === 'owner'
@@ -668,9 +757,10 @@ function PartiesCard({ ownerName, tenantName, vendorName, ownerEmail, tenantEmai
   )
 }
 
-function ProgressCard({ status, sigs }: { status: string; sigs: { signer_role: string; signed_at: string }[] }) {
+function ProgressCard({ status, sigs, isService }: { status: string; sigs: { signer_role: string; signed_at: string }[]; isService?: boolean }) {
   const ownerSig = sigs.find(s => s.signer_role === 'owner')
   const tenantSig = sigs.find(s => s.signer_role === 'tenant')
+  const vendorSig = sigs.find(s => s.signer_role === 'vendor')
 
   type StepState = 'done' | 'current' | 'pending'
   const stateFor = (hasSigned: boolean, isCurrent: boolean): StepState => hasSigned ? 'done' : (isCurrent ? 'current' : 'pending')
@@ -687,13 +777,33 @@ function ProgressCard({ status, sigs }: { status: string; sigs: { signer_role: s
   const stepOwner = { key: 'signed_owner', label: 'Signed by Owner', sub: signedByOwnerState === 'current' ? 'Waiting for signature' : (signedByOwnerState === 'pending' ? 'Pending' : undefined), state: signedByOwnerState, when: ownerSig?.signed_at }
   const stepTenant = { key: 'signed_tenant', label: 'Signed by Tenant', sub: signedByTenantState === 'current' ? 'Waiting for signature' : (signedByTenantState === 'pending' ? 'Pending' : undefined), state: signedByTenantState, when: tenantSig?.signed_at }
   const thirdIsOwner = ownerSigned && !tenantSigned
-  const steps: { key: string; label: string; sub?: string; state: StepState; when?: string }[] = [
-    { key: 'created', label: 'Created', state: 'done' },
-    { key: 'sent', label: 'Sent', state: 'done' },
-    thirdIsOwner ? stepOwner : stepTenant,
-    thirdIsOwner ? stepTenant : stepOwner,
-    { key: 'active', label: 'Active', sub: activeState === 'pending' ? 'Pending' : undefined, state: activeState },
-  ]
+  let steps: { key: string; label: string; sub?: string; state: StepState; when?: string }[] = []
+  if (isService) {
+    const stepVendor: { key: string; label: string; sub?: string; state: StepState; when?: string } = {
+      key: 'signed_vendor',
+      label: 'Signed by Vendor',
+      sub: !vendorSig ? 'Waiting for signature' : undefined,
+      state: vendorSig ? 'done' : 'pending',
+      when: vendorSig?.signed_at,
+    }
+    // Service contracts: Created → Sent → Signed by Owner → Signed by Vendor → Active (or vendor first)
+    const vendorFirst = !!vendorSig && !ownerSig
+    steps = [
+      { key: 'created', label: 'Created', state: 'done' },
+      { key: 'sent', label: 'Sent', state: 'done' },
+      vendorFirst ? stepVendor : stepOwner,
+      vendorFirst ? stepOwner : stepVendor,
+      { key: 'active', label: 'Active', sub: activeState === 'pending' ? 'Pending' : undefined, state: activeState },
+    ]
+  } else {
+    steps = [
+      { key: 'created', label: 'Created', state: 'done' },
+      { key: 'sent', label: 'Sent', state: 'done' },
+      thirdIsOwner ? stepOwner : stepTenant,
+      thirdIsOwner ? stepTenant : stepOwner,
+      { key: 'active', label: 'Active', sub: activeState === 'pending' ? 'Pending' : undefined, state: activeState },
+    ]
+  }
 
   const StepIcon = ({ state }: { state: StepState }) => {
     if (state === 'done') {

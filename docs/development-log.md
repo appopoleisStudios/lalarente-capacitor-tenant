@@ -167,6 +167,122 @@ This log tracks all development work, challenges, and solutions for the Lala Ren
 
 ---
 
+## [2025-08-16] – Dedicated Vendors Model Finalization & Routing Defaults
+**Status:** Completed  
+**Description:** Confirmed business meaning and implementation approach for Dedicated Vendors. These represent long‑term/retainer vendors linked to an owner per property (optionally by service category), typically backed by an active service contract. Clarified default routing behavior and UI backlog.
+
+**What we finalized:**
+- Dedicated Vendors definition: owner’s preferred/retainer vendors per property (+ optional `category_id`).
+- Lifecycle linkage: activating a service contract Owner↔Vendor for a property/category should create or re‑enable a corresponding `dedicated_vendors` row (`is_active=true`, `priority` from contract if available). Ending/terminating the contract should set `is_active=false`.
+- Manual curation allowed: owners can add/remove/toggle preferred vendors even before a contract; when a contract is later signed, we link/sync the record.
+
+**Routing behavior (MMS):**
+- When owner selects “Invite Vendors” without listing specific vendors, the system auto‑invites all active dedicated vendors for the request’s `property_id` (and `category_id` when set) via `route_maintenance_request_to_vendors`.
+- If no dedicated vendors exist, fallback is open market (`visibility='public'`).
+
+**RLS/DB status (already in repo):**
+- `dedicated_vendors` table with indices and RLS policies for owner manage + vendor read (see `016_mms_flow_integration.sql`).
+- `route_maintenance_request_to_vendors` RPC inserts `vendor_quote_requests` from `dedicated_vendors` and advances MMS status to `vendor_routed`.
+
+**UI backlog additions:**
+- Property → “Dedicated Vendors” tab: list, filter by category, show linked contract, priority chip, toggle `is_active`, add/remove vendors.
+- Owner Maintenance → New Request: “Invite my dedicated vendors” default toggle; if none exist, show hint that request will be public.
+- Service Contract activation/termination hook: reflect in `dedicated_vendors` automatically.
+
+**Business rules notes:**
+- VAT line appears only if vendor is VAT‑registered; many vendors won’t charge VAT. Platform fee applies to vendor payout calculation and is always shown to vendor.
+
+**Next Steps:**
+- Implement Property→Dedicated Vendors management UI with RLS‑safe queries or SECURITY DEFINER RPCs for list/mutate.
+- Hook contract activation/termination to toggle `dedicated_vendors.is_active`.
+- Owner New Request form: add “Invite my dedicated vendors” toggle and category scoping.
+- Extend vendor contract detail UI to show PO/Execution/Closure sections with VAT/platform fee math.
+
+---
+
+## [2025-08-16] – Fetch Performance Optimizations (Vendor Jobs, Owner Maintenance)
+**Status:** Completed  
+**Description:** Reduced perceived data loading lag by parallelizing independent Supabase calls and batching per-row counts into a single query. Maintains DB-first/RLS-safe hydration (no embedded joins across RLS tables) and minimizes selected columns.
+
+**Changes:**
+- Vendor Jobs (`src/app/dashboard/vendor/jobs/page.tsx`)
+  - Parallelized queries for: `service_contracts`, `purchase_orders`, `job_executions`, `quotes`, and `vendor_quote_requests` using `Promise.all`.
+  - Parallelized the two `maintenance_requests` queries (invited vs selected_vendor) and merged results client-side.
+  - Kept selects to essential columns only.
+
+- Owner Maintenance List (`src/app/dashboard/owner/maintenance/page.tsx`)
+  - Replaced N per-request quote count calls with one batched select of `quotes` by `request_id`; built a count map and merged counts locally.
+  - Preserved base-then-hydrate pattern to avoid RLS recursion issues.
+
+**Impact:**
+- Fewer network round trips, reduced sequential latency on initial load, smoother UI on both pages.
+
+**Guidelines (applied and to keep):**
+- Use `Promise.all` for independent fetches; only request needed columns.
+- Avoid embedded joins across RLS-protected tables; hydrate in separate calls or via SECURITY DEFINER RPCs when needed.
+- Batch aggregations (counts/sums) to a single grouped call or map from a single select.
+
+**Next Targets:**
+- Review other pages for similar batching opportunities and apply the same pattern.
+
+---
+
+## [2025-08-16] – Owner Dashboard: My Vendors Quick Action + Live Data Wiring
+**Status:** Completed  
+**Description:** Preserved the original Owner dashboard layout, added a compact "My Vendors" quick action, and removed static mocks in favor of optimized live queries.
+
+**Changes:**
+- `src/app/dashboard/owner/page.tsx`
+  - Added a small quick action card "My Vendors" linking to `/dashboard/owner/dedicated-vendors` placed above "Active Maintenance" and also added to the Portfolio Summary action row.
+  - Replaced mock stats with batched/parallel Supabase queries:
+    - Portfolio metrics: properties → active leases (occupied), payments this month (income)
+    - Documents counts: leases, purchase orders for owner service contracts, quotes on owner requests
+    - Active Maintenance: recent owner maintenance requests
+    - Recent Activity: latest maintenance audit events
+  - All selects are column-scoped; independent queries parallelized with `Promise.all`.
+
+**Impact:**
+- Dashboard now reflects seeded data dynamically without removing any section, and loads faster due to fewer sequential calls.
+
+---
+
+## [2025-08-16] – Dedicated Vendors Page: Two Expandable Sections (All + Filtered Manage)
+**Status:** Completed  
+**Description:** Implemented owner-friendly management with a top aggregate view and a lower filtered/manage section.
+
+**Changes:**
+- `src/app/dashboard/owner/dedicated-vendors/page.tsx`
+  - New top section "All Dedicated Vendors" (default open) aggregating across all owner properties; batched hydration for vendors/properties/categories; actions: toggle Active, Remove.
+  - Existing property/category filtered section retained below with Add Vendor (by ID), priority, Active/Remove.
+  - Optimized with minimal column selects and `Promise.all`; RLS-safe (no embedded joins across protected tables).
+
+**Impact:**
+- Single page shows the full roster and precise per-property/category management, reducing navigation and improving clarity.
+
+---
+
+## [2025-08-16] – RLS-safe Vendor Search + Duplicate Prevention (Email Unique, Contact Required)
+**Status:** Completed (UI + RPC) / Partially Applied (DB)  
+**Description:** Owner/vendor search uses SECURITY DEFINER RPC to bypass RLS safely. Prevent duplicates via email unique (partial) and a trigger enforcing at least one contact (email or phone). Deferred phone uniqueness due to demo phones being reused.
+
+**Changes:**
+- DB:
+  - RPC `public.search_vendors_minimal(p_term text, p_limit int)` added (SECURITY DEFINER).
+  - Partial unique index on `lower(email)` where `email is not null`.
+  - Trigger `trg_vendor_contact` to ensure vendors always have email or phone.
+  - Deferred: phone unique index until demo numbers are cleaned.
+- UI:
+  - `src/app/dashboard/owner/maintenance/new/page.tsx`: Invite Vendors uses RPC search; click result to add invite.
+  - `src/app/dashboard/owner/dedicated-vendors/page.tsx`: Search via RPC; click Add to insert into `dedicated_vendors` with priority.
+
+**Impact:**
+- Search works for owners under RLS; future vendor duplicates by email are blocked; vendors must have at least one contact method.
+
+**Next:**
+- Add phone normalization and unique index post demo-data cleanup.
+
+---
+
 ## [2025-08-14] – Android APK build (Capacitor) on Windows/OneDrive
 **Status:** Completed  
 **Description:** Built Android APK via Gradle/Android Studio without breaking the static-export Next.js setup.

@@ -1,15 +1,20 @@
 import type { Options } from '@wdio/types'
+import path from 'path'
+import dotenv from 'dotenv'
 
-const isApk = !!process.env.ANDROID_APP
+// Load environment variables from .env.local
+dotenv.config({ path: path.join(__dirname, '../../.env.local') })
+
+const isApk = !!process.env.ANDROID_APP || true // Default to APK mode
 
 export const config: Options.Testrunner = {
   runner: 'local',
   specs: ['./specs/**/*.e2e.ts'],
   maxInstances: 1,
   logLevel: 'info',
-  waitforTimeout: 20000,
-  connectionRetryTimeout: 120000,
-  connectionRetryCount: 3,
+  waitforTimeout: 30000,
+  connectionRetryTimeout: 180000,
+  connectionRetryCount: 5,
   framework: 'mocha',
   reporters: ['spec'],
   mochaOpts: { ui: 'bdd', timeout: 240000 },
@@ -30,16 +35,17 @@ export const config: Options.Testrunner = {
       platformName: 'Android',
       'appium:automationName': 'UiAutomator2',
       ...(isApk
-        ? { 'appium:app': process.env.ANDROID_APP }
+        ? { 'appium:app': process.env.ANDROID_APP || path.join(__dirname, '../../android/app/build/outputs/apk/debug/app-debug.apk') }
         : {
             'appium:appPackage': process.env.ANDROID_APP_PACKAGE || 'com.lalarente.app',
             'appium:appActivity': process.env.ANDROID_APP_ACTIVITY || 'MainActivity',
           }),
-      'appium:newCommandTimeout': 180,
-      'appium:adbExecTimeout': 60000,
+             'appium:newCommandTimeout': 300,
+       'appium:adbExecTimeout': 120000,
       'appium:autoGrantPermissions': true,
       // We switch to WEBVIEW manually for stability
-      'appium:autoWebview': false,
+      'appium:autoWebview': true,
+      'appium:autoWebviewTimeout': 15000,
       // Set to your emulator or device
       'appium:deviceName': process.env.ANDROID_DEVICE || 'Android Emulator',
       'appium:udid': process.env.ANDROID_UDID,
@@ -48,5 +54,6 @@ export const config: Options.Testrunner = {
 }
 
 export default config
+
 
 

@@ -21,3 +21,4 @@ grant execute on function public.get_profile_minimal(uuid) to authenticated;
 
 
 
+

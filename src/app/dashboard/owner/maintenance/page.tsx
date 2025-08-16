@@ -103,22 +103,30 @@ export default function OwnerMaintenancePage() {
           }
         }
         
-        // Get quote counts for each request
-        const requestsWithQuotes = await Promise.all(
-          requestsBase.map(async (req: MRBase) => {
-            const { count } = await sb
-              .from('quotes')
-              .select('*', { count: 'exact', head: true })
-              .eq('request_id', req.id)
-            
-            return {
-              ...req,
-              property: req.property_id ? propertyMap[req.property_id] || null : null,
-              selected_vendor: req.selected_vendor_id ? vendorMap[req.selected_vendor_id] || null : null,
-              quotes_count: count || 0
-            }
-          })
-        )
+        // Get quote counts for each request in ONE batched query
+        const requestIdsForCounts = requestsBase.map(r => r.id)
+        let quotesCountMap: Record<string, number> = {}
+        if (requestIdsForCounts.length > 0) {
+          const { data: quotesRows, error: quotesErr } = await sb
+            .from('quotes')
+            .select('request_id')
+            .in('request_id', requestIdsForCounts)
+          if (quotesErr) {
+            console.error('Owner maintenance quotes count batch error:', quotesErr)
+          } else {
+            quotesCountMap = (quotesRows || []).reduce((acc: Record<string, number>, q: { request_id: string }) => {
+              acc[q.request_id] = (acc[q.request_id] || 0) + 1
+              return acc
+            }, {})
+          }
+        }
+
+        const requestsWithQuotes = requestsBase.map((req: MRBase) => ({
+          ...req,
+          property: req.property_id ? propertyMap[req.property_id] || null : null,
+          selected_vendor: req.selected_vendor_id ? vendorMap[req.selected_vendor_id] || null : null,
+          quotes_count: quotesCountMap[req.id] || 0
+        }))
         
         setRequests(requestsWithQuotes)
       } catch (err) {

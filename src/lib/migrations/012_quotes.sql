@@ -88,3 +88,4 @@ DO $$ BEGIN
       WITH CHECK (EXISTS (SELECT 1 FROM public.quotes q WHERE q.id = quote_lines.quote_id AND q.vendor_id = (SELECT auth.uid())));
   END IF;
 END $$;
+

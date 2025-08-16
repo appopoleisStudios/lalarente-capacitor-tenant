@@ -556,6 +556,7 @@ create table if not exists public.dedicated_vendors (
   category_id uuid null references public.service_categories(id) on delete set null,
   vendor_id uuid not null references public.profiles(id) on delete cascade,
   priority smallint default 1,
+  is_active boolean default true,
   created_at timestamptz default now()
 );
 
@@ -633,6 +634,18 @@ Security/RLS: All new tables follow party‑based visibility (owner, vendor, and
 
 - Our `service_contracts` remain the agreement backbone. We insert PO and Execution/Closure between signatures and completion.
 - Existing audit, signatures, and document integrity (PDF/hash) continue unchanged.
+
+### 7.5 Dedicated Vendors – Business Semantics & Routing Defaults
+
+- Definition: Dedicated Vendors are long‑term/retainer vendors preferred by an owner for a particular `property_id` (optionally scoped by `category_id`). They are often backed by an active service contract but can be curated manually pre‑contract.
+- Contract linkage: Activating a service contract should create or reactivate the matching `dedicated_vendors` row (`is_active=true`, `priority` from contract if applicable). Ending/terminating the contract should set `is_active=false`.
+- Routing defaults: When an owner selects “Invite Vendors” without specifying individuals, the system auto‑invites all active dedicated vendors for that property/category via `route_maintenance_request_to_vendors`. If none exist, the request defaults to open market (`visibility='public'`).
+- RLS: Owners manage rows for properties they own; vendors can read rows where `vendor_id = auth.uid()`. See `016_mms_flow_integration.sql` for indices and policies.
+
+### 7.6 Financial Rules (VAT and Platform Fee)
+
+- VAT line appears only if the vendor is VAT‑registered (store `vendor.vat_registered` and optional `vat_number`). Many vendors will not charge VAT.
+- Platform fee applies to all vendor payouts (e.g., 10–20%). UI shows customer total, VAT (if applicable), discount, platform fee, and vendor payout calculation.
 
 ### 7.5 Roadmap Adjustments
 

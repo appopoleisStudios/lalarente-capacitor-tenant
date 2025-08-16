@@ -40,3 +40,4 @@ export default function MetricsStrip({ activeJobs, thisMonth, earnings, rating, 
 }
 
 
+

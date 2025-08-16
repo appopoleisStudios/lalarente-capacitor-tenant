@@ -3,78 +3,155 @@
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 import ProtectedRoute from '@/components/ProtectedRoute'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import BottomNavbar from '@/components/BottomNavbar'
+import { supabase } from '@/lib/supabase'
 
 export default function OwnerDashboardPage() {
   const router = useRouter()
-  const { profile } = useAuthStore()
+  const { profile, user } = useAuthStore()
 
-  // Example data for widgets
-  const [portfolio] = useState({
-    totalUnits: 10,
-    occupied: 8,
-    vacant: 2,
-    monthIncome: 76000,
-    arrears: 7000,
-    occupancy: 80
+  // Derived metrics
+  const [metrics, setMetrics] = useState({
+    totalUnits: 0,
+    occupied: 0,
+    vacant: 0,
+    monthIncome: 0,
+    arrears: 0,
+    occupancy: 0
   })
-  const [analytics] = useState({
-    ytdIncome: 430000,
-    avgOccupancy: 86,
-    late: 2,
-    repairsOpen: 4
+
+  const [documentsCounts, setDocumentsCounts] = useState({
+    leases: 0,
+    invoices: 0,
+    quotes: 0,
+    tax: 0,
+    compliance: 0
   })
-  const [maintenance] = useState([
-    { title: 'Geyser Burst', unit: 'Rosebank Lofts 5C', status: 'Open', vendor: 'FixItNow', quote: 2000, invoice: 2100, color: 'blue-500' },
-    { title: 'Leakage', unit: 'Sandton Villas 3A', status: 'Quote received', vendor: 'WaterPros', quote: 1250, invoice: null, color: 'yellow-500' }
-  ])
-  const [documents] = useState([
-    { name: 'Lease Contracts', icon: 'fas fa-file-signature', type: 'lease', count: 7, info: 'Active/Past' },
-    { name: 'Invoices', icon: 'fas fa-file-invoice-dollar', type: 'invoice', count: 6, info: 'Latest' },
-    { name: 'Vendor Quotes', icon: 'fas fa-file-contract', type: 'quote', count: 3, info: 'For Review' },
-    { name: 'Tax Reports', icon: 'fas fa-balance-scale', type: 'tax', count: 2, info: 'Annual/CSV' },
-    { name: 'Compliance Docs', icon: 'fas fa-shield-alt', type: 'compliance', count: 5, info: 'FICA, COC' }
-  ])
-  const [applicants] = useState([
-    {
-      avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-      name: 'Mpumi Ndlovu',
-      property: 'Rosebank Lofts',
-      status: 'Pending',
-      date: '1h ago'
-    },
-    {
-      avatar: 'https://randomuser.me/api/portraits/men/65.jpg',
-      name: 'Malik Jacobs',
-      property: 'Sandton View',
-      status: 'Approved',
-      date: '3h ago'
-    },
-    {
-      avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-      name: 'Andile Mokoena',
-      property: 'Umhlanga Heights',
-      status: 'Pending',
-      date: '4h ago'
-    },
-    {
-      avatar: 'https://randomuser.me/api/portraits/women/54.jpg',
-      name: 'Megan Louw',
-      property: 'Central Park Villas',
-      status: 'Approved',
-      date: 'Today'
+
+  type MRList = { id: string; title: string; property_label: string; status: string; quote?: number|null; invoice?: number|null; color?: string }
+  const [maintenance, setMaintenance] = useState<MRList[]>([])
+
+  type Applicant = { avatar: string; name: string; property: string; status: string; date: string }
+  const [applicants] = useState<Applicant[]>([])
+
+  type ActivityRow = { icon: string; color: string; label: string; value: string; date: string }
+  const [recentActivity, setRecentActivity] = useState<ActivityRow[]>([])
+
+  useEffect(() => {
+    if (!user) return
+    const load = async () => {
+      // Step 1: fetch owner properties (ids + titles)
+      const { data: props } = await supabase
+        .from('properties')
+        .select('id,title')
+        .eq('owner_id', user.id)
+        .order('title')
+      const propertyIds = (props || []).map(p => p.id)
+      const totalUnits = propertyIds.length
+
+      // Step 2: in parallel, fetch active leases count, month income, and maintenance list
+      const startOfMonth = new Date(); startOfMonth.setDate(1); startOfMonth.setHours(0,0,0,0)
+      const startISO = startOfMonth.toISOString()
+
+      const [leasesCountRes, paidRes, mrRes] = await Promise.all([
+        propertyIds.length > 0
+          ? supabase.from('leases').select('*', { count: 'exact', head: true }).in('property_id', propertyIds)
+              .lte('lease_start', new Date().toISOString()).gte('lease_end', new Date().toISOString())
+          : Promise.resolve({ count: 0 }),
+        propertyIds.length > 0
+          ? supabase.from('payments').select('amount,property_id,paid_date,status')
+              .in('property_id', propertyIds)
+              .gte('paid_date', startISO)
+              .eq('status', 'paid')
+          : Promise.resolve({ data: [] }),
+        supabase
+          .from('maintenance_requests')
+          .select('id,title,priority,mms_status,created_at,property_id')
+          .eq('owner_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(5)
+      ])
+
+      const occupied = (leasesCountRes as { count: number }).count || 0
+      const vacant = Math.max(totalUnits - occupied, 0)
+      const monthIncome = (paidRes.data || []).reduce((sum: number, r: { amount: number }) => sum + (Number(r.amount) || 0), 0)
+      const occupancy = totalUnits > 0 ? Math.round((occupied / totalUnits) * 100) : 0
+
+      setMetrics({ totalUnits, occupied, vacant, monthIncome, arrears: 0, occupancy })
+
+      // Step 3: documents counts (batched)
+      const [leasesCountOnly, scRes] = await Promise.all([
+        propertyIds.length > 0
+          ? supabase.from('leases').select('*', { count: 'exact', head: true }).in('property_id', propertyIds)
+          : Promise.resolve({ count: 0 }),
+        supabase.from('service_contracts').select('id').eq('owner_id', user.id)
+      ])
+      const contractIds = (scRes.data || []).map((r: { id: string }) => r.id)
+      const [poRes, ownerMRRes, quotesRes] = await Promise.all([
+        contractIds.length > 0
+          ? supabase.from('purchase_orders').select('id,contract_id').in('contract_id', contractIds)
+          : Promise.resolve({ data: [] }),
+        supabase.from('maintenance_requests').select('id').eq('owner_id', user.id),
+        // quotes for owner requests
+        supabase.from('quotes').select('id,request_id')
+      ])
+      const ownerRequestIds = (ownerMRRes.data || []).map((r: { id: string }) => r.id)
+      const quotesCount = (quotesRes.data || []).filter((q: { request_id: string|null }) => q.request_id && ownerRequestIds.includes(q.request_id)).length
+      setDocumentsCounts({
+        leases: (leasesCountOnly as { count: number }).count || 0,
+        invoices: (poRes.data || []).length,
+        quotes: quotesCount,
+        tax: 0,
+        compliance: 0
+      })
+
+      // Step 4: map maintenance quick view items
+      const mrList = (mrRes.data || []).map((r: { id: string; title: string; priority: string | null; mms_status: string | null }) => ({
+        id: r.id,
+        title: r.title,
+        property_label: '',
+        status: r.mms_status || 'open',
+        quote: null,
+        invoice: null,
+        color: (r.priority || 'medium') === 'high' ? 'red-500' : (r.priority || 'medium') === 'low' ? 'green-500' : 'yellow-500'
+      }))
+      setMaintenance(mrList)
+
+      // Step 5: recent activity (last 5 audit events on owner's requests)
+      const { data: ownerReqs } = await supabase.from('maintenance_requests').select('id').eq('owner_id', user.id)
+      const reqIds = (ownerReqs || []).map(r => r.id)
+      if (reqIds.length > 0) {
+        const { data: audits } = await supabase
+          .from('maintenance_request_audit_logs')
+          .select('event,created_at')
+          .in('request_id', reqIds)
+          .order('created_at', { ascending: false })
+          .limit(5)
+        const mapIcon: Record<string, ActivityRow> = {}
+        const acts: ActivityRow[] = (audits || []).map(a => ({
+          icon: 'fas fa-info-circle',
+          color: 'blue-600',
+          label: a.event.replace(/_/g, ' '),
+          value: '',
+          date: new Date(a.created_at as string).toLocaleDateString()
+        }))
+        setRecentActivity(acts)
+      } else {
+        setRecentActivity([])
+      }
     }
-  ])
-  
-  
-  const [recentActivity] = useState([
-    { icon: 'fas fa-file-invoice-dollar', color: 'emerald-600', label: 'Rent Received', value: 'R 12,000', date: 'Today' },
-    { icon: 'fas fa-exclamation-triangle', color: 'red-500', label: 'Arrears Notice', value: 'Unit 207', date: '1h ago' },
-    { icon: 'fas fa-tools', color: 'yellow-600', label: 'New Maintenance', value: 'Rosebank Lofts', date: 'Yesterday' }
-  ])
+    load()
+  }, [user])
 
+  const documents = useMemo(() => ([
+    { name: 'Lease Contracts', icon: 'fas fa-file-signature', type: 'lease', count: documentsCounts.leases, info: 'Active/Past' },
+    { name: 'Invoices', icon: 'fas fa-file-invoice-dollar', type: 'invoice', count: documentsCounts.invoices, info: 'Latest' },
+    { name: 'Vendor Quotes', icon: 'fas fa-file-contract', type: 'quote', count: documentsCounts.quotes, info: 'For Review' },
+    { name: 'Tax Reports', icon: 'fas fa-balance-scale', type: 'tax', count: documentsCounts.tax, info: 'Annual/CSV' },
+    { name: 'Compliance Docs', icon: 'fas fa-shield-alt', type: 'compliance', count: documentsCounts.compliance, info: 'FICA, COC' }
+  ]), [documentsCounts])
 
   return (
     <ProtectedRoute allowedRoles={['owner']}>
@@ -109,18 +186,18 @@ export default function OwnerDashboardPage() {
               <div className="ml-4">
                 <div className="text-lg font-bold">My Portfolio</div>
                 <div className="text-sm text-blue-100">
-                  Units: <b>{portfolio.totalUnits}</b> | Occupied: <b>{portfolio.occupied}</b> | Vacant: <b>{portfolio.vacant}</b>
+                  Units: <b>{metrics.totalUnits}</b> | Occupied: <b>{metrics.occupied}</b> | Vacant: <b>{metrics.vacant}</b>
                 </div>
               </div>
             </div>
             <div className="flex items-center justify-between my-2">
               <div>
                 <div className="text-blue-200 text-sm font-medium">Monthly Rent</div>
-                <div className="text-xl font-extrabold">R {portfolio.monthIncome.toLocaleString()}</div>
+                <div className="text-xl font-extrabold">R {metrics.monthIncome.toLocaleString()}</div>
               </div>
               <div>
                 <div className="text-blue-200 text-sm font-medium">In Arrears</div>
-                <div className="text-xl font-bold text-yellow-100">R {portfolio.arrears.toLocaleString()}</div>
+                <div className="text-xl font-bold text-yellow-100">R {metrics.arrears.toLocaleString()}</div>
               </div>
             </div>
             <div className="flex gap-4 mt-2">
@@ -142,6 +219,12 @@ export default function OwnerDashboardPage() {
               >
                 Lease Contracts
               </button>
+              <button
+                onClick={() => router.push('/dashboard/owner/dedicated-vendors')}
+                className="bg-white/90 text-indigo-700 rounded-lg px-3 py-2 text-sm font-semibold shadow hover:bg-indigo-50 transition"
+              >
+                My Vendors
+              </button>
             </div>
           </div>
 
@@ -149,22 +232,22 @@ export default function OwnerDashboardPage() {
           <div className="grid grid-cols-2 gap-4 mb-7">
   <div className="bg-white rounded-lg shadow-sm border border-blue-100 p-4 flex flex-col items-center">
     <i className="fas fa-coins text-emerald-600 text-2xl mb-1" />
-    <div className="font-extrabold text-xl text-gray-900">R {analytics.ytdIncome.toLocaleString()}</div>
-    <div className="text-sm text-gray-700 font-semibold mt-1">YTD Income</div>
+    <div className="font-extrabold text-xl text-gray-900">R {metrics.monthIncome.toLocaleString()}</div>
+    <div className="text-sm text-gray-700 font-semibold mt-1">This Month Income</div>
   </div>
   <div className="bg-white rounded-lg shadow-sm border border-emerald-100 p-4 flex flex-col items-center">
     <i className="fas fa-chart-line text-blue-500 text-2xl mb-1" />
-    <div className="font-extrabold text-xl text-gray-900">{analytics.avgOccupancy}%</div>
-    <div className="text-sm text-gray-700 font-semibold mt-1">Avg. Occupancy</div>
+    <div className="font-extrabold text-xl text-gray-900">{metrics.occupancy}%</div>
+    <div className="text-sm text-gray-700 font-semibold mt-1">Current Occupancy</div>
   </div>
   <div className="bg-white rounded-lg shadow-sm border border-yellow-100 p-4 flex flex-col items-center">
     <i className="fas fa-user-clock text-yellow-500 text-2xl mb-1" />
-    <div className="font-extrabold text-xl text-gray-900">{analytics.late}</div>
+    <div className="font-extrabold text-xl text-gray-900">0</div>
     <div className="text-sm text-gray-700 font-semibold mt-1">Tenants In Arrears</div>
   </div>
   <div className="bg-white rounded-lg shadow-sm border border-blue-100 p-4 flex flex-col items-center">
     <i className="fas fa-tools text-blue-600 text-2xl mb-1" />
-    <div className="font-extrabold text-xl text-gray-900">{analytics.repairsOpen}</div>
+    <div className="font-extrabold text-xl text-gray-900">{maintenance.length}</div>
     <div className="text-sm text-gray-700 font-semibold mt-1">Open Maintenance</div>
   </div>
 </div>
@@ -205,6 +288,19 @@ export default function OwnerDashboardPage() {
   </div>
 </div>
 
+          {/* My Vendors quick action (above Active Maintenance) */}
+          <div className="mb-4">
+            <div className="grid grid-cols-3 gap-3">
+              <button
+                onClick={() => router.push('/dashboard/owner/dedicated-vendors')}
+                className="bg-white rounded-lg border border-gray-100 p-3 flex flex-col items-center shadow-sm hover:shadow"
+              >
+                <i className="fas fa-user-cog text-2xl text-indigo-600 mb-1" />
+                <span className="text-xs font-semibold text-gray-800">My Vendors</span>
+              </button>
+            </div>
+          </div>
+
           {/* Maintenance Quick View */}
           <div className="mb-7">
             <div className="flex items-center mb-2 justify-between">
@@ -220,15 +316,15 @@ export default function OwnerDashboardPage() {
               {maintenance.length === 0 && (
                 <div className="text-gray-500 text-base italic p-4">No active requests!</div>
               )}
-              {maintenance.map((m, i) => (
-                <div key={i} className="bg-white p-3 rounded-lg shadow-sm border border-gray-100 flex items-center justify-between">
+              {maintenance.map((m) => (
+                <div key={m.id} className="bg-white p-3 rounded-lg shadow-sm border border-gray-100 flex items-center justify-between">
                   <div className="flex items-center">
-                    <div className={`w-8 h-8 bg-${m.color}/20 rounded-full flex items-center justify-center mr-2`}>
+                    <div className={`w-8 h-8 bg-${m.color || 'yellow-500'}/20 rounded-full flex items-center justify-center mr-2`}>
                       <i className="fas fa-tools text-yellow-500 text-lg"></i>
                     </div>
                     <div>
                       <div className="font-semibold text-base text-gray-800">{m.title}</div>
-                      <div className="text-sm text-gray-500">{m.unit}</div>
+                      <div className="text-sm text-gray-500">{m.property_label || ''}</div>
                     </div>
                   </div>
                   <div className="ml-2 flex flex-col items-end">
@@ -257,20 +353,24 @@ export default function OwnerDashboardPage() {
     </button>
   </div>
   <div className="space-y-2">
-    {applicants.map((a, idx) => (
-      <div key={idx} className="flex items-center bg-white p-2 rounded-lg shadow-sm border border-gray-100">
-        <Image src={a.avatar} alt={a.name} width={36} height={36} className="rounded-full" />
-        <div className="ml-3 flex-1">
-          <div className="font-semibold text-base text-gray-900">{a.name}</div>
-          <div className="text-sm text-gray-500">{a.property}</div>
+    {applicants.length === 0 ? (
+      <div className="text-sm text-gray-500">No recent applications.</div>
+    ) : (
+      applicants.map((a, idx) => (
+        <div key={idx} className="flex items-center bg-white p-2 rounded-lg shadow-sm border border-gray-100">
+          <Image src={a.avatar} alt={a.name} width={36} height={36} className="rounded-full" />
+          <div className="ml-3 flex-1">
+            <div className="font-semibold text-base text-gray-900">{a.name}</div>
+            <div className="text-sm text-gray-500">{a.property}</div>
+          </div>
+          <span className={`ml-2 text-xs rounded px-2 ${a.status === 'Approved'
+            ? 'bg-emerald-100 text-emerald-800'
+            : 'bg-yellow-100 text-yellow-800'
+          }`}>{a.status}</span>
+          <span className="text-xs text-gray-400 ml-2">{a.date}</span>
         </div>
-        <span className={`ml-2 text-xs rounded px-2 ${a.status === 'Approved'
-          ? 'bg-emerald-100 text-emerald-800'
-          : 'bg-yellow-100 text-yellow-800'
-        }`}>{a.status}</span>
-        <span className="text-xs text-gray-400 ml-2">{a.date}</span>
-      </div>
-    ))}
+      ))
+    )}
   </div>
 </div>
 
@@ -282,18 +382,22 @@ export default function OwnerDashboardPage() {
               <button className="text-sm text-blue-600 hover:text-blue-800 font-semibold">View All</button>
             </div>
             <div className="space-y-3">
-              {recentActivity.map((a, idx) => (
-                <div key={idx} className="flex items-center space-x-3">
-                  <div className={`w-8 h-8 bg-${a.color}/10 rounded-full flex items-center justify-center`}>
-                    <i className={`${a.icon} text-${a.color} text-xl`}></i>
+              {recentActivity.length === 0 ? (
+                <div className="text-sm text-gray-500">No recent activity.</div>
+              ) : (
+                recentActivity.map((a, idx) => (
+                  <div key={idx} className="flex items-center space-x-3">
+                    <div className={`w-8 h-8 bg-${a.color}/10 rounded-full flex items-center justify-center`}>
+                      <i className={`${a.icon} text-${a.color} text-xl`}></i>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-base font-semibold text-gray-800">{a.label}</p>
+                      <p className="text-sm text-gray-600">{a.value}</p>
+                    </div>
+                    <span className="text-xs text-gray-500">{a.date}</span>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-base font-semibold text-gray-800">{a.label}</p>
-                    <p className="text-sm text-gray-600">{a.value}</p>
-                  </div>
-                  <span className="text-xs text-gray-500">{a.date}</span>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>

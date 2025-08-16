@@ -55,3 +55,4 @@ grant execute on function public.log_service_contract_event(uuid, text, jsonb) t
 
 
 
+

@@ -19,3 +19,4 @@ export default function QuickActions({ actions }: { actions: Action[] }) {
 }
 
 
+
