@@ -62,6 +62,293 @@ This log tracks all development work, challenges, and solutions for the Lala Ren
 - Add SECURITY DEFINER RPC for owner maintenance list to avoid any future RLS regressions.  
 - Tests: implement unit/integration/E2E (web + Appium) across roles (tenant/owner/vendor/admin).  
 
+## [2025-08-16] – Vendor Contract Management System (Sprint 1)
+**Status:** Completed  
+**Description:** Implemented comprehensive vendor contract management system with contract listing, detail views, document management, and electronic signing capabilities.
+**Features Implemented:**
+1. **Enhanced Database Schema**: Added contract management fields to service_contracts table
+2. **Contract List Page**: Vendor can view all contracts with filtering, search, and sorting
+3. **Contract Detail Page**: Comprehensive contract view with tabs for overview, documents, timeline, and actions
+4. **Document Management**: Upload, download, and manage contract documents with version control
+5. **Electronic Signing**: Signature upload and contract activation workflow
+6. **Notifications & Audit Logs**: Track contract events and notify parties of status changes
+7. **Dashboard Integration**: Added contracts quick action to vendor dashboard
+
+**Database Changes:**
+- Migration `020_vendor_contract_management.sql`: Enhanced service_contracts with contract_value, sla_hours, renewal_date, auto_renew, termination_notice_days, vendor_notes, owner_notes, estimated_duration_hours, actual_duration_hours, vendor_rating, vendor_feedback, owner_rating, owner_feedback
+- New tables: contract_documents, contract_notifications, contract_management_audit_logs, service_contract_signatures
+- RPC functions: log_contract_event, create_contract_notification
+
+**Code Changes:**
+- New files: 
+  - `src/app/dashboard/vendor/contracts/page.tsx` (contract list)
+  - `src/app/dashboard/vendor/contracts/[id]/page.tsx` (contract detail)
+  - `src/app/dashboard/vendor/contracts/[id]/sign/page.tsx` (signing page)
+- Updated: `src/app/dashboard/vendor/page.tsx` (added contracts quick action)
+- Updated: `src/components/Vendor/ContractsTabs.tsx` (linked to new contracts page)
+
+**Contract Management Features:**
+- **Status Tracking**: draft → pending_signatures → active → completed/terminated/expired
+- **Document Upload**: Support for multiple file types with notes and versioning
+- **Electronic Signing**: Image-based signature upload with legal compliance
+- **Notifications**: Real-time notifications for status changes and document uploads
+- **Audit Trail**: Complete history of all contract events and changes
+- **Filtering & Search**: By status, type, priority, and text search
+- **Mobile Responsive**: Optimized for mobile app usage
+
+**Next Steps:**
+- Owner contract creation interface
+
+---
+
+## [2025-08-16] – Vendor Contract Messaging System & RLS Policy Fixes
+**Status:** Completed  
+**Description:** Implemented vendor contract messaging functionality and resolved critical RLS policy issues that were blocking message sending.
+
+### Critical Issues Encountered & Resolved
+
+#### 1. **Initial Data Loading Errors**
+**Problem:** Vendor contract detail page showed "Joined contract load failed", "Property direct query error", "Tenant direct query error"
+**Root Cause:** RLS policies blocking vendor access to property and profile data
+**Solution:** 
+- Initially attempted RPC-first approach with direct query fallbacks
+- Switched to direct Supabase queries with proper error handling
+- Made related data errors non-fatal (logged as warnings)
+
+#### 2. **Timeline Design Mismatch**
+**Problem:** Vendor contract timeline was horizontal instead of vertical signature-driven design
+**Root Cause:** Incorrect timeline implementation not matching owner/tenant contract designs
+**Solution:** 
+- Researched owner/tenant contract pages and design patterns
+- Replaced horizontal "Status Timeline" with vertical "Contract Progress" timeline
+- Implemented signature-driven step logic based on `service_contract_signatures`
+- Added conditional step ordering (vendor/owner signature order)
+
+#### 3. **Redundant Sign Contract Button**
+**Problem:** "Sign Contract" button appeared in both contract list and detail views
+**Root Cause:** Poor business logic implementation
+**Solution:** 
+- Removed redundant button from contract list page
+- Implemented conditional rendering in detail view based on signature status
+- Added business logic: show "Sign Contract" only if vendor hasn't signed
+
+#### 4. **Persistent Message Loading Error**
+**Problem:** "Error loading messages: {}" on vendor contract message page
+**Root Cause:** Multiple issues:
+- **Relationship ambiguity**: `sender:profiles(id, full_name)` had multiple relationships
+- **RLS policy issue**: Vendor couldn't insert messages due to incorrect policy
+- **Missing RPC types**: Functions existed but weren't typed in TypeScript
+
+**Solutions Implemented:**
+
+**A. Relationship Ambiguity Fix:**
+```typescript
+// Before (ambiguous)
+sender:profiles(id, full_name)
+
+// After (explicit)
+sender:profiles!messages_sender_id_fkey(id, full_name)
+```
+
+**B. RLS Policy Analysis & Fix:**
+- **Discovered**: Existing policies used `properties.assigned_vendor_id` which doesn't exist
+- **Root Cause**: Vendor-property relationship is through `dedicated_vendors` table, not `assigned_vendor_id`
+- **Solution**: Updated RLS policy to use correct relationship:
+
+```sql
+-- Drop existing incorrect policy
+DROP POLICY "messages_insert_access" ON public.messages;
+
+-- Create corrected policy using service_contracts relationship
+CREATE POLICY "messages_insert_access" ON public.messages
+    FOR INSERT TO authenticated
+    WITH CHECK (
+        sender_id = auth.uid() AND (
+            property_id IN (
+                SELECT id FROM public.properties 
+                WHERE owner_id = auth.uid()
+                OR EXISTS (
+                    SELECT 1 FROM public.service_contracts sc 
+                    WHERE sc.property_id = properties.id 
+                    AND sc.vendor_id = auth.uid()
+                )
+            )
+        )
+    );
+```
+
+**C. TypeScript RPC Function Types:**
+- **Problem**: `create_contract_notification` and `log_contract_event` functions existed but weren't typed
+- **Solution**: Added missing function types to `src/types/supabase.ts`:
+
+```typescript
+create_contract_notification: {
+  Args: { 
+    p_contract_id: string; 
+    p_recipient_id: string; 
+    p_notification_type: string; 
+    p_title: string; 
+    p_message: string 
+  }
+  Returns: undefined
+},
+log_contract_event: {
+  Args: { 
+    p_contract_id: string; 
+    p_event: string; 
+    p_actor_id?: string; 
+    p_old_values?: Json; 
+    p_new_values?: Json 
+  }
+  Returns: undefined
+}
+```
+
+**D. TypeScript Null Safety Fix:**
+- **Problem**: `p_recipient_id` parameter expected `string` but received `string | null`
+- **Solution**: Added null check before calling RPC function:
+
+```typescript
+// Only create notification if we have a valid recipient
+if (contract.owner?.id) {
+  await supabase.rpc('create_contract_notification', {
+    p_contract_id: contract.id,
+    p_recipient_id: contract.owner.id, // Now guaranteed to be string
+    p_notification_type: 'message',
+    p_title: 'New Message from Vendor',
+    p_message: `You have received a new message from the vendor regarding contract "${contract.title}".`
+  })
+}
+```
+
+### Database Schema Analysis & Lessons Learned
+
+#### **Messages Table Structure:**
+```typescript
+messages: {
+  Row: {
+    attachments: string[] | null
+    content: string
+    created_at: string | null
+    id: string
+    message_type: string | null
+    property_id: string | null  // Links to properties table
+    read_at: string | null
+    recipient_id: string | null // Links to profiles table
+    sender_id: string | null    // Links to profiles table
+  }
+}
+```
+
+#### **Key Relationships Discovered:**
+- **Vendor → Property**: Through `service_contracts` table (`vendor_id` → `property_id`)
+- **Messages → Property**: Direct relationship via `property_id`
+- **Messages → Profiles**: Dual relationship via `sender_id` and `recipient_id`
+
+### Code Changes Made
+
+#### **Files Modified:**
+1. **`src/app/dashboard/vendor/contracts/view/page.tsx`**
+   - Fixed data loading with proper error handling
+   - Implemented vertical signature-driven timeline
+   - Added conditional action buttons based on signature status
+   - Removed redundant "Sign Contract" button
+
+2. **`src/app/dashboard/vendor/contracts/page.tsx`**
+   - Removed redundant "Sign Contract" button from contract cards
+
+3. **`src/app/dashboard/vendor/contracts/message/page.tsx`**
+   - Fixed messages query with explicit relationship specification
+   - Updated to use `property_id` instead of `contract_id`
+   - Added null safety for RPC function calls
+   - Enhanced error handling and logging
+
+4. **`src/types/supabase.ts`**
+   - Added missing RPC function types for `create_contract_notification` and `log_contract_event`
+
+#### **Files Deleted:**
+- Removed old route structure: `src/app/dashboard/vendor/contracts/[id]/` (replaced with query parameter approach)
+
+### Business Logic Implemented
+
+#### **Contract Action Visibility Rules:**
+```typescript
+// Show "Sign Contract" only if:
+contract.status === 'pending_signatures' && !vendorHasSigned
+
+// Show "Send Message to Owner" only if:
+contract.status === 'pending_signatures' && vendorHasSigned && !ownerHasSigned
+
+// Otherwise: no Actions block
+```
+
+#### **Timeline Step Logic:**
+```typescript
+const vendorSig = sigs.find(s => s.signer_role === 'vendor');
+const ownerSig = sigs.find(s => s.signer_role === 'owner');
+const vendorHasSigned = !!vendorSig;
+const ownerHasSigned = !!ownerSig;
+
+// Conditional step ordering based on who signed first
+const steps = [
+  { key: 'created', label: 'Created', state: 'done' },
+  { key: 'sent', label: 'Sent', state: 'done' },
+  vendorHasSigned && !ownerHasSigned ? vendorStep : ownerStep,
+  vendorHasSigned && !ownerHasSigned ? ownerStep : vendorStep,
+  { key: 'active', label: 'Active', state: activeState },
+];
+```
+
+### Critical Lessons Learned & Rules Established
+
+#### **1. Database-First Development Rule**
+**Problem**: Made assumptions about table structure and relationships
+**Solution**: Always check existing database schema, policies, and relationships before making changes
+**Rule Added**: "CRITICAL: Always check existing database state (tables, policies, functions, triggers, RLS) before suggesting any database changes or code modifications."
+
+#### **2. Error Resolution Rule**
+**Problem**: Jumped to solutions without proper analysis
+**Solution**: Systematic approach to error resolution
+**Rule Added**: "ERROR RESOLUTION RULE: Before fixing any TypeScript/lint errors, always: 1) Check database schema and relationships, 2) Review development logs and documentation, 3) Examine related files and table structures, 4) Remember this is a mobile app project using Capacitor"
+
+#### **3. RLS Policy Analysis Pattern**
+**Problem**: Created policies without checking existing ones
+**Solution**: Always check existing policies first using:
+```sql
+SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual, with_check 
+FROM pg_policies 
+WHERE tablename = 'messages';
+```
+
+#### **4. TypeScript RPC Function Management**
+**Problem**: RPC functions existed but weren't typed
+**Solution**: Always verify RPC functions are properly typed in `src/types/supabase.ts`
+
+### Mobile App Context Maintained
+- All changes prioritized mobile-first UI patterns
+- Maintained Capacitor compatibility
+- Used mobile-optimized layouts and interactions
+- Preserved existing mobile navigation patterns
+
+### Testing & Validation
+- **Messages Functionality**: ✅ Working - vendors can send/receive messages
+- **Contract Timeline**: ✅ Working - vertical signature-driven design
+- **Action Buttons**: ✅ Working - conditional rendering based on signature status
+- **TypeScript**: ✅ Clean - no type errors
+- **RLS Policies**: ✅ Working - proper vendor access to messages
+
+### Next Steps for Debug Build
+- Ready for mobile testing on device
+- All vendor contract messaging features functional
+- Mobile-optimized interface complete
+- Database policies properly configured
+
+### Files Ready for Build
+- `src/app/dashboard/vendor/contracts/view/page.tsx` - Fixed timeline and actions
+- `src/app/dashboard/vendor/contracts/message/page.tsx` - Fixed messaging
+- `src/types/supabase.ts` - Added RPC function types
+- RLS policies updated in database
+
 ## [2025-08-15] – MMS Flow Integration & Maintenance Request System
 **Status:** Completed  
 **Description:** Implemented complete MMS (Maintenance Management System) flow integration connecting maintenance_requests to quotes, purchase orders, and vendor routing. Created owner maintenance request creation and management UI.

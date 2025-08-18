@@ -72,7 +72,7 @@ export default function OnboardingUserTypePage() {
             <label className="flex items-center gap-2 text-sm text-gray-800">
               <input type="checkbox" checked={ownerProperty} onChange={(e)=>setOwnerProperty(e.target.checked)} /> Add first property
             </label>
-          </div>
+                  </div>
         )}
 
         {role === 'vendor' && (
@@ -87,7 +87,7 @@ export default function OnboardingUserTypePage() {
             <label className="flex items-center gap-2 text-sm text-gray-800">
               <input type="checkbox" checked={vendorKyc} onChange={(e)=>setVendorKyc(e.target.checked)} /> Upload KYC documents
             </label>
-          </div>
+              </div>
         )}
 
         {role === 'tenant' && (
@@ -99,12 +99,12 @@ export default function OnboardingUserTypePage() {
             <label className="flex items-center gap-2 text-sm text-gray-800">
               <input type="checkbox" checked={tenantVerify} onChange={(e)=>setTenantVerify(e.target.checked)} /> Verify phone/ID
             </label>
-          </div>
+                    </div>
         )}
 
         {msg && <div className="mb-3 text-sm text-gray-700">{msg}</div>}
         <button onClick={markDone} disabled={!canComplete} className={`w-full ${canComplete ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-300 cursor-not-allowed'} text-white py-2 rounded-lg font-medium`} data-testid="onboarding-mark-done">Mark Onboarding Done</button>
-      </div>
+                  </div>
     </ProtectedRoute>
   )
 }

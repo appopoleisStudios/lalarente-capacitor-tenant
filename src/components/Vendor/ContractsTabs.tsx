@@ -29,7 +29,7 @@ export default function ContractsTabs({ pending, active, completed }: { pending:
 		<div className="bg-white rounded-lg shadow">
 			<div className="p-4 border-b border-gray-100 flex items-center justify-between">
 				<h3 className="font-semibold text-gray-900">Active Jobs</h3>
-				<Link href="/dashboard/vendor/jobs#current-jobs" className="text-blue-600 text-sm font-medium">View All</Link>
+				<Link href="/dashboard/vendor/contracts" className="text-blue-600 text-sm font-medium">View All</Link>
 			</div>
 			<div className="divide-y divide-gray-100">
 				{[...pending, ...active].slice(0,2).map((c)=> (

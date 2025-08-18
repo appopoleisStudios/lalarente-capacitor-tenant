@@ -1851,6 +1851,26 @@ export type Database = {
         Args: { p_contract_id: string; p_data?: Json; p_event: string }
         Returns: undefined
       }
+      create_contract_notification: {
+        Args: { 
+          p_contract_id: string; 
+          p_recipient_id: string; 
+          p_notification_type: string; 
+          p_title: string; 
+          p_message: string 
+        }
+        Returns: undefined
+      }
+      log_contract_event: {
+        Args: { 
+          p_contract_id: string; 
+          p_event: string; 
+          p_actor_id?: string; 
+          p_old_values?: Json; 
+          p_new_values?: Json 
+        }
+        Returns: undefined
+      }
       route_maintenance_request_to_vendors: {
         Args: { p_quote_deadline_hours?: number; p_request_id: string }
         Returns: undefined

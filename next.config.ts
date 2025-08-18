@@ -1,12 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Mobile-only static export for Capacitor
   output: 'export',
   trailingSlash: true,
   images: {
     unoptimized: true
   },
-  // assetPrefix: process.env.NODE_ENV === 'production' ? './' : '',
-  basePath: '',
+  // Mobile-optimized settings
+  compress: false,
+  poweredByHeader: false
 }
 
 module.exports = nextConfig

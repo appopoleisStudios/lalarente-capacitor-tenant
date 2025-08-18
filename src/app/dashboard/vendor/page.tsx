@@ -256,6 +256,7 @@ export default function VendorDashboardPage() {
           </div>
 
           <QuickActions actions={[
+            { key:'contracts', label:'Contracts', emoji:'📋', onClick:()=>{ router.push('/dashboard/vendor/contracts') } },
             { key:'earn', label:'Earnings', emoji:'💰', onClick:()=>{ router.push('/dashboard/vendor/payments') } },
             { key:'reviews', label:'Reviews', emoji:'⭐', onClick:()=>{} },
             { key:'docs', label:'Documents', emoji:'📄', onClick:()=>{} },
