@@ -7,6 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "check-all": "npm run type-check && npm run lint && npm run test:ci",
+    "test:ci": "echo 'No tests configured yet'",
+    "pre-commit": "npm run type-check && npm run lint",
     "test:mobile": "wdio run tests/mobile/wdio.conf.ts",
     "test:mobile:debug": "wdio run tests/mobile/wdio.conf.ts --logLevel debug",
     "test:mobile:single": "wdio run tests/mobile/wdio.conf.ts --spec tests/mobile/specs/basic-app-test.e2e.ts",
@@ -17,7 +22,8 @@
     "test:mobile:all": "wdio run tests/mobile/wdio.conf.ts --spec tests/mobile/specs/comprehensive-auth-test.e2e.ts tests/mobile/specs/maintenance-workflow-test.e2e.ts tests/mobile/specs/dedicated-vendors-test.e2e.ts tests/mobile/specs/profile-navigation-test.e2e.ts",
     "migrate": "tsx scripts/runMigration.ts",
     "migrate:status": "tsx scripts/runMigration.ts --status",
-    "migrate:rollback": "tsx scripts/runMigration.ts --rollback"
+    "migrate:rollback": "tsx scripts/runMigration.ts --rollback",
+    "prepare": "husky install"
   },
   "dependencies": {
     "@capacitor-community/keep-awake": "^7.1.0",
@@ -35,6 +41,7 @@
     "@capacitor/splash-screen": "^7.0.1",
     "@capacitor/status-bar": "^7.0.1",
     "@capacitor/toast": "^7.0.1",
+    "@googlemaps/js-api-loader": "^1.16.10",
     "@radix-ui/react-slot": "^1.2.3",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/supabase-js": "^2.52.1",
@@ -69,6 +76,7 @@
     "dotenv": "^17.2.1",
     "eslint": "^9",
     "eslint-config-next": "15.4.4",
+    "husky": "^9.1.7",
     "supabase": "^2.33.7",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
