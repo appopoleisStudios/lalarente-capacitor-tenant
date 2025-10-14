@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { User } from '@supabase/supabase-js'
 import { supabase, type Profile, type UserRole } from '@/lib/supabase'
 import { validateIdDocumentFile } from '@/utils/fileValidation'
-import { uploadSecureDocument, FicaDocumentData } from '@/utils/secureDocuments'
+import { uploadSecureDocument } from '@/utils/secureDocuments'
 import { validatePasswordStrength } from '@/utils/password'
 
 interface AuthState {
@@ -119,7 +119,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (!data.user) throw new Error('No user returned')
 
       // Insert into profiles table
-      const { error: profileError } = await supabase
+      const { error: _profileError } = await supabase
         .from('profiles')
         .insert([{
           id: data.user.id,
@@ -128,7 +128,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           verification_status: false
         }])
       
-      if (profileError) throw profileError
+      if (_profileError) throw _profileError
 
       const newProfile: Profile = {
         id: data.user.id,
@@ -462,7 +462,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Add retry mechanism for profile fetch
       let retries = 3
       let profileData = null
-      let profileError = null
+      // keep for debugging retry path without unused var error
+      // let _profileError: unknown = null
       
       while (retries > 0 && !profileData) {
         try {
@@ -474,7 +475,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             .single()
           
           if (error) {
-            profileError = error
             if (error.code === 'PGRST116') {
               console.log(`Profile not found for user: ${userId}, retries left: ${retries - 1}`)
               if (retries > 1) {
@@ -495,7 +495,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           break
           
         } catch (error) {
-          profileError = error
           if (retries > 1) {
             console.log(`Profile fetch failed, retrying... (${retries - 1} retries left)`)
             await new Promise(resolve => setTimeout(resolve, 1000 * (4 - retries)))

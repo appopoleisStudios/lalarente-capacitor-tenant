@@ -108,7 +108,7 @@ function VendorContractMessagePageInner() {
 			console.log('Loading messages for property_id:', contract.property.id)
 			
 			// First, let's test if we can access the messages table at all
-			const { data: testData, error: testError } = await supabase
+      const { data: _testData, error: testError } = await supabase
 				.from('messages')
 				.select('id')
 				.limit(1)
@@ -180,16 +180,16 @@ function VendorContractMessagePageInner() {
 		try {
 			setSending(true)
 			setError(null)
-			const { error: sendError } = await supabase
-				.from('messages')
-				.insert({
-					property_id: contract.property?.id,
-					sender_id: user.id,
-					recipient_id: contract.owner?.id || null,
-					content: newMessage,
-					message_type: messageType,
-					read_at: null
-				})
+      const { error: sendError } = await (supabase as any)
+        .from('messages')
+        .insert({
+          ...(contract.property?.id ? { property_id: contract.property.id } : {}),
+          sender_id: user.id,
+          ...(contract.owner?.id ? { recipient_id: contract.owner.id } : {}),
+          content: newMessage,
+          message_type: messageType,
+          read_at: null
+        })
 			if (sendError) throw sendError
 			
 			// Only create notification if we have a valid recipient

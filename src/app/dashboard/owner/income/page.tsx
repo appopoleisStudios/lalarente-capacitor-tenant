@@ -15,7 +15,8 @@ import {
   Building,
   BarChart3,
   FileText,
-  CheckCircle
+  CheckCircle,
+  ArrowLeft
 } from 'lucide-react'
 
 interface IncomeMetrics {
@@ -61,6 +62,7 @@ interface MonthlyData {
 }
 
 export default function OwnerIncomePage() {
+  const router = useRouter()
   const { user } = useAuthStore()
   const [metrics, setMetrics] = useState<IncomeMetrics | null>(null)
   const [payments, setPayments] = useState<Payment[]>([])
@@ -351,10 +353,21 @@ export default function OwnerIncomePage() {
     return (
       <ProtectedRoute allowedRoles={['owner']}>
         <div className="mobile-app w-[100vw] max-w-[100vw] mx-0 bg-white min-h-screen pb-20 overflow-x-hidden">
-          <div className="bg-white shadow-sm p-4 sticky top-0 z-10">
-            <h1 className="text-xl font-bold text-gray-900">Income & Reports</h1>
-            <p className="text-sm text-blue-700">Owner Earnings</p>
+        <div className="bg-white shadow-sm p-4 sticky top-0 z-10">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.back()}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              aria-label="Go back"
+            >
+              <ArrowLeft className="h-5 w-5 text-gray-600" />
+            </button>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">Income & Reports</h1>
+              <p className="text-sm text-blue-700">Owner Earnings</p>
+            </div>
           </div>
+        </div>
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
@@ -367,8 +380,19 @@ export default function OwnerIncomePage() {
     <ProtectedRoute allowedRoles={['owner']}>
       <div className="mobile-app w-[100vw] max-w-[100vw] mx-0 bg-white min-h-screen pb-20 overflow-x-hidden">
         <div className="bg-white shadow-sm p-4 sticky top-0 z-10">
-          <h1 className="text-xl font-bold text-gray-900">Income & Reports</h1>
-          <p className="text-sm text-blue-700">Owner Earnings</p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.back()}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              aria-label="Go back"
+            >
+              <ArrowLeft className="h-5 w-5 text-gray-600" />
+            </button>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">Income & Reports</h1>
+              <p className="text-sm text-blue-700">Owner Earnings</p>
+            </div>
+          </div>
         </div>
         
         <main className="px-4 py-4 space-y-4">

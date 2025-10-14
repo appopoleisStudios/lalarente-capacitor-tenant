@@ -1,16 +1,63 @@
-// .vscode/settings.json
 {
-    "coderabbit.autoReview": false,
-    "coderabbit.reviewOnSave": false,
-    "coderabbit.focusMode": "critical-only",
-    "coderabbit.maxSuggestions": 5,
-    "coderabbit.categories": {
-      "security": true,
-      "performance": true,
-      "bugs": true,
-      "style": false,
-      "formatting": false,
-      "documentation": false
-    }
-  }
+  "typescript.preferences.includePackageJsonAutoImports": "auto",
+  "typescript.suggest.autoImports": true,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "typescript.preferences.importModuleSpecifier": "relative",
   
+  // Real-time error checking
+  "typescript.validate.enable": true,
+  "typescript.check.npmIsInstalled": true,
+  "typescript.preferences.includePackageJsonAutoImports": "auto",
+  
+  // ESLint integration
+  "eslint.enable": true,
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  "eslint.run": "onType",
+  "eslint.autoFixOnSave": true,
+  
+  // Format on save
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true,
+    "source.organizeImports": true
+  },
+  
+  // TypeScript specific
+  "typescript.preferences.includePackageJsonAutoImports": "auto",
+  "typescript.suggest.autoImports": true,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  
+  // File associations
+  "files.associations": {
+    "*.tsx": "typescriptreact",
+    "*.ts": "typescript"
+  },
+  
+  // Exclude patterns
+  "files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/CVS": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true,
+    "**/node_modules": true,
+    "**/.next": true,
+    "**/out": true,
+    "**/android": true
+  },
+  
+  // Search exclude
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.next": true,
+    "**/out": true,
+    "**/android": true,
+    "**/dist": true
+  }
+}

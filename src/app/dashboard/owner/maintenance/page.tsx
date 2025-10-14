@@ -6,6 +6,7 @@ import ProtectedRoute from '@/components/ProtectedRoute'
 import { useAuthStore } from '@/store/authStore'
 import { supabase } from '@/lib/supabase'
 import BottomNavbar from '@/components/BottomNavbar'
+import { ArrowLeft } from 'lucide-react'
 
 type MaintenanceRequest = {
   id: string
@@ -198,7 +199,16 @@ export default function OwnerMaintenancePage() {
     <ProtectedRoute allowedRoles={['owner']}>
       <div className="max-w-sm mx-auto bg-white min-h-screen pb-20">
         <div className="px-4 py-4 flex items-center justify-between border-b">
-          <h1 className="font-semibold text-gray-900">Maintenance Requests</h1>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.back()}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              aria-label="Go back"
+            >
+              <ArrowLeft className="h-5 w-5 text-gray-600" />
+            </button>
+            <h1 className="font-semibold text-gray-900">Maintenance Requests</h1>
+          </div>
           <button
             onClick={() => router.push('/dashboard/owner/maintenance/new')}
             className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700"

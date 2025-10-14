@@ -116,17 +116,35 @@ function NewQuotePageInner() {
         </div>
         <div className="bg-white rounded-lg shadow p-4 space-y-3">
           <div>
-            <label className="block text-sm text-gray-700 mb-1">Line item title</label>
-            <input value={title} onChange={e=>setTitle(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" placeholder="e.g. AC servicing" />
+            <label className="block text-sm text-gray-800 mb-1">Line item title</label>
+            <input
+              value={title}
+              onChange={e=>setTitle(e.target.value)}
+              className="w-full border rounded px-3 py-2 text-sm text-gray-900 placeholder-gray-500 bg-white"
+              placeholder="e.g. AC servicing"
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm text-gray-700 mb-1">Quantity</label>
-              <input type="number" min={1} value={qty} onChange={e=>setQty(parseFloat(e.target.value))} className="w-full border rounded px-3 py-2 text-sm" />
+              <label className="block text-sm text-gray-800 mb-1">Quantity</label>
+              <input
+                type="number"
+                min={1}
+                value={qty}
+                onChange={e=>setQty(parseFloat(e.target.value))}
+                className="w-full border rounded px-3 py-2 text-sm text-gray-900 bg-white"
+              />
             </div>
             <div>
-              <label className="block text-sm text-gray-700 mb-1">Unit price (R)</label>
-              <input type="number" min={0} value={unitPrice} onChange={e=>setUnitPrice(parseFloat(e.target.value))} className="w-full border rounded px-3 py-2 text-sm" />
+              <label className="block text-sm text-gray-800 mb-1">Unit price (R)</label>
+              <input
+                type="number"
+                min={0}
+                value={unitPrice}
+                onChange={e=>setUnitPrice(parseFloat(e.target.value))}
+                className="w-full border rounded px-3 py-2 text-sm text-gray-900 bg-white"
+                autoFocus={unitPrice <= 0}
+              />
             </div>
           </div>
           {error && <div className="text-sm text-red-600">{error}</div>}

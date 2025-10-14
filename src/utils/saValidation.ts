@@ -44,7 +44,7 @@ export function validateSAIDNumber(idNumber: string): SAIDValidationResult {
   const checksum = parseInt(cleanId.substring(12, 13))
 
   // Validate birth date
-  const currentYear = new Date().getFullYear() % 100
+  // const currentYearTwoDigit = new Date().getFullYear() % 100
   let fullYear = year
   
   // Determine century (assume 1900s for years 00-29, 2000s for 30-99)
@@ -69,8 +69,9 @@ export function validateSAIDNumber(idNumber: string): SAIDValidationResult {
   }
 
   // Check if person is too old (over 120 years)
-  const age = new Date().getFullYear() - birthDate.getFullYear()
-  if (age > 120) {
+  const currentYearFull = new Date().getFullYear()
+  const birthYear = birthDate.getFullYear()
+  if (currentYearFull - birthYear > 120) {
     return { isValid: false, error: 'Invalid birth date - person would be over 120 years old' }
   }
 
@@ -129,18 +130,18 @@ function calculateSAIDChecksum(idDigits: string): number {
   // SA ID algorithm: double every second digit from RIGHT (not left)
   // This is the correct algorithm for South African ID numbers
   for (let i = 0; i < digits.length; i++) {
-    let digit = digits[i]
+    let digitNum = digits[i] ?? 0
     
     // Double every second digit from right (even indices: 0, 2, 4, 6, 8, 10)
     if (i % 2 === 0) {
-      digit *= 2
+      digitNum *= 2
       // If doubled number is greater than 9, add its digits
-      if (digit > 9) {
-        digit = Math.floor(digit / 10) + (digit % 10)
+      if (digitNum > 9) {
+        digitNum = Math.floor(digitNum / 10) + (digitNum % 10)
       }
     }
     
-    sum += digit
+    sum += digitNum
   }
   
   // Calculate checksum: (10 - (sum % 10)) % 10
@@ -158,18 +159,18 @@ function calculateAlternativeChecksum(idDigits: string): number {
   
   // Alternative algorithm: double every second digit from left
   for (let i = 0; i < digits.length; i++) {
-    let digit = digits[i]
+    let digitNum = digits[i] ?? 0
     
     // Double every second digit from left (odd indices: 1, 3, 5, 7, 9, 11)
     if (i % 2 === 1) {
-      digit *= 2
+      digitNum *= 2
       // If doubled number is greater than 9, add its digits
-      if (digit > 9) {
-        digit = Math.floor(digit / 10) + (digit % 10)
+      if (digitNum > 9) {
+        digitNum = Math.floor(digitNum / 10) + (digitNum % 10)
       }
     }
     
-    sum += digit
+    sum += digitNum
   }
   
   // Calculate checksum: (10 - (sum % 10)) % 10

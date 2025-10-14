@@ -47,7 +47,9 @@ export default function MyVendorsSection({ className = '' }: Props) {
         if (propsRes.data) setProperties(propsRes.data as Property[])
         if (catsRes.data) setCategories(catsRes.data as Category[])
         if (!selectedProperty && propsRes.data && propsRes.data.length > 0) {
-          setSelectedProperty(propsRes.data[0].id)
+          if (propsRes.data && propsRes.data[0]) {
+            setSelectedProperty(propsRes.data[0].id)
+          }
         }
       } catch (e) {
         setError('Failed to load properties/categories')

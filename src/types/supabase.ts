@@ -769,6 +769,7 @@ export type Database = {
           property_type: string
           province: string
           rent_amount: number
+          services_provided: string[] | null
           status: Database["public"]["Enums"]["property_status"] | null
           title: string
           updated_at: string | null
@@ -792,6 +793,7 @@ export type Database = {
           property_type: string
           province: string
           rent_amount: number
+          services_provided?: string[] | null
           status?: Database["public"]["Enums"]["property_status"] | null
           title: string
           updated_at?: string | null
@@ -815,6 +817,7 @@ export type Database = {
           property_type?: string
           province?: string
           rent_amount?: number
+          services_provided?: string[] | null
           status?: Database["public"]["Enums"]["property_status"] | null
           title?: string
           updated_at?: string | null
@@ -1249,6 +1252,17 @@ export type Database = {
           title: string
           updated_at: string | null
           vendor_id: string
+          // Additional columns present in DB and used by app code
+          contract_value: number | null
+          sla_hours: number | null
+          renewal_date: string | null
+          start_date: string | null
+          end_date: string | null
+          completion_date: string | null
+          vendor_notes: string | null
+          owner_notes: string | null
+          contract_type: string | null
+          priority: string | null
         }
         Insert: {
           compiled_html?: string | null
@@ -1268,6 +1282,16 @@ export type Database = {
           title: string
           updated_at?: string | null
           vendor_id: string
+          contract_value?: number | null
+          sla_hours?: number | null
+          renewal_date?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          completion_date?: string | null
+          vendor_notes?: string | null
+          owner_notes?: string | null
+          contract_type?: string | null
+          priority?: string | null
         }
         Update: {
           compiled_html?: string | null
@@ -1287,6 +1311,16 @@ export type Database = {
           title?: string
           updated_at?: string | null
           vendor_id?: string
+          contract_value?: number | null
+          sla_hours?: number | null
+          renewal_date?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          completion_date?: string | null
+          vendor_notes?: string | null
+          owner_notes?: string | null
+          contract_type?: string | null
+          priority?: string | null
         }
         Relationships: [
           {

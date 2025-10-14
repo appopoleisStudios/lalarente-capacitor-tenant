@@ -32,7 +32,7 @@ export default function ContractsTabs({ pending, active, completed }: { pending:
 				<Link href="/dashboard/vendor/contracts" className="text-blue-600 text-sm font-medium">View All</Link>
 			</div>
 			<div className="divide-y divide-gray-100">
-				{[...pending, ...active].slice(0,2).map((c)=> (
+				{[...pending, ...active, ...completed].slice(0,2).map((c)=> (
 					<div className="p-4" key={c.id}>
 						<div className="flex items-start justify-between mb-2">
 							<div className="flex-1">

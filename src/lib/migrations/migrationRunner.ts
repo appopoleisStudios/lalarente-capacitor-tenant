@@ -291,18 +291,29 @@ class MigrationRunner {
     sqlHash?: string
   ) {
     try {
+      const payload: {
+        migration_id: string
+        name: string
+        executed_at?: string
+        success?: boolean
+        error_message?: string | null
+        execution_time_ms?: number | null
+        executed_by?: string
+        sql_hash?: string
+      } = {
+        migration_id: migrationId,
+        name,
+        executed_at: new Date().toISOString(),
+        success,
+        error_message: errorMessage ?? null,
+        execution_time_ms: executionTime ?? null,
+      }
+      if (executedBy) payload.executed_by = executedBy
+      if (sqlHash) payload.sql_hash = sqlHash
+
       const { error } = await supabase
         .from(this.migrationsTable)
-        .upsert({
-          migration_id: migrationId,
-          name,
-          executed_at: new Date().toISOString(),
-          success,
-          error_message: errorMessage,
-          execution_time_ms: executionTime,
-          executed_by: executedBy,
-          sql_hash: sqlHash
-        })
+        .upsert(payload)
 
       if (error) {
         console.error('Failed to record migration:', error)
@@ -326,12 +337,15 @@ class MigrationRunner {
       if (error) return null
 
       const migrationData = data as MigrationRow
-      return {
+      const base: { migrationId: string; executed: boolean; error?: string | null; executedAt?: Date } = {
         migrationId: migrationData.migration_id,
         executed: migrationData.success,
-        executedAt: migrationData.executed_at ? new Date(migrationData.executed_at) : undefined,
-        error: migrationData.error_message
+        ...(migrationData.error_message !== undefined ? { error: migrationData.error_message } : {}),
       }
+      if (migrationData.executed_at) {
+        base.executedAt = new Date(migrationData.executed_at)
+      }
+      return base as MigrationStatus
     } catch (error) {
       return null
     }
@@ -349,12 +363,15 @@ class MigrationRunner {
 
       if (error) return []
 
-      return (data as MigrationRow[]).map(row => ({
-        migrationId: row.migration_id,
-        executed: row.success,
-        executedAt: row.executed_at ? new Date(row.executed_at) : undefined,
-        error: row.error_message
-      }))
+      return (data as MigrationRow[]).map(row => {
+        const base: { migrationId: string; executed: boolean; error?: string | null; executedAt?: Date } = {
+          migrationId: row.migration_id,
+          executed: row.success,
+          ...(row.error_message !== undefined ? { error: row.error_message } : {}),
+        }
+        if (row.executed_at) base.executedAt = new Date(row.executed_at)
+        return base as MigrationStatus
+      })
     } catch (error) {
       return []
     }

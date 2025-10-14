@@ -50,6 +50,28 @@
 - **CRITICAL: Always check existing database state (tables, policies, functions, triggers, RLS) before suggesting any database changes or code modifications. Never assume table structure or existing policies - verify first using Supabase MCP or existing schema files.**
 - **ERROR RESOLUTION RULE: Before fixing any TypeScript/lint errors, always: 1) Check database schema and relationships, 2) Review development logs and documentation, 3) Examine related files and table structures, 4) Remember this is a mobile app project using Capacitor - prioritize mobile-first solutions and UI patterns.**
 
+## AI Error Prevention Rules (CRITICAL)
+- **ALWAYS run type checking before suggesting code**: Use `npx tsc --noEmit` to validate TypeScript
+- **ALWAYS run linting before suggesting code**: Use `npm run lint` to validate ESLint rules
+- **NEVER suggest code with TypeScript errors**: Fix all type errors before proposing solutions
+- **NEVER suggest code with ESLint errors**: Fix all linting errors before proposing solutions
+- **ALWAYS use strict TypeScript patterns**: No `any` types, explicit return types, proper null checks
+- **ALWAYS validate database queries**: Check Supabase schema before writing queries
+- **ALWAYS test code changes**: Verify functionality works before suggesting
+- **ALWAYS follow existing patterns**: Match existing code style and architecture
+- **ALWAYS document breaking changes**: Explain any changes that might affect existing functionality
+- **ALWAYS provide rollback instructions**: Include steps to revert changes if needed
+
+## AI Code Generation Standards
+- **Type Safety First**: Every function, variable, and prop must be properly typed
+- **Error Handling**: Include proper error handling and user feedback
+- **Mobile-First**: All UI components must be mobile-optimized
+- **Accessibility**: Include proper ARIA labels and accessibility features
+- **Performance**: Use React best practices (memo, useCallback, useMemo when appropriate)
+- **Security**: Follow RLS patterns and validate all user inputs
+- **Testing**: Include data-testid attributes for testing
+- **Documentation**: Add JSDoc comments for complex functions
+
 ## Key Schema Facts
 **Tables:** profiles, properties, property_assignments, leases, payments, maintenance_requests, inspections, messages
 **Enums:** user_role, property_status, payment_status, maintenance_status, inspection_type

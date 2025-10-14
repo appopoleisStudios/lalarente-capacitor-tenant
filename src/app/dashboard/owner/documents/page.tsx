@@ -3,6 +3,7 @@
 import { Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import ProtectedRoute from '@/components/ProtectedRoute'
+import BottomNavbar from '@/components/BottomNavbar'
 
 function OwnerDocumentsPageInner() {
   const router = useRouter()
@@ -46,6 +47,8 @@ function OwnerDocumentsPageInner() {
             </div>
           )}
         </div>
+        
+        <BottomNavbar userRole="owner" />
       </div>
     </ProtectedRoute>
   )

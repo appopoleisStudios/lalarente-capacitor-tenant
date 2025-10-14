@@ -1,6 +1,9 @@
 apply plugin: 'com.android.application'
 
 android {
+    buildFeatures {
+        buildConfig true
+    }
     namespace "com.lalarente.app"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
@@ -20,6 +23,26 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            // Append feature tag to versionName in debug for visibility inside app
+            def featureTag = System.getenv("FEATURE_TAG") ?: "dev"
+            versionNameSuffix "-${featureTag}"
+            // Expose metadata to BuildConfig for in-app display
+            buildConfigField "String", "GIT_SHA", '"' + (System.getenv("GIT_COMMIT") ?: "dev") + '"'
+            buildConfigField "String", "GIT_BRANCH", '"' + (System.getenv("GIT_BRANCH") ?: "local") + '"'
+            buildConfigField "String", "FEATURE_TAG", '"' + featureTag + '"'
+        }
+    }
+
+    // Rename APKs with feature/branch/sha/date for easier distribution
+    applicationVariants.all { variant ->
+        variant.outputs.each { output ->
+            def date = new Date().format("yyyyMMdd-HHmm")
+            def branch = System.getenv("GIT_BRANCH") ?: "local"
+            def sha = (System.getenv("GIT_COMMIT") ?: "dev").take(7)
+            def feature = System.getenv("FEATURE_TAG") ?: "general"
+            output.outputFileName = "lalarente-${variant.buildType.name}-v${defaultConfig.versionName}-${feature}-${branch}-${sha}-${date}.apk"
         }
     }
 }

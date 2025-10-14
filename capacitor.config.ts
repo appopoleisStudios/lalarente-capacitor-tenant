@@ -5,7 +5,9 @@ const config: CapacitorConfig = {
   appName: 'Lala Rente',
   webDir: 'out',
   server: {
-    androidScheme: 'https'
+    url: 'https://lalarente-app.vercel.app', // Your Vercel app domain
+    androidScheme: 'https',
+    cleartext: false
   },
   plugins: {
     SplashScreen: {

@@ -8,7 +8,7 @@ import { useAuthStore } from '@/store/authStore'
 import { supabase } from '@/lib/supabase'
 import VendorHeader from '@/components/Vendor/VendorHeader'
 import BottomNavbar from '@/components/BottomNavbar'
-import { ArrowLeft, FileText, Upload, CheckCircle, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, CheckCircle, AlertTriangle } from 'lucide-react'
 
 interface Contract {
 	id: string

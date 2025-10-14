@@ -9,11 +9,15 @@ Lala Rente acts as a middleman between property owners and vendors, facilitating
 
 ### **1. Contract Management System**
 - ✅ **Vendor Contract List**: View all contracts with filtering and search
-- ✅ **Contract Detail View**: Comprehensive contract information with timeline
+- ✅ **Vendor Contract Detail View**: Comprehensive contract information with timeline
+- ✅ **Owner Contract List**: View all contracts with signing interface
+- ✅ **Owner Contract Detail View**: Complete contract detail with role-based conditional rendering
 - ✅ **Contract Messaging**: Direct messaging between vendor and owner
 - ✅ **Contract Signing**: Electronic signature upload and contract activation
 - ✅ **Contract Documents**: Upload, download, and manage contract documents
 - ✅ **Contract Timeline**: Visual progress tracking for contract status
+- ✅ **Contract Creation**: Owner can create tenancy contracts with templates
+- ✅ **Contract Status Updates**: Automatic status changes based on signatures
 
 ### **2. Maintenance Request System**
 - ✅ **Maintenance Request Creation**: Owners can create maintenance requests
@@ -248,6 +252,106 @@ Lala Rente acts as a middleman between property owners and vendors, facilitating
 
 ---
 
+## 📊 **UPDATED IMPLEMENTATION ROADMAP**
+
+### **Phase 1: Communication Enhancement (Week 1-2)**
+**Status**: Ready to implement
+- [ ] Real-time messaging system with WebSockets
+- [ ] Email/SMS notifications integration
+- [ ] Message threading and search functionality
+- [ ] File sharing in messages
+- [ ] Push notifications for mobile app
+
+### **Phase 2: Payment & Commission System (Week 3-4)**
+**Status**: Database ready, needs payment gateway
+- [ ] Payment gateway integration (Razorpay/Stripe)
+- [ ] Commission calculation engine
+- [ ] Transaction tracking system
+- [ ] Vendor payout automation
+- [ ] Financial reporting dashboard
+
+### **Phase 3: Quote & Bidding System (Week 5-6)**
+**Status**: Basic structure exists, needs enhancement
+- [ ] Enhanced quote creation interface
+- [ ] Quote comparison tools for owners
+- [ ] Quote-to-contract conversion
+- [ ] Quote negotiation system
+- [ ] Quote history and analytics
+
+### **Phase 4: Work Order Management (Week 7-8)**
+**Status**: Maintenance requests exist, needs work order enhancement
+- [ ] Work order creation interface
+- [ ] Progress tracking with photos
+- [ ] Milestone and time tracking
+- [ ] Completion verification system
+- [ ] Work order templates
+
+### **Phase 5: Quality & Reviews (Week 9-10)**
+**Status**: New feature development
+- [ ] Quality inspection system
+- [ ] Vendor rating and review system
+- [ ] Dispute resolution workflow
+- [ ] Review moderation tools
+- [ ] Quality analytics dashboard
+
+---
+
+## 🎯 **IMMEDIATE NEXT STEPS (Week 1)**
+
+### **Priority 1: Test Existing Contract System**
+- [ ] Verify owner contract workflow end-to-end
+- [ ] Test vendor contract workflow end-to-end
+- [ ] Verify data fetching and RLS policies
+- [ ] Test contract signing and status updates
+- [ ] Verify contract messaging functionality
+
+### **Priority 2: Enhance Communication**
+- [ ] Implement real-time messaging with WebSockets
+- [ ] Add message notifications
+- [ ] Enhance message threading
+- [ ] Add file sharing to messages
+
+### **Priority 3: Payment System Foundation**
+- [ ] Set up payment gateway integration
+- [ ] Create commission calculation engine
+- [ ] Implement transaction tracking
+- [ ] Build vendor payout system
+
+---
+
+## 🔧 **TECHNICAL ARCHITECTURE**
+
+### **Database Tables (Mostly Complete)**
+- ✅ `service_contracts` - Main contract table
+- ✅ `tenancy_contracts` - Tenancy contract table
+- ✅ `contract_documents` - Document storage
+- ✅ `contract_notifications` - Notification system
+- ✅ `contract_management_audit_logs` - Audit trail
+- ✅ `messages` - Communication system
+- [ ] `commission_transactions` - Commission tracking
+- [ ] `payment_processing` - Payment transactions
+- [ ] `vendor_payouts` - Payout management
+- [ ] `quotes` - Quote system
+- [ ] `work_orders` - Work order management
+- [ ] `quality_inspections` - Quality verification
+- [ ] `vendor_ratings` - Rating system
+
+### **External Integrations Needed**
+- [ ] Payment gateway (Razorpay/Stripe)
+- [ ] Email service (SendGrid/AWS SES)
+- [ ] SMS service (Twilio)
+- [ ] Push notification service
+- [ ] WebSocket service (Supabase Realtime)
+
+### **Mobile App Features**
+- [ ] Real-time messaging
+- [ ] Push notifications
+- [ ] Photo upload for work progress
+- [ ] Offline capability for basic functions
+- [ ] GPS tracking for work verification
+
+---
+
 ## 📊 **SUCCESS METRICS**
 
 ### **Communication Efficiency**
@@ -269,69 +373,13 @@ Lala Rente acts as a middleman between property owners and vendors, facilitating
 
 ---
 
-## 🔧 **TECHNICAL ARCHITECTURE**
+## 🚀 **BRANCH STRATEGY**
 
-### **Database Tables Needed**
-- `commission_transactions`
-- `payment_processing`
-- `vendor_payouts`
-- `quotes`
-- `work_orders`
-- `quality_inspections`
-- `vendor_ratings`
-- `communication_channels`
-
-### **External Integrations**
-- Payment gateway (Razorpay/Stripe)
-- Email service (SendGrid/AWS SES)
-- SMS service (Twilio)
-- Push notification service
-- Document signing service
-
-### **Mobile App Features**
-- Real-time messaging
-- Push notifications
-- Photo upload for work progress
-- Offline capability for basic functions
-- GPS tracking for work verification
+Based on existing branches, recommended approach:
+- **Current Branch**: `feat/mms-lite-po-exec` (seems to be active)
+- **New Branch**: `feat/vendor-owner-communication` for Phase 1
+- **Integration**: Merge into main after each phase completion
 
 ---
 
-## 📅 **IMPLEMENTATION TIMELINE**
-
-### **Sprint 1 (Week 1-2): Communication Enhancement**
-- Real-time messaging system
-- Email/SMS notifications
-- Message threading and search
-
-### **Sprint 2 (Week 3-4): Payment System**
-- Payment gateway integration
-- Commission calculation engine
-- Basic payout system
-
-### **Sprint 3 (Week 5-6): Quote System**
-- Quote creation and submission
-- Quote comparison interface
-- Quote-to-contract conversion
-
-### **Sprint 4 (Week 7-8): Work Management**
-- Work order system
-- Progress tracking
-- Quality verification
-
-### **Sprint 5 (Week 9-10): Quality & Reviews**
-- Rating and review system
-- Quality inspection
-- Dispute resolution
-
----
-
-## 🎯 **NEXT STEPS**
-
-1. **Prioritize Sprint 1 features** for immediate development
-2. **Set up payment gateway integration** for commission system
-3. **Implement real-time messaging** for better communication
-4. **Create quote management system** for vendor bidding
-5. **Build work order system** for project management
-
-This document serves as the foundation for all vendor-owner interaction development. Each user story should be broken down into specific technical tasks before implementation begins.
+This updated roadmap reflects the current state where contract management is complete and focuses on enhancing communication, payment systems, and work management features for the vendor-owner ecosystem.

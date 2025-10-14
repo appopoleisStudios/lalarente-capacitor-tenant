@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import BottomNavbar from '@/components/BottomNavbar'
 import { supabase } from '@/lib/supabase'
+import { ArrowLeft } from 'lucide-react'
 
 export default function OwnerDashboardPage() {
   const router = useRouter()
@@ -129,7 +130,7 @@ export default function OwnerDashboardPage() {
           .in('request_id', reqIds)
           .order('created_at', { ascending: false })
           .limit(5)
-        const mapIcon: Record<string, ActivityRow> = {}
+        // mapIcon was unused
         const acts: ActivityRow[] = (audits || []).map(a => ({
           icon: 'fas fa-info-circle',
           color: 'blue-600',
@@ -165,9 +166,18 @@ export default function OwnerDashboardPage() {
 
         {/* Header */}
         <div className="bg-white shadow-sm p-4 relative z-10 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Portfolio Dashboard</h1>
-            <p className="text-sm text-blue-700 font-medium">Welcome back, {profile?.full_name || 'Owner'}</p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.back()}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              aria-label="Go back"
+            >
+              <ArrowLeft className="h-5 w-5 text-gray-600" />
+            </button>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">Portfolio Dashboard</h1>
+              <p className="text-sm text-blue-700 font-medium">Welcome back, {profile?.full_name || 'Owner'}</p>
+            </div>
           </div>
           <button className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition">
             <i className="fas fa-bell text-blue-600"></i>
@@ -213,12 +223,7 @@ export default function OwnerDashboardPage() {
               >
                 Earnings Report
               </button>
-              <button
-                onClick={() => router.push('/contracts')}
-                className="bg-white/90 text-blue-700 rounded-lg px-3 py-2 text-sm font-semibold shadow hover:bg-blue-50 transition"
-              >
-                Lease Contracts
-              </button>
+
               <button
                 onClick={() => router.push('/dashboard/owner/dedicated-vendors')}
                 className="bg-white/90 text-indigo-700 rounded-lg px-3 py-2 text-sm font-semibold shadow hover:bg-indigo-50 transition"
@@ -288,15 +293,29 @@ export default function OwnerDashboardPage() {
   </div>
 </div>
 
-          {/* My Vendors quick action (above Active Maintenance) */}
+          {/* Quick Actions */}
           <div className="mb-4">
             <div className="grid grid-cols-3 gap-3">
+              <button
+                onClick={() => router.push('/dashboard/owner/contracts')}
+                className="bg-white rounded-lg border border-gray-100 p-3 flex flex-col items-center shadow-sm hover:shadow"
+              >
+                <i className="fas fa-file-signature text-2xl text-blue-600 mb-1" />
+                <span className="text-xs font-semibold text-gray-800">Contracts</span>
+              </button>
               <button
                 onClick={() => router.push('/dashboard/owner/dedicated-vendors')}
                 className="bg-white rounded-lg border border-gray-100 p-3 flex flex-col items-center shadow-sm hover:shadow"
               >
                 <i className="fas fa-user-cog text-2xl text-indigo-600 mb-1" />
                 <span className="text-xs font-semibold text-gray-800">My Vendors</span>
+              </button>
+              <button
+                onClick={() => router.push('/dashboard/owner/maintenance')}
+                className="bg-white rounded-lg border border-gray-100 p-3 flex flex-col items-center shadow-sm hover:shadow"
+              >
+                <i className="fas fa-tools text-2xl text-yellow-600 mb-1" />
+                <span className="text-xs font-semibold text-gray-800">Maintenance</span>
               </button>
             </div>
           </div>

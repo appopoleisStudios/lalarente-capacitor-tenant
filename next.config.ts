@@ -1,7 +1,9 @@
 /** @type {import('next').NextConfig} */
+const isStaticExport = process.env.STATIC_EXPORT === 'true' || process.env.NEXT_OUTPUT === 'export'
+
 const nextConfig = {
-  // Mobile-only static export for Capacitor
-  output: 'export',
+  // Enable static export only when explicitly requested (dynamic routes otherwise fail)
+  ...(isStaticExport ? { output: 'export' } : {}),
   trailingSlash: true,
   images: {
     unoptimized: true

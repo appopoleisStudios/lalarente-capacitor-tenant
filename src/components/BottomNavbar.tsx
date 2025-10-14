@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, usePathname } from 'next/navigation'
-import { useAuthStore } from '@/store/authStore'
+// import { useAuthStore } from '@/store/authStore'
 
 interface BottomNavbarProps {
   userRole: 'tenant' | 'owner' | 'vendor' | 'admin'
@@ -10,7 +10,7 @@ interface BottomNavbarProps {
 export default function BottomNavbar({ userRole }: BottomNavbarProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const { signOut } = useAuthStore()
+  // const { signOut } = useAuthStore()
 
   // Color mapping for active states
   const activeColorClasses = {
@@ -116,6 +116,10 @@ export default function BottomNavbar({ userRole }: BottomNavbarProps) {
   const baseTabs = userRole === 'tenant' ? tenantTabs : userRole === 'owner' ? ownerTabs : userRole === 'vendor' ? vendorTabs : adminTabs
 
   const tabs = [...baseTabs]
+  // Add About icon only for debug builds (controlled via env)
+  if (process.env.NEXT_PUBLIC_DEBUG_ABOUT === '1') {
+    tabs.push({ id: 'about', label: 'About', icon: 'fas fa-circle-info', path: '/about', badge: null } as any)
+  }
   const activeColor = userRole === 'tenant' ? 'emerald' : userRole === 'vendor' ? 'indigo' : 'blue'
 
   const handleTabPress = (path: string) => {

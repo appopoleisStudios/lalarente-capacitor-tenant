@@ -14,16 +14,10 @@ import {
 	Calendar, 
 	DollarSign, 
 	Clock, 
-	Star, 
-	FileText, 
-	Upload, 
-	Download,
-	CheckCircle,
 	MapPin,
 	User,
 	Building,
-	Tag,
-	TrendingUp
+	Tag
 } from 'lucide-react'
 
 type ContractStatus = 'draft' | 'pending_signatures' | 'active' | 'completed' | 'terminated' | 'expired'
@@ -380,7 +374,7 @@ function VendorContractDetailPageInner() {
 		)
 	}
 
-	const vendorHasSigned = sigs.some(s => s.signer_role === 'vendor')
+	// Removed unused vendorHasSigned variable
 
 	return (
 		<ProtectedRoute allowedRoles={['vendor']}>
@@ -431,24 +425,24 @@ function VendorContractDetailPageInner() {
 							const vendorStep: { key: string; label: string; sub?: string; state: StepState; when?: string } = {
 								key: 'signed_vendor',
 								label: 'Signed by Vendor',
-								sub: vendorSig ? undefined : 'Waiting for signature',
+								...(vendorSig ? {} : { sub: 'Waiting for signature' }),
 								state: vendorSig ? 'done' : 'pending',
-								when: vendorSig?.signed_at,
+								...(vendorSig?.signed_at ? { when: vendorSig.signed_at } : {}),
 							}
 							const ownerStep: { key: string; label: string; sub?: string; state: StepState; when?: string } = {
 								key: 'signed_owner',
 								label: 'Signed by Owner',
-								sub: ownerSig ? undefined : 'Waiting for signature',
+								...(ownerSig ? {} : { sub: 'Waiting for signature' }),
 								state: ownerSig ? 'done' : 'pending',
-								when: ownerSig?.signed_at,
+								...(ownerSig?.signed_at ? { when: ownerSig.signed_at } : {}),
 							}
 							const vendorFirst = !!vendorSig && !ownerSig
-							const steps = [
+                            const steps = [
 								{ key: 'created', label: 'Created', state: 'done' as StepState },
 								{ key: 'sent', label: 'Sent', state: 'done' as StepState },
 								vendorFirst ? vendorStep : ownerStep,
 								vendorFirst ? ownerStep : vendorStep,
-								{ key: 'active', label: 'Active', sub: activeState === 'pending' ? 'Pending' : undefined, state: activeState },
+                              { key: 'active', label: 'Active', ...(activeState === 'pending' ? { sub: 'Pending' } : {}), state: activeState },
 							]
 							const StepIcon = ({ state }: { state: StepState }) => {
 								if (state === 'done') return <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs">✓</div>
@@ -654,7 +648,7 @@ function VendorContractDetailPageInner() {
 								{contract.documents.map((doc) => (
 									<div key={doc.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
 										<div className="flex items-center gap-3">
-											<FileText className="h-5 w-5 text-gray-500" />
+            <span className="h-5 w-5 text-gray-500">📄</span>
 											<div>
 												<p className="text-sm font-medium text-gray-900">{doc.file_name}</p>
 												<p className="text-xs text-gray-500">

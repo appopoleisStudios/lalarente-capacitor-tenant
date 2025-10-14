@@ -6,6 +6,7 @@ import ProtectedRoute from '@/components/ProtectedRoute'
 import { useAuthStore } from '@/store/authStore'
 import { supabase } from '@/lib/supabase'
 import BottomNavbar from '@/components/BottomNavbar'
+import { ArrowLeft } from 'lucide-react'
 
 type Property = {
   id: string
@@ -118,7 +119,12 @@ export default function NewMaintenanceRequestPage() {
         if (error) throw error
         const rows = ((data || []) as { id: string; full_name: string | null; email: string | null; phone: string | null }[])
           .map((p) => ({ id: p.id, name: p.full_name || 'Vendor', email: p.email || undefined, phone: p.phone || undefined }))
-        setVendorSearchResults(rows)
+        setVendorSearchResults(rows.map(r => ({
+          id: r.id,
+          name: r.name,
+          ...(r.email ? { email: r.email } : {}),
+          ...(r.phone ? { phone: r.phone } : {}),
+        })))
       } catch (e) {
         console.error('Vendor search failed', e)
         setVendorSearchResults([])
@@ -210,7 +216,16 @@ export default function NewMaintenanceRequestPage() {
     <ProtectedRoute allowedRoles={['owner']}>
       <div className="max-w-sm mx-auto bg-white min-h-screen pb-20">
         <div className="px-4 py-4 flex items-center justify-between border-b">
-          <h1 className="font-semibold text-gray-900">New Maintenance Request</h1>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.back()}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              aria-label="Go back"
+            >
+              <ArrowLeft className="h-5 w-5 text-gray-600" />
+            </button>
+            <h1 className="font-semibold text-gray-900">New Maintenance Request</h1>
+          </div>
           <button 
             onClick={() => router.back()}
             className="text-gray-500 hover:text-gray-700"

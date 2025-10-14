@@ -1,0 +1,30 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit checks..."
+
+# TypeScript type checking
+echo "📝 Checking TypeScript types..."
+npx tsc --noEmit
+if [ $? -ne 0 ]; then
+  echo "❌ TypeScript errors found. Please fix before committing."
+  exit 1
+fi
+
+# ESLint checking
+echo "🔧 Running ESLint..."
+npx eslint . --ext .ts,.tsx --max-warnings 0
+if [ $? -ne 0 ]; then
+  echo "❌ ESLint errors found. Please fix before committing."
+  exit 1
+fi
+
+# Run tests
+echo "🧪 Running tests..."
+npm run test:ci
+if [ $? -ne 0 ]; then
+  echo "❌ Tests failed. Please fix before committing."
+  exit 1
+fi
+
+echo "✅ All pre-commit checks passed!"

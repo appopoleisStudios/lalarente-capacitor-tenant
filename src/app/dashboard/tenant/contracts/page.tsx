@@ -24,7 +24,8 @@ export default function TenantContractsPage() {
 	const { user } = useAuthStore()
 	const [serviceContracts, setServiceContracts] = useState<ServiceContractLite[]>([])
 	const [tenancyContracts, setTenancyContracts] = useState<TenancyContractLite[]>([])
-  const [loading, setLoading] = useState(false) // kept for future UX; suppress unused warning by using it
+  const [loading, setLoading] = useState(false)
+  void loading
 	const [msg, setMsg] = useState('')
 
 	useEffect(() => {
@@ -51,11 +52,11 @@ export default function TenantContractsPage() {
 		load()
 	}, [user])
 
-	const signServiceContractAsTenant = async (contractId: string, file: File | null) => {
+  const signServiceContractAsTenant = async (contractId: string, file: File | null) => {
 		if (!user) return
 		setLoading(true)
 		setMsg('')
-		try {
+    try {
 			let signatureUrl: string | null = null
 			if (file) {
 				const path = `signatures/${contractId}/${user.id}-${Date.now()}-${file.name}`
@@ -77,7 +78,7 @@ export default function TenantContractsPage() {
 		} catch (err) {
 			const message = err instanceof Error ? err.message : 'Failed to sign'
 			setMsg(message)
-		} finally {
+    } finally {
       setLoading(false)
 		}
 	}

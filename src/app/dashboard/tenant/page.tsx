@@ -17,6 +17,7 @@ import RecentActivityFeed from '@/components/Dashboard/Tenant/RecentActivityFeed
 import SupportContactCard from '@/components/Dashboard/Tenant/SupportContactCard'
 import TenantChatWidget from '@/components/Dashboard/Tenant/TenantChatWidget'
 import { createDocument } from '@/utils/documentUtils'
+import { ArrowLeft } from 'lucide-react'
 
 
 
@@ -82,7 +83,16 @@ export default function TenantDashboardPage() {
         </div>
 
         {/* Header */}
-        <TenantHeader tenantName={profile?.full_name || 'Tenant'} propertyName="Sandton Apartment" />
+        <div className="bg-white shadow-sm p-4 relative z-10 flex items-center gap-3">
+          <button
+            onClick={() => router.back()}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            aria-label="Go back"
+          >
+            <ArrowLeft className="h-5 w-5 text-gray-600" />
+          </button>
+          <TenantHeader tenantName={profile?.full_name || 'Tenant'} propertyName="Sandton Apartment" />
+        </div>
 
         <div className="p-6 pb-2 relative z-10">
 

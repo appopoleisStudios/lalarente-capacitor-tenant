@@ -62,7 +62,7 @@ export default function OwnerDedicatedVendorsPage() {
         if (catsRes.data) setCategories(catsRes.data as Category[])
         // default select first property if exists
         if (!selectedProperty && propsRes.data && propsRes.data.length > 0) {
-          setSelectedProperty(propsRes.data[0].id)
+          setSelectedProperty((propsRes.data[0] as Property).id)
         }
       } catch (e) {
         setError('Failed to load properties/categories')
@@ -85,7 +85,12 @@ export default function OwnerDedicatedVendorsPage() {
           .rpc('search_vendors_minimal', { p_term: term, p_limit: 10 })
         if (error) throw error
         const rows = ((data || []) as { id: string; full_name: string | null; email: string | null; phone: string | null }[])
-          .map((p) => ({ id: p.id, name: p.full_name || 'Vendor', email: p.email || undefined, phone: p.phone || undefined }))
+          .map((p) => ({
+            id: p.id,
+            name: p.full_name || 'Vendor',
+            ...(p.email ? { email: p.email } : {}),
+            ...(p.phone ? { phone: p.phone } : {}),
+          }))
         setVendorResults(rows)
       } catch (e) {
         // eslint-disable-next-line no-console
@@ -137,9 +142,9 @@ export default function OwnerDedicatedVendorsPage() {
 
         const merged: AllRow[] = all.map(r => ({
           ...r,
-          property_title: propTitleMap[r.property_id],
-          category_name: r.category_id ? (catNameMap[r.category_id] || '') : '',
-          vendor_name: vendorNameMap[r.vendor_id] || r.vendor_id,
+          ...(propTitleMap[r.property_id] ? { property_title: propTitleMap[r.property_id] } : {}),
+          ...(r.category_id && catNameMap[r.category_id] ? { category_name: catNameMap[r.category_id] } : {}),
+          ...(vendorNameMap[r.vendor_id] ? { vendor_name: vendorNameMap[r.vendor_id] } : {}),
         }))
         setAllRows(merged)
       } catch (e) {
@@ -229,6 +234,7 @@ export default function OwnerDedicatedVendorsPage() {
     }
   }
 
+  // keep for UI button wiring; underscore to appease TS when temporarily unused
   const handleAdd = async () => {
     if (!selectedProperty || !newVendorId) { setError('Select a property and pick a vendor (use search).'); return }
     try {
@@ -257,6 +263,9 @@ export default function OwnerDedicatedVendorsPage() {
       console.error(e)
     }
   }
+
+  // Mark used to satisfy noUnusedLocals when UI wiring is conditional
+  void handleAdd
 
   const handleAddVendorId = async (vendorId: string) => {
     if (!selectedProperty) { setError('Select a property first.'); return }

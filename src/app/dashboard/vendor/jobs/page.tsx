@@ -111,10 +111,16 @@ export default function VendorJobsPage() {
           cta = { label: 'Submit Quote', href: `/dashboard/vendor/quotes/new?contract_id=${r.id}` }
         } else if (poStatus === 'po_issued') {
           friendly = 'PO Issued'
+          cta = { label: 'Start Execution', href: `/dashboard/vendor/execution/${r.id}` }
         } else if (execStatus === 'in_progress') {
           friendly = 'In Progress'
+          cta = { label: 'Continue Execution', href: `/dashboard/vendor/execution/${r.id}` }
+        } else if (execStatus === 'paused') {
+          friendly = 'Paused'
+          cta = { label: 'Resume Execution', href: `/dashboard/vendor/execution/${r.id}` }
         } else if (execStatus === 'completed') {
           friendly = 'Completed'
+          cta = { label: 'View Execution', href: `/dashboard/vendor/execution/${r.id}` }
         }
         return {
           id: r.id,

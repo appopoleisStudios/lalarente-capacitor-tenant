@@ -1,10 +1,12 @@
 'use client'
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { Suspense, useEffect, useRef, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/authStore'
+import BottomNavbar from '@/components/BottomNavbar'
+import { ArrowLeft } from 'lucide-react'
 
 type ServiceContract = {
 	id: string
@@ -32,6 +34,7 @@ type TenancyContract = {
 
 function ContractDetailPageInner() {
 	const params = useSearchParams()
+	const router = useRouter()
 	const contractId = params.get('id') || ''
 	const [serviceContract, setServiceContract] = useState<ServiceContract | null>(null)
 	const [tenancyContract, setTenancyContract] = useState<TenancyContract | null>(null)
@@ -51,8 +54,8 @@ function ContractDetailPageInner() {
 	const [sigs, setSigs] = useState<{ signer_role: string; signed_at: string }[]>([])
 	const [audit, setAudit] = useState<{ action: string; timestamp: string; actor_role: string | null }[]>([])
 	// Service pricing & MMS (service contracts)
-	const [svcQuote, setSvcQuote] = useState<{ subtotal: number | null; total: number | null; status: string | null } | null>(null)
-	const [svcPO, setSvcPO] = useState<{ po_number?: string | null; status?: string | null; subtotal?: number | null; vat_amount?: number | null; platform_fee_amount?: number | null; total_amount?: number | null } | null>(null)
+	const [svcQuote, setSvcQuote] = useState<{ id?: string; subtotal: number | null; total: number | null; status: string | null } | null>(null)
+	const [svcPO, setSvcPO] = useState<{ id?: string; po_number?: string | null; status?: string | null; subtotal?: number | null; vat_amount?: number | null; platform_fee_amount?: number | null; total_amount?: number | null } | null>(null)
 	const [svcExec, setSvcExec] = useState<{ status: string | null } | null>(null)
 	// Financial summary (tenant)
 	const [financial, setFinancial] = useState<{ rentAmount?: number; depositAmount?: number; leaseStart?: string; leaseEnd?: string } | null>(null)
@@ -63,8 +66,8 @@ function ContractDetailPageInner() {
 	// Signature UI (tabs like draw/type/upload; MVP: upload + basic draw placeholder)
 	const [activeTab, setActiveTab] = useState<'draw' | 'type' | 'upload'>('draw')
 	const [consent, setConsent] = useState(false)
-	const [typedSig, setTypedSig] = useState('')
-	const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [typedSig, setTypedSig] = useState('')
+  const [uploadFile, setUploadFile] = useState<File | null>(null)
 	const [typedStyle, setTypedStyle] = useState<'left' | 'right' | null>(null)
 	const canvasRef = useRef<HTMLCanvasElement | null>(null)
 	const [hasStroke, setHasStroke] = useState(false)
@@ -129,23 +132,20 @@ function ContractDetailPageInner() {
 	}, [contractId])
 
 	const contract = serviceContract || tenancyContract
-	const role = profile?.role
-	const isOwner = role === 'owner'
-	const isTenant = role === 'tenant'
+const role = profile?.role
 	const isService = !!serviceContract
 	const currentParty = getCurrentPartyRole()
 
 	async function loadAncillary(kind: 'service' | 'tenancy', row: ServiceContract | TenancyContract) {
 		try {
-			// Parties (use SECURITY DEFINER RPC to avoid RLS issues for cross-profile reads)
-			const resolveMinimal = async (userId: string | null | undefined) => {
+			// Parties (fetch directly from profiles table)
+			const resolveProfile = async (userId: string | null | undefined) => {
 				if (!userId) return null
-				const res = await (supabase as any).rpc('get_profile_minimal', { uid: userId as any })
-				const data = Array.isArray(res.data) ? res.data[0] : (res.data as any)
-				return data || null
+				const res = await supabase.from('profiles').select('full_name, email').eq('id', userId).maybeSingle()
+				return res.data || null
 			}
 
-			const owner = await resolveMinimal(row.owner_id)
+			const owner = await resolveProfile(row.owner_id)
 			if (owner) {
 				setOwnerName(owner.full_name || 'Owner')
 				setOwnerEmail(owner.email || '')
@@ -155,7 +155,7 @@ function ContractDetailPageInner() {
 			}
 
 			if ('tenant_id' in row && row.tenant_id) {
-				const tenant = await resolveMinimal(row.tenant_id)
+				const tenant = await resolveProfile(row.tenant_id)
 				if (tenant) {
 					setTenantName(tenant.full_name || 'Tenant')
 					setTenantEmail(tenant.email || '')
@@ -169,7 +169,7 @@ function ContractDetailPageInner() {
 			}
 
 			if ('vendor_id' in row && (row as ServiceContract).vendor_id) {
-				const vendor = await resolveMinimal((row as ServiceContract).vendor_id)
+				const vendor = await resolveProfile((row as ServiceContract).vendor_id)
 				if (vendor) {
 					setVendorName(vendor.full_name || 'Vendor')
 					setVendorEmail(vendor.email || '')
@@ -188,10 +188,7 @@ function ContractDetailPageInner() {
 
 			// Financial Summary (tenancy only)
 			if (kind === 'tenancy') {
-				let leaseMonthly: string | undefined
-				let leaseDeposit: string | undefined
-				let leaseDueDay: string | undefined
-				let leaseTerm: string | undefined
+				// Removed unused variables: leaseMonthly, leaseDeposit, leaseDueDay, leaseTerm
 				try {
 					const tnc = row as TenancyContract
 					let leaseRes
@@ -208,12 +205,12 @@ function ContractDetailPageInner() {
 					}
                     const lease = (leaseRes.data as unknown as { rent_amount?: number | null; deposit_amount?: number | null; lease_start?: string | null; lease_end?: string | null } | null) || null
                     if (lease) {
-                        setFinancial({
-                            rentAmount: typeof lease.rent_amount === 'number' ? lease.rent_amount : undefined,
-                            depositAmount: typeof lease.deposit_amount === 'number' ? lease.deposit_amount : undefined,
-                            leaseStart: lease.lease_start || undefined,
-                            leaseEnd: lease.lease_end || undefined,
-                        })
+                        const next: { rentAmount?: number; depositAmount?: number; leaseStart?: string; leaseEnd?: string } = {}
+                        if (typeof lease.rent_amount === 'number') { next.rentAmount = lease.rent_amount }
+                        if (typeof lease.deposit_amount === 'number') { next.depositAmount = lease.deposit_amount }
+                        if (lease.lease_start) { next.leaseStart = lease.lease_start }
+                        if (lease.lease_end) { next.leaseEnd = lease.lease_end }
+                        setFinancial(next)
                     } else {
                         setFinancial(null)
                     }
@@ -244,9 +241,9 @@ function ContractDetailPageInner() {
 							.limit(1),
 					])
 					const q = Array.isArray(qRes?.data) ? qRes.data[0] : null
-					setSvcQuote(q ? { subtotal: q.subtotal ?? null, total: q.total_amount ?? null, status: q.status ?? null } : null)
+					setSvcQuote(q ? { id: q.id, subtotal: q.subtotal ?? null, total: q.total_amount ?? null, status: q.status ?? null } : null)
 					const po = Array.isArray(poRes?.data) ? poRes.data[0] : null
-					setSvcPO(po ? { po_number: po.po_number ?? null, status: po.status ?? null, subtotal: po.subtotal ?? null, vat_amount: po.vat_amount ?? null, platform_fee_amount: po.platform_fee_amount ?? null, total_amount: po.total_amount ?? null } : null)
+					setSvcPO(po ? { id: po.id, po_number: po.po_number ?? null, status: po.status ?? null, subtotal: po.subtotal ?? null, vat_amount: po.vat_amount ?? null, platform_fee_amount: po.platform_fee_amount ?? null, total_amount: po.total_amount ?? null } : null)
 					const ex = Array.isArray(exRes?.data) ? exRes.data[0] : null
 					setSvcExec(ex ? { status: ex.status ?? null } : null)
 				} catch {
@@ -256,7 +253,27 @@ function ContractDetailPageInner() {
 			// Signatures list
 			const sigTable = kind === 'service' ? 'service_contract_signatures' : 'tenancy_contract_signatures'
 			const sigRes = await supabase.from(sigTable).select('signer_role,signed_at').eq('contract_id', row.id).order('signed_at', { ascending: true })
-			setSigs(sigRes.data || [])
+            setSigs(sigRes.data || [])
+
+            // UX fix: Override status pill to 'pending_signatures' until required parties have signed
+            try {
+                const sigList = (sigRes.data || []) as { signer_role: string; signed_at: string }[]
+                const ownerHas = sigList.some(s => s.signer_role === 'owner')
+                const vendorHas = sigList.some(s => s.signer_role === 'vendor')
+                const tenantHas = sigList.some(s => s.signer_role === 'tenant')
+                const currentStatus = (kind === 'service' ? (row as ServiceContract).status : (row as TenancyContract).status) || 'pending_signatures'
+
+                const signaturesComplete = kind === 'service' ? (ownerHas && vendorHas) : (ownerHas && tenantHas)
+
+                // Only coerce to pending_signatures when not completed and signatures are incomplete
+                if (currentStatus !== 'completed' && !signaturesComplete) {
+                    setStatusPill('pending_signatures')
+                } else {
+                    setStatusPill(currentStatus)
+                }
+            } catch {
+                // best-effort; keep existing statusPill if anything goes wrong
+            }
 
 			// Log 'viewed' activity for current viewer, then load recent activity
 			// Only log a 'viewed' event if it hasn't been logged very recently by this user
@@ -328,17 +345,17 @@ function ContractDetailPageInner() {
 		}
 	}
 
-	function canSignInline(): boolean {
+  function canSignInline(): boolean {
 		if (statusPill !== 'pending_signatures') return false
 		const party = getCurrentPartyRole()
 		if (!party) return false
-		return consent && (
-			activeTab === 'upload'
-				? !!uploadFile
-				: activeTab === 'type'
-					? typedSig.trim().length > 0 && typedStyle !== null
-					: hasStroke
-		)
+    return consent && (
+      activeTab === 'upload'
+        ? !!uploadFile
+        : activeTab === 'type'
+          ? typedSig.trim().length > 0 && typedStyle !== null
+          : hasStroke
+    )
 	}
 
 	function startDraw(e: React.MouseEvent | React.TouchEvent) {
@@ -425,9 +442,19 @@ function ContractDetailPageInner() {
 			{/* Header */}
 			<div className={`px-4 py-4 ${role === 'owner' ? 'bg-gradient-to-r from-blue-700 to-blue-600' : role === 'tenant' ? 'bg-gradient-to-r from-emerald-600 to-emerald-500' : 'bg-gradient-to-r from-indigo-600 to-indigo-500'}`}>
 				<div className="max-w-3xl mx-auto text-white">
-					<div className="text-xl font-bold">Contract Details</div>
-					<div className="mt-1 text-xs opacity-90">
-						<span className="bg-white/20 px-2 py-0.5 rounded-full">{role || 'Viewer'}</span>
+					<div className="flex items-center gap-3">
+						<button 
+							onClick={() => router.back()} 
+							className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+						>
+							<ArrowLeft className="h-5 w-5 text-white" />
+						</button>
+						<div className="flex-1">
+							<div className="text-xl font-bold">Contract Details</div>
+							<div className="mt-1 text-xs opacity-90">
+								<span className="bg-white/20 px-2 py-0.5 rounded-full">{role || 'Viewer'}</span>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -455,26 +482,43 @@ function ContractDetailPageInner() {
 							)
 						})()}
 						<PartiesCard ownerName={ownerName} tenantName={tenantName} vendorName={vendorName} ownerEmail={ownerEmail} tenantEmail={tenantEmail} vendorEmail={vendorEmail} />
-						{financial && (
-							<FinancialSummaryCard rentAmount={financial.rentAmount} depositAmount={financial.depositAmount} leaseStart={financial.leaseStart} leaseEnd={financial.leaseEnd} />
-						)}
+                        {financial && (
+                            <FinancialSummaryCard 
+                                {...(financial.rentAmount !== undefined ? { rentAmount: financial.rentAmount } : {})}
+                                {...(financial.depositAmount !== undefined ? { depositAmount: financial.depositAmount } : {})}
+                                {...(financial.leaseStart ? { leaseStart: financial.leaseStart } : {})}
+                                {...(financial.leaseEnd ? { leaseEnd: financial.leaseEnd } : {})}
+                            />
+                        )}
 						{isService && (
 							<ServicePriceBreakdownCard quote={svcQuote} po={svcPO} />
 						)}
+		{isService && role === 'owner' && (
+			<OwnerActionsCard
+				quote={svcQuote}
+				po={svcPO}
+				exec={svcExec}
+				contractId={contractId}
+				canApproveQuote={hasSigned('owner') && hasSigned('vendor')}
+				onScrollToMessages={() => {
+					const el = document.getElementById('contract-messages')
+					if (el) el.scrollIntoView({ behavior: 'smooth' })
+				}}
+			/>
+		)}
 						{isService && (
 							<POExecutionStatusCard po={svcPO} exec={svcExec} />
 						)}
 						<ProgressCard status={statusPill} sigs={sigs} isService={isService} />
 						{statusPill === 'pending_signatures' && !hasSigned(currentParty || undefined) && (
-							<SignatureRequiredCard
+            <SignatureRequiredCard
 								activeTab={activeTab}
 								setActiveTab={setActiveTab}
 								typedSig={typedSig}
 								setTypedSig={setTypedSig}
 								typedStyle={typedStyle}
 								setTypedStyle={setTypedStyle}
-								uploadFile={uploadFile}
-								setUploadFile={setUploadFile}
+                                
 								consent={consent}
 								setConsent={setConsent}
 								canvasRef={canvasRef}
@@ -483,11 +527,28 @@ function ContractDetailPageInner() {
 								endDraw={endDraw}
 								clearCanvas={clearCanvas}
 								canSign={canSignInline()}
-								onSign={handleSign}
-								role={role}
-								onRequestChanges={() => setShowChanges(true)}
+                onSign={handleSign}
+                {...(role ? { role } : {})}
+                uploadFile={uploadFile}
+                setUploadFile={setUploadFile}
+                onRequestChanges={() => setShowChanges(true)}
 							/>
 						)}
+					{/* Messaging Section */}
+					<div id="contract-messages">
+						<ContractMessagesCard 
+							contractId={contractId} 
+							propertyId={(contract as any).property_id} 
+							role={role ?? null}
+							vendorName={vendorName}
+							ownerName={ownerName}
+							tenantName={tenantName}
+							isService={isService}
+							vendorId={(contract as any)?.vendor_id}
+							ownerId={(contract as any)?.owner_id}
+						/>
+					</div>
+						
 						{showChanges && (
 							<div className="bg-white rounded-xl border p-4">
 								<div className="text-lg font-semibold text-gray-900 mb-3">Request Changes</div>
@@ -509,14 +570,17 @@ function ContractDetailPageInner() {
 						)}
 						<DocumentCard contract={contract} status={statusPill} />
 					<ActivityCard items={audit} role={role || null} />
-					<FooterCard
+                    <FooterCard
 						canSign={statusPill === 'pending_signatures' && !hasSigned(currentParty || undefined) ? canSignInline() : false}
 						onSign={handleSign}
-						role={role}
+                        {...(role ? { role } : {})}
 					/>
 					</>
 				)}
 			</div>
+			
+			{/* Bottom Navigation */}
+			<BottomNavbar userRole={role as 'owner' | 'vendor' | 'tenant' | 'admin'} />
 		</div>
 	)
 }
@@ -531,38 +595,7 @@ export default function ContractDetailPage() {
 
 // removed duplicate function block
 
-function Signatures({ contractId, isService }: { contractId: string; isService: boolean }) {
-  const [sigs, setSigs] = useState<{ signer_role: string; signed_at: string }[]>([])
-  const [error, setError] = useState('')
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const table = isService ? 'service_contract_signatures' : 'tenancy_contract_signatures'
-        const { data } = await supabase
-          .from(table)
-          .select('signer_role,signed_at')
-          .eq('contract_id', contractId)
-          .order('signed_at', { ascending: true })
-        setSigs(data || [])
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Failed to load signatures')
-      }
-    }
-    load()
-  }, [contractId, isService])
-  if (error) return <div className="text-sm text-red-600">{error}</div>
-  return (
-    <div className="border rounded p-3">
-      <div className="font-medium mb-2">Signatures</div>
-      {sigs.length === 0 && <div className="text-sm text-gray-500">No signatures yet.</div>}
-      <ul className="text-sm text-gray-700 space-y-1">
-        {sigs.map((s, idx) => (
-          <li key={idx}>{s.signer_role} • {new Date(s.signed_at).toLocaleString()}</li>
-        ))}
-      </ul>
-    </div>
-  )
-}
+// Removed unused Signatures function
 
 function FinancialSummaryCard({ rentAmount, depositAmount, leaseStart, leaseEnd }: { rentAmount?: number; depositAmount?: number; leaseStart?: string; leaseEnd?: string }) {
   const hasAny = typeof rentAmount === 'number' || typeof depositAmount === 'number' || (leaseStart && leaseEnd)
@@ -641,55 +674,132 @@ function POExecutionStatusCard({ po, exec }: { po: { status?: string | null } | 
   )
 }
 
-function InlineSign({ contractId, isService, status }: { contractId: string; isService: boolean; status: string }) {
-  const { profile } = useAuthStore()
-  const isOwner = profile?.role === 'owner'
-  const isTenant = profile?.role === 'tenant'
-  const [consent, setConsent] = useState(false)
-  const [file, setFile] = useState<File | null>(null)
-  const [msg, setMsg] = useState('')
+function OwnerActionsCard({
+	quote,
+	po,
+	exec,
+	contractId,
+	canApproveQuote,
+	onScrollToMessages
+}: {
+	quote: { id?: string; subtotal: number | null; total: number | null; status: string | null } | null
+	po: { id?: string; po_number?: string | null; status?: string | null; subtotal?: number | null; vat_amount?: number | null; platform_fee_amount?: number | null; total_amount?: number | null } | null
+	exec: { status: string | null } | null
+	contractId: string
+	canApproveQuote: boolean
+	onScrollToMessages: () => void
+}) {
+	const hasQuote = !!quote
+	const hasPO = !!po
+	const execStatus = exec?.status || 'not_started'
 
-  if (status !== 'pending_signatures' || (!isOwner && !isTenant)) return null
+	const Button = ({
+		label,
+		onClick,
+		variant = 'primary',
+		disabled = false
+	}: { label: string; onClick?: () => void; variant?: 'primary' | 'secondary'; disabled?: boolean }) => (
+		<button
+			onClick={disabled ? undefined : onClick}
+			className={`px-3 py-2 rounded-lg text-sm font-medium border transition ${
+				variant === 'primary'
+					? 'bg-blue-600 text-white hover:bg-blue-700 border-blue-600'
+					: 'bg-white text-gray-700 hover:bg-gray-50 border-gray-300'
+			} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+			aria-disabled={disabled}
+		>
+			{label}
+		</button>
+	)
 
-  const handleSign = async () => {
-    try {
-      let signatureUrl: string | null = null
-      if (file) {
-        const path = `signatures/${contractId}/${profile?.id || 'user'}-${Date.now()}-${file.name}`
-        const up = await supabase.storage.from('contracts').upload(path, file, { upsert: true })
-        if (up.error) throw up.error
-        signatureUrl = up.data?.path || path
-      }
-      const table = isService ? 'service_contract_signatures' : 'tenancy_contract_signatures'
-      const role = isOwner ? 'owner' : 'tenant'
-      const ins = await supabase.from(table).insert({
-        contract_id: contractId,
-        signer_role: role,
-        signer_id: profile?.id || '',
-        signature_image_url: signatureUrl || 'uploaded-in-external-system',
-        signed_at: new Date().toISOString(),
-      })
-      if (ins.error) throw ins.error
-      setMsg('Signed successfully')
-    } catch (e) {
-      setMsg(e instanceof Error ? e.message : 'Failed to sign')
-    }
-  }
+	return (
+		<div className="bg-white rounded-xl border p-4">
+			<div className="text-lg font-semibold text-gray-900 mb-3">Owner Actions</div>
+			<div className="grid grid-cols-2 gap-3">
+				{/* Quotes */}
+					<Button
+						label="Review Quotes"
+						variant="secondary"
+						disabled={!hasQuote}
+						onClick={() => { window.location.href = '/dashboard/owner/quotes' }}
+					/>
+					<Button
+						label="Compare Quotes"
+						variant="secondary"
+						disabled={!hasQuote}
+						onClick={() => { window.location.href = '/dashboard/owner/quotes/compare' }}
+					/>
 
-  return (
-    <div className="bg-white rounded-lg border p-4">
-      <div className="text-lg font-semibold text-gray-900 mb-3">Your Signature</div>
-      <div className="text-sm text-gray-600 mb-2">Upload signature image (PNG/JPG). In-app signature pad coming next.</div>
-      <input type="file" accept="image/*" onChange={(e)=> setFile(e.target.files?.[0] || null)} />
-      <div className="flex items-start gap-2 mt-3">
-        <input type="checkbox" checked={consent} onChange={(e)=>setConsent(e.target.checked)} />
-        <label className="text-sm text-gray-700">I agree this is my legal signature</label>
-      </div>
-      <button className="mt-3 bg-sa-blue-500 hover:bg-sa-blue-600 text-white px-4 py-2 rounded disabled:opacity-50" disabled={!consent} onClick={handleSign}>Sign now</button>
-      {msg && <div className="mt-2 text-sm text-gray-700">{msg}</div>}
-    </div>
-  )
+				{/* PO */}
+				<Button
+					label="Approve Quote → Issue PO"
+					disabled={!hasQuote || hasPO || !canApproveQuote}
+					onClick={async () => {
+						if (!quote?.id) return
+						
+						try {
+							// Call the RPC function to approve quote and generate PO
+							const { data, error } = await supabase.rpc('approve_quote_and_generate_po', {
+								quote_id: quote.id
+							})
+							
+							if (error) {
+								throw error
+							}
+							
+							// Show success message and reload page to reflect changes
+							alert(`Quote approved! Purchase Order ${data} has been generated.`)
+							window.location.reload()
+							
+						} catch (e) {
+							alert(`Failed to approve quote: ${e instanceof Error ? e.message : 'Unknown error'}`)
+						}
+					}}
+				/>
+				<Button
+					label="View PO"
+					variant="secondary"
+					disabled={!hasPO}
+					onClick={() => {
+						if (po?.id) {
+							window.location.href = `/dashboard/owner/purchase-orders/${po.id}`
+						}
+					}}
+				/>
+
+				{/* Execution & Comms */}
+				<Button
+					label={execStatus === 'in_progress' ? 'Track Execution' : execStatus === 'completed' ? 'Execution Completed' : 'Start Execution'}
+					variant="secondary"
+					disabled={!hasPO}
+					onClick={() => {
+						window.scrollTo({ top: 0, behavior: 'smooth' })
+					}}
+				/>
+				<Button
+					label="Message Vendor"
+					variant="secondary"
+					onClick={onScrollToMessages}
+				/>
+				<Button
+					label="Review Closure"
+					variant="secondary"
+					disabled={execStatus !== 'completed'}
+					onClick={() => {
+						if (contractId) {
+							window.location.href = `/dashboard/owner/closure/${contractId}`
+						}
+					}}
+				/>
+			</div>
+			<div className="mt-2 text-xs text-gray-500">
+				Quotes/PO pages are being wired next; buttons are enabled only when data exists.
+			</div>
+		</div>
+	)
 }
+
+// Removed unused InlineSign function
 
 // Modular Cards
 function AgreementCard({ title, propertyLine, createdAt, updatedAt, shortId, status }: { title: string; propertyLine: string; createdAt?: string; updatedAt?: string; shortId?: string; status?: string }) {
@@ -774,17 +884,29 @@ function ProgressCard({ status, sigs, isService }: { status: string; sigs: { sig
   const signedByOwnerState: StepState = stateFor(ownerSigned, tenantSigned && !ownerSigned)
   const activeState: StepState = (status === 'active' || status === 'completed') ? 'done' : 'pending'
 
-  const stepOwner = { key: 'signed_owner', label: 'Signed by Owner', sub: signedByOwnerState === 'current' ? 'Waiting for signature' : (signedByOwnerState === 'pending' ? 'Pending' : undefined), state: signedByOwnerState, when: ownerSig?.signed_at }
-  const stepTenant = { key: 'signed_tenant', label: 'Signed by Tenant', sub: signedByTenantState === 'current' ? 'Waiting for signature' : (signedByTenantState === 'pending' ? 'Pending' : undefined), state: signedByTenantState, when: tenantSig?.signed_at }
+  const stepOwner: { key: string; label: string; sub?: string; state: StepState; when?: string } = { 
+    key: 'signed_owner', 
+    label: 'Signed by Owner', 
+    ...(signedByOwnerState === 'current' ? { sub: 'Waiting for signature' } : signedByOwnerState === 'pending' ? { sub: 'Pending' } : {}), 
+    state: signedByOwnerState, 
+    ...(ownerSig?.signed_at ? { when: ownerSig.signed_at } : {}),
+  }
+  const stepTenant: { key: string; label: string; sub?: string; state: StepState; when?: string } = { 
+    key: 'signed_tenant', 
+    label: 'Signed by Tenant', 
+    ...(signedByTenantState === 'current' ? { sub: 'Waiting for signature' } : signedByTenantState === 'pending' ? { sub: 'Pending' } : {}), 
+    state: signedByTenantState, 
+    ...(tenantSig?.signed_at ? { when: tenantSig.signed_at } : {}),
+  }
   const thirdIsOwner = ownerSigned && !tenantSigned
   let steps: { key: string; label: string; sub?: string; state: StepState; when?: string }[] = []
   if (isService) {
     const stepVendor: { key: string; label: string; sub?: string; state: StepState; when?: string } = {
       key: 'signed_vendor',
       label: 'Signed by Vendor',
-      sub: !vendorSig ? 'Waiting for signature' : undefined,
+      ...(!vendorSig ? { sub: 'Waiting for signature' } : {}),
       state: vendorSig ? 'done' : 'pending',
-      when: vendorSig?.signed_at,
+      ...(vendorSig?.signed_at ? { when: vendorSig.signed_at } : {}),
     }
     // Service contracts: Created → Sent → Signed by Owner → Signed by Vendor → Active (or vendor first)
     const vendorFirst = !!vendorSig && !ownerSig
@@ -793,7 +915,7 @@ function ProgressCard({ status, sigs, isService }: { status: string; sigs: { sig
       { key: 'sent', label: 'Sent', state: 'done' },
       vendorFirst ? stepVendor : stepOwner,
       vendorFirst ? stepOwner : stepVendor,
-      { key: 'active', label: 'Active', sub: activeState === 'pending' ? 'Pending' : undefined, state: activeState },
+      { key: 'active', label: 'Active', ...(activeState === 'pending' ? { sub: 'Pending' } : {}), state: activeState },
     ]
   } else {
     steps = [
@@ -801,7 +923,7 @@ function ProgressCard({ status, sigs, isService }: { status: string; sigs: { sig
       { key: 'sent', label: 'Sent', state: 'done' },
       thirdIsOwner ? stepOwner : stepTenant,
       thirdIsOwner ? stepTenant : stepOwner,
-      { key: 'active', label: 'Active', sub: activeState === 'pending' ? 'Pending' : undefined, state: activeState },
+      { key: 'active', label: 'Active', ...(activeState === 'pending' ? { sub: 'Pending' } : {}), state: activeState },
     ]
   }
 
@@ -855,8 +977,8 @@ function SignatureRequiredCard({
   setTypedSig,
   typedStyle,
   setTypedStyle,
-  uploadFile,
-  setUploadFile,
+  uploadFile: _uploadFile,
+  setUploadFile: _setUploadFile,
   consent,
   setConsent,
   canvasRef,
@@ -951,7 +1073,7 @@ function SignatureRequiredCard({
           </svg>
           <div className="text-sm text-gray-600">Upload your signature image</div>
           <div className="text-xs text-gray-500 mb-3">PNG, JPG, or SVG up to 2MB</div>
-          <input id="signature-upload-input" className="hidden" type="file" accept="image/*,.svg" onChange={(e)=> setUploadFile(e.target.files?.[0] || null)} />
+          <input id="signature-upload-input" className="hidden" type="file" accept="image/*,.svg" onChange={(e)=> _setUploadFile?.(e.target.files?.[0] || null)} />
           <label htmlFor="signature-upload-input" className={`mt-1 inline-block px-4 py-2 rounded-lg text-sm font-medium cursor-pointer text-white ${role==='owner' ? 'bg-blue-600 hover:bg-blue-700' : role==='tenant' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}>Choose File</label>
         </div>
       )}
@@ -1084,6 +1206,236 @@ function ActivityCard({ items, role }: { items: { action: string; timestamp: str
           )
         })}
       </ul>
+    </div>
+  )
+}
+
+function ContractMessagesCard({ 
+  contractId, 
+  propertyId, 
+  role, 
+  vendorName, 
+  ownerName, 
+  tenantName, 
+  isService,
+  vendorId,
+  ownerId
+}: { 
+  contractId: string; 
+  propertyId: string; 
+  role: string | null;
+  vendorName: string;
+  ownerName: string;
+  tenantName: string;
+  isService: boolean;
+  vendorId?: string;
+  ownerId?: string;
+}) {
+  const { profile } = useAuthStore()
+  const [messages, setMessages] = useState<{ id: string; content: string; sender_id: string; sender_name: string; created_at: string }[]>([])
+  const [newMessage, setNewMessage] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [sending, setSending] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const loadMessages = useCallback(async () => {
+    try {
+      setLoading(true)
+      const { data: messagesData, error: messagesError } = await supabase
+        .from('messages')
+        .select(`
+          *,
+          sender:profiles!messages_sender_id_fkey(id, full_name)
+        `)
+        .eq('property_id', propertyId)
+        .order('created_at', { ascending: true })
+
+      if (messagesError) throw messagesError
+
+      console.log('Raw messages data:', messagesData)
+      console.log('Property ID being queried:', propertyId)
+
+      const formattedMessages = (messagesData || []).map((msg: any) => {
+        const isOwnMessage = (msg.sender_id || '') === (profile?.id || '')
+        
+        // For own messages, show "You"
+        if (isOwnMessage) {
+          return {
+            id: String(msg.id),
+            content: String(msg.content ?? ''),
+            sender_id: String(msg.sender_id || ''),
+            sender_name: 'You',
+            created_at: String(msg.created_at || new Date().toISOString())
+          }
+        }
+        
+        // For other messages, determine sender name based on role and contract context
+        let senderName = (msg.sender?.full_name as string) || 'Unknown'
+        
+        // If sender name is still 'Unknown', try to match with contract parties
+        if (senderName === 'Unknown' || !msg.sender?.full_name) {
+          if (role === 'owner') {
+            // Owner is viewing messages - other sender could be vendor or tenant
+            if (isService && msg.sender_id === vendorId) {
+              senderName = vendorName || 'Vendor'
+            } else if (!isService && msg.sender_id === (contractId ? 'tenant_id' : null)) {
+              senderName = tenantName || 'Tenant'
+            }
+          } else if (role === 'vendor') {
+            // Vendor is viewing messages - other sender is owner
+            if (msg.sender_id === ownerId) {
+              senderName = ownerName || 'Owner'
+            }
+          } else if (role === 'tenant') {
+            // Tenant is viewing messages - other sender is owner
+            if (msg.sender_id === ownerId) {
+              senderName = ownerName || 'Owner'
+            }
+          }
+        }
+        
+        return {
+          id: String(msg.id),
+          content: String(msg.content ?? ''),
+          sender_id: String(msg.sender_id || ''),
+          sender_name: senderName,
+          created_at: String(msg.created_at || new Date().toISOString())
+        }
+      })
+
+      setMessages(formattedMessages)
+    } catch (error) {
+      console.error('Error loading messages:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [propertyId, role, profile?.id, vendorId, ownerId, isService, vendorName, tenantName, ownerName, contractId])
+
+  const sendMessage = async () => {
+    if (!newMessage.trim() || !profile?.id) return
+
+    try {
+      setSending(true)
+      
+      // Determine recipient_id based on role and contract type
+      let recipientId: string | null = null
+      if (role === 'owner' && isService && vendorId) {
+        recipientId = vendorId // Owner sending to vendor
+      } else if (role === 'vendor' && ownerId) {
+        recipientId = ownerId // Vendor sending to owner
+      } else if (role === 'tenant' && ownerId) {
+        recipientId = ownerId // Tenant sending to owner
+      }
+
+      console.log('Sending message:', {
+        content: newMessage.trim(),
+        sender_id: profile.id,
+        property_id: propertyId,
+        role: role,
+        profile_id: profile.id,
+        recipient_id: recipientId,
+        vendor_id: vendorId,
+        owner_id: ownerId
+      })
+
+      const { data: insertData, error: insertError } = await supabase
+        .from('messages')
+        .insert({
+          content: newMessage.trim(),
+          sender_id: profile.id,
+          property_id: propertyId,
+          recipient_id: recipientId
+        })
+        .select()
+
+      if (insertError) {
+        console.error('Message insert error:', insertError)
+        throw insertError
+      }
+      
+      console.log('Message inserted successfully:', insertData)
+
+      // Send notification to other parties
+      if (role === 'owner' && isService) {
+        // Notify vendor if this is a service contract
+        // We need to get the vendor ID from the contract context
+        // For now, skip notification to avoid errors
+        console.log('Owner message sent - notification skipped due to missing vendor context')
+      }
+
+      setNewMessage('')
+      await loadMessages() // Reload messages
+    } catch (error) {
+      console.error('Error sending message:', error)
+    } finally {
+      setSending(false)
+    }
+  }
+
+  useEffect(() => {
+    loadMessages()
+  }, [loadMessages])
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  const formatTime = (timestamp: string) => {
+    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
+
+  return (
+    <div className="bg-white rounded-xl border p-4">
+      <div className="text-lg font-semibold text-gray-900 mb-3">Messages</div>
+      
+      {/* Messages List */}
+      <div className="max-h-64 overflow-y-auto mb-4 space-y-3">
+        {loading ? (
+          <div className="text-sm text-gray-500">Loading messages...</div>
+        ) : messages.length === 0 ? (
+          <div className="text-sm text-gray-500">No messages yet. Start the conversation!</div>
+        ) : (
+          messages.map((message) => {
+            const isOwnMessage = message.sender_id === profile?.id
+            return (
+              <div key={message.id} className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-xs px-3 py-2 rounded-lg text-sm ${
+                  isOwnMessage 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-100 text-gray-900'
+                }`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-medium text-xs">{message.sender_name}</span>
+                    <span className="text-xs opacity-70">{formatTime(message.created_at)}</span>
+                  </div>
+                  <p className="whitespace-pre-wrap">{message.content}</p>
+                </div>
+              </div>
+            )
+          })
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Message Input */}
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+          placeholder="Type your message..."
+          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          disabled={sending}
+        />
+        <button
+          onClick={sendMessage}
+          disabled={!newMessage.trim() || sending}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {sending ? 'Sending...' : 'Send'}
+        </button>
+      </div>
     </div>
   )
 }

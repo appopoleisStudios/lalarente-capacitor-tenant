@@ -110,7 +110,7 @@ export function getAccessibleButtonProps(
   label: string,
   onClick?: () => void,
   disabled = false,
-  variant: 'primary' | 'secondary' | 'danger' = 'primary'
+  _variant: 'primary' | 'secondary' | 'danger' = 'primary'
 ) {
   return {
     'aria-label': label,
@@ -161,7 +161,7 @@ export function getAccessibleInputProps(
  * Generate accessible status message props
  */
 export function getAccessibleStatusProps(
-  message: string,
+  _message: string,
   type: 'info' | 'success' | 'warning' | 'error' = 'info'
 ) {
   return {

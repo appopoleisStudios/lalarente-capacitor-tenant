@@ -6,6 +6,8 @@ import { useEffect } from 'react'
 import { useAuthStore } from '@/store/authStore'
 import { supabase } from '@/lib/supabase'
 import { useMobile } from '@/hooks/useMobile'
+import dynamic from 'next/dynamic'
+const DebugAbout = dynamic(() => import('@/components/DebugAbout'), { ssr: false })
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -93,6 +95,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Lala Rente" />
       </head>
       <body className={`${inter.className} ${isNative ? 'mobile-app' : ''}`}>
+        {process.env.NEXT_PUBLIC_DEBUG_ABOUT === '1' && <DebugAbout />}
         {children}
       </body>
     </html>

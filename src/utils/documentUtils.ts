@@ -48,9 +48,9 @@ export function ensureDocumentIds(documents: Partial<Document>[]): Document[] {
     name: doc.name || `Document ${index + 1}`,
     date: doc.date || 'Unknown',
     icon: doc.icon || 'fas fa-file',
-    type: doc.type,
-    url: doc.url,
-    size: doc.size
+    ...(doc.type ? { type: doc.type } : {}),
+    ...(doc.url ? { url: doc.url } : {}),
+    ...(typeof doc.size === 'number' ? { size: doc.size } : {}),
   }))
 }
 
@@ -73,9 +73,9 @@ export function createDocument(
     name,
     date,
     icon,
-    type: options.type,
-    url: options.url,
-    size: options.size
+    ...(options.type ? { type: options.type } : {}),
+    ...(options.url ? { url: options.url } : {}),
+    ...(typeof options.size === 'number' ? { size: options.size } : {}),
   }
 }
 

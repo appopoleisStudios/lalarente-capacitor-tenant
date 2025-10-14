@@ -363,7 +363,7 @@ export default function VendorContractsPage() {
                 value={`${sortBy}-${sortOrder}`}
                 onChange={(e) => {
                   const [field, order] = e.target.value.split('-')
-                  if (isSortField(field)) {
+          if (field && isSortField(field)) {
                     setSortBy(field)
                   } else {
                     setSortBy('created_at')

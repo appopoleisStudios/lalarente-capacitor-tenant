@@ -11,10 +11,8 @@ import BottomNavbar from '@/components/BottomNavbar'
 import { 
 	ArrowLeft, 
 	CheckCircle, 
-	Clock, 
 	AlertTriangle,
-	Star,
-	MessageSquare
+	Star
 } from 'lucide-react'
 
 interface Contract {
