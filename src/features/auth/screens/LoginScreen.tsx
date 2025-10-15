@@ -33,12 +33,15 @@ const RSA_COLORS = {
   textGray: '#737373',
 };
 
+import { useAuth } from '@/src/contexts/AuthContext';
+
 export default function LoginScreen() {
   const router = useRouter();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // Animations
   const logoScale = useSharedValue(0.8);
@@ -66,11 +69,24 @@ export default function LoginScreen() {
   }));
 
   const handleLogin = async () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    if (!email.trim() || !password.trim()) {
+      alert('Please enter both email and password');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await signIn(email.trim(), password);
+      
+      // Navigation will be handled by auth state change
+      // For now, all roles go to owner dashboard
       router.replace('/(owner)/dashboard');
-    }, 1200);
+    } catch (error: any) {
+      console.error('Login error:', error);
+      alert(error.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -105,69 +121,62 @@ export default function LoginScreen() {
             entering={FadeInDown.delay(200).duration(600)}
             style={styles.formContainer}
           >
-            <Text style={styles.formTitle}>Let's sign you in</Text>
-            <Text style={styles.formSubtitle}>Welcome back, you've been missed</Text>
+            <Text style={styles.formTitle}>Welcome Back</Text>
+            <Text style={styles.formSubtitle}>Sign in to your account</Text>
 
             {/* Email Input */}
-            <Animated.View 
-              entering={FadeInDown.delay(400).duration(600)}
-              style={styles.inputWrapper}
-            >
+            <Animated.View entering={FadeInDown.delay(300).duration(600)}>
               <Text style={styles.inputLabel}>Email</Text>
               <View style={styles.inputContainer}>
                 <Text style={styles.inputIcon}>✉️</Text>
                 <TextInput
-                  placeholder="name@company.com"
+                  style={styles.input}
+                  placeholder="your@email.com"
+                  placeholderTextColor={RSA_COLORS.textGray}
                   value={email}
                   onChangeText={setEmail}
-                  keyboardType="email-address"
                   autoCapitalize="none"
+                  keyboardType="email-address"
                   autoComplete="email"
-                  placeholderTextColor={RSA_COLORS.textGray}
-                  style={styles.input}
+                  editable={!loading}
                 />
               </View>
             </Animated.View>
 
             {/* Password Input */}
-            <Animated.View 
-              entering={FadeInDown.delay(500).duration(600)}
-              style={styles.inputWrapper}
-            >
-              <View style={styles.labelRow}>
-                <Text style={styles.inputLabel}>Password</Text>
-                <Pressable>
-                  <Text style={styles.forgotLink}>Forgot?</Text>
-                </Pressable>
-              </View>
+            <Animated.View entering={FadeInDown.delay(400).duration(600)}>
+              <Text style={styles.inputLabel}>Password</Text>
               <View style={styles.inputContainer}>
                 <Text style={styles.inputIcon}>🔒</Text>
                 <TextInput
+                  style={styles.input}
                   placeholder="Enter your password"
+                  placeholderTextColor={RSA_COLORS.textGray}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
-                  placeholderTextColor={RSA_COLORS.textGray}
-                  style={styles.input}
+                  autoCapitalize="none"
+                  autoComplete="password"
+                  editable={!loading}
                 />
                 <Pressable
                   style={styles.eyeButton}
                   onPress={() => setShowPassword(!showPassword)}
                 >
-                  <Text style={styles.eyeIcon}>{showPassword ? '👁' : '👁‍🗨'}</Text>
+                  <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
                 </Pressable>
               </View>
             </Animated.View>
 
             {/* Sign In Button */}
-            <Animated.View entering={FadeInDown.delay(600).duration(600)}>
+            <Animated.View entering={FadeInDown.delay(500).duration(600)}>
               <Pressable
                 style={[
                   styles.signInButton,
-                  (!email || !password || loading) && styles.signInButtonDisabled,
+                  loading && styles.signInButtonDisabled,
                 ]}
                 onPress={handleLogin}
-                disabled={!email || !password || loading}
+                disabled={loading}
               >
                 <Text style={styles.signInButtonText}>
                   {loading ? 'Signing in...' : 'Sign In'}
@@ -175,46 +184,12 @@ export default function LoginScreen() {
               </Pressable>
             </Animated.View>
 
-            {/* Divider */}
-            <Animated.View 
-              entering={FadeInDown.delay(700).duration(600)}
-              style={styles.divider}
-            >
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or continue with</Text>
-              <View style={styles.dividerLine} />
+            {/* Helper Text */}
+            <Animated.View entering={FadeInDown.delay(600).duration(600)}>
+              <Text style={styles.helperText}>
+                Your role will be determined by your profile
+              </Text>
             </Animated.View>
-
-            {/* Social Buttons */}
-            <Animated.View 
-              entering={FadeInDown.delay(800).duration(600)}
-              style={styles.socialContainer}
-            >
-              <Pressable style={styles.socialButton}>
-                <View style={styles.socialIconContainer}>
-                  <Text style={styles.socialIcon}>G</Text>
-                </View>
-                <Text style={styles.socialText}>Google</Text>
-              </Pressable>
-
-              <Pressable style={styles.socialButton}>
-                <View style={styles.socialIconContainer}>
-                  <Text style={styles.socialIcon}></Text>
-                </View>
-                <Text style={styles.socialText}>Apple</Text>
-              </Pressable>
-            </Animated.View>
-          </Animated.View>
-
-          {/* Sign Up Link */}
-          <Animated.View 
-            entering={FadeInDown.delay(900).duration(600)}
-            style={styles.signupContainer}
-          >
-            <Text style={styles.signupText}>Don't have an account? </Text>
-            <Pressable>
-              <Text style={styles.signupLink}>Sign Up</Text>
-            </Pressable>
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -291,37 +266,26 @@ const styles = StyleSheet.create({
     color: RSA_COLORS.textGray,
     marginBottom: 32,
   },
-  // Input styles
-  inputWrapper: {
-    marginBottom: 20,
-  },
+  // Input fields
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
     color: RSA_COLORS.black,
     marginBottom: 8,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  forgotLink: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: RSA_COLORS.blue,
+    marginTop: 16,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: RSA_COLORS.gray,
+    backgroundColor: RSA_COLORS.white,
+    borderWidth: 2,
+    borderColor: '#E5E5E5',
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 54,
   },
   inputIcon: {
-    fontSize: 18,
+    fontSize: 20,
     marginRight: 12,
   },
   input: {
@@ -331,10 +295,16 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   eyeButton: {
-    padding: 8,
+    padding: 4,
   },
   eyeIcon: {
-    fontSize: 18,
+    fontSize: 20,
+  },
+  helperText: {
+    fontSize: 13,
+    color: RSA_COLORS.textGray,
+    textAlign: 'center',
+    marginTop: 16,
   },
   // Sign in button
   signInButton: {
@@ -346,7 +316,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   signInButtonDisabled: {
-    backgroundColor: '#CCCCCC',
+    opacity: 0.5,
   },
   signInButtonText: {
     fontSize: 16,
@@ -354,71 +324,5 @@ const styles = StyleSheet.create({
     color: RSA_COLORS.white,
     letterSpacing: 0.3,
   },
-  // Divider
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 32,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E5E5E5',
-  },
-  dividerText: {
-    marginHorizontal: 16,
-    fontSize: 13,
-    fontWeight: '500',
-    color: RSA_COLORS.textGray,
-  },
-  // Social buttons
-  socialContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  socialButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 54,
-    backgroundColor: RSA_COLORS.white,
-    borderWidth: 1.5,
-    borderColor: '#E5E5E5',
-    borderRadius: 12,
-    gap: 10,
-  },
-  socialIconContainer: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: RSA_COLORS.gray,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  socialIcon: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: RSA_COLORS.black,
-  },
-  socialText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: RSA_COLORS.black,
-  },
-  // Sign up
-  signupContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 24,
-  },
-  signupText: {
-    fontSize: 15,
-    color: RSA_COLORS.textGray,
-  },
-  signupLink: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: RSA_COLORS.green,
-  },
+
 });

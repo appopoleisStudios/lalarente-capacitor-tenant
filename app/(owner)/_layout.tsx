@@ -1,19 +1,18 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-
-const RSA = { blue: '#002395' };
+import { colors } from '@/src/shared/theme/colors';
 
 export default function OwnerLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: RSA.blue,
-        tabBarInactiveTintColor: '#9ca3af',
+        tabBarActiveTintColor: colors.primary[500], // SA Green - Primary brand color
+        tabBarInactiveTintColor: colors.gray[400],
         tabBarStyle: {
-          backgroundColor: '#ffffff',
+          backgroundColor: colors.background.default,
           borderTopWidth: 1,
-          borderTopColor: '#e5e7eb',
+          borderTopColor: colors.border.default,
           height: 85,
           paddingBottom: 25,
           paddingTop: 8,
@@ -68,8 +67,7 @@ export default function OwnerLayout() {
       <Tabs.Screen
         name="add-property"
         options={{
-          href: null, // Modal - no tabs
-          presentation: 'modal',
+          href: null, // Hidden from tabs - accessed as modal
         }}
       />
     </Tabs>
