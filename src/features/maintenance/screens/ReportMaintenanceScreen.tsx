@@ -8,7 +8,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useMediaUpload } from '../hooks';
-import { getTenantProperties } from '@/src/lib/mockData';
+import { maintenanceApi } from '../api';
 import { colors } from '@/src/shared/theme/colors';
 import { StyleSheet } from 'react-native';
 
@@ -20,19 +20,6 @@ const PRIORITIES = [
   { value: 'high', label: 'High', color: colors.error[500], icon: 'arrow-up-circle' },
 ];
 
-const MOCK_CATEGORIES = [
-  { id: 'cat-plumbing', name: 'Plumbing' },
-  { id: 'cat-electrical', name: 'Electrical' },
-  { id: 'cat-hvac', name: 'HVAC' },
-  { id: 'cat-general', name: 'General' },
-];
-
-const MOCK_OWNER_PROPERTIES = [
-  { id: 'prop-001', title: 'Sunset Apartment 3B' },
-  { id: 'prop-002', title: 'Green Park House' },
-  { id: 'prop-003', title: 'Ocean View Villa' },
-];
-
 export default function ReportMaintenanceScreen() {
   const { user, profile } = useAuth();
   const {
@@ -42,6 +29,7 @@ export default function ReportMaintenanceScreen() {
     takePhoto,
     pickMedia,
     removeFile,
+    uploadFiles,
     canAddMore,
   } = useMediaUpload(10);
 
@@ -53,25 +41,38 @@ export default function ReportMaintenanceScreen() {
   const [visibility, setVisibility] = useState<'public' | 'invited'>('invited');
   const [submitting, setSubmitting] = useState(false);
 
-  // Tenant-specific: Property selection
-  const [tenantProperties, setTenantProperties] = useState<any[]>([]);
-  const [isPropertyLocked, setIsPropertyLocked] = useState(false);
+  // Data from API
+  const [categories, setCategories] = useState<any[]>([]);
+  const [properties, setProperties] = useState<any[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
 
   const isOwner = profile?.role === 'owner';
-  const isTenant = profile?.role === 'tenant';
 
+  // Fetch categories and properties on mount
   useEffect(() => {
-    if (isTenant && user?.id) {
-      const properties = getTenantProperties(user.id);
-      setTenantProperties(properties);
+    async function fetchData() {
+      try {
+        setLoadingData(true);
+        
+        // Fetch categories
+        const categoriesData = await maintenanceApi.getServiceCategories();
+        setCategories(categoriesData);
 
-      // Auto-select if single property
-      if (properties.length === 1) {
-        setPropertyId(properties[0].property_id);
-        setIsPropertyLocked(true);
+        // Fetch owner's properties (only for owner role)
+        if (isOwner && user?.id) {
+          const propertiesData = await maintenanceApi.getOwnerProperties(user.id);
+          setProperties(propertiesData);
+        }
+      } catch (error: any) {
+        console.error('Error fetching data:', error);
+        Alert.alert('Error', 'Failed to load form data');
+      } finally {
+        setLoadingData(false);
       }
     }
-  }, [isTenant, user?.id]);
+
+    fetchData();
+  }, [isOwner, user?.id]);
 
   const handleSubmit = async () => {
     // Validation
@@ -87,34 +88,72 @@ export default function ReportMaintenanceScreen() {
       Alert.alert('Required', 'Please select a property');
       return;
     }
+    if (!user?.id) {
+      Alert.alert('Error', 'User not authenticated');
+      return;
+    }
 
     try {
       setSubmitting(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-      // TODO: Upload files when ready
-      // const { photos, videos } = await uploadFiles('maintenance-images');
+      // Step 1: Create maintenance request (without images first)
+      const request = await maintenanceApi.createMaintenanceRequest({
+        property_id: propertyId,
+        owner_id: isOwner ? user.id : '', // Will be fetched from property if empty
+        tenant_id: isOwner ? '' : user.id, // Tenant ID if tenant creates
+        category_id: categoryId || undefined,
+        priority,
+        title: title.trim(),
+        description: description.trim(),
+        visibility, // ✅ Pass visibility to API
+      });
 
-      // TODO: Create maintenance request via API
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Step 2: Upload media files if any
+      if (files.length > 0) {
+        const imageUrls = await uploadFiles(request.id);
+        
+        // Step 3: Update request with image URLs
+        if (imageUrls.length > 0) {
+          await maintenanceApi.updateMaintenanceRequest(request.id, {
+            images: imageUrls,
+          });
+        }
+      }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert(
         'Success',
-        isTenant
-          ? 'Request sent to property owner'
-          : 'Maintenance request submitted successfully',
+        'Maintenance request submitted successfully',
         [{ text: 'OK', onPress: () => router.back() }]
       );
     } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', error.message || 'Failed to submit request');
+      console.error('Submit error:', error);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const availableProperties = isOwner ? MOCK_OWNER_PROPERTIES : tenantProperties;
+  // Show loading state while fetching data
+  if (loadingData) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#111827" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Report Maintenance</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={RSA.green} />
+          <Text style={styles.loadingText}>Loading form...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -161,35 +200,22 @@ export default function ReportMaintenanceScreen() {
         {/* Property Selection */}
         <Animated.View entering={FadeInDown.delay(300).duration(500)} style={styles.section}>
           <Text style={styles.label}>Property *</Text>
-          {isPropertyLocked ? (
-            <View style={styles.lockedProperty}>
-              <Text style={styles.lockedPropertyText}>
-                {availableProperties.find(p => p.property_id === propertyId)?.property?.title ||
-                  availableProperties.find(p => p.id === propertyId)?.title}
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.chipContainer}>
-              {availableProperties.map((item) => {
-                const propId = item.property_id || item.id;
-                const propTitle = item.property?.title || item.title;
-                return (
-                  <TouchableOpacity
-                    key={propId}
-                    style={[styles.chip, propertyId === propId && styles.chipActive]}
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setPropertyId(propId);
-                    }}
-                  >
-                    <Text style={[styles.chipText, propertyId === propId && styles.chipTextActive]}>
-                      {propTitle}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
+          <View style={styles.chipContainer}>
+            {properties.map((property) => (
+              <TouchableOpacity
+                key={property.id}
+                style={[styles.chip, propertyId === property.id && styles.chipActive]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setPropertyId(property.id);
+                }}
+              >
+                <Text style={[styles.chipText, propertyId === property.id && styles.chipTextActive]}>
+                  {property.title}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </Animated.View>
 
         {/* Priority */}
@@ -218,7 +244,7 @@ export default function ReportMaintenanceScreen() {
         <Animated.View entering={FadeInDown.delay(500).duration(500)} style={styles.section}>
           <Text style={styles.label}>Category</Text>
           <View style={styles.chipContainer}>
-            {MOCK_CATEGORIES.map((category) => (
+            {categories.map((category) => (
               <TouchableOpacity
                 key={category.id}
                 style={[styles.chip, categoryId === category.id && styles.chipActive]}
@@ -239,36 +265,65 @@ export default function ReportMaintenanceScreen() {
         {isOwner && (
           <Animated.View entering={FadeInDown.delay(600).duration(500)} style={styles.section}>
             <Text style={styles.label}>Request Visibility</Text>
+            <Text style={styles.helperText}>
+              Choose how vendors can see this request
+            </Text>
             <View style={styles.visibilityContainer}>
               <TouchableOpacity
-                style={[styles.visibilityChip, visibility === 'public' && styles.chipActive]}
+                style={[
+                  styles.visibilityChip,
+                  visibility === 'public' && styles.visibilityChipActive,
+                ]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setVisibility('public');
                 }}
               >
                 <Text style={styles.visibilityIcon}>🌍</Text>
-                <Text style={[styles.visibilityLabel, visibility === 'public' && styles.chipTextActive]}>
+                <Text
+                  style={[
+                    styles.visibilityLabel,
+                    visibility === 'public' && styles.visibilityLabelActive,
+                  ]}
+                >
                   Open Market
                 </Text>
-                <Text style={[styles.visibilityHint, visibility === 'public' && { color: 'rgba(255,255,255,0.8)' }]}>
+                <Text
+                  style={[
+                    styles.visibilityHint,
+                    visibility === 'public' && styles.visibilityHintActive,
+                  ]}
+                >
                   All vendors can quote
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.visibilityChip, visibility === 'invited' && styles.chipActive]}
+                style={[
+                  styles.visibilityChip,
+                  visibility === 'invited' && styles.visibilityChipActive,
+                ]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setVisibility('invited');
                 }}
               >
                 <Text style={styles.visibilityIcon}>🔒</Text>
-                <Text style={[styles.visibilityLabel, visibility === 'invited' && styles.chipTextActive]}>
+                <Text
+                  style={[
+                    styles.visibilityLabel,
+                    visibility === 'invited' && styles.visibilityLabelActive,
+                  ]}
+                >
                   Invite Only
                 </Text>
-                <Text style={[styles.visibilityHint, visibility === 'invited' && { color: 'rgba(255,255,255,0.8)' }]}>
-                  Choose vendors
+                <Text
+                  style={[
+                    styles.visibilityHint,
+                    visibility === 'invited' && styles.visibilityHintActive,
+                  ]}
+                >
+                  Choose specific vendors
                 </Text>
               </TouchableOpacity>
             </View>
@@ -338,7 +393,7 @@ export default function ReportMaintenanceScreen() {
             <ActivityIndicator color="#FFFFFF" />
           ) : (
             <Text style={styles.submitButtonText}>
-              {isTenant ? 'Send to Owner' : 'Submit Request'}
+              Submit Request
             </Text>
           )}
         </TouchableOpacity>
@@ -349,6 +404,8 @@ export default function ReportMaintenanceScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f9fafb' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  loadingText: { marginTop: 12, fontSize: 16, color: '#6b7280' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 16, backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
   backButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
@@ -368,11 +425,15 @@ const styles = StyleSheet.create({
   priorityChip: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12, borderRadius: 12, backgroundColor: '#f5f5f5' },
   priorityText: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
   priorityTextActive: { color: '#ffffff' },
+  helperText: { fontSize: 12, color: '#9ca3af', marginTop: 4, marginBottom: 12 },
   visibilityContainer: { flexDirection: 'row', gap: 12 },
   visibilityChip: { flex: 1, padding: 16, borderRadius: 12, backgroundColor: '#f5f5f5', borderWidth: 2, borderColor: '#e5e7eb', alignItems: 'center' },
+  visibilityChipActive: { backgroundColor: RSA.green, borderColor: RSA.green },
   visibilityIcon: { fontSize: 32, marginBottom: 8 },
   visibilityLabel: { fontSize: 14, fontWeight: '700', color: '#111827' },
+  visibilityLabelActive: { color: '#ffffff' },
   visibilityHint: { fontSize: 11, color: '#9ca3af', marginTop: 4, textAlign: 'center' },
+  visibilityHintActive: { color: 'rgba(255, 255, 255, 0.8)' },
   lockedProperty: { backgroundColor: '#f5f5f5', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb' },
   lockedPropertyText: { fontSize: 16, fontWeight: '600', color: '#111827' },
   mediaGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },

@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, SafeAreaView } from 'react-native';
-import { useRouter } from 'expo-router';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, SafeAreaView, ActivityIndicator, RefreshControl } from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { AnimatedButton } from '../components/AnimatedButton';
 import { MaintenanceStatsCard } from '../components/MaintenanceStatsCard';
 import { MaintenanceFilters } from '../components/MaintenanceFilters';
 import { StatusBadge, PriorityIndicator } from '@/src/features/maintenance/components';
-import { MOCK_MAINTENANCE_REQUESTS, MOCK_USERS } from '@/src/lib/mockData';
+import { useMaintenanceRequests } from '@/src/features/maintenance/hooks';
 import { styles } from './OwnerMaintenanceListScreen.styles';
 
 type FilterType = 'all' | 'open' | 'assigned' | 'in_progress' | 'completed';
@@ -15,14 +15,19 @@ type FilterType = 'all' | 'open' | 'assigned' | 'in_progress' | 'completed';
 export default function OwnerMaintenanceListScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  
+  // Real data from database
+  const { requests: allRequests, loading, error, refreshing, onRefresh, refetch } = useMaintenanceRequests();
 
-  // Mock data - filter by owner
-  const allRequests = MOCK_MAINTENANCE_REQUESTS.filter(
-    (r) => r.owner_id === MOCK_USERS.owner.id
+  // Refresh when screen comes into focus (after delete/update)
+  useFocusEffect(
+    React.useCallback(() => {
+      refetch();
+    }, [refetch])
   );
 
   // Filter requests
-  const filteredRequests = allRequests.filter((request) => {
+  const filteredRequests = allRequests.filter((request: any) => {
     if (activeFilter === 'all') return true;
     return request.status === activeFilter;
   });
@@ -30,10 +35,10 @@ export default function OwnerMaintenanceListScreen() {
   // Calculate counts
   const counts = {
     all: allRequests.length,
-    open: allRequests.filter((r) => r.status === 'open').length,
-    assigned: allRequests.filter((r) => r.status === 'assigned').length,
-    in_progress: allRequests.filter((r) => r.status === 'in_progress').length,
-    completed: allRequests.filter((r) => r.status === 'completed').length,
+    open: allRequests.filter((r: any) => r.status === 'open').length,
+    assigned: allRequests.filter((r: any) => r.status === 'assigned').length,
+    in_progress: allRequests.filter((r: any) => r.status === 'in_progress').length,
+    completed: allRequests.filter((r: any) => r.status === 'completed').length,
   };
 
   const formatDate = (dateString: string) => {
@@ -60,6 +65,52 @@ export default function OwnerMaintenanceListScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     router.push(`/(owner)/maintenance/${requestId}`);
   };
+
+  // Loading state
+  if (loading && !refreshing) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <Text style={styles.headerTitle}>Maintenance</Text>
+              <Text style={styles.headerSubtitle}>Loading...</Text>
+            </View>
+          </View>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#007A4D" />
+            <Text style={styles.loadingText}>Loading requests...</Text>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <Text style={styles.headerTitle}>Maintenance</Text>
+              <Text style={styles.headerSubtitle}>Error</Text>
+            </View>
+          </View>
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorIcon}>⚠️</Text>
+            <Text style={styles.errorTitle}>Failed to load requests</Text>
+            <Text style={styles.errorMessage}>{error}</Text>
+            <AnimatedButton onPress={onRefresh}>
+              <View style={styles.retryButton}>
+                <Text style={styles.retryButtonText}>Retry</Text>
+              </View>
+            </AnimatedButton>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -90,6 +141,9 @@ export default function OwnerMaintenanceListScreen() {
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#007A4D" />
+          }
           showsVerticalScrollIndicator={false}
         >
           {/* Stats Cards */}
@@ -112,7 +166,7 @@ export default function OwnerMaintenanceListScreen() {
               </View>
             ) : (
               <View>
-                {filteredRequests.map((request, index) => (
+                {filteredRequests.map((request: any, index: number) => (
                   <AnimatedButton
                     key={request.id}
                     onPress={() => handleCardPress(request.id)}

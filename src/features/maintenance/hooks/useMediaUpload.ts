@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
-import { uploadMultipleFiles } from '../../../lib/storage';
-import { Alert } from 'react-native';
+import { supabase, STORAGE_BUCKETS } from '@/src/lib/supabase';
+import { Alert, Platform } from 'react-native';
 
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB (Supabase limit)
 
@@ -38,25 +38,38 @@ export function useMediaUpload(maxFiles: number = 10) {
 
   // Take photo with camera
   const takePhoto = async () => {
-    const hasPermission = await requestCameraPermission();
-    if (!hasPermission) return;
-
     if (files.length >= maxFiles) {
       Alert.alert('Limit Reached', `You can only upload up to ${maxFiles} files`);
       return;
     }
 
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 0.8,
-    });
+    const hasPermission = await requestCameraPermission();
+    if (!hasPermission) return;
 
-    if (!result.canceled && result.assets[0]) {
-      setFiles((prev) => [...prev, {
-        uri: result.assets[0].uri,
-        type: 'photo',
-      }]);
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'], // Updated from deprecated MediaTypeOptions
+        allowsEditing: true,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setFiles((prev) => [...prev, {
+          uri: result.assets[0].uri,
+          type: 'photo',
+        }]);
+      }
+    } catch (error: any) {
+      // Handle simulator camera error gracefully
+      if (error.message?.includes('Camera') || error.message?.includes('simulator')) {
+        Alert.alert(
+          'Camera Not Available',
+          'Camera is not available on simulator. Please use "Pick from Gallery" instead or test on a physical device.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert('Camera Error', error.message || 'Failed to open camera');
+      }
     }
   };
 
@@ -71,35 +84,39 @@ export function useMediaUpload(maxFiles: number = 10) {
       return;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All, // Photos + Videos
-      allowsMultipleSelection: true,
-      quality: 0.8,
-      selectionLimit: remainingSlots,
-      videoMaxDuration: 120, // 2 minutes max
-    });
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images', 'videos'], // Updated from deprecated MediaTypeOptions.All
+        allowsMultipleSelection: true,
+        quality: 0.8,
+        selectionLimit: remainingSlots,
+        videoMaxDuration: 120, // 2 minutes max
+      });
 
-    if (!result.canceled && result.assets.length > 0) {
-      const newFiles: MediaFile[] = [];
-      
-      for (const asset of result.assets) {
-        // Check video size
-        if (asset.type === 'video' && asset.fileSize && asset.fileSize > MAX_VIDEO_SIZE) {
-          Alert.alert(
-            'File Too Large',
-            `Video exceeds 50MB limit. Please choose a smaller file.`
-          );
-          continue;
+      if (!result.canceled && result.assets.length > 0) {
+        const newFiles: MediaFile[] = [];
+        
+        for (const asset of result.assets) {
+          // Check video size
+          if (asset.type === 'video' && asset.fileSize && asset.fileSize > MAX_VIDEO_SIZE) {
+            Alert.alert(
+              'File Too Large',
+              `Video exceeds 50MB limit. Please choose a smaller file.`
+            );
+            continue;
+          }
+
+          newFiles.push({
+            uri: asset.uri,
+            type: asset.type === 'video' ? 'video' : 'photo',
+            size: asset.fileSize,
+          });
         }
 
-        newFiles.push({
-          uri: asset.uri,
-          type: asset.type === 'video' ? 'video' : 'photo',
-          size: asset.fileSize,
-        });
+        setFiles((prev) => [...prev, ...newFiles]);
       }
-
-      setFiles((prev) => [...prev, ...newFiles]);
+    } catch (error: any) {
+      Alert.alert('Gallery Error', error.message || 'Failed to open gallery');
     }
   };
 
@@ -109,34 +126,56 @@ export function useMediaUpload(maxFiles: number = 10) {
   };
 
   // Upload files to Supabase Storage
-  const uploadFiles = async (bucket: string = 'maintenance-images') => {
-    if (files.length === 0) return { photos: [], videos: [] };
+  const uploadFiles = async (requestId: string) => {
+    if (files.length === 0) return [];
 
     try {
       setUploading(true);
       setUploadProgress(0);
 
-      const uris = files.map(f => f.uri);
-      const urls = await uploadMultipleFiles(
-        uris,
-        bucket,
-        (progress) => setUploadProgress(progress)
-      );
+      const uploadedUrls: string[] = [];
+      const totalFiles = files.length;
 
-      // Separate photos and videos
-      const photos: string[] = [];
-      const videos: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Generate unique filename
+        const timestamp = Date.now();
+        const random = Math.random().toString(36).substring(7);
+        const ext = file.type === 'video' ? 'mp4' : 'jpg';
+        const fileName = `${timestamp}-${random}.${ext}`;
+        const filePath = `${requestId}/${fileName}`;
 
-      files.forEach((file, index) => {
-        if (file.type === 'video') {
-          videos.push(urls[index]);
-        } else {
-          photos.push(urls[index]);
+        // For React Native, we need to use FormData or ArrayBuffer
+        // Get the file as ArrayBuffer
+        const response = await fetch(file.uri);
+        const arrayBuffer = await response.arrayBuffer();
+
+        // Upload to Supabase Storage using ArrayBuffer
+        const { error: uploadError } = await supabase.storage
+          .from(STORAGE_BUCKETS.MAINTENANCE_MEDIA)
+          .upload(filePath, arrayBuffer, {
+            contentType: file.type === 'video' ? 'video/mp4' : 'image/jpeg',
+            upsert: false,
+          });
+
+        if (uploadError) {
+          throw new Error(`Failed to upload ${file.type}: ${uploadError.message}`);
         }
-      });
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from(STORAGE_BUCKETS.MAINTENANCE_MEDIA)
+          .getPublicUrl(filePath);
+
+        uploadedUrls.push(urlData.publicUrl);
+
+        // Update progress
+        setUploadProgress(((i + 1) / totalFiles) * 100);
+      }
 
       setUploading(false);
-      return { photos, videos };
+      return uploadedUrls;
     } catch (error: any) {
       setUploading(false);
       Alert.alert('Upload Failed', error.message);

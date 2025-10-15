@@ -3,15 +3,15 @@ import { maintenanceApi } from '../api/maintenanceApi';
 import { useAuth } from '@/src/contexts/AuthContext';
 
 export function useMaintenanceRequests() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Fetch maintenance requests
+  // Fetch maintenance requests with role-based filtering
   const fetchRequests = useCallback(async () => {
-    if (!user?.id) {
+    if (!user?.id || !profile?.role) {
       // No user logged in - set loading to false and show empty state
       setLoading(false);
       setRefreshing(false);
@@ -21,7 +21,9 @@ export function useMaintenanceRequests() {
 
     try {
       setError(null);
-      const data = await maintenanceApi.getMaintenanceRequests(user.id);
+      // Filter out admin role (not supported in maintenance)
+      const role = profile.role === 'admin' ? 'owner' : profile.role;
+      const data = await maintenanceApi.getMaintenanceRequests(user.id, role);
       setRequests(data);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch maintenance requests');
@@ -30,7 +32,7 @@ export function useMaintenanceRequests() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [user?.id]);
+  }, [user?.id, profile?.role]);
 
   // Pull-to-refresh handler
   const onRefresh = useCallback(() => {
@@ -40,7 +42,7 @@ export function useMaintenanceRequests() {
 
   // Initial load + Real-time subscription
   useEffect(() => {
-    if (!user?.id) {
+    if (!user?.id || !profile?.role) {
       // No user - stop loading and show empty state
       setLoading(false);
       setRequests([]);
@@ -61,7 +63,7 @@ export function useMaintenanceRequests() {
     return () => {
       maintenanceApi.unsubscribe(subscription);
     };
-  }, [user?.id, fetchRequests]);
+  }, [user?.id, profile?.role, fetchRequests]);
 
   // Filter by status
   const filterByStatus = useCallback(

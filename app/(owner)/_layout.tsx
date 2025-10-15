@@ -70,6 +70,18 @@ export default function OwnerLayout() {
           href: null, // Hidden from tabs - accessed as modal
         }}
       />
+      <Tabs.Screen
+        name="maintenance/new"
+        options={{
+          href: null, // Hidden from tabs - detail screen
+        }}
+      />
+      <Tabs.Screen
+        name="maintenance/[id]"
+        options={{
+          href: null, // Hidden from tabs - detail screen
+        }}
+      />
     </Tabs>
   );
 }

@@ -37,11 +37,29 @@ import { useAuth } from '@/src/contexts/AuthContext';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { signIn } = useAuth();
+  const { signIn, profile, loading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Redirect based on role when profile loads after login
+  useEffect(() => {
+    if (profile && !authLoading) {
+      setLoading(false);
+      
+      // Role-based navigation
+      if (profile.role === 'owner') {
+        router.replace('/(owner)/dashboard');
+      } else if (profile.role === 'tenant') {
+        // TODO: Create tenant dashboard
+        router.replace('/(owner)/dashboard'); // Temporary
+      } else if (profile.role === 'vendor') {
+        // TODO: Create vendor dashboard
+        router.replace('/(owner)/dashboard'); // Temporary
+      }
+    }
+  }, [profile, authLoading]);
 
   // Animations
   const logoScale = useSharedValue(0.8);
@@ -78,13 +96,11 @@ export default function LoginScreen() {
       setLoading(true);
       await signIn(email.trim(), password);
       
-      // Navigation will be handled by auth state change
-      // For now, all roles go to owner dashboard
-      router.replace('/(owner)/dashboard');
+      // Note: Navigation will be handled by useEffect watching profile changes
+      // See useEffect below that redirects based on role
     } catch (error: any) {
       console.error('Login error:', error);
       alert(error.message || 'Login failed. Please check your credentials.');
-    } finally {
       setLoading(false);
     }
   };

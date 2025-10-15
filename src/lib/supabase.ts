@@ -16,6 +16,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, 
 // Storage bucket names
 export const STORAGE_BUCKETS = {
   PROPERTY_IMAGES: 'property-images',
+  MAINTENANCE_MEDIA: 'maintenance-media', // Photos/videos for maintenance requests
   DOCUMENTS: 'documents',
   CONTRACTS: 'contracts',
 } as const;

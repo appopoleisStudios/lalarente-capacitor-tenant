@@ -350,6 +350,48 @@ export interface Database {
       }
       
       // ============================================
+      // LEASES
+      // ============================================
+      leases: {
+        Row: {
+          id: string
+          property_id: string | null
+          tenant_id: string | null
+          lease_start: string
+          lease_end: string
+          rent_amount: number
+          deposit_amount: number | null
+          lease_document_url: string | null
+          status: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          property_id?: string | null
+          tenant_id?: string | null
+          lease_start: string
+          lease_end: string
+          rent_amount: number
+          deposit_amount?: number | null
+          lease_document_url?: string | null
+          status?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          property_id?: string | null
+          tenant_id?: string | null
+          lease_start?: string
+          lease_end?: string
+          rent_amount?: number
+          deposit_amount?: number | null
+          lease_document_url?: string | null
+          status?: string | null
+          created_at?: string
+        }
+      }
+      
+      // ============================================
       // PROFILES (USERS)
       // ============================================
       profiles: {
@@ -392,6 +434,7 @@ export type JobExecution = Database['public']['Tables']['job_executions']['Row']
 export type ServiceCategory = Database['public']['Tables']['service_categories']['Row']
 export type Property = Database['public']['Tables']['properties']['Row']
 export type Profile = Database['public']['Tables']['profiles']['Row']
+export type Lease = Database['public']['Tables']['leases']['Row']
 
 // Extended types with relationships
 export type MaintenanceRequestWithRelations = MaintenanceRequest & {
