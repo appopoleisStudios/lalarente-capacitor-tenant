@@ -4,7 +4,6 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { AnimatedButton } from '../components/AnimatedButton';
-import { MaintenanceStatsCard } from '../components/MaintenanceStatsCard';
 import { MaintenanceFilters } from '../components/MaintenanceFilters';
 import { StatusBadge, PriorityIndicator } from '@/src/features/maintenance/components';
 import { useMaintenanceRequests } from '@/src/features/maintenance/hooks';
@@ -146,18 +145,8 @@ export default function OwnerMaintenanceListScreen() {
           }
           showsVerticalScrollIndicator={false}
         >
-          {/* Stats Cards */}
-          <Animated.View entering={FadeInDown.delay(100).duration(500)}>
-            <MaintenanceStatsCard
-              openCount={counts.open}
-              assignedCount={counts.assigned}
-              inProgressCount={counts.in_progress}
-              completedCount={counts.completed}
-            />
-          </Animated.View>
-
           {/* Requests List */}
-          <Animated.View entering={FadeInDown.delay(200).duration(500)}>
+          <Animated.View entering={FadeInDown.delay(100).duration(500)}>
             {filteredRequests.length === 0 ? (
               <View style={styles.emptyContainer}>
                 <Text style={styles.emptyIcon}>🔧</Text>
