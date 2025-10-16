@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 
-const RSA = { blue: '#002395', green: '#007A4D', red: '#DE3831', gold: '#FFB81C' };
+const RSA = { blue: '#002395', red: '#DE3831', gold: '#FFB81C' };
 
 export const styles = StyleSheet.create({
   safeArea: {
@@ -37,11 +37,11 @@ export const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: RSA.green,
+    backgroundColor: RSA.blue,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 4,
-    shadowColor: RSA.green,
+    shadowColor: RSA.blue,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

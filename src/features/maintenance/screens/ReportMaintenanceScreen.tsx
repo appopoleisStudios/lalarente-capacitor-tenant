@@ -12,7 +12,7 @@ import { maintenanceApi } from '../api';
 import { colors } from '@/src/shared/theme/colors';
 import { StyleSheet } from 'react-native';
 
-const RSA = { green: '#007A4D' };
+const RSA = { blue: '#002395' };
 
 const PRIORITIES = [
   { value: 'low', label: 'Low', color: colors.success[500], icon: 'arrow-down-circle' },
@@ -148,7 +148,7 @@ export default function ReportMaintenanceScreen() {
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={RSA.green} />
+          <ActivityIndicator size="large" color={RSA.blue} />
           <Text style={styles.loadingText}>Loading form...</Text>
         </View>
       </SafeAreaView>
@@ -366,11 +366,11 @@ export default function ReportMaintenanceScreen() {
             {canAddMore && (
               <>
                 <TouchableOpacity style={styles.addMediaButton} onPress={takePhoto}>
-                  <Ionicons name="camera" size={32} color={RSA.green} />
+                  <Ionicons name="camera" size={32} color={RSA.blue} />
                   <Text style={styles.addMediaText}>Camera</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.addMediaButton} onPress={pickMedia}>
-                  <Ionicons name="images" size={32} color={RSA.green} />
+                  <Ionicons name="images" size={32} color={RSA.blue} />
                   <Text style={styles.addMediaText}>Gallery</Text>
                 </TouchableOpacity>
               </>
@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
   charCount: { fontSize: 12, color: '#9ca3af', textAlign: 'right', marginTop: 4 },
   chipContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: '#f5f5f5', borderWidth: 1, borderColor: '#e5e7eb' },
-  chipActive: { backgroundColor: RSA.green, borderColor: RSA.green },
+  chipActive: { backgroundColor: RSA.blue, borderColor: RSA.blue },
   chipText: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
   chipTextActive: { color: '#ffffff' },
   priorityContainer: { flexDirection: 'row', gap: 12 },
@@ -428,7 +428,7 @@ const styles = StyleSheet.create({
   helperText: { fontSize: 12, color: '#9ca3af', marginTop: 4, marginBottom: 12 },
   visibilityContainer: { flexDirection: 'row', gap: 12 },
   visibilityChip: { flex: 1, padding: 16, borderRadius: 12, backgroundColor: '#f5f5f5', borderWidth: 2, borderColor: '#e5e7eb', alignItems: 'center' },
-  visibilityChipActive: { backgroundColor: RSA.green, borderColor: RSA.green },
+  visibilityChipActive: { backgroundColor: RSA.blue, borderColor: RSA.blue },
   visibilityIcon: { fontSize: 32, marginBottom: 8 },
   visibilityLabel: { fontSize: 14, fontWeight: '700', color: '#111827' },
   visibilityLabelActive: { color: '#ffffff' },
@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
   addMediaText: { fontSize: 12, color: '#6b7280', marginTop: 4, fontWeight: '600' },
   mediaHint: { fontSize: 11, color: '#9ca3af', marginTop: 8 },
   footer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, backgroundColor: '#ffffff', borderTopWidth: 1, borderTopColor: '#e5e7eb' },
-  submitButton: { backgroundColor: RSA.green, paddingVertical: 16, borderRadius: 12, alignItems: 'center' },
+  submitButton: { backgroundColor: RSA.blue, paddingVertical: 16, borderRadius: 12, alignItems: 'center' },
   submitButtonDisabled: { opacity: 0.5 },
   submitButtonText: { fontSize: 16, fontWeight: '700', color: '#ffffff' },
 });

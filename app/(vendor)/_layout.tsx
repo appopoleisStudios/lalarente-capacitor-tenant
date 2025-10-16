@@ -2,7 +2,7 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/src/shared/theme/colors';
 
-export default function OwnerLayout() {
+export default function VendorLayout() {
   return (
     <Tabs
       screenOptions={{
@@ -26,7 +26,7 @@ export default function OwnerLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          href: null, // Hidden
+          href: null, // Hidden - redirects to dashboard
         }}
       />
       <Tabs.Screen
@@ -37,61 +37,37 @@ export default function OwnerLayout() {
         }}
       />
       <Tabs.Screen
-        name="properties"
-        options={{
-          title: 'Properties',
-          tabBarIcon: ({ color, size }) => <Ionicons name="business" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="maintenance"
         options={{
-          title: 'Maintenance',
-          tabBarIcon: ({ color, size }) => <Ionicons name="construct" size={size} color={color} />,
+          title: 'Requests',
+          tabBarIcon: ({ color, size }) => <Ionicons name="list" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="tenants"
+        name="jobs/index"
         options={{
-          title: 'Tenants',
-          tabBarIcon: ({ color, size }) => <Ionicons name="people" size={size} color={color} />,
+          title: 'My Jobs',
+          tabBarIcon: ({ color, size }) => <Ionicons name="hammer" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="contracts/index"
+        options={{
+          title: 'Contracts',
+          tabBarIcon: ({ color, size }) => <Ionicons name="document-text" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile/index"
         options={{
           title: 'Profile',
           tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="add-property"
-        options={{
-          href: null, // Hidden from tabs - accessed as modal
-        }}
-      />
-      <Tabs.Screen
-        name="maintenance/new"
-        options={{
-          href: null, // Hidden from tabs - detail screen
-        }}
-      />
-      <Tabs.Screen
         name="maintenance/[id]"
         options={{
           href: null, // Hidden from tabs - detail screen
-        }}
-      />
-      <Tabs.Screen
-        name="maintenance/[id]/quote/[quoteId]"
-        options={{
-          href: null, // Hidden from tabs - quote detail screen
-        }}
-      />
-      <Tabs.Screen
-        name="maintenance/[id]/po/[poId]"
-        options={{
-          href: null, // Hidden from tabs - PO detail screen
         }}
       />
     </Tabs>

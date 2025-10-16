@@ -1,206 +1,128 @@
 import { supabase } from '@/src/lib/supabase';
-import type { Quote } from '@/src/types/database.types';
 
-export interface CreateQuoteInput {
-  request_id: string;
+export interface Quote {
+  id: string;
   vendor_id: string;
-  owner_id: string;          // REQUIRED - who gets the quote
-  property_id: string;       // REQUIRED
-  subtotal: number;
+  owner_id: string;
+  property_id: string;
+  request_id?: string;
+  /**
+   * Optional reference to a service contract.
+   * This field is populated when the quote is from a long-term contracted vendor.
+   * For ad-hoc or short-term maintenance requests, this will be null.
+   * @nullable
+   */
+  contract_id: string | null;
+  status: 'requested' | 'submitted' | 'approved' | 'rejected' | 'revision_requested';
+  subtotal?: number;
   vat_amount?: number;
   discount_amount?: number;
-  total_amount: number;
+  total_amount?: number;
   notes?: string;
-  validity_date?: string;    // When quote expires
+  revision_number?: number;
+  revision_reason?: string;
+  created_at: string;
+  updated_at: string;
+  vendor?: {
+    id: string;
+    full_name: string;
+    phone: string;
+    email: string;
+    avatar_url?: string;
+  };
+  /**
+   * Optional contract information when contract_id is present.
+   * Only populated when the quote is associated with a long-term service contract.
+   */
+  contract?: {
+    id: string;
+    status: string | null;
+  };
 }
 
-export interface VendorQuoteRequestInput {
-  request_id: string;
-  vendor_id: string;
-  response_deadline?: string; // When vendor must respond by
+export interface QuoteRevision {
+  id: string;
+  quote_id: string;
+  revision_number: number;
+  subtotal: number;
+  vat_amount: number;
+  discount_amount: number;
+  total_amount: number;
+  notes?: string;
+  revised_by: string;
+  revision_reason?: string;
+  created_at: string;
+}
+
+export interface QuoteUpdateData {
+  subtotal?: number;
+  vat_amount?: number;
+  discount_amount?: number;
+  total_amount?: number;
+  notes?: string;
+  revision_reason?: string;
 }
 
 export const quotesApi = {
-  // ============================================
-  // FETCH QUOTES
-  // ============================================
-  
-  // Get all quotes for a maintenance request
-  async getQuotesForRequest(requestId: string) {
+  /**
+   * Get quotes for a maintenance request.
+   * Includes optional contract information when contract_id is present.
+   * 
+   * @param requestId - The maintenance request ID
+   * @returns Array of quotes with vendor and optional contract information
+   */
+  async getQuotesByRequest(requestId: string) {
     const { data, error } = await supabase
       .from('quotes')
       .select(`
         *,
         vendor:profiles!vendor_id(
-          id, 
-          full_name, 
-          phone, 
-          email, 
+          id,
+          full_name,
+          phone,
+          email,
           avatar_url
         ),
-        quote_lines(
+        contract:service_contracts(
           id,
-          description,
-          quantity,
-          unit_price,
-          total_price
+          status
         )
       `)
       .eq('request_id', requestId)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data;
+    return data as Quote[];
   },
 
-  // ============================================
-  // VENDOR SUBMITS QUOTE
-  // ============================================
-  
-  async createQuote(input: CreateQuoteInput) {
-    // Calculate total if not provided
-    const total = input.total_amount || (
-      input.subtotal + (input.vat_amount || 0) - (input.discount_amount || 0)
-    );
-
+  // Get single quote
+  async getQuoteById(quoteId: string) {
     const { data, error } = await supabase
       .from('quotes')
-      .insert({
-        request_id: input.request_id,
-        vendor_id: input.vendor_id,
-        owner_id: input.owner_id,
-        property_id: input.property_id,
-        subtotal: input.subtotal,
-        vat_amount: input.vat_amount || 0,
-        discount_amount: input.discount_amount || 0,
-        total_amount: total,
-        notes: input.notes,
-        validity_date: input.validity_date,
-        status: 'draft', // Default status from schema
-      })
       .select(`
         *,
-        vendor:profiles!vendor_id(id, full_name, phone)
+        vendor:profiles!vendor_id(
+          id,
+          full_name,
+          phone,
+          email,
+          avatar_url
+        )
       `)
-      .single();
-
-    if (error) throw error;
-
-    // Update vendor_quote_request status
-    await supabase
-      .from('vendor_quote_requests')
-      .update({ 
-        status: 'responded',
-        responded_at: new Date().toISOString(),
-        quote_id: data.id,
-      })
-      .eq('request_id', input.request_id)
-      .eq('vendor_id', input.vendor_id);
-
-    return data as Quote;
-  },
-
-  // ============================================
-  // PUSH TO VENDORS
-  // ============================================
-  
-  async sendQuoteRequestToVendors(
-    requestId: string,
-    vendorIds: string[],
-    responseDeadline?: string
-  ) {
-    const requests = vendorIds.map(vendorId => ({
-      request_id: requestId,
-      vendor_id: vendorId,
-      status: 'pending',
-      response_deadline: responseDeadline,
-    }));
-
-    const { data, error } = await supabase
-      .from('vendor_quote_requests')
-      .insert(requests)
-      .select(`
-        *,
-        vendor:profiles!vendor_id(id, full_name, phone, email)
-      `);
-
-    if (error) throw error;
-
-    // Update maintenance request status
-    await supabase
-      .from('maintenance_requests')
-      .update({
-        mms_status: 'vendor_routing',
-        vendor_routed_at: new Date().toISOString(),
-        quote_deadline: responseDeadline,
-      })
-      .eq('id', requestId);
-
-    return data;
-  },
-
-  // ============================================
-  // ACCEPT QUOTE (OWNER SELECTS VENDOR)
-  // ============================================
-  
-  async acceptQuote(quoteId: string, requestId: string) {
-    // 1. Get quote details
-    const { data: quote, error: fetchError } = await supabase
-      .from('quotes')
-      .select('*')
       .eq('id', quoteId)
       .single();
 
-    if (fetchError) throw fetchError;
-
-    // 2. Update quote status
-    const { error: quoteError } = await supabase
-      .from('quotes')
-      .update({ 
-        status: 'approved',
-        accepted_at: new Date().toISOString(),
-      })
-      .eq('id', quoteId);
-
-    if (quoteError) throw quoteError;
-
-    // 3. Update maintenance request
-    const { error: requestError } = await supabase
-      .from('maintenance_requests')
-      .update({
-        selected_quote_id: quoteId,
-        selected_vendor_id: quote.vendor_id,
-        mms_status: 'po_issued',
-        status: 'assigned',
-        estimated_cost: quote.total_amount,
-      })
-      .eq('id', requestId);
-
-    if (requestError) throw requestError;
-
-    // 4. Reject other quotes
-    await supabase
-      .from('quotes')
-      .update({ 
-        status: 'rejected',
-        rejected_at: new Date().toISOString(),
-      })
-      .eq('request_id', requestId)
-      .neq('id', quoteId);
-
-    return quote as Quote;
+    if (error) throw error;
+    return data as Quote;
   },
 
-  // ============================================
-  // REJECT QUOTE
-  // ============================================
-  
-  async rejectQuote(quoteId: string) {
-    const { data, error } = await supabase
-      .from('quotes')
-      .update({ 
-        status: 'rejected',
-        rejected_at: new Date().toISOString(),
+  // Accept a quote
+  async acceptQuote(quoteId: string) {
+    const { data, error } = await (supabase
+      .from('quotes') as any)
+      .update({
+        status: 'approved',
+        updated_at: new Date().toISOString(),
       })
       .eq('id', quoteId)
       .select()
@@ -210,57 +132,50 @@ export const quotesApi = {
     return data as Quote;
   },
 
-  // ============================================
-  // COMPARE QUOTES (Sorted by price)
-  // ============================================
-  
-  async compareQuotes(requestId: string) {
+  // Reject a quote
+  async rejectQuote(quoteId: string) {
+    const { data, error } = await (supabase
+      .from('quotes') as any)
+      .update({
+        status: 'rejected',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', quoteId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as Quote;
+  },
+
+  // Get approved quote for a request
+  async getApprovedQuote(requestId: string) {
     const { data, error } = await supabase
       .from('quotes')
       .select(`
         *,
         vendor:profiles!vendor_id(
-          id, 
-          full_name, 
-          phone, 
-          email
-        ),
-        quote_lines(*)
+          id,
+          full_name,
+          phone,
+          email,
+          avatar_url
+        )
       `)
       .eq('request_id', requestId)
-      .in('status', ['draft', 'submitted'])
-      .order('total_amount', { ascending: true });
+      .eq('status', 'approved')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .single();
 
-    if (error) throw error;
-    return data;
+    if (error && error.code !== 'PGRST116') throw error;
+    return data as Quote | null;
   },
 
-  // ============================================
-  // GET VENDOR QUOTE REQUESTS
-  // ============================================
-  
-  async getVendorQuoteRequests(requestId: string) {
-    const { data, error } = await supabase
-      .from('vendor_quote_requests')
-      .select(`
-        *,
-        vendor:profiles!vendor_id(id, full_name, phone, email),
-        quote:quotes(id, total_amount, status, created_at)
-      `)
-      .eq('request_id', requestId)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return data;
-  },
-
-  // ============================================
-  // REAL-TIME SUBSCRIPTION
-  // ============================================
-  
-  subscribeToQuotes(requestId: string, callback: (payload: any) => void) {
+  // Subscribe to quote changes
+  subscribeToQuotes(requestId: string, callback: (quote: Quote) => void) {
     const subscription = supabase
-      .channel(`quotes_${requestId}`)
+      .channel(`quotes:${requestId}`)
       .on(
         'postgres_changes',
         {
@@ -269,14 +184,175 @@ export const quotesApi = {
           table: 'quotes',
           filter: `request_id=eq.${requestId}`,
         },
-        callback
+        async (payload) => {
+          // Fetch the complete quote with relations
+          const newRecord = payload.new as { id: string };
+          const { data } = await supabase
+            .from('quotes')
+            .select(`
+              *,
+              vendor:profiles!vendor_id(
+                id,
+                full_name,
+                phone,
+                email,
+                avatar_url
+              )
+            `)
+            .eq('id', newRecord.id)
+            .single();
+
+          if (data) {
+            callback(data as Quote);
+          }
+        }
       )
       .subscribe();
 
     return subscription;
   },
 
+  // Unsubscribe
   unsubscribe(subscription: any) {
     subscription.unsubscribe();
+  },
+
+  /**
+   * Update quote with revision tracking
+   * Creates a revision record before updating the quote
+   * 
+   * @param quoteId - The quote ID to update
+   * @param updateData - The fields to update
+   * @param userId - The user making the update (vendor_id or owner_id)
+   * @returns Updated quote
+   */
+  async updateQuote(quoteId: string, updateData: QuoteUpdateData, userId: string) {
+    // First, get the current quote to create revision
+    const currentQuote = await quotesApi.getQuoteById(quoteId);
+    
+    const currentRevision = currentQuote.revision_number || 0;
+    const newRevision = currentRevision + 1;
+
+    // Create revision record
+    const { error: revisionError } = await (supabase
+      .from('quote_revisions') as any)
+      .insert({
+        quote_id: quoteId,
+        revision_number: currentRevision,
+        subtotal: currentQuote.subtotal,
+        vat_amount: currentQuote.vat_amount,
+        discount_amount: currentQuote.discount_amount,
+        total_amount: currentQuote.total_amount,
+        notes: currentQuote.notes,
+        revised_by: userId,
+        revision_reason: updateData.revision_reason,
+      });
+
+    if (revisionError) throw revisionError;
+
+    // Update the quote with new data
+    const { data, error } = await (supabase
+      .from('quotes') as any)
+      .update({
+        ...updateData,
+        revision_number: newRevision,
+        status: 'submitted', // Reset to submitted after edit
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', quoteId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as Quote;
+  },
+
+  /**
+   * Request revision from vendor (owner action)
+   * 
+   * @param quoteId - The quote ID
+   * @param reason - Reason for requesting revision
+   * @returns Updated quote
+   */
+  async requestRevision(quoteId: string, reason: string) {
+    const { data, error } = await (supabase
+      .from('quotes') as any)
+      .update({
+        status: 'revision_requested',
+        revision_reason: reason,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', quoteId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as Quote;
+  },
+
+  /**
+   * Get revision history for a quote
+   * 
+   * @param quoteId - The quote ID
+   * @returns Array of revisions ordered by revision number
+   */
+  async getQuoteRevisions(quoteId: string): Promise<QuoteRevision[]> {
+    const { data, error } = await supabase
+      .from('quote_revisions')
+      .select('*')
+      .eq('quote_id', quoteId)
+      .order('revision_number', { ascending: true });
+
+    if (error) throw error;
+    return data as QuoteRevision[];
+  },
+
+  /**
+   * Auto-generate PO from approved quote
+   * Creates a PO with all quote details
+   * 
+   * @param quoteId - The approved quote ID
+   * @returns Created purchase order
+   */
+  async generatePOFromQuote(quoteId: string) {
+    const quote = await quotesApi.getQuoteById(quoteId);
+    
+    if (quote.status !== 'approved') {
+      throw new Error('Only approved quotes can generate POs');
+    }
+
+    // Generate PO number (format: PO-YYYYMMDD-XXXX)
+    const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
+    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    const poNumber = `PO-${date}-${random}`;
+
+    // Create PO
+    const { data, error } = await (supabase
+      .from('purchase_orders') as any)
+      .insert({
+        contract_id: quote.contract_id,
+        po_number: poNumber,
+        currency: 'USD', // Default, should come from quote or property settings
+        subtotal: quote.subtotal,
+        vat_amount: quote.vat_amount,
+        platform_fee_amount: 0, // Calculate based on business logic
+        total_amount: quote.total_amount,
+        status: 'draft',
+        revision_number: 1,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Update maintenance request with po_id
+    if (quote.request_id) {
+      await (supabase
+        .from('maintenance_requests') as any)
+        .update({ po_id: data.id })
+        .eq('id', quote.request_id);
+    }
+
+    return data;
   },
 };

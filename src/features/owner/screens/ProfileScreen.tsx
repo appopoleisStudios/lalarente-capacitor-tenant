@@ -3,17 +3,31 @@ import { View, Text, StyleSheet, SafeAreaView, ScrollView, Alert } from 'react-n
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { AnimatedButton } from '../components/AnimatedButton';
+import { useAuth } from '@/src/contexts/AuthContext';
 
 const RSA = { blue: '#002395', red: '#DE3831' };
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const { signOut } = useAuth();
 
   const handleLogout = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     Alert.alert('Logout', 'Are you sure you want to logout?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: () => router.replace('/auth/login') },
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await signOut();
+            router.replace('/auth/login');
+          } catch (error) {
+            console.error('Logout error:', error);
+            Alert.alert('Error', 'Failed to logout. Please try again.');
+          }
+        },
+      },
     ]);
   };
 

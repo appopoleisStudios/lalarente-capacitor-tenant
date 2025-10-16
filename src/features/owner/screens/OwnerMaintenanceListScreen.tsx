@@ -77,7 +77,7 @@ export default function OwnerMaintenanceListScreen() {
             </View>
           </View>
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#007A4D" />
+            <ActivityIndicator size="large" color="#002395" />
             <Text style={styles.loadingText}>Loading requests...</Text>
           </View>
         </View>
@@ -141,7 +141,7 @@ export default function OwnerMaintenanceListScreen() {
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#007A4D" />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#002395" />
           }
           showsVerticalScrollIndicator={false}
         >

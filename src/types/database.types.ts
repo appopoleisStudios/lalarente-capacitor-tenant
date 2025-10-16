@@ -28,7 +28,7 @@ export interface Database {
           description: string
           priority: 'low' | 'medium' | 'high'
           status: 'open' | 'assigned' | 'in_progress' | 'completed' | 'closed'
-          mms_status: 'notification' | 'acknowledged' | 'vendor_routing' | 'quoting' | 'po_issued' | 'executing' | 'closing'
+          mms_status: 'notification' | 'acknowledged' | 'vendor_routed' | 'quote_received' | 'po_issued' | 'in_progress' | 'completed'
           images: string[] | null
           category_id: string | null
           estimated_cost: number | null
@@ -300,6 +300,84 @@ export interface Database {
       }
       
       // ============================================
+      // VENDOR SERVICES
+      // ============================================
+      vendor_services: {
+        Row: {
+          id: string
+          vendor_id: string
+          category_id: string
+          title: string | null
+          description: string | null
+          base_price: number | null
+          pricing_unit: string | null
+          min_callout_fee: number | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          vendor_id: string
+          category_id: string
+          title?: string | null
+          description?: string | null
+          base_price?: number | null
+          pricing_unit?: string | null
+          min_callout_fee?: number | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          vendor_id?: string
+          category_id?: string
+          title?: string | null
+          description?: string | null
+          base_price?: number | null
+          pricing_unit?: string | null
+          min_callout_fee?: number | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      
+      // ============================================
+      // DEDICATED VENDORS
+      // ============================================
+      dedicated_vendors: {
+        Row: {
+          id: string
+          property_id: string
+          category_id: string | null
+          vendor_id: string
+          priority: number
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          property_id: string
+          category_id?: string | null
+          vendor_id: string
+          priority?: number
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          property_id?: string
+          category_id?: string | null
+          vendor_id?: string
+          priority?: number
+          is_active?: boolean
+          created_at?: string
+        }
+      }
+      
+      // ============================================
       // SERVICE CATEGORIES
       // ============================================
       service_categories: {
@@ -435,6 +513,9 @@ export type ServiceCategory = Database['public']['Tables']['service_categories']
 export type Property = Database['public']['Tables']['properties']['Row']
 export type Profile = Database['public']['Tables']['profiles']['Row']
 export type Lease = Database['public']['Tables']['leases']['Row']
+export type VendorQuoteRequest = Database['public']['Tables']['vendor_quote_requests']['Row']
+export type VendorService = Database['public']['Tables']['vendor_services']['Row']
+export type DedicatedVendor = Database['public']['Tables']['dedicated_vendors']['Row']
 
 // Extended types with relationships
 export type MaintenanceRequestWithRelations = MaintenanceRequest & {
