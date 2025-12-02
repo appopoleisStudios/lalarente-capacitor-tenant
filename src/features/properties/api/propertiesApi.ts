@@ -73,6 +73,13 @@ export interface UpdatePropertyInput {
   deposit_amount?: number | null;
   amenities?: string[] | null;
   parking_spaces?: number | null;
+  size_sqm?: number | null;
+  available_from?: string | null;
+  minimum_lease_months?: number | null;
+  pets_allowed?: boolean | null;
+  smoking_allowed?: boolean | null;
+  latitude?: number | null;
+  longitude?: number | null;
   status?: PropertyStatus;
   images?: string[] | null;
   lease_terms?: any | null;

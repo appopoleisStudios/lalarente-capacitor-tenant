@@ -63,12 +63,13 @@ export default function PropertiesListScreen() {
 
   const handleView = (id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Navigate to property detail
+    router.push(`/(owner)/properties/${id}`);
   };
 
   const handleEdit = (id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Navigate to edit property
+    // TODO: Navigate to edit property screen
+    router.push(`/(owner)/properties/${id}`);
   };
 
   return (

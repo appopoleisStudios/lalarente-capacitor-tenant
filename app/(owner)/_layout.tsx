@@ -71,6 +71,18 @@ export default function OwnerLayout() {
         }}
       />
       <Tabs.Screen
+        name="properties/[id]"
+        options={{
+          href: null, // Hidden from tabs - property detail screen
+        }}
+      />
+      <Tabs.Screen
+        name="properties/[id]/edit"
+        options={{
+          href: null, // Hidden from tabs - edit property screen
+        }}
+      />
+      <Tabs.Screen
         name="maintenance/new"
         options={{
           href: null, // Hidden from tabs - detail screen
