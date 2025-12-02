@@ -627,6 +627,227 @@ export const maintenanceApi = {
       vendorsNotified: vendorIds.length,
     };
   },
+
+  /**
+   * Start work on a maintenance request (Vendor action)
+   * Updates status to 'in_progress' and records work start time
+   * 
+   * @param requestId - The maintenance request ID
+   * @param vendorId - The vendor's user ID
+   * @returns Updated maintenance request
+   */
+  async startWork(requestId: string, vendorId: string) {
+    console.log('🚀 Starting work:', { requestId, vendorId });
+
+    // Verify vendor is assigned to this job
+    const { data: request, error: fetchError } = await supabase
+      .from('maintenance_requests')
+      .select('id, selected_vendor_id, status, work_can_start')
+      .eq('id', requestId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const typedRequest = request as any;
+
+    if (typedRequest.selected_vendor_id !== vendorId) {
+      throw new Error('You are not assigned to this job');
+    }
+
+    if (typedRequest.status !== 'assigned') {
+      throw new Error('Job is not in assigned status');
+    }
+
+    if (!typedRequest.work_can_start) {
+      throw new Error('Work cannot be started yet. Please wait for owner approval.');
+    }
+
+    // Update maintenance request
+    const { data, error } = await (supabase
+      .from('maintenance_requests') as any)
+      .update({
+        status: 'in_progress',
+        work_started_at: new Date().toISOString(),
+        work_started_by: vendorId,
+      })
+      .eq('id', requestId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Error starting work:', error);
+      throw error;
+    }
+
+    console.log('✅ Work started successfully');
+    return data;
+  },
+
+  /**
+   * Submit daily progress update (Vendor action)
+   * 
+   * @param requestId - The maintenance request ID
+   * @param vendorId - The vendor's user ID
+   * @param notes - Progress notes
+   * @param photos - Array of photo URLs
+   * @returns Created progress update
+   */
+  async submitProgressUpdate(
+    requestId: string,
+    vendorId: string,
+    notes: string,
+    photos: string[]
+  ) {
+    console.log('📸 Submitting progress update:', { requestId, vendorId });
+
+    // Verify vendor is assigned and work is in progress
+    const { data: request, error: fetchError } = await supabase
+      .from('maintenance_requests')
+      .select('id, selected_vendor_id, status')
+      .eq('id', requestId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const typedRequest = request as any;
+
+    if (typedRequest.selected_vendor_id !== vendorId) {
+      throw new Error('You are not assigned to this job');
+    }
+
+    if (typedRequest.status !== 'in_progress') {
+      throw new Error('Work must be in progress to submit updates');
+    }
+
+    // Create progress update
+    const { data, error } = await (supabase
+      .from('job_progress_updates') as any)
+      .insert({
+        maintenance_request_id: requestId,
+        vendor_id: vendorId,
+        update_date: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+        notes: notes,
+        photos: photos,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Error submitting progress update:', error);
+      throw error;
+    }
+
+    console.log('✅ Progress update submitted');
+    return data;
+  },
+
+  /**
+   * Get progress updates for a maintenance request
+   * 
+   * @param requestId - The maintenance request ID
+   * @returns Array of progress updates
+   */
+  async getProgressUpdates(requestId: string) {
+    const { data, error } = await supabase
+      .from('job_progress_updates')
+      .select('*')
+      .eq('maintenance_request_id', requestId)
+      .order('update_date', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  /**
+   * Request job closure (Vendor action)
+   * 
+   * @param requestId - The maintenance request ID
+   * @param vendorId - The vendor's user ID
+   * @param completionNotes - Notes about the completed work
+   * @param completionPhotos - Array of completion photo URLs (minimum 2)
+   * @returns Created closure report
+   */
+  async requestClosure(
+    requestId: string,
+    vendorId: string,
+    completionNotes: string,
+    completionPhotos: string[]
+  ) {
+    console.log('🏁 Requesting job closure:', { requestId, vendorId });
+
+    if (completionPhotos.length < 2) {
+      throw new Error('Please upload at least 2 completion photos');
+    }
+
+    // Verify vendor is assigned and work is in progress
+    const { data: request, error: fetchError } = await supabase
+      .from('maintenance_requests')
+      .select('id, selected_vendor_id, status')
+      .eq('id', requestId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const typedRequest = request as any;
+
+    if (typedRequest.selected_vendor_id !== vendorId) {
+      throw new Error('You are not assigned to this job');
+    }
+
+    if (typedRequest.status !== 'in_progress') {
+      throw new Error('Work must be in progress to request closure');
+    }
+
+    // Create closure report
+    const { data: closureReport, error: closureError } = await (supabase
+      .from('closure_reports') as any)
+      .insert({
+        maintenance_request_id: requestId,
+        completion_notes: completionNotes,
+        completion_photos: completionPhotos,
+        status: 'pending',
+      })
+      .select()
+      .single();
+
+    if (closureError) {
+      console.error('❌ Error creating closure report:', closureError);
+      throw closureError;
+    }
+
+    // Update maintenance request
+    const { error: updateError } = await (supabase
+      .from('maintenance_requests') as any)
+      .update({
+        closure_requested_at: new Date().toISOString(),
+      })
+      .eq('id', requestId);
+
+    if (updateError) {
+      console.error('❌ Error updating maintenance request:', updateError);
+      throw updateError;
+    }
+
+    console.log('✅ Closure requested successfully');
+    return closureReport;
+  },
+
+  /**
+   * Get closure report for a maintenance request
+   * 
+   * @param requestId - The maintenance request ID
+   * @returns Closure report or null
+   */
+  async getClosureReport(requestId: string) {
+    const { data, error } = await supabase
+      .from('closure_reports')
+      .select('*')
+      .eq('maintenance_request_id', requestId)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
 };
 
 
@@ -667,6 +888,7 @@ export interface VendorMaintenanceRequest extends MaintenanceRequest {
     status: string;
     total_amount: number | null;
     created_at: string;
+    revision_reason?: string | null;
   };
   has_quote_request?: boolean;
   can_quote?: boolean; // Whether vendor has matching category to submit quote
@@ -773,7 +995,7 @@ export const vendorMaintenanceApi = {
     );
 
     // Get vendor's quotes
-    const { data: vendorQuotes, error: quotesError} = await supabase
+    const { data: vendorQuotes, error: quotesError } = await supabase
       .from('quotes')
       .select('id, request_id, status, total_amount, created_at')
       .eq('vendor_id', vendorId);
@@ -845,9 +1067,9 @@ export const vendorMaintenanceApi = {
     const enrichedRequests: VendorMaintenanceRequest[] = accessibleRequests.map(request => {
       const quote = quotesByRequest.get(request.id);
       const hasQuoteRequest = quoteRequestMap.has(request.id);
-      
+
       // Check if vendor can quote (has matching category or is invited/dedicated)
-      const canQuote = 
+      const canQuote =
         hasQuoteRequest || // Invited vendors can always quote
         request.selected_vendor_id === vendorId || // Selected vendor can quote
         (request.category_id && vendorCategoryIds.includes(request.category_id)) || // Category match
@@ -900,7 +1122,7 @@ export const vendorMaintenanceApi = {
     // Get vendor's quote for this request
     const { data: quote } = await supabase
       .from('quotes')
-      .select('id, status, total_amount, created_at')
+      .select('id, status, total_amount, created_at, revision_reason')
       .eq('request_id', requestId)
       .eq('vendor_id', vendorId)
       .maybeSingle();
@@ -934,7 +1156,7 @@ export const vendorMaintenanceApi = {
       .maybeSingle();
 
     // Determine if vendor can quote
-    const canQuote = 
+    const canQuote =
       !!quoteRequest || // Invited vendors can always quote
       typedRequest.selected_vendor_id === vendorId || // Selected vendor can quote
       (typedRequest.category_id && vendorCategoryIds.includes(typedRequest.category_id)) || // Category match
@@ -947,6 +1169,7 @@ export const vendorMaintenanceApi = {
         status: typedQuote.status,
         total_amount: typedQuote.total_amount,
         created_at: typedQuote.created_at,
+        revision_reason: typedQuote.revision_reason,
       } : undefined,
       has_quote_request: !!quoteRequest,
       can_quote: canQuote,
@@ -1052,7 +1275,7 @@ export const vendorMaintenanceApi = {
     // If marking as completed, add completion data
     if (update.status === 'completed') {
       updateData.completed_date = new Date().toISOString();
-      
+
       if (update.completion_notes) {
         // Store completion notes in a way that makes sense for your schema
         // You might want to add a completion_notes field to maintenance_requests
@@ -1093,7 +1316,7 @@ export const vendorMaintenanceApi = {
   ) {
     // Validate that vendor has access to this request
     const request = await this.getRequestById(quoteData.request_id, vendorId);
-    
+
     if (!request.has_quote_request && request.visibility !== 'public') {
       throw new Error('You do not have permission to quote on this request');
     }
@@ -1224,3 +1447,4 @@ export const vendorMaintenanceApi = {
     return { success: true, message: 'Quote request declined' };
   },
 };
+

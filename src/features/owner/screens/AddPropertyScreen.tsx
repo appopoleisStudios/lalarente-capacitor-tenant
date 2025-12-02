@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, SafeAreaView, TextInput, Alert } from 'react-native';
+import { View, Text, ScrollView, SafeAreaView, TextInput, Alert, Switch, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 import { AnimatedButton } from '../components/AnimatedButton';
+import { LocationPicker } from '../components/LocationPicker';
+import { propertiesApi } from '../../properties/api/propertiesApi';
+import { supabase } from '../../../lib/supabase';
 import { styles } from './AddPropertyScreen.styles';
 
 interface PropertyForm {
@@ -15,11 +19,19 @@ interface PropertyForm {
   bedrooms: string;
   bathrooms: string;
   parking_spaces: string;
+  size_sqm: string;
   rent_amount: string;
   deposit_amount: string;
   description: string;
   amenities: string[];
   services_provided: string[];
+  available_from: string;
+  minimum_lease_months: string;
+  pets_allowed: boolean;
+  smoking_allowed: boolean;
+  photos: string[];
+  latitude: number | null;
+  longitude: number | null;
 }
 
 const AMENITY_OPTIONS = [
@@ -51,14 +63,29 @@ export default function AddPropertyScreen() {
     bedrooms: '',
     bathrooms: '',
     parking_spaces: '',
+    size_sqm: '',
     rent_amount: '',
     deposit_amount: '',
     description: '',
     amenities: [],
     services_provided: [],
+    available_from: new Date().toISOString().split('T')[0],
+    minimum_lease_months: '12',
+    pets_allowed: false,
+    smoking_allowed: false,
+    photos: [],
+    latitude: null,
+    longitude: null,
   });
   const [newAmenity, setNewAmenity] = useState('');
   const [newService, setNewService] = useState('');
+  const [userId, setUserId] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUserId(data.user?.id || null);
+    });
+  }, []);
 
   const toggleAmenity = (value: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -106,6 +133,32 @@ export default function AddPropertyScreen() {
     setForm(prev => ({ ...prev, services_provided: prev.services_provided.filter(s => s !== service) }));
   };
 
+  const pickImages = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Please grant photo library access to upload images');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 0.8,
+      selectionLimit: 10,
+    });
+
+    if (!result.canceled && result.assets) {
+      const newPhotos = result.assets.map(asset => asset.uri);
+      setForm(prev => ({ ...prev, photos: [...prev.photos, ...newPhotos].slice(0, 10) }));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  };
+
+  const removePhoto = (index: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setForm(prev => ({ ...prev, photos: prev.photos.filter((_, i) => i !== index) }));
+  };
+
   const handleSubmit = async () => {
     // Validation
     if (!form.title || !form.address || !form.city || !form.province || !form.rent_amount) {
@@ -114,16 +167,53 @@ export default function AddPropertyScreen() {
       return;
     }
 
+    if (!userId) {
+      Alert.alert('Error', 'You must be logged in to create a property');
+      return;
+    }
+
     setSaving(true);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     
-    // Simulate save
-    setTimeout(() => {
-      setSaving(false);
+    try {
+      // Create property
+      const property = await propertiesApi.createProperty({
+        owner_id: userId,
+        title: form.title,
+        address: form.address,
+        city: form.city,
+        province: form.province,
+        postal_code: form.postal_code || null,
+        property_type: form.property_type as any,
+        bedrooms: form.bedrooms ? parseInt(form.bedrooms) : 0,
+        bathrooms: form.bathrooms ? parseInt(form.bathrooms) : 0,
+        parking_spaces: form.parking_spaces ? parseInt(form.parking_spaces) : null,
+        size_sqm: form.size_sqm ? parseFloat(form.size_sqm) : null,
+        rent_amount: parseFloat(form.rent_amount),
+        deposit_amount: form.deposit_amount ? parseFloat(form.deposit_amount) : null,
+        description: form.description || null,
+        amenities: form.amenities.length > 0 ? form.amenities : null,
+        available_from: form.available_from || null,
+        minimum_lease_months: form.minimum_lease_months ? parseInt(form.minimum_lease_months) : null,
+        pets_allowed: form.pets_allowed,
+        smoking_allowed: form.smoking_allowed,
+        latitude: form.latitude,
+        longitude: form.longitude,
+      });
+
+      // TODO: Upload photos to Supabase Storage
+      // For now, we'll skip photo upload as it requires storage setup
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Success', 'Property created successfully!', [
         { text: 'OK', onPress: () => router.back() },
       ]);
-    }, 1000);
+    } catch (error) {
+      console.error('Error creating property:', error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to create property');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -158,6 +248,33 @@ export default function AddPropertyScreen() {
               value={form.title}
               onChangeText={(text) => setForm({ ...form, title: text })}
             />
+          </View>
+
+          {/* Photo Upload */}
+          <View style={styles.section}>
+            <Text style={styles.label}>Property Photos</Text>
+            <Text style={styles.helperText}>Add up to 10 photos</Text>
+            
+            <AnimatedButton onPress={pickImages}>
+              <View style={styles.uploadButton}>
+                <Text style={styles.uploadButtonText}>📷 Select Photos</Text>
+              </View>
+            </AnimatedButton>
+
+            {form.photos.length > 0 && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosScroll}>
+                {form.photos.map((photo, index) => (
+                  <View key={index} style={styles.photoContainer}>
+                    <Image source={{ uri: photo }} style={styles.photoPreview} />
+                    <AnimatedButton onPress={() => removePhoto(index)}>
+                      <View style={styles.photoRemove}>
+                        <Text style={styles.photoRemoveText}>×</Text>
+                      </View>
+                    </AnimatedButton>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
           </View>
 
           {/* Amenities */}
@@ -272,67 +389,37 @@ export default function AddPropertyScreen() {
             />
           </View>
 
-          {/* Address */}
+          {/* Location Picker with Map */}
+          <LocationPicker
+            initialAddress={form.address}
+            initialLatitude={form.latitude || undefined}
+            initialLongitude={form.longitude || undefined}
+            onLocationSelect={(location) => {
+              setForm({
+                ...form,
+                address: location.address,
+                city: location.city,
+                province: location.province,
+                postal_code: location.postalCode,
+                latitude: location.latitude,
+                longitude: location.longitude,
+              });
+            }}
+          />
+
+          {/* Property Type */}
           <View style={styles.section}>
-            <Text style={styles.label}>Address *</Text>
+            <Text style={styles.label}>Property Type *</Text>
             <TextInput
               style={styles.input}
-              placeholder="Start typing your address..."
+              placeholder="e.g., Apartment, House, Townhouse"
               placeholderTextColor="#9ca3af"
-              value={form.address}
-              onChangeText={(text) => setForm({ ...form, address: text })}
+              value={form.property_type}
+              onChangeText={(text) => setForm({ ...form, property_type: text })}
             />
           </View>
 
-          {/* City & Province */}
-          <View style={styles.row}>
-            <View style={[styles.section, { flex: 1 }]}>
-              <Text style={styles.label}>City *</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="City"
-                placeholderTextColor="#9ca3af"
-                value={form.city}
-                onChangeText={(text) => setForm({ ...form, city: text })}
-              />
-            </View>
-            <View style={[styles.section, { flex: 1 }]}>
-              <Text style={styles.label}>Province *</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Province"
-                placeholderTextColor="#9ca3af"
-                value={form.province}
-                onChangeText={(text) => setForm({ ...form, province: text })}
-              />
-            </View>
-          </View>
-
-          {/* Postal & Type */}
-          <View style={styles.row}>
-            <View style={[styles.section, { flex: 1 }]}>
-              <Text style={styles.label}>Postal Code</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="2000"
-                placeholderTextColor="#9ca3af"
-                value={form.postal_code}
-                onChangeText={(text) => setForm({ ...form, postal_code: text })}
-              />
-            </View>
-            <View style={[styles.section, { flex: 1 }]}>
-              <Text style={styles.label}>Type *</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Apartment"
-                placeholderTextColor="#9ca3af"
-                value={form.property_type}
-                onChangeText={(text) => setForm({ ...form, property_type: text })}
-              />
-            </View>
-          </View>
-
-          {/* Bed/Bath/Parking */}
+          {/* Bed/Bath/Parking/Size */}
           <View style={styles.row}>
             <View style={[styles.section, { flex: 1 }]}>
               <Text style={styles.label}>Bedrooms</Text>
@@ -369,6 +456,19 @@ export default function AddPropertyScreen() {
             </View>
           </View>
 
+          {/* Size */}
+          <View style={styles.section}>
+            <Text style={styles.label}>Property Size (sqm)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g., 85"
+              placeholderTextColor="#9ca3af"
+              keyboardType="numeric"
+              value={form.size_sqm}
+              onChangeText={(text) => setForm({ ...form, size_sqm: text })}
+            />
+          </View>
+
           {/* Rent & Deposit */}
           <View style={styles.row}>
             <View style={[styles.section, { flex: 1 }]}>
@@ -392,6 +492,64 @@ export default function AddPropertyScreen() {
                 value={form.deposit_amount}
                 onChangeText={(text) => setForm({ ...form, deposit_amount: text })}
               />
+            </View>
+          </View>
+
+          {/* Lease Terms */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Lease Terms</Text>
+            
+            {/* Available From & Minimum Lease */}
+            <View style={styles.row}>
+              <View style={[styles.section, { flex: 1 }]}>
+                <Text style={styles.label}>Available From</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor="#9ca3af"
+                  value={form.available_from}
+                  onChangeText={(text) => setForm({ ...form, available_from: text })}
+                />
+              </View>
+              <View style={[styles.section, { flex: 1 }]}>
+                <Text style={styles.label}>Min. Lease (months)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="12"
+                  placeholderTextColor="#9ca3af"
+                  keyboardType="numeric"
+                  value={form.minimum_lease_months}
+                  onChangeText={(text) => setForm({ ...form, minimum_lease_months: text })}
+                />
+              </View>
+            </View>
+
+            {/* Pets & Smoking */}
+            <View style={styles.switchRow}>
+              <View style={styles.switchItem}>
+                <Text style={styles.switchLabel}>Pets Allowed</Text>
+                <Switch
+                  value={form.pets_allowed}
+                  onValueChange={(value) => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setForm({ ...form, pets_allowed: value });
+                  }}
+                  trackColor={{ false: '#d1d5db', true: '#10b981' }}
+                  thumbColor="#ffffff"
+                />
+              </View>
+              <View style={styles.switchItem}>
+                <Text style={styles.switchLabel}>Smoking Allowed</Text>
+                <Switch
+                  value={form.smoking_allowed}
+                  onValueChange={(value) => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setForm({ ...form, smoking_allowed: value });
+                  }}
+                  trackColor={{ false: '#d1d5db', true: '#10b981' }}
+                  thumbColor="#ffffff"
+                />
+              </View>
             </View>
           </View>
 

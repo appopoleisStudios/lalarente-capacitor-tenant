@@ -1,11 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator, Pressable } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '@/src/contexts/AuthContext';
+import {
+    getVendorAvailableRequests,
+    getVendorMyJobs,
+    type VendorMaintenanceRequest,
+} from '@/src/features/maintenance/api';
+import { colors } from '@/src/shared/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { colors } from '@/src/shared/theme/colors';
-import { useAuth } from '@/src/contexts/AuthContext';
-import { vendorMaintenanceApi, VendorMaintenanceRequest } from '@/src/features/maintenance/api/maintenanceApi';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface DashboardStats {
     availableRequests: number;
@@ -51,7 +55,7 @@ export default function VendorDashboardScreen() {
 
         try {
             // Fetch ALL available requests (no status filter to see everything vendor has access to)
-            const allRequests = await vendorMaintenanceApi.getAvailableRequests(user.id);
+            const allRequests = await getVendorAvailableRequests(user.id);
             
             console.log('All available requests for vendor:', allRequests.length);
             console.log('Request details:', allRequests.map(r => ({
@@ -75,7 +79,7 @@ export default function VendorDashboardScreen() {
             );
 
             // Fetch active jobs
-            const activeJobs = await vendorMaintenanceApi.getMyJobs(user.id);
+            const activeJobs = await getVendorMyJobs(user.id);
 
             // Calculate completed jobs this month
             const now = new Date();
@@ -93,8 +97,13 @@ export default function VendorDashboardScreen() {
                 completedJobs: completedThisMonth.length,
             });
 
-            // Generate recent activity from all requests
-            const activity = generateRecentActivity([...allRequests, ...activeJobs]);
+            // Generate recent activity from all requests (deduplicate by ID)
+            const allRequestsMap = new Map<string, VendorMaintenanceRequest>();
+            [...allRequests, ...activeJobs].forEach(req => {
+                allRequestsMap.set(req.id, req);
+            });
+            const uniqueRequests = Array.from(allRequestsMap.values());
+            const activity = generateRecentActivity(uniqueRequests);
             setRecentActivity(activity);
 
             // Generate upcoming work from active jobs
@@ -327,9 +336,9 @@ export default function VendorDashboardScreen() {
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Recent Activity</Text>
                         <View style={styles.activityContainer}>
-                            {recentActivity.map((activity) => (
+                            {recentActivity.map((activity, index) => (
                                 <ActivityCard
-                                    key={activity.id}
+                                    key={`${activity.id}-${index}`}
                                     activity={activity}
                                     formatTime={formatActivityTime}
                                 />

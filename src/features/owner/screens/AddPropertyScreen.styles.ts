@@ -42,4 +42,18 @@ export const styles = StyleSheet.create({
   submitButton: { backgroundColor: RSA.blue, paddingVertical: 16, borderRadius: 12, alignItems: 'center', marginTop: 8 },
   submitButtonDisabled: { opacity: 0.6 },
   submitButtonText: { fontSize: 16, fontWeight: '700', color: '#ffffff' },
+  
+  helperText: { fontSize: 12, color: '#6b7280', marginBottom: 8 },
+  uploadButton: { backgroundColor: '#f3f4f6', borderWidth: 2, borderColor: '#e5e7eb', borderStyle: 'dashed', borderRadius: 12, paddingVertical: 20, alignItems: 'center', justifyContent: 'center' },
+  uploadButtonText: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
+  photosScroll: { marginTop: 12 },
+  photoContainer: { position: 'relative', marginRight: 8 },
+  photoPreview: { width: 100, height: 100, borderRadius: 8 },
+  photoRemove: { position: 'absolute', top: -8, right: -8, width: 24, height: 24, borderRadius: 12, backgroundColor: '#ef4444', alignItems: 'center', justifyContent: 'center' },
+  photoRemoveText: { color: '#ffffff', fontSize: 16, fontWeight: '700' },
+  
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 12 },
+  switchRow: { gap: 12 },
+  switchItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, backgroundColor: '#f9fafb', borderRadius: 12, marginBottom: 8 },
+  switchLabel: { fontSize: 14, fontWeight: '600', color: '#374151' },
 });

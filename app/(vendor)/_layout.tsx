@@ -70,6 +70,48 @@ export default function VendorLayout() {
           href: null, // Hidden from tabs - detail screen
         }}
       />
+      <Tabs.Screen
+        name="maintenance/[id]/quote/new"
+        options={{
+          href: null, // Hidden from tabs - quote submission screen
+        }}
+      />
+      <Tabs.Screen
+        name="maintenance/[id]/quote/edit"
+        options={{
+          href: null, // Hidden from tabs - quote edit screen
+        }}
+      />
+      <Tabs.Screen
+        name="maintenance/[id]/quote/[quoteId]"
+        options={{
+          href: null, // Hidden from tabs - quote detail screen
+        }}
+      />
+      <Tabs.Screen
+        name="maintenance/[id]/po/[poId]"
+        options={{
+          href: null, // Hidden from tabs - PO detail screen
+        }}
+      />
+      <Tabs.Screen
+        name="profile/services"
+        options={{
+          href: null, // Hidden from tabs - services management screen
+        }}
+      />
+      <Tabs.Screen
+        name="profile/documents"
+        options={{
+          href: null, // Hidden from tabs - documents management screen
+        }}
+      />
+      <Tabs.Screen
+        name="jobs/[id]"
+        options={{
+          href: null, // Hidden from tabs - job detail screen
+        }}
+      />
     </Tabs>
   );
 }

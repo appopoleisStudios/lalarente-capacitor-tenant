@@ -4,15 +4,15 @@ import { AnimatedButton } from './AnimatedButton';
 
 interface Property {
   id: string;
-  title: string;
-  address: string;
-  city: string;
-  province: string;
-  rent_amount: number;
-  bedrooms?: number;
-  bathrooms?: number;
-  parking_spaces?: number;
-  status: 'available' | 'occupied' | 'maintenance' | 'vacant';
+  title?: string | null;
+  address?: string | null;
+  city?: string | null;
+  province?: string | null;
+  rent_amount?: number | null;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  parking_spaces?: number | null;
+  status?: string | null;
   images?: string[];
 }
 
@@ -22,15 +22,16 @@ interface PropertyCardProps {
   onEdit: (id: string) => void;
 }
 
-const STATUS_COLORS = {
+const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   available: { bg: '#d1fae5', text: '#065f46' },
-  occupied: { bg: '#dbeafe', text: '#1e40af' },
+  rented: { bg: '#dbeafe', text: '#1e40af' },
   maintenance: { bg: '#fef3c7', text: '#92400e' },
-  vacant: { bg: '#f1f5f9', text: '#475569' },
+  draft: { bg: '#f1f5f9', text: '#475569' },
 };
 
 export const PropertyCard = ({ property, onView, onEdit }: PropertyCardProps) => {
-  const statusColor = STATUS_COLORS[property.status];
+  const status = property.status || 'draft';
+  const statusColor = STATUS_COLORS[status] || STATUS_COLORS.draft;
 
   return (
     <View style={styles.card}>
@@ -48,17 +49,17 @@ export const PropertyCard = ({ property, onView, onEdit }: PropertyCardProps) =>
       {/* Content */}
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title} numberOfLines={1}>{property.title}</Text>
+          <Text style={styles.title} numberOfLines={1}>{property.title || 'Untitled Property'}</Text>
           <View style={[styles.statusBadge, { backgroundColor: statusColor.bg }]}>
-            <Text style={[styles.statusText, { color: statusColor.text }]}>{property.status}</Text>
+            <Text style={[styles.statusText, { color: statusColor.text }]}>{status}</Text>
           </View>
         </View>
 
         <Text style={styles.address} numberOfLines={1}>
-          {property.address}, {property.city}, {property.province}
+          {property.address || 'No address'}, {property.city || 'Unknown'}, {property.province || 'Unknown'}
         </Text>
 
-        <Text style={styles.rent}>R {property.rent_amount.toLocaleString()}</Text>
+        <Text style={styles.rent}>R {(property.rent_amount || 0).toLocaleString()}</Text>
 
         {(property.bedrooms != null || property.bathrooms != null || property.parking_spaces != null) && (
           <View style={styles.details}>

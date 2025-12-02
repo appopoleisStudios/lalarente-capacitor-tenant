@@ -1,11 +1,20 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useAuth } from '@/src/contexts/AuthContext';
+import {
+    acceptQuote,
+    getQuoteById,
+    getQuoteRevisions,
+    rejectQuote,
+    requestQuoteRevision,
+    type Quote,
+    type QuoteRevision,
+} from '@/src/features/maintenance/api';
+import { colors } from '@/src/shared/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { quotesApi, Quote, QuoteRevision } from '@/src/features/maintenance/api/quotesApi';
-import { colors } from '@/src/shared/theme/colors';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const RSA = { blue: '#002395' };
 
@@ -19,6 +28,7 @@ const STATUS_CONFIG = {
 
 export default function OwnerQuoteDetailScreen() {
   const { quoteId, requestId } = useLocalSearchParams<{ quoteId: string; requestId: string }>();
+  const { user } = useAuth();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [revisions, setRevisions] = useState<QuoteRevision[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,16 +41,25 @@ export default function OwnerQuoteDetailScreen() {
     }
   }, [quoteId]);
 
+  // Refetch data when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      if (quoteId) {
+        fetchQuoteDetails();
+      }
+    }, [quoteId])
+  );
+
   const fetchQuoteDetails = async () => {
     try {
       setLoading(true);
       
       // Fetch quote
-      const quoteData = await quotesApi.getQuoteById(quoteId);
+      const quoteData = await getQuoteById(quoteId);
       setQuote(quoteData);
       
       // Fetch revisions
-      const revisionsData = await quotesApi.getQuoteRevisions(quoteId);
+      const revisionsData = await getQuoteRevisions(quoteId);
       setRevisions(revisionsData);
       
     } catch (error: any) {
@@ -64,11 +83,13 @@ export default function OwnerQuoteDetailScreen() {
               setActionLoading(true);
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-              // Accept the quote
-              await quotesApi.acceptQuote(quoteId);
+              // Accept the quote (new function handles everything)
+              if (!user?.id) {
+                throw new Error('User not authenticated');
+              }
               
-              // Generate PO
-              await quotesApi.generatePOFromQuote(quoteId);
+              const result = await acceptQuote(quoteId, user.id);
+              console.log('✅ Quote acceptance result:', result);
               
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               Alert.alert('Success', 'Quote accepted and PO generated', [
@@ -106,7 +127,11 @@ export default function OwnerQuoteDetailScreen() {
               setActionLoading(true);
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-              await quotesApi.rejectQuote(quoteId);
+              if (!user?.id) {
+                throw new Error('User not authenticated');
+              }
+              
+              await rejectQuote(quoteId, user.id, 'Quote rejected by owner');
               
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               Alert.alert('Success', 'Quote rejected', [
@@ -147,7 +172,11 @@ export default function OwnerQuoteDetailScreen() {
               setActionLoading(true);
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-              await quotesApi.requestRevision(quoteId, reason);
+              if (!user?.id) {
+                throw new Error('User not authenticated');
+              }
+
+              await requestQuoteRevision(quoteId, user.id, reason);
               
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               Alert.alert('Success', 'Revision request sent to vendor');
@@ -267,7 +296,7 @@ export default function OwnerQuoteDetailScreen() {
               <Text style={styles.costLabel}>VAT (15%)</Text>
               <Text style={styles.costValue}>R {quote.vat_amount?.toLocaleString() || '0'}</Text>
             </View>
-            {quote.discount_amount && quote.discount_amount > 0 && (
+            {quote.discount_amount != null && quote.discount_amount > 0 && (
               <View style={styles.costRow}>
                 <Text style={[styles.costLabel, { color: colors.success[600] }]}>Discount</Text>
                 <Text style={[styles.costValue, { color: colors.success[600] }]}>
@@ -283,11 +312,11 @@ export default function OwnerQuoteDetailScreen() {
           </View>
 
           {/* Revision Badge */}
-          {quote.revision_number && quote.revision_number > 0 && (
+          {quote.revision_number != null && quote.revision_number > 0 && (
             <View style={styles.revisionBadge}>
               <Ionicons name="refresh" size={16} color={colors.warning[600]} />
               <Text style={styles.revisionBadgeText}>
-                Revision {quote.revision_number} {hasRevisions && `(${revisions.length} previous)`}
+                Revision {quote.revision_number} {hasRevisions ? `(${revisions.length} previous)` : ''}
               </Text>
             </View>
           )}

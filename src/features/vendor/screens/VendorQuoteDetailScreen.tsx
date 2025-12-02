@@ -1,11 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, StyleSheet, TextInput } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useAuth } from '@/src/contexts/AuthContext';
+import {
+    getQuoteById,
+    getQuoteRevisions,
+    updateQuote,
+    type Quote,
+    type QuoteRevision,
+} from '@/src/features/maintenance/api';
+import { colors } from '@/src/shared/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { quotesApi, Quote, QuoteRevision } from '@/src/features/maintenance/api/quotesApi';
-import { colors } from '@/src/shared/theme/colors';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const RSA = { blue: '#002395' };
 
@@ -19,13 +26,14 @@ const STATUS_CONFIG = {
 
 export default function VendorQuoteDetailScreen() {
   const { quoteId } = useLocalSearchParams<{ quoteId: string }>();
+  const { user } = useAuth();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [revisions, setRevisions] = useState<QuoteRevision[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [showRevisions, setShowRevisions] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  
+
   // Edit form state
   const [editSubtotal, setEditSubtotal] = useState('');
   const [editVAT, setEditVAT] = useState('');
@@ -43,17 +51,17 @@ export default function VendorQuoteDetailScreen() {
   const fetchQuoteDetails = async () => {
     try {
       setLoading(true);
-      const quoteData = await quotesApi.getQuoteById(quoteId);
+      const quoteData = await getQuoteById(quoteId);
       setQuote(quoteData);
-      
+
       // Initialize edit form
       setEditSubtotal(quoteData.subtotal?.toString() || '0');
       setEditVAT(quoteData.vat_amount?.toString() || '0');
       setEditDiscount(quoteData.discount_amount?.toString() || '0');
       setEditTotal(quoteData.total_amount?.toString() || '0');
       setEditNotes(quoteData.notes || '');
-      
-      const revisionsData = await quotesApi.getQuoteRevisions(quoteId);
+
+      const revisionsData = await getQuoteRevisions(quoteId);
       setRevisions(revisionsData);
     } catch (error: any) {
       console.error('Error fetching quote:', error);
@@ -97,9 +105,11 @@ export default function VendorQuoteDetailScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
               // Get current user ID (vendor)
-              const userId = 'current-vendor-id'; // TODO: Get from auth context
+              if (!user?.id) {
+                throw new Error('User not authenticated');
+              }
 
-              await quotesApi.updateQuote(
+              await updateQuote(
                 quoteId,
                 {
                   subtotal: parseFloat(editSubtotal),
@@ -109,7 +119,7 @@ export default function VendorQuoteDetailScreen() {
                   notes: editNotes,
                   revision_reason: editReason,
                 },
-                userId
+                user.id
               );
 
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -166,15 +176,15 @@ export default function VendorQuoteDetailScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Quote Details</Text>
         {canEdit && (
-          <TouchableOpacity 
-            onPress={handleEditToggle} 
+          <TouchableOpacity
+            onPress={handleEditToggle}
             style={styles.headerButton}
             disabled={actionLoading}
           >
-            <Ionicons 
-              name={editMode ? "close" : "create-outline"} 
-              size={24} 
-              color={editMode ? colors.error[500] : RSA.blue} 
+            <Ionicons
+              name={editMode ? "close" : "create-outline"}
+              size={24}
+              color={editMode ? colors.error[500] : RSA.blue}
             />
           </TouchableOpacity>
         )}
@@ -261,7 +271,7 @@ export default function VendorQuoteDetailScreen() {
                   placeholder="0"
                 />
               </View>
-              
+
               <View style={styles.reasonSection}>
                 <Text style={styles.reasonLabel}>Notes (Optional)</Text>
                 <TextInput
@@ -317,7 +327,7 @@ export default function VendorQuoteDetailScreen() {
                 <Text style={styles.costLabel}>VAT (15%)</Text>
                 <Text style={styles.costValue}>R {quote.vat_amount?.toLocaleString() || '0'}</Text>
               </View>
-              {quote.discount_amount && quote.discount_amount > 0 && (
+              {quote.discount_amount != null && quote.discount_amount > 0 && (
                 <View style={styles.costRow}>
                   <Text style={[styles.costLabel, { color: colors.success[600] }]}>Discount</Text>
                   <Text style={[styles.costValue, { color: colors.success[600] }]}>
@@ -333,11 +343,11 @@ export default function VendorQuoteDetailScreen() {
             </View>
           )}
 
-          {quote.revision_number && quote.revision_number > 0 && !editMode && (
+          {quote.revision_number != null && quote.revision_number > 0 && !editMode && (
             <View style={styles.revisionBadge}>
               <Ionicons name="refresh" size={16} color={colors.warning[600]} />
               <Text style={styles.revisionBadgeText}>
-                Revision {quote.revision_number} {hasRevisions && `(${revisions.length} previous)`}
+                Revision {quote.revision_number} {hasRevisions ? `(${revisions.length} previous)` : ''}
               </Text>
             </View>
           )}
@@ -380,7 +390,7 @@ export default function VendorQuoteDetailScreen() {
                     })}
                   </Text>
                 </View>
-                
+
                 <View style={styles.revisionCosts}>
                   <View style={styles.revisionCostRow}>
                     <Text style={styles.revisionCostLabel}>Total</Text>
@@ -430,56 +440,56 @@ const styles = StyleSheet.create({
   errorText: { marginTop: 16, fontSize: 18, fontWeight: '600', color: '#111827' },
   backButton: { marginTop: 24, paddingHorizontal: 24, paddingVertical: 12, backgroundColor: RSA.blue, borderRadius: 8 },
   backButtonText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
-  
-  header: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
-    paddingHorizontal: 16, 
-    paddingVertical: 16, 
-    backgroundColor: '#FFFFFF', 
-    borderBottomWidth: 1, 
-    borderBottomColor: '#e5e7eb' 
+
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb'
   },
   headerButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
-  
+
   scrollView: { flex: 1 },
-  
+
   statusContainer: { alignItems: 'center', paddingVertical: 20 },
-  statusBadge: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 8, 
-    paddingHorizontal: 16, 
-    paddingVertical: 10, 
-    borderRadius: 20 
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20
   },
   statusText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
-  
+
   section: { marginHorizontal: 16, marginBottom: 24 },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 12 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  
-  contractBanner: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 8, 
-    paddingHorizontal: 16, 
-    paddingVertical: 12, 
-    backgroundColor: colors.info[50], 
-    borderRadius: 12, 
-    borderWidth: 1, 
-    borderColor: colors.info[500] 
+
+  contractBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.info[50],
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.info[500]
   },
   contractBannerText: { fontSize: 15, fontWeight: '600', color: colors.info[700] },
-  
-  costCard: { 
-    backgroundColor: '#FFFFFF', 
-    borderRadius: 12, 
-    padding: 16, 
-    borderWidth: 1, 
-    borderColor: '#e5e7eb' 
+
+  costCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb'
   },
   costRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   costLabel: { fontSize: 15, color: '#6b7280' },
@@ -487,47 +497,47 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: '#e5e7eb', marginVertical: 8 },
   totalLabel: { fontSize: 18, fontWeight: '700', color: '#111827' },
   totalValue: { fontSize: 24, fontWeight: '700', color: RSA.blue },
-  
-  editCard: { 
-    backgroundColor: '#FFFFFF', 
-    borderRadius: 12, 
-    padding: 16, 
-    borderWidth: 2, 
-    borderColor: RSA.blue 
+
+  editCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: RSA.blue
   },
   editRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   editLabel: { fontSize: 15, fontWeight: '600', color: '#111827', flex: 1 },
-  editInput: { 
-    flex: 1, 
-    borderWidth: 1, 
-    borderColor: '#d1d5db', 
-    borderRadius: 8, 
-    paddingHorizontal: 12, 
-    paddingVertical: 8, 
-    fontSize: 15, 
+  editInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 15,
     textAlign: 'right',
     backgroundColor: '#FFFFFF',
   },
   totalInput: { fontSize: 18, fontWeight: '700', color: RSA.blue },
-  
+
   reasonSection: { marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#e5e7eb' },
   reasonLabel: { fontSize: 14, fontWeight: '600', color: '#111827', marginBottom: 8 },
-  reasonInput: { 
-    borderWidth: 1, 
-    borderColor: '#d1d5db', 
-    borderRadius: 8, 
-    paddingHorizontal: 12, 
-    paddingVertical: 10, 
+  reasonInput: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     fontSize: 15,
     minHeight: 70,
     textAlignVertical: 'top',
   },
-  
+
   editActions: { flexDirection: 'row', gap: 12, marginTop: 16 },
-  editActionButton: { 
-    flex: 1, 
-    paddingVertical: 12, 
-    borderRadius: 8, 
+  editActionButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -535,46 +545,46 @@ const styles = StyleSheet.create({
   cancelButtonText: { fontSize: 15, fontWeight: '600', color: '#6b7280' },
   saveButton: { backgroundColor: RSA.blue },
   saveButtonText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
-  
-  revisionBadge: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 6, 
-    marginTop: 12, 
-    paddingHorizontal: 12, 
-    paddingVertical: 8, 
-    backgroundColor: colors.warning[50], 
+
+  revisionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: colors.warning[50],
     borderRadius: 8,
     alignSelf: 'flex-start',
   },
   revisionBadgeText: { fontSize: 13, fontWeight: '600', color: colors.warning[700] },
-  
+
   revisionToggle: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   revisionToggleText: { fontSize: 14, fontWeight: '600', color: RSA.blue },
-  
-  notesCard: { 
-    backgroundColor: '#FFFFFF', 
-    borderRadius: 12, 
-    padding: 16, 
-    borderWidth: 1, 
-    borderColor: '#e5e7eb' 
+
+  notesCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb'
   },
   notesText: { fontSize: 15, color: '#374151', lineHeight: 22 },
-  
-  revisionCard: { 
-    backgroundColor: '#FFFFFF', 
-    borderRadius: 12, 
-    padding: 16, 
-    borderWidth: 1, 
+
+  revisionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
     borderColor: '#e5e7eb',
     marginBottom: 12,
   },
   revisionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  revisionNumber: { 
-    backgroundColor: colors.gray[100], 
-    paddingHorizontal: 12, 
-    paddingVertical: 6, 
-    borderRadius: 12 
+  revisionNumber: {
+    backgroundColor: colors.gray[100],
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12
   },
   revisionNumberText: { fontSize: 13, fontWeight: '700', color: colors.gray[700] },
   revisionDate: { fontSize: 13, color: '#6b7280' },

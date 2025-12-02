@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { maintenanceApi } from '../api/maintenanceApi';
+import { useEffect, useState } from 'react';
+import { getMaintenanceRequestById } from '../api';
 
 export function useMaintenanceDetail(requestId: string) {
   const [request, setRequest] = useState<any>(null);
@@ -13,7 +13,7 @@ export function useMaintenanceDetail(requestId: string) {
       try {
         setLoading(true);
         setError(null);
-        const data = await maintenanceApi.getMaintenanceRequestById(requestId);
+        const data = await getMaintenanceRequestById(requestId);
         setRequest(data);
       } catch (err: any) {
         setError(err.message || 'Failed to fetch request details');

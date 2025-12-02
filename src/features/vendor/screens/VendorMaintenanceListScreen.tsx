@@ -1,22 +1,21 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  ActivityIndicator,
-  RefreshControl,
-  TouchableOpacity,
-  ScrollView,
-  TextInput,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { colors } from '@/src/shared/theme/colors';
-import { vendorMaintenanceApi } from '@/src/features/maintenance/api/maintenanceApi';
-import type { VendorMaintenanceRequest } from '@/src/features/maintenance/api/maintenanceApi';
+import { getVendorAvailableRequests, type VendorMaintenanceRequest } from '@/src/features/maintenance/api';
 import { RequestCard } from '@/src/features/vendor/components/RequestCard';
 import { supabase } from '@/src/lib/supabase';
+import { colors } from '@/src/shared/theme/colors';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    FlatList,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 type StatusFilter = 'all' | 'open' | 'assigned' | 'in_progress' | 'completed';
 
@@ -91,7 +90,7 @@ export const VendorMaintenanceListScreen: React.FC = () => {
         filters.category = categoryFilter;
       }
 
-      const data = await vendorMaintenanceApi.getAvailableRequests(user.id, filters);
+      const data = await getVendorAvailableRequests(user.id, filters);
 
       if (isRefresh) {
         setRequests(data);

@@ -1,6 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
-import { maintenanceApi } from '../api/maintenanceApi';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { useCallback, useEffect, useState } from 'react';
+import {
+    filterByPriority as filterRequestsByPriority,
+    filterByStatus as filterRequestsByStatus,
+    getMaintenanceRequests,
+    subscribeToMaintenanceRequests,
+    unsubscribeFromMaintenanceRequests,
+} from '../api';
 
 export function useMaintenanceRequests() {
   const { user, profile } = useAuth();
@@ -23,7 +29,7 @@ export function useMaintenanceRequests() {
       setError(null);
       // Filter out admin role (not supported in maintenance)
       const role = profile.role === 'admin' ? 'owner' : profile.role;
-      const data = await maintenanceApi.getMaintenanceRequests(user.id, role);
+      const data = await getMaintenanceRequests(user.id, role);
       setRequests(data);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch maintenance requests');
@@ -52,7 +58,7 @@ export function useMaintenanceRequests() {
     fetchRequests();
 
     // Subscribe to real-time changes
-    const subscription = maintenanceApi.subscribeToMaintenanceRequests(
+    const subscription = subscribeToMaintenanceRequests(
       user.id,
       (payload: any) => {
         console.log('Real-time update:', payload);
@@ -61,7 +67,7 @@ export function useMaintenanceRequests() {
     );
 
     return () => {
-      maintenanceApi.unsubscribe(subscription);
+      unsubscribeFromMaintenanceRequests(subscription);
     };
   }, [user?.id, profile?.role, fetchRequests]);
 
@@ -72,7 +78,7 @@ export function useMaintenanceRequests() {
 
       try {
         setLoading(true);
-        const data = await maintenanceApi.filterByStatus(user.id, statuses);
+        const data = await filterRequestsByStatus(user.id, statuses);
         setRequests(data);
       } catch (err: any) {
         setError(err.message);
@@ -90,7 +96,7 @@ export function useMaintenanceRequests() {
 
       try {
         setLoading(true);
-        const data = await maintenanceApi.filterByPriority(user.id, priorities);
+        const data = await filterRequestsByPriority(user.id, priorities);
         setRequests(data);
       } catch (err: any) {
         setError(err.message);

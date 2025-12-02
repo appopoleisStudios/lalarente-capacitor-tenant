@@ -1,11 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, StyleSheet, TextInput } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
-import { purchaseOrdersApi, PurchaseOrder, PORevision } from '@/src/features/maintenance/api/purchaseOrdersApi';
+import { useAuth } from '@/src/contexts/AuthContext';
+import {
+    getPOById,
+    getPORevisions,
+    sendPOToVendor,
+    type PORevision,
+    type PurchaseOrder,
+} from '@/src/features/maintenance/api';
 import { colors } from '@/src/shared/theme/colors';
+import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import * as Haptics from 'expo-haptics';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const RSA = { blue: '#002395' };
 
@@ -19,19 +27,28 @@ const STATUS_CONFIG = {
 
 export default function OwnerPODetailScreen() {
   const { poId, requestId } = useLocalSearchParams<{ poId: string; requestId: string }>();
+  const { profile } = useAuth();
   const [po, setPO] = useState<PurchaseOrder | null>(null);
   const [revisions, setRevisions] = useState<PORevision[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [showRevisions, setShowRevisions] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  
+
   // Edit form state
   const [editSubtotal, setEditSubtotal] = useState('');
   const [editVAT, setEditVAT] = useState('');
   const [editPlatformFee, setEditPlatformFee] = useState('');
   const [editTotal, setEditTotal] = useState('');
   const [editReason, setEditReason] = useState('');
+
+  // Scheduling state
+  const [scheduledDate, setScheduledDate] = useState<Date>(new Date());
+  const [scheduledTime, setScheduledTime] = useState<Date>(new Date());
+  const [workInstructions, setWorkInstructions] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [sendingToVendor, setSendingToVendor] = useState(false);
 
   useEffect(() => {
     if (poId) {
@@ -42,16 +59,16 @@ export default function OwnerPODetailScreen() {
   const fetchPODetails = async () => {
     try {
       setLoading(true);
-      const poData = await purchaseOrdersApi.getPOById(poId);
+      const poData = await getPOById(poId);
       setPO(poData);
-      
+
       // Initialize edit form
       setEditSubtotal(poData.subtotal?.toString() || '0');
       setEditVAT(poData.vat_amount?.toString() || '0');
       setEditPlatformFee(poData.platform_fee_amount?.toString() || '0');
       setEditTotal(poData.total_amount?.toString() || '0');
-      
-      const revisionsData = await purchaseOrdersApi.getPORevisions(poId);
+
+      const revisionsData = await getPORevisions(poId);
       setRevisions(revisionsData);
     } catch (error: any) {
       console.error('Error fetching PO:', error);
@@ -93,10 +110,10 @@ export default function OwnerPODetailScreen() {
               setActionLoading(true);
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-              // Get current user ID (you'll need to implement this based on your auth)
-              const userId = 'current-user-id'; // TODO: Get from auth context
+              const userId = profile?.id || '';
 
-              await purchaseOrdersApi.updatePO(
+              const { updatePO } = await import('@/src/features/maintenance/api');
+              await updatePO(
                 poId,
                 {
                   subtotal: parseFloat(editSubtotal),
@@ -123,6 +140,87 @@ export default function OwnerPODetailScreen() {
         },
       ]
     );
+  };
+
+  const handleSendToVendor = async () => {
+    // Validate that date is in the future
+    // const now = new Date();
+    // if (scheduledDate < now) {
+    //   Alert.alert('Invalid Date', 'Please select a future date for the scheduled work');
+    //   return;
+    // }
+
+    Alert.alert(
+      'Send PO to Vendor',
+      'This will notify the vendor and allow them to start work at the scheduled time. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Send',
+          onPress: async () => {
+            try {
+              setSendingToVendor(true);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+              const userId = profile?.id || '';
+
+              // Format date and time
+              const dateStr = scheduledDate.toISOString();
+              const timeStr = `${scheduledTime.getHours().toString().padStart(2, '0')}:${scheduledTime.getMinutes().toString().padStart(2, '0')}`;
+
+              await sendPOToVendor(
+                poId,
+                dateStr,
+                timeStr,
+                workInstructions.trim() || null,
+                userId
+              );
+
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              Alert.alert('Success', 'PO sent to vendor. They will be notified.');
+              fetchPODetails();
+            } catch (error: any) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              Alert.alert('Error', error.message || 'Failed to send PO to vendor');
+            } finally {
+              setSendingToVendor(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    const currentDate = selectedDate || scheduledDate;
+    
+    // Always close on Android (dialog dismissed)
+    // On iOS, only close if user cancelled
+    if (Platform.OS === 'android' || event.type === 'dismissed') {
+      setShowDatePicker(false);
+    }
+    
+    // Update date if user selected one
+    if (event.type === 'set' && selectedDate) {
+      setScheduledDate(selectedDate);
+      setShowDatePicker(false); // Close after selection
+    }
+  };
+
+  const onTimeChange = (event: any, selectedTime?: Date) => {
+    const currentTime = selectedTime || scheduledTime;
+    
+    // Always close on Android (dialog dismissed)
+    // On iOS, only close if user cancelled
+    if (Platform.OS === 'android' || event.type === 'dismissed') {
+      setShowTimePicker(false);
+    }
+    
+    // Update time if user selected one
+    if (event.type === 'set' && selectedTime) {
+      setScheduledTime(selectedTime);
+      setShowTimePicker(false); // Close after selection
+    }
   };
 
   if (loading) {
@@ -160,15 +258,15 @@ export default function OwnerPODetailScreen() {
           <Ionicons name="arrow-back" size={24} color="#111827" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Purchase Order</Text>
-        <TouchableOpacity 
-          onPress={handleEditToggle} 
+        <TouchableOpacity
+          onPress={handleEditToggle}
           style={styles.headerButton}
           disabled={actionLoading}
         >
-          <Ionicons 
-            name={editMode ? "close" : "create-outline"} 
-            size={24} 
-            color={editMode ? colors.error[500] : RSA.blue} 
+          <Ionicons
+            name={editMode ? "close" : "create-outline"}
+            size={24}
+            color={editMode ? colors.error[500] : RSA.blue}
           />
         </TouchableOpacity>
       </View>
@@ -198,7 +296,7 @@ export default function OwnerPODetailScreen() {
             <View style={styles.contractCard}>
               <Ionicons name="document-text" size={24} color={colors.info[500]} />
               <View style={styles.contractInfo}>
-                <Text style={styles.contractNumber}>{po.contract.contract_number}</Text>
+                <Text style={styles.contractNumber}>Contract ID: {po.contract.id.substring(0, 8)}...</Text>
                 <Text style={styles.contractStatus}>Status: {po.contract.status}</Text>
               </View>
             </View>
@@ -268,7 +366,7 @@ export default function OwnerPODetailScreen() {
                   placeholder="0"
                 />
               </View>
-              
+
               <View style={styles.reasonSection}>
                 <Text style={styles.reasonLabel}>Reason for Revision *</Text>
                 <TextInput
@@ -343,6 +441,150 @@ export default function OwnerPODetailScreen() {
           </View>
         )}
 
+        {/* Schedule Work Section */}
+        {!po.sent_to_vendor_at && !editMode && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Schedule Work</Text>
+            <View style={styles.scheduleCard}>
+              <Text style={styles.scheduleDescription}>
+                Set when the vendor should start work and provide any special instructions.
+              </Text>
+
+              {/* Date Picker */}
+              <View style={styles.scheduleField}>
+                <View style={styles.scheduleFieldHeader}>
+                  <Ionicons name="calendar-outline" size={20} color={RSA.blue} />
+                  <Text style={styles.scheduleFieldLabel}>Start Date *</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.dateTimeButton}
+                  onPress={() => setShowDatePicker(true)}
+                >
+                  <Text style={styles.dateTimeButtonText}>
+                    {scheduledDate.toLocaleDateString('en-ZA', {
+                      weekday: 'short',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </Text>
+                  <Ionicons name="chevron-down" size={20} color="#6b7280" />
+                </TouchableOpacity>
+              </View>
+
+              {/* Time Picker */}
+              <View style={styles.scheduleField}>
+                <View style={styles.scheduleFieldHeader}>
+                  <Ionicons name="time-outline" size={20} color={RSA.blue} />
+                  <Text style={styles.scheduleFieldLabel}>Start Time *</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.dateTimeButton}
+                  onPress={() => setShowTimePicker(true)}
+                >
+                  <Text style={styles.dateTimeButtonText}>
+                    {scheduledTime.toLocaleTimeString('en-ZA', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </Text>
+                  <Ionicons name="chevron-down" size={20} color="#6b7280" />
+                </TouchableOpacity>
+              </View>
+
+              {/* Work Instructions */}
+              <View style={styles.scheduleField}>
+                <View style={styles.scheduleFieldHeader}>
+                  <Ionicons name="document-text-outline" size={20} color={RSA.blue} />
+                  <Text style={styles.scheduleFieldLabel}>Work Instructions (Optional)</Text>
+                </View>
+                <TextInput
+                  style={styles.instructionsInput}
+                  value={workInstructions}
+                  onChangeText={setWorkInstructions}
+                  placeholder="Add any special instructions for the vendor..."
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+              </View>
+
+              {/* Send Button */}
+              <TouchableOpacity
+                style={[styles.sendButton, sendingToVendor && styles.sendButtonDisabled]}
+                onPress={handleSendToVendor}
+                disabled={sendingToVendor}
+              >
+                {sendingToVendor ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Ionicons name="send" size={20} color="#FFFFFF" />
+                    <Text style={styles.sendButtonText}>Send to Vendor</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              <Text style={styles.scheduleNote}>
+                💡 The vendor can only start work after the scheduled time arrives
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* PO Sent Status */}
+        {po.sent_to_vendor_at && !editMode && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Work Schedule</Text>
+            <View style={styles.sentCard}>
+              <View style={styles.sentBadge}>
+                <Ionicons name="checkmark-circle" size={24} color={colors.success[500]} />
+                <Text style={styles.sentBadgeText}>PO Sent to Vendor</Text>
+              </View>
+
+              <View style={styles.sentDetails}>
+                <View style={styles.sentDetailRow}>
+                  <Ionicons name="calendar" size={18} color="#6b7280" />
+                  <Text style={styles.sentDetailLabel}>Scheduled Start:</Text>
+                  <Text style={styles.sentDetailValue}>
+                    {po.scheduled_start_date && new Date(po.scheduled_start_date).toLocaleDateString('en-ZA', {
+                      weekday: 'short',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </Text>
+                </View>
+
+                <View style={styles.sentDetailRow}>
+                  <Ionicons name="time" size={18} color="#6b7280" />
+                  <Text style={styles.sentDetailLabel}>Start Time:</Text>
+                  <Text style={styles.sentDetailValue}>{po.scheduled_start_time}</Text>
+                </View>
+
+                <View style={styles.sentDetailRow}>
+                  <Ionicons name="paper-plane" size={18} color="#6b7280" />
+                  <Text style={styles.sentDetailLabel}>Sent:</Text>
+                  <Text style={styles.sentDetailValue}>
+                    {new Date(po.sent_to_vendor_at).toLocaleDateString('en-ZA', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })}
+                  </Text>
+                </View>
+              </View>
+
+              {po.work_instructions && (
+                <View style={styles.instructionsDisplay}>
+                  <Text style={styles.instructionsDisplayLabel}>Work Instructions:</Text>
+                  <Text style={styles.instructionsDisplayText}>{po.work_instructions}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
+
         {showRevisions && hasRevisions && !editMode && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Revision History</Text>
@@ -360,7 +602,7 @@ export default function OwnerPODetailScreen() {
                     })}
                   </Text>
                 </View>
-                
+
                 <View style={styles.revisionCosts}>
                   <View style={styles.revisionCostRow}>
                     <Text style={styles.revisionCostLabel}>Total</Text>
@@ -398,6 +640,27 @@ export default function OwnerPODetailScreen() {
 
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* Date Picker Modal */}
+      {showDatePicker && (
+        <DateTimePicker
+          value={scheduledDate}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={onDateChange}
+          // minimumDate={new Date()}
+        />
+      )}
+
+      {/* Time Picker Modal */}
+      {showTimePicker && (
+        <DateTimePicker
+          value={scheduledTime}
+          mode="time"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          // onChange={onTimeChange}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -410,59 +673,59 @@ const styles = StyleSheet.create({
   errorText: { marginTop: 16, fontSize: 18, fontWeight: '600', color: '#111827' },
   backButton: { marginTop: 24, paddingHorizontal: 24, paddingVertical: 12, backgroundColor: RSA.blue, borderRadius: 8 },
   backButtonText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
-  
-  header: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
-    paddingHorizontal: 16, 
-    paddingVertical: 16, 
-    backgroundColor: '#FFFFFF', 
-    borderBottomWidth: 1, 
-    borderBottomColor: '#e5e7eb' 
+
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb'
   },
   headerButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
-  
+
   scrollView: { flex: 1 },
-  
+
   statusContainer: { alignItems: 'center', paddingVertical: 20 },
-  statusBadge: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 8, 
-    paddingHorizontal: 16, 
-    paddingVertical: 10, 
-    borderRadius: 20 
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20
   },
   statusText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
-  
+
   section: { marginHorizontal: 16, marginBottom: 24 },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 12 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  
+
   poNumber: { fontSize: 24, fontWeight: '700', color: RSA.blue, textAlign: 'center' },
   poDate: { fontSize: 14, color: '#6b7280', textAlign: 'center', marginTop: 4 },
-  
-  contractCard: { 
-    flexDirection: 'row', 
-    backgroundColor: '#FFFFFF', 
-    borderRadius: 12, 
-    padding: 16, 
-    borderWidth: 1, 
+
+  contractCard: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
     borderColor: colors.info[500],
     gap: 12,
   },
   contractInfo: { flex: 1 },
   contractNumber: { fontSize: 16, fontWeight: '600', color: '#111827' },
   contractStatus: { fontSize: 14, color: '#6b7280', marginTop: 4 },
-  
-  costCard: { 
-    backgroundColor: '#FFFFFF', 
-    borderRadius: 12, 
-    padding: 16, 
-    borderWidth: 1, 
-    borderColor: '#e5e7eb' 
+
+  costCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb'
   },
   costRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   costLabel: { fontSize: 15, color: '#6b7280' },
@@ -470,47 +733,47 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: '#e5e7eb', marginVertical: 8 },
   totalLabel: { fontSize: 18, fontWeight: '700', color: '#111827' },
   totalValue: { fontSize: 24, fontWeight: '700', color: RSA.blue },
-  
-  editCard: { 
-    backgroundColor: '#FFFFFF', 
-    borderRadius: 12, 
-    padding: 16, 
-    borderWidth: 2, 
-    borderColor: RSA.blue 
+
+  editCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: RSA.blue
   },
   editRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   editLabel: { fontSize: 15, fontWeight: '600', color: '#111827', flex: 1 },
-  editInput: { 
-    flex: 1, 
-    borderWidth: 1, 
-    borderColor: '#d1d5db', 
-    borderRadius: 8, 
-    paddingHorizontal: 12, 
-    paddingVertical: 8, 
-    fontSize: 15, 
+  editInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 15,
     textAlign: 'right',
     backgroundColor: '#FFFFFF',
   },
   totalInput: { fontSize: 18, fontWeight: '700', color: RSA.blue },
-  
+
   reasonSection: { marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#e5e7eb' },
   reasonLabel: { fontSize: 14, fontWeight: '600', color: '#111827', marginBottom: 8 },
-  reasonInput: { 
-    borderWidth: 1, 
-    borderColor: '#d1d5db', 
-    borderRadius: 8, 
-    paddingHorizontal: 12, 
-    paddingVertical: 10, 
+  reasonInput: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     fontSize: 15,
     minHeight: 80,
     textAlignVertical: 'top',
   },
-  
+
   editActions: { flexDirection: 'row', gap: 12, marginTop: 16 },
-  editActionButton: { 
-    flex: 1, 
-    paddingVertical: 12, 
-    borderRadius: 8, 
+  editActionButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -518,46 +781,46 @@ const styles = StyleSheet.create({
   cancelButtonText: { fontSize: 15, fontWeight: '600', color: '#6b7280' },
   saveButton: { backgroundColor: RSA.blue },
   saveButtonText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
-  
-  revisionBadge: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 6, 
-    marginTop: 12, 
-    paddingHorizontal: 12, 
-    paddingVertical: 8, 
-    backgroundColor: colors.warning[50], 
+
+  revisionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: colors.warning[50],
     borderRadius: 8,
     alignSelf: 'flex-start',
   },
   revisionBadgeText: { fontSize: 13, fontWeight: '600', color: colors.warning[700] },
-  
+
   revisionToggle: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   revisionToggleText: { fontSize: 14, fontWeight: '600', color: RSA.blue },
-  
-  notesCard: { 
-    backgroundColor: '#FFFFFF', 
-    borderRadius: 12, 
-    padding: 16, 
-    borderWidth: 1, 
-    borderColor: '#e5e7eb' 
+
+  notesCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb'
   },
   notesText: { fontSize: 15, color: '#374151', lineHeight: 22 },
-  
-  revisionCard: { 
-    backgroundColor: '#FFFFFF', 
-    borderRadius: 12, 
-    padding: 16, 
-    borderWidth: 1, 
+
+  revisionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
     borderColor: '#e5e7eb',
     marginBottom: 12,
   },
   revisionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  revisionNumber: { 
-    backgroundColor: colors.gray[100], 
-    paddingHorizontal: 12, 
-    paddingVertical: 6, 
-    borderRadius: 12 
+  revisionNumber: {
+    backgroundColor: colors.gray[100],
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12
   },
   revisionNumberText: { fontSize: 13, fontWeight: '700', color: colors.gray[700] },
   revisionDate: { fontSize: 13, color: '#6b7280' },
@@ -570,4 +833,100 @@ const styles = StyleSheet.create({
   revisionReason: { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#e5e7eb' },
   revisionReasonLabel: { fontSize: 12, fontWeight: '600', color: '#6b7280', marginBottom: 4 },
   revisionReasonText: { fontSize: 14, color: '#374151', lineHeight: 20 },
+
+  // Schedule Work Section
+  scheduleCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb'
+  },
+  scheduleDescription: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 20,
+    lineHeight: 20
+  },
+  scheduleField: { marginBottom: 16 },
+  scheduleFieldHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8
+  },
+  scheduleFieldLabel: { fontSize: 15, fontWeight: '600', color: '#111827' },
+  dateTimeButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+  },
+  dateTimeButtonText: { fontSize: 15, color: '#111827', fontWeight: '500' },
+  instructionsInput: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    minHeight: 100,
+    backgroundColor: '#FFFFFF',
+  },
+  sendButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: RSA.blue,
+    paddingVertical: 14,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  sendButtonDisabled: { opacity: 0.6 },
+  sendButtonText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
+  scheduleNote: {
+    fontSize: 13,
+    color: '#6b7280',
+    marginTop: 12,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+
+  // PO Sent Status
+  sentCard: {
+    backgroundColor: colors.success[50],
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.success[500]
+  },
+  sentBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16
+  },
+  sentBadgeText: { fontSize: 16, fontWeight: '700', color: colors.success[700] },
+  sentDetails: { gap: 12 },
+  sentDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8
+  },
+  sentDetailLabel: { fontSize: 14, color: '#6b7280', fontWeight: '500' },
+  sentDetailValue: { fontSize: 14, color: '#111827', fontWeight: '600', flex: 1 },
+  instructionsDisplay: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: colors.success[500]
+  },
+  instructionsDisplayLabel: { fontSize: 13, fontWeight: '600', color: '#6b7280', marginBottom: 6 },
+  instructionsDisplayText: { fontSize: 14, color: '#374151', lineHeight: 20 },
 });

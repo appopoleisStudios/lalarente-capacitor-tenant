@@ -1,14 +1,30 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useAuth } from '@/src/contexts/AuthContext';
+import {
+  acceptQuote,
+  acknowledgeRequest,
+  getMaintenanceRequestById,
+  getPOByRequestId,
+  getQuotesByRequest,
+  pushToDedicatedVendors,
+  pushToOpenMarket,
+  rejectQuote,
+  requestQuoteRevision,
+  type PurchaseOrder
+} from '@/src/features/maintenance/api';
+import { MediaGallery } from '@/src/features/maintenance/components/MediaGallery';
+import {
+  QuoteCard,
+  RequestInfoSection,
+  RequestPOSection,
+  RequestTimelineSection,
+} from '@/src/features/owner/components';
+import { colors } from '@/src/shared/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { maintenanceApi } from '@/src/features/maintenance/api';
-import { quotesApi } from '@/src/features/maintenance/api/quotesApi';
-import { purchaseOrdersApi, PurchaseOrder } from '@/src/features/maintenance/api/purchaseOrdersApi';
-import { MediaGallery } from '@/src/features/maintenance/components/MediaGallery';
-import { colors } from '@/src/shared/theme/colors';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const RSA = { blue: '#002395' };
 
@@ -28,8 +44,11 @@ const PRIORITY_CONFIG = {
 
 export default function OwnerMaintenanceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { user } = useAuth();
   const [request, setRequest] = useState<any>(null);
   const [quotes, setQuotes] = useState<any[]>([]);
+  const [quoteRevisions, setQuoteRevisions] = useState<Record<string, any[]>>({});
+  const [expandedQuotes, setExpandedQuotes] = useState<Record<string, boolean>>({});
   const [purchaseOrder, setPurchaseOrder] = useState<PurchaseOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -40,28 +59,56 @@ export default function OwnerMaintenanceDetailScreen() {
     }
   }, [id]);
 
+  // Refetch data when screen comes into focus (e.g., after navigating back)
+  useFocusEffect(
+    React.useCallback(() => {
+      if (id) {
+        console.log('🔄 Screen focused - refetching data...');
+        fetchRequest();
+      }
+      return () => {
+        console.log('👋 Screen unfocused');
+      };
+    }, [id])
+  );
+
   const fetchRequest = async () => {
     try {
       setLoading(true);
-      
+
       // 1. Fetch main request
-      const data = await maintenanceApi.getMaintenanceRequestById(id);
+      const data = await getMaintenanceRequestById(id);
       setRequest(data);
-      
+
       // 2. Fetch quotes for this request
       try {
-        const quotesData = await quotesApi.getQuotesByRequest(id);
+        const quotesData = await getQuotesByRequest(id);
         setQuotes(quotesData);
+
+        // 2b. Fetch revisions for each quote
+        const revisionsMap: Record<string, any[]> = {};
+        for (const quote of quotesData) {
+          try {
+            const { getQuoteRevisions } = await import('@/src/features/maintenance/api');
+            const revisions = await getQuoteRevisions(quote.id);
+            if (revisions && revisions.length > 0) {
+              revisionsMap[quote.id] = revisions;
+            }
+          } catch (error) {
+            console.log(`Failed to fetch revisions for quote ${quote.id}:`, error);
+          }
+        }
+        setQuoteRevisions(revisionsMap);
       } catch (error) {
         console.log('Failed to fetch quotes:', error);
         setQuotes([]);
       }
-      
+
       // 3. Fetch PO using the DIRECT po_id reference (CORRECTED)
       const poId = (data as any)?.po_id;
       if (poId) {
         try {
-          const po = await purchaseOrdersApi.getPOById(poId);
+          const po = await getPOByRequestId(id) || await (await import('@/src/features/maintenance/api')).getPOById(poId);
           setPurchaseOrder(po);
         } catch (error) {
           console.log('Failed to fetch PO:', error);
@@ -70,7 +117,7 @@ export default function OwnerMaintenanceDetailScreen() {
       } else {
         setPurchaseOrder(null);
       }
-      
+
     } catch (error: any) {
       console.error('Error fetching request:', error);
       Alert.alert('Error', 'Failed to load request details');
@@ -84,7 +131,7 @@ export default function OwnerMaintenanceDetailScreen() {
       setActionLoading(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-      await maintenanceApi.acknowledgeRequest(id);
+      await acknowledgeRequest(id);
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Success', 'Request acknowledged');
@@ -120,7 +167,7 @@ export default function OwnerMaintenanceDetailScreen() {
       setActionLoading(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-      await maintenanceApi.pushToOpenMarket(id);
+      await pushToOpenMarket(id);
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Success', 'Request pushed to open market. All vendors in this category can now see and quote on this request.');
@@ -146,11 +193,11 @@ export default function OwnerMaintenanceDetailScreen() {
               setActionLoading(true);
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-              const result = await maintenanceApi.pushToDedicatedVendors(id);
-              
+              const result = await pushToDedicatedVendors(id);
+
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               Alert.alert(
-                'Success', 
+                'Success',
                 `Request sent to ${result.vendorsNotified} dedicated vendor${result.vendorsNotified !== 1 ? 's' : ''}`
               );
               fetchRequest();
@@ -180,7 +227,8 @@ export default function OwnerMaintenanceDetailScreen() {
               setActionLoading(true);
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-              await maintenanceApi.closeRequest(id);
+              const { closeRequest } = await import('@/src/features/maintenance/api');
+              await closeRequest(id);
 
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
@@ -211,12 +259,27 @@ export default function OwnerMaintenanceDetailScreen() {
               setActionLoading(true);
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-              // TODO: Implement accept quote API
-              // await maintenanceApi.acceptQuote(quoteId, vendorId);
-              
+              // Accept the quote (new function handles everything including PO generation)
+              if (!user?.id) {
+                throw new Error('User not authenticated');
+              }
+
+              const result = await acceptQuote(quoteId, user.id);
+              console.log('✅ Quote acceptance result:', result);
+              console.log('✅ PO ID:', result?.po?.id);
+
+              if (!result?.po?.id) {
+                throw new Error('PO was not created successfully');
+              }
+
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              Alert.alert('Success', 'Quote accepted and PO generated');
-              fetchRequest();
+
+              // Refresh the current screen data before navigating
+              await fetchRequest();
+
+              // Redirect to PO detail screen
+              console.log('🔄 Navigating to PO screen:', `/(owner)/maintenance/${id}/po/${result.po.id}`);
+              router.push(`/(owner)/maintenance/${id}/po/${result.po.id}`);
             } catch (error: any) {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
               Alert.alert('Error', error.message || 'Failed to accept quote');
@@ -232,7 +295,7 @@ export default function OwnerMaintenanceDetailScreen() {
   const handleRejectQuote = async (quoteId: string) => {
     Alert.alert(
       'Reject Quote',
-      'Are you sure you want to reject this quote?',
+      'Are you sure you want to reject this quote? The vendor will be notified.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -243,9 +306,12 @@ export default function OwnerMaintenanceDetailScreen() {
               setActionLoading(true);
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-              // TODO: Implement reject quote API
-              // await maintenanceApi.rejectQuote(quoteId);
-              
+              if (!user?.id) {
+                throw new Error('User not authenticated');
+              }
+
+              await rejectQuote(quoteId, user.id);
+
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               Alert.alert('Success', 'Quote rejected');
               fetchRequest();
@@ -259,6 +325,53 @@ export default function OwnerMaintenanceDetailScreen() {
         },
       ]
     );
+  };
+
+  const handleRequestRevision = (quoteId: string) => {
+    Alert.prompt(
+      'Request Revision',
+      'Please explain what changes you need:',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Send Request',
+          onPress: async (reason?: string) => {
+            if (!reason || reason.trim() === '') {
+              Alert.alert('Error', 'Please provide a reason for the revision');
+              return;
+            }
+
+            try {
+              setActionLoading(true);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+              if (!user?.id) {
+                throw new Error('User not authenticated');
+              }
+
+              await requestQuoteRevision(quoteId, user.id, reason);
+
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              Alert.alert('Success', 'Revision request sent to vendor');
+              fetchRequest();
+            } catch (error: any) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              Alert.alert('Error', error.message || 'Failed to request revision');
+            } finally {
+              setActionLoading(false);
+            }
+          },
+        },
+      ],
+      'plain-text'
+    );
+  };
+
+  const toggleQuoteExpanded = (quoteId: string) => {
+    setExpandedQuotes(prev => ({
+      ...prev,
+      [quoteId]: !prev[quoteId]
+    }));
   };
 
   const handleDelete = async () => {
@@ -275,7 +388,8 @@ export default function OwnerMaintenanceDetailScreen() {
               setActionLoading(true);
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
-              await maintenanceApi.deleteMaintenanceRequest(id);
+              const { deleteMaintenanceRequest } = await import('@/src/features/maintenance/api');
+              await deleteMaintenanceRequest(id);
 
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
@@ -327,14 +441,14 @@ export default function OwnerMaintenanceDetailScreen() {
   const priorityConfig = PRIORITY_CONFIG[request.priority as keyof typeof PRIORITY_CONFIG];
   const canAcknowledge = request.mms_status === 'notification' && !request.acknowledged_at;
   const canPushToVendors = request.acknowledged_at && !request.vendor_routed_at;
-  
+
   // Edge case: Request is in open market but no quotes received
-  const isUnquotedOpenMarket = request.acknowledged_at && 
-                                request.vendor_routed_at && 
-                                request.visibility === 'public' &&
-                                (!quotes || quotes.length === 0) &&
-                                request.status === 'open';
-  
+  const isUnquotedOpenMarket = request.acknowledged_at &&
+    request.vendor_routed_at &&
+    request.visibility === 'public' &&
+    (!quotes || quotes.length === 0) &&
+    request.status === 'open';
+
   // Can send to dedicated vendors if acknowledged and no PO issued yet
   const canSendToDedicatedVendors = request.acknowledged_at && !purchaseOrder;
 
@@ -342,7 +456,7 @@ export default function OwnerMaintenanceDetailScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => {
             // Navigate back to maintenance list instead of using router.back()
             // which can go to dashboard
@@ -351,7 +465,7 @@ export default function OwnerMaintenanceDetailScreen() {
             } else {
               router.back();
             }
-          }} 
+          }}
           style={styles.headerButton}
         >
           <Ionicons name="arrow-back" size={24} color="#111827" />
@@ -397,69 +511,8 @@ export default function OwnerMaintenanceDetailScreen() {
           <Text style={styles.title}>{request.title}</Text>
         </View>
 
-        {/* Days Since Created */}
-        <View style={styles.daysCard}>
-          <Ionicons name="calendar-outline" size={20} color={colors.gray[600]} />
-          <Text style={styles.daysText}>
-            {(() => {
-              const days = Math.floor((Date.now() - new Date(request.created_at).getTime()) / (1000 * 60 * 60 * 24));
-              if (days === 0) return 'Created today';
-              if (days === 1) return 'Created 1 day ago';
-              return `Created ${days} days ago`;
-            })()}
-          </Text>
-          {request.completed_date && (
-            <Text style={styles.daysSubtext}>
-              {(() => {
-                const completionDays = Math.floor(
-                  (new Date(request.completed_date).getTime() - new Date(request.created_at).getTime()) / (1000 * 60 * 60 * 24)
-                );
-                return ` • Completed in ${completionDays} ${completionDays === 1 ? 'day' : 'days'}`;
-              })()}
-            </Text>
-          )}
-        </View>
-
-        {/* Property Info */}
-        <View style={styles.infoCard}>
-          <View style={styles.infoRow}>
-            <Ionicons name="home" size={20} color={colors.gray[600]} />
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Property</Text>
-              <Text style={styles.infoValue}>{request.property?.title}</Text>
-              <Text style={styles.infoSubtext}>
-                {request.property?.address}, {request.property?.city}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Tenant Info (if exists) */}
-        {request.tenant && (
-          <View style={styles.infoCard}>
-            <View style={styles.infoRow}>
-              <Ionicons name="person" size={20} color={colors.gray[600]} />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Reported By</Text>
-                <Text style={styles.infoValue}>{request.tenant.full_name}</Text>
-                <Text style={styles.infoSubtext}>{request.tenant.phone}</Text>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* Category */}
-        {request.category && (
-          <View style={styles.infoCard}>
-            <View style={styles.infoRow}>
-              <Ionicons name="pricetag" size={20} color={colors.gray[600]} />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Category</Text>
-                <Text style={styles.infoValue}>{request.category.name}</Text>
-              </View>
-            </View>
-          </View>
-        )}
+        {/* Request Info Section */}
+        <RequestInfoSection request={request} />
 
         {/* Description */}
         <View style={styles.section}>
@@ -524,122 +577,25 @@ export default function OwnerMaintenanceDetailScreen() {
               <Text style={styles.sectionBadge}>{quotes.length} received</Text>
             </View>
             {quotes.map((quote: any) => (
-              <TouchableOpacity 
-                key={quote.id} 
-                style={styles.quoteCard}
-                onPress={() => router.push(`/(owner)/maintenance/${id}/quote/${quote.id}`)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.quoteHeader}>
-                  <View style={styles.quoteVendor}>
-                    <Ionicons name="person-circle" size={40} color={colors.gray[400]} />
-                    <View style={styles.quoteVendorInfo}>
-                      <View style={styles.quoteVendorNameRow}>
-                        <Text style={styles.quoteVendorName}>{quote.vendor?.full_name}</Text>
-                        {quote.contract_id && (
-                          <View style={styles.contractBadge}>
-                            <Ionicons name="document-text-outline" size={14} color={colors.info[600]} />
-                            <Text style={styles.contractBadgeText}>Contract</Text>
-                          </View>
-                        )}
-                      </View>
-                      <Text style={styles.quoteVendorPhone}>{quote.vendor?.phone}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.quoteAmount}>
-                    <Text style={styles.quoteAmountLabel}>Quote</Text>
-                    <Text style={styles.quoteAmountValue}>R {quote.total_amount?.toLocaleString()}</Text>
-                  </View>
-                </View>
-                
-                {quote.notes && (
-                  <Text style={styles.quoteNotes}>{quote.notes}</Text>
-                )}
-                
-                <View style={styles.quoteDetails}>
-                  <View style={styles.quoteDetailItem}>
-                    <Ionicons name="time-outline" size={16} color={colors.gray[500]} />
-                    <Text style={styles.quoteDetailText}>{quote.estimated_duration || 'Not specified'}</Text>
-                  </View>
-                  {quote.warranty_period && (
-                    <View style={styles.quoteDetailItem}>
-                      <Ionicons name="shield-checkmark-outline" size={16} color={colors.gray[500]} />
-                      <Text style={styles.quoteDetailText}>{quote.warranty_period} warranty</Text>
-                    </View>
-                  )}
-                </View>
-
-                {quote.status === 'submitted' && (
-                  <View style={styles.quoteActions}>
-                    <TouchableOpacity
-                      style={[styles.quoteActionButton, styles.quoteRejectButton]}
-                      onPress={() => handleRejectQuote(quote.id)}
-                    >
-                      <Text style={styles.quoteRejectText}>Reject</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.quoteActionButton, styles.quoteAcceptButton]}
-                      onPress={() => handleAcceptQuote(quote.id, quote.vendor_id)}
-                    >
-                      <Text style={styles.quoteAcceptText}>Accept & Generate PO</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-                
-                {quote.status === 'accepted' && (
-                  <View style={styles.quoteStatusBadge}>
-                    <Ionicons name="checkmark-circle" size={16} color={colors.success[500]} />
-                    <Text style={styles.quoteStatusText}>Accepted</Text>
-                  </View>
-                )}
-                
-                {/* Tap to view details hint */}
-                <View style={styles.quoteTapHint}>
-                  <Text style={styles.quoteTapHintText}>Tap to view full details</Text>
-                  <Ionicons name="chevron-forward" size={16} color={colors.gray[400]} />
-                </View>
-              </TouchableOpacity>
+              <QuoteCard
+                key={quote.id}
+                quote={quote}
+                revisions={quoteRevisions[quote.id] || []}
+                onAccept={() => handleAcceptQuote(quote.id, quote.vendor_id)}
+                onReject={() => handleRejectQuote(quote.id)}
+                onRequestRevision={() => handleRequestRevision(quote.id)}
+                onViewDetails={() => router.push(`/(owner)/maintenance/${id}/quote/${quote.id}`)}
+              />
             ))}
           </View>
         )}
 
         {/* Purchase Order */}
-        {purchaseOrder && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Purchase Order</Text>
-              <Text style={[styles.sectionBadge, { backgroundColor: colors.success[50], color: colors.success[700] }]}>
-                Issued
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={styles.poCard}
-              onPress={() => router.push(`/(owner)/maintenance/${id}/po/${purchaseOrder.id}`)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.poHeader}>
-                <Ionicons name="document-text" size={32} color={RSA.blue} />
-                <View style={styles.poInfo}>
-                  <Text style={styles.poNumber}>{purchaseOrder.po_number}</Text>
-                  <Text style={styles.poAmount}>
-                    R {purchaseOrder.total_amount?.toLocaleString() || '0'}
-                  </Text>
-                  
-                  {/* Contract Reference */}
-                  {purchaseOrder.contract && (
-                    <View style={styles.poContractRef}>
-                      <Ionicons name="link-outline" size={14} color={colors.gray[500]} />
-                      <Text style={styles.poContractText}>
-                        Contract: {purchaseOrder.contract.contract_number}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={colors.gray[400]} />
-              </View>
-            </TouchableOpacity>
-          </View>
-        )}
+        <RequestPOSection
+          purchaseOrder={purchaseOrder}
+          requestId={id}
+          onPress={() => purchaseOrder && router.push(`/(owner)/maintenance/${id}/po/${purchaseOrder.id}`)}
+        />
 
         {/* Invoice */}
         {request.status === 'completed' && (
@@ -677,73 +633,7 @@ export default function OwnerMaintenanceDetailScreen() {
         )}
 
         {/* Timeline */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Timeline</Text>
-          <View style={styles.timeline}>
-            <TimelineItem
-              icon="add-circle"
-              label="Created"
-              date={new Date(request.created_at).toLocaleDateString()}
-              completed
-            />
-            {request.acknowledged_at && (
-              <TimelineItem
-                icon="checkmark-circle"
-                label="Acknowledged"
-                date={new Date(request.acknowledged_at).toLocaleDateString()}
-                completed
-              />
-            )}
-            {request.vendor_routed_at && (
-              <TimelineItem
-                icon="people"
-                label="Sent to Vendors"
-                date={new Date(request.vendor_routed_at).toLocaleDateString()}
-                completed
-              />
-            )}
-            {quotes && quotes.length > 0 && (
-              <TimelineItem
-                icon="document-text"
-                label={`Quote${quotes.length > 1 ? 's' : ''} Received (${quotes.length})`}
-                date={new Date(quotes[0].created_at).toLocaleDateString()}
-                completed
-              />
-            )}
-            {purchaseOrder && (
-              <TimelineItem
-                icon="receipt"
-                label="Purchase Order Issued"
-                date={new Date(purchaseOrder.created_at).toLocaleDateString()}
-                completed
-              />
-            )}
-            {request.status === 'in_progress' && (
-              <TimelineItem
-                icon="construct"
-                label="Work In Progress"
-                date={request.scheduled_date ? new Date(request.scheduled_date).toLocaleDateString() : 'In Progress'}
-                completed
-              />
-            )}
-            {request.completed_date && (
-              <TimelineItem
-                icon="checkmark-done"
-                label="Completed"
-                date={new Date(request.completed_date).toLocaleDateString()}
-                completed
-              />
-            )}
-            {request.status === 'closed' && !request.completed_date && (
-              <TimelineItem
-                icon="archive"
-                label="Closed"
-                date={new Date().toLocaleDateString()}
-                completed
-              />
-            )}
-          </View>
-        </View>
+        <RequestTimelineSection request={request} quotes={quotes} purchaseOrder={purchaseOrder} />
 
         <View style={{ height: 100 }} />
       </ScrollView>
@@ -811,34 +701,7 @@ export default function OwnerMaintenanceDetailScreen() {
   );
 }
 
-// Timeline Item Component
-function TimelineItem({
-  icon,
-  label,
-  date,
-  completed,
-}: {
-  icon: string;
-  label: string;
-  date: string;
-  completed: boolean;
-}) {
-  return (
-    <View style={styles.timelineItem}>
-      <View style={[styles.timelineIcon, completed && styles.timelineIconCompleted]}>
-        <Ionicons
-          name={icon as any}
-          size={16}
-          color={completed ? '#FFFFFF' : colors.gray[400]}
-        />
-      </View>
-      <View style={styles.timelineContent}>
-        <Text style={styles.timelineLabel}>{label}</Text>
-        <Text style={styles.timelineDate}>{date}</Text>
-      </View>
-    </View>
-  );
-}
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f9fafb' },
@@ -885,18 +748,18 @@ const styles = StyleSheet.create({
   secondaryButton: { backgroundColor: '#FFFFFF', borderWidth: 2, borderColor: RSA.blue },
   warningButton: { backgroundColor: colors.warning[500] },
   actionButtonText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
-  
+
   // Section headers
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   sectionBadge: { fontSize: 12, fontWeight: '600', color: colors.gray[600], backgroundColor: colors.gray[100], paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
-  
+
   // Chat button
   chatButton: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb', overflow: 'hidden' },
   chatButtonContent: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 },
   chatButtonText: { flex: 1 },
   chatButtonTitle: { fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 2 },
   chatButtonSubtitle: { fontSize: 13, color: '#6b7280' },
-  
+
   // Quote cards
   quoteCard: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb', padding: 16, marginBottom: 12 },
   quoteHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
@@ -924,7 +787,7 @@ const styles = StyleSheet.create({
   quoteStatusText: { fontSize: 13, fontWeight: '600', color: colors.success[700] },
   quoteTapHint: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f3f4f6' },
   quoteTapHintText: { fontSize: 13, color: colors.gray[500] },
-  
+
   // PO card
   poCard: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb', overflow: 'hidden' },
   poHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 },
@@ -934,7 +797,7 @@ const styles = StyleSheet.create({
   poVendor: { fontSize: 14, color: '#6b7280' },
   poContractRef: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   poContractText: { fontSize: 12, color: colors.gray[600] },
-  
+
   // Invoice card
   invoiceCard: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb', overflow: 'hidden' },
   invoiceHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 },

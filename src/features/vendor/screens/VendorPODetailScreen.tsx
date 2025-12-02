@@ -1,11 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+import {
+    getPOById,
+    getPORevisions,
+    updatePOStatus,
+    type PORevision,
+    type PurchaseOrder,
+} from '@/src/features/maintenance/api';
+import { colors } from '@/src/shared/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { purchaseOrdersApi, PurchaseOrder, PORevision } from '@/src/features/maintenance/api/purchaseOrdersApi';
-import { colors } from '@/src/shared/theme/colors';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const RSA = { blue: '#002395' };
 
@@ -34,10 +40,10 @@ export default function VendorPODetailScreen() {
   const fetchPODetails = async () => {
     try {
       setLoading(true);
-      const poData = await purchaseOrdersApi.getPOById(poId);
+      const poData = await getPOById(poId);
       setPO(poData);
-      
-      const revisionsData = await purchaseOrdersApi.getPORevisions(poId);
+
+      const revisionsData = await getPORevisions(poId);
       setRevisions(revisionsData);
     } catch (error: any) {
       console.error('Error fetching PO:', error);
@@ -67,7 +73,7 @@ export default function VendorPODetailScreen() {
 
               // TODO: Implement API to notify owner about update request
               // This would typically create a notification or message to the owner
-              
+
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               Alert.alert('Success', 'Update request sent to property owner');
             } catch (error: any) {
@@ -96,11 +102,18 @@ export default function VendorPODetailScreen() {
               setActionLoading(true);
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-              await purchaseOrdersApi.updatePOStatus(poId, 'accepted');
-              
+              await updatePOStatus(poId, 'accepted');
+
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              Alert.alert('Success', 'Purchase Order accepted');
-              fetchPODetails();
+              
+              // Get the maintenance request ID from the PO's contract
+              if (po?.contract_id) {
+                // Navigate to job detail screen
+                router.replace(`/(vendor)/jobs/${po.contract_id}`);
+              } else {
+                Alert.alert('Success', 'Purchase Order accepted');
+                fetchPODetails();
+              }
             } catch (error: any) {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
               Alert.alert('Error', error.message || 'Failed to accept PO');
@@ -260,7 +273,7 @@ export default function VendorPODetailScreen() {
                     })}
                   </Text>
                 </View>
-                
+
                 <View style={styles.revisionCosts}>
                   <View style={styles.revisionCostRow}>
                     <Text style={styles.revisionCostLabel}>Total</Text>
@@ -342,59 +355,59 @@ const styles = StyleSheet.create({
   errorText: { marginTop: 16, fontSize: 18, fontWeight: '600', color: '#111827' },
   backButton: { marginTop: 24, paddingHorizontal: 24, paddingVertical: 12, backgroundColor: RSA.blue, borderRadius: 8 },
   backButtonText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
-  
-  header: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
-    paddingHorizontal: 16, 
-    paddingVertical: 16, 
-    backgroundColor: '#FFFFFF', 
-    borderBottomWidth: 1, 
-    borderBottomColor: '#e5e7eb' 
+
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb'
   },
   headerButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
-  
+
   scrollView: { flex: 1 },
-  
+
   statusContainer: { alignItems: 'center', paddingVertical: 20 },
-  statusBadge: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 8, 
-    paddingHorizontal: 16, 
-    paddingVertical: 10, 
-    borderRadius: 20 
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20
   },
   statusText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
-  
+
   section: { marginHorizontal: 16, marginBottom: 24 },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 12 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  
+
   poNumber: { fontSize: 24, fontWeight: '700', color: RSA.blue, textAlign: 'center' },
   poDate: { fontSize: 14, color: '#6b7280', textAlign: 'center', marginTop: 4 },
-  
-  contractCard: { 
-    flexDirection: 'row', 
-    backgroundColor: '#FFFFFF', 
-    borderRadius: 12, 
-    padding: 16, 
-    borderWidth: 1, 
+
+  contractCard: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
     borderColor: colors.info[500],
     gap: 12,
   },
   contractInfo: { flex: 1 },
   contractNumber: { fontSize: 16, fontWeight: '600', color: '#111827' },
   contractStatus: { fontSize: 14, color: '#6b7280', marginTop: 4 },
-  
-  costCard: { 
-    backgroundColor: '#FFFFFF', 
-    borderRadius: 12, 
-    padding: 16, 
-    borderWidth: 1, 
-    borderColor: '#e5e7eb' 
+
+  costCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb'
   },
   costRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   costLabel: { fontSize: 15, color: '#6b7280' },
@@ -402,46 +415,46 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: '#e5e7eb', marginVertical: 8 },
   totalLabel: { fontSize: 18, fontWeight: '700', color: '#111827' },
   totalValue: { fontSize: 24, fontWeight: '700', color: RSA.blue },
-  
-  revisionBadge: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 6, 
-    marginTop: 12, 
-    paddingHorizontal: 12, 
-    paddingVertical: 8, 
-    backgroundColor: colors.warning[50], 
+
+  revisionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: colors.warning[50],
     borderRadius: 8,
     alignSelf: 'flex-start',
   },
   revisionBadgeText: { fontSize: 13, fontWeight: '600', color: colors.warning[700] },
-  
+
   revisionToggle: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   revisionToggleText: { fontSize: 14, fontWeight: '600', color: RSA.blue },
-  
-  notesCard: { 
-    backgroundColor: '#FFFFFF', 
-    borderRadius: 12, 
-    padding: 16, 
-    borderWidth: 1, 
-    borderColor: '#e5e7eb' 
+
+  notesCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb'
   },
   notesText: { fontSize: 15, color: '#374151', lineHeight: 22 },
-  
-  revisionCard: { 
-    backgroundColor: '#FFFFFF', 
-    borderRadius: 12, 
-    padding: 16, 
-    borderWidth: 1, 
+
+  revisionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
     borderColor: '#e5e7eb',
     marginBottom: 12,
   },
   revisionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  revisionNumber: { 
-    backgroundColor: colors.gray[100], 
-    paddingHorizontal: 12, 
-    paddingVertical: 6, 
-    borderRadius: 12 
+  revisionNumber: {
+    backgroundColor: colors.gray[100],
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12
   },
   revisionNumberText: { fontSize: 13, fontWeight: '700', color: colors.gray[700] },
   revisionDate: { fontSize: 13, color: '#6b7280' },
@@ -454,11 +467,11 @@ const styles = StyleSheet.create({
   revisionReason: { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#e5e7eb' },
   revisionReasonLabel: { fontSize: 12, fontWeight: '600', color: '#6b7280', marginBottom: 4 },
   revisionReasonText: { fontSize: 14, color: '#374151', lineHeight: 20 },
-  
-  footer: { 
-    padding: 16, 
-    backgroundColor: '#FFFFFF', 
-    borderTopWidth: 1, 
+
+  footer: {
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
@@ -467,22 +480,22 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   actionButtons: { flexDirection: 'row', gap: 8 },
-  actionButton: { 
-    flex: 1, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    gap: 6, 
-    paddingVertical: 14, 
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 2,
   },
-  requestButton: { 
-    backgroundColor: '#FFFFFF', 
+  requestButton: {
+    backgroundColor: '#FFFFFF',
     borderColor: colors.warning[500],
   },
   requestButtonText: { fontSize: 15, fontWeight: '700', color: colors.warning[600] },
-  acceptButton: { 
+  acceptButton: {
     backgroundColor: RSA.blue,
     borderColor: RSA.blue,
   },

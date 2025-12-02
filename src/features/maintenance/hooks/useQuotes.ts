@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { quotesApi } from '../api/quotesApi';
+import { useCallback, useEffect, useState } from 'react';
+import { getQuotesByRequest, subscribeToQuotes, unsubscribeFromQuotes } from '../api';
 
 export function useQuotes(requestId: string) {
   const [quotes, setQuotes] = useState([]);
@@ -12,7 +12,7 @@ export function useQuotes(requestId: string) {
     try {
       setLoading(true);
       setError(null);
-      const data = await quotesApi.getQuotesForRequest(requestId);
+      const data = await getQuotesByRequest(requestId);
       setQuotes(data);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch quotes');
@@ -28,13 +28,13 @@ export function useQuotes(requestId: string) {
     fetchQuotes();
 
     // Subscribe to real-time quote updates
-    const subscription = quotesApi.subscribeToQuotes(requestId, (payload: any) => {
+    const subscription = subscribeToQuotes(requestId, (payload: any) => {
       console.log('Quote updated:', payload);
       fetchQuotes();
     });
 
     return () => {
-      quotesApi.unsubscribe(subscription);
+      unsubscribeFromQuotes(subscription);
     };
   }, [requestId, fetchQuotes]);
 

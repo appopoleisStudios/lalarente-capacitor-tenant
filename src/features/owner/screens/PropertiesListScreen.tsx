@@ -1,70 +1,45 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, SafeAreaView, TextInput, FlatList } from 'react-native';
+import { View, Text, ScrollView, SafeAreaView, TextInput, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { AnimatedButton } from '../components/AnimatedButton';
 import { PropertyCard } from '../components/PropertyCard';
+import { useProperties } from '../../properties/hooks/useProperties';
+import { supabase } from '../../../lib/supabase';
 import { styles } from './PropertiesListScreen.styles';
-
-// Mock data
-const MOCK_PROPERTIES = [
-  {
-    id: '1',
-    title: 'Rosebank Lofts 2B',
-    address: '123 Oxford Road',
-    city: 'Johannesburg',
-    province: 'Gauteng',
-    rent_amount: 12500,
-    bedrooms: 2,
-    bathrooms: 1,
-    parking_spaces: 1,
-    status: 'occupied' as const,
-    images: ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400'],
-  },
-  {
-    id: '2',
-    title: 'Sandton View',
-    address: '45 Rivonia Road',
-    city: 'Sandton',
-    province: 'Gauteng',
-    rent_amount: 18000,
-    bedrooms: 3,
-    bathrooms: 2,
-    parking_spaces: 2,
-    status: 'available' as const,
-    images: ['https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400'],
-  },
-  {
-    id: '3',
-    title: 'Umhlanga Heights',
-    address: '789 Lighthouse Road',
-    city: 'Umhlanga',
-    province: 'KwaZulu-Natal',
-    rent_amount: 15000,
-    bedrooms: 2,
-    bathrooms: 2,
-    parking_spaces: 1,
-    status: 'maintenance' as const,
-  },
-];
 
 export default function PropertiesListScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'occupied' | 'maintenance' | 'vacant'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'rented' | 'maintenance'>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'rent_desc' | 'rent_asc'>('newest');
 
+  // Get current user ID
+  const [userId, setUserId] = useState<string | null>(null);
+  
+  React.useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUserId(data.user?.id || null);
+    });
+  }, []);
+
+  // Fetch properties using the hook
+  const { properties, loading, error, refreshing, refresh } = useProperties({
+    ownerId: userId || undefined,
+    autoFetch: !!userId,
+  });
+
   const filteredProperties = useMemo(() => {
-    let result = [...MOCK_PROPERTIES];
+    let result = [...properties];
 
     // Search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       result = result.filter(
         (p) =>
-          p.title.toLowerCase().includes(query) ||
-          p.address.toLowerCase().includes(query) ||
-          p.city.toLowerCase().includes(query)
+          p.title?.toLowerCase().includes(query) ||
+          p.address?.toLowerCase().includes(query) ||
+          p.city?.toLowerCase().includes(query)
       );
     }
 
@@ -75,13 +50,16 @@ export default function PropertiesListScreen() {
 
     // Sort
     if (sortBy === 'rent_desc') {
-      result.sort((a, b) => b.rent_amount - a.rent_amount);
+      result.sort((a, b) => (b.rent_amount || 0) - (a.rent_amount || 0));
     } else if (sortBy === 'rent_asc') {
-      result.sort((a, b) => a.rent_amount - b.rent_amount);
+      result.sort((a, b) => (a.rent_amount || 0) - (b.rent_amount || 0));
+    } else {
+      // newest - sort by created_at descending
+      result.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
     }
 
     return result;
-  }, [searchQuery, statusFilter, sortBy]);
+  }, [properties, searchQuery, statusFilter, sortBy]);
 
   const handleView = (id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -112,7 +90,7 @@ export default function PropertiesListScreen() {
             </AnimatedButton>
             <Text style={styles.headerTitle}>My Properties</Text>
           </View>
-          <AnimatedButton onPress={() => router.push('/owner/add-property')}>
+          <AnimatedButton onPress={() => router.push('/(owner)/add-property')}>
             <View style={styles.addButton}>
               <Text style={styles.addButtonText}>+ Add Property</Text>
             </View>
@@ -133,7 +111,7 @@ export default function PropertiesListScreen() {
             <View style={styles.pickerWrapper}>
               <Text style={styles.pickerLabel}>Status:</Text>
               <View style={styles.pickerButtons}>
-                {(['all', 'available', 'occupied', 'maintenance', 'vacant'] as const).map((status) => (
+                {(['all', 'available', 'rented', 'maintenance'] as const).map((status) => (
                   <AnimatedButton key={status} onPress={() => setStatusFilter(status)}>
                     <View style={[styles.filterChip, statusFilter === status && styles.filterChipActive]}>
                       <Text style={[styles.filterChipText, statusFilter === status && styles.filterChipTextActive]}>
@@ -163,25 +141,56 @@ export default function PropertiesListScreen() {
           </View>
         </View>
 
+        {/* Loading State */}
+        {loading && !refreshing && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#10b981" />
+            <Text style={styles.loadingText}>Loading properties...</Text>
+          </View>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorTitle}>Error Loading Properties</Text>
+            <Text style={styles.errorText}>{error}</Text>
+            <AnimatedButton onPress={refresh}>
+              <View style={styles.retryButton}>
+                <Text style={styles.retryButtonText}>Try Again</Text>
+              </View>
+            </AnimatedButton>
+          </View>
+        )}
+
         {/* Properties List */}
-        <FlatList
-          data={filteredProperties}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <PropertyCard property={item} onView={handleView} onEdit={handleEdit} />}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyTitle}>No properties yet</Text>
-              <Text style={styles.emptyText}>Add your first property to start managing rent and maintenance.</Text>
-              <AnimatedButton onPress={() => router.push('/owner/add-property')}>
-                <View style={styles.emptyButton}>
-                  <Text style={styles.emptyButtonText}>+ Add Property</Text>
-                </View>
-              </AnimatedButton>
-            </View>
-          }
-        />
+        {!loading && !error && (
+          <FlatList
+            data={filteredProperties}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => <PropertyCard property={item} onView={handleView} onEdit={handleEdit} />}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={refresh}
+                tintColor="#10b981"
+                colors={['#10b981']}
+              />
+            }
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyTitle}>No properties yet</Text>
+                <Text style={styles.emptyText}>Add your first property to start managing rent and maintenance.</Text>
+                <AnimatedButton onPress={() => router.push('/owner/add-property')}>
+                  <View style={styles.emptyButton}>
+                    <Text style={styles.emptyButtonText}>+ Add Property</Text>
+                  </View>
+                </AnimatedButton>
+              </View>
+            }
+          />
+        )}
       </View>
     </SafeAreaView>
   );

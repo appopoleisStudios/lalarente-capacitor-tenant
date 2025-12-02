@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import type { VendorMaintenanceRequest } from '@/src/features/maintenance/api';
 import { colors } from '@/src/shared/theme/colors';
-import type { VendorMaintenanceRequest } from '@/src/features/maintenance/api/maintenanceApi';
+import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface RequestCardProps {
   request: VendorMaintenanceRequest;

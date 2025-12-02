@@ -5,11 +5,11 @@ import { supabase } from '@/src/lib/supabase';
  */
 export interface ServiceContract {
   id: string;
-  contract_number?: string;
   vendor_id: string | null;
   status: string | null;
   start_date: string | null;
   end_date: string | null;
+  contract_number?: string | null;
 }
 
 /**
@@ -36,6 +36,11 @@ export interface PurchaseOrder {
   pdf_url?: string;
   revision_number?: number;
   revision_reason?: string;
+  scheduled_start_date?: string;
+  scheduled_start_time?: string;
+  work_instructions?: string;
+  sent_to_vendor_at?: string;
+  sent_by?: string;
   created_at: string;
   updated_at: string;
   // Joined data (optional)
@@ -76,9 +81,8 @@ export const purchaseOrdersApi = {
       .from('purchase_orders')
       .select(`
         *,
-        contract:service_contracts!contract_id(
+        contract:service_contracts(
           id,
-          contract_number,
           vendor_id,
           status,
           start_date,
@@ -86,9 +90,18 @@ export const purchaseOrdersApi = {
         )
       `)
       .eq('id', poId)
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching PO by ID:', error);
+      console.error('PO ID:', poId);
+      throw error;
+    }
+    
+    if (!data) {
+      throw new Error('Purchase Order not found');
+    }
+    
     return data as PurchaseOrder;
   },
 
@@ -165,6 +178,8 @@ export const purchaseOrdersApi = {
 
   // Update PO status
   async updatePOStatus(poId: string, status: string) {
+    console.log('🔄 Updating PO status:', { poId, status });
+    
     const { data, error } = await (supabase
       .from('purchase_orders') as any)
       .update({ 
@@ -175,7 +190,72 @@ export const purchaseOrdersApi = {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Error updating PO status:', error);
+      throw error;
+    }
+
+    console.log('✅ PO status updated:', data);
+
+    // If PO is accepted, update the maintenance request status to 'assigned'
+    if (status === 'accepted') {
+      console.log('🔍 Looking for maintenance request with po_id:', poId);
+      
+      // Find the maintenance request that references this PO
+      const { data: request, error: reqError } = await supabase
+        .from('maintenance_requests')
+        .select('id, status, selected_vendor_id, selected_quote_id')
+        .eq('po_id', poId)
+        .maybeSingle();
+
+      if (reqError) {
+        console.error('❌ Error finding maintenance request:', reqError);
+      } else if (request) {
+        console.log('✅ Found maintenance request:', request);
+        
+        // Get the vendor_id from the selected quote
+        let vendorId = (request as any).selected_vendor_id;
+        
+        if (!vendorId && (request as any).selected_quote_id) {
+          console.log('🔍 Getting vendor_id from quote:', (request as any).selected_quote_id);
+          const { data: quote } = await supabase
+            .from('quotes')
+            .select('vendor_id')
+            .eq('id', (request as any).selected_quote_id)
+            .single();
+          
+          vendorId = (quote as any)?.vendor_id;
+          console.log('✅ Found vendor_id from quote:', vendorId);
+        }
+        
+        // Update maintenance request status to 'assigned' and set selected_vendor_id
+        const updateData: any = {
+          status: 'assigned',
+          mms_status: 'po_issued',
+        };
+        
+        // Set selected_vendor_id if we found it
+        if (vendorId) {
+          updateData.selected_vendor_id = vendorId;
+        }
+        
+        const { data: updatedRequest, error: updateError } = await (supabase
+          .from('maintenance_requests') as any)
+          .update(updateData)
+          .eq('id', (request as any).id)
+          .select()
+          .single();
+
+        if (updateError) {
+          console.error('❌ Error updating maintenance request:', updateError);
+        } else {
+          console.log('✅ Maintenance request updated to assigned:', updatedRequest);
+        }
+      } else {
+        console.warn('⚠️ No maintenance request found with po_id:', poId);
+      }
+    }
+
     return data as PurchaseOrder;
   },
 
@@ -291,5 +371,45 @@ export const purchaseOrdersApi = {
     }
 
     return auditTrail;
+  },
+
+  /**
+   * Send PO to vendor with scheduling information
+   * Updates PO with scheduled start date/time, work instructions, and sent timestamp
+   * 
+   * @param poId - The PO ID to send
+   * @param scheduledStartDate - When the work should start (ISO date string)
+   * @param scheduledStartTime - Time of day for work start (HH:MM format)
+   * @param workInstructions - Optional instructions for the vendor
+   * @param sentBy - User ID of the owner sending the PO
+   * @returns Updated PO
+   */
+  async sendPOToVendor(
+    poId: string,
+    scheduledStartDate: string,
+    scheduledStartTime: string,
+    workInstructions: string | null,
+    sentBy: string
+  ): Promise<PurchaseOrder> {
+    const { data, error } = await (supabase
+      .from('purchase_orders') as any)
+      .update({
+        scheduled_start_date: scheduledStartDate,
+        scheduled_start_time: scheduledStartTime,
+        work_instructions: workInstructions,
+        sent_to_vendor_at: new Date().toISOString(),
+        sent_by: sentBy,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', poId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    
+    // TODO: Send notification to vendor
+    // This would typically trigger a notification through your notification system
+    
+    return data as PurchaseOrder;
   },
 };

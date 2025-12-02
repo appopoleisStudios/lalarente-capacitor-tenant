@@ -1,0 +1,11 @@
+Edge Case Name,Priority,Status,Affects Flow State,Option A,Option B,Option C,Client Decision,Implementation Notes
+EC-001: No Vendors Available,🔴 Critical,Open,vendor_routing,Show error message to owner,Auto-expand to General Maintenance category,Let owner invite external vendor manually,,Need fallback logic in pushToOpenMarket()
+EC-002: Owner Doesn't Acknowledge in 24h,🔴 Critical,Open,notification,Auto-acknowledge + send urgent notification,Escalate to property manager,Send reminder notifications (6h/12h/24h),,Requires cron job / scheduled function
+EC-003: No Quotes Received in 48h,🔴 Critical,Open,vendor_routing,Notify owner to re-push or invite manually,Auto-increase visibility (invited → public),Platform suggests vendors to invite,,Need deadline tracking in vendor_routing status
+EC-004: Owner Rejects All Quotes,🟡 Medium,Open,quoting,Return to vendor_routing - invite different vendors,Allow owner to negotiate with vendors,Close request with reason "Quotes too expensive",,Add rejected_quotes tracking
+EC-005: Vendor Can't Make Scheduled Time,🔴 Critical,Open,po_issued,Vendor can request reschedule (owner approves),Owner can edit scheduled time before work starts,Cancel PO and select different vendor,,Need reschedule_request feature
+EC-006: Work Quality is Poor,🟡 Medium,Open,closing,Return to executing - vendor fixes issues,Dispute process - owner can withhold payment,Close with "Unsatisfactory" - vendor rating affected,,Add dispute workflow + vendor ratings
+EC-007: Invoice Doesn't Match PO Amount,🔴 Critical,Open,closing,Owner can approve variance (if within 10%),Auto-reject if variance >10% - vendor revises,Manual review process,,Add invoice validation logic
+EC-008: Multiple PO Revisions (>5),🟢 Low,Open,po_issued,Limit to 5 revisions - then close request,Flag for manual review after 3 revisions,No limit but notify both parties,,Add revision counter
+EC-009: Tenant Updates Request After Submission,🟢 Low,Decided,notification,Allow edits only while status = notification,No edits after submission,Allow edits with owner approval,Option A - Already implemented ✅,Already implemented in code
+EC-010: Vendor Uploads Wrong Completion Photos,🟢 Low,Open,closing,Allow vendor to delete/re-upload before submission,Owner can request re-upload,System auto-validates photo quality,,Backlog feature

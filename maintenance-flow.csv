@@ -1,0 +1,9 @@
+Name,Status,Role,Decision Needed,Next Steps,Notes,Edge Cases
+📥 Tenant Reports Issue,notification,Tenant,No,Owner Acknowledges,"Tenant uploads photos/videos, describes problem, sets priority","What if tenant uploads wrong info?, What if urgent emergency?"
+✅ Owner Reviews Request,acknowledged,Owner,Yes,Push to Vendors,"Owner decides: Public Market OR Invite Vendors","What if owner doesn't acknowledge in 24h?, What if owner rejects request?"
+📢 Pushing to Vendors,vendor_routing,Owner,No,Vendors Submit Quotes,Vendors notified via WhatsApp/Email/SMS,"What if NO vendors available?, What if no quotes received in 48h?"
+💰 Vendors Submit Quotes,quoting,Vendor,No,Owner Accepts Quote,Multiple vendors can submit quotes,"What if owner rejects ALL quotes?, What if vendor withdraws quote?"
+📄 Purchase Order Created,po_issued,Owner,Yes,Schedule Work,"Owner sets date, time, work instructions","What if owner needs to revise PO?, What if vendor can't make scheduled time?"
+🔨 Vendor Does the Work,executing,Vendor,No,Mark Complete,"Vendor updates progress, uploads photos during work","What if work takes longer?, What if vendor finds additional issues?"
+📸 Work Completed - Review,closing,Owner,Yes,Approve & Pay,Owner reviews completion photos and work quality,"What if work quality is poor?, What if invoice doesn't match PO?"
+✅ Request Closed,completed,System,No,Archive,"Payment released, request archived","What if payment fails?, What if vendor disputes rating?"

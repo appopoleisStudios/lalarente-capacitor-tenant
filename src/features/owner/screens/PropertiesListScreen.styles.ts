@@ -65,4 +65,48 @@ export const styles = StyleSheet.create({
   emptyText: { fontSize: 14, color: '#6b7280', textAlign: 'center', marginBottom: 16, lineHeight: 20 },
   emptyButton: { backgroundColor: RSA.blue, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },
   emptyButtonText: { fontSize: 14, fontWeight: '600', color: '#ffffff' },
+  
+  loadingContainer: { 
+    flex: 1, 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    paddingVertical: 60 
+  },
+  loadingText: { 
+    fontSize: 14, 
+    color: '#6b7280', 
+    marginTop: 12 
+  },
+  
+  errorContainer: { 
+    flex: 1, 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    paddingHorizontal: 24, 
+    paddingVertical: 40 
+  },
+  errorTitle: { 
+    fontSize: 16, 
+    fontWeight: '700', 
+    color: '#dc2626', 
+    marginBottom: 8 
+  },
+  errorText: { 
+    fontSize: 14, 
+    color: '#6b7280', 
+    textAlign: 'center', 
+    marginBottom: 16, 
+    lineHeight: 20 
+  },
+  retryButton: { 
+    backgroundColor: RSA.blue, 
+    paddingHorizontal: 16, 
+    paddingVertical: 10, 
+    borderRadius: 8 
+  },
+  retryButtonText: { 
+    fontSize: 14, 
+    fontWeight: '600', 
+    color: '#ffffff' 
+  },
 });
