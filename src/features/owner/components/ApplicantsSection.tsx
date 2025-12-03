@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
+import { useRouter } from 'expo-router';
 import { AnimatedButton } from './AnimatedButton';
 
 interface Applicant {
@@ -15,11 +16,15 @@ interface ApplicantsSectionProps {
 }
 
 export const ApplicantsSection = ({ applicants }: ApplicantsSectionProps) => {
+  const router = useRouter();
+  
   return (
     <View>
       <View style={styles.header}>
         <Text style={styles.title}>Recent Applications</Text>
-        <AnimatedButton><Text style={styles.seeAll}>See All</Text></AnimatedButton>
+        <AnimatedButton onPress={() => router.push('/(owner)/applications' as any)}>
+          <Text style={styles.seeAll}>See All</Text>
+        </AnimatedButton>
       </View>
       {applicants.map((a, i) => (
         <AnimatedButton key={i} style={styles.card}>

@@ -213,19 +213,52 @@ export const propertiesApi = {
    * Get a single property by ID with relations
    */
   async getProperty(id: string): Promise<PropertyWithRelations> {
+    console.log('🔍 Fetching property with ID:', id);
+    
+    // Fetch property without join first
     const { data, error } = await supabase
       .from('properties')
-      .select(`
-        *,
-        owner:profiles!owner_id(id, full_name, email, phone)
-      `)
+      .select('*')
       .eq('id', id)
       .single();
 
     if (error) {
-      console.error('Error fetching property:', error);
+      console.error('❌ Error fetching property:', error);
       throw new Error(`Failed to fetch property: ${error.message}`);
     }
+
+    console.log('✅ Property data fetched');
+    console.log('🆔 Owner ID:', data.owner_id);
+    
+    // Always fetch owner separately to avoid RLS issues with joins
+    let ownerData = null;
+    if (data.owner_id) {
+      console.log('👤 Fetching owner profile for ID:', data.owner_id);
+      
+      const { data: owner, error: ownerError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, phone')
+        .eq('id', data.owner_id)
+        .single();
+      
+      if (ownerError) {
+        console.error('❌ Error fetching owner:', ownerError);
+        console.error('⚠️ Property has owner_id but no matching profile exists!');
+        // Create a placeholder owner object
+        ownerData = {
+          id: data.owner_id,
+          full_name: 'Property Owner',
+          email: null,
+          phone: null,
+        };
+      } else {
+        console.log('✅ Owner fetched:', owner);
+        ownerData = owner;
+      }
+    }
+    
+    // Attach owner to property data
+    (data as any).owner = ownerData;
 
     // Fetch leases separately if needed
     const { data: leases } = await supabase
@@ -240,10 +273,13 @@ export const propertiesApi = {
       `)
       .eq('property_id', id);
 
-    return {
+    const result = {
       ...data,
       leases: leases || [],
     } as PropertyWithRelations;
+    
+    console.log('🎁 Final property with owner:', result.owner);
+    return result;
   },
 
   /**

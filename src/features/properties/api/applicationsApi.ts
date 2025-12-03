@@ -309,7 +309,7 @@ export const applicationsApi = {
   /**
    * Reject an application with reason
    */
-  async rejectApplication(id: string, reason: string): Promise<RentalApplication> {
+  async rejectApplication(id: string, reason?: string): Promise<RentalApplication> {
     const { data, error } = await supabase
       .from('rental_applications')
       .update({

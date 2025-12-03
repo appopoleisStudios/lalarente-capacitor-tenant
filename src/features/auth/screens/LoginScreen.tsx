@@ -52,8 +52,7 @@ export default function LoginScreen() {
       if (profile.role === 'owner') {
         router.replace('/(owner)/dashboard');
       } else if (profile.role === 'tenant') {
-        // TODO: Create tenant dashboard
-        router.replace('/(owner)/dashboard'); // Temporary
+        router.replace('/(tenant)/dashboard');
       } else if (profile.role === 'vendor') {
         router.replace('/(vendor)/dashboard');
       }

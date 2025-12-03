@@ -2,12 +2,12 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/src/shared/theme/colors';
 
-export default function OwnerLayout() {
+export default function TenantLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.rsa.blue, // RSA Blue - Primary brand color
+        tabBarActiveTintColor: colors.rsa.blue,
         tabBarInactiveTintColor: colors.gray[400],
         tabBarStyle: {
           backgroundColor: colors.background.default,
@@ -32,29 +32,29 @@ export default function OwnerLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: 'Dashboard',
+          title: 'Home',
           tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="properties"
+        name="search"
         options={{
-          title: 'Properties',
-          tabBarIcon: ({ color, size }) => <Ionicons name="business" size={size} color={color} />,
+          title: 'Search',
+          tabBarIcon: ({ color, size }) => <Ionicons name="search" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="maintenance"
+        name="lease"
         options={{
-          title: 'Maintenance',
-          tabBarIcon: ({ color, size }) => <Ionicons name="construct" size={size} color={color} />,
+          title: 'My Lease',
+          tabBarIcon: ({ color, size }) => <Ionicons name="document-text" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="tenants"
+        name="payments"
         options={{
-          title: 'Tenants',
-          tabBarIcon: ({ color, size }) => <Ionicons name="people" size={size} color={color} />,
+          title: 'Payments',
+          tabBarIcon: ({ color, size }) => <Ionicons name="card" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -65,61 +65,25 @@ export default function OwnerLayout() {
         }}
       />
       <Tabs.Screen
-        name="add-property"
-        options={{
-          href: null, // Hidden from tabs - accessed as modal
-        }}
-      />
-      <Tabs.Screen
         name="properties/[id]"
         options={{
           href: null, // Hidden from tabs - property detail screen
         }}
       />
       <Tabs.Screen
-        name="properties/[id]/edit"
+        name="apply/[propertyId]"
         options={{
-          href: null, // Hidden from tabs - edit property screen
+          href: null, // Hidden from tabs - application form
         }}
       />
       <Tabs.Screen
-        name="maintenance/new"
-        options={{
-          href: null, // Hidden from tabs - detail screen
-        }}
-      />
-      <Tabs.Screen
-        name="maintenance/[id]"
-        options={{
-          href: null, // Hidden from tabs - detail screen
-        }}
-      />
-      <Tabs.Screen
-        name="maintenance/[id]/quote/[quoteId]"
-        options={{
-          href: null, // Hidden from tabs - quote detail screen
-        }}
-      />
-      <Tabs.Screen
-        name="maintenance/[id]/po/[poId]"
-        options={{
-          href: null, // Hidden from tabs - PO detail screen
-        }}
-      />
-      <Tabs.Screen
-        name="applications"
+        name="maintenance"
         options={{
           href: null, // Hidden from tabs - accessed from dashboard
         }}
       />
       <Tabs.Screen
-        name="applications/[id]"
-        options={{
-          href: null, // Hidden from tabs - application detail screen
-        }}
-      />
-      <Tabs.Screen
-        name="rent-roll"
+        name="messages"
         options={{
           href: null, // Hidden from tabs - accessed from dashboard
         }}

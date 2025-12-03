@@ -45,9 +45,9 @@ export const PortfolioCard = ({ userName, totalUnits, occupied, vacant, monthInc
             <Text style={styles.buttonText}>View Properties</Text>
           </View>
         </AnimatedButton>
-        <AnimatedButton style={styles.button}>
+        <AnimatedButton style={styles.button} onPress={() => router.push('/(owner)/rent-roll' as any)}>
           <View style={styles.buttonInner}>
-            <Text style={styles.buttonText}>Earnings Report</Text>
+            <Text style={styles.buttonText}>Rent Roll</Text>
           </View>
         </AnimatedButton>
         <AnimatedButton style={styles.button} onPress={() => router.push('/(owner)/add-property')}>

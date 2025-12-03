@@ -377,7 +377,10 @@ export default function OwnerPropertyDetailScreen() {
                 </AnimatedButton>
               )}
               
-              <AnimatedButton onPress={() => Alert.alert('Coming Soon', 'View applications feature')}>
+              <AnimatedButton onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push(`/(owner)/applications?propertyId=${id}` as any);
+              }}>
                 <View style={[styles.actionButton, styles.secondaryButton]}>
                   <Text style={styles.secondaryButtonText}>View Applications</Text>
                 </View>
