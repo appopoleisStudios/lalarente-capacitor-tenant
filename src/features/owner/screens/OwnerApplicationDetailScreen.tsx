@@ -33,6 +33,15 @@ export default function OwnerApplicationDetailScreen() {
       setError(null);
       const data = await applicationsApi.getApplication(id);
       setApplication(data);
+      
+      // Auto-transition from 'submitted' to 'under_review' when owner views it
+      if (data.status === 'submitted') {
+        console.log('📋 Auto-transitioning application to under_review');
+        await applicationsApi.updateApplication(id, { status: 'under_review' });
+        // Reload to get updated status
+        const updatedData = await applicationsApi.getApplication(id);
+        setApplication(updatedData);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load application');
     } finally {
@@ -83,6 +92,7 @@ export default function OwnerApplicationDetailScreen() {
           onPress: async (reason?: string) => {
             try {
               setProcessing(true);
+              console.log('❌ Rejecting with reason:', reason);
               await applicationsApi.rejectApplication(id, reason || undefined);
               Alert.alert('Success', 'Application rejected', [{ text: 'OK', onPress: () => router.back() }]);
             } catch (err) {

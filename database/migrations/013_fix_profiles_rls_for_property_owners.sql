@@ -67,6 +67,16 @@ USING (
   AND role = 'vendor'
 );
 
+-- Policy 6: Allow authenticated users to view tenant profiles
+-- This allows owners to see tenant names in applications
+CREATE POLICY "Authenticated users can view tenant profiles"
+ON profiles
+FOR SELECT
+USING (
+  auth.role() = 'authenticated' 
+  AND role = 'tenant'
+);
+
 -- Verify the new policies
 DO $$
 BEGIN

@@ -365,8 +365,8 @@ export default function TenantApplicationScreen() {
       // Update profile first (for future applications)
       await updateProfile(user.id);
 
-      // Submit application
-      await applicationsApi.createApplication({
+      // Create application
+      const application = await applicationsApi.createApplication({
         property_id: propertyId,
         tenant_id: user.id,
         owner_id: property.owner_id,
@@ -381,6 +381,9 @@ export default function TenantApplicationScreen() {
         employment_start_date: employmentStartDate || undefined,
         employer_contact: employerContact || undefined,
       });
+
+      // Submit the application (change status from draft to submitted)
+      await applicationsApi.submitApplication(application.id);
 
       Alert.alert(
         'Success',

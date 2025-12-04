@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   Dimensions,
   Alert,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { propertiesApi } from '../../properties/api/propertiesApi';
@@ -56,12 +56,23 @@ export default function TenantPropertyDetailScreen() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [hasActiveApplication, setHasActiveApplication] = useState(false);
   const [isCurrentProperty, setIsCurrentProperty] = useState(false);
+  const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
+  const [applicationId, setApplicationId] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
       loadPropertyDetails();
     }
   }, [id]);
+
+  // Reload when screen comes into focus (to show updated application status)
+  useFocusEffect(
+    useCallback(() => {
+      if (id) {
+        loadPropertyDetails();
+      }
+    }, [id])
+  );
 
   const loadPropertyDetails = async () => {
     try {
@@ -101,30 +112,73 @@ export default function TenantPropertyDetailScreen() {
       
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        console.log('👤 Current user ID:', user.id);
+        
         // Check if tenant already has an active lease on this property
-        const { data: tenantLease } = await supabase
+        const { data: tenantLease, error: leaseError } = await supabase
           .from('leases')
           .select('id')
           .eq('property_id', id)
           .eq('tenant_id', user.id)
           .eq('status', 'active')
-          .single();
+          .maybeSingle();
+
+        console.log('🏠 Tenant lease check:', tenantLease, leaseError);
 
         if (tenantLease) {
+          console.log('✅ User has active lease on this property');
           setIsCurrentProperty(true);
         }
 
         // Check if tenant already has a pending application for this property
-        const { data: existingApp } = await supabase
+        const { data: existingApp, error: appError } = await supabase
           .from('rental_applications')
-          .select('id, status')
+          .select('id, status, rejected_at, created_at')
           .eq('property_id', id)
           .eq('tenant_id', user.id)
-          .in('status', ['draft', 'submitted', 'under_review'])
-          .single();
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        console.log('📝 Existing application check:', existingApp, appError);
 
         if (existingApp) {
-          setHasActiveApplication(true);
+          // Store the application for status display
+          setApplicationStatus(existingApp.status);
+          setApplicationId(existingApp.id);
+          
+          // Check for pending applications (draft, submitted, under_review)
+          if (['draft', 'submitted', 'under_review'].includes(existingApp.status)) {
+            console.log('⚠️ User has pending application:', existingApp.status);
+            setHasActiveApplication(true);
+          }
+          // Check for rejected applications within 3 months
+          else if (existingApp.status === 'rejected' && existingApp.rejected_at) {
+            const rejectedDate = new Date(existingApp.rejected_at);
+            const threeMonthsAgo = new Date();
+            threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+            
+            if (rejectedDate > threeMonthsAgo) {
+              console.log('⚠️ User was rejected within 3 months - cannot reapply yet');
+              setHasActiveApplication(true);
+              // Don't set error - let the status banner show instead
+            } else {
+              console.log('✅ Rejection was more than 3 months ago - user can apply');
+              setHasActiveApplication(false);
+            }
+          }
+          // Approved applications - user should not apply again
+          else if (existingApp.status === 'approved') {
+            console.log('⚠️ User already has approved application');
+            setHasActiveApplication(true);
+          }
+          else {
+            console.log('✅ Previous application was withdrawn or old rejection - user can apply');
+            setHasActiveApplication(false);
+          }
+        } else {
+          console.log('✅ No previous application - user can apply');
+          setHasActiveApplication(false);
         }
 
         // TODO: Check favorites table when implemented
@@ -195,6 +249,9 @@ export default function TenantPropertyDetailScreen() {
   // Debug log before render
   console.log('🎨 Rendering with property:', property);
   console.log('🎨 Property owner in state:', property?.owner);
+  console.log('🔘 hasActiveApplication:', hasActiveApplication);
+  console.log('🔘 isCurrentProperty:', isCurrentProperty);
+  console.log('🔘 Button should be disabled:', isCurrentProperty || hasActiveApplication);
 
   if (loading) {
     return (
@@ -424,6 +481,30 @@ export default function TenantPropertyDetailScreen() {
           </View>
         </ScrollView>
 
+        {/* Application Status Banner */}
+        {applicationStatus && (
+          <View style={[styles.statusBanner, getStatusBannerStyle(applicationStatus)]}>
+            <Ionicons name={getStatusIcon(applicationStatus)} size={20} color="#FFF" />
+            <View style={styles.statusBannerContent}>
+              <Text style={styles.statusBannerTitle}>
+                {getStatusTitle(applicationStatus)}
+              </Text>
+              <Text style={styles.statusBannerText}>
+                {getStatusMessage(applicationStatus)}
+              </Text>
+            </View>
+            {applicationId && (
+              <TouchableOpacity 
+                onPress={() => router.push(`/(tenant)/applications/${applicationId}` as any)}
+                style={styles.viewApplicationButton}
+              >
+                <Text style={styles.viewApplicationButtonText}>View</Text>
+                <Ionicons name="chevron-forward" size={16} color="#FFF" />
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
         {/* Action Buttons - Only show if property is available */}
         {property.status === 'available' && !error && (
           <View style={styles.actionBar}>
@@ -443,7 +524,15 @@ export default function TenantPropertyDetailScreen() {
               disabled={isCurrentProperty || hasActiveApplication}
             >
               <Text style={[styles.applyButtonText, (isCurrentProperty || hasActiveApplication) && styles.disabledButtonText]}>
-                {hasActiveApplication ? 'Application Pending' : isCurrentProperty ? 'Current Property' : 'Apply Now'}
+                {isCurrentProperty 
+                  ? 'Current Property' 
+                  : hasActiveApplication 
+                    ? applicationStatus === 'rejected'
+                      ? 'Cannot Reapply Yet'
+                      : applicationStatus === 'approved'
+                        ? 'Already Approved'
+                        : 'Application Pending'
+                    : 'Apply Now'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -489,6 +578,75 @@ const TermItem = ({
     </View>
   </View>
 );
+
+// Helper functions for application status
+const getStatusBannerStyle = (status: string) => {
+  switch (status) {
+    case 'submitted':
+      return { backgroundColor: '#2196F3' };
+    case 'under_review':
+      return { backgroundColor: '#FF9800' };
+    case 'approved':
+      return { backgroundColor: '#4CAF50' };
+    case 'rejected':
+      return { backgroundColor: '#F44336' };
+    case 'withdrawn':
+      return { backgroundColor: '#9E9E9E' };
+    default:
+      return { backgroundColor: '#757575' };
+  }
+};
+
+const getStatusIcon = (status: string) => {
+  switch (status) {
+    case 'submitted':
+      return 'paper-plane';
+    case 'under_review':
+      return 'eye';
+    case 'approved':
+      return 'checkmark-circle';
+    case 'rejected':
+      return 'close-circle';
+    case 'withdrawn':
+      return 'remove-circle';
+    default:
+      return 'document-text';
+  }
+};
+
+const getStatusTitle = (status: string) => {
+  switch (status) {
+    case 'submitted':
+      return 'Application Submitted';
+    case 'under_review':
+      return 'Under Review';
+    case 'approved':
+      return 'Application Approved!';
+    case 'rejected':
+      return 'Application Rejected';
+    case 'withdrawn':
+      return 'Application Withdrawn';
+    default:
+      return 'Application Status';
+  }
+};
+
+const getStatusMessage = (status: string) => {
+  switch (status) {
+    case 'submitted':
+      return 'Your application is waiting for the owner to review';
+    case 'under_review':
+      return 'The owner is currently reviewing your application';
+    case 'approved':
+      return 'Congratulations! The owner will contact you to proceed with the lease';
+    case 'rejected':
+      return 'Unfortunately, your application was not accepted';
+    case 'withdrawn':
+      return 'You withdrew this application';
+    default:
+      return '';
+  }
+};
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -843,5 +1001,39 @@ const styles = StyleSheet.create({
   },
   disabledButtonText: {
     color: '#999',
+  },
+  statusBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+  },
+  statusBannerContent: {
+    flex: 1,
+  },
+  statusBannerTitle: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  statusBannerText: {
+    color: '#FFF',
+    fontSize: 14,
+    opacity: 0.9,
+  },
+  viewApplicationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 16,
+    gap: 4,
+  },
+  viewApplicationButtonText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
