@@ -183,7 +183,7 @@ export default function PropertiesListScreen() {
               <View style={styles.emptyState}>
                 <Text style={styles.emptyTitle}>No properties yet</Text>
                 <Text style={styles.emptyText}>Add your first property to start managing rent and maintenance.</Text>
-                <AnimatedButton onPress={() => router.push('/owner/add-property')}>
+                <AnimatedButton onPress={() => router.push('/(owner)/add-property')}>
                   <View style={styles.emptyButton}>
                     <Text style={styles.emptyButtonText}>+ Add Property</Text>
                   </View>

@@ -5,7 +5,7 @@ import type {
   MaintenanceRequestInsert,
   MaintenanceRequestWithRelations,
   ServiceCategory
-} from '@/src/types/database.types';
+} from '@/src/types/maintenance.types';
 
 // Feature flag for mock mode
 const USE_MOCK_DATA = false; // ✅ Changed to false - using real data now

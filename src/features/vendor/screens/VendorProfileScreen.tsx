@@ -110,7 +110,7 @@ export default function VendorProfileScreen() {
           {/* Rating */}
           {rating > 0 && (
             <View style={styles.ratingContainer}>
-              <Ionicons name="star" size={20} color={colors.rsa.yellow} />
+              <Ionicons name="star" size={20} color={colors.rsa.gold} />
               <Text style={styles.ratingText}>
                 {rating.toFixed(1)} ({totalReviews} reviews)
               </Text>

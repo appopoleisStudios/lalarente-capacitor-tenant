@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
-import { Profile } from '@/src/types/database.types';
+import { Database } from '@/src/types/database.types';
 import { supabase } from '@/src/lib/supabase';
+
+type Profile = Database['public']['Tables']['profiles']['Row'];
 
 type AuthContextType = {
   session: Session | null;

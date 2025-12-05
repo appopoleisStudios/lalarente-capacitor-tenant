@@ -98,7 +98,7 @@ export const styles = StyleSheet.create({
   retryButton: {
     paddingHorizontal: 24,
     paddingVertical: 12,
-    backgroundColor: RSA.green,
+    backgroundColor: RSA.blue,
     borderRadius: 8,
   },
   retryButtonText: {
