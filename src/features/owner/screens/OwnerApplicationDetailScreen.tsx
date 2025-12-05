@@ -37,7 +37,7 @@ export default function OwnerApplicationDetailScreen() {
       // Auto-transition from 'submitted' to 'under_review' when owner views it
       if (data.status === 'submitted') {
         console.log('📋 Auto-transitioning application to under_review');
-        await applicationsApi.updateApplication(id, { status: 'under_review' });
+        await applicationsApi.updateApplication(id, { status: 'under_review' } as any);
         // Reload to get updated status
         const updatedData = await applicationsApi.getApplication(id);
         setApplication(updatedData);

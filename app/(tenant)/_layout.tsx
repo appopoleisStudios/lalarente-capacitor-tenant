@@ -43,11 +43,11 @@ export default function TenantLayout() {
           tabBarIcon: ({ color, size }) => <Ionicons name="search" size={size} color={color} />,
         }}
       />
+      {/* Lease screen - NOT in bottom navbar, accessed from dashboard */}
       <Tabs.Screen
         name="lease"
         options={{
-          title: 'My Lease',
-          tabBarIcon: ({ color, size }) => <Ionicons name="document-text" size={size} color={color} />,
+          href: null,
         }}
       />
       <Tabs.Screen
@@ -86,6 +86,12 @@ export default function TenantLayout() {
         name="messages"
         options={{
           href: null, // Hidden from tabs - accessed from dashboard
+        }}
+      />
+      <Tabs.Screen
+        name="applications/[id]"
+        options={{
+          href: null, // Hidden from tabs - application detail screen
         }}
       />
     </Tabs>

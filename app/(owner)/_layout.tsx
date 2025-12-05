@@ -124,6 +124,18 @@ export default function OwnerLayout() {
           href: null, // Hidden from tabs - accessed from dashboard
         }}
       />
+      <Tabs.Screen
+        name="leases/[id]"
+        options={{
+          href: null, // Hidden from tabs - lease detail screen
+        }}
+      />
+      <Tabs.Screen
+        name="leases/create"
+        options={{
+          href: null, // Hidden from tabs - lease creation screen
+        }}
+      />
     </Tabs>
   );
 }

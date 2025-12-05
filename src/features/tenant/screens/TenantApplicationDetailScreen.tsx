@@ -53,7 +53,7 @@ export default function TenantApplicationDetailScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await applicationsApi.updateApplication(id, { status: 'withdrawn' });
+              await applicationsApi.updateApplication(id, { status: 'withdrawn' } as any);
               Alert.alert('Success', 'Application withdrawn', [
                 { text: 'OK', onPress: () => router.back() },
               ]);
