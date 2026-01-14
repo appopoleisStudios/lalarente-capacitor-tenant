@@ -14,6 +14,10 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
+import SignatureModal from '../../leases/components/SignatureModal';
+import { uploadSignature } from '../../leases/api/storageService';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
 
 const RSA = { green: '#007A4D', gold: '#FFB81C' }; // Tenant colors
 
@@ -56,6 +60,8 @@ export default function TenantLeaseScreen() {
   const [lease, setLease] = useState<Lease | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showSignatureModal, setShowSignatureModal] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     loadActiveLease();
@@ -67,7 +73,7 @@ export default function TenantLeaseScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Get active lease for tenant
+      // Get active or pending lease for tenant
       const { data, error: leaseError } = await supabase
         .from('leases')
         .select(`
@@ -76,7 +82,9 @@ export default function TenantLeaseScreen() {
           owner:profiles!owner_id(full_name, email, phone)
         `)
         .eq('tenant_id', user.id)
-        .eq('status', 'active')
+        .in('status', ['active', 'pending_tenant_signature', 'pending_owner_signature'])
+        .order('created_at', { ascending: false })
+        .limit(1)
         .single();
 
       if (leaseError) {
@@ -107,6 +115,60 @@ export default function TenantLeaseScreen() {
     }
   };
 
+  const handleDownloadDocument = async () => {
+    if (!lease?.lease_document_url) {
+      Alert.alert('Notice', 'Lease document is not available yet');
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+
+      // Check if sharing is available
+      const isAvailable = await Sharing.isAvailableAsync();
+      if (!isAvailable) {
+        Alert.alert('Error', 'Sharing is not available on this device');
+        return;
+      }
+
+      // Download and share the file
+      const filename = `Lease_${lease.property?.title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+
+      // Fetch the PDF
+      const response = await fetch(lease.lease_document_url);
+      const blob = await response.blob();
+      const reader = new FileReader();
+
+      reader.onloadend = async () => {
+        const base64data = reader.result as string;
+        // Use Paths.document for newer expo-file-system or fallback
+        const docDir = (FileSystem as any).documentDirectory || new (FileSystem as any).Directory((FileSystem as any).Paths?.document).uri;
+        const localUri = `${docDir}${filename}`;
+
+        // Write to local file
+        await FileSystem.writeAsStringAsync(
+          localUri,
+          base64data.split(',')[1],
+          { encoding: 'base64' }
+        );
+
+        // Share the file
+        await Sharing.shareAsync(localUri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Download Lease Agreement',
+          UTI: 'com.adobe.pdf',
+        });
+      };
+
+      reader.readAsDataURL(blob);
+    } catch (error) {
+      console.error('Error downloading lease document:', error);
+      Alert.alert('Error', 'Failed to download lease document. Please try again.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleContactOwner = () => {
     if (lease?.owner) {
       Alert.alert(
@@ -118,6 +180,112 @@ export default function TenantLeaseScreen() {
           { text: 'Email', onPress: () => lease.owner?.email && Linking.openURL(`mailto:${lease.owner.email}`) },
         ]
       );
+    }
+  };
+
+  const handleSignLease = () => {
+    setShowSignatureModal(true);
+  };
+
+  const handleSignatureSave = async (signatureBase64: string) => {
+    if (!lease) return;
+
+    try {
+      setActionLoading(true);
+
+      // Upload signature to storage (with automatic retry logic)
+      const signatureUrl = await uploadSignature(lease.id, 'tenant', signatureBase64);
+
+      // Update lease with signature (with retry logic for network errors)
+      let updateSuccess = false;
+      let lastError: any;
+      const maxRetries = 3;
+      
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+          const { error: updateError } = await supabase
+            .from('leases')
+            .update({
+              tenant_signature_url: signatureUrl,
+              tenant_signed_at: new Date().toISOString(),
+              status: 'pending_owner_signature',
+            })
+            .eq('id', lease.id);
+
+          if (updateError) {
+            // Check if it's a network error
+            const errorMessage = updateError.message?.toLowerCase() || '';
+            const isNetworkError = 
+              errorMessage.includes('network') ||
+              errorMessage.includes('timeout') ||
+              errorMessage.includes('fetch failed') ||
+              errorMessage.includes('connection');
+
+            if (isNetworkError && attempt < maxRetries - 1) {
+              console.warn(`Database update attempt ${attempt + 1} failed, retrying...`);
+              lastError = updateError;
+              await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+              continue;
+            }
+            throw updateError;
+          }
+
+          updateSuccess = true;
+          break;
+        } catch (error) {
+          lastError = error;
+          if (attempt === maxRetries - 1) {
+            throw error;
+          }
+        }
+      }
+
+      if (!updateSuccess) {
+        throw lastError || new Error('Failed to update lease after multiple attempts');
+      }
+
+      // TODO: Create notification for owner when notifications table is ready
+      // await supabase.from('notifications').insert({
+      //   recipient_id: lease.owner_id,
+      //   title: 'Tenant Signed Lease',
+      //   message: 'Your tenant has signed the lease agreement',
+      //   type: 'lease_signature',
+      //   related_id: lease.id,
+      // });
+
+      Alert.alert(
+        'Success',
+        'Lease agreement signed! Waiting for owner to sign.',
+        [{ text: 'OK', onPress: () => loadActiveLease() }]
+      );
+    } catch (err: any) {
+      console.error('Error signing lease:', err);
+      
+      // Provide user-friendly error messages based on error type
+      let errorTitle = 'Signing Failed';
+      let errorMessage = 'Failed to sign lease agreement. Please try again.';
+
+      // Check for network errors
+      const errorString = err?.message?.toLowerCase() || '';
+      if (
+        errorString.includes('network') ||
+        errorString.includes('timeout') ||
+        errorString.includes('fetch failed') ||
+        errorString.includes('connection') ||
+        err?.name === 'NetworkError'
+      ) {
+        errorTitle = 'Connection Error';
+        errorMessage = 'Network connection failed. Please check your internet connection and try again.';
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+
+      Alert.alert(errorTitle, errorMessage, [
+        { text: 'OK', style: 'default' }
+      ]);
+    } finally {
+      setActionLoading(false);
+      setShowSignatureModal(false);
     }
   };
 
@@ -345,20 +513,48 @@ export default function TenantLeaseScreen() {
           {/* Lease Document */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Lease Document</Text>
-            <TouchableOpacity style={styles.documentCard} onPress={handleViewDocument}>
-              <View style={styles.documentIcon}>
-                <Ionicons name="document-text" size={32} color={RSA.green} />
+            {lease.lease_document_url ? (
+              <View>
+                <TouchableOpacity style={styles.documentCard} onPress={handleViewDocument}>
+                  <View style={styles.documentIcon}>
+                    <Ionicons name="document-text" size={32} color={RSA.green} />
+                  </View>
+                  <View style={styles.documentInfo}>
+                    <Text style={styles.documentTitle}>Lease Agreement</Text>
+                    <Text style={styles.documentSubtitle}>Tap to view in browser</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#CCC" />
+                </TouchableOpacity>
+
+                {/* Download Button */}
+                <TouchableOpacity
+                  style={[styles.downloadButton, actionLoading && styles.buttonDisabled]}
+                  onPress={handleDownloadDocument}
+                  disabled={actionLoading}
+                >
+                  {actionLoading ? (
+                    <ActivityIndicator color={RSA.green} size="small" />
+                  ) : (
+                    <>
+                      <Ionicons name="download-outline" size={20} color={RSA.green} />
+                      <Text style={styles.downloadButtonText}>Download PDF</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
               </View>
-              <View style={styles.documentInfo}>
-                <Text style={styles.documentTitle}>Lease Agreement</Text>
-                <Text style={styles.documentSubtitle}>
-                  {lease.lease_document_url ? 'Tap to view' : 'Not available yet'}
-                </Text>
-              </View>
-              {lease.lease_document_url && (
-                <Ionicons name="chevron-forward" size={20} color="#CCC" />
-              )}
-            </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={styles.documentCard} disabled>
+                <View style={styles.documentIcon}>
+                  <Ionicons name="document-text" size={32} color="#CCC" />
+                </View>
+                <View style={styles.documentInfo}>
+                  <Text style={[styles.documentTitle, { color: '#999' }]}>Lease Agreement</Text>
+                  <Text style={styles.documentSubtitle}>
+                    {lease.status === 'active' ? 'Generating document...' : 'Available after both parties sign'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Signatures */}
@@ -380,6 +576,43 @@ export default function TenantLeaseScreen() {
             </View>
           </View>
 
+          {/* Action Buttons */}
+          {lease.status === 'pending_tenant_signature' && (
+            <View style={styles.section}>
+              <View style={styles.infoBox}>
+                <Ionicons name="information-circle" size={20} color={RSA.green} />
+                <Text style={styles.infoText}>
+                  Your lease agreement is ready. Please review and sign below.
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.primaryButton, actionLoading && styles.buttonDisabled]}
+                onPress={handleSignLease}
+                disabled={actionLoading}
+              >
+                {actionLoading ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <>
+                    <Ionicons name="create" size={20} color="#FFF" />
+                    <Text style={styles.primaryButtonText}>Sign Lease Agreement</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {lease.status === 'pending_owner_signature' && (
+            <View style={styles.section}>
+              <View style={styles.infoBox}>
+                <Ionicons name="checkmark-circle" size={20} color={RSA.green} />
+                <Text style={styles.infoText}>
+                  You've signed the lease! Waiting for owner to sign.
+                </Text>
+              </View>
+            </View>
+          )}
+
           {/* Contact Owner */}
           <View style={styles.section}>
             <TouchableOpacity style={styles.contactButton} onPress={handleContactOwner}>
@@ -388,6 +621,16 @@ export default function TenantLeaseScreen() {
             </TouchableOpacity>
           </View>
         </ScrollView>
+
+        {/* Signature Modal */}
+        <SignatureModal
+          visible={showSignatureModal}
+          onClose={() => setShowSignatureModal(false)}
+          onSave={handleSignatureSave}
+          title="Sign Lease Agreement"
+          description="By signing below, you confirm that you agree to all terms and conditions of this lease agreement."
+          primaryColor={RSA.green}
+        />
       </View>
     </SafeAreaView>
   );
@@ -690,6 +933,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: RSA.green,
   },
+  downloadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    padding: 14,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: RSA.green,
+    gap: 8,
+  },
+  downloadButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: RSA.green,
+  },
   noLeaseTitle: {
     fontSize: 20,
     fontWeight: '700',
@@ -731,5 +991,37 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: RSA.green,
+    borderRadius: 8,
+    padding: 16,
+    gap: 8,
+  },
+  primaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E9',
+    borderRadius: 8,
+    padding: 16,
+    gap: 12,
+    marginBottom: 16,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#2E7D32',
+    lineHeight: 20,
   },
 });

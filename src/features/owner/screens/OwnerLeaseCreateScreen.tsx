@@ -43,7 +43,7 @@ export default function OwnerLeaseCreateScreen() {
   // Lease form fields
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [leaseType, setLeaseType] = useState<'fixed_term' | 'month_to_month'>('fixed_term');
+  const [leaseType, setLeaseType] = useState<'fixed' | 'month_to_month'>('fixed');
   const [monthlyRent, setMonthlyRent] = useState('');
   const [depositAmount, setDepositAmount] = useState('');
   const [paymentDueDay, setPaymentDueDay] = useState('1');
@@ -164,7 +164,7 @@ export default function OwnerLeaseCreateScreen() {
                   rent_escalation_type: rentEscalationValue ? rentEscalationType : null,
                   rent_escalation_value: rentEscalationValue ? parseFloat(rentEscalationValue) : null,
                   rent_escalation_frequency_months: rentEscalationValue ? parseInt(rentEscalationFrequency) : null,
-                  status: 'pending_signatures',
+                  status: 'pending_tenant_signature',
                 })
                 .select()
                 .single();
@@ -264,10 +264,10 @@ export default function OwnerLeaseCreateScreen() {
                 <View style={styles.radioGroup}>
                   <TouchableOpacity
                     style={styles.radioOption}
-                    onPress={() => setLeaseType('fixed_term')}
+                    onPress={() => setLeaseType('fixed')}
                   >
                     <Ionicons
-                      name={leaseType === 'fixed_term' ? 'radio-button-on' : 'radio-button-off'}
+                      name={leaseType === 'fixed' ? 'radio-button-on' : 'radio-button-off'}
                       size={24}
                       color={RSA.blue}
                     />

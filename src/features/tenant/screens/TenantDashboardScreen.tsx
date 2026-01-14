@@ -71,7 +71,7 @@ export default function TenantDashboardScreen() {
         setUserName(profile.full_name || 'Tenant');
       }
 
-      // Get active lease
+      // Get active or pending lease
       const { data: leases } = await supabase
         .from('leases')
         .select(`
@@ -80,7 +80,9 @@ export default function TenantDashboardScreen() {
           owner:profiles!owner_id(id, full_name, phone, email)
         `)
         .eq('tenant_id', user.id)
-        .eq('status', 'active')
+        .in('status', ['active', 'pending_tenant_signature', 'pending_owner_signature'])
+        .order('created_at', { ascending: false })
+        .limit(1)
         .single();
 
       if (leases) {
@@ -205,6 +207,30 @@ export default function TenantDashboardScreen() {
                   onPress={() => router.push('/(tenant)/profile' as any)}
                 >
                   <Text style={styles.verificationButtonText}>Complete Verification</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {/* Pending Signature Alert */}
+          {activeLease && activeLease.status === 'pending_tenant_signature' && (
+            <View style={styles.section}>
+              <View style={styles.signatureAlertCard}>
+                <View style={styles.signatureAlertHeader}>
+                  <Ionicons name="document-text" size={32} color="#FF9800" />
+                  <View style={styles.signatureAlertInfo}>
+                    <Text style={styles.signatureAlertTitle}>Lease Agreement Ready!</Text>
+                    <Text style={styles.signatureAlertSubtext}>
+                      Your lease for {activeLease.property?.title} is ready for signature
+                    </Text>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  style={styles.signatureAlertButton}
+                  onPress={() => router.push('/(tenant)/lease' as any)}
+                >
+                  <Ionicons name="create" size={20} color="#FFF" />
+                  <Text style={styles.signatureAlertButtonText}>Sign Lease Now</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -950,5 +976,51 @@ const styles = StyleSheet.create({
     backgroundColor: '#E3F2FD',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  signatureAlertCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF9800',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  signatureAlertHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+    gap: 16,
+  },
+  signatureAlertInfo: {
+    flex: 1,
+  },
+  signatureAlertTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 8,
+  },
+  signatureAlertSubtext: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+  },
+  signatureAlertButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FF9800',
+    paddingVertical: 14,
+    borderRadius: 10,
+    gap: 8,
+  },
+  signatureAlertButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

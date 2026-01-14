@@ -14,6 +14,12 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
+import SignatureModal from '../../leases/components/SignatureModal';
+import { uploadSignature } from '../../leases/api/storageService';
+import { executeLease } from '../../leases/api/leaseExecutionService';
+import { regenerateLeasePDF } from '../../leases/api/regenerateLeasePDF';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
 
 const RSA = { blue: '#002395', gold: '#FFB81C' }; // Owner colors
 
@@ -58,6 +64,8 @@ export default function OwnerLeaseDetailScreen() {
   const [lease, setLease] = useState<Lease | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showSignatureModal, setShowSignatureModal] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -106,6 +114,88 @@ export default function OwnerLeaseDetailScreen() {
     }
   };
 
+  const handleRegeneratePDF = async () => {
+    if (!lease) return;
+
+    Alert.alert(
+      'Regenerate PDF',
+      'This will generate the lease PDF document. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Generate',
+          onPress: async () => {
+            try {
+              setActionLoading(true);
+              await regenerateLeasePDF(lease.id);
+              Alert.alert('Success', 'PDF generated successfully! Refreshing...');
+              await loadLease(); // Reload to show the PDF
+            } catch (error) {
+              console.error('Error regenerating PDF:', error);
+              Alert.alert('Error', 'Failed to generate PDF. Check console for details.');
+            } finally {
+              setActionLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDownloadDocument = async () => {
+    if (!lease?.lease_document_url) {
+      Alert.alert('Notice', 'Lease document is not available yet');
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+
+      // Check if sharing is available
+      const isAvailable = await Sharing.isAvailableAsync();
+      if (!isAvailable) {
+        Alert.alert('Error', 'Sharing is not available on this device');
+        return;
+      }
+
+      // Download and share the file
+      const filename = `Lease_${lease.property?.title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+
+      // Fetch the PDF
+      const response = await fetch(lease.lease_document_url);
+      const blob = await response.blob();
+      const reader = new FileReader();
+
+      reader.onloadend = async () => {
+        const base64data = reader.result as string;
+        // Use Paths.document for newer expo-file-system or fallback
+        const docDir = (FileSystem as any).documentDirectory || new (FileSystem as any).Directory((FileSystem as any).Paths?.document).uri;
+        const localUri = `${docDir}${filename}`;
+
+        // Write to local file
+        await FileSystem.writeAsStringAsync(
+          localUri,
+          base64data.split(',')[1],
+          { encoding: 'base64' }
+        );
+
+        // Share the file
+        await Sharing.shareAsync(localUri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Download Lease Agreement',
+          UTI: 'com.adobe.pdf',
+        });
+      };
+
+      reader.readAsDataURL(blob);
+    } catch (error) {
+      console.error('Error downloading lease document:', error);
+      Alert.alert('Error', 'Failed to download lease document. Please try again.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleContactTenant = () => {
     if (lease?.tenant) {
       Alert.alert(
@@ -117,6 +207,182 @@ export default function OwnerLeaseDetailScreen() {
           { text: 'Email', onPress: () => lease.tenant?.email && Linking.openURL(`mailto:${lease.tenant.email}`) },
         ]
       );
+    }
+  };
+
+  const handleSendToTenant = () => {
+    if (!lease) return;
+    
+    Alert.alert(
+      'Send Lease Agreement',
+      `Send lease agreement to ${lease.tenant?.full_name} for signature?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Send',
+          onPress: async () => {
+            try {
+              setActionLoading(true);
+              
+              // Update lease status
+              const { error: updateError } = await supabase
+                .from('leases')
+                .update({ status: 'pending_tenant_signature' })
+                .eq('id', lease.id);
+
+              if (updateError) throw updateError;
+
+              // TODO: Create notification for tenant when notifications table is ready
+              // await supabase.from('notifications').insert({
+              //   recipient_id: lease.tenant_id,
+              //   title: 'New Lease Agreement',
+              //   message: 'Your lease agreement is ready for signature',
+              //   type: 'lease_signature',
+              //   related_id: lease.id,
+              // });
+
+              Alert.alert('Success', 'Lease agreement sent to tenant');
+              loadLease(); // Reload to show updated status
+            } catch (err) {
+              console.error('Error sending lease:', err);
+              Alert.alert('Error', 'Failed to send lease agreement');
+            } finally {
+              setActionLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleSignLease = () => {
+    setShowSignatureModal(true);
+  };
+
+  const handleSignatureSave = async (signatureBase64: string) => {
+    if (!lease) return;
+
+    try {
+      setActionLoading(true);
+
+      // Upload signature to storage (with automatic retry logic)
+      const signatureUrl = await uploadSignature(lease.id, 'owner', signatureBase64);
+
+      // Update lease with signature (with retry logic for network errors)
+      let updateSuccess = false;
+      let lastError: any;
+      const maxRetries = 3;
+      
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+          const { error: updateError } = await supabase
+            .from('leases')
+            .update({
+              owner_signature_url: signatureUrl,
+              owner_signed_at: new Date().toISOString(),
+              status: 'active',
+              executed_at: new Date().toISOString(),
+            })
+            .eq('id', lease.id);
+
+          if (updateError) {
+            // Check if it's a network error
+            const errorMessage = updateError.message?.toLowerCase() || '';
+            const isNetworkError = 
+              errorMessage.includes('network') ||
+              errorMessage.includes('timeout') ||
+              errorMessage.includes('fetch failed') ||
+              errorMessage.includes('connection');
+
+            if (isNetworkError && attempt < maxRetries - 1) {
+              console.warn(`Database update attempt ${attempt + 1} failed, retrying...`);
+              lastError = updateError;
+              await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+              continue;
+            }
+            throw updateError;
+          }
+
+          updateSuccess = true;
+          break;
+        } catch (error) {
+          lastError = error;
+          if (attempt === maxRetries - 1) {
+            throw error;
+          }
+        }
+      }
+
+      if (!updateSuccess) {
+        throw lastError || new Error('Failed to update lease after multiple attempts');
+      }
+
+      // Execute lease (update property, create payment, notify) with retry logic
+      let executeSuccess = false;
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+          await executeLease(lease.id);
+          executeSuccess = true;
+          break;
+        } catch (error: any) {
+          const errorMessage = error?.message?.toLowerCase() || '';
+          const isNetworkError = 
+            errorMessage.includes('network') ||
+            errorMessage.includes('timeout') ||
+            errorMessage.includes('fetch failed') ||
+            errorMessage.includes('connection');
+
+          if (isNetworkError && attempt < maxRetries - 1) {
+            console.warn(`Lease execution attempt ${attempt + 1} failed, retrying...`);
+            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+            continue;
+          }
+          
+          // If lease execution fails, log but don't fail the whole operation
+          // The lease is already signed and active
+          console.error('Error executing lease (non-critical):', error);
+          Alert.alert(
+            'Partial Success',
+            'Lease signed successfully, but some automated tasks may need manual completion. Please contact support if needed.',
+            [{ text: 'OK', onPress: () => loadLease() }]
+          );
+          return;
+        }
+      }
+
+      Alert.alert(
+        'Success',
+        'Lease agreement signed and activated!',
+        [{ text: 'OK', onPress: () => loadLease() }]
+      );
+    } catch (err: any) {
+      console.error('Error signing lease:', err);
+      
+      // Provide user-friendly error messages based on error type
+      let errorTitle = 'Signing Failed';
+      let errorMessage = 'Failed to sign lease agreement. Please try again.';
+
+      // Check for network errors
+      const errorString = err?.message?.toLowerCase() || '';
+      if (
+        errorString.includes('network') ||
+        errorString.includes('timeout') ||
+        errorString.includes('fetch failed') ||
+        errorString.includes('connection') ||
+        err?.name === 'NetworkError'
+      ) {
+        errorTitle = 'Connection Error';
+        errorMessage = 'Network connection failed. Please check your internet connection and try again.';
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+
+      Alert.alert(errorTitle, errorMessage, [
+        { text: 'OK', style: 'default' }
+      ]);
+    } finally {
+      setActionLoading(false);
+      setShowSignatureModal(false);
     }
   };
 
@@ -347,20 +613,68 @@ export default function OwnerLeaseDetailScreen() {
           {/* Lease Document */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Lease Document</Text>
-            <TouchableOpacity style={styles.documentCard} onPress={handleViewDocument}>
-              <View style={styles.documentIcon}>
-                <Ionicons name="document-text" size={32} color={RSA.blue} />
+            {lease.lease_document_url ? (
+              <View>
+                <TouchableOpacity style={styles.documentCard} onPress={handleViewDocument}>
+                  <View style={styles.documentIcon}>
+                    <Ionicons name="document-text" size={32} color={RSA.blue} />
+                  </View>
+                  <View style={styles.documentInfo}>
+                    <Text style={styles.documentTitle}>Lease Agreement</Text>
+                    <Text style={styles.documentSubtitle}>Tap to view in browser</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#CCC" />
+                </TouchableOpacity>
+
+                {/* Download Button */}
+                <TouchableOpacity
+                  style={[styles.downloadButton, actionLoading && styles.buttonDisabled]}
+                  onPress={handleDownloadDocument}
+                  disabled={actionLoading}
+                >
+                  {actionLoading ? (
+                    <ActivityIndicator color={RSA.blue} size="small" />
+                  ) : (
+                    <>
+                      <Ionicons name="download-outline" size={20} color={RSA.blue} />
+                      <Text style={styles.downloadButtonText}>Download PDF</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
               </View>
-              <View style={styles.documentInfo}>
-                <Text style={styles.documentTitle}>Lease Agreement</Text>
-                <Text style={styles.documentSubtitle}>
-                  {lease.lease_document_url ? 'Tap to view' : 'Not available yet'}
-                </Text>
+            ) : (
+              <View>
+                <TouchableOpacity style={styles.documentCard} disabled>
+                  <View style={styles.documentIcon}>
+                    <Ionicons name="document-text" size={32} color="#CCC" />
+                  </View>
+                  <View style={styles.documentInfo}>
+                    <Text style={[styles.documentTitle, { color: '#999' }]}>Lease Agreement</Text>
+                    <Text style={styles.documentSubtitle}>
+                      {lease.status === 'active' ? 'PDF not generated' : 'Available after both parties sign'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Temporary button to regenerate PDF for old leases */}
+                {lease.status === 'active' && (
+                  <TouchableOpacity
+                    style={[styles.downloadButton, { borderColor: '#FF9800' }, actionLoading && styles.buttonDisabled]}
+                    onPress={handleRegeneratePDF}
+                    disabled={actionLoading}
+                  >
+                    {actionLoading ? (
+                      <ActivityIndicator color="#FF9800" size="small" />
+                    ) : (
+                      <>
+                        <Ionicons name="refresh-outline" size={20} color="#FF9800" />
+                        <Text style={[styles.downloadButtonText, { color: '#FF9800' }]}>Generate PDF</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                )}
               </View>
-              {lease.lease_document_url && (
-                <Ionicons name="chevron-forward" size={20} color="#CCC" />
-              )}
-            </TouchableOpacity>
+            )}
           </View>
 
           {/* Signatures */}
@@ -382,6 +696,62 @@ export default function OwnerLeaseDetailScreen() {
             </View>
           </View>
 
+          {/* Action Buttons */}
+          {lease.status === 'draft' && (
+            <View style={styles.section}>
+              <TouchableOpacity
+                style={[styles.primaryButton, actionLoading && styles.buttonDisabled]}
+                onPress={handleSendToTenant}
+                disabled={actionLoading}
+              >
+                {actionLoading ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <>
+                    <Ionicons name="send" size={20} color="#FFF" />
+                    <Text style={styles.primaryButtonText}>Send to Tenant for Signature</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {lease.status === 'pending_owner_signature' && (
+            <View style={styles.section}>
+              <View style={styles.infoBox}>
+                <Ionicons name="information-circle" size={20} color={RSA.blue} />
+                <Text style={styles.infoText}>
+                  Tenant has signed the lease. Review and sign to activate.
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.primaryButton, actionLoading && styles.buttonDisabled]}
+                onPress={handleSignLease}
+                disabled={actionLoading}
+              >
+                {actionLoading ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <>
+                    <Ionicons name="create" size={20} color="#FFF" />
+                    <Text style={styles.primaryButtonText}>Sign to Activate Lease</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {lease.status === 'pending_tenant_signature' && (
+            <View style={styles.section}>
+              <View style={styles.infoBox}>
+                <Ionicons name="time" size={20} color="#FFA500" />
+                <Text style={styles.infoText}>
+                  Waiting for tenant to sign the lease agreement.
+                </Text>
+              </View>
+            </View>
+          )}
+
           {/* Contact Tenant */}
           <View style={styles.section}>
             <TouchableOpacity style={styles.contactButton} onPress={handleContactTenant}>
@@ -390,6 +760,16 @@ export default function OwnerLeaseDetailScreen() {
             </TouchableOpacity>
           </View>
         </ScrollView>
+
+        {/* Signature Modal */}
+        <SignatureModal
+          visible={showSignatureModal}
+          onClose={() => setShowSignatureModal(false)}
+          onSave={handleSignatureSave}
+          title="Sign Lease Agreement"
+          description="By signing below, you confirm that you agree to all terms and conditions of this lease agreement."
+          primaryColor={RSA.blue}
+        />
       </View>
     </SafeAreaView>
   );
@@ -717,6 +1097,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: RSA.blue,
   },
+  downloadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    padding: 14,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: RSA.blue,
+    gap: 8,
+  },
+  downloadButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: RSA.blue,
+  },
   errorText: {
     marginTop: 12,
     fontSize: 16,
@@ -734,5 +1131,37 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: RSA.blue,
+    borderRadius: 8,
+    padding: 16,
+    gap: 8,
+  },
+  primaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E3F2FD',
+    borderRadius: 8,
+    padding: 16,
+    gap: 12,
+    marginBottom: 16,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#1976D2',
+    lineHeight: 20,
   },
 });

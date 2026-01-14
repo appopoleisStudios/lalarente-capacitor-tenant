@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '../../../lib/supabase';
 import { applicationsApi, ApplicationWithRelations } from '../../properties/api/applicationsApi';
 
 export default function OwnerApplicationDetailScreen() {
@@ -21,6 +22,7 @@ export default function OwnerApplicationDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasLease, setHasLease] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -33,6 +35,15 @@ export default function OwnerApplicationDetailScreen() {
       setError(null);
       const data = await applicationsApi.getApplication(id);
       setApplication(data);
+      
+      // Check if a lease already exists for this application
+      const { data: existingLease } = await supabase
+        .from('leases')
+        .select('id')
+        .eq('application_id', id)
+        .single();
+      
+      setHasLease(!!existingLease);
       
       // Auto-transition from 'submitted' to 'under_review' when owner views it
       if (data.status === 'submitted') {
@@ -353,6 +364,36 @@ export default function OwnerApplicationDetailScreen() {
             )}
           </TouchableOpacity>
         </View>
+      ) : application.status === 'approved' && !hasLease ? (
+        <View style={styles.actionBar}>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.createLeaseButton]}
+            onPress={() => router.push(`/(owner)/leases/create?applicationId=${id}` as any)}
+          >
+            <Ionicons name="document-text" size={20} color="#FFF" />
+            <Text style={styles.actionButtonText}>Create Lease</Text>
+          </TouchableOpacity>
+        </View>
+      ) : application.status === 'approved' && hasLease ? (
+        <View style={styles.actionBar}>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.viewLeaseButton]}
+            onPress={async () => {
+              // Get the lease ID and navigate to it
+              const { data: lease } = await supabase
+                .from('leases')
+                .select('id')
+                .eq('application_id', id)
+                .single();
+              if (lease) {
+                router.push(`/(owner)/leases/${lease.id}` as any);
+              }
+            }}
+          >
+            <Ionicons name="eye" size={20} color="#FFF" />
+            <Text style={styles.actionButtonText}>View Lease</Text>
+          </TouchableOpacity>
+        </View>
       ) : null}
       </View>
     </SafeAreaView>
@@ -624,6 +665,12 @@ const styles = StyleSheet.create({
   },
   rejectButton: {
     backgroundColor: '#F44336',
+  },
+  createLeaseButton: {
+    backgroundColor: '#007AFF',
+  },
+  viewLeaseButton: {
+    backgroundColor: '#4CAF50',
   },
   actionButtonText: {
     color: '#FFF',
