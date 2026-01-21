@@ -195,20 +195,18 @@ export default function TenantPropertyDetailScreen() {
       Alert.alert('Notice', 'This is your current property. You are already living here.');
       return;
     }
-    Alert.alert(
-      'Request Viewing',
-      'Would you like to request a viewing for this property?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Request',
-          onPress: () => {
-            // TODO: Navigate to viewing request screen
-            Alert.alert('Success', 'Viewing request sent to owner');
-          },
-        },
-      ]
-    );
+    if (!property) {
+      Alert.alert('Error', 'Property information not available');
+      return;
+    }
+    router.push({
+      pathname: '/tenant/viewings/request',
+      params: {
+        propertyId: property.id,
+        propertyTitle: property.title,
+        ownerId: property.owner_id,
+      },
+    });
   };
 
   const handleApply = () => {

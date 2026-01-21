@@ -1,0 +1,642 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  StyleSheet,
+  SafeAreaView,
+  Alert,
+  Linking,
+} from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { viewingsApi, ViewingWithRelations } from '../../properties/api/viewingsApi';
+
+const RSA = { green: '#007A4D', gold: '#FFB81C' };
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'pending':
+      return '#FF9800';
+    case 'approved':
+      return '#4CAF50';
+    case 'declined':
+      return '#F44336';
+    case 'completed':
+      return '#2196F3';
+    case 'cancelled':
+      return '#999';
+    default:
+      return '#999';
+  }
+};
+
+const getStatusIcon = (status: string) => {
+  switch (status) {
+    case 'pending':
+      return 'time-outline';
+    case 'approved':
+      return 'checkmark-circle';
+    case 'declined':
+      return 'close-circle';
+    case 'completed':
+      return 'checkmark-done-circle';
+    case 'cancelled':
+      return 'ban';
+    default:
+      return 'help-circle';
+  }
+};
+
+export default function TenantViewingDetailScreen() {
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const viewingId = params.id as string;
+
+  const [viewing, setViewing] = useState<ViewingWithRelations | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
+
+  useEffect(() => {
+    loadViewing();
+  }, [viewingId]);
+
+  const loadViewing = async () => {
+    try {
+      const data = await viewingsApi.getViewing(viewingId);
+      setViewing(data);
+    } catch (error) {
+      console.error('Error loading viewing:', error);
+      Alert.alert('Error', 'Failed to load viewing details');
+      router.back();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    Alert.alert(
+      'Cancel Viewing',
+      'Are you sure you want to cancel this viewing request?',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, Cancel',
+          style: 'destructive',
+          onPress: confirmCancel,
+        },
+      ]
+    );
+  };
+
+  const confirmCancel = async () => {
+    if (!viewing) return;
+
+    setCancelling(true);
+    try {
+      await viewingsApi.cancelViewing(viewing.id, 'tenant', 'Cancelled by tenant');
+      Alert.alert('Cancelled', 'Your viewing request has been cancelled.', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
+    } catch (error) {
+      console.error('Error cancelling viewing:', error);
+      Alert.alert('Error', 'Failed to cancel viewing. Please try again.');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const handleCallOwner = () => {
+    if (viewing?.owner?.phone) {
+      Linking.openURL(`tel:${viewing.owner.phone}`);
+    }
+  };
+
+  const handleEmailOwner = () => {
+    if (viewing?.owner?.email) {
+      Linking.openURL(`mailto:${viewing.owner.email}`);
+    }
+  };
+
+  const handleViewProperty = () => {
+    if (viewing?.property_id) {
+      router.push({
+        pathname: '/tenant/properties/[id]',
+        params: { id: viewing.property_id },
+      });
+    }
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-ZA', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  const formatDateTime = (dateStr: string, timeStr: string) => {
+    return `${formatDate(dateStr)} at ${timeStr}`;
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color="#333" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Viewing Details</Text>
+            <View style={styles.placeholder} />
+          </View>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={RSA.green} />
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!viewing) {
+    return null;
+  }
+
+  const statusColor = getStatusColor(viewing.status);
+  const statusIcon = getStatusIcon(viewing.status);
+  const canCancel = viewing.status === 'pending' || viewing.status === 'approved';
+  const isUpcoming =
+    viewing.status === 'approved' &&
+    new Date(viewing.confirmed_date || viewing.requested_date) >= new Date();
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Viewing Details</Text>
+          <View style={styles.placeholder} />
+        </View>
+
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Status Card */}
+          <View style={[styles.statusCard, { backgroundColor: `${statusColor}15` }]}>
+            <Ionicons name={statusIcon as any} size={48} color={statusColor} />
+            <Text style={[styles.statusTitle, { color: statusColor }]}>
+              {viewing.status.charAt(0).toUpperCase() + viewing.status.slice(1)}
+            </Text>
+            {isUpcoming && (
+              <View style={styles.upcomingBadge}>
+                <Ionicons name="alarm" size={16} color="#FFF" />
+                <Text style={styles.upcomingText}>Upcoming Viewing</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Property Card */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Property</Text>
+            <TouchableOpacity style={styles.propertyCard} onPress={handleViewProperty}>
+              <View style={styles.propertyHeader}>
+                <Ionicons name="home" size={24} color={RSA.green} />
+                <View style={styles.propertyInfo}>
+                  <Text style={styles.propertyTitle}>{viewing.property?.title}</Text>
+                  <Text style={styles.propertyAddress}>
+                    {viewing.property?.address}, {viewing.property?.city}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={24} color="#999" />
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {/* Viewing Schedule */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Schedule</Text>
+            <View style={styles.card}>
+              <View style={styles.detailRow}>
+                <Ionicons name="calendar-outline" size={20} color={RSA.green} />
+                <View style={styles.detailContent}>
+                  <Text style={styles.detailLabel}>Requested Date & Time</Text>
+                  <Text style={styles.detailValue}>
+                    {formatDateTime(viewing.requested_date, viewing.requested_time)}
+                  </Text>
+                </View>
+              </View>
+
+              {viewing.status === 'approved' && viewing.confirmed_date && (
+                <View style={[styles.detailRow, styles.confirmedRow]}>
+                  <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+                  <View style={styles.detailContent}>
+                    <Text style={styles.detailLabel}>Confirmed Date & Time</Text>
+                    <Text style={[styles.detailValue, { color: '#4CAF50', fontWeight: '600' }]}>
+                      {formatDateTime(viewing.confirmed_date, viewing.confirmed_time!)}
+                    </Text>
+                  </View>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Your Message */}
+          {viewing.message && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Your Message</Text>
+              <View style={styles.card}>
+                <Text style={styles.messageText}>{viewing.message}</Text>
+              </View>
+            </View>
+          )}
+
+          {/* Owner Response */}
+          {viewing.owner_response && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Owner Response</Text>
+              <View style={styles.card}>
+                <Text style={styles.messageText}>{viewing.owner_response}</Text>
+                {viewing.responded_at && (
+                  <Text style={styles.responseDate}>
+                    {new Date(viewing.responded_at).toLocaleString('en-ZA')}
+                  </Text>
+                )}
+              </View>
+            </View>
+          )}
+
+          {/* Alternative Times */}
+          {viewing.alternative_times && viewing.alternative_times.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Suggested Alternative Times</Text>
+              <View style={styles.card}>
+                {viewing.alternative_times.map((time, index) => (
+                  <View key={index} style={styles.alternativeTimeRow}>
+                    <Ionicons name="time-outline" size={16} color="#666" />
+                    <Text style={styles.alternativeTimeText}>{time}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Owner Contact */}
+          {viewing.owner && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Property Owner</Text>
+              <View style={styles.card}>
+                <View style={styles.ownerHeader}>
+                  <View style={styles.ownerAvatar}>
+                    <Ionicons name="person" size={24} color="#FFF" />
+                  </View>
+                  <View style={styles.ownerInfo}>
+                    <Text style={styles.ownerName}>{viewing.owner.full_name}</Text>
+                    {viewing.owner.email && (
+                      <Text style={styles.ownerContact}>{viewing.owner.email}</Text>
+                    )}
+                    {viewing.owner.phone && (
+                      <Text style={styles.ownerContact}>{viewing.owner.phone}</Text>
+                    )}
+                  </View>
+                </View>
+
+                {(viewing.owner.phone || viewing.owner.email) && (
+                  <View style={styles.contactActions}>
+                    {viewing.owner.phone && (
+                      <TouchableOpacity style={styles.contactButton} onPress={handleCallOwner}>
+                        <Ionicons name="call" size={18} color={RSA.green} />
+                        <Text style={styles.contactButtonText}>Call</Text>
+                      </TouchableOpacity>
+                    )}
+                    {viewing.owner.email && (
+                      <TouchableOpacity style={styles.contactButton} onPress={handleEmailOwner}>
+                        <Ionicons name="mail" size={18} color={RSA.green} />
+                        <Text style={styles.contactButtonText}>Email</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
+
+          {/* Timeline */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Timeline</Text>
+            <View style={styles.card}>
+              <View style={styles.timelineItem}>
+                <View style={styles.timelineDot} />
+                <View style={styles.timelineContent}>
+                  <Text style={styles.timelineTitle}>Request Submitted</Text>
+                  <Text style={styles.timelineDate}>
+                    {new Date(viewing.created_at!).toLocaleString('en-ZA')}
+                  </Text>
+                </View>
+              </View>
+
+              {viewing.responded_at && (
+                <View style={styles.timelineItem}>
+                  <View style={styles.timelineDot} />
+                  <View style={styles.timelineContent}>
+                    <Text style={styles.timelineTitle}>Owner Responded</Text>
+                    <Text style={styles.timelineDate}>
+                      {new Date(viewing.responded_at).toLocaleString('en-ZA')}
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {viewing.completed_at && (
+                <View style={styles.timelineItem}>
+                  <View style={styles.timelineDot} />
+                  <View style={styles.timelineContent}>
+                    <Text style={styles.timelineTitle}>Viewing Completed</Text>
+                    <Text style={styles.timelineDate}>
+                      {new Date(viewing.completed_at).toLocaleString('en-ZA')}
+                    </Text>
+                  </View>
+                </View>
+              )}
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* Actions */}
+        {canCancel && (
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={[styles.cancelButton, cancelling && styles.buttonDisabled]}
+              onPress={handleCancel}
+              disabled={cancelling}
+            >
+              {cancelling ? (
+                <ActivityIndicator size="small" color="#F44336" />
+              ) : (
+                <>
+                  <Ionicons name="close-circle" size={20} color="#F44336" />
+                  <Text style={styles.cancelButtonText}>Cancel Viewing Request</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFF',
+  },
+  container: {
+    flex: 1,
+    backgroundColor: '#F5F5F5',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: '#FFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  backButton: {
+    padding: 4,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  placeholder: {
+    width: 32,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  content: {
+    flex: 1,
+    padding: 16,
+  },
+  statusCard: {
+    alignItems: 'center',
+    padding: 24,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  statusTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginTop: 12,
+  },
+  upcomingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: RSA.green,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+    marginTop: 12,
+    gap: 6,
+  },
+  upcomingText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  section: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#999',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 10,
+  },
+  card: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  propertyCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  propertyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+  },
+  propertyInfo: {
+    flex: 1,
+  },
+  propertyTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  propertyAddress: {
+    fontSize: 14,
+    color: '#666',
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 16,
+  },
+  confirmedRow: {
+    backgroundColor: '#E8F5E9',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  detailContent: {
+    flex: 1,
+  },
+  detailLabel: {
+    fontSize: 12,
+    color: '#999',
+    marginBottom: 4,
+  },
+  detailValue: {
+    fontSize: 15,
+    color: '#333',
+    fontWeight: '500',
+  },
+  messageText: {
+    fontSize: 15,
+    color: '#333',
+    lineHeight: 22,
+  },
+  responseDate: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 8,
+  },
+  alternativeTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 6,
+  },
+  alternativeTimeText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  ownerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  ownerAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: RSA.green,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ownerInfo: {
+    flex: 1,
+  },
+  ownerName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  ownerContact: {
+    fontSize: 13,
+    color: '#666',
+  },
+  contactActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  contactButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F5F5F5',
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 6,
+  },
+  contactButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: RSA.green,
+  },
+  timelineItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 16,
+  },
+  timelineDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: RSA.green,
+    marginTop: 4,
+  },
+  timelineContent: {
+    flex: 1,
+  },
+  timelineTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  timelineDate: {
+    fontSize: 12,
+    color: '#999',
+  },
+  footer: {
+    padding: 16,
+    backgroundColor: '#FFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+  cancelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFEBEE',
+    paddingVertical: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#FFCDD2',
+    gap: 8,
+  },
+  cancelButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#F44336',
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+});
