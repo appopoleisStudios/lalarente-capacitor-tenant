@@ -21,6 +21,11 @@ export type NotificationType =
   | 'application_received'
   | 'application_approved'
   | 'application_rejected'
+  | 'viewing_requested'
+  | 'viewing_approved'
+  | 'viewing_declined'
+  | 'viewing_cancelled'
+  | 'viewing_completed'
   | 'viewing_scheduled'
   | 'viewing_reminder'
   | 'welcome'
@@ -132,6 +137,11 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences['preferen
   application_received: { email: true, sms: true, push: true },
   application_approved: { email: true, sms: true, push: true },
   application_rejected: { email: true, sms: false, push: true },
+  viewing_requested: { email: true, sms: true, push: true },
+  viewing_approved: { email: true, sms: true, push: true },
+  viewing_declined: { email: true, sms: false, push: true },
+  viewing_cancelled: { email: true, sms: false, push: true },
+  viewing_completed: { email: true, sms: false, push: true },
   viewing_scheduled: { email: true, sms: true, push: true },
   viewing_reminder: { email: false, sms: true, push: true },
   welcome: { email: true, sms: false, push: false },

@@ -177,6 +177,26 @@ export const notificationsApi = {
         title: 'Application Update',
         body: `Your application for ${data?.propertyTitle || ''} was not successful.`,
       },
+      viewing_requested: {
+        title: 'New Viewing Request',
+        body: `${data?.tenantName || 'A tenant'} requested to view ${data?.propertyTitle || 'your property'} on ${data?.requestedDate || ''}.`,
+      },
+      viewing_approved: {
+        title: 'Viewing Approved',
+        body: `Your viewing request for ${data?.propertyTitle || ''} on ${data?.confirmedDate || data?.requestedDate || ''} has been approved!`,
+      },
+      viewing_declined: {
+        title: 'Viewing Request Update',
+        body: `Your viewing request for ${data?.propertyTitle || ''} was declined. ${data?.ownerResponse || ''}`,
+      },
+      viewing_cancelled: {
+        title: 'Viewing Cancelled',
+        body: `The viewing for ${data?.propertyTitle || ''} on ${data?.viewingDate || ''} has been cancelled.`,
+      },
+      viewing_completed: {
+        title: 'Viewing Completed',
+        body: `The viewing for ${data?.propertyTitle || ''} has been marked as completed.`,
+      },
       viewing_scheduled: {
         title: 'Viewing Confirmed',
         body: `Viewing scheduled for ${data?.viewingDate || ''} at ${data?.viewingTime || ''}.`,

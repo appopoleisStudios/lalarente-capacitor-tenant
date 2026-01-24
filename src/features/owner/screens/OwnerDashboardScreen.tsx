@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, SafeAreaView } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { AnimatedButton } from '../components/AnimatedButton';
 import { PortfolioCard } from '../components/PortfolioCard';
@@ -9,8 +9,11 @@ import { AnalyticsGrid } from '../components/AnalyticsGrid';
 import { DocumentsSection } from '../components/DocumentsSection';
 import { MaintenanceSection } from '../components/MaintenanceSection';
 import { ApplicantsSection } from '../components/ApplicantsSection';
+import { ViewingRequestsSection } from '../components/ViewingRequestsSection';
 import { ActivitySection } from '../components/ActivitySection';
 import { styles } from './OwnerDashboardScreen.styles';
+import { supabase } from '../../../lib/supabase';
+import { viewingsApi } from '../../properties/api/viewingsApi';
 
 const mockData = {
   user: { name: 'Thabo' },
@@ -41,6 +44,76 @@ const mockData = {
 export default function OwnerDashboardScreen() {
   const router = useRouter();
   const [notificationCount] = useState(3);
+  const [viewingRequests, setViewingRequests] = useState<any[]>([]);
+  const [pendingViewingsCount, setPendingViewingsCount] = useState(0);
+  const [ownerId, setOwnerId] = useState<string | null>(null);
+
+  useEffect(() => {
+    initOwner();
+  }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (ownerId) {
+        loadViewingRequests();
+      }
+    }, [ownerId])
+  );
+
+  const initOwner = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      setOwnerId(user.id);
+      loadViewingRequests(user.id);
+    }
+  };
+
+  const loadViewingRequests = async (userId?: string) => {
+    try {
+      const ownerIdToUse = userId || ownerId;
+      if (!ownerIdToUse) return;
+
+      // Get recent viewing requests
+      const viewings = await viewingsApi.getOwnerViewings(ownerIdToUse);
+
+      // Get only pending and recent viewings for dashboard
+      const recentViewings = viewings
+        .filter(v => ['pending', 'approved'].includes(v.status))
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 5);
+
+      // Format for display
+      const formattedViewings = await Promise.all(
+        recentViewings.map(async (v) => {
+          const { data: property } = await supabase
+            .from('properties')
+            .select('title')
+            .eq('id', v.property_id)
+            .single();
+
+          const { data: tenant } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', v.tenant_id)
+            .single();
+
+          return {
+            id: v.id,
+            property_title: property?.title || 'Property',
+            tenant_name: tenant?.full_name || 'Tenant',
+            requested_date: v.requested_date,
+            requested_time: v.requested_time,
+            status: v.status,
+          };
+        })
+      );
+
+      setViewingRequests(formattedViewings);
+      setPendingViewingsCount(viewings.filter(v => v.status === 'pending').length);
+    } catch (error) {
+      console.error('Error loading viewing requests:', error);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -92,6 +165,15 @@ export default function OwnerDashboardScreen() {
           <Animated.View entering={FadeInDown.delay(400).duration(500)}>
             <MaintenanceSection maintenance={mockData.maintenance} />
           </Animated.View>
+
+          {viewingRequests.length > 0 && (
+            <Animated.View entering={FadeInDown.delay(450).duration(500)}>
+              <ViewingRequestsSection
+                viewings={viewingRequests}
+                pendingCount={pendingViewingsCount}
+              />
+            </Animated.View>
+          )}
 
           <Animated.View entering={FadeInDown.delay(500).duration(500)}>
             <ApplicantsSection applicants={mockData.applicants} />

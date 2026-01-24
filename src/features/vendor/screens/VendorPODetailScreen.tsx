@@ -1,6 +1,9 @@
+import { useAuth } from '@/src/contexts/AuthContext';
 import {
+    acceptPO,
     getPOById,
     getPORevisions,
+    rejectPO,
     updatePOStatus,
     type PORevision,
     type PurchaseOrder,
@@ -25,6 +28,7 @@ const STATUS_CONFIG = {
 
 export default function VendorPODetailScreen() {
   const { poId } = useLocalSearchParams<{ poId: string }>();
+  const { user } = useAuth();
   const [po, setPO] = useState<PurchaseOrder | null>(null);
   const [revisions, setRevisions] = useState<PORevision[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,10 +106,10 @@ export default function VendorPODetailScreen() {
               setActionLoading(true);
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-              await updatePOStatus(poId, 'accepted');
+              await acceptPO(poId, user?.id || '');
 
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              
+
               // Get the maintenance request ID from the PO's contract
               if (po?.contract_id) {
                 // Navigate to job detail screen
@@ -123,6 +127,46 @@ export default function VendorPODetailScreen() {
           },
         },
       ]
+    );
+  };
+
+  const handleRejectPO = () => {
+    Alert.prompt(
+      'Reject Purchase Order',
+      'Please provide a reason for rejecting this PO:',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reject',
+          style: 'destructive',
+          onPress: async (reason?: string) => {
+            if (!reason || reason.trim() === '') {
+              Alert.alert('Error', 'Please provide a reason for rejection');
+              return;
+            }
+
+            try {
+              setActionLoading(true);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+              await rejectPO(poId, user?.id || '', reason.trim());
+
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              Alert.alert(
+                'PO Rejected',
+                'The purchase order has been rejected. The owner will be notified.',
+                [{ text: 'OK', onPress: () => router.back() }]
+              );
+            } catch (error: any) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              Alert.alert('Error', error.message || 'Failed to reject PO');
+            } finally {
+              setActionLoading(false);
+            }
+          },
+        },
+      ],
+      'plain-text'
     );
   };
 
@@ -312,34 +356,32 @@ export default function VendorPODetailScreen() {
         <View style={{ height: 120 }} />
       </ScrollView>
 
-      {(canAccept || po.status === 'accepted') && (
+      {canAccept && (
         <View style={styles.footer}>
           <View style={styles.actionButtons}>
             <TouchableOpacity
-              style={[styles.actionButton, styles.requestButton]}
-              onPress={handleRequestUpdate}
+              style={[styles.actionButton, styles.rejectButton]}
+              onPress={handleRejectPO}
               disabled={actionLoading}
             >
-              <Ionicons name="create-outline" size={20} color={colors.warning[600]} />
-              <Text style={styles.requestButtonText}>Request Update</Text>
+              <Ionicons name="close-circle" size={20} color={colors.error[600]} />
+              <Text style={styles.rejectButtonText}>Reject</Text>
             </TouchableOpacity>
 
-            {canAccept && (
-              <TouchableOpacity
-                style={[styles.actionButton, styles.acceptButton]}
-                onPress={handleAcceptPO}
-                disabled={actionLoading}
-              >
-                {actionLoading ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <>
-                    <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
-                    <Text style={styles.acceptButtonText}>Accept PO</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity
+              style={[styles.actionButton, styles.acceptButton]}
+              onPress={handleAcceptPO}
+              disabled={actionLoading}
+            >
+              {actionLoading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                  <Text style={styles.acceptButtonText}>Accept PO</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
       )}
@@ -495,6 +537,11 @@ const styles = StyleSheet.create({
     borderColor: colors.warning[500],
   },
   requestButtonText: { fontSize: 15, fontWeight: '700', color: colors.warning[600] },
+  rejectButton: {
+    backgroundColor: '#FFFFFF',
+    borderColor: colors.error[500],
+  },
+  rejectButtonText: { fontSize: 15, fontWeight: '700', color: colors.error[600] },
   acceptButton: {
     backgroundColor: RSA.blue,
     borderColor: RSA.blue,

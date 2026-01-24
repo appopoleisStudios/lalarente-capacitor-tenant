@@ -2,13 +2,17 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import {
   acceptQuote,
   acknowledgeRequest,
+  approveClosureReport,
+  getClosureReport,
   getMaintenanceRequestById,
   getPOByRequestId,
   getQuotesByRequest,
   pushToDedicatedVendors,
   pushToOpenMarket,
+  rejectClosureReport,
   rejectQuote,
   requestQuoteRevision,
+  type ClosureReport,
   type PurchaseOrder
 } from '@/src/features/maintenance/api';
 import { MediaGallery } from '@/src/features/maintenance/components/MediaGallery';
@@ -50,6 +54,7 @@ export default function OwnerMaintenanceDetailScreen() {
   const [quoteRevisions, setQuoteRevisions] = useState<Record<string, any[]>>({});
   const [expandedQuotes, setExpandedQuotes] = useState<Record<string, boolean>>({});
   const [purchaseOrder, setPurchaseOrder] = useState<PurchaseOrder | null>(null);
+  const [closureReport, setClosureReport] = useState<ClosureReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -116,6 +121,15 @@ export default function OwnerMaintenanceDetailScreen() {
         }
       } else {
         setPurchaseOrder(null);
+      }
+
+      // 4. Fetch closure report if job is in progress or completed
+      try {
+        const closure = await getClosureReport(id);
+        setClosureReport(closure);
+      } catch (error) {
+        console.log('Failed to fetch closure report:', error);
+        setClosureReport(null);
       }
 
     } catch (error: any) {
@@ -367,6 +381,81 @@ export default function OwnerMaintenanceDetailScreen() {
     );
   };
 
+  const handleApproveClosure = () => {
+    Alert.alert(
+      'Approve Job Completion',
+      'By approving, you confirm the work has been completed satisfactorily. The job will be marked as completed. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Approve',
+          onPress: async () => {
+            try {
+              setActionLoading(true);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+              if (!user?.id) {
+                throw new Error('User not authenticated');
+              }
+
+              await approveClosureReport(id, user.id);
+
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              Alert.alert('Success', 'Job marked as completed successfully');
+              fetchRequest();
+            } catch (error: any) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              Alert.alert('Error', error.message || 'Failed to approve closure');
+            } finally {
+              setActionLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleRejectClosure = () => {
+    Alert.prompt(
+      'Request Changes',
+      'Please explain what needs to be fixed or improved:',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Send Request',
+          style: 'destructive',
+          onPress: async (reason?: string) => {
+            if (!reason || reason.trim() === '') {
+              Alert.alert('Error', 'Please provide a reason for rejection');
+              return;
+            }
+
+            try {
+              setActionLoading(true);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+              if (!user?.id) {
+                throw new Error('User not authenticated');
+              }
+
+              await rejectClosureReport(id, user.id, reason.trim());
+
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              Alert.alert('Success', 'Closure rejected. The vendor will be notified.');
+              fetchRequest();
+            } catch (error: any) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              Alert.alert('Error', error.message || 'Failed to reject closure');
+            } finally {
+              setActionLoading(false);
+            }
+          },
+        },
+      ],
+      'plain-text'
+    );
+  };
+
   const toggleQuoteExpanded = (quoteId: string) => {
     setExpandedQuotes(prev => ({
       ...prev,
@@ -597,6 +686,61 @@ export default function OwnerMaintenanceDetailScreen() {
           onPress={() => purchaseOrder && router.push(`/(owner)/maintenance/${id}/po/${purchaseOrder.id}`)}
         />
 
+        {/* Closure Request */}
+        {closureReport && closureReport.status === 'pending' && (
+          <View style={styles.section}>
+            <View style={styles.closureBanner}>
+              <View style={styles.closureBannerHeader}>
+                <Ionicons name="checkmark-done-circle" size={28} color={colors.success[500]} />
+                <Text style={styles.closureBannerTitle}>
+                  🏁 Vendor has requested job closure
+                </Text>
+              </View>
+              <Text style={styles.closureBannerSubtitle}>
+                Review the completion notes and photos below, then approve or request changes.
+              </Text>
+            </View>
+
+            <View style={styles.closureContent}>
+              <Text style={styles.closureLabel}>Completion Notes</Text>
+              <View style={styles.closureNotesCard}>
+                <Text style={styles.closureNotesText}>
+                  {closureReport.completion_notes || 'No notes provided'}
+                </Text>
+              </View>
+
+              <Text style={styles.closureLabel}>Completion Photos</Text>
+              <MediaGallery images={closureReport.completion_photos || []} />
+
+              <View style={styles.closureActions}>
+                <TouchableOpacity
+                  style={[styles.closureButton, styles.closureRejectButton]}
+                  onPress={handleRejectClosure}
+                  disabled={actionLoading}
+                >
+                  <Ionicons name="close-circle" size={20} color={colors.error[600]} />
+                  <Text style={styles.closureRejectButtonText}>Request Changes</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.closureButton, styles.closureApproveButton]}
+                  onPress={handleApproveClosure}
+                  disabled={actionLoading}
+                >
+                  {actionLoading ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                      <Text style={styles.closureApproveButtonText}>Approve & Complete</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* Invoice */}
         {request.status === 'completed' && (
           <View style={styles.section}>
@@ -804,4 +948,85 @@ const styles = StyleSheet.create({
   invoiceInfo: { flex: 1 },
   invoiceTitle: { fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 2 },
   invoiceAmount: { fontSize: 20, fontWeight: '700', color: colors.warning[600] },
+
+  // Closure section
+  closureBanner: {
+    backgroundColor: colors.success[50],
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: colors.success[500],
+    marginBottom: 16,
+  },
+  closureBannerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 8,
+  },
+  closureBannerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.success[800],
+    flex: 1,
+  },
+  closureBannerSubtitle: {
+    fontSize: 14,
+    color: colors.success[700],
+    lineHeight: 20,
+  },
+  closureContent: {
+    gap: 16,
+  },
+  closureLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  closureNotesCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  closureNotesText: {
+    fontSize: 14,
+    color: '#374151',
+    lineHeight: 20,
+  },
+  closureActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  closureButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 2,
+  },
+  closureRejectButton: {
+    backgroundColor: '#FFFFFF',
+    borderColor: colors.error[500],
+  },
+  closureRejectButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.error[600],
+  },
+  closureApproveButton: {
+    backgroundColor: colors.success[500],
+    borderColor: colors.success[500],
+  },
+  closureApproveButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
 });
