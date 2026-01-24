@@ -150,7 +150,7 @@ export default function OwnerViewingsScreen() {
         ]}
         onPress={() =>
           router.push({
-            pathname: '/owner/viewings/[id]',
+            pathname: '/(owner)/viewings/[id]',
             params: { id: item.id },
           })
         }

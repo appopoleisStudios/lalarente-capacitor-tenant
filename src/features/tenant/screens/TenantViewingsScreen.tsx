@@ -145,7 +145,7 @@ export default function TenantViewingsScreen() {
         style={[styles.card, upcoming && styles.upcomingCard]}
         onPress={() =>
           router.push({
-            pathname: '/tenant/viewings/[id]',
+            pathname: '/(tenant)/viewings/[id]',
             params: { id: item.id },
           })
         }

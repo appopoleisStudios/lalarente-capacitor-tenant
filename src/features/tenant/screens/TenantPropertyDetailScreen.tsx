@@ -200,7 +200,7 @@ export default function TenantPropertyDetailScreen() {
       return;
     }
     router.push({
-      pathname: '/tenant/viewings/request',
+      pathname: '/(tenant)/viewings/request',
       params: {
         propertyId: property.id,
         propertyTitle: property.title,
