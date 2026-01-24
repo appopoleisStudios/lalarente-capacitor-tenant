@@ -94,6 +94,24 @@ export default function TenantLayout() {
           href: null, // Hidden from tabs - application detail screen
         }}
       />
+      <Tabs.Screen
+        name="viewings"
+        options={{
+          href: null, // Hidden from tabs - viewing requests list
+        }}
+      />
+      <Tabs.Screen
+        name="viewings/request"
+        options={{
+          href: null, // Hidden from tabs - request viewing screen
+        }}
+      />
+      <Tabs.Screen
+        name="viewings/[id]"
+        options={{
+          href: null, // Hidden from tabs - viewing detail screen
+        }}
+      />
     </Tabs>
   );
 }

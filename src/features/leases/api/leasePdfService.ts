@@ -1,6 +1,7 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
+import { decode } from 'base64-arraybuffer';
 import { uploadLeasePDF } from './storageService';
 
 interface LeaseData {
@@ -499,13 +500,8 @@ export async function generateAndUploadLeasePDF(leaseData: LeaseData): Promise<s
 
     console.log('PDF read as base64, length:', base64.length);
 
-    // Convert base64 to ArrayBuffer
-    const binaryString = atob(base64);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    const arrayBuffer = bytes.buffer;
+    // Convert base64 to ArrayBuffer using base64-arraybuffer (React Native compatible)
+    const arrayBuffer = decode(base64);
 
     console.log('PDF converted to ArrayBuffer, size:', arrayBuffer.byteLength);
 

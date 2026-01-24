@@ -136,6 +136,24 @@ export default function OwnerLayout() {
           href: null, // Hidden from tabs - lease creation screen
         }}
       />
+      <Tabs.Screen
+        name="viewings"
+        options={{
+          href: null, // Hidden from tabs - viewing requests list
+        }}
+      />
+      <Tabs.Screen
+        name="viewings/[id]"
+        options={{
+          href: null, // Hidden from tabs - viewing detail screen
+        }}
+      />
+      <Tabs.Screen
+        name="LAYOUT_THEME_UPDATE.md"
+        options={{
+          href: null, // Hidden - documentation file
+        }}
+      />
     </Tabs>
   );
 }
