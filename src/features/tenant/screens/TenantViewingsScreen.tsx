@@ -86,6 +86,33 @@ export default function TenantViewingsScreen() {
     filterViewings();
   }, [viewings, selectedStatus]);
 
+  // Real-time subscription for viewing requests
+  useEffect(() => {
+    if (!userId) return;
+
+    const channel = supabase
+      .channel('tenant-viewings')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'viewing_requests',
+          filter: `tenant_id=eq.${userId}`,
+        },
+        (payload) => {
+          console.log('Viewing request change:', payload);
+          // Reload viewings when any change occurs
+          loadViewings();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId]);
+
   const initUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
