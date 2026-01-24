@@ -102,7 +102,7 @@ export default function TenantRequestViewingScreen() {
         owner_id: ownerId,
         requested_date: selectedDate.toISOString().split('T')[0],
         requested_time: selectedTime.toTimeString().split(' ')[0].slice(0, 5),
-        message: message.trim() || undefined,
+        tenant_notes: message.trim() || undefined,
       });
 
       Alert.alert(

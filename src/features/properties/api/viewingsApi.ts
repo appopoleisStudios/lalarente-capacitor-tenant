@@ -35,7 +35,7 @@ export interface RequestViewingInput {
   owner_id: string;
   requested_date: string;
   requested_time: string;
-  message?: string;
+  tenant_notes?: string;
 }
 
 export interface ApproveViewingInput {
@@ -73,7 +73,7 @@ export const viewingsApi = {
         owner_id: input.owner_id,
         requested_date: input.requested_date,
         requested_time: input.requested_time,
-        message: input.message || null,
+        tenant_notes: input.tenant_notes || null,
         status: 'pending',
       })
       .select()
