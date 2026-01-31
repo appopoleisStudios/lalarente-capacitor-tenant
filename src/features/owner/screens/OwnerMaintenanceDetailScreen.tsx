@@ -967,7 +967,7 @@ const styles = StyleSheet.create({
   closureBannerTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors.success[800],
+    color: colors.success[700],
     flex: 1,
   },
   closureBannerSubtitle: {

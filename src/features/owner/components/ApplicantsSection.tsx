@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { AnimatedButton } from './AnimatedButton';
 
 interface Applicant {
+  id?: string;
   avatar: string;
   name: string;
   property: string;
@@ -27,7 +28,11 @@ export const ApplicantsSection = ({ applicants }: ApplicantsSectionProps) => {
         </AnimatedButton>
       </View>
       {applicants.map((a, i) => (
-        <AnimatedButton key={i} style={styles.card}>
+        <AnimatedButton
+          key={i}
+          style={styles.card}
+          onPress={() => a.id && router.push(`/(owner)/applications/${a.id}` as any)}
+        >
           <View style={styles.cardInner}>
             <Image source={{ uri: a.avatar }} style={styles.avatar} />
             <View style={styles.info}>

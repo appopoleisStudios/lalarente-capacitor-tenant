@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { useRouter } from 'expo-router';
 import { AnimatedButton } from './AnimatedButton';
 
 const { width } = Dimensions.get('window');
@@ -18,17 +19,43 @@ export const AnalyticsGrid = ({
   tenantsInArrears,
   openMaintenance,
 }: AnalyticsGridProps) => {
+  const router = useRouter();
+
   const cards = [
-    { icon: '💰', value: `R ${monthIncome.toLocaleString()}`, label: 'This Month Income' },
-    { icon: '📈', value: `${currentOccupancy}%`, label: 'Current Occupancy' },
-    { icon: '⏰', value: tenantsInArrears.toString(), label: 'Tenants In Arrears' },
-    { icon: '🔧', value: openMaintenance.toString(), label: 'Open Maintenance' },
+    {
+      icon: '💰',
+      value: `R ${monthIncome.toLocaleString()}`,
+      label: 'This Month Income',
+      route: '/(owner)/rent-roll' as const
+    },
+    {
+      icon: '📈',
+      value: `${currentOccupancy}%`,
+      label: 'Current Occupancy',
+      route: '/(owner)/properties' as const
+    },
+    {
+      icon: '⏰',
+      value: tenantsInArrears.toString(),
+      label: 'Tenants In Arrears',
+      route: '/(owner)/rent-roll' as const
+    },
+    {
+      icon: '🔧',
+      value: openMaintenance.toString(),
+      label: 'Open Maintenance',
+      route: '/(owner)/maintenance' as const
+    },
   ];
 
   return (
     <View style={styles.grid}>
       {cards.map((card, index) => (
-        <AnimatedButton key={index} style={[styles.card, { width: CARD_WIDTH }]}>
+        <AnimatedButton
+          key={index}
+          style={[styles.card, { width: CARD_WIDTH }]}
+          onPress={() => router.push(card.route as any)}
+        >
           <View style={styles.cardInner}>
             <Text style={styles.icon}>{card.icon}</Text>
             <Text style={styles.value}>{card.value}</Text>

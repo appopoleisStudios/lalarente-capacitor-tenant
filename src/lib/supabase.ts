@@ -2,13 +2,19 @@ import { createClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
 import { Database } from '@/src/types/database.types';
 
+// Debug: Log what Constants.expoConfig contains
+console.log('🔍 DEBUG Constants.expoConfig:', JSON.stringify(Constants.expoConfig?.extra, null, 2));
+
 // Environment variables (accessed via Constants.expoConfig.extra for React Native)
 const SUPABASE_URL = Constants.expoConfig?.extra?.supabaseUrl || '';
 const SUPABASE_ANON_KEY = Constants.expoConfig?.extra?.supabaseAnonKey || '';
 
 // Validate environment variables
+console.log('🔍 DEBUG SUPABASE_URL:', SUPABASE_URL ? `${SUPABASE_URL.substring(0, 30)}...` : '❌ MISSING');
+console.log('🔍 DEBUG SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? `${SUPABASE_ANON_KEY.substring(0, 30)}...` : '❌ MISSING');
+
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.error('Missing Supabase environment variables!');
+  console.error('❌ Missing Supabase environment variables!');
   console.error('SUPABASE_URL:', SUPABASE_URL ? '✓' : '✗');
   console.error('SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? '✓' : '✗');
   console.error('Make sure .env file exists and Metro bundler is restarted');

@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
 import { AnimatedButton } from './AnimatedButton';
 
 interface Document {
@@ -14,17 +15,42 @@ interface DocumentsSectionProps {
 }
 
 export const DocumentsSection = ({ documents }: DocumentsSectionProps) => {
+  const router = useRouter();
+
+  const handleDocumentPress = (docType: string) => {
+    // Navigate based on document type
+    switch (docType) {
+      case 'leases':
+      case 'active-leases':
+      case 'past-leases':
+        router.push('/(owner)/properties' as any); // TODO: Create dedicated leases list screen
+        break;
+      case 'quotes':
+      case 'pending-quotes':
+      case 'invoices':
+      case 'recent-invoices':
+        router.push('/(owner)/maintenance' as any);
+        break;
+      default:
+        router.push('/(owner)/properties' as any);
+    }
+  };
+
   return (
     <View>
       <View style={styles.header}>
         <Text style={styles.title}>My Documents</Text>
-        <AnimatedButton>
+        <AnimatedButton onPress={() => router.push('/(owner)/properties' as any)}>
           <Text style={styles.seeAll}>See All</Text>
         </AnimatedButton>
       </View>
       <View style={styles.grid}>
         {documents.map((doc) => (
-          <AnimatedButton key={doc.type} style={styles.card}>
+          <AnimatedButton
+            key={doc.type}
+            style={styles.card}
+            onPress={() => handleDocumentPress(doc.type)}
+          >
             <View style={styles.cardInner}>
               <Text style={styles.icon}>{doc.icon}</Text>
               <Text style={styles.name} numberOfLines={2}>{doc.name}</Text>

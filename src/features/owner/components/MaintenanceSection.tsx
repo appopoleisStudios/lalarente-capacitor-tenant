@@ -1,10 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
 import { AnimatedButton } from './AnimatedButton';
 
 const RSA = { blue: '#002395', green: '#007A4D' };
 
 interface Maintenance {
+  id?: string;
   title: string;
   unit: string;
   status: string;
@@ -17,14 +19,22 @@ interface MaintenanceSectionProps {
 }
 
 export const MaintenanceSection = ({ maintenance }: MaintenanceSectionProps) => {
+  const router = useRouter();
+
   return (
     <View>
       <View style={styles.header}>
         <Text style={styles.title}>Active Maintenance</Text>
-        <AnimatedButton><Text style={styles.seeAll}>See All</Text></AnimatedButton>
+        <AnimatedButton onPress={() => router.push('/(owner)/maintenance' as any)}>
+          <Text style={styles.seeAll}>See All</Text>
+        </AnimatedButton>
       </View>
       {maintenance.map((m, i) => (
-        <AnimatedButton key={i} style={styles.card}>
+        <AnimatedButton
+          key={i}
+          style={styles.card}
+          onPress={() => m.id && router.push(`/(owner)/maintenance/${m.id}` as any)}
+        >
           <View style={styles.cardInner}>
             <View style={styles.left}>
               <View style={styles.iconContainer}><Text>🔧</Text></View>

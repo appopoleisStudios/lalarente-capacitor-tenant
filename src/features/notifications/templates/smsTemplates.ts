@@ -98,6 +98,26 @@ export const smsTemplates: Record<NotificationType, (data: SmsTemplateData) => S
   }),
 
   // Viewing notifications
+  viewing_requested: (data) => ({
+    message: truncate(`${BRAND_NAME}: New viewing request for ${data.propertyTitle}. Review in app.`),
+  }),
+
+  viewing_approved: (data) => ({
+    message: truncate(`${BRAND_NAME}: Your viewing for ${data.propertyTitle} has been approved. Check app for details.`),
+  }),
+
+  viewing_declined: (data) => ({
+    message: truncate(`${BRAND_NAME}: Your viewing request for ${data.propertyTitle} was declined.`),
+  }),
+
+  viewing_cancelled: (data) => ({
+    message: truncate(`${BRAND_NAME}: Viewing for ${data.propertyTitle} has been cancelled.`),
+  }),
+
+  viewing_completed: (data) => ({
+    message: truncate(`${BRAND_NAME}: Thank you for viewing ${data.propertyTitle}!`),
+  }),
+
   viewing_scheduled: (data) => ({
     message: truncate(`${BRAND_NAME}: Viewing confirmed for ${data.propertyTitle} on ${data.viewingDate} at ${data.viewingTime}.`),
   }),

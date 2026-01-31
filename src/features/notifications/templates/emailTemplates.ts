@@ -581,6 +581,77 @@ export const emailTemplates: Record<NotificationType, (data: EmailTemplateData) 
     `, 'Your account is verified'),
     text: `Hello ${data.recipientName},\n\nYour account has been successfully verified!\n\nYou now have full access to all features on ${BRAND.name}.\n\nGo to dashboard: ${data.dashboardUrl || '#'}`,
   }),
+
+  // Viewing notifications
+  viewing_requested: (data) => ({
+    subject: `New Viewing Request - ${data.propertyTitle}`,
+    html: emailLayout(`
+      <h2 style="margin: 0 0 20px; color: #333; font-size: 22px;">New Viewing Request</h2>
+      <p style="margin: 0 0 15px; color: #666; font-size: 16px; line-height: 1.6;">
+        Hello ${data.recipientName},
+      </p>
+      <p style="margin: 0 0 15px; color: #666; font-size: 16px; line-height: 1.6;">
+        A viewing has been requested for <strong>${data.propertyTitle}</strong>.
+      </p>
+      ${button('View Request', data.viewingUrl || '#')}
+    `, `Viewing request for ${data.propertyTitle}`),
+    text: `Hello ${data.recipientName},\n\nA viewing has been requested for ${data.propertyTitle}.\n\nView request: ${data.viewingUrl || '#'}`,
+  }),
+
+  viewing_approved: (data) => ({
+    subject: `Viewing Approved - ${data.propertyTitle}`,
+    html: emailLayout(`
+      <h2 style="margin: 0 0 20px; color: #333; font-size: 22px;">Viewing Approved</h2>
+      <p style="margin: 0 0 15px; color: #666; font-size: 16px; line-height: 1.6;">
+        Hello ${data.recipientName},
+      </p>
+      ${alertBox('Your viewing request has been approved!', 'success')}
+      ${button('View Details', data.viewingUrl || '#')}
+    `, 'Your viewing is approved'),
+    text: `Hello ${data.recipientName},\n\nYour viewing request has been approved!\n\nView details: ${data.viewingUrl || '#'}`,
+  }),
+
+  viewing_declined: (data) => ({
+    subject: `Viewing Declined - ${data.propertyTitle}`,
+    html: emailLayout(`
+      <h2 style="margin: 0 0 20px; color: #333; font-size: 22px;">Viewing Declined</h2>
+      <p style="margin: 0 0 15px; color: #666; font-size: 16px; line-height: 1.6;">
+        Hello ${data.recipientName},
+      </p>
+      <p style="margin: 0 0 15px; color: #666; font-size: 16px; line-height: 1.6;">
+        Unfortunately, your viewing request for <strong>${data.propertyTitle}</strong> has been declined.
+      </p>
+    `, 'Viewing declined'),
+    text: `Hello ${data.recipientName},\n\nUnfortunately, your viewing request for ${data.propertyTitle} has been declined.`,
+  }),
+
+  viewing_cancelled: (data) => ({
+    subject: `Viewing Cancelled - ${data.propertyTitle}`,
+    html: emailLayout(`
+      <h2 style="margin: 0 0 20px; color: #333; font-size: 22px;">Viewing Cancelled</h2>
+      <p style="margin: 0 0 15px; color: #666; font-size: 16px; line-height: 1.6;">
+        Hello ${data.recipientName},
+      </p>
+      <p style="margin: 0 0 15px; color: #666; font-size: 16px; line-height: 1.6;">
+        The viewing for <strong>${data.propertyTitle}</strong> has been cancelled.
+      </p>
+    `, 'Viewing cancelled'),
+    text: `Hello ${data.recipientName},\n\nThe viewing for ${data.propertyTitle} has been cancelled.`,
+  }),
+
+  viewing_completed: (data) => ({
+    subject: `Viewing Completed - ${data.propertyTitle}`,
+    html: emailLayout(`
+      <h2 style="margin: 0 0 20px; color: #333; font-size: 22px;">Viewing Completed</h2>
+      <p style="margin: 0 0 15px; color: #666; font-size: 16px; line-height: 1.6;">
+        Hello ${data.recipientName},
+      </p>
+      <p style="margin: 0 0 15px; color: #666; font-size: 16px; line-height: 1.6;">
+        Thank you for viewing <strong>${data.propertyTitle}</strong>. We hope you enjoyed the tour!
+      </p>
+    `, 'Thank you for viewing'),
+    text: `Hello ${data.recipientName},\n\nThank you for viewing ${data.propertyTitle}. We hope you enjoyed the tour!`,
+  }),
 };
 
 export default emailTemplates;
