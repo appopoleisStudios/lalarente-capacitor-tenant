@@ -42,7 +42,6 @@ export interface RequestViewingInput {
 export interface ApproveViewingInput {
   viewing_id: string;
   confirmed_date?: string;
-  confirmed_time?: string;
   owner_notes?: string;
 }
 
@@ -131,16 +130,14 @@ export const viewingsApi = {
     }
 
     const confirmedDate = input.confirmed_date || viewing.requested_date;
-    const confirmedTime = input.confirmed_time || viewing.requested_time;
 
     const { data, error } = await supabase
       .from('viewing_requests')
       .update({
         status: 'approved',
         confirmed_date: confirmedDate,
-        confirmed_time: confirmedTime,
         owner_response: input.owner_notes || 'Viewing approved',
-        responded_at: new Date().toISOString(),
+        owner_notes: input.owner_notes || null,
       })
       .eq('id', input.viewing_id)
       .select()
@@ -167,7 +164,7 @@ export const viewingsApi = {
           propertyId: viewing.property_id,
           propertyTitle: property?.title || 'the property',
           confirmedDate: confirmedDate,
-          confirmedTime: confirmedTime,
+          confirmedTime: viewing.requested_time,
           ownerNotes: input.owner_notes,
         },
       });
@@ -195,7 +192,6 @@ export const viewingsApi = {
         status: 'declined',
         owner_response: input.owner_response,
         alternative_times: input.alternative_times || null,
-        responded_at: new Date().toISOString(),
       })
       .eq('id', input.viewing_id)
       .select()
@@ -277,7 +273,7 @@ export const viewingsApi = {
           propertyId: viewing.property_id,
           propertyTitle: property?.title || 'the property',
           viewingDate: viewing.confirmed_date || viewing.requested_date,
-          viewingTime: viewing.confirmed_time || viewing.requested_time,
+          viewingTime: viewing.requested_time,
           cancelledBy,
           reason,
         },
@@ -364,13 +360,11 @@ export const viewingsApi = {
 
     if (rescheduledBy === 'owner') {
       updateData.confirmed_date = newDate;
-      updateData.confirmed_time = newTime;
       updateData.owner_response = 'Viewing rescheduled by owner';
     } else {
       // If tenant reschedules, reset to pending
       updateData.status = 'pending';
       updateData.confirmed_date = null;
-      updateData.confirmed_time = null;
     }
 
     const { data, error } = await supabase

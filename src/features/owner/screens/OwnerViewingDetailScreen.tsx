@@ -106,9 +106,6 @@ export default function OwnerViewingDetailScreen() {
           confirmed_date: modifyDateTime
             ? selectedDate.toISOString().split('T')[0]
             : viewing.requested_date,
-          confirmed_time: modifyDateTime
-            ? selectedTime.toTimeString().split(' ')[0].slice(0, 5)
-            : viewing.requested_time,
           owner_notes: responseNotes.trim() || undefined,
         });
         Alert.alert('Approved', 'Viewing has been approved. The tenant will be notified.', [
@@ -539,7 +536,7 @@ export default function OwnerViewingDetailScreen() {
                   <View style={styles.detailContent}>
                     <Text style={styles.detailLabel}>Confirmed</Text>
                     <Text style={[styles.detailValue, { color: '#4CAF50' }]}>
-                      {formatDate(viewing.confirmed_date)} at {viewing.confirmed_time}
+                      {formatDate(viewing.confirmed_date)} at {viewing.requested_time}
                     </Text>
                   </View>
                 </View>
@@ -548,11 +545,11 @@ export default function OwnerViewingDetailScreen() {
           </View>
 
           {/* Tenant Message */}
-          {viewing.message && (
+          {viewing.tenant_notes && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Tenant Message</Text>
               <View style={styles.card}>
-                <Text style={styles.messageText}>{viewing.message}</Text>
+                <Text style={styles.messageText}>{viewing.tenant_notes}</Text>
               </View>
             </View>
           )}
@@ -563,11 +560,6 @@ export default function OwnerViewingDetailScreen() {
               <Text style={styles.sectionTitle}>Your Response</Text>
               <View style={styles.card}>
                 <Text style={styles.messageText}>{viewing.owner_response}</Text>
-                {viewing.responded_at && (
-                  <Text style={styles.responseDate}>
-                    {new Date(viewing.responded_at).toLocaleString('en-ZA')}
-                  </Text>
-                )}
               </View>
             </View>
           )}
@@ -585,18 +577,6 @@ export default function OwnerViewingDetailScreen() {
                   </Text>
                 </View>
               </View>
-
-              {viewing.responded_at && (
-                <View style={styles.timelineItem}>
-                  <View style={styles.timelineDot} />
-                  <View style={styles.timelineContent}>
-                    <Text style={styles.timelineTitle}>Response Sent</Text>
-                    <Text style={styles.timelineDate}>
-                      {new Date(viewing.responded_at).toLocaleString('en-ZA')}
-                    </Text>
-                  </View>
-                </View>
-              )}
 
               {viewing.completed_at && (
                 <View style={styles.timelineItem}>

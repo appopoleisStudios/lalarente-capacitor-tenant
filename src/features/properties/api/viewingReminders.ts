@@ -84,7 +84,7 @@ export async function sendViewingReminders(): Promise<{
         owner_id,
         property_id,
         confirmed_date,
-        confirmed_time,
+        requested_time,
         reminder_sent_at,
         property:properties (
           title
@@ -118,7 +118,7 @@ export async function sendViewingReminders(): Promise<{
     for (const viewing of viewings) {
       try {
         const propertyTitle = viewing.property?.title || 'the property';
-        const viewingTime = viewing.confirmed_time || 'the scheduled time';
+        const viewingTime = viewing.requested_time || 'the scheduled time';
 
         // Send to tenant
         await notificationsApi.sendNotification({

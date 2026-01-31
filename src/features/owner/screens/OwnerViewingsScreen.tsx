@@ -232,16 +232,16 @@ export default function OwnerViewingsScreen() {
             <Ionicons name="calendar-outline" size={16} color="#666" />
             <Text style={styles.detailText}>
               {item.status === 'approved' && item.confirmed_date
-                ? `${formatDate(item.confirmed_date)} at ${item.confirmed_time}`
+                ? `${formatDate(item.confirmed_date)} at ${item.requested_time}`
                 : `Requested: ${formatDate(item.requested_date)} at ${item.requested_time}`}
             </Text>
           </View>
 
-          {item.message && (
+          {item.tenant_notes && (
             <View style={styles.messageBox}>
               <Text style={styles.messageLabel}>Tenant Message:</Text>
               <Text style={styles.messageText} numberOfLines={2}>
-                {item.message}
+                {item.tenant_notes}
               </Text>
             </View>
           )}

@@ -211,7 +211,7 @@ export default function TenantViewingsScreen() {
             <Ionicons name="calendar-outline" size={16} color="#666" />
             <Text style={styles.detailText}>
               {item.status === 'approved' && item.confirmed_date
-                ? `Confirmed: ${formatDate(item.confirmed_date)} at ${item.confirmed_time}`
+                ? `Confirmed: ${formatDate(item.confirmed_date)} at ${item.requested_time}`
                 : `Requested: ${formatDate(item.requested_date)} at ${item.requested_time}`}
             </Text>
           </View>
@@ -255,7 +255,7 @@ export default function TenantViewingsScreen() {
       {selectedStatus === 'all' && (
         <TouchableOpacity
           style={styles.browseButton}
-          onPress={() => router.push('/tenant/search')}
+          onPress={() => router.push('/(tenant)/search')}
         >
           <Text style={styles.browseButtonText}>Browse Properties</Text>
         </TouchableOpacity>

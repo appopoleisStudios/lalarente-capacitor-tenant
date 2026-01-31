@@ -242,7 +242,7 @@ export default function DocumentsManagementScreen() {
                             {docType?.label || doc.doc_type}
                           </Text>
                           <Text style={styles.docDate}>
-                            Uploaded {new Date(doc.uploaded_at).toLocaleDateString()}
+                            Uploaded {doc.uploaded_at ? new Date(doc.uploaded_at).toLocaleDateString() : 'Unknown'}
                           </Text>
                         </View>
                         <View style={styles.docActions}>
@@ -298,7 +298,7 @@ export default function DocumentsManagementScreen() {
                             {docType?.label || doc.doc_type}
                           </Text>
                           <Text style={styles.docDate}>
-                            Approved {new Date(doc.reviewed_at || doc.uploaded_at).toLocaleDateString()}
+                            Approved {doc.reviewed_at ? new Date(doc.reviewed_at).toLocaleDateString() : doc.uploaded_at ? new Date(doc.uploaded_at).toLocaleDateString() : 'Unknown'}
                           </Text>
                         </View>
                         <View style={styles.docActions}>
@@ -357,7 +357,7 @@ export default function DocumentsManagementScreen() {
                             <Text style={styles.docNotes}>Reason: {doc.notes}</Text>
                           )}
                           <Text style={styles.docDate}>
-                            Rejected {new Date(doc.reviewed_at || doc.uploaded_at).toLocaleDateString()}
+                            Rejected {doc.reviewed_at ? new Date(doc.reviewed_at).toLocaleDateString() : doc.uploaded_at ? new Date(doc.uploaded_at).toLocaleDateString() : 'Unknown'}
                           </Text>
                         </View>
                         <View style={styles.docActions}>

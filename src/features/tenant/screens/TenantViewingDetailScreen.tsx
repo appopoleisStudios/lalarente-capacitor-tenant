@@ -123,7 +123,7 @@ export default function TenantViewingDetailScreen() {
   const handleViewProperty = () => {
     if (viewing?.property_id) {
       router.push({
-        pathname: '/tenant/properties/[id]',
+        pathname: '/(tenant)/properties/[id]',
         params: { id: viewing.property_id },
       });
     }
@@ -237,7 +237,7 @@ export default function TenantViewingDetailScreen() {
                   <View style={styles.detailContent}>
                     <Text style={styles.detailLabel}>Confirmed Date & Time</Text>
                     <Text style={[styles.detailValue, { color: '#4CAF50', fontWeight: '600' }]}>
-                      {formatDateTime(viewing.confirmed_date, viewing.confirmed_time!)}
+                      {formatDateTime(viewing.confirmed_date, viewing.requested_time)}
                     </Text>
                   </View>
                 </View>
@@ -246,11 +246,11 @@ export default function TenantViewingDetailScreen() {
           </View>
 
           {/* Your Message */}
-          {viewing.message && (
+          {viewing.tenant_notes && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Your Message</Text>
               <View style={styles.card}>
-                <Text style={styles.messageText}>{viewing.message}</Text>
+                <Text style={styles.messageText}>{viewing.tenant_notes}</Text>
               </View>
             </View>
           )}
@@ -261,11 +261,6 @@ export default function TenantViewingDetailScreen() {
               <Text style={styles.sectionTitle}>Owner Response</Text>
               <View style={styles.card}>
                 <Text style={styles.messageText}>{viewing.owner_response}</Text>
-                {viewing.responded_at && (
-                  <Text style={styles.responseDate}>
-                    {new Date(viewing.responded_at).toLocaleString('en-ZA')}
-                  </Text>
-                )}
               </View>
             </View>
           )}
@@ -338,18 +333,6 @@ export default function TenantViewingDetailScreen() {
                   </Text>
                 </View>
               </View>
-
-              {viewing.responded_at && (
-                <View style={styles.timelineItem}>
-                  <View style={styles.timelineDot} />
-                  <View style={styles.timelineContent}>
-                    <Text style={styles.timelineTitle}>Owner Responded</Text>
-                    <Text style={styles.timelineDate}>
-                      {new Date(viewing.responded_at).toLocaleString('en-ZA')}
-                    </Text>
-                  </View>
-                </View>
-              )}
 
               {viewing.completed_at && (
                 <View style={styles.timelineItem}>

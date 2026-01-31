@@ -168,7 +168,7 @@ export default function PropertiesListScreen() {
           <FlatList
             data={filteredProperties}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <PropertyCard property={item} onView={handleView} onEdit={handleEdit} />}
+            renderItem={({ item }) => <PropertyCard property={item as any} onView={handleView} onEdit={handleEdit} />}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
             refreshControl={

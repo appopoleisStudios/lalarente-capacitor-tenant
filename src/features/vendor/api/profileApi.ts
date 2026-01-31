@@ -3,29 +3,29 @@ import { supabase } from '@/src/lib/supabase';
 export interface ServiceCategory {
   id: string;
   name: string;
-  description?: string;
-  is_active: boolean;
+  description: string | null;
+  is_active: boolean | null;
 }
 
 export interface VendorService {
   id: string;
   vendor_id: string;
-  category_id: string;
+  category_id: string | null;
   title: string;
-  description?: string;
+  description: string | null;
   base_price: number;
-  pricing_unit?: string;
-  min_callout_fee?: number;
-  is_active: boolean;
-  category?: ServiceCategory;
+  pricing_unit: string | null;
+  min_callout_fee: number | null;
+  is_active: boolean | null;
+  category?: ServiceCategory | null;
 }
 
 export interface VendorServiceArea {
   id: string;
   vendor_id: string;
-  city?: string;
-  province?: string;
-  postal_codes?: string[];
+  city: string | null;
+  province: string | null;
+  postal_codes: string[] | null;
 }
 
 export interface VendorDocument {
@@ -33,20 +33,20 @@ export interface VendorDocument {
   vendor_id: string;
   doc_type: string;
   file_url: string;
-  status: 'pending' | 'approved' | 'rejected';
-  notes?: string;
-  uploaded_at: string;
-  reviewed_at?: string;
+  status: string;
+  notes: string | null;
+  uploaded_at: string | null;
+  reviewed_at: string | null;
 }
 
 export interface VendorProfile {
   id: string;
   full_name: string;
-  email?: string;
-  phone?: string;
-  avatar_url?: string;
-  rating?: number;
-  total_reviews?: number;
+  email: string | null;
+  phone: string | null;
+  avatar_url: string | null;
+  rating: number | null;
+  total_reviews: number | null;
   services: VendorService[];
   service_areas: VendorServiceArea[];
   documents: VendorDocument[];
@@ -132,7 +132,7 @@ export const vendorProfileApi = {
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
-      return data || [];
+      return (data as ServiceCategory[]) || [];
     } catch (error) {
       console.error('Error fetching service categories:', error);
       throw error;
@@ -167,7 +167,8 @@ export const vendorProfileApi = {
         .single();
 
       if (error) throw error;
-      return data;
+      if (!data) throw new Error('Failed to create service');
+      return data as VendorService;
     } catch (error) {
       console.error('Error adding service:', error);
       throw error;
@@ -211,7 +212,8 @@ export const vendorProfileApi = {
         .single();
 
       if (error) throw error;
-      return data;
+      if (!data) throw new Error('Failed to create service area');
+      return data as VendorServiceArea;
     } catch (error) {
       console.error('Error adding service area:', error);
       throw error;
@@ -260,7 +262,8 @@ export const vendorProfileApi = {
         .single();
 
       if (error) throw error;
-      return data;
+      if (!data) throw new Error('Failed to upload document');
+      return data as VendorDocument;
     } catch (error) {
       console.error('Error uploading document:', error);
       throw error;

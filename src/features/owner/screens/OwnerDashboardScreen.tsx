@@ -1,5 +1,19 @@
+/**
+ * Owner Dashboard Screen
+ *
+ * Enterprise-level dashboard implementation with:
+ * - Proper separation of concerns (UI vs data fetching)
+ * - Custom hooks for data management
+ * - Comprehensive error handling
+ * - Loading states
+ * - Type safety
+ * - Real-time data from existing APIs
+ *
+ * @module OwnerDashboardScreen
+ */
+
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, ScrollView, SafeAreaView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -14,32 +28,17 @@ import { ActivitySection } from '../components/ActivitySection';
 import { styles } from './OwnerDashboardScreen.styles';
 import { supabase } from '../../../lib/supabase';
 import { viewingsApi } from '../../properties/api/viewingsApi';
+import { useOwnerDashboard } from '../hooks/useOwnerDashboard';
+import { Ionicons } from '@expo/vector-icons';
 
-const mockData = {
-  user: { name: 'Thabo' },
-  portfolio: { totalUnits: 10, occupied: 8, vacant: 2, monthIncome: 76000, arrears: 7000 },
-  analytics: { monthIncome: 76000, currentOccupancy: 80, tenantsInArrears: 2, openMaintenance: 4 },
-  maintenance: [
-    { title: 'Geyser Burst', unit: 'Rosebank Lofts 5C', status: 'Open', quote: 2000, invoice: 2100 },
-    { title: 'Leakage', unit: 'Sandton Villas 3A', status: 'Quote received', quote: 1250, invoice: null },
-  ],
-  documents: [
-    { name: 'Lease Contracts', icon: '📄', type: 'lease', info: 'Active/Past' },
-    { name: 'Invoices', icon: '💰', type: 'invoice', info: 'Latest' },
-    { name: 'Vendor Quotes', icon: '📋', type: 'quote', info: 'For Review' },
-    { name: 'Tax Reports', icon: '⚖️', type: 'tax', info: 'Annual' },
-    { name: 'Compliance', icon: '🛡️', type: 'compliance', info: 'FICA/COC' },
-  ],
-  applicants: [
-    { avatar: 'https://randomuser.me/api/portraits/women/44.jpg', name: 'Mpumi Ndlovu', property: 'Rosebank Lofts', status: 'Pending', date: '1h ago' },
-    { avatar: 'https://randomuser.me/api/portraits/men/65.jpg', name: 'Malik Jacobs', property: 'Sandton View', status: 'Approved', date: '3h ago' },
-  ],
-  recentActivity: [
-    { icon: '💰', label: 'Rent Received', value: 'R 12,000', date: 'Today' },
-    { icon: '⚠️', label: 'Arrears Notice', value: 'Unit 207', date: '1h ago' },
-    { icon: '🔧', label: 'New Maintenance', value: 'Rosebank', date: 'Yesterday' },
-  ],
-};
+// Static documents data (until documents module is implemented)
+const STATIC_DOCUMENTS = [
+  { name: 'Lease Contracts', icon: '📄', type: 'lease', info: 'Active/Past' },
+  { name: 'Invoices', icon: '💰', type: 'invoice', info: 'Latest' },
+  { name: 'Vendor Quotes', icon: '📋', type: 'quote', info: 'For Review' },
+  { name: 'Tax Reports', icon: '⚖️', type: 'tax', info: 'Annual' },
+  { name: 'Compliance', icon: '🛡️', type: 'compliance', info: 'FICA/COC' },
+];
 
 export default function OwnerDashboardScreen() {
   const router = useRouter();
@@ -47,6 +46,9 @@ export default function OwnerDashboardScreen() {
   const [viewingRequests, setViewingRequests] = useState<any[]>([]);
   const [pendingViewingsCount, setPendingViewingsCount] = useState(0);
   const [ownerId, setOwnerId] = useState<string | null>(null);
+
+  // Use custom hook for dashboard data (enterprise pattern)
+  const { data: dashboardData, loading, error, refetch } = useOwnerDashboard(ownerId);
 
   useEffect(() => {
     initOwner();
@@ -73,16 +75,13 @@ export default function OwnerDashboardScreen() {
       const ownerIdToUse = userId || ownerId;
       if (!ownerIdToUse) return;
 
-      // Get recent viewing requests
       const viewings = await viewingsApi.getOwnerViewings(ownerIdToUse);
 
-      // Get only pending and recent viewings for dashboard
       const recentViewings = viewings
-        .filter(v => ['pending', 'approved'].includes(v.status))
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .filter(v => ['pending', 'approved'].includes(v.status) && v.created_at)
+        .sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime())
         .slice(0, 5);
 
-      // Format for display
       const formattedViewings = await Promise.all(
         recentViewings.map(async (v) => {
           const { data: property } = await supabase
@@ -115,13 +114,56 @@ export default function OwnerDashboardScreen() {
     }
   };
 
+  // Loading state
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={[styles.container, styles.centerContent]}>
+          <ActivityIndicator size="large" color="#002395" />
+          <Text style={styles.loadingText}>Loading dashboard...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Error state with retry
+  if (error) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={[styles.container, styles.centerContent]}>
+          <Ionicons name="alert-circle" size={64} color="#DC2626" />
+          <Text style={styles.errorTitle}>Unable to load dashboard</Text>
+          <Text style={styles.errorMessage}>{error.message}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={refetch}>
+            <Ionicons name="refresh" size={20} color="#FFF" />
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // No data state (edge case - user might not have properties yet)
+  if (!dashboardData) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={[styles.container, styles.centerContent]}>
+          <Ionicons name="home-outline" size={64} color="#9CA3AF" />
+          <Text style={styles.emptyTitle}>Welcome to LaLarente</Text>
+          <Text style={styles.emptyMessage}>Start by adding your first property</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Success state - render dashboard with real data
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <AnimatedButton 
+            <AnimatedButton
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 router.back();
@@ -134,7 +176,9 @@ export default function OwnerDashboardScreen() {
             </AnimatedButton>
             <View>
               <Text style={styles.headerTitle}>Portfolio Dashboard</Text>
-              <Text style={styles.headerSubtitle}>Welcome back, {mockData.user.name}</Text>
+              <Text style={styles.headerSubtitle}>
+                Welcome back, {dashboardData.userName}
+              </Text>
             </View>
           </View>
           <AnimatedButton onPress={() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)}>
@@ -149,23 +193,36 @@ export default function OwnerDashboardScreen() {
           </AnimatedButton>
         </View>
 
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} bounces alwaysBounceVertical>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          bounces
+          alwaysBounceVertical
+        >
+          {/* Portfolio Card - Real Data */}
           <Animated.View entering={FadeInDown.delay(100).duration(500)}>
-            <PortfolioCard {...mockData.portfolio} userName={mockData.user.name} />
+            <PortfolioCard {...dashboardData.portfolio} userName={dashboardData.userName} />
           </Animated.View>
 
+          {/* Analytics Grid - Real Data */}
           <Animated.View entering={FadeInDown.delay(200).duration(500)}>
-            <AnalyticsGrid {...mockData.analytics} />
+            <AnalyticsGrid {...dashboardData.analytics} />
           </Animated.View>
 
+          {/* Documents Section - Static data for now */}
           <Animated.View entering={FadeInDown.delay(300).duration(500)}>
-            <DocumentsSection documents={mockData.documents} />
+            <DocumentsSection documents={STATIC_DOCUMENTS} />
           </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(400).duration(500)}>
-            <MaintenanceSection maintenance={mockData.maintenance} />
-          </Animated.View>
+          {/* Maintenance Section - Real Data */}
+          {dashboardData.maintenance.length > 0 && (
+            <Animated.View entering={FadeInDown.delay(400).duration(500)}>
+              <MaintenanceSection maintenance={dashboardData.maintenance} />
+            </Animated.View>
+          )}
 
+          {/* Viewing Requests Section - Real Data */}
           {viewingRequests.length > 0 && (
             <Animated.View entering={FadeInDown.delay(450).duration(500)}>
               <ViewingRequestsSection
@@ -175,13 +232,19 @@ export default function OwnerDashboardScreen() {
             </Animated.View>
           )}
 
-          <Animated.View entering={FadeInDown.delay(500).duration(500)}>
-            <ApplicantsSection applicants={mockData.applicants} />
-          </Animated.View>
+          {/* Applicants Section - Real Data */}
+          {dashboardData.applicants.length > 0 && (
+            <Animated.View entering={FadeInDown.delay(500).duration(500)}>
+              <ApplicantsSection applicants={dashboardData.applicants} />
+            </Animated.View>
+          )}
 
-          <Animated.View entering={FadeInDown.delay(600).duration(500)}>
-            <ActivitySection activities={mockData.recentActivity} />
-          </Animated.View>
+          {/* Activity Feed - Real Data */}
+          {dashboardData.recentActivity.length > 0 && (
+            <Animated.View entering={FadeInDown.delay(600).duration(500)}>
+              <ActivitySection activities={dashboardData.recentActivity} />
+            </Animated.View>
+          )}
         </ScrollView>
       </View>
     </SafeAreaView>
