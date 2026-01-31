@@ -17,6 +17,12 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { viewingsApi, ViewingWithRelations } from '../../properties/api/viewingsApi';
+import {
+  getViewingActionStatus,
+  isViewingExpired,
+  getExpiryReasonMessage,
+  formatViewingDateTime,
+} from '../../properties/utils/viewingHelpers';
 
 const RSA = { blue: '#002395', gold: '#FFB81C' };
 
@@ -432,6 +438,10 @@ export default function OwnerViewingDetailScreen() {
     return null;
   }
 
+  // Get action status using helper
+  const actionStatus = getViewingActionStatus(viewing);
+  const expired = isViewingExpired(viewing);
+
   const isPending = viewing.status === 'pending';
   const isApproved = viewing.status === 'approved';
   const canComplete = isApproved && new Date(viewing.confirmed_date || viewing.requested_date) <= new Date();
@@ -449,8 +459,34 @@ export default function OwnerViewingDetailScreen() {
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Expired Banner */}
+          {expired && (
+            <View style={styles.expiredBanner}>
+              <Ionicons name="time-outline" size={24} color="#6B7280" />
+              <View style={styles.expiredBannerText}>
+                <Text style={styles.expiredTitle}>
+                  {actionStatus.badge === 'Expired' ? 'Request Expired' : 'Action Required'}
+                </Text>
+                <Text style={styles.expiredMessage}>
+                  {actionStatus.message || getExpiryReasonMessage(actionStatus.reason)}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Urgent Banner */}
+          {!expired && actionStatus.badge === 'Urgent' && (
+            <View style={styles.urgentBanner}>
+              <Ionicons name="alarm" size={24} color="#DE3831" />
+              <View style={styles.urgentBannerText}>
+                <Text style={styles.urgentTitle}>Urgent Response Needed</Text>
+                <Text style={styles.urgentMessage}>{actionStatus.message}</Text>
+              </View>
+            </View>
+          )}
+
           {/* Status Banner */}
-          {isPending && (
+          {isPending && !expired && !actionStatus.badge && (
             <View style={styles.pendingBanner}>
               <Ionicons name="alert-circle" size={24} color="#FF9800" />
               <View style={styles.pendingBannerText}>
@@ -594,21 +630,29 @@ export default function OwnerViewingDetailScreen() {
         </ScrollView>
 
         {/* Action Buttons */}
-        {isPending && (
+        {isPending && !expired && (
           <View style={styles.footer}>
             <TouchableOpacity
-              style={[styles.actionButton, styles.declineButton]}
+              style={[
+                styles.actionButton,
+                styles.declineButton,
+                !actionStatus.canDecline && styles.disabledButton
+              ]}
               onPress={handleDeclinePress}
-              disabled={processing}
+              disabled={processing || !actionStatus.canDecline}
             >
               <Ionicons name="close-circle" size={20} color="#F44336" />
               <Text style={styles.declineButtonText}>Decline</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.actionButton, styles.approveButton]}
+              style={[
+                styles.actionButton,
+                styles.approveButton,
+                !actionStatus.canApprove && styles.disabledButton
+              ]}
               onPress={handleApprovePress}
-              disabled={processing}
+              disabled={processing || !actionStatus.canApprove}
             >
               <Ionicons name="checkmark-circle" size={20} color="#FFF" />
               <Text style={styles.approveButtonText}>Approve</Text>
@@ -718,6 +762,59 @@ const styles = StyleSheet.create({
   pendingMessage: {
     fontSize: 14,
     color: '#F57C00',
+  },
+  expiredBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    gap: 12,
+  },
+  expiredBannerText: {
+    flex: 1,
+  },
+  expiredTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  expiredMessage: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    lineHeight: 20,
+  },
+  urgentBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEE2E2',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    gap: 12,
+  },
+  urgentBannerText: {
+    flex: 1,
+  },
+  urgentTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#991B1B',
+    marginBottom: 4,
+  },
+  urgentMessage: {
+    fontSize: 14,
+    color: '#DC2626',
+    lineHeight: 20,
+  },
+  disabledButton: {
+    opacity: 0.4,
   },
   section: {
     marginBottom: 20,

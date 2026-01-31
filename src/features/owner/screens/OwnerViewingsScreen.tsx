@@ -14,6 +14,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { viewingsApi, ViewingWithRelations } from '../../properties/api/viewingsApi';
 import { supabase } from '../../../lib/supabase';
+import { isViewingExpired, getViewingActionStatus } from '../../properties/utils/viewingHelpers';
 
 const RSA = { blue: '#002395', gold: '#FFB81C' };
 
@@ -166,7 +167,9 @@ export default function OwnerViewingsScreen() {
     const upcoming = isUpcoming(item);
     const statusColor = getStatusColor(item.status);
     const statusIcon = getStatusIcon(item.status);
-    const requiresAction = item.status === 'pending';
+    const expired = isViewingExpired(item);
+    const actionStatus = getViewingActionStatus(item);
+    const requiresAction = item.status === 'pending' && !expired;
 
     return (
       <TouchableOpacity
@@ -174,6 +177,7 @@ export default function OwnerViewingsScreen() {
           styles.card,
           upcoming && styles.upcomingCard,
           requiresAction && styles.actionRequiredCard,
+          expired && styles.expiredCard,
         ]}
         onPress={() =>
           router.push({
@@ -182,14 +186,28 @@ export default function OwnerViewingsScreen() {
           })
         }
       >
-        {requiresAction && (
+        {expired && (
+          <View style={styles.expiredBadge}>
+            <Ionicons name="time-outline" size={14} color="#FFF" />
+            <Text style={styles.expiredText}>Expired</Text>
+          </View>
+        )}
+
+        {actionStatus.badge === 'Urgent' && !expired && (
+          <View style={styles.urgentBadge}>
+            <Ionicons name="alarm" size={14} color="#FFF" />
+            <Text style={styles.urgentText}>Urgent</Text>
+          </View>
+        )}
+
+        {requiresAction && actionStatus.badge !== 'Urgent' && (
           <View style={styles.actionBadge}>
             <Ionicons name="alert-circle" size={14} color="#FFF" />
             <Text style={styles.actionText}>Action Required</Text>
           </View>
         )}
 
-        {upcoming && !requiresAction && (
+        {upcoming && !requiresAction && !expired && !actionStatus.badge && (
           <View style={styles.upcomingBadge}>
             <Ionicons name="alarm" size={14} color="#FFF" />
             <Text style={styles.upcomingText}>Upcoming</Text>
@@ -513,6 +531,44 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   upcomingText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  expiredBadge: {
+    position: 'absolute',
+    top: -8,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#6B7280',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  expiredText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  expiredCard: {
+    opacity: 0.7,
+    borderColor: '#D1D5DB',
+  },
+  urgentBadge: {
+    position: 'absolute',
+    top: -8,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#DE3831',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  urgentText: {
     fontSize: 12,
     fontWeight: '600',
     color: '#FFF',
