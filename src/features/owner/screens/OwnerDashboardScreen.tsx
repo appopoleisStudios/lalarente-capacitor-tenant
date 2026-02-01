@@ -78,7 +78,7 @@ export default function OwnerDashboardScreen() {
       const viewings = await viewingsApi.getOwnerViewings(ownerIdToUse);
 
       const recentViewings = viewings
-        .filter(v => ['pending', 'approved'].includes(v.status) && v.created_at)
+        .filter(v => ['pending', 'approved', 'expired'].includes(v.status) && v.created_at)
         .sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime())
         .slice(0, 5);
 
