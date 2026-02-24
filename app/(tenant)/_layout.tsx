@@ -167,6 +167,18 @@ export default function TenantLayout() {
         }}
       />
       <Tabs.Screen
+        name="deposit"
+        options={{
+          href: null, // Hidden from tabs - accessed from dashboard
+        }}
+      />
+      <Tabs.Screen
+        name="lease-renewal"
+        options={{
+          href: null, // Hidden from tabs - accessed from dashboard/lease
+        }}
+      />
+      <Tabs.Screen
         name="privacy"
         options={{
           href: null, // Hidden from tabs - accessed from profile/settings

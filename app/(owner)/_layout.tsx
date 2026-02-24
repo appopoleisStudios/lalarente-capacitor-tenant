@@ -191,6 +191,30 @@ export default function OwnerLayout() {
         }}
       />
       <Tabs.Screen
+        name="deposits"
+        options={{
+          href: null, // Hidden from tabs - accessed from dashboard
+        }}
+      />
+      <Tabs.Screen
+        name="insurance"
+        options={{
+          href: null, // Hidden from tabs - accessed from dashboard
+        }}
+      />
+      <Tabs.Screen
+        name="insurance/new"
+        options={{
+          href: null, // Hidden from tabs - create new claim
+        }}
+      />
+      <Tabs.Screen
+        name="insurance/[id]"
+        options={{
+          href: null, // Hidden from tabs - view claim detail
+        }}
+      />
+      <Tabs.Screen
         name="invoices"
         options={{
           href: null, // Hidden from tabs - accessed from Documents section
