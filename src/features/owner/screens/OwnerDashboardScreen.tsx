@@ -193,7 +193,7 @@ export default function OwnerDashboardScreen() {
     { name: 'Compliance', icon: '🛡️', type: 'compliance', info: 'FICA + COC' },
     { name: 'Deposits', icon: '🏦', type: 'deposits', info: 'Interest + Refunds' },
     { name: 'Lease Renewals', icon: '🔄', type: 'renewals', info: 'CPA Notices' },
-    { name: 'Insurance', icon: '🛡️', type: 'insurance', info: 'Claims Tracker' },
+    { name: 'Insurance', icon: '📑', type: 'insurance', info: 'Claims Tracker' },
   ];
 
   // Success state - render dashboard with real data
