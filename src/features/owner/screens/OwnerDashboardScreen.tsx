@@ -191,6 +191,9 @@ export default function OwnerDashboardScreen() {
     { name: 'Vendor Quotes', icon: '📋', type: 'pending-quotes', info: `${dashboardData.documents.pendingQuotes} For Review` },
     { name: 'Tax Reports', icon: '⚖️', type: 'tax', info: 'SARS ITR12' },
     { name: 'Compliance', icon: '🛡️', type: 'compliance', info: 'FICA + COC' },
+    { name: 'Deposits', icon: '🏦', type: 'deposits', info: 'Interest + Refunds' },
+    { name: 'Lease Renewals', icon: '🔄', type: 'renewals', info: 'CPA Notices' },
+    { name: 'Insurance', icon: '🛡️', type: 'insurance', info: 'Claims Tracker' },
   ];
 
   // Success state - render dashboard with real data

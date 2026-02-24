@@ -331,6 +331,70 @@ export default function TenantDashboardScreen() {
             </View>
           )}
 
+          {/* Lease Renewal Alert — shown when < 120 days to expiry */}
+          {activeLease && activeLease.end_date && (() => {
+            const days = Math.ceil((new Date(activeLease.end_date).getTime() - Date.now()) / 86400000);
+            if (days > 0 && days <= 120) {
+              return (
+                <View style={styles.section}>
+                  <TouchableOpacity
+                    style={[
+                      styles.renewalAlertCard,
+                      days <= 40 && styles.renewalAlertUrgent,
+                    ]}
+                    onPress={() => router.push('/(tenant)/lease-renewal' as any)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.renewalAlertLeft}>
+                      <Ionicons
+                        name="calendar-outline"
+                        size={28}
+                        color={days <= 40 ? colors.rsa.red : '#D97706'}
+                      />
+                      <View>
+                        <Text style={[styles.renewalAlertTitle, days <= 40 && { color: colors.rsa.red }]}>
+                          Lease Expiry in {days} days
+                        </Text>
+                        <Text style={styles.renewalAlertSub}>
+                          {days <= 40
+                            ? 'Respond now — CPA deadline approaching'
+                            : 'Review renewal options with your landlord'}
+                        </Text>
+                      </View>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
+                  </TouchableOpacity>
+                </View>
+              );
+            }
+            return null;
+          })()}
+
+          {/* Deposit Status — shown when active lease has a deposit */}
+          {activeLease && (activeLease.deposit_amount || 0) > 0 && (
+            <View style={styles.section}>
+              <TouchableOpacity
+                style={styles.depositCard}
+                onPress={() => router.push('/(tenant)/deposit' as any)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.depositLeft}>
+                  <Ionicons name="wallet" size={24} color={colors.rsa.green} />
+                  <View>
+                    <Text style={styles.depositTitle}>Security Deposit</Text>
+                    <Text style={styles.depositSub}>
+                      R {((activeLease.deposit_amount || 0) + (activeLease.deposit_total_interest || 0)).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {(activeLease.deposit_total_interest || 0) > 0
+                        ? ` (incl. R ${(activeLease.deposit_total_interest || 0).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} interest)`
+                        : ' held in trust'}
+                    </Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
+              </TouchableOpacity>
+            </View>
+          )}
+
           {/* Upcoming Viewings */}
           {upcomingViewings.length > 0 && (
             <View style={styles.section}>
@@ -547,6 +611,36 @@ export default function TenantDashboardScreen() {
                 </View>
                 <Text style={styles.documentText}>Reports</Text>
               </TouchableOpacity>
+
+              {activeLease && (activeLease.deposit_amount || 0) > 0 && (
+                <TouchableOpacity
+                  style={styles.documentCard}
+                  onPress={() => router.push('/(tenant)/deposit' as any)}
+                >
+                  <View style={[styles.documentIcon, { backgroundColor: colors.rsa.green + '15' }]}>
+                    <Ionicons name="wallet" size={24} color={colors.rsa.green} />
+                  </View>
+                  <Text style={styles.documentText}>Deposit</Text>
+                </TouchableOpacity>
+              )}
+
+              {activeLease && (() => {
+                const days = activeLease.end_date
+                  ? Math.ceil((new Date(activeLease.end_date).getTime() - Date.now()) / 86400000)
+                  : null;
+                if (!days || days > 120) return null;
+                return (
+                  <TouchableOpacity
+                    style={styles.documentCard}
+                    onPress={() => router.push('/(tenant)/lease-renewal' as any)}
+                  >
+                    <View style={[styles.documentIcon, { backgroundColor: '#FEF3C7' }]}>
+                      <Ionicons name="refresh-circle" size={24} color="#D97706" />
+                    </View>
+                    <Text style={styles.documentText}>Renewal</Text>
+                  </TouchableOpacity>
+                );
+              })()}
             </View>
           </View>
 
@@ -1285,6 +1379,69 @@ const styles = StyleSheet.create({
     backgroundColor: colors.info[50],
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  renewalAlertCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFBEB',
+    borderRadius: 12,
+    padding: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#F59E0B',
+    gap: 12,
+  },
+  renewalAlertUrgent: {
+    backgroundColor: '#FEF2F2',
+    borderLeftColor: colors.rsa.red,
+  },
+  renewalAlertLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  renewalAlertTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#92400E',
+    marginBottom: 2,
+  },
+  renewalAlertSub: {
+    fontSize: 12,
+    color: '#78350F',
+    lineHeight: 16,
+  },
+  depositCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background.default,
+    borderRadius: 12,
+    padding: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.rsa.green,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  depositLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  depositTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text.primary,
+    marginBottom: 2,
+  },
+  depositSub: {
+    fontSize: 12,
+    color: colors.text.secondary,
+    lineHeight: 16,
   },
   signatureAlertCard: {
     backgroundColor: colors.background.default,

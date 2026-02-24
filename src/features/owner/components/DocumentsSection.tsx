@@ -18,21 +18,42 @@ export const DocumentsSection = ({ documents }: DocumentsSectionProps) => {
   const router = useRouter();
 
   const handleDocumentPress = (docType: string) => {
-    // Navigate based on document type
     switch (docType) {
       case 'leases':
       case 'active-leases':
       case 'past-leases':
-        router.push('/(owner)/properties' as any); // TODO: Create dedicated leases list screen
+        // Signed lease contracts are per-tenant — go to tenants list to find & download
+        router.push('/(owner)/tenants' as any);
+        break;
+      case 'invoices':
+      case 'recent-invoices':
+        // Rent + vendor invoices combined
+        router.push('/(owner)/invoices' as any);
         break;
       case 'quotes':
       case 'pending-quotes':
-      case 'invoices':
-      case 'recent-invoices':
+        // Vendor quotes are on maintenance requests awaiting approval
         router.push('/(owner)/maintenance' as any);
         break;
+      case 'tax':
+        // SARS tax year summary — ITR12 rental income
+        router.push('/(owner)/tax-reports' as any);
+        break;
+      case 'compliance':
+        // FICA tenant KYC + property compliance certificates
+        router.push('/(owner)/compliance' as any);
+        break;
+      case 'deposits':
+        router.push('/(owner)/deposits' as any);
+        break;
+      case 'renewals':
+        router.push('/(owner)/renewals' as any);
+        break;
+      case 'insurance':
+        router.push('/(owner)/insurance' as any);
+        break;
       default:
-        router.push('/(owner)/properties' as any);
+        break;
     }
   };
 
@@ -40,7 +61,7 @@ export const DocumentsSection = ({ documents }: DocumentsSectionProps) => {
     <View>
       <View style={styles.header}>
         <Text style={styles.title}>My Documents</Text>
-        <AnimatedButton onPress={() => router.push('/(owner)/properties' as any)}>
+        <AnimatedButton onPress={() => router.push('/(owner)/tenants' as any)}>
           <Text style={styles.seeAll}>See All</Text>
         </AnimatedButton>
       </View>
