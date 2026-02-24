@@ -25,7 +25,7 @@ import { colors } from '@/src/shared/theme/colors';
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const formatZAR = (amount: number) =>
-  `R ${amount.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 0 })}`;
+  `R ${amount.toLocaleString('en-ZA', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
 const CLAIM_STATUS_INFO: Record<ClaimStatus, { label: string; color: string; bg: string }> = {
   draft: { label: 'Draft', color: '#6B7280', bg: '#F3F4F6' },
