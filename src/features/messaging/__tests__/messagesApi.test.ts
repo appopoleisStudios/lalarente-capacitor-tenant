@@ -8,9 +8,7 @@ describe('messagesApi', () => {
         'maintenance',
         'lease',
         'payment',
-        'viewing',
-        'application',
-        'other',
+        'emergency',
       ];
 
       categories.forEach((category) => {

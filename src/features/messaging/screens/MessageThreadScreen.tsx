@@ -7,21 +7,22 @@ import {
   TextInput,
   ActivityIndicator,
   StyleSheet,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   Image,
   Keyboard,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { messagesApi } from '../api/messagesApi';
 import { ThreadWithRelations, MessageWithSender, CATEGORY_INFO, ThreadCategory } from '../types';
 import { supabase } from '../../../lib/supabase';
+import { colors } from '@/src/shared/theme/colors';
 
-const COLORS = {
-  owner: { primary: '#002395', secondary: '#FFB81C' },
-  tenant: { primary: '#007A4D', secondary: '#FFB81C' },
+const ROLE_COLORS = {
+  owner: { primary: colors.rsa.blue, secondary: colors.rsa.gold },
+  tenant: { primary: colors.rsa.green, secondary: colors.rsa.gold },
 };
 
 interface Props {
@@ -31,7 +32,7 @@ interface Props {
 export default function MessageThreadScreen({ role = 'owner' }: Props) {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const colors = COLORS[role];
+  const roleColors = ROLE_COLORS[role];
   const flatListRef = useRef<FlatList>(null);
 
   const [thread, setThread] = useState<ThreadWithRelations | null>(null);
@@ -85,19 +86,20 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
 
   const handleNewMessage = useCallback((newMessage: any) => {
     setMessages(prev => {
-      // Avoid duplicates
-      if (prev.some(m => m.id === newMessage.id)) {
-        return prev;
-      }
-      return [...prev, newMessage];
+      // Skip if real message ID already in list
+      if (prev.some(m => m.id === newMessage.id)) return prev;
+      // Replace any optimistic temp message with same content+sender
+      const filtered = prev.filter(m =>
+        !(String(m.id).startsWith('temp-') &&
+          m.content === newMessage.content &&
+          m.sender_id === newMessage.sender_id)
+      );
+      return [...filtered, newMessage];
     });
 
-    // Scroll to bottom
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
 
-    // Mark as read if not from current user
+    // Mark as read if message is from the other party
     if (newMessage.sender_id !== userId && id) {
       const threadId = Array.isArray(id) ? id[0] : id;
       messagesApi.markAsRead(threadId, userId!, role);
@@ -112,17 +114,34 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
     Keyboard.dismiss();
     setSending(true);
 
+    // Optimistic update: show message immediately without waiting for real-time
+    const tempId = `temp-${Date.now()}`;
+    const optimistic: MessageWithSender = {
+      id: tempId,
+      thread_id: thread.id,
+      content,
+      sender_id: userId,
+      sender_role: role,
+      created_at: new Date().toISOString(),
+      read_at: null,
+      delivered_at: null,
+    };
+    setMessages(prev => [...prev, optimistic]);
+    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50);
+
     try {
-      await messagesApi.sendMessage({
+      const sent = await messagesApi.sendMessage({
         thread_id: thread.id,
         content,
         sender_id: userId,
         sender_role: role,
       });
-      // Message will be added via real-time subscription
+      // Replace optimistic message with confirmed DB row
+      setMessages(prev => prev.map(m => m.id === tempId ? sent : m));
     } catch (error) {
       console.error('Error sending message:', error);
-      // Restore message text on error
+      // Remove optimistic message and restore text so user can retry
+      setMessages(prev => prev.filter(m => m.id !== tempId));
       setMessageText(content);
     } finally {
       setSending(false);
@@ -188,7 +207,7 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
               {item.sender?.avatar_url ? (
                 <Image source={{ uri: item.sender.avatar_url }} style={styles.avatar} />
               ) : (
-                <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
+                <View style={[styles.avatarPlaceholder, { backgroundColor: roleColors.primary }]}>
                   <Text style={styles.avatarText}>
                     {item.sender?.full_name?.charAt(0).toUpperCase() || '?'}
                   </Text>
@@ -200,7 +219,7 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
             style={[
               styles.messageBubble,
               isMine
-                ? [styles.messageBubbleMine, { backgroundColor: colors.primary }]
+                ? [styles.messageBubbleMine, { backgroundColor: roleColors.primary }]
                 : styles.messageBubbleOther,
             ]}
           >
@@ -227,7 +246,7 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color={roleColors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -243,13 +262,13 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#333" />
+            <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </TouchableOpacity>
           <View style={styles.headerContent}>
             {otherParty?.avatar_url ? (
               <Image source={{ uri: otherParty.avatar_url }} style={styles.headerAvatar} />
             ) : (
-              <View style={[styles.headerAvatarPlaceholder, { backgroundColor: colors.primary }]}>
+              <View style={[styles.headerAvatarPlaceholder, { backgroundColor: roleColors.primary }]}>
                 <Text style={styles.headerAvatarText}>
                   {otherParty?.full_name?.charAt(0).toUpperCase() || '?'}
                 </Text>
@@ -273,7 +292,7 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
         {/* Thread Subject */}
         {thread?.subject && (
           <View style={styles.subjectBar}>
-            <Ionicons name="chatbubble-outline" size={16} color="#666" />
+            <Ionicons name="chatbubble-outline" size={16} color={colors.text.secondary} />
             <Text style={styles.subjectText} numberOfLines={1}>
               {thread.subject}
             </Text>
@@ -292,7 +311,7 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
           }}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Ionicons name="chatbubble-outline" size={48} color="#CCC" />
+              <Ionicons name="chatbubble-outline" size={48} color={colors.gray[300]} />
               <Text style={styles.emptyText}>No messages yet</Text>
               <Text style={styles.emptySubtext}>Start the conversation!</Text>
             </View>
@@ -300,7 +319,7 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
         />
 
         {/* Input Bar */}
-        {thread?.status === 'open' ? (
+        {thread?.status === 'active' ? (
           <View style={styles.inputBar}>
             <TextInput
               style={styles.textInput}
@@ -313,7 +332,7 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
             <TouchableOpacity
               style={[
                 styles.sendButton,
-                { backgroundColor: colors.primary },
+                { backgroundColor: roleColors.primary },
                 (!messageText.trim() || sending) && styles.sendButtonDisabled,
               ]}
               onPress={sendMessage}
@@ -328,7 +347,7 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
           </View>
         ) : (
           <View style={styles.closedBar}>
-            <Ionicons name="lock-closed" size={16} color="#666" />
+            <Ionicons name="lock-closed" size={16} color={colors.text.secondary} />
             <Text style={styles.closedText}>This conversation is closed</Text>
           </View>
         )}
@@ -340,11 +359,11 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.background.default,
   },
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.background.secondary,
   },
   centerContainer: {
     flex: 1,
@@ -355,9 +374,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.background.default,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: colors.border.default,
   },
   backButton: {
     padding: 4,
@@ -385,7 +404,7 @@ const styles = StyleSheet.create({
   headerAvatarText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text.inverse,
   },
   headerInfo: {
     flex: 1,
@@ -393,7 +412,7 @@ const styles = StyleSheet.create({
   headerName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text.primary,
   },
   categoryTag: {
     flexDirection: 'row',
@@ -408,21 +427,21 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontSize: 12,
-    color: '#666',
+    color: colors.text.secondary,
   },
   subjectBar: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: colors.background.secondary,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: colors.border.default,
     gap: 8,
   },
   subjectText: {
     flex: 1,
     fontSize: 14,
-    color: '#666',
+    color: colors.text.secondary,
   },
   messagesList: {
     padding: 16,
@@ -434,8 +453,8 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 12,
-    color: '#999',
-    backgroundColor: '#F0F0F0',
+    color: colors.text.tertiary,
+    backgroundColor: colors.background.tertiary,
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
@@ -466,7 +485,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text.inverse,
   },
   messageBubble: {
     maxWidth: '75%',
@@ -474,7 +493,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   messageBubbleOther: {
-    backgroundColor: '#FFF',
+    backgroundColor: colors.background.default,
     borderBottomLeftRadius: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -487,15 +506,15 @@ const styles = StyleSheet.create({
   },
   messageText: {
     fontSize: 15,
-    color: '#333',
+    color: colors.text.primary,
     lineHeight: 20,
   },
   messageTextMine: {
-    color: '#FFF',
+    color: colors.text.inverse,
   },
   messageTime: {
     fontSize: 11,
-    color: '#999',
+    color: colors.text.tertiary,
     marginTop: 4,
     textAlign: 'right',
   },
@@ -511,33 +530,33 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#666',
+    color: colors.text.secondary,
     marginTop: 12,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#999',
+    color: colors.text.tertiary,
     marginTop: 4,
   },
   inputBar: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     padding: 12,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.background.default,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    borderTopColor: colors.border.default,
     gap: 8,
   },
   textInput: {
     flex: 1,
     maxHeight: 100,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: colors.background.tertiary,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: 10,
     fontSize: 15,
-    color: '#333',
+    color: colors.text.primary,
   },
   sendButton: {
     width: 40,
@@ -554,11 +573,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: colors.background.tertiary,
     gap: 8,
   },
   closedText: {
     fontSize: 14,
-    color: '#666',
+    color: colors.text.secondary,
   },
 });

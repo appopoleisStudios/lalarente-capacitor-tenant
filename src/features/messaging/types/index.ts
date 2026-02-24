@@ -6,18 +6,16 @@ export type MessageThreadInsert = Database['public']['Tables']['message_threads'
 export type Message = Database['public']['Tables']['messages']['Row'];
 export type MessageInsert = Database['public']['Tables']['messages']['Insert'];
 
-// Thread category enum
+// Thread category enum — must match DB CHECK constraint
 export type ThreadCategory =
   | 'general'
   | 'maintenance'
   | 'lease'
   | 'payment'
-  | 'viewing'
-  | 'application'
-  | 'other';
+  | 'emergency';
 
-// Thread status enum
-export type ThreadStatus = 'open' | 'closed' | 'archived';
+// Thread status enum — must match DB CHECK constraint ('active' | 'archived')
+export type ThreadStatus = 'active' | 'archived';
 
 // Sender role enum
 export type SenderRole = 'owner' | 'tenant' | 'vendor' | 'admin';
@@ -115,7 +113,5 @@ export const CATEGORY_INFO: Record<ThreadCategory, { label: string; icon: string
   maintenance: { label: 'Maintenance', icon: 'construct', color: '#FF9800' },
   lease: { label: 'Lease', icon: 'document-text', color: '#9C27B0' },
   payment: { label: 'Payment', icon: 'cash', color: '#4CAF50' },
-  viewing: { label: 'Viewing', icon: 'eye', color: '#00BCD4' },
-  application: { label: 'Application', icon: 'clipboard', color: '#E91E63' },
-  other: { label: 'Other', icon: 'ellipsis-horizontal', color: '#607D8B' },
+  emergency: { label: 'Emergency', icon: 'warning', color: '#F44336' },
 };

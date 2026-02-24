@@ -1,39 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../../lib/supabase';
-import { leasesApi } from '../../properties/api/leasesApi';
 import { paymentsApi } from '../../properties/api/paymentsApi';
-
-const RSA = { 
-  green: '#007A4D',  // RSA Green for tenants
-  blue: '#002395',   // RSA Blue
-  gold: '#FFB81C',
-  red: '#DE3831',
-};
+import { messagesApi } from '../../messaging/api/messagesApi';
+import { colors } from '@/src/shared/theme/colors';
 
 const getMaintenanceStatusStyle = (status: string) => {
   switch (status) {
-    case 'open':
-      return { backgroundColor: '#FFF3E0' };
-    case 'assigned':
-      return { backgroundColor: '#E3F2FD' };
-    case 'in_progress':
-      return { backgroundColor: '#FFF9C4' };
-    case 'completed':
-      return { backgroundColor: '#E8F5E9' };
-    default:
-      return { backgroundColor: '#F5F5F5' };
+    case 'open': return { backgroundColor: colors.warning[50] };
+    case 'assigned': return { backgroundColor: colors.info[50] };
+    case 'in_progress': return { backgroundColor: colors.warning[50] };
+    case 'completed': return { backgroundColor: colors.primary[50] };
+    default: return { backgroundColor: colors.background.secondary };
   }
 };
 
@@ -45,15 +34,21 @@ export default function TenantDashboardScreen() {
   const [nextPayment, setNextPayment] = useState<any>(null);
   const [recentPayments, setRecentPayments] = useState<any[]>([]);
   const [maintenanceRequests, setMaintenanceRequests] = useState<any[]>([]);
+  const [upcomingViewings, setUpcomingViewings] = useState<any[]>([]);
+  const [pendingApplications, setPendingApplications] = useState<any[]>([]);
+  const [messageThreads, setMessageThreads] = useState<any[]>([]);
+  const [totalUnreadMessages, setTotalUnreadMessages] = useState(0);
   const [verificationStatus, setVerificationStatus] = useState({
     identity: false,
     income: false,
     references: false,
   });
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadDashboardData();
+    }, [])
+  );
 
   const loadDashboardData = async () => {
     try {
@@ -72,7 +67,7 @@ export default function TenantDashboardScreen() {
       }
 
       // Get active or pending lease
-      const { data: leases } = await supabase
+      const { data: lease } = await supabase
         .from('leases')
         .select(`
           *,
@@ -83,21 +78,16 @@ export default function TenantDashboardScreen() {
         .in('status', ['active', 'pending_tenant_signature', 'pending_owner_signature'])
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (leases) {
-        setActiveLease(leases);
-      }
+      setActiveLease(lease ?? null);
 
       // Get upcoming payment
       const payments = await paymentsApi.getTenantPayments(user.id);
       const upcoming = payments.find(p => p.status === 'pending');
-      setNextPayment(upcoming);
+      setNextPayment(upcoming ?? null);
 
-      // Get recent payments
-      const recent = payments
-        .filter(p => p.status === 'completed')
-        .slice(0, 3);
+      const recent = payments.filter(p => p.status === 'completed').slice(0, 3);
       setRecentPayments(recent);
 
       // Get active maintenance requests
@@ -109,24 +99,70 @@ export default function TenantDashboardScreen() {
         .order('created_at', { ascending: false })
         .limit(3);
 
-      if (maintenance) {
-        setMaintenanceRequests(maintenance);
-      }
+      setMaintenanceRequests(maintenance ?? []);
 
-      // Check verification status (from profile or applications)
-      const { data: applications } = await supabase
+      // Get upcoming viewings (approved or pending, future dates)
+      const { data: viewings } = await supabase
+        .from('viewing_requests')
+        .select(`
+          id, proposed_date, status, message,
+          property:properties!property_id(id, title, address)
+        `)
+        .eq('tenant_id', user.id)
+        .in('status', ['approved', 'pending'])
+        .gte('proposed_date', new Date().toISOString())
+        .order('proposed_date', { ascending: true })
+        .limit(3);
+
+      setUpcomingViewings(viewings ?? []);
+
+      // Get pending applications
+      const { data: apps } = await supabase
+        .from('rental_applications')
+        .select(`
+          id, status, created_at,
+          property:properties!property_id(id, title)
+        `)
+        .eq('tenant_id', user.id)
+        .in('status', ['submitted', 'under_review', 'pending_verification'])
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      setPendingApplications(apps ?? []);
+
+      // Get unread message threads
+      const threads = await messagesApi.getUserThreads(user.id, 'tenant');
+      const sorted = [...threads].sort((a, b) => {
+        const aUnread = a.unread_count_tenant ?? 0;
+        const bUnread = b.unread_count_tenant ?? 0;
+        if (bUnread !== aUnread) return bUnread - aUnread;
+        return new Date(b.last_message_at ?? 0).getTime() - new Date(a.last_message_at ?? 0).getTime();
+      });
+      const unreadTotal = threads.reduce((sum, t) => sum + (t.unread_count_tenant ?? 0), 0);
+      setTotalUnreadMessages(unreadTotal);
+      setMessageThreads(sorted.slice(0, 3).map(t => ({
+        id: t.id,
+        owner_name: (t as any).owner?.full_name ?? 'Landlord',
+        subject: t.subject,
+        unread_count: t.unread_count_tenant ?? 0,
+        last_message_at: t.last_message_at,
+        category: t.category,
+      })));
+
+      // Check verification status from latest application
+      const { data: latestApp } = await supabase
         .from('rental_applications')
         .select('identity_verification_status, id_document_url, proof_of_income_urls, reference_urls')
         .eq('tenant_id', user.id)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (applications) {
+      if (latestApp) {
         setVerificationStatus({
-          identity: applications.identity_verification_status === 'verified',
-          income: (applications.proof_of_income_urls?.length || 0) > 0,
-          references: (applications.reference_urls?.length || 0) > 0,
+          identity: latestApp.identity_verification_status === 'verified',
+          income: (latestApp.proof_of_income_urls?.length || 0) > 0,
+          references: (latestApp.reference_urls?.length || 0) > 0,
         });
       }
 
@@ -141,11 +177,16 @@ export default function TenantDashboardScreen() {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={colors.rsa.green} />
         </View>
       </SafeAreaView>
     );
   }
+
+  const notificationCount = maintenanceRequests.length
+    + (nextPayment ? 1 : 0)
+    + (activeLease?.status === 'pending_tenant_signature' ? 1 : 0)
+    + totalUnreadMessages;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -156,11 +197,26 @@ export default function TenantDashboardScreen() {
             <Text style={styles.greeting}>Welcome back,</Text>
             <Text style={styles.userName}>{userName}</Text>
           </View>
-          <TouchableOpacity style={styles.notificationButton}>
-            <Ionicons name="notifications-outline" size={24} color="#333" />
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>2</Text>
-            </View>
+          <TouchableOpacity
+            style={styles.notificationButton}
+            onPress={() => {
+              if (totalUnreadMessages > 0) {
+                router.push('/(tenant)/messages' as any);
+              } else if (activeLease?.status === 'pending_tenant_signature') {
+                router.push('/(tenant)/lease' as any);
+              } else if (nextPayment) {
+                router.push('/(tenant)/payments' as any);
+              } else if (maintenanceRequests.length > 0) {
+                router.push('/(tenant)/maintenance' as any);
+              }
+            }}
+          >
+            <Ionicons name="notifications-outline" size={24} color={colors.text.primary} />
+            {notificationCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{notificationCount}</Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -170,41 +226,31 @@ export default function TenantDashboardScreen() {
             <View style={styles.section}>
               <View style={styles.verificationCard}>
                 <View style={styles.verificationHeader}>
-                  <Ionicons name="shield-checkmark" size={24} color="#FF9800" />
+                  <Ionicons name="shield-checkmark" size={24} color={colors.warning[500]} />
                   <Text style={styles.verificationTitle}>Complete Your Profile</Text>
                 </View>
                 <Text style={styles.verificationSubtext}>
                   Verify your documents to speed up future applications
                 </Text>
                 <View style={styles.verificationItems}>
-                  <View style={styles.verificationItem}>
-                    <Ionicons 
-                      name={verificationStatus.identity ? 'checkmark-circle' : 'ellipse-outline'} 
-                      size={20} 
-                      color={verificationStatus.identity ? '#4CAF50' : '#CCC'} 
-                    />
-                    <Text style={styles.verificationItemText}>Identity Verification</Text>
-                  </View>
-                  <View style={styles.verificationItem}>
-                    <Ionicons 
-                      name={verificationStatus.income ? 'checkmark-circle' : 'ellipse-outline'} 
-                      size={20} 
-                      color={verificationStatus.income ? '#4CAF50' : '#CCC'} 
-                    />
-                    <Text style={styles.verificationItemText}>Proof of Income</Text>
-                  </View>
-                  <View style={styles.verificationItem}>
-                    <Ionicons 
-                      name={verificationStatus.references ? 'checkmark-circle' : 'ellipse-outline'} 
-                      size={20} 
-                      color={verificationStatus.references ? '#4CAF50' : '#CCC'} 
-                    />
-                    <Text style={styles.verificationItemText}>References</Text>
-                  </View>
+                  {[
+                    { label: 'Identity Verification', done: verificationStatus.identity },
+                    { label: 'Proof of Income', done: verificationStatus.income },
+                    { label: 'References', done: verificationStatus.references },
+                  ].map(item => (
+                    <View key={item.label} style={styles.verificationItem}>
+                      <Ionicons
+                        name={item.done ? 'checkmark-circle' : 'ellipse-outline'}
+                        size={20}
+                        color={item.done ? colors.primary[500] : colors.gray[300]}
+                      />
+                      <Text style={styles.verificationItemText}>{item.label}</Text>
+                    </View>
+                  ))}
                 </View>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.verificationButton}
-                  onPress={() => router.push('/(tenant)/profile' as any)}
+                  onPress={() => router.push('/(tenant)/documents' as any)}
                 >
                   <Text style={styles.verificationButtonText}>Complete Verification</Text>
                 </TouchableOpacity>
@@ -213,11 +259,11 @@ export default function TenantDashboardScreen() {
           )}
 
           {/* Pending Signature Alert */}
-          {activeLease && activeLease.status === 'pending_tenant_signature' && (
+          {activeLease?.status === 'pending_tenant_signature' && (
             <View style={styles.section}>
               <View style={styles.signatureAlertCard}>
                 <View style={styles.signatureAlertHeader}>
-                  <Ionicons name="document-text" size={32} color="#FF9800" />
+                  <Ionicons name="document-text" size={32} color={colors.warning[500]} />
                   <View style={styles.signatureAlertInfo}>
                     <Text style={styles.signatureAlertTitle}>Lease Agreement Ready!</Text>
                     <Text style={styles.signatureAlertSubtext}>
@@ -229,7 +275,7 @@ export default function TenantDashboardScreen() {
                   style={styles.signatureAlertButton}
                   onPress={() => router.push('/(tenant)/lease' as any)}
                 >
-                  <Ionicons name="create" size={20} color="#FFF" />
+                  <Ionicons name="create" size={20} color={colors.text.inverse} />
                   <Text style={styles.signatureAlertButtonText}>Sign Lease Now</Text>
                 </TouchableOpacity>
               </View>
@@ -238,10 +284,10 @@ export default function TenantDashboardScreen() {
 
           {/* Active Lease Card */}
           {activeLease ? (
-            <LinearGradient colors={[RSA.green, '#005A3A']} style={styles.leaseCard}>
+            <LinearGradient colors={[colors.rsa.green, '#005A3A']} style={styles.leaseCard}>
               <View style={styles.leaseHeader}>
                 <View style={styles.iconContainer}>
-                  <Ionicons name="home" size={24} color="#FFF" />
+                  <Ionicons name="home" size={24} color={colors.text.inverse} />
                 </View>
                 <View style={styles.leaseInfo}>
                   <Text style={styles.leaseTitle}>Current Home</Text>
@@ -268,12 +314,12 @@ export default function TenantDashboardScreen() {
                 onPress={() => router.push('/(tenant)/lease' as any)}
               >
                 <Text style={styles.viewLeaseButtonText}>View Lease Details</Text>
-                <Ionicons name="arrow-forward" size={16} color={RSA.green} />
+                <Ionicons name="arrow-forward" size={16} color={colors.rsa.green} />
               </TouchableOpacity>
             </LinearGradient>
           ) : (
             <View style={styles.noLeaseCard}>
-              <Ionicons name="home-outline" size={48} color="#CCC" />
+              <Ionicons name="home-outline" size={48} color={colors.gray[300]} />
               <Text style={styles.noLeaseText}>No Active Lease</Text>
               <Text style={styles.noLeaseSubtext}>Start searching for your next home</Text>
               <TouchableOpacity
@@ -282,6 +328,146 @@ export default function TenantDashboardScreen() {
               >
                 <Text style={styles.searchButtonText}>Search Properties</Text>
               </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Upcoming Viewings */}
+          {upcomingViewings.length > 0 && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Upcoming Viewings</Text>
+                <TouchableOpacity onPress={() => router.push('/(tenant)/viewings' as any)}>
+                  <Text style={styles.seeAllText}>See All</Text>
+                </TouchableOpacity>
+              </View>
+              {upcomingViewings.map(viewing => (
+                <TouchableOpacity
+                  key={viewing.id}
+                  style={styles.viewingCard}
+                  onPress={() => router.push(`/(tenant)/viewings/${viewing.id}` as any)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.viewingIcon, { backgroundColor: colors.info[50] }]}>
+                    <Ionicons name="calendar" size={20} color={colors.info[500]} />
+                  </View>
+                  <View style={styles.viewingInfo}>
+                    <Text style={styles.viewingProperty} numberOfLines={1}>
+                      {viewing.property?.title || 'Property'}
+                    </Text>
+                    <Text style={styles.viewingDate}>
+                      {new Date(viewing.proposed_date).toLocaleDateString('en-ZA', {
+                        weekday: 'short', day: 'numeric', month: 'short',
+                        hour: '2-digit', minute: '2-digit',
+                      })}
+                    </Text>
+                  </View>
+                  <View style={[
+                    styles.viewingStatusBadge,
+                    {
+                      backgroundColor: viewing.status === 'approved'
+                        ? colors.primary[50]
+                        : colors.warning[50],
+                    },
+                  ]}>
+                    <Text style={[
+                      styles.viewingStatusText,
+                      {
+                        color: viewing.status === 'approved'
+                          ? colors.primary[500]
+                          : colors.warning[500],
+                      },
+                    ]}>
+                      {viewing.status === 'approved' ? 'Confirmed' : 'Pending'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* Pending Applications */}
+          {pendingApplications.length > 0 && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>My Applications</Text>
+                <TouchableOpacity onPress={() => router.push('/(tenant)/search' as any)}>
+                  <Text style={styles.seeAllText}>Search More</Text>
+                </TouchableOpacity>
+              </View>
+              {pendingApplications.map(app => (
+                <TouchableOpacity
+                  key={app.id}
+                  style={styles.applicationCard}
+                  onPress={() => router.push(`/(tenant)/applications/${app.id}` as any)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.applicationIcon, { backgroundColor: colors.primary[50] }]}>
+                    <Ionicons name="document-text" size={20} color={colors.primary[500]} />
+                  </View>
+                  <View style={styles.applicationInfo}>
+                    <Text style={styles.applicationProperty} numberOfLines={1}>
+                      {app.property?.title || 'Property'}
+                    </Text>
+                    <Text style={styles.applicationDate}>
+                      Applied {new Date(app.created_at).toLocaleDateString('en-ZA')}
+                    </Text>
+                  </View>
+                  <View style={styles.applicationStatusBadge}>
+                    <Text style={styles.applicationStatusText}>
+                      {app.status.replace(/_/g, ' ')}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* Messages Section */}
+          {messageThreads.length > 0 && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={styles.sectionTitle}>Messages</Text>
+                  {totalUnreadMessages > 0 && (
+                    <View style={styles.unreadBadge}>
+                      <Text style={styles.unreadBadgeText}>
+                        {totalUnreadMessages > 99 ? '99+' : totalUnreadMessages}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <TouchableOpacity onPress={() => router.push('/(tenant)/messages' as any)}>
+                  <Text style={styles.seeAllText}>See All</Text>
+                </TouchableOpacity>
+              </View>
+              {messageThreads.map(thread => (
+                <TouchableOpacity
+                  key={thread.id}
+                  style={[styles.messageCard, thread.unread_count > 0 && styles.messageCardUnread]}
+                  onPress={() => router.push(`/(tenant)/messages/${thread.id}` as any)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.messageIcon, { backgroundColor: colors.rsa.green + '20' }]}>
+                    <Ionicons name="chatbubble-outline" size={20} color={colors.rsa.green} />
+                  </View>
+                  <View style={styles.messageInfo}>
+                    <Text style={[styles.messageSender, thread.unread_count > 0 && styles.messageBold]} numberOfLines={1}>
+                      {thread.owner_name}
+                    </Text>
+                    <Text style={[styles.messageSubject, thread.unread_count > 0 && styles.messageBold]} numberOfLines={1}>
+                      {thread.subject}
+                    </Text>
+                  </View>
+                  {thread.unread_count > 0 && (
+                    <View style={styles.messageUnreadDot}>
+                      <Text style={styles.messageUnreadText}>
+                        {thread.unread_count > 99 ? '99+' : thread.unread_count}
+                      </Text>
+                    </View>
+                  )}
+                  <Ionicons name="chevron-forward" size={16} color={colors.text.tertiary} />
+                </TouchableOpacity>
+              ))}
             </View>
           )}
 
@@ -295,9 +481,14 @@ export default function TenantDashboardScreen() {
                 </TouchableOpacity>
               </View>
               {maintenanceRequests.map((request, index) => (
-                <View key={index} style={styles.maintenanceCard}>
-                  <View style={[styles.maintenanceIcon, { backgroundColor: '#FFF3E0' }]}>
-                    <Ionicons name="construct" size={20} color="#FF9800" />
+                <TouchableOpacity
+                  key={request.id || index}
+                  style={styles.maintenanceCard}
+                  onPress={() => router.push(`/(tenant)/maintenance/${request.id}` as any)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.maintenanceIcon, { backgroundColor: colors.warning[50] }]}>
+                    <Ionicons name="construct" size={20} color={colors.warning[500]} />
                   </View>
                   <View style={styles.maintenanceInfo}>
                     <Text style={styles.maintenanceTitle}>{request.title || 'Maintenance Request'}</Text>
@@ -308,7 +499,7 @@ export default function TenantDashboardScreen() {
                   <View style={[styles.maintenanceStatus, getMaintenanceStatusStyle(request.status)]}>
                     <Text style={styles.maintenanceStatusText}>{request.status}</Text>
                   </View>
-                </View>
+                </TouchableOpacity>
               ))}
             </View>
           )}
@@ -317,42 +508,42 @@ export default function TenantDashboardScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Documents</Text>
             <View style={styles.documentsGrid}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.documentCard}
                 onPress={() => router.push('/(tenant)/lease' as any)}
               >
-                <View style={[styles.documentIcon, { backgroundColor: '#E3F2FD' }]}>
-                  <Ionicons name="document-text" size={24} color="#2196F3" />
+                <View style={[styles.documentIcon, { backgroundColor: colors.info[50] }]}>
+                  <Ionicons name="document-text" size={24} color={colors.info[500]} />
                 </View>
                 <Text style={styles.documentText}>Lease</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.documentCard}
                 onPress={() => router.push('/(tenant)/payments' as any)}
               >
-                <View style={[styles.documentIcon, { backgroundColor: '#E8F5E9' }]}>
-                  <Ionicons name="receipt" size={24} color="#4CAF50" />
+                <View style={[styles.documentIcon, { backgroundColor: colors.primary[50] }]}>
+                  <Ionicons name="receipt" size={24} color={colors.primary[500]} />
                 </View>
                 <Text style={styles.documentText}>Receipts</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.documentCard}
-                onPress={() => router.push('/(tenant)/profile' as any)}
+                onPress={() => router.push('/(tenant)/documents' as any)}
               >
-                <View style={[styles.documentIcon, { backgroundColor: '#FFF3E0' }]}>
-                  <Ionicons name="card" size={24} color="#FF9800" />
+                <View style={[styles.documentIcon, { backgroundColor: colors.warning[50] }]}>
+                  <Ionicons name="card" size={24} color={colors.warning[500]} />
                 </View>
                 <Text style={styles.documentText}>ID Docs</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.documentCard}
-                onPress={() => router.push('/(tenant)/maintenance' as any)}
+                onPress={() => router.push('/(tenant)/reports' as any)}
               >
-                <View style={[styles.documentIcon, { backgroundColor: '#F3E5F5' }]}>
-                  <Ionicons name="hammer" size={24} color="#9C27B0" />
+                <View style={[styles.documentIcon, { backgroundColor: colors.rsa.blue + '15' }]}>
+                  <Ionicons name="hammer" size={24} color={colors.rsa.blue} />
                 </View>
                 <Text style={styles.documentText}>Reports</Text>
               </TouchableOpacity>
@@ -364,36 +555,56 @@ export default function TenantDashboardScreen() {
             <Text style={styles.sectionTitle}>Recent Activity</Text>
             <View style={styles.activityFeed}>
               {nextPayment && (
-                <View style={styles.activityItem}>
-                  <View style={[styles.activityDot, { backgroundColor: '#FF9800' }]} />
+                <TouchableOpacity
+                  style={styles.activityItem}
+                  onPress={() => router.push('/(tenant)/payments' as any)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.activityDot, { backgroundColor: colors.warning[500] }]} />
                   <View style={styles.activityContent}>
                     <Text style={styles.activityText}>Payment due</Text>
                     <Text style={styles.activityTime}>
                       {new Date(nextPayment.due_date).toLocaleDateString()}
                     </Text>
                   </View>
-                </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.text.tertiary} />
+                </TouchableOpacity>
               )}
               {recentPayments.length > 0 && (
-                <View style={styles.activityItem}>
-                  <View style={[styles.activityDot, { backgroundColor: '#4CAF50' }]} />
+                <TouchableOpacity
+                  style={styles.activityItem}
+                  onPress={() => router.push('/(tenant)/payments' as any)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.activityDot, { backgroundColor: colors.primary[500] }]} />
                   <View style={styles.activityContent}>
                     <Text style={styles.activityText}>Payment received</Text>
                     <Text style={styles.activityTime}>
                       {new Date(recentPayments[0].paid_date!).toLocaleDateString()}
                     </Text>
                   </View>
-                </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.text.tertiary} />
+                </TouchableOpacity>
               )}
               {maintenanceRequests.length > 0 && (
-                <View style={styles.activityItem}>
-                  <View style={[styles.activityDot, { backgroundColor: '#2196F3' }]} />
+                <TouchableOpacity
+                  style={styles.activityItem}
+                  onPress={() => router.push(`/(tenant)/maintenance/${maintenanceRequests[0].id}` as any)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.activityDot, { backgroundColor: colors.info[500] }]} />
                   <View style={styles.activityContent}>
-                    <Text style={styles.activityText}>Maintenance request submitted</Text>
+                    <Text style={styles.activityText}>Maintenance request active</Text>
                     <Text style={styles.activityTime}>
                       {new Date(maintenanceRequests[0].created_at).toLocaleDateString()}
                     </Text>
                   </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.text.tertiary} />
+                </TouchableOpacity>
+              )}
+              {!nextPayment && recentPayments.length === 0 && maintenanceRequests.length === 0 && (
+                <View style={styles.activityEmpty}>
+                  <Text style={styles.activityEmptyText}>No recent activity</Text>
                 </View>
               )}
             </View>
@@ -405,8 +616,8 @@ export default function TenantDashboardScreen() {
               <Text style={styles.sectionTitle}>Next Payment</Text>
               <View style={styles.paymentCard}>
                 <View style={styles.paymentHeader}>
-                  <View style={[styles.paymentIcon, { backgroundColor: '#FFF3E0' }]}>
-                    <Ionicons name="calendar" size={24} color="#FF9800" />
+                  <View style={[styles.paymentIcon, { backgroundColor: colors.warning[50] }]}>
+                    <Ionicons name="calendar" size={24} color={colors.warning[500]} />
                   </View>
                   <View style={styles.paymentInfo}>
                     <Text style={styles.paymentType}>Rent Payment</Text>
@@ -436,8 +647,8 @@ export default function TenantDashboardScreen() {
                 style={styles.actionCard}
                 onPress={() => router.push('/(tenant)/search' as any)}
               >
-                <View style={[styles.actionIcon, { backgroundColor: '#E8F5E9' }]}>
-                  <Ionicons name="search" size={24} color={RSA.green} />
+                <View style={[styles.actionIcon, { backgroundColor: colors.primary[50] }]}>
+                  <Ionicons name="search" size={24} color={colors.rsa.green} />
                 </View>
                 <Text style={styles.actionText}>Search</Text>
               </TouchableOpacity>
@@ -446,8 +657,8 @@ export default function TenantDashboardScreen() {
                 style={styles.actionCard}
                 onPress={() => router.push('/(tenant)/payments' as any)}
               >
-                <View style={[styles.actionIcon, { backgroundColor: '#E3F2FD' }]}>
-                  <Ionicons name="card" size={24} color={RSA.blue} />
+                <View style={[styles.actionIcon, { backgroundColor: colors.info[50] }]}>
+                  <Ionicons name="card" size={24} color={colors.rsa.blue} />
                 </View>
                 <Text style={styles.actionText}>Payments</Text>
               </TouchableOpacity>
@@ -456,8 +667,8 @@ export default function TenantDashboardScreen() {
                 style={styles.actionCard}
                 onPress={() => router.push('/(tenant)/maintenance' as any)}
               >
-                <View style={[styles.actionIcon, { backgroundColor: '#FFF3E0' }]}>
-                  <Ionicons name="construct" size={24} color="#FF9800" />
+                <View style={[styles.actionIcon, { backgroundColor: colors.warning[50] }]}>
+                  <Ionicons name="construct" size={24} color={colors.warning[500]} />
                 </View>
                 <Text style={styles.actionText}>Maintenance</Text>
               </TouchableOpacity>
@@ -466,8 +677,8 @@ export default function TenantDashboardScreen() {
                 style={styles.actionCard}
                 onPress={() => router.push('/(tenant)/messages' as any)}
               >
-                <View style={[styles.actionIcon, { backgroundColor: '#F3E5F5' }]}>
-                  <Ionicons name="chatbubbles" size={24} color="#9C27B0" />
+                <View style={[styles.actionIcon, { backgroundColor: colors.rsa.green + '15' }]}>
+                  <Ionicons name="chatbubbles" size={24} color={colors.rsa.green} />
                 </View>
                 <Text style={styles.actionText}>Messages</Text>
               </TouchableOpacity>
@@ -484,9 +695,14 @@ export default function TenantDashboardScreen() {
                 </TouchableOpacity>
               </View>
               {recentPayments.map((payment, index) => (
-                <View key={index} style={styles.paymentHistoryCard}>
+                <TouchableOpacity
+                  key={index}
+                  style={styles.paymentHistoryCard}
+                  onPress={() => router.push('/(tenant)/payments' as any)}
+                  activeOpacity={0.7}
+                >
                   <View style={styles.paymentHistoryIcon}>
-                    <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+                    <Ionicons name="checkmark-circle" size={20} color={colors.primary[500]} />
                   </View>
                   <View style={styles.paymentHistoryInfo}>
                     <Text style={styles.paymentHistoryType}>{payment.type}</Text>
@@ -497,7 +713,7 @@ export default function TenantDashboardScreen() {
                   <Text style={styles.paymentHistoryAmount}>
                     R {payment.amount.toLocaleString()}
                   </Text>
-                </View>
+                </TouchableOpacity>
               ))}
             </View>
           )}
@@ -520,11 +736,13 @@ export default function TenantDashboardScreen() {
                   style={styles.messageButton}
                   onPress={() => router.push('/(tenant)/messages' as any)}
                 >
-                  <Ionicons name="chatbubble" size={20} color="#007AFF" />
+                  <Ionicons name="chatbubble" size={20} color={colors.rsa.blue} />
                 </TouchableOpacity>
               </View>
             </View>
           )}
+
+          <View style={{ height: 100 }} />
         </ScrollView>
       </View>
     </SafeAreaView>
@@ -534,11 +752,11 @@ export default function TenantDashboardScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.background.default,
   },
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.background.secondary,
   },
   centerContainer: {
     flex: 1,
@@ -550,16 +768,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.background.default,
   },
   greeting: {
     fontSize: 14,
-    color: '#666',
+    color: colors.text.secondary,
   },
   userName: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#333',
+    color: colors.text.primary,
     marginTop: 4,
   },
   notificationButton: {
@@ -570,7 +788,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 4,
     right: 4,
-    backgroundColor: '#F44336',
+    backgroundColor: colors.error[500],
     borderRadius: 10,
     minWidth: 20,
     height: 20,
@@ -578,7 +796,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   badgeText: {
-    color: '#FFF',
+    color: colors.text.inverse,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -614,7 +832,7 @@ const styles = StyleSheet.create({
   propertyName: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text.inverse,
     marginBottom: 4,
   },
   propertyAddress: {
@@ -635,13 +853,13 @@ const styles = StyleSheet.create({
   leaseDetailValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text.inverse,
   },
   viewLeaseButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFF',
+    backgroundColor: colors.background.default,
     paddingVertical: 12,
     borderRadius: 10,
     gap: 8,
@@ -649,44 +867,44 @@ const styles = StyleSheet.create({
   viewLeaseButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: RSA.green,
+    color: colors.rsa.green,
   },
   noLeaseCard: {
     margin: 16,
     padding: 32,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.background.default,
     borderRadius: 16,
     alignItems: 'center',
   },
   noLeaseText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text.primary,
     marginTop: 16,
   },
   noLeaseSubtext: {
     fontSize: 14,
-    color: '#666',
+    color: colors.text.secondary,
     marginTop: 8,
     marginBottom: 20,
   },
   searchButton: {
-    backgroundColor: RSA.green,
+    backgroundColor: colors.rsa.green,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 10,
   },
   searchButtonText: {
-    color: '#FFF',
+    color: colors.text.inverse,
     fontSize: 14,
     fontWeight: '600',
   },
   verificationCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: colors.background.default,
     borderRadius: 12,
     padding: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#FF9800',
+    borderLeftColor: colors.warning[500],
   },
   verificationHeader: {
     flexDirection: 'row',
@@ -697,11 +915,11 @@ const styles = StyleSheet.create({
   verificationTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text.primary,
   },
   verificationSubtext: {
     fontSize: 14,
-    color: '#666',
+    color: colors.text.secondary,
     marginBottom: 16,
   },
   verificationItems: {
@@ -715,23 +933,102 @@ const styles = StyleSheet.create({
   },
   verificationItemText: {
     fontSize: 14,
-    color: '#666',
+    color: colors.text.secondary,
   },
   verificationButton: {
-    backgroundColor: '#FF9800',
+    backgroundColor: colors.warning[500],
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
   },
   verificationButtonText: {
-    color: '#FFF',
+    color: colors.text.inverse,
     fontSize: 14,
     fontWeight: '600',
+  },
+  viewingCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background.default,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
+  },
+  viewingIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  viewingInfo: {
+    flex: 1,
+  },
+  viewingProperty: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.primary,
+  },
+  viewingDate: {
+    fontSize: 12,
+    color: colors.text.secondary,
+    marginTop: 2,
+  },
+  viewingStatusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  viewingStatusText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  applicationCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background.default,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
+  },
+  applicationIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  applicationInfo: {
+    flex: 1,
+  },
+  applicationProperty: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.primary,
+  },
+  applicationDate: {
+    fontSize: 12,
+    color: colors.text.secondary,
+    marginTop: 2,
+  },
+  applicationStatusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: colors.warning[50],
+  },
+  applicationStatusText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.warning[500],
+    textTransform: 'capitalize',
   },
   maintenanceCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
+    backgroundColor: colors.background.default,
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
@@ -750,11 +1047,11 @@ const styles = StyleSheet.create({
   maintenanceTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text.primary,
   },
   maintenanceDate: {
     fontSize: 12,
-    color: '#666',
+    color: colors.text.secondary,
     marginTop: 2,
   },
   maintenanceStatus: {
@@ -765,7 +1062,7 @@ const styles = StyleSheet.create({
   maintenanceStatusText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#666',
+    color: colors.text.secondary,
     textTransform: 'capitalize',
   },
   documentsGrid: {
@@ -776,7 +1073,7 @@ const styles = StyleSheet.create({
   documentCard: {
     flex: 1,
     minWidth: '45%',
-    backgroundColor: '#FFF',
+    backgroundColor: colors.background.default,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -792,23 +1089,26 @@ const styles = StyleSheet.create({
   documentText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text.primary,
   },
   activityFeed: {
-    backgroundColor: '#FFF',
+    backgroundColor: colors.background.default,
     borderRadius: 12,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
   activityItem: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 16,
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.default,
   },
   activityDot: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    marginTop: 4,
     marginRight: 12,
   },
   activityContent: {
@@ -817,12 +1117,20 @@ const styles = StyleSheet.create({
   activityText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
+    color: colors.text.primary,
+    marginBottom: 2,
   },
   activityTime: {
     fontSize: 12,
-    color: '#666',
+    color: colors.text.secondary,
+  },
+  activityEmpty: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  activityEmptyText: {
+    fontSize: 14,
+    color: colors.text.tertiary,
   },
   section: {
     marginHorizontal: 16,
@@ -837,16 +1145,17 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#333',
+    color: colors.text.primary,
     marginBottom: 12,
   },
   seeAllText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#007AFF',
+    color: colors.rsa.blue,
+    marginBottom: 12,
   },
   paymentCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: colors.background.default,
     borderRadius: 12,
     padding: 16,
   },
@@ -869,26 +1178,26 @@ const styles = StyleSheet.create({
   paymentType: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text.primary,
   },
   paymentDate: {
     fontSize: 14,
-    color: '#666',
+    color: colors.text.secondary,
     marginTop: 4,
   },
   paymentAmount: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#333',
+    color: colors.text.primary,
   },
   payButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: colors.primary[500],
     paddingVertical: 12,
     borderRadius: 10,
     alignItems: 'center',
   },
   payButtonText: {
-    color: '#FFF',
+    color: colors.text.inverse,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -900,7 +1209,7 @@ const styles = StyleSheet.create({
   actionCard: {
     flex: 1,
     minWidth: '45%',
-    backgroundColor: '#FFF',
+    backgroundColor: colors.background.default,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -916,12 +1225,12 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text.primary,
   },
   paymentHistoryCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
+    backgroundColor: colors.background.default,
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
@@ -935,23 +1244,23 @@ const styles = StyleSheet.create({
   paymentHistoryType: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text.primary,
     textTransform: 'capitalize',
   },
   paymentHistoryDate: {
     fontSize: 12,
-    color: '#666',
+    color: colors.text.secondary,
     marginTop: 2,
   },
   paymentHistoryAmount: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text.primary,
   },
   contactCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
+    backgroundColor: colors.background.default,
     borderRadius: 12,
     padding: 16,
   },
@@ -961,28 +1270,28 @@ const styles = StyleSheet.create({
   contactName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text.primary,
     marginBottom: 8,
   },
   contactDetail: {
     fontSize: 14,
-    color: '#666',
+    color: colors.text.secondary,
     marginBottom: 4,
   },
   messageButton: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#E3F2FD',
+    backgroundColor: colors.info[50],
     alignItems: 'center',
     justifyContent: 'center',
   },
   signatureAlertCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: colors.background.default,
     borderRadius: 12,
     padding: 20,
     borderLeftWidth: 4,
-    borderLeftColor: '#FF9800',
+    borderLeftColor: colors.warning[500],
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -1001,26 +1310,89 @@ const styles = StyleSheet.create({
   signatureAlertTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#333',
+    color: colors.text.primary,
     marginBottom: 8,
   },
   signatureAlertSubtext: {
     fontSize: 14,
-    color: '#666',
+    color: colors.text.secondary,
     lineHeight: 20,
   },
   signatureAlertButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FF9800',
+    backgroundColor: colors.warning[500],
     paddingVertical: 14,
     borderRadius: 10,
     gap: 8,
   },
   signatureAlertButtonText: {
-    color: '#FFF',
+    color: colors.text.inverse,
     fontSize: 16,
     fontWeight: '600',
+  },
+  unreadBadge: {
+    backgroundColor: colors.rsa.green,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    minWidth: 20,
+    alignItems: 'center',
+  },
+  unreadBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.text.inverse,
+  },
+  messageCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background.default,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
+  },
+  messageCardUnread: {
+    backgroundColor: colors.rsa.green + '10',
+    borderLeftWidth: 3,
+    borderLeftColor: colors.rsa.green,
+  },
+  messageIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  messageInfo: {
+    flex: 1,
+  },
+  messageSender: {
+    fontSize: 14,
+    color: colors.text.primary,
+  },
+  messageSubject: {
+    fontSize: 12,
+    color: colors.text.secondary,
+    marginTop: 2,
+  },
+  messageBold: {
+    fontWeight: '700',
+  },
+  messageUnreadDot: {
+    backgroundColor: colors.rsa.green,
+    borderRadius: 10,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    minWidth: 20,
+    alignItems: 'center',
+    marginRight: 6,
+  },
+  messageUnreadText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.text.inverse,
   },
 });

@@ -25,7 +25,7 @@ export const messagesApi = {
         lease_id: input.lease_id || null,
         subject: input.subject,
         category: input.category,
-        status: 'open',
+        status: 'active',
         last_message_at: new Date().toISOString(),
         unread_count_owner: input.sender_role === 'tenant' ? 1 : 0,
         unread_count_tenant: input.sender_role === 'owner' ? 1 : 0,
@@ -267,7 +267,7 @@ export const messagesApi = {
   async closeThread(threadId: string): Promise<MessageThread> {
     const { data, error } = await supabase
       .from('message_threads')
-      .update({ status: 'closed' })
+      .update({ status: 'archived' })
       .eq('id', threadId)
       .select()
       .single();
@@ -305,7 +305,7 @@ export const messagesApi = {
   async reopenThread(threadId: string): Promise<MessageThread> {
     const { data, error } = await supabase
       .from('message_threads')
-      .update({ status: 'open' })
+      .update({ status: 'active' })
       .eq('id', threadId)
       .select()
       .single();
@@ -396,7 +396,7 @@ export const messagesApi = {
       .select('*')
       .eq('owner_id', ownerId)
       .eq('tenant_id', tenantId)
-      .eq('status', 'open');
+      .eq('status', 'active');
 
     if (propertyId) {
       query = query.eq('property_id', propertyId);
@@ -417,7 +417,7 @@ export const messagesApi = {
         property_id: propertyId || null,
         subject: subject || 'New Conversation',
         category,
-        status: 'open',
+        status: 'active',
         last_message_at: new Date().toISOString(),
       })
       .select()

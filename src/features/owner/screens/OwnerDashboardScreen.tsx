@@ -13,7 +13,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, SafeAreaView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -25,27 +26,21 @@ import { MaintenanceSection } from '../components/MaintenanceSection';
 import { ApplicantsSection } from '../components/ApplicantsSection';
 import { ViewingRequestsSection } from '../components/ViewingRequestsSection';
 import { ActivitySection } from '../components/ActivitySection';
+import { MessagesSection } from '../components/MessagesSection';
 import { styles } from './OwnerDashboardScreen.styles';
 import { supabase } from '../../../lib/supabase';
 import { viewingsApi } from '../../properties/api/viewingsApi';
+import { messagesApi } from '../../messaging/api/messagesApi';
 import { useOwnerDashboard } from '../hooks/useOwnerDashboard';
 import { Ionicons } from '@expo/vector-icons';
 
-// Static documents data (until documents module is implemented)
-const STATIC_DOCUMENTS = [
-  { name: 'Lease Contracts', icon: '📄', type: 'lease', info: 'Active/Past' },
-  { name: 'Invoices', icon: '💰', type: 'invoice', info: 'Latest' },
-  { name: 'Vendor Quotes', icon: '📋', type: 'quote', info: 'For Review' },
-  { name: 'Tax Reports', icon: '⚖️', type: 'tax', info: 'Annual' },
-  { name: 'Compliance', icon: '🛡️', type: 'compliance', info: 'FICA/COC' },
-];
-
 export default function OwnerDashboardScreen() {
   const router = useRouter();
-  const [notificationCount] = useState(3);
   const [viewingRequests, setViewingRequests] = useState<any[]>([]);
   const [pendingViewingsCount, setPendingViewingsCount] = useState(0);
   const [ownerId, setOwnerId] = useState<string | null>(null);
+  const [messageThreads, setMessageThreads] = useState<any[]>([]);
+  const [totalUnreadMessages, setTotalUnreadMessages] = useState(0);
 
   // Use custom hook for dashboard data (enterprise pattern)
   const { data: dashboardData, loading, error, refetch } = useOwnerDashboard(ownerId);
@@ -58,6 +53,7 @@ export default function OwnerDashboardScreen() {
     React.useCallback(() => {
       if (ownerId) {
         loadViewingRequests();
+        loadMessages(ownerId);
       }
     }, [ownerId])
   );
@@ -67,6 +63,33 @@ export default function OwnerDashboardScreen() {
     if (user) {
       setOwnerId(user.id);
       loadViewingRequests(user.id);
+      loadMessages(user.id);
+    }
+  };
+
+  const loadMessages = async (userId: string) => {
+    try {
+      const threads = await messagesApi.getUserThreads(userId, 'owner');
+      // Sort by unread first, then by recency
+      const sorted = [...threads].sort((a, b) => {
+        const aUnread = a.unread_count_owner ?? 0;
+        const bUnread = b.unread_count_owner ?? 0;
+        if (bUnread !== aUnread) return bUnread - aUnread;
+        return new Date(b.last_message_at ?? 0).getTime() - new Date(a.last_message_at ?? 0).getTime();
+      });
+
+      const totalUnread = threads.reduce((sum, t) => sum + (t.unread_count_owner ?? 0), 0);
+      setTotalUnreadMessages(totalUnread);
+      setMessageThreads(sorted.slice(0, 3).map(t => ({
+        id: t.id,
+        tenant_name: (t as any).tenant?.full_name ?? 'Tenant',
+        subject: t.subject,
+        unread_count: t.unread_count_owner ?? 0,
+        last_message_at: t.last_message_at,
+        category: t.category,
+      })));
+    } catch (err) {
+      console.error('Error loading messages for dashboard:', err);
     }
   };
 
@@ -156,6 +179,20 @@ export default function OwnerDashboardScreen() {
     );
   }
 
+  // Computed notification count: pending viewings + pending applications + unread messages
+  const notificationCount = pendingViewingsCount
+    + dashboardData.applicants.filter(a => a.status === 'Pending').length
+    + totalUnreadMessages;
+
+  // Dynamic documents from real data
+  const documents = [
+    { name: 'Lease Contracts', icon: '📄', type: 'active-leases', info: `${dashboardData.documents.activeLeases} Active` },
+    { name: 'Invoices', icon: '💰', type: 'recent-invoices', info: `${dashboardData.documents.recentInvoices} This Month` },
+    { name: 'Vendor Quotes', icon: '📋', type: 'pending-quotes', info: `${dashboardData.documents.pendingQuotes} For Review` },
+    { name: 'Tax Reports', icon: '⚖️', type: 'tax', info: 'SARS ITR12' },
+    { name: 'Compliance', icon: '🛡️', type: 'compliance', info: 'FICA + COC' },
+  ];
+
   // Success state - render dashboard with real data
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -181,7 +218,10 @@ export default function OwnerDashboardScreen() {
               </Text>
             </View>
           </View>
-          <AnimatedButton onPress={() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)}>
+          <AnimatedButton onPress={() => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            router.push('/(owner)/messages' as any);
+          }}>
             <View style={styles.notificationInner}>
               <Text style={styles.bellIcon}>🔔</Text>
               {notificationCount > 0 && (
@@ -210,9 +250,9 @@ export default function OwnerDashboardScreen() {
             <AnalyticsGrid {...dashboardData.analytics} />
           </Animated.View>
 
-          {/* Documents Section - Static data for now */}
+          {/* Documents Section - Real counts */}
           <Animated.View entering={FadeInDown.delay(300).duration(500)}>
-            <DocumentsSection documents={STATIC_DOCUMENTS} />
+            <DocumentsSection documents={documents} />
           </Animated.View>
 
           {/* Maintenance Section - Real Data */}
@@ -232,6 +272,13 @@ export default function OwnerDashboardScreen() {
             </Animated.View>
           )}
 
+          {/* Messages Section - Unread threads */}
+          {messageThreads.length > 0 && (
+            <Animated.View entering={FadeInDown.delay(475).duration(500)}>
+              <MessagesSection threads={messageThreads} totalUnread={totalUnreadMessages} />
+            </Animated.View>
+          )}
+
           {/* Applicants Section - Real Data */}
           {dashboardData.applicants.length > 0 && (
             <Animated.View entering={FadeInDown.delay(500).duration(500)}>
@@ -245,8 +292,10 @@ export default function OwnerDashboardScreen() {
               <ActivitySection activities={dashboardData.recentActivity} />
             </Animated.View>
           )}
+
         </ScrollView>
       </View>
     </SafeAreaView>
   );
 }
+

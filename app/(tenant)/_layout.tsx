@@ -83,9 +83,51 @@ export default function TenantLayout() {
         }}
       />
       <Tabs.Screen
+        name="maintenance/report"
+        options={{
+          href: null, // Hidden from tabs - report new maintenance issue
+        }}
+      />
+      <Tabs.Screen
+        name="maintenance/[id]"
+        options={{
+          href: null, // Hidden from tabs - maintenance detail screen
+        }}
+      />
+      <Tabs.Screen
         name="messages"
         options={{
           href: null, // Hidden from tabs - accessed from dashboard
+        }}
+      />
+      <Tabs.Screen
+        name="messages/[id]"
+        options={{
+          href: null, // Hidden from tabs - message thread screen
+        }}
+      />
+      <Tabs.Screen
+        name="messages/new"
+        options={{
+          href: null, // Hidden from tabs - compose new message
+        }}
+      />
+      <Tabs.Screen
+        name="documents"
+        options={{
+          href: null, // Hidden from tabs - accessed from dashboard
+        }}
+      />
+      <Tabs.Screen
+        name="reports"
+        options={{
+          href: null, // Hidden from tabs - inspections + maintenance verification
+        }}
+      />
+      <Tabs.Screen
+        name="maintenance/verify"
+        options={{
+          href: null, // Hidden from tabs - tenant verifies maintenance closure
         }}
       />
       <Tabs.Screen
@@ -110,6 +152,30 @@ export default function TenantLayout() {
         name="viewings/[id]"
         options={{
           href: null, // Hidden from tabs - viewing detail screen
+        }}
+      />
+      <Tabs.Screen
+        name="payment-disputes"
+        options={{
+          href: null, // Hidden from tabs - accessed from payments
+        }}
+      />
+      <Tabs.Screen
+        name="early-termination"
+        options={{
+          href: null, // Hidden from tabs - accessed from lease detail
+        }}
+      />
+      <Tabs.Screen
+        name="privacy"
+        options={{
+          href: null, // Hidden from tabs - accessed from profile/settings
+        }}
+      />
+      <Tabs.Screen
+        name="privacy/data-rights"
+        options={{
+          href: null, // Hidden from tabs - DSAR screen
         }}
       />
     </Tabs>

@@ -149,9 +149,63 @@ export default function OwnerLayout() {
         }}
       />
       <Tabs.Screen
-        name="LAYOUT_THEME_UPDATE.md"
+        name="arrears"
         options={{
-          href: null, // Hidden - documentation file
+          href: null, // Hidden from tabs - accessed from dashboard
+        }}
+      />
+      <Tabs.Screen
+        name="renewals"
+        options={{
+          href: null, // Hidden from tabs - accessed from dashboard
+        }}
+      />
+      <Tabs.Screen
+        name="privacy"
+        options={{
+          href: null, // Hidden from tabs - accessed from profile/settings
+        }}
+      />
+      <Tabs.Screen
+        name="privacy/data-rights"
+        options={{
+          href: null, // Hidden from tabs - DSAR screen
+        }}
+      />
+      <Tabs.Screen
+        name="messages"
+        options={{
+          href: null, // Hidden from tabs - accessed from dashboard
+        }}
+      />
+      <Tabs.Screen
+        name="messages/[id]"
+        options={{
+          href: null, // Hidden from tabs - message thread screen
+        }}
+      />
+      <Tabs.Screen
+        name="messages/new"
+        options={{
+          href: null, // Hidden from tabs - compose new message
+        }}
+      />
+      <Tabs.Screen
+        name="invoices"
+        options={{
+          href: null, // Hidden from tabs - accessed from Documents section
+        }}
+      />
+      <Tabs.Screen
+        name="tax-reports"
+        options={{
+          href: null, // Hidden from tabs - accessed from Documents section
+        }}
+      />
+      <Tabs.Screen
+        name="compliance"
+        options={{
+          href: null, // Hidden from tabs - accessed from Documents section
         }}
       />
     </Tabs>

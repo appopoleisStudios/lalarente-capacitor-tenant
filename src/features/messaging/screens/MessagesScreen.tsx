@@ -6,19 +6,20 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
-  SafeAreaView,
   RefreshControl,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { messagesApi } from '../api/messagesApi';
 import { ThreadWithRelations, ThreadFilter, CATEGORY_INFO, ThreadCategory } from '../types';
 import { supabase } from '../../../lib/supabase';
+import { colors } from '@/src/shared/theme/colors';
 
-const COLORS = {
-  owner: { primary: '#002395', secondary: '#FFB81C' },
-  tenant: { primary: '#007A4D', secondary: '#FFB81C' },
+const ROLE_COLORS = {
+  owner: { primary: colors.rsa.blue, secondary: colors.rsa.gold },
+  tenant: { primary: colors.rsa.green, secondary: colors.rsa.gold },
 };
 
 interface Props {
@@ -27,7 +28,7 @@ interface Props {
 
 export default function MessagesScreen({ role = 'owner' }: Props) {
   const router = useRouter();
-  const colors = COLORS[role];
+  const roleColors = ROLE_COLORS[role];
 
   const [threads, setThreads] = useState<ThreadWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,7 +123,7 @@ export default function MessagesScreen({ role = 'owner' }: Props) {
     const otherParty = getOtherParty(item);
     const unreadCount = getUnreadCount(item) || 0;
     const category = item.category as ThreadCategory;
-    const categoryInfo = CATEGORY_INFO[category] || CATEGORY_INFO.other;
+    const categoryInfo = CATEGORY_INFO[category] || CATEGORY_INFO.general;
 
     return (
       <TouchableOpacity
@@ -134,7 +135,7 @@ export default function MessagesScreen({ role = 'owner' }: Props) {
           {otherParty?.avatar_url ? (
             <Image source={{ uri: otherParty.avatar_url }} style={styles.avatar} />
           ) : (
-            <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
+            <View style={[styles.avatarPlaceholder, { backgroundColor: roleColors.primary }]}>
               <Text style={styles.avatarText}>
                 {otherParty?.full_name?.charAt(0).toUpperCase() || '?'}
               </Text>
@@ -166,7 +167,7 @@ export default function MessagesScreen({ role = 'owner' }: Props) {
 
         {/* Unread Badge */}
         {unreadCount > 0 && (
-          <View style={[styles.unreadBadge, { backgroundColor: colors.primary }]}>
+          <View style={[styles.unreadBadge, { backgroundColor: roleColors.primary }]}>
             <Text style={styles.unreadText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
           </View>
         )}
@@ -190,12 +191,12 @@ export default function MessagesScreen({ role = 'owner' }: Props) {
 
   const renderFilters = () => (
     <View style={styles.filterContainer}>
-      {(['all', 'open', 'closed'] as const).map(status => (
+      {(['all', 'active', 'archived'] as const).map(status => (
         <TouchableOpacity
           key={status}
           style={[
             styles.filterButton,
-            filter.status === status && { backgroundColor: colors.primary },
+            filter.status === status && { backgroundColor: roleColors.primary },
           ]}
           onPress={() => setFilter({ ...filter, status })}
         >
@@ -216,7 +217,7 @@ export default function MessagesScreen({ role = 'owner' }: Props) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color={roleColors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -227,8 +228,30 @@ export default function MessagesScreen({ role = 'owner' }: Props) {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
+          {router.canGoBack() ? (
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.backButton} />
+          )}
           <Text style={styles.headerTitle}>Messages</Text>
-          {/* Future: Add compose button */}
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() =>
+              router.push(
+                role === 'tenant'
+                  ? '/(tenant)/messages/new'
+                  : ('/(owner)/messages/new' as any)
+              )
+            }
+          >
+            <Ionicons
+              name="create-outline"
+              size={24}
+              color={role === 'tenant' ? colors.rsa.green : colors.rsa.blue}
+            />
+          </TouchableOpacity>
         </View>
 
         {/* Filters */}
@@ -244,8 +267,8 @@ export default function MessagesScreen({ role = 'owner' }: Props) {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={[colors.primary]}
-              tintColor={colors.primary}
+              colors={[roleColors.primary]}
+              tintColor={roleColors.primary}
             />
           }
           contentContainerStyle={threads.length === 0 && styles.emptyList}
@@ -258,11 +281,11 @@ export default function MessagesScreen({ role = 'owner' }: Props) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.background.default,
   },
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.background.secondary,
   },
   centerContainer: {
     flex: 1,
@@ -273,43 +296,52 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-    backgroundColor: '#FFF',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.background.default,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: colors.border.default,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#333',
+    color: colors.text.primary,
   },
   filterContainer: {
     flexDirection: 'row',
     padding: 12,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.background.default,
     gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.default,
   },
   filterButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: colors.background.tertiary,
   },
   filterText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#666',
+    color: colors.text.secondary,
   },
   threadCard: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.background.default,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: colors.border.default,
   },
   threadCardUnread: {
-    backgroundColor: '#F8FAFF',
+    backgroundColor: colors.info[50],
   },
   avatarContainer: {
     position: 'relative',
@@ -330,7 +362,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text.inverse,
   },
   categoryBadge: {
     position: 'absolute',
@@ -342,7 +374,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#FFF',
+    borderColor: colors.background.default,
   },
   threadContent: {
     flex: 1,
@@ -355,22 +387,22 @@ const styles = StyleSheet.create({
   },
   threadName: {
     fontSize: 16,
-    color: '#333',
+    color: colors.text.primary,
     flex: 1,
     marginRight: 8,
   },
   threadTime: {
     fontSize: 12,
-    color: '#999',
+    color: colors.text.tertiary,
   },
   threadSubject: {
     fontSize: 14,
-    color: '#666',
+    color: colors.text.secondary,
     marginBottom: 2,
   },
   threadProperty: {
     fontSize: 12,
-    color: '#999',
+    color: colors.text.tertiary,
   },
   textBold: {
     fontWeight: '600',
@@ -387,7 +419,7 @@ const styles = StyleSheet.create({
   unreadText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text.inverse,
   },
   emptyContainer: {
     flex: 1,
@@ -401,13 +433,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text.primary,
     marginTop: 16,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: '#666',
+    color: colors.text.secondary,
     textAlign: 'center',
   },
 });
