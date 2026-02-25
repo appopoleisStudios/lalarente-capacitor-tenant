@@ -55,7 +55,7 @@ export function subscribeToMessages(
           .single();
 
         if (data) {
-          callback(data as Message);
+          callback(data as unknown as Message);
         }
       }
     )

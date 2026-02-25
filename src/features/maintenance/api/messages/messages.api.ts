@@ -36,7 +36,7 @@ export async function getMessages(
     .order('created_at', { ascending: true });
 
   if (error) throw error;
-  return (data || []) as Message[];
+  return (data || []) as unknown as Message[];
 }
 
 /**
@@ -58,7 +58,7 @@ export async function getMessages(
  * ```
  */
 export async function sendMessage(input: SendMessageInput): Promise<Message> {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('messages')
     .insert({
       property_id: input.property_id,
@@ -79,7 +79,7 @@ export async function sendMessage(input: SendMessageInput): Promise<Message> {
     .single();
 
   if (error) throw error;
-  return data as Message;
+  return data as unknown as Message;
 }
 
 /**

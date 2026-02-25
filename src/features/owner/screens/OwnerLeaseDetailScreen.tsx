@@ -39,8 +39,6 @@ interface Lease {
   tenant_signed_at: string | null;
   owner_signature_url: string | null;
   tenant_signature_url: string | null;
-  late_fee_amount: number | null;
-  late_fee_grace_days: number | null;
   rent_escalation_type: string | null;
   rent_escalation_value: number | null;
   rent_escalation_frequency_months: number | null;
@@ -560,15 +558,6 @@ export default function OwnerLeaseDetailScreen() {
                   icon="calendar"
                   label="Payment Due Day"
                   value={`${lease.payment_due_day}${getDaySuffix(lease.payment_due_day)} of each month`}
-                />
-              )}
-              {lease.late_fee_amount && (
-                <DetailRow
-                  icon="alert-circle"
-                  label="Late Payment Fee"
-                  value={`R ${lease.late_fee_amount.toLocaleString()}${
-                    lease.late_fee_grace_days ? ` (after ${lease.late_fee_grace_days} days)` : ''
-                  }`}
                 />
               )}
             </View>

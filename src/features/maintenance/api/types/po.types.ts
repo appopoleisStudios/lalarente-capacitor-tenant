@@ -37,7 +37,7 @@ export interface PurchaseOrder {
   contract?: ServiceContract;
 }
 
-export interface PurchaseOrderWithDetails extends PurchaseOrder {
+export interface PurchaseOrderWithDetails extends Omit<PurchaseOrder, 'contract'> {
   contract?: {
     id: string;
     quote?: {
@@ -93,6 +93,7 @@ export interface PORevisionData {
   platform_fee_amount: number;
   total_amount: number;
   revision_reason?: string;
+  revision_number?: number;
 }
 
 export interface AuditTrail {

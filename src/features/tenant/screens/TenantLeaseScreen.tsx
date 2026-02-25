@@ -6,11 +6,11 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
-  SafeAreaView,
   Alert,
   Linking,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
@@ -36,8 +36,6 @@ interface Lease {
   tenant_signed_at: string | null;
   owner_signature_url: string | null;
   tenant_signature_url: string | null;
-  late_fee_amount: number | null;
-  late_fee_grace_days: number | null;
   rent_escalation_type: string | null;
   rent_escalation_value: number | null;
   rent_escalation_frequency_months: number | null;
@@ -462,15 +460,6 @@ export default function TenantLeaseScreen() {
                   value={`${lease.payment_due_day}${getDaySuffix(lease.payment_due_day)} of each month`}
                 />
               )}
-              {lease.late_fee_amount && (
-                <DetailRow
-                  icon="alert-circle"
-                  label="Late Payment Fee"
-                  value={`R ${lease.late_fee_amount.toLocaleString()}${
-                    lease.late_fee_grace_days ? ` (after ${lease.late_fee_grace_days} days)` : ''
-                  }`}
-                />
-              )}
             </View>
           </View>
 
@@ -610,6 +599,19 @@ export default function TenantLeaseScreen() {
                   You've signed the lease! Waiting for owner to sign.
                 </Text>
               </View>
+            </View>
+          )}
+
+          {/* Early Termination — CPA s14(2)(b)(i) right */}
+          {(lease.status === 'active' || lease.status === 'month_to_month') && (
+            <View style={styles.section}>
+              <TouchableOpacity
+                style={styles.terminationButton}
+                onPress={() => router.push({ pathname: '/(tenant)/early-termination', params: { leaseId: lease.id } })}
+              >
+                <Ionicons name="exit-outline" size={20} color="#DC2626" />
+                <Text style={styles.terminationButtonText}>Request Early Termination</Text>
+              </TouchableOpacity>
             </View>
           )}
 
@@ -916,6 +918,22 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
     borderRadius: 4,
     backgroundColor: '#FAFAFA',
+  },
+  terminationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#DC2626',
+    gap: 8,
+  },
+  terminationButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#DC2626',
   },
   contactButton: {
     flexDirection: 'row',

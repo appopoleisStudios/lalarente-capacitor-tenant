@@ -34,7 +34,7 @@ export async function filterByStatus(
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data as MaintenanceRequest[];
+  return data as unknown as MaintenanceRequest[];
 }
 
 /**
@@ -65,7 +65,7 @@ export async function filterByPriority(
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data as MaintenanceRequest[];
+  return data as unknown as MaintenanceRequest[];
 }
 
 /**
@@ -87,5 +87,5 @@ export async function getServiceCategories(): Promise<ServiceCategory[]> {
     .order('sort_order');
 
   if (error) throw error;
-  return data as ServiceCategory[];
+  return data as unknown as ServiceCategory[];
 }

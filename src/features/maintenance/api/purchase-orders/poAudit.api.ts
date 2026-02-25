@@ -5,7 +5,7 @@
 
 import { supabase } from '@/src/lib/supabase';
 import type { MaintenanceRequest } from '../types/maintenance.types';
-import type { AuditTrail, PurchaseOrder } from '../types/po.types';
+import type { AuditTrail, PORevision, PurchaseOrder } from '../types/po.types';
 import type { Quote } from '../types/quote.types';
 
 /**
@@ -56,7 +56,7 @@ export async function getDisputeAuditTrail(requestId: string): Promise<AuditTrai
       .eq('po_id', requestData.po_id)
       .order('revision_number', { ascending: true });
 
-    auditTrail.po_history = poRevisions || [];
+    auditTrail.po_history = (poRevisions || []) as unknown as PORevision[];
   }
 
   return auditTrail;
@@ -117,7 +117,7 @@ export async function getCompleteHistory(requestId: string): Promise<{
   const auditTrail = await getDisputeAuditTrail(requestId);
 
   return {
-    request: request as MaintenanceRequest,
+    request: request as unknown as MaintenanceRequest,
     quotes: (quotes || []) as Quote[],
     po,
     revisions: {

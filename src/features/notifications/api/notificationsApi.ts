@@ -2,12 +2,20 @@ import { supabase } from '../../../lib/supabase';
 import type {
   Notification,
   NotificationWithRecipient,
+  NotificationPreferences,
+  NotificationType,
+  NotificationChannel,
   SendNotificationInput,
   NotificationFilter,
   NotificationStats,
 } from '../types';
+import { DEFAULT_NOTIFICATION_PREFERENCES } from '../types';
+
 import { emailTemplates } from '../templates/emailTemplates';
 import { smsTemplates, smsService, formatSAPhoneNumber, isValidSAPhoneNumber } from '../templates/smsTemplates';
+
+// notifications table does not yet have a migration — cast via any until 033 is applied
+const notifTable = () => (supabase as any).from('notifications');
 
 export const notificationsApi = {
   /**
@@ -31,14 +39,13 @@ export const notificationsApi = {
       const preferences = await this.getUserPreferences(input.user_id);
 
       // Determine which channels to use
-      const channels = input.channels || this.getDefaultChannels(input.type, preferences);
+      const channels = input.channels || this.getDefaultChannels(input.type, preferences ?? undefined);
 
       // Get notification content
       const content = this.getNotificationContent(input.type, input.data);
 
       // Create notification record
-      const { data: notification, error: notifError } = await supabase
-        .from('notifications')
+      const { data: notification, error: notifError } = await notifTable()
         .insert({
           user_id: input.user_id,
           type: input.type,
@@ -84,8 +91,7 @@ export const notificationsApi = {
       await Promise.allSettled(sendPromises);
 
       // Update notification status
-      await supabase
-        .from('notifications')
+      await notifTable()
         .update({ status: 'sent', sent_at: new Date().toISOString() })
         .eq('id', notification.id);
 
@@ -328,7 +334,7 @@ export const notificationsApi = {
   ): Promise<void> {
     try {
       // Get user's push tokens
-      const { data: tokens, error } = await supabase
+      const { data: tokens, error } = await (supabase as any)
         .from('push_tokens')
         .select('token, platform')
         .eq('user_id', userId);
@@ -340,7 +346,7 @@ export const notificationsApi = {
 
       // In production, this would use Expo Push Notifications or Firebase
       console.log('Push notification would be sent:', {
-        tokens: tokens.map(t => t.token),
+        tokens: tokens.map((t: any) => t.token),
         title,
         body,
         data,
@@ -373,8 +379,7 @@ export const notificationsApi = {
     limit: number = 50,
     offset: number = 0
   ): Promise<Notification[]> {
-    let query = supabase
-      .from('notifications')
+    let query = notifTable()
       .select('*')
       .eq('user_id', userId);
 
@@ -418,8 +423,7 @@ export const notificationsApi = {
    * Get unread notification count
    */
   async getUnreadCount(userId: string): Promise<number> {
-    const { count, error } = await supabase
-      .from('notifications')
+    const { count, error } = await notifTable()
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
       .is('read_at', null);
@@ -436,8 +440,7 @@ export const notificationsApi = {
    * Mark notification as read
    */
   async markAsRead(notificationId: string): Promise<void> {
-    const { error } = await supabase
-      .from('notifications')
+    const { error } = await notifTable()
       .update({ read_at: new Date().toISOString() })
       .eq('id', notificationId);
 
@@ -451,8 +454,7 @@ export const notificationsApi = {
    * Mark all notifications as read
    */
   async markAllAsRead(userId: string): Promise<void> {
-    const { error } = await supabase
-      .from('notifications')
+    const { error } = await notifTable()
       .update({ read_at: new Date().toISOString() })
       .eq('user_id', userId)
       .is('read_at', null);
@@ -467,8 +469,7 @@ export const notificationsApi = {
    * Delete a notification
    */
   async deleteNotification(notificationId: string): Promise<void> {
-    const { error } = await supabase
-      .from('notifications')
+    const { error } = await notifTable()
       .delete()
       .eq('id', notificationId);
 
@@ -482,8 +483,7 @@ export const notificationsApi = {
    * Delete all read notifications
    */
   async deleteReadNotifications(userId: string): Promise<void> {
-    const { error } = await supabase
-      .from('notifications')
+    const { error } = await notifTable()
       .delete()
       .eq('user_id', userId)
       .not('read_at', 'is', null);
@@ -530,7 +530,7 @@ export const notificationsApi = {
       return null;
     }
 
-    return data;
+    return data as unknown as NotificationPreferences | null;
   },
 
   /**
@@ -555,7 +555,7 @@ export const notificationsApi = {
       throw new Error(`Failed to update notification preferences: ${error.message}`);
     }
 
-    return data;
+    return data as unknown as NotificationPreferences;
   },
 
   /**

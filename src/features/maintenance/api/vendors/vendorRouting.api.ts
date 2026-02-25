@@ -27,7 +27,7 @@ export async function pushToOpenMarket(requestId: string): Promise<MaintenanceRe
     .single();
 
   if (error) throw error;
-  return data as MaintenanceRequest;
+  return data as unknown as MaintenanceRequest;
 }
 
 /**
@@ -97,7 +97,7 @@ export async function pushToDedicatedVendors(requestId: string): Promise<{
   // TODO: Send notifications to vendors
 
   return {
-    request: data as MaintenanceRequest,
+    request: data as unknown as MaintenanceRequest,
     vendorsNotified: vendors.length,
   };
 }
@@ -152,7 +152,7 @@ export async function pushToSelectedVendors(
   // TODO: Send notifications to selected vendors
 
   return {
-    request: data as MaintenanceRequest,
+    request: data as unknown as MaintenanceRequest,
     vendorsNotified: vendorIds.length,
   };
 }

@@ -43,7 +43,7 @@ export async function getVendorsByCategory(categoryId: string): Promise<VendorPr
     new Map(data?.map(item => [item.vendor_id, item.vendor]) || []).values()
   );
 
-  return uniqueVendors as VendorProfile[];
+  return uniqueVendors as unknown as VendorProfile[];
 }
 
 /**
@@ -92,7 +92,7 @@ export async function getDedicatedVendors(
 
   if (error) throw error;
 
-  return (data?.map(item => item.vendor) || []) as VendorProfile[];
+  return (data?.map(item => item.vendor) || []) as unknown as VendorProfile[];
 }
 
 /**
@@ -172,7 +172,7 @@ export async function searchVendorByEmail(email: string): Promise<VendorProfile 
     throw error;
   }
 
-  return data as VendorProfile;
+  return data as unknown as VendorProfile;
 }
 
 /**

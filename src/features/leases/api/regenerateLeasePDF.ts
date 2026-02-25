@@ -51,7 +51,7 @@ export async function regenerateLeasePDF(leaseId: string): Promise<void> {
 
     // Generate and upload PDF
     console.log('Generating PDF...');
-    const leaseDocumentUrl = await generateAndUploadLeasePDF(lease);
+    const leaseDocumentUrl = await generateAndUploadLeasePDF(lease as any);
     console.log('PDF generated successfully:', leaseDocumentUrl);
 
     // Update lease with document URL

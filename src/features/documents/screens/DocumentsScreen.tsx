@@ -106,11 +106,11 @@ export default function DocumentsScreen({ role = 'owner', propertyId, leaseId }:
   }, [userId, filter, propertyId, leaseId]);
 
   const navigateToDocument = (documentId: string) => {
-    router.push(`/(${role})/documents/${documentId}`);
+    router.push(`/(${role})/documents/${documentId}` as any);
   };
 
   const navigateToUpload = () => {
-    router.push(`/(${role})/documents/upload`);
+    router.push(`/(${role})/documents/upload` as any);
   };
 
   const formatFileSize = (bytes: number | null) => {

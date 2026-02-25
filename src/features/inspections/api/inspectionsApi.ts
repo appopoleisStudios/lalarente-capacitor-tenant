@@ -62,7 +62,7 @@ export const inspectionsApi = {
       throw new Error(`Failed to fetch inspection: ${error.message}`);
     }
 
-    return data as InspectionWithRelations;
+    return data as unknown as InspectionWithRelations;
   },
 
   /**
@@ -84,7 +84,7 @@ export const inspectionsApi = {
       throw new Error(`Failed to fetch property inspections: ${error.message}`);
     }
 
-    return data as InspectionWithRelations[];
+    return data as unknown as InspectionWithRelations[];
   },
 
   /**
@@ -107,7 +107,7 @@ export const inspectionsApi = {
       throw new Error(`Failed to fetch lease inspections: ${error.message}`);
     }
 
-    return data as InspectionWithRelations[];
+    return data as unknown as InspectionWithRelations[];
   },
 
   /**
@@ -137,7 +137,7 @@ export const inspectionsApi = {
       throw new Error(`Failed to fetch owner inspections: ${error.message}`);
     }
 
-    return data as InspectionWithRelations[];
+    return data as unknown as InspectionWithRelations[];
   },
 
   /**
@@ -167,7 +167,7 @@ export const inspectionsApi = {
       throw new Error(`Failed to fetch tenant inspections: ${error.message}`);
     }
 
-    return data as InspectionWithRelations[];
+    return data as unknown as InspectionWithRelations[];
   },
 
   /**
@@ -198,7 +198,7 @@ export const inspectionsApi = {
   ): Promise<Inspection> {
     const { data, error } = await supabase
       .from('inspections')
-      .update({ rooms })
+      .update({ rooms: rooms as any })
       .eq('id', id)
       .select()
       .single();
@@ -392,7 +392,7 @@ export const inspectionsApi = {
       throw new Error(`Failed to fetch move-in inspection: ${error.message}`);
     }
 
-    return data as InspectionWithRelations;
+    return data as unknown as InspectionWithRelations;
   },
 
   /**

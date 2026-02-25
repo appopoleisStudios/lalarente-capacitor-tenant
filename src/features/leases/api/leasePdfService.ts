@@ -29,8 +29,8 @@ interface LeaseData {
   deposit_amount: number | null;
   payment_due_day: number | null;
   lease_type: string | null;
-  late_fee_amount: number | null;
-  late_fee_grace_days: number | null;
+  late_fee_amount?: number | null;
+  late_fee_grace_days?: number | null;
   rent_escalation_type: string | null;
   rent_escalation_value: number | null;
   rent_escalation_frequency_months: number | null;

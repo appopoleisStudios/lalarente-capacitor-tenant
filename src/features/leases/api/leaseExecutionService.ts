@@ -78,7 +78,7 @@ export async function executeLease(leaseId: string): Promise<void> {
     let leaseDocumentUrl: string | null = null;
 
     try {
-      leaseDocumentUrl = await generateAndUploadLeasePDF(lease);
+      leaseDocumentUrl = await generateAndUploadLeasePDF(lease as any);
       console.log('Lease PDF generated and uploaded successfully:', leaseDocumentUrl);
     } catch (pdfError) {
       console.error('Error generating lease PDF:', pdfError);

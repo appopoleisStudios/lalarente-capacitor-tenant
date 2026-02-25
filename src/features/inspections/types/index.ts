@@ -65,7 +65,7 @@ export interface KeyHandover {
 }
 
 // Extended inspection with relations
-export interface InspectionWithRelations extends Inspection {
+export interface InspectionWithRelations extends Omit<Inspection, 'rooms'> {
   property?: {
     id: string;
     title: string;

@@ -354,9 +354,7 @@ export const maintenanceApi = {
           full_name,
           email,
           phone,
-          avatar_url,
-          business_name,
-          rating
+          avatar_url
         )
       `)
       .eq('category_id', categoryId)
@@ -385,9 +383,7 @@ export const maintenanceApi = {
           full_name,
           email,
           phone,
-          avatar_url,
-          business_name,
-          rating
+          avatar_url
         )
       `)
       .eq('property_id', propertyId)
@@ -444,8 +440,6 @@ export const maintenanceApi = {
         email,
         phone,
         avatar_url,
-        business_name,
-        rating,
         role
       `)
       .eq('email', email.toLowerCase().trim())
