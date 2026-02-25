@@ -17,6 +17,16 @@ import type { Database } from '../../../types/database.types';
 
 type ApplicationStatus = 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected' | 'withdrawn';
 
+const ACTIVE_STATUSES = ['submitted', 'under_review', 'shortlisted', 'backup'];
+
+interface PropertyGroup {
+  propertyId: string;
+  propertyTitle: string;
+  propertyAddress: string;
+  applications: ApplicationWithRelations[];
+  activeCount: number;
+}
+
 export default function OwnerApplicationsScreen() {
   const router = useRouter();
   const { propertyId } = useLocalSearchParams<{ propertyId?: string }>();
@@ -74,6 +84,26 @@ export default function OwnerApplicationsScreen() {
     return filtered;
   };
 
+  const getPropertyGroups = (filtered: ApplicationWithRelations[]): PropertyGroup[] => {
+    const map = new Map<string, PropertyGroup>();
+    for (const app of filtered) {
+      const pid = app.property_id;
+      if (!map.has(pid)) {
+        map.set(pid, {
+          propertyId: pid,
+          propertyTitle: (app.property as any)?.title || 'Property',
+          propertyAddress: (app.property as any)?.address || '',
+          applications: [],
+          activeCount: 0,
+        });
+      }
+      const group = map.get(pid)!;
+      group.applications.push(app);
+      if (ACTIVE_STATUSES.includes(app.status)) group.activeCount++;
+    }
+    return Array.from(map.values());
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft':
@@ -109,57 +139,6 @@ export default function OwnerApplicationsScreen() {
         return 'help-circle-outline';
     }
   };
-
-  const renderApplicationCard = ({ item }: { item: ApplicationWithRelations }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => router.push(`/(owner)/applications/${item.id}` as any)}
-    >
-      <View style={styles.cardHeader}>
-        <View style={styles.propertyInfo}>
-          <Text style={styles.propertyTitle} numberOfLines={1}>
-            {item.property?.title || 'Property'}
-          </Text>
-          <Text style={styles.propertyAddress} numberOfLines={1}>
-            {item.property?.address || ''}
-          </Text>
-        </View>
-        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-          <Ionicons name={getStatusIcon(item.status)} size={16} color="#FFF" />
-          <Text style={styles.statusText}>{item.status}</Text>
-        </View>
-      </View>
-
-      <View style={styles.cardBody}>
-        <View style={styles.infoRow}>
-          <Ionicons name="person-outline" size={18} color="#666" />
-          <Text style={styles.infoText}>{item.tenant?.full_name || 'Unknown'}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Ionicons name="mail-outline" size={18} color="#666" />
-          <Text style={styles.infoText}>{item.tenant?.email || ''}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Ionicons name="calendar-outline" size={18} color="#666" />
-          <Text style={styles.infoText}>
-            Applied: {new Date(item.created_at!).toLocaleDateString()}
-          </Text>
-        </View>
-        {item.affordability_ratio && (
-          <View style={styles.infoRow}>
-            <Ionicons name="cash-outline" size={18} color="#666" />
-            <Text style={styles.infoText}>
-              Affordability: {(item.affordability_ratio * 100).toFixed(1)}%
-            </Text>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.cardFooter}>
-        <Ionicons name="chevron-forward" size={20} color="#007AFF" />
-      </View>
-    </TouchableOpacity>
-  );
 
   const renderFilters = () => {
     const statuses = ['draft', 'submitted', 'under_review', 'approved', 'rejected', 'withdrawn'];
@@ -270,6 +249,7 @@ export default function OwnerApplicationsScreen() {
   }
 
   const filteredApplications = getFilteredApplications();
+  const propertyGroups = getPropertyGroups(filteredApplications);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -288,7 +268,7 @@ export default function OwnerApplicationsScreen() {
       </View>
 
       {renderFilters()}
-      
+
       {filteredApplications.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Ionicons name="document-text-outline" size={64} color="#CCC" />
@@ -301,11 +281,88 @@ export default function OwnerApplicationsScreen() {
         </View>
       ) : (
         <FlatList
-          data={filteredApplications}
-          renderItem={renderApplicationCard}
-          keyExtractor={item => item.id}
+          data={propertyGroups}
+          keyExtractor={group => group.propertyId}
           contentContainerStyle={styles.listContent}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          renderItem={({ item: group }) => (
+            <View style={styles.groupSection}>
+              {/* Property Group Header */}
+              <View style={styles.groupHeader}>
+                <View style={styles.groupHeaderLeft}>
+                  <Text style={styles.groupPropertyTitle} numberOfLines={1}>
+                    {group.propertyTitle}
+                  </Text>
+                  <Text style={styles.groupPropertyAddress} numberOfLines={1}>
+                    {group.propertyAddress}
+                  </Text>
+                </View>
+                <View style={styles.groupHeaderRight}>
+                  <Text style={styles.groupCount}>
+                    {group.applications.length} applicant{group.applications.length !== 1 ? 's' : ''}
+                  </Text>
+                  {group.activeCount >= 2 && (
+                    <TouchableOpacity
+                      style={styles.compareButton}
+                      onPress={() =>
+                        router.push(
+                          `/(owner)/application-competition?propertyId=${group.propertyId}&propertyTitle=${encodeURIComponent(group.propertyTitle)}` as any
+                        )
+                      }
+                    >
+                      <Ionicons name="podium" size={14} color="#FFF" />
+                      <Text style={styles.compareButtonText}>Compare</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+
+              {/* Application Cards */}
+              {group.applications.map(item => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.card}
+                  onPress={() => router.push(`/(owner)/applications/${item.id}` as any)}
+                >
+                  <View style={styles.cardHeader}>
+                    <View style={styles.propertyInfo}>
+                      <Text style={styles.propertyTitle} numberOfLines={1}>
+                        {item.tenant?.full_name || 'Unknown Tenant'}
+                      </Text>
+                      <Text style={styles.propertyAddress} numberOfLines={1}>
+                        {item.tenant?.email || ''}
+                      </Text>
+                    </View>
+                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+                      <Ionicons name={getStatusIcon(item.status)} size={16} color="#FFF" />
+                      <Text style={styles.statusText}>{item.status.replace('_', ' ')}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.cardBody}>
+                    <View style={styles.infoRow}>
+                      <Ionicons name="calendar-outline" size={18} color="#666" />
+                      <Text style={styles.infoText}>
+                        Applied: {new Date(item.created_at!).toLocaleDateString()}
+                      </Text>
+                    </View>
+                    {item.affordability_ratio && (
+                      <View style={styles.infoRow}>
+                        <Ionicons name="cash-outline" size={18} color="#666" />
+                        <Text style={styles.infoText}>
+                          Affordability: {(item.affordability_ratio * 100).toFixed(1)}%
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <View style={styles.cardFooter}>
+                    <Ionicons name="chevron-forward" size={20} color="#007AFF" />
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         />
       )}
       </View>
@@ -508,5 +565,52 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     textAlign: 'center',
+  },
+  groupSection: {
+    marginBottom: 20,
+  },
+  groupHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingHorizontal: 4,
+    marginBottom: 8,
+  },
+  groupHeaderLeft: {
+    flex: 1,
+    marginRight: 12,
+  },
+  groupPropertyTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#333',
+  },
+  groupPropertyAddress: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 1,
+  },
+  groupHeaderRight: {
+    alignItems: 'flex-end',
+    gap: 6,
+  },
+  groupCount: {
+    fontSize: 12,
+    color: '#999',
+    fontWeight: '500',
+  },
+  compareButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#002395',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  compareButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFF',
   },
 });
