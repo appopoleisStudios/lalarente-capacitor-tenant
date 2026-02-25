@@ -227,7 +227,14 @@ export default function OwnerDashboardScreen() {
           </View>
           <AnimatedButton onPress={() => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            router.push('/(owner)/messages' as any);
+            // Context-aware routing: highest urgency first
+            if (dashboardData.pendingTerminations > 0) {
+              router.push('/(owner)/early-termination' as any);
+            } else if (dashboardData.processingPayments > 0) {
+              router.push('/(owner)/rent-roll' as any);
+            } else {
+              router.push('/(owner)/messages' as any);
+            }
           }}>
             <View style={styles.notificationInner}>
               <Text style={styles.bellIcon}>🔔</Text>
@@ -251,6 +258,45 @@ export default function OwnerDashboardScreen() {
           <Animated.View entering={FadeInDown.delay(100).duration(500)}>
             <PortfolioCard {...dashboardData.portfolio} userName={dashboardData.userName} />
           </Animated.View>
+
+          {/* Urgent Action Alerts */}
+          {dashboardData.pendingTerminations > 0 && (
+            <Animated.View entering={FadeInDown.delay(140).duration(400)}>
+              <TouchableOpacity
+                style={styles.terminationAlertCard}
+                onPress={() => router.push('/(owner)/early-termination' as any)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="alert-circle" size={24} color="#DC2626" />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.terminationAlertTitle}>
+                    {dashboardData.pendingTerminations} Early Termination {dashboardData.pendingTerminations === 1 ? 'Request' : 'Requests'} Pending
+                  </Text>
+                  <Text style={styles.terminationAlertSub}>CPA s14 — Tenant statutory right to exit</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#DC2626" />
+              </TouchableOpacity>
+            </Animated.View>
+          )}
+
+          {dashboardData.processingPayments > 0 && (
+            <Animated.View entering={FadeInDown.delay(160).duration(400)}>
+              <TouchableOpacity
+                style={styles.processingAlertCard}
+                onPress={() => router.push('/(owner)/rent-roll' as any)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="hourglass-outline" size={24} color="#7C3AED" />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.processingAlertTitle}>
+                    {dashboardData.processingPayments} Payment{dashboardData.processingPayments > 1 ? 's' : ''} Awaiting Confirmation
+                  </Text>
+                  <Text style={styles.processingAlertSub}>Tenants have submitted payment — confirm receipt</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#7C3AED" />
+              </TouchableOpacity>
+            </Animated.View>
+          )}
 
           {/* Analytics Grid - Real Data */}
           <Animated.View entering={FadeInDown.delay(200).duration(500)}>
