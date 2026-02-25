@@ -217,7 +217,8 @@ export const leaseTerminationApi = {
   },
 
   /**
-   * Get all terminated leases for an owner (for reporting).
+   * Get leases that went through the early termination process (for history view).
+   * Only returns 'early_terminated' — not normally expired/terminated leases.
    */
   async getTerminatedLeases(ownerId: string): Promise<Record<string, unknown>[]> {
     const { data, error } = await supabase
@@ -228,7 +229,7 @@ export const leaseTerminationApi = {
         tenant:profiles!tenant_id(id, full_name, email)
       `)
       .eq('owner_id', ownerId)
-      .in('status', ['terminated', 'early_terminated'])
+      .eq('status', 'early_terminated')
       .order('terminated_at', { ascending: false });
 
     if (error) {
