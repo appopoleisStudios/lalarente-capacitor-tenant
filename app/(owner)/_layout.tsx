@@ -250,6 +250,18 @@ export default function OwnerLayout() {
           href: null, // Hidden from tabs - accessed from tenant dashboard / notifications
         }}
       />
+      <Tabs.Screen
+        name="payment-disputes"
+        options={{
+          href: null, // Hidden from tabs - accessed from dashboard / rent-roll
+        }}
+      />
+      <Tabs.Screen
+        name="maintenance/send-po"
+        options={{
+          href: null, // Hidden from tabs - send PO to vendor
+        }}
+      />
     </Tabs>
   );
 }

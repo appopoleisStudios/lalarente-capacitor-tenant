@@ -308,6 +308,19 @@ export default function TenantPaymentScreen() {
             </View>
           </View>
 
+          {/* Arrears & Escalations */}
+          <TouchableOpacity
+            style={[styles.disputeButton, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}
+            onPress={() => router.push('/(tenant)/arrears' as any)}
+          >
+            <Ionicons name="trending-up-outline" size={20} color="#DC2626" />
+            <View style={styles.disputeContent}>
+              <Text style={[styles.disputeTitle, { color: '#991B1B' }]}>Arrears & Escalations</Text>
+              <Text style={[styles.disputeSubtitle, { color: '#DC2626' }]}>View outstanding amounts and CPA cure period</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+          </TouchableOpacity>
+
           {/* Dispute a Payment */}
           <TouchableOpacity
             style={styles.disputeButton}

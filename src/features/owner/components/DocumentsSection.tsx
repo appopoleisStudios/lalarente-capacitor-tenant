@@ -55,6 +55,9 @@ export const DocumentsSection = ({ documents }: DocumentsSectionProps) => {
       case 'insurance':
         router.push('/(owner)/insurance' as any);
         break;
+      case 'payment-disputes':
+        router.push('/(owner)/payment-disputes' as any);
+        break;
       default:
         break;
     }

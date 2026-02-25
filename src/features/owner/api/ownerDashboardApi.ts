@@ -78,6 +78,7 @@ export interface OwnerDashboardData {
   documents: DocumentStats;
   pendingTerminations: number;
   processingPayments: number;
+  openDisputes: number;
 }
 
 // ============================================================================
@@ -119,10 +120,11 @@ export async function getOwnerDashboardData(ownerId: string): Promise<OwnerDashb
 
     // Fetch holding deposits count for owner's properties (pending + paid = "active")
     const propertyIds = properties.map((p: any) => p.id);
-    const [holdingDepositsActive, pendingTerminations, processingPayments] = await Promise.all([
+    const [holdingDepositsActive, pendingTerminations, processingPayments, openDisputes] = await Promise.all([
       fetchHoldingDepositsCount(propertyIds),
       fetchPendingTerminationsCount(ownerId),
       fetchProcessingPaymentsCount(propertyIds),
+      fetchOpenDisputesCount(ownerId),
     ]);
 
     // Batch-fetch accepted quotes for active maintenance requests (single extra query)
@@ -160,6 +162,7 @@ export async function getOwnerDashboardData(ownerId: string): Promise<OwnerDashb
       documents,
       pendingTerminations,
       processingPayments,
+      openDisputes,
     };
   } catch (error) {
     console.error('[ownerDashboardApi] Error fetching dashboard data:', error);
@@ -208,6 +211,21 @@ async function fetchProcessingPaymentsCount(propertyIds: string[]): Promise<numb
     .select('*', { count: 'exact', head: true })
     .in('property_id', propertyIds)
     .eq('status', 'processing');
+  return count || 0;
+}
+
+async function fetchOpenDisputesCount(ownerId: string): Promise<number> {
+  const { data: leases } = await supabase
+    .from('leases')
+    .select('id')
+    .eq('owner_id', ownerId);
+  const leaseIds = (leases || []).map((l: { id: string }) => l.id);
+  if (leaseIds.length === 0) return 0;
+  const { count } = await supabase
+    .from('payment_disputes')
+    .select('*', { count: 'exact', head: true })
+    .in('lease_id', leaseIds)
+    .in('status', ['open', 'under_review', 'mediation']);
   return count || 0;
 }
 

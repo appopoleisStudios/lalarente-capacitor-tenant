@@ -180,12 +180,13 @@ export default function OwnerDashboardScreen() {
   }
 
   // Computed notification count: pending viewings + pending applications + unread messages
-  // + termination requests awaiting review + payments awaiting confirmation
+  // + termination requests awaiting review + payments awaiting confirmation + open disputes
   const notificationCount = pendingViewingsCount
     + dashboardData.applicants.filter(a => a.status === 'Pending').length
     + totalUnreadMessages
     + dashboardData.pendingTerminations
-    + dashboardData.processingPayments;
+    + dashboardData.processingPayments
+    + dashboardData.openDisputes;
 
   // Dynamic documents from real data
   const documents = [
@@ -198,6 +199,7 @@ export default function OwnerDashboardScreen() {
     { name: 'Holding Deposits', icon: '🔒', type: 'holding-deposit', info: `${dashboardData.documents.holdingDepositsActive} Active` },
     { name: 'Lease Renewals', icon: '🔄', type: 'renewals', info: 'CPA Notices' },
     { name: 'Insurance', icon: '📑', type: 'insurance', info: 'Claims Tracker' },
+    { name: 'Disputes', icon: '⚖️', type: 'payment-disputes', info: dashboardData.openDisputes > 0 ? `${dashboardData.openDisputes} Open` : 'Payment Queries' },
   ];
 
   // Success state - render dashboard with real data
@@ -230,6 +232,8 @@ export default function OwnerDashboardScreen() {
             // Context-aware routing: highest urgency first
             if (dashboardData.pendingTerminations > 0) {
               router.push('/(owner)/early-termination' as any);
+            } else if (dashboardData.openDisputes > 0) {
+              router.push('/(owner)/payment-disputes' as any);
             } else if (dashboardData.processingPayments > 0) {
               router.push('/(owner)/rent-roll' as any);
             } else {
@@ -275,6 +279,25 @@ export default function OwnerDashboardScreen() {
                   <Text style={styles.terminationAlertSub}>CPA s14 — Tenant statutory right to exit</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color="#DC2626" />
+              </TouchableOpacity>
+            </Animated.View>
+          )}
+
+          {dashboardData.openDisputes > 0 && (
+            <Animated.View entering={FadeInDown.delay(155).duration(400)}>
+              <TouchableOpacity
+                style={styles.processingAlertCard}
+                onPress={() => router.push('/(owner)/payment-disputes' as any)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="shield-half-outline" size={24} color="#7C3AED" />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.processingAlertTitle}>
+                    {dashboardData.openDisputes} Payment Dispute{dashboardData.openDisputes > 1 ? 's' : ''} Open
+                  </Text>
+                  <Text style={styles.processingAlertSub}>Tenants have raised payment queries</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#7C3AED" />
               </TouchableOpacity>
             </Animated.View>
           )}

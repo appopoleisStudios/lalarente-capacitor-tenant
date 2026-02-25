@@ -202,6 +202,12 @@ export default function TenantLayout() {
           href: null, // Hidden from tabs - accessed from dashboard
         }}
       />
+      <Tabs.Screen
+        name="arrears"
+        options={{
+          href: null, // Hidden from tabs - accessed from payments or dashboard
+        }}
+      />
     </Tabs>
   );
 }
