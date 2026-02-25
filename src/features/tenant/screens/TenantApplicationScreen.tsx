@@ -7,11 +7,11 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
-  SafeAreaView,
   Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
@@ -386,12 +386,12 @@ export default function TenantApplicationScreen() {
       await applicationsApi.submitApplication(application.id);
 
       Alert.alert(
-        'Success',
-        'Your application has been submitted successfully! The property owner will review it shortly.',
+        'Application Submitted',
+        'Your application has been submitted! Track its status and respond to any holding deposit requests from the owner.',
         [
           {
-            text: 'OK',
-            onPress: () => router.push('/(tenant)/dashboard'),
+            text: 'Track Application',
+            onPress: () => router.push('/(tenant)/application-status' as any),
           },
         ]
       );

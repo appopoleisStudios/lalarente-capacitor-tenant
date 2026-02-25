@@ -9,11 +9,17 @@ import {
   Alert,
   Linking,
   SafeAreaView,
+  TextInput,
+  Modal,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { applicationsApi, ApplicationWithRelations } from '../../properties/api/applicationsApi';
+import {
+  holdingDepositApi,
+  HoldingDeposit,
+} from '../../applications/api/holdingDeposit.api';
 
 export default function OwnerApplicationDetailScreen() {
   const router = useRouter();
@@ -23,6 +29,9 @@ export default function OwnerApplicationDetailScreen() {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasLease, setHasLease] = useState(false);
+  const [holdingDeposit, setHoldingDeposit] = useState<HoldingDeposit | null>(null);
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [depositAmount, setDepositAmount] = useState('');
 
   useEffect(() => {
     if (id) {
@@ -44,7 +53,17 @@ export default function OwnerApplicationDetailScreen() {
         .single();
       
       setHasLease(!!existingLease);
-      
+
+      // Load holding deposit for this application
+      const { data: deposit } = await supabase
+        .from('holding_deposits')
+        .select('*')
+        .eq('application_id', id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setHoldingDeposit(deposit as HoldingDeposit | null);
+
       // Auto-transition from 'submitted' to 'under_review' when owner views it
       if (data.status === 'submitted') {
         console.log('📋 Auto-transitioning application to under_review');
@@ -116,6 +135,42 @@ export default function OwnerApplicationDetailScreen() {
       ],
       'plain-text'
     );
+  };
+
+  const handleRequestDeposit = async () => {
+    const amount = parseFloat(depositAmount);
+    if (isNaN(amount) || amount <= 0) {
+      Alert.alert('Invalid Amount', 'Please enter a valid deposit amount.');
+      return;
+    }
+    if (!application) return;
+
+    try {
+      setProcessing(true);
+      const deposit = await holdingDepositApi.createDeposit(application.tenant_id, {
+        propertyId: application.property_id,
+        applicationId: application.id,
+        amount,
+      });
+      setHoldingDeposit(deposit);
+      setShowDepositModal(false);
+      setDepositAmount('');
+      Alert.alert(
+        'Deposit Requested',
+        `A holding deposit of R ${amount.toLocaleString('en-ZA')} has been requested. The tenant has 48 hours to pay.`
+      );
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to create deposit request');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const openDepositModal = () => {
+    // Pre-fill with 1 month's rent as default
+    const rent = application?.property?.rent_amount;
+    if (rent) setDepositAmount(rent.toString());
+    setShowDepositModal(true);
   };
 
   const openDocument = (url: string) => {
@@ -311,6 +366,108 @@ export default function OwnerApplicationDetailScreen() {
           </View>
         </View>
 
+        {/* Holding Deposit */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Holding Deposit</Text>
+          {holdingDeposit ? (
+            <View style={[styles.card, styles.depositCard]}>
+              <View style={styles.depositRow}>
+                <Text style={styles.depositLabel}>Amount</Text>
+                <Text style={styles.depositAmount}>
+                  R {holdingDeposit.amount.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </Text>
+              </View>
+              <View style={styles.depositRow}>
+                <Text style={styles.depositLabel}>Status</Text>
+                <View style={[
+                  styles.depositStatusBadge,
+                  {
+                    backgroundColor:
+                      holdingDeposit.status === 'paid' ? '#E6F7F0' :
+                      holdingDeposit.status === 'applied' ? '#E6EBF5' :
+                      holdingDeposit.status === 'refunded' ? '#F3F4F6' :
+                      '#FEF3C7',
+                  },
+                ]}>
+                  <Text style={[
+                    styles.depositStatusText,
+                    {
+                      color:
+                        holdingDeposit.status === 'paid' ? '#007A4D' :
+                        holdingDeposit.status === 'applied' ? '#002395' :
+                        holdingDeposit.status === 'refunded' ? '#6B7280' :
+                        '#D97706',
+                    },
+                  ]}>
+                    {holdingDeposit.status === 'pending' ? 'Awaiting Payment' :
+                     holdingDeposit.status === 'paid' ? 'Paid — Property Secured' :
+                     holdingDeposit.status === 'applied' ? 'Applied to Lease' :
+                     holdingDeposit.status === 'refunded' ? 'Refunded' :
+                     holdingDeposit.status}
+                  </Text>
+                </View>
+              </View>
+              {holdingDeposit.payment_deadline && holdingDeposit.status === 'pending' && (
+                <View style={styles.depositRow}>
+                  <Text style={styles.depositLabel}>Pay Deadline</Text>
+                  <Text style={styles.depositDeadline}>
+                    {new Date(holdingDeposit.payment_deadline).toLocaleDateString('en-ZA')}
+                  </Text>
+                </View>
+              )}
+              {holdingDeposit.paid_at && (
+                <View style={styles.depositRow}>
+                  <Text style={styles.depositLabel}>Paid On</Text>
+                  <Text style={styles.depositValue}>
+                    {new Date(holdingDeposit.paid_at).toLocaleDateString('en-ZA')}
+                  </Text>
+                </View>
+              )}
+              {holdingDeposit.status === 'paid' && (
+                <TouchableOpacity
+                  style={styles.applyLeaseButton}
+                  onPress={() => {
+                    Alert.alert(
+                      'Apply to Lease',
+                      'Apply this holding deposit to the tenant\'s first month / security deposit?',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Apply',
+                          onPress: async () => {
+                            try {
+                              const updated = await holdingDepositApi.applyToLease(holdingDeposit.id);
+                              setHoldingDeposit(updated);
+                            } catch (err: any) {
+                              Alert.alert('Error', err.message);
+                            }
+                          },
+                        },
+                      ]
+                    );
+                  }}
+                >
+                  <Text style={styles.applyLeaseButtonText}>Apply to Lease</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ) : (
+            <View style={[styles.card, styles.noDepositCard]}>
+              <Ionicons name="lock-open-outline" size={24} color="#999" />
+              <Text style={styles.noDepositText}>No holding deposit requested yet</Text>
+              {['under_review', 'shortlisted'].includes(application?.status || '') && (
+                <TouchableOpacity
+                  style={styles.requestDepositButton}
+                  onPress={openDepositModal}
+                >
+                  <Ionicons name="add-circle" size={16} color="#002395" />
+                  <Text style={styles.requestDepositButtonText}>Request Holding Deposit</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+        </View>
+
         {/* Application Timeline */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Timeline</Text>
@@ -349,6 +506,16 @@ export default function OwnerApplicationDetailScreen() {
             <Ionicons name="close-circle" size={20} color="#FFF" />
             <Text style={styles.actionButtonText}>Reject</Text>
           </TouchableOpacity>
+          {!holdingDeposit && (
+            <TouchableOpacity
+              style={[styles.actionButton, styles.depositButton]}
+              onPress={openDepositModal}
+              disabled={processing}
+            >
+              <Ionicons name="lock-closed" size={20} color="#FFF" />
+              <Text style={styles.actionButtonText}>Request Deposit</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={[styles.actionButton, styles.approveButton]}
             onPress={handleApprove}
@@ -395,6 +562,47 @@ export default function OwnerApplicationDetailScreen() {
           </TouchableOpacity>
         </View>
       ) : null}
+
+      {/* Request Holding Deposit Modal */}
+      <Modal visible={showDepositModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Request Holding Deposit</Text>
+            <Text style={styles.modalSubtitle}>
+              The tenant will have 48 hours to pay. The property will be held for 7 days after payment.
+            </Text>
+            <Text style={styles.modalLabel}>Amount (ZAR)</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={depositAmount}
+              onChangeText={setDepositAmount}
+              keyboardType="numeric"
+              placeholder="e.g. 8500"
+            />
+            <Text style={styles.modalHint}>
+              Typically 1 month's rent · Must be refunded if application is rejected (RHA s5A)
+            </Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancel}
+                onPress={() => { setShowDepositModal(false); setDepositAmount(''); }}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalConfirm, processing && { opacity: 0.7 }]}
+                onPress={handleRequestDeposit}
+                disabled={processing}
+              >
+                {processing
+                  ? <ActivityIndicator color="#FFF" size="small" />
+                  : <Text style={styles.modalConfirmText}>Send Request</Text>
+                }
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
       </View>
     </SafeAreaView>
   );
@@ -672,9 +880,161 @@ const styles = StyleSheet.create({
   viewLeaseButton: {
     backgroundColor: '#4CAF50',
   },
+  depositButton: {
+    backgroundColor: '#002395',
+  },
   actionButtonText: {
     color: '#FFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  // Holding deposit section
+  depositCard: {
+    gap: 10,
+  },
+  depositRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  depositLabel: {
+    fontSize: 14,
+    color: '#666',
+  },
+  depositAmount: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#002395',
+  },
+  depositStatusBadge: {
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  depositStatusText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  depositDeadline: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#D97706',
+  },
+  depositValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  applyLeaseButton: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#007A4D',
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  applyLeaseButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#007A4D',
+  },
+  noDepositCard: {
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 20,
+  },
+  noDepositText: {
+    fontSize: 14,
+    color: '#999',
+  },
+  requestDepositButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#002395',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginTop: 4,
+  },
+  requestDepositButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#002395',
+  },
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalBox: {
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    gap: 12,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+  },
+  modalSubtitle: {
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 18,
+  },
+  modalLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 4,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    color: '#333',
+  },
+  modalHint: {
+    fontSize: 12,
+    color: '#999',
+    fontStyle: 'italic',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 8,
+  },
+  modalCancel: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#666',
+  },
+  modalConfirm: {
+    flex: 2,
+    backgroundColor: '#002395',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  modalConfirmText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFF',
   },
 });

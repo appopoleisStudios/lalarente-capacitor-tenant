@@ -21,6 +21,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/src/lib/supabase';
 import { colors } from '@/src/shared/theme/colors';
 
+interface HoldingDepositSummary {
+  id: string;
+  application_id: string | null;
+  amount: number;
+  status: string;
+  payment_deadline: string | null;
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface ApplicationRecord {
@@ -77,6 +85,7 @@ const CREDIT_CONFIG: Record<string, { label: string; color: string }> = {
 export default function TenantApplicationStatusScreen() {
   const router = useRouter();
   const [applications, setApplications] = useState<ApplicationRecord[]>([]);
+  const [holdingDeposits, setHoldingDeposits] = useState<Record<string, HoldingDepositSummary>>({});
   const [loading, setLoading] = useState(true);
 
   useFocusEffect(
@@ -102,7 +111,23 @@ export default function TenantApplicationStatusScreen() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setApplications((data || []) as unknown as ApplicationRecord[]);
+      const apps = (data || []) as unknown as ApplicationRecord[];
+      setApplications(apps);
+
+      // Load pending holding deposits keyed by application_id
+      if (apps.length > 0) {
+        const appIds = apps.map(a => a.id);
+        const { data: deposits } = await supabase
+          .from('holding_deposits')
+          .select('id, application_id, amount, status, payment_deadline')
+          .in('application_id', appIds)
+          .in('status', ['pending', 'paid']);
+        const depositMap: Record<string, HoldingDepositSummary> = {};
+        for (const d of (deposits || []) as HoldingDepositSummary[]) {
+          if (d.application_id) depositMap[d.application_id] = d;
+        }
+        setHoldingDeposits(depositMap);
+      }
     } catch (err: any) {
       console.error('Error loading applications:', err);
       Alert.alert('Error', 'Failed to load applications');
@@ -170,7 +195,12 @@ export default function TenantApplicationStatusScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{title}</Text>
         {items.map(app => (
-          <ApplicationCard key={app.id} app={app} onWithdraw={handleWithdraw} />
+          <ApplicationCard
+            key={app.id}
+            app={app}
+            deposit={holdingDeposits[app.id] || null}
+            onWithdraw={handleWithdraw}
+          />
         ))}
       </View>
     );
@@ -225,11 +255,14 @@ export default function TenantApplicationStatusScreen() {
 
 function ApplicationCard({
   app,
+  deposit,
   onWithdraw,
 }: {
   app: ApplicationRecord;
+  deposit: HoldingDepositSummary | null;
   onWithdraw: (a: ApplicationRecord) => void;
 }) {
+  const router = useRouter();
   const config = STATUS_CONFIG[app.status] || STATUS_CONFIG.submitted;
   const creditInfo = app.credit_check_status
     ? CREDIT_CONFIG[app.credit_check_status]
@@ -270,6 +303,35 @@ function ApplicationCard({
           <Text style={styles.rentText}>
             R {app.property.monthly_rent.toLocaleString('en-ZA')}/month
           </Text>
+        )}
+
+        {/* Holding Deposit Banner */}
+        {deposit && deposit.status === 'pending' && (
+          <TouchableOpacity
+            style={styles.depositBanner}
+            onPress={() => router.push('/(tenant)/holding-deposit' as any)}
+          >
+            <Ionicons name="lock-closed" size={16} color="#D97706" />
+            <View style={styles.depositBannerText}>
+              <Text style={styles.depositBannerTitle}>
+                Holding deposit required — R {deposit.amount.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </Text>
+              {deposit.payment_deadline && (
+                <Text style={styles.depositBannerDeadline}>
+                  Pay by {new Date(deposit.payment_deadline).toLocaleDateString('en-ZA')} to secure this property
+                </Text>
+              )}
+            </View>
+            <Ionicons name="chevron-forward" size={16} color="#D97706" />
+          </TouchableOpacity>
+        )}
+        {deposit && deposit.status === 'paid' && (
+          <View style={styles.depositPaidBanner}>
+            <Ionicons name="shield-checkmark" size={16} color={colors.rsa.green} />
+            <Text style={styles.depositPaidText}>
+              Holding deposit paid — property secured
+            </Text>
+          </View>
         )}
 
         {/* Metrics */}
@@ -548,5 +610,39 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.text.secondary,
     fontWeight: '600',
+  },
+  depositBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  depositBannerText: { flex: 1 },
+  depositBannerTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#92400E',
+  },
+  depositBannerDeadline: {
+    fontSize: 12,
+    color: '#B45309',
+    marginTop: 2,
+  },
+  depositPaidBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#E6F7F0',
+    borderRadius: 8,
+    padding: 10,
+  },
+  depositPaidText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.rsa.green,
   },
 });
