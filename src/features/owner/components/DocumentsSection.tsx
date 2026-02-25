@@ -46,6 +46,9 @@ export const DocumentsSection = ({ documents }: DocumentsSectionProps) => {
       case 'deposits':
         router.push('/(owner)/deposits' as any);
         break;
+      case 'holding-deposit':
+        router.push('/(owner)/holding-deposit' as any);
+        break;
       case 'renewals':
         router.push('/(owner)/renewals' as any);
         break;

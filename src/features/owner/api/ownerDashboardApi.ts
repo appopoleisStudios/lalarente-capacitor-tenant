@@ -65,6 +65,7 @@ export interface DocumentStats {
   pastLeases: number;
   pendingQuotes: number;
   recentInvoices: number;
+  holdingDepositsActive: number;
 }
 
 export interface OwnerDashboardData {
@@ -114,13 +115,34 @@ export async function getOwnerDashboardData(ownerId: string): Promise<OwnerDashb
       applicationsApi.getOwnerApplications(ownerId),
     ]);
 
+    // Fetch holding deposits count for owner's properties (pending + paid = "active")
+    const propertyIds = properties.map((p: any) => p.id);
+    const holdingDepositsActive = await fetchHoldingDepositsCount(propertyIds);
+
+    // Batch-fetch accepted quotes for active maintenance requests (single extra query)
+    const activeIds = maintenanceRequests
+      .filter(r => ['open', 'quote_received', 'in_progress'].includes(r.status))
+      .map(r => r.id);
+
+    const quotesMap: Record<string, number> = {};
+    if (activeIds.length > 0) {
+      const { data: quotesData } = await supabase
+        .from('quotes')
+        .select('request_id, total_amount')
+        .in('request_id', activeIds)
+        .in('status', ['accepted', 'approved']);
+      if (quotesData) {
+        quotesData.forEach((q: any) => { quotesMap[q.request_id] = q.total_amount; });
+      }
+    }
+
     // Transform raw data into dashboard-specific formats
     const portfolio = calculatePortfolioStats(properties, payments);
     const analytics = calculateAnalytics(properties, payments, maintenanceRequests);
-    const maintenance = formatMaintenanceItems(maintenanceRequests);
+    const maintenance = formatMaintenanceItems(maintenanceRequests, quotesMap);
     const applicants = formatApplicants(applications);
     const recentActivity = buildActivityFeed(payments, maintenanceRequests, applications);
-    const documents = calculateDocumentStats(); // Placeholder for future implementation
+    const documents = calculateDocumentStats(properties, payments, maintenanceRequests, holdingDepositsActive);
 
     return {
       userName: userProfile?.full_name || 'Owner',
@@ -140,6 +162,20 @@ export async function getOwnerDashboardData(ownerId: string): Promise<OwnerDashb
 // ============================================================================
 // HELPER FUNCTIONS - Data Fetching
 // ============================================================================
+
+/**
+ * Fetches count of active holding deposits (pending + paid) for given property IDs.
+ * "Active" = money is either requested or received but not yet applied/refunded.
+ */
+async function fetchHoldingDepositsCount(propertyIds: string[]): Promise<number> {
+  if (propertyIds.length === 0) return 0;
+  const { count } = await supabase
+    .from('holding_deposits')
+    .select('*', { count: 'exact', head: true })
+    .in('property_id', propertyIds)
+    .in('status', ['pending', 'paid']);
+  return count || 0;
+}
 
 /**
  * Fetches user profile data
@@ -261,17 +297,16 @@ function calculateAnalytics(
  * Formats maintenance requests for dashboard display
  * Takes only the 5 most recent active requests
  */
-function formatMaintenanceItems(requests: any[]): MaintenanceItem[] {
+function formatMaintenanceItems(requests: any[], quotesMap: Record<string, number> = {}): MaintenanceItem[] {
   return requests
     .filter(r => ['open', 'quote_received', 'in_progress'].includes(r.status))
     .slice(0, 5)
     .map(r => {
       const property = r.property as any;
 
-      // Map status to user-friendly display
       const statusMap: Record<string, string> = {
         open: 'Open',
-        quote_received: 'Quote received',
+        quote_received: 'Quote Received',
         in_progress: 'In Progress',
       };
 
@@ -280,8 +315,8 @@ function formatMaintenanceItems(requests: any[]): MaintenanceItem[] {
         title: r.title || 'Maintenance Request',
         unit: property?.title || 'Property',
         status: statusMap[r.status] || r.status,
-        quote: null, // TODO: Extract from quotes when available
-        invoice: null, // TODO: Extract from invoices when available
+        quote: quotesMap[r.id] || null,
+        invoice: null,
         created_at: r.created_at,
       };
     });
@@ -392,16 +427,26 @@ function buildActivityFeed(
 }
 
 /**
- * Calculates document statistics
- * Placeholder - will be implemented when document module is complete
+ * Calculates document statistics from already-fetched data (no extra queries).
  */
-function calculateDocumentStats(): DocumentStats {
-  return {
-    activeLeases: 0,
-    pastLeases: 0,
-    pendingQuotes: 0,
-    recentInvoices: 0,
-  };
+function calculateDocumentStats(
+  properties: any[],
+  payments: any[],
+  maintenanceRequests: any[],
+  holdingDepositsActive: number = 0,
+): DocumentStats {
+  const activeLeases = properties.filter(p => p.status === 'rented').length;
+
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+  const recentInvoices = payments.filter(
+    p => p.status === 'completed' && p.paid_date && new Date(p.paid_date) >= monthStart
+  ).length;
+
+  const pendingQuotes = maintenanceRequests.filter(r => r.status === 'quote_received').length;
+
+  return { activeLeases, pastLeases: 0, pendingQuotes, recentInvoices, holdingDepositsActive };
 }
 
 // ============================================================================

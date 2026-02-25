@@ -192,6 +192,7 @@ export default function OwnerDashboardScreen() {
     { name: 'Tax Reports', icon: '⚖️', type: 'tax', info: 'SARS ITR12' },
     { name: 'Compliance', icon: '🛡️', type: 'compliance', info: 'FICA + COC' },
     { name: 'Deposits', icon: '🏦', type: 'deposits', info: 'Interest + Refunds' },
+    { name: 'Holding Deposits', icon: '🔒', type: 'holding-deposit', info: `${dashboardData.documents.holdingDepositsActive} Active` },
     { name: 'Lease Renewals', icon: '🔄', type: 'renewals', info: 'CPA Notices' },
     { name: 'Insurance', icon: '📑', type: 'insurance', info: 'Claims Tracker' },
   ];
