@@ -190,6 +190,18 @@ export default function TenantLayout() {
           href: null, // Hidden from tabs - DSAR screen
         }}
       />
+      <Tabs.Screen
+        name="holding-deposit"
+        options={{
+          href: null, // Hidden from tabs - accessed from applications/search
+        }}
+      />
+      <Tabs.Screen
+        name="application-status"
+        options={{
+          href: null, // Hidden from tabs - accessed from dashboard
+        }}
+      />
     </Tabs>
   );
 }

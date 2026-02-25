@@ -232,6 +232,18 @@ export default function OwnerLayout() {
           href: null, // Hidden from tabs - accessed from Documents section
         }}
       />
+      <Tabs.Screen
+        name="holding-deposit"
+        options={{
+          href: null, // Hidden from tabs - accessed from applications/properties
+        }}
+      />
+      <Tabs.Screen
+        name="application-competition"
+        options={{
+          href: null, // Hidden from tabs - accessed from property detail / applications
+        }}
+      />
     </Tabs>
   );
 }
