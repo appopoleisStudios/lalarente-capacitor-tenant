@@ -180,9 +180,12 @@ export default function OwnerDashboardScreen() {
   }
 
   // Computed notification count: pending viewings + pending applications + unread messages
+  // + termination requests awaiting review + payments awaiting confirmation
   const notificationCount = pendingViewingsCount
     + dashboardData.applicants.filter(a => a.status === 'Pending').length
-    + totalUnreadMessages;
+    + totalUnreadMessages
+    + dashboardData.pendingTerminations
+    + dashboardData.processingPayments;
 
   // Dynamic documents from real data
   const documents = [

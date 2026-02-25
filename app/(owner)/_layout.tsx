@@ -244,6 +244,12 @@ export default function OwnerLayout() {
           href: null, // Hidden from tabs - accessed from property detail / applications
         }}
       />
+      <Tabs.Screen
+        name="early-termination"
+        options={{
+          href: null, // Hidden from tabs - accessed from tenant dashboard / notifications
+        }}
+      />
     </Tabs>
   );
 }

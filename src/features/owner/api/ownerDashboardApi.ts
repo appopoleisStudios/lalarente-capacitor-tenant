@@ -76,6 +76,8 @@ export interface OwnerDashboardData {
   applicants: ApplicantItem[];
   recentActivity: ActivityItem[];
   documents: DocumentStats;
+  pendingTerminations: number;
+  processingPayments: number;
 }
 
 // ============================================================================
@@ -117,7 +119,11 @@ export async function getOwnerDashboardData(ownerId: string): Promise<OwnerDashb
 
     // Fetch holding deposits count for owner's properties (pending + paid = "active")
     const propertyIds = properties.map((p: any) => p.id);
-    const holdingDepositsActive = await fetchHoldingDepositsCount(propertyIds);
+    const [holdingDepositsActive, pendingTerminations, processingPayments] = await Promise.all([
+      fetchHoldingDepositsCount(propertyIds),
+      fetchPendingTerminationsCount(ownerId),
+      fetchProcessingPaymentsCount(propertyIds),
+    ]);
 
     // Batch-fetch accepted quotes for active maintenance requests (single extra query)
     const activeIds = maintenanceRequests
@@ -152,6 +158,8 @@ export async function getOwnerDashboardData(ownerId: string): Promise<OwnerDashb
       applicants,
       recentActivity,
       documents,
+      pendingTerminations,
+      processingPayments,
     };
   } catch (error) {
     console.error('[ownerDashboardApi] Error fetching dashboard data:', error);
@@ -174,6 +182,32 @@ async function fetchHoldingDepositsCount(propertyIds: string[]): Promise<number>
     .select('*', { count: 'exact', head: true })
     .in('property_id', propertyIds)
     .in('status', ['pending', 'paid']);
+  return count || 0;
+}
+
+/**
+ * Count leases with a pending early termination request (tenant submitted, owner hasn't reviewed).
+ */
+async function fetchPendingTerminationsCount(ownerId: string): Promise<number> {
+  const { count } = await supabase
+    .from('leases')
+    .select('*', { count: 'exact', head: true })
+    .eq('owner_id', ownerId)
+    .eq('status', 'active')
+    .not('early_termination_requested_at', 'is', null);
+  return count || 0;
+}
+
+/**
+ * Count payments in 'processing' status (tenant confirmed EFT, awaiting owner confirmation).
+ */
+async function fetchProcessingPaymentsCount(propertyIds: string[]): Promise<number> {
+  if (propertyIds.length === 0) return 0;
+  const { count } = await supabase
+    .from('payments')
+    .select('*', { count: 'exact', head: true })
+    .in('property_id', propertyIds)
+    .eq('status', 'processing');
   return count || 0;
 }
 

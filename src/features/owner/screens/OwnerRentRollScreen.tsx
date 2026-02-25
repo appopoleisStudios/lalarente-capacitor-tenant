@@ -23,9 +23,10 @@ interface PropertyPaymentSummary {
   tenant_name: string | null;
   monthly_rent: number;
   next_payment_due: string | null;
-  payment_status: 'paid' | 'pending' | 'overdue' | 'no_lease';
+  payment_status: 'paid' | 'pending' | 'overdue' | 'processing' | 'no_lease';
   overdue_amount: number;
   last_payment_date: string | null;
+  processing_payments: Array<{ id: string; amount: number; transaction_id: string | null }>;
 }
 
 export default function OwnerRentRollScreen() {
@@ -36,7 +37,8 @@ export default function OwnerRentRollScreen() {
   
   const [stats, setStats] = useState<PaymentStats | null>(null);
   const [propertySummaries, setPropertySummaries] = useState<PropertyPaymentSummary[]>([]);
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'paid' | 'pending' | 'overdue'>('all');
+  const [selectedFilter, setSelectedFilter] = useState<'all' | 'paid' | 'pending' | 'overdue' | 'processing'>('all');
+  const [confirmingPropertyId, setConfirmingPropertyId] = useState<string | null>(null);
 
   useEffect(() => {
     loadRentRollData();
@@ -70,11 +72,16 @@ export default function OwnerRentRollScreen() {
         const upcomingPayments = propertyPayments
           .filter(p => p.status === 'pending' && new Date(p.due_date) >= today)
           .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
-        
+
         // Find overdue payments
         const overduePayments = propertyPayments
           .filter(p => p.status === 'pending' && new Date(p.due_date) < today);
-        
+
+        // Find payments awaiting owner confirmation (tenant submitted EFT)
+        const processingPayments = propertyPayments
+          .filter(p => p.status === 'processing')
+          .map(p => ({ id: p.id, amount: p.amount, transaction_id: (p as any).transaction_id }));
+
         // Find last paid payment
         const paidPayments = propertyPayments
           .filter(p => p.status === 'completed' && p.paid_date)
@@ -84,19 +91,16 @@ export default function OwnerRentRollScreen() {
         const overdueAmount = overduePayments.reduce((sum, p) => sum + p.amount, 0);
         const lastPayment = paidPayments[0];
 
-        let paymentStatus: 'paid' | 'pending' | 'overdue' | 'no_lease' = 'no_lease';
-        
+        let paymentStatus: 'paid' | 'pending' | 'overdue' | 'processing' | 'no_lease' = 'no_lease';
+
         if (property.status === 'rented') {
-          if (overduePayments.length > 0) {
+          if (processingPayments.length > 0) {
+            paymentStatus = 'processing';
+          } else if (overduePayments.length > 0) {
             paymentStatus = 'overdue';
           } else if (nextPayment) {
-            // Check if next payment is within 5 days
             const daysUntilDue = Math.ceil((new Date(nextPayment.due_date).getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-            if (daysUntilDue <= 5) {
-              paymentStatus = 'pending';
-            } else {
-              paymentStatus = 'paid';
-            }
+            paymentStatus = daysUntilDue <= 5 ? 'pending' : 'paid';
           } else {
             paymentStatus = 'paid';
           }
@@ -112,6 +116,7 @@ export default function OwnerRentRollScreen() {
           payment_status: paymentStatus,
           overdue_amount: overdueAmount,
           last_payment_date: lastPayment?.paid_date || null,
+          processing_payments: processingPayments,
         };
       });
 
@@ -127,6 +132,43 @@ export default function OwnerRentRollScreen() {
   const onRefresh = () => {
     setRefreshing(true);
     loadRentRollData();
+  };
+
+  const confirmPayments = (item: PropertyPaymentSummary) => {
+    if (item.processing_payments.length === 0) return;
+    const total = item.processing_payments.reduce((s, p) => s + p.amount, 0);
+    const refs = item.processing_payments
+      .map(p => p.transaction_id)
+      .filter(Boolean)
+      .join(', ');
+    const refText = refs ? `\nTenant reference: ${refs}` : '';
+    Alert.alert(
+      'Confirm Payment Receipt',
+      `${item.tenant_name || 'Tenant'} has confirmed payment of R ${total.toLocaleString()}.${refText}\n\nConfirm that you have received this payment?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm Received',
+          onPress: async () => {
+            setConfirmingPropertyId(item.property_id);
+            try {
+              const ids = item.processing_payments.map(p => p.id);
+              const { error } = await supabase
+                .from('payments')
+                .update({ status: 'completed', paid_date: new Date().toISOString() })
+                .in('id', ids);
+              if (error) throw error;
+              Alert.alert('Confirmed', 'Payment marked as received.');
+              loadRentRollData();
+            } catch (err) {
+              Alert.alert('Error', 'Failed to confirm payment.');
+            } finally {
+              setConfirmingPropertyId(null);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const sendPaymentReminder = (propertyId: string, tenantName: string) => {
@@ -153,27 +195,21 @@ export default function OwnerRentRollScreen() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'paid':
-        return '#4CAF50';
-      case 'pending':
-        return '#FFA500';
-      case 'overdue':
-        return '#F44336';
-      default:
-        return '#9E9E9E';
+      case 'paid': return '#4CAF50';
+      case 'processing': return '#7C3AED';
+      case 'pending': return '#FFA500';
+      case 'overdue': return '#F44336';
+      default: return '#9E9E9E';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'paid':
-        return 'checkmark-circle';
-      case 'pending':
-        return 'time';
-      case 'overdue':
-        return 'alert-circle';
-      default:
-        return 'remove-circle-outline';
+      case 'paid': return 'checkmark-circle';
+      case 'processing': return 'hourglass-outline';
+      case 'pending': return 'time';
+      case 'overdue': return 'alert-circle';
+      default: return 'remove-circle-outline';
     }
   };
 
@@ -234,6 +270,24 @@ export default function OwnerRentRollScreen() {
         )}
       </View>
 
+      {item.payment_status === 'processing' && (
+        <TouchableOpacity
+          style={styles.confirmButton}
+          onPress={(e) => { e.stopPropagation(); confirmPayments(item); }}
+          disabled={confirmingPropertyId === item.property_id}
+        >
+          {confirmingPropertyId === item.property_id ? (
+            <ActivityIndicator size="small" color="#FFF" />
+          ) : (
+            <>
+              <Ionicons name="checkmark-done-outline" size={18} color="#FFF" />
+              <Text style={styles.confirmButtonText}>
+                Confirm Receipt ({item.processing_payments.length})
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+      )}
       {(item.payment_status === 'pending' || item.payment_status === 'overdue') && item.tenant_name && (
         <TouchableOpacity
           style={styles.reminderButton}
@@ -321,7 +375,7 @@ export default function OwnerRentRollScreen() {
 
       {/* Filters */}
       <View style={styles.filtersContainer}>
-        {(['all', 'paid', 'pending', 'overdue'] as const).map(filter => (
+        {(['all', 'paid', 'processing', 'pending', 'overdue'] as const).map(filter => (
           <TouchableOpacity
             key={filter}
             style={[styles.filterButton, selectedFilter === filter && styles.filterButtonActive]}
@@ -584,6 +638,21 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: 14,
     color: '#666',
+  },
+  confirmButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: '#7C3AED',
+    gap: 8,
+  },
+  confirmButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFF',
   },
   reminderButton: {
     flexDirection: 'row',

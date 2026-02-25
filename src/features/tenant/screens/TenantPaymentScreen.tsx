@@ -6,10 +6,12 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
-  SafeAreaView,
   Alert,
   RefreshControl,
+  Modal,
+  TextInput,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
@@ -50,6 +52,13 @@ export default function TenantPaymentScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<'all' | 'pending' | 'paid'>('all');
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [payingPayment, setPayingPayment] = useState<Payment | null>(null);
+  const [selectedMethod, setSelectedMethod] = useState('EFT / Internet Banking');
+  const [referenceInput, setReferenceInput] = useState('');
+  const [paySubmitting, setPaySubmitting] = useState(false);
+
+  const PAYMENT_METHODS = ['EFT / Internet Banking', 'Debit Order', 'Cash'];
 
   useEffect(() => {
     loadData();
@@ -60,13 +69,16 @@ export default function TenantPaymentScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get active lease
-      const { data: leaseData } = await supabase
+      // Get most recent active lease (tenant may have multiple)
+      const { data: leasesData } = await supabase
         .from('leases')
         .select('id, monthly_rent, payment_due_day, property:properties!property_id(title)')
         .eq('tenant_id', user.id)
-        .eq('status', 'active')
-        .single();
+        .in('status', ['active', 'month_to_month'])
+        .order('start_date', { ascending: false })
+        .limit(1);
+
+      const leaseData = leasesData?.[0] ?? null;
 
       if (leaseData) {
         setLease(leaseData as Lease);
@@ -107,20 +119,38 @@ export default function TenantPaymentScreen() {
   };
 
   const handleMakePayment = (payment: Payment) => {
-    Alert.alert(
-      'Make Payment',
-      `Pay R ${payment.amount.toLocaleString()} for ${payment.type}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Pay Now',
-          onPress: () => {
-            // TODO: Integrate payment gateway (Task 15.2)
-            Alert.alert('Coming Soon', 'Payment gateway integration will be added in Task 15.2');
-          },
-        },
-      ]
-    );
+    setPayingPayment(payment);
+    setSelectedMethod('EFT / Internet Banking');
+    setReferenceInput('');
+    setShowPayModal(true);
+  };
+
+  const handleSubmitPayment = async () => {
+    if (!payingPayment) return;
+    setPaySubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('payments')
+        .update({
+          status: 'processing',
+          payment_method: selectedMethod,
+          transaction_id: referenceInput.trim() || null,
+        })
+        .eq('id', payingPayment.id);
+
+      if (error) throw error;
+
+      setShowPayModal(false);
+      Alert.alert(
+        'Payment Confirmed',
+        'Your payment has been recorded as confirmed. Your landlord will verify receipt and mark it as paid.',
+      );
+      loadData();
+    } catch {
+      Alert.alert('Error', 'Failed to record payment. Please try again.');
+    } finally {
+      setPaySubmitting(false);
+    }
   };
 
   const getDaysUntilDue = (dueDate: string) => {
@@ -134,7 +164,10 @@ export default function TenantPaymentScreen() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'paid':
+      case 'completed':
         return RSA.green;
+      case 'processing':
+        return '#7C3AED';
       case 'pending':
         return '#FF9800';
       case 'overdue':
@@ -149,7 +182,10 @@ export default function TenantPaymentScreen() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'paid':
+      case 'completed':
         return 'checkmark-circle';
+      case 'processing':
+        return 'hourglass-outline';
       case 'pending':
         return 'time-outline';
       case 'overdue':
@@ -272,6 +308,19 @@ export default function TenantPaymentScreen() {
             </View>
           </View>
 
+          {/* Dispute a Payment */}
+          <TouchableOpacity
+            style={styles.disputeButton}
+            onPress={() => router.push('/(tenant)/payment-disputes')}
+          >
+            <Ionicons name="alert-circle-outline" size={20} color="#D97706" />
+            <View style={styles.disputeContent}>
+              <Text style={styles.disputeTitle}>Dispute a Payment</Text>
+              <Text style={styles.disputeSubtitle}>Raise a query about a charge or payment</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+          </TouchableOpacity>
+
           {/* Filter Tabs */}
           <View style={styles.filterContainer}>
             <TouchableOpacity
@@ -367,6 +416,11 @@ export default function TenantPaymentScreen() {
                           <Text style={styles.miniPayButtonText}>Pay</Text>
                         </TouchableOpacity>
                       )}
+                      {payment.status === 'processing' && (
+                        <View style={styles.processingPill}>
+                          <Text style={styles.processingPillText}>Awaiting confirmation</Text>
+                        </View>
+                      )}
                     </View>
                   </TouchableOpacity>
                 ))}
@@ -375,6 +429,73 @@ export default function TenantPaymentScreen() {
           </View>
         </ScrollView>
       </View>
+
+      {/* EFT Payment Confirmation Modal */}
+      <Modal visible={showPayModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <Text style={styles.modalTitle}>Confirm Payment</Text>
+            {payingPayment && (
+              <Text style={styles.modalAmount}>
+                R {payingPayment.amount.toLocaleString()} — {payingPayment.type}
+              </Text>
+            )}
+            <Text style={styles.modalSubtitle}>
+              Confirm that you have already paid via your bank. Your landlord will verify and mark the payment as received.
+            </Text>
+
+            {/* Method Selector */}
+            <Text style={styles.modalLabel}>Payment method</Text>
+            <View style={styles.methodRow}>
+              {PAYMENT_METHODS.map((m) => (
+                <TouchableOpacity
+                  key={m}
+                  style={[styles.methodChip, selectedMethod === m && styles.methodChipActive]}
+                  onPress={() => setSelectedMethod(m)}
+                >
+                  <Text style={[styles.methodChipText, selectedMethod === m && styles.methodChipTextActive]}>
+                    {m}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Reference */}
+            <Text style={styles.modalLabel}>Your bank reference (optional)</Text>
+            <TextInput
+              style={styles.referenceInput}
+              value={referenceInput}
+              onChangeText={setReferenceInput}
+              placeholder="e.g., RENT-JAN or your surname"
+              placeholderTextColor="#9CA3AF"
+              autoCapitalize="characters"
+            />
+            <Text style={styles.modalHint}>
+              This helps your landlord match the payment in their bank statement.
+            </Text>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => setShowPayModal(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalConfirmBtn, paySubmitting && { opacity: 0.6 }]}
+                onPress={handleSubmitPayment}
+                disabled={paySubmitting}
+              >
+                {paySubmitting ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <Text style={styles.modalConfirmText}>Confirm Payment</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -612,6 +733,31 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFF',
   },
+  disputeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFBEB',
+    borderRadius: 10,
+    padding: 14,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    gap: 12,
+  },
+  disputeContent: {
+    flex: 1,
+  },
+  disputeTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#92400E',
+  },
+  disputeSubtitle: {
+    fontSize: 12,
+    color: '#B45309',
+    marginTop: 2,
+  },
   emptyHistory: {
     alignItems: 'center',
     padding: 32,
@@ -645,4 +791,49 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  processingPill: {
+    backgroundColor: '#EDE9FE',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  processingPillText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#5B21B6',
+  },
+  // EFT Modal
+  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
+  modalSheet: {
+    backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    padding: 24, paddingBottom: 40,
+  },
+  modalTitle: { fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 4 },
+  modalAmount: { fontSize: 24, fontWeight: '700', color: RSA.green, marginBottom: 8 },
+  modalSubtitle: { fontSize: 13, color: '#6B7280', lineHeight: 18, marginBottom: 20 },
+  modalLabel: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 8 },
+  methodRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
+  methodChip: {
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20,
+    borderWidth: 1.5, borderColor: '#D1D5DB', backgroundColor: '#FFF',
+  },
+  methodChipActive: { borderColor: RSA.green, backgroundColor: '#F0FDF4' },
+  methodChipText: { fontSize: 13, color: '#6B7280', fontWeight: '500' },
+  methodChipTextActive: { color: RSA.green, fontWeight: '700' },
+  referenceInput: {
+    borderWidth: 1.5, borderColor: '#D1D5DB', borderRadius: 10,
+    padding: 12, fontSize: 15, color: '#111827', marginBottom: 6,
+  },
+  modalHint: { fontSize: 11, color: '#9CA3AF', marginBottom: 24 },
+  modalActions: { flexDirection: 'row', gap: 12 },
+  modalCancelBtn: {
+    flex: 1, paddingVertical: 14, borderRadius: 10, alignItems: 'center',
+    borderWidth: 1, borderColor: '#E5E7EB',
+  },
+  modalCancelText: { fontSize: 15, fontWeight: '600', color: '#374151' },
+  modalConfirmBtn: {
+    flex: 2, paddingVertical: 14, borderRadius: 10, alignItems: 'center',
+    backgroundColor: RSA.green,
+  },
+  modalConfirmText: { fontSize: 15, fontWeight: '700', color: '#FFF' },
 });
