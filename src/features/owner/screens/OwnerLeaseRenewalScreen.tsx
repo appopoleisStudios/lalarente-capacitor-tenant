@@ -50,6 +50,7 @@ export default function OwnerLeaseRenewalScreen() {
   const [escalationRate, setEscalationRate] = useState('');
   const [offerNotes, setOfferNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [executingLeaseId, setExecutingLeaseId] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -143,6 +144,34 @@ export default function OwnerLeaseRenewalScreen() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleExecuteRenewal = async (negotiationId: string, leaseId: string) => {
+    Alert.alert(
+      'Execute Renewal',
+      'This will create a new lease and send it to both parties for signing. The current lease will be marked as expired.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Create New Lease',
+          onPress: async () => {
+            setExecutingLeaseId(leaseId);
+            try {
+              await leaseRenewalApi.executeRenewal(negotiationId);
+              Alert.alert(
+                'Renewal Executed',
+                'New lease created successfully and is now pending dual-party signing.',
+                [{ text: 'OK', onPress: loadExpiringLeases }]
+              );
+            } catch (err: any) {
+              Alert.alert('Error', err.message || 'Failed to execute renewal');
+            } finally {
+              setExecutingLeaseId(null);
+            }
+          },
+        },
+      ]
+    );
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -318,17 +347,55 @@ export default function OwnerLeaseRenewalScreen() {
                   </View>
                 )}
 
+                {/* Accepted negotiation status row */}
+                {latestNeg?.status === 'accepted' && (
+                  <View style={styles.activeOfferRow}>
+                    <Ionicons name="checkmark-circle" size={14} color={colors.rsa.green} />
+                    <Text style={[styles.activeOfferText, { color: colors.rsa.green }]}>
+                      Round {latestNeg.round}: {formatZAR(latestNeg.proposed_monthly_rent)}/mo accepted by tenant
+                    </Text>
+                  </View>
+                )}
+
                 {/* Actions */}
                 <View style={styles.cardActions}>
-                  <TouchableOpacity
-                    style={styles.offerButton}
-                    onPress={() => handleOpenOfferModal(lease.id, lease.monthly_rent)}
-                  >
-                    <Ionicons name="send" size={16} color={colors.rsa.white} />
-                    <Text style={styles.offerButtonText}>
-                      {hasActiveOffer ? 'Send Counter-Offer' : 'Send Renewal Offer'}
-                    </Text>
-                  </TouchableOpacity>
+                  {latestNeg?.status === 'accepted' ? (
+                    <>
+                      <View style={styles.acceptedBanner}>
+                        <Ionicons name="checkmark-circle" size={16} color={colors.rsa.green} />
+                        <Text style={styles.acceptedBannerText}>
+                          Tenant accepted · Execute to create the new lease
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        style={[
+                          styles.executeButton,
+                          executingLeaseId === lease.id && styles.submitButtonDisabled,
+                        ]}
+                        onPress={() => handleExecuteRenewal(latestNeg.id, lease.id)}
+                        disabled={!!executingLeaseId}
+                      >
+                        {executingLeaseId === lease.id ? (
+                          <ActivityIndicator size="small" color={colors.rsa.white} />
+                        ) : (
+                          <>
+                            <Ionicons name="rocket" size={16} color={colors.rsa.white} />
+                            <Text style={styles.executeButtonText}>Execute Renewal (Create New Lease)</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.offerButton}
+                      onPress={() => handleOpenOfferModal(lease.id, lease.monthly_rent)}
+                    >
+                      <Ionicons name="send" size={16} color={colors.rsa.white} />
+                      <Text style={styles.offerButtonText}>
+                        {hasActiveOffer ? 'Send Counter-Offer' : 'Send Renewal Offer'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             );
@@ -742,6 +809,35 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     fontSize: 16,
+    fontWeight: '700',
+    color: colors.rsa.white,
+  },
+  acceptedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#E6F7F0',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 8,
+  },
+  acceptedBannerText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.rsa.green,
+    flex: 1,
+  },
+  executeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: colors.rsa.green,
+    borderRadius: 10,
+    padding: 13,
+  },
+  executeButtonText: {
+    fontSize: 14,
     fontWeight: '700',
     color: colors.rsa.white,
   },

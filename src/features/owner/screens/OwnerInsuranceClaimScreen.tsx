@@ -20,7 +20,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '@/src/lib/supabase';
+import { uploadFile } from '@/src/lib/storage';
 import {
   insuranceClaimsApi,
   InsuranceClaim,
@@ -81,6 +83,13 @@ export default function OwnerInsuranceClaimScreen() {
   const [policies, setPolicies] = useState<InsurancePolicy[]>([]);
   const [showPolicyPicker, setShowPolicyPicker] = useState(false);
 
+  // Documents state
+  const [claimDocuments, setClaimDocuments] = useState<any[]>([]);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [addDocModal, setAddDocModal] = useState(false);
+  const [docTitle, setDocTitle] = useState('');
+  const [docType, setDocType] = useState('photo');
+
   // Form state
   const [selectedPolicy, setSelectedPolicy] = useState<InsurancePolicy | null>(null);
   const [claimType, setClaimType] = useState<ClaimType>('fire_damage');
@@ -108,18 +117,22 @@ export default function OwnerInsuranceClaimScreen() {
       setPolicies(userPolicies);
 
       if (!isNewClaim && claimId) {
-        const { data, error } = await supabase
-          .from('insurance_claims')
-          .select(`
-            *,
-            policy:insurance_policies!policy_id(policy_number, insurer_name),
-            property:properties!property_id(title, address)
-          `)
-          .eq('id', claimId)
-          .single();
+        const [claimResult, docs] = await Promise.all([
+          supabase
+            .from('insurance_claims')
+            .select(`
+              *,
+              policy:insurance_policies!policy_id(policy_number, insurer_name),
+              property:properties!property_id(title, address)
+            `)
+            .eq('id', claimId)
+            .single(),
+          insuranceClaimsApi.getClaimDocuments(claimId),
+        ]);
 
-        if (error) throw error;
-        setClaim(data as InsuranceClaim);
+        if (claimResult.error) throw claimResult.error;
+        setClaim(claimResult.data as InsuranceClaim);
+        setClaimDocuments(docs);
       } else if (userPolicies.length === 1) {
         setSelectedPolicy(userPolicies[0]);
       }
@@ -128,6 +141,62 @@ export default function OwnerInsuranceClaimScreen() {
       Alert.alert('Error', 'Failed to load claim information');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePickAndUpload = async () => {
+    if (!claim || !userId) return;
+    if (!docTitle.trim()) {
+      Alert.alert('Title Required', 'Please enter a document title before picking a file');
+      return;
+    }
+
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Camera roll access is needed to add photos');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: false,
+      quality: 0.8,
+    });
+
+    if (result.canceled || !result.assets[0]) return;
+
+    const asset = result.assets[0];
+    const ext = asset.uri.split('.').pop() || 'jpg';
+    const fileName = `${Date.now()}.${ext}`;
+
+    setUploadingDoc(true);
+    setAddDocModal(false);
+    try {
+      const uploadResult = await uploadFile(
+        'DOCUMENTS',
+        { uri: asset.uri, name: fileName, type: asset.mimeType || `image/${ext}` },
+        `insurance-claims/${claim.id}`
+      );
+
+      if (uploadResult.error) throw new Error(uploadResult.error);
+
+      await insuranceClaimsApi.addClaimDocument(
+        claim.id,
+        userId,
+        docType,
+        docTitle.trim(),
+        uploadResult.url
+      );
+
+      const docs = await insuranceClaimsApi.getClaimDocuments(claim.id);
+      setClaimDocuments(docs);
+      setDocTitle('');
+      setDocType('photo');
+      Alert.alert('Uploaded', 'Document added to your claim.');
+    } catch (err: any) {
+      Alert.alert('Upload Failed', err.message || 'Could not upload document');
+    } finally {
+      setUploadingDoc(false);
     }
   };
 
@@ -325,6 +394,44 @@ export default function OwnerInsuranceClaimScreen() {
             )}
           </View>
 
+          {/* Documents Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionRow}>
+              <Text style={styles.sectionTitle}>Supporting Documents</Text>
+              <TouchableOpacity
+                style={styles.addDocBtn}
+                onPress={() => setAddDocModal(true)}
+                disabled={uploadingDoc}
+              >
+                {uploadingDoc ? (
+                  <ActivityIndicator size="small" color={colors.rsa.white} />
+                ) : (
+                  <>
+                    <Ionicons name="add" size={16} color={colors.rsa.white} />
+                    <Text style={styles.addDocBtnText}>Add Photo</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+            {claimDocuments.length === 0 ? (
+              <Text style={styles.noDocsText}>
+                No documents attached. Add photos of damage, police reports, or repair quotes.
+              </Text>
+            ) : (
+              claimDocuments.map((doc) => (
+                <View key={doc.id} style={styles.docRow}>
+                  <Ionicons name="document-attach-outline" size={18} color={colors.rsa.blue} />
+                  <View style={styles.docInfo}>
+                    <Text style={styles.docTitle}>{doc.title}</Text>
+                    <Text style={styles.docType}>
+                      {doc.document_type} · {new Date(doc.created_at).toLocaleDateString('en-ZA')}
+                    </Text>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+
           {/* Submit Action (if draft) */}
           {claim.status === 'draft' && (
             <View style={styles.section}>
@@ -387,6 +494,55 @@ export default function OwnerInsuranceClaimScreen() {
             </View>
           </View>
         </ScrollView>
+
+        {/* Add Document Modal */}
+        <Modal
+          visible={addDocModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setAddDocModal(false)}
+        >
+          <SafeAreaView style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setAddDocModal(false)}>
+                <Ionicons name="close" size={24} color={colors.text.primary} />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Add Document</Text>
+              <View style={{ width: 24 }} />
+            </View>
+            <ScrollView contentContainerStyle={styles.modalContent}>
+              <Text style={styles.fieldLabel}>Document Type</Text>
+              <View style={styles.docTypeRow}>
+                {['photo', 'quote', 'report', 'receipt', 'other'].map((type) => (
+                  <TouchableOpacity
+                    key={type}
+                    style={[styles.docTypeChip, docType === type && styles.docTypeChipActive]}
+                    onPress={() => setDocType(type)}
+                  >
+                    <Text style={[styles.docTypeChipText, docType === type && styles.docTypeChipTextActive]}>
+                      {type}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={styles.fieldLabel}>Document Title *</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={docTitle}
+                onChangeText={setDocTitle}
+                placeholder="e.g. Fire damage photo — kitchen"
+                placeholderTextColor={colors.gray[400]}
+              />
+              <TouchableOpacity
+                style={[styles.submitButton, { marginTop: 24 }]}
+                onPress={handlePickAndUpload}
+              >
+                <Ionicons name="image-outline" size={18} color={colors.rsa.white} />
+                <Text style={styles.submitButtonText}>Pick Photo & Upload</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
       </SafeAreaView>
     );
   }
@@ -856,5 +1012,90 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: colors.rsa.green,
+  },
+  sectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  addDocBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.rsa.blue,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  addDocBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.rsa.white,
+  },
+  noDocsText: {
+    fontSize: 13,
+    color: colors.text.tertiary,
+    fontStyle: 'italic',
+    lineHeight: 18,
+  },
+  docRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.default,
+  },
+  docInfo: { flex: 1 },
+  docTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.primary,
+  },
+  docType: {
+    fontSize: 12,
+    color: colors.text.tertiary,
+    marginTop: 2,
+    textTransform: 'capitalize',
+  },
+  docTypeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  docTypeChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    backgroundColor: colors.background.secondary,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  docTypeChipActive: {
+    backgroundColor: colors.rsa.blue + '20',
+    borderColor: colors.rsa.blue,
+  },
+  docTypeChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text.secondary,
+    textTransform: 'capitalize',
+  },
+  docTypeChipTextActive: {
+    color: colors.rsa.blue,
+  },
+  modalInput: {
+    backgroundColor: colors.background.secondary,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 15,
+    color: colors.text.primary,
+  },
+  modalContent: {
+    padding: 16,
+    paddingBottom: 32,
   },
 });

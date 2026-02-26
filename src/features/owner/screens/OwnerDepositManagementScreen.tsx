@@ -16,6 +16,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -29,6 +31,7 @@ import { colors } from '@/src/shared/theme/colors';
 
 interface DepositRecord {
   leaseId: string;
+  tenantId: string;
   propertyTitle: string;
   propertyAddress: string;
   tenantName: string;
@@ -40,6 +43,9 @@ interface DepositRecord {
   isOverdue: boolean;
   leaseStatus: string;
 }
+
+const DEDUCTION_TYPES = ['cleaning', 'damages', 'unpaid_rent', 'key_replacement', 'other'] as const;
+type DeductionType = typeof DEDUCTION_TYPES[number];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -63,6 +69,11 @@ export default function OwnerDepositManagementScreen() {
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [deductionModal, setDeductionModal] = useState<DepositRecord | null>(null);
+  const [deductionType, setDeductionType] = useState<DeductionType>('damages');
+  const [deductionDesc, setDeductionDesc] = useState('');
+  const [deductionAmount, setDeductionAmount] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -80,7 +91,7 @@ export default function OwnerDepositManagementScreen() {
       const { data: leases, error } = await supabase
         .from('leases')
         .select(`
-          id, monthly_rent, deposit_amount, deposit_total_interest,
+          id, tenant_id, monthly_rent, deposit_amount, deposit_total_interest,
           deposit_refund_status, deposit_refund_deadline, status,
           property:properties!property_id(title, address),
           tenant:profiles!tenant_id(full_name)
@@ -99,6 +110,7 @@ export default function OwnerDepositManagementScreen() {
 
         return {
           leaseId: l.id,
+          tenantId: l.tenant_id || '',
           propertyTitle: l.property?.title || 'Unknown Property',
           propertyAddress: l.property?.address || '',
           tenantName: l.tenant?.full_name || 'Unknown Tenant',
@@ -138,6 +150,69 @@ export default function OwnerDepositManagementScreen() {
       setExpanded(leaseId);
       loadSummary(leaseId);
     }
+  };
+
+  const handleOpenDeductionModal = (deposit: DepositRecord) => {
+    setDeductionModal(deposit);
+    setDeductionType('damages');
+    setDeductionDesc('');
+    setDeductionAmount('');
+  };
+
+  const handleSubmitDeduction = async () => {
+    if (!deductionModal || !userId) return;
+    const amount = parseFloat(deductionAmount);
+    if (isNaN(amount) || amount <= 0) {
+      Alert.alert('Invalid Amount', 'Please enter a valid deduction amount');
+      return;
+    }
+    if (!deductionDesc.trim()) {
+      Alert.alert('Description Required', 'Please describe the deduction reason');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await depositRefundApi.proposeDeduction({
+        leaseId: deductionModal.leaseId,
+        ownerId: userId,
+        tenantId: deductionModal.tenantId,
+        deductionType,
+        description: deductionDesc.trim(),
+        amount,
+      });
+      Alert.alert('Deduction Added', 'The tenant will be notified to respond to the proposed deduction.');
+      setDeductionModal(null);
+      loadDeposits();
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to add deduction');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleProcessRefund = async (deposit: DepositRecord) => {
+    Alert.alert(
+      'Process Final Refund',
+      `Mark the deposit for ${deposit.tenantName} as fully refunded? This records that you have transferred ${formatZAR(deposit.currentBalance)} to the tenant.\n\nRHA s5(7): You must ensure funds are actually transferred.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Mark as Refunded',
+          onPress: async () => {
+            try {
+              const amount = await depositRefundApi.processRefund(deposit.leaseId);
+              Alert.alert(
+                'Refund Processed',
+                `Refund of ${formatZAR(amount)} recorded. Please ensure you have transferred the funds to the tenant.`
+              );
+              loadDeposits();
+            } catch (err: any) {
+              Alert.alert('Error', err.message || 'Failed to process refund');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleInitiateRefund = async (leaseId: string) => {
@@ -313,7 +388,7 @@ export default function OwnerDepositManagementScreen() {
                     )}
 
                     {/* Actions */}
-                    {deposit.leaseStatus === 'terminated' && deposit.refundStatus === 'not_applicable' && (
+                    {deposit.leaseStatus !== 'active' && deposit.refundStatus === 'not_applicable' && (
                       <TouchableOpacity
                         style={styles.actionButton}
                         onPress={() => handleInitiateRefund(deposit.leaseId)}
@@ -322,6 +397,25 @@ export default function OwnerDepositManagementScreen() {
                         <Text style={styles.actionButtonText}>Initiate Refund Process</Text>
                       </TouchableOpacity>
                     )}
+
+                    {(deposit.refundStatus === 'pending_inspection' || deposit.refundStatus === 'deductions_proposed') && (
+                      <View style={styles.refundActionsRow}>
+                        <TouchableOpacity
+                          style={styles.deductionButton}
+                          onPress={() => handleOpenDeductionModal(deposit)}
+                        >
+                          <Ionicons name="remove-circle-outline" size={16} color={colors.rsa.red} />
+                          <Text style={styles.deductionButtonText}>Add Deduction</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.finaliseButton}
+                          onPress={() => handleProcessRefund(deposit)}
+                        >
+                          <Ionicons name="checkmark-done" size={16} color={colors.rsa.white} />
+                          <Text style={styles.finaliseButtonText}>Finalise Refund</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
                   </View>
                 )}
               </View>
@@ -329,6 +423,84 @@ export default function OwnerDepositManagementScreen() {
           })
         )}
       </ScrollView>
+
+      {/* Add Deduction Modal */}
+      <Modal
+        visible={!!deductionModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setDeductionModal(null)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setDeductionModal(null)}>
+              <Ionicons name="close" size={24} color={colors.text.primary} />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Add Deposit Deduction</Text>
+            <View style={{ width: 24 }} />
+          </View>
+          <ScrollView contentContainerStyle={styles.modalContent}>
+            <Text style={styles.modalSubtitle}>
+              {deductionModal?.tenantName} · {deductionModal?.propertyTitle}
+            </Text>
+            <Text style={styles.fieldLabel}>Deduction Type</Text>
+            <View style={styles.typeGrid}>
+              {DEDUCTION_TYPES.map((type) => (
+                <TouchableOpacity
+                  key={type}
+                  style={[styles.typeChip, deductionType === type && styles.typeChipActive]}
+                  onPress={() => setDeductionType(type)}
+                >
+                  <Text style={[styles.typeChipText, deductionType === type && styles.typeChipTextActive]}>
+                    {type.replace(/_/g, ' ')}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Text style={styles.fieldLabel}>Description *</Text>
+            <TextInput
+              style={[styles.modalInput, styles.modalInputMulti]}
+              value={deductionDesc}
+              onChangeText={setDeductionDesc}
+              placeholder="e.g. Carpet damage in living room — replacement cost"
+              placeholderTextColor={colors.gray[400]}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
+            <Text style={styles.fieldLabel}>Amount (R) *</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={deductionAmount}
+              onChangeText={setDeductionAmount}
+              keyboardType="numeric"
+              placeholder="e.g. 2500"
+              placeholderTextColor={colors.gray[400]}
+            />
+            <View style={styles.legalNotice}>
+              <Ionicons name="information-circle" size={16} color={colors.rsa.blue} />
+              <Text style={styles.legalText}>
+                RHA s5(4): Deductions must be for actual damage beyond fair wear and tear.
+                Tenant has 14 days to respond.
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.actionButton, submitting && { opacity: 0.5 }]}
+              onPress={handleSubmitDeduction}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <ActivityIndicator size="small" color={colors.rsa.white} />
+              ) : (
+                <>
+                  <Ionicons name="add-circle" size={18} color={colors.rsa.white} />
+                  <Text style={styles.actionButtonText}>Submit Deduction</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -572,5 +744,114 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: colors.rsa.white,
+  },
+  refundActionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+  },
+  deductionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 10,
+    padding: 12,
+  },
+  deductionButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.rsa.red,
+  },
+  finaliseButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: colors.rsa.green,
+    borderRadius: 10,
+    padding: 12,
+  },
+  finaliseButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.rsa.white,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: colors.background.default,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.default,
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: colors.text.primary,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: colors.text.secondary,
+    marginBottom: 16,
+  },
+  modalContent: {
+    padding: 16,
+    paddingBottom: 32,
+  },
+  fieldLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: 6,
+    marginTop: 14,
+  },
+  typeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  typeChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: colors.background.secondary,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  typeChipActive: {
+    backgroundColor: colors.rsa.red + '20',
+    borderColor: colors.rsa.red,
+  },
+  typeChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text.secondary,
+    textTransform: 'capitalize',
+  },
+  typeChipTextActive: {
+    color: colors.rsa.red,
+  },
+  modalInput: {
+    backgroundColor: colors.background.secondary,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 15,
+    color: colors.text.primary,
+  },
+  modalInputMulti: {
+    minHeight: 80,
   },
 });

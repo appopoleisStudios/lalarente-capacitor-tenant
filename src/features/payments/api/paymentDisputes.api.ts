@@ -269,6 +269,45 @@ export const paymentDisputesApi = {
   },
 
   /**
+   * Reject a payment arrangement (owner declines proposed instalment plan).
+   */
+  async rejectArrangement(arrangementId: string, rejectedBy: string): Promise<PaymentArrangement> {
+    const { data, error } = await supabase
+      .from('payment_arrangements')
+      .update({
+        status: 'rejected',
+        accepted_by: rejectedBy, // reuse field to track who actioned
+        accepted_at: new Date().toISOString(),
+      })
+      .eq('id', arrangementId)
+      .select()
+      .single();
+
+    if (error) throw new Error(`Failed to reject arrangement: ${error.message}`);
+    return data as PaymentArrangement;
+  },
+
+  /**
+   * Get all proposed payment arrangements across an owner's leases.
+   * Includes tenant name and property title for display.
+   */
+  async getOwnerArrangements(ownerId: string): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('payment_arrangements')
+      .select(`
+        *,
+        tenant:profiles!tenant_id(full_name),
+        lease:leases!lease_id(property:properties!property_id(title))
+      `)
+      .eq('owner_id', ownerId)
+      .eq('status', 'proposed')
+      .order('created_at', { ascending: false });
+
+    if (error) throw new Error(`Failed to fetch owner arrangements: ${error.message}`);
+    return data || [];
+  },
+
+  /**
    * Get arrangements for a lease.
    */
   async getLeaseArrangements(leaseId: string): Promise<PaymentArrangement[]> {

@@ -20,6 +20,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/src/lib/supabase';
 import { leaseTerminationApi } from '@/src/features/leases/api/leaseTermination.api';
+import { depositRefundApi } from '@/src/features/deposits/api/depositRefund.api';
 import { colors } from '@/src/shared/theme/colors';
 
 const RSA_BLUE = '#002395';
@@ -94,7 +95,16 @@ export default function OwnerEarlyTerminationScreen() {
             setActionLoading(request.id);
             try {
               await leaseTerminationApi.acceptTermination(request.id);
-              Alert.alert('Termination Accepted', `The lease for ${request.property?.title} has been terminated. The deposit refund process should begin within 14–21 days of the effective date.`);
+              // Auto-initiate deposit refund process (RHA s5(7))
+              try {
+                await depositRefundApi.initiateRefund(request.id);
+              } catch {
+                // Non-blocking — deposit may not exist or already initiated
+              }
+              Alert.alert(
+                'Termination Accepted',
+                `The lease for ${request.property?.title} has been terminated. The deposit refund process has been initiated — ${request.tenant?.full_name || 'the tenant'} has 7 days for a joint inspection per RHA s5(7).`
+              );
               loadData();
             } catch (err) {
               Alert.alert('Error', err instanceof Error ? err.message : 'Failed to accept');
