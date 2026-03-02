@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
+import { notificationsApi } from '../../notifications/api/notificationsApi';
 import SignatureModal from '../../leases/components/SignatureModal';
 import { uploadSignature } from '../../leases/api/storageService';
 import * as Sharing from 'expo-sharing';
@@ -24,6 +25,7 @@ const RSA = { green: '#007A4D', gold: '#FFB81C' }; // Tenant colors
 interface Lease {
   id: string;
   property_id: string;
+  owner_id: string;
   start_date: string;
   end_date: string;
   monthly_rent: number;
@@ -175,7 +177,7 @@ export default function TenantLeaseScreen() {
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Call', onPress: () => lease.owner?.phone && Linking.openURL(`tel:${lease.owner.phone}`) },
-          { text: 'Email', onPress: () => lease.owner?.email && Linking.openURL(`mailto:${lease.owner.email}`) },
+          { text: 'Message', onPress: () => router.push('/(tenant)/messages' as any) },
         ]
       );
     }
@@ -242,14 +244,12 @@ export default function TenantLeaseScreen() {
         throw lastError || new Error('Failed to update lease after multiple attempts');
       }
 
-      // TODO: Create notification for owner when notifications table is ready
-      // await supabase.from('notifications').insert({
-      //   recipient_id: lease.owner_id,
-      //   title: 'Tenant Signed Lease',
-      //   message: 'Your tenant has signed the lease agreement',
-      //   type: 'lease_signature',
-      //   related_id: lease.id,
-      // });
+      // Notify owner that tenant has signed
+      await notificationsApi.sendNotification({
+        user_id: lease.owner_id,
+        type: 'lease_signed' as any,
+        data: { lease_id: lease.id, property_id: lease.property_id },
+      }).catch(() => {}); // Non-blocking
 
       Alert.alert(
         'Success',

@@ -15,11 +15,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { paymentsApi, PaymentWithRelations, PaymentStats } from '../../properties/api/paymentsApi';
 import { propertiesApi } from '../../properties/api/propertiesApi';
+import { notificationsApi } from '../../notifications/api/notificationsApi';
 
 interface PropertyPaymentSummary {
   property_id: string;
   property_title: string;
   property_address: string;
+  tenant_id: string | null;
   tenant_name: string | null;
   monthly_rent: number;
   next_payment_due: string | null;
@@ -110,6 +112,7 @@ export default function OwnerRentRollScreen() {
           property_id: property.id,
           property_title: property.title,
           property_address: property.address,
+          tenant_id: (nextPayment as any)?.tenant_id || (lastPayment as any)?.tenant_id || null,
           tenant_name: nextPayment?.tenant?.full_name || lastPayment?.tenant?.full_name || null,
           monthly_rent: property.rent_amount || 0,
           next_payment_due: nextPayment?.due_date || null,
@@ -171,17 +174,26 @@ export default function OwnerRentRollScreen() {
     );
   };
 
-  const sendPaymentReminder = (propertyId: string, tenantName: string) => {
+  const sendPaymentReminder = (item: PropertyPaymentSummary) => {
+    if (!item.tenant_id || !item.tenant_name) return;
     Alert.alert(
       'Send Reminder',
-      `Send payment reminder to ${tenantName}?`,
+      `Send payment reminder to ${item.tenant_name}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Send',
-          onPress: () => {
-            // TODO: Implement reminder notification
-            Alert.alert('Success', 'Payment reminder sent');
+          onPress: async () => {
+            try {
+              await notificationsApi.sendNotification({
+                user_id: item.tenant_id!,
+                type: 'payment_reminder' as any,
+                data: { property_id: item.property_id },
+              });
+              Alert.alert('Success', 'Payment reminder sent');
+            } catch {
+              Alert.alert('Error', 'Failed to send reminder');
+            }
           },
         },
       ]
@@ -293,7 +305,7 @@ export default function OwnerRentRollScreen() {
           style={styles.reminderButton}
           onPress={(e) => {
             e.stopPropagation();
-            sendPaymentReminder(item.property_id, item.tenant_name!);
+            sendPaymentReminder(item);
           }}
         >
           <Ionicons name="notifications-outline" size={18} color="#007AFF" />

@@ -6,11 +6,13 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
-  SafeAreaView,
   Image,
   Dimensions,
   Alert,
+  Share,
+  Linking,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
@@ -77,13 +79,8 @@ export default function TenantPropertyDetailScreen() {
   const loadPropertyDetails = async () => {
     try {
       setError(null);
-      console.log('🏠 Loading property details for ID:', id);
       const data = await propertiesApi.getProperty(id);
-      
-      console.log('📦 Property data received:', data);
-      console.log('👤 Owner in property data:', data.owner);
-      console.log('📝 Owner full_name:', data.owner?.full_name);
-      
+
       // Business Logic: Check if property is actually available
       if (data.status !== 'available') {
         setError('This property is no longer available');
@@ -112,8 +109,6 @@ export default function TenantPropertyDetailScreen() {
       
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        console.log('👤 Current user ID:', user.id);
-        
         // Check if tenant already has an active lease on this property
         const { data: tenantLease, error: leaseError } = await supabase
           .from('leases')
@@ -123,10 +118,7 @@ export default function TenantPropertyDetailScreen() {
           .eq('status', 'active')
           .maybeSingle();
 
-        console.log('🏠 Tenant lease check:', tenantLease, leaseError);
-
         if (tenantLease) {
-          console.log('✅ User has active lease on this property');
           setIsCurrentProperty(true);
         }
 
@@ -140,8 +132,6 @@ export default function TenantPropertyDetailScreen() {
           .limit(1)
           .maybeSingle();
 
-        console.log('📝 Existing application check:', existingApp, appError);
-
         if (existingApp) {
           // Store the application for status display
           setApplicationStatus(existingApp.status);
@@ -149,7 +139,6 @@ export default function TenantPropertyDetailScreen() {
           
           // Check for pending applications (draft, submitted, under_review)
           if (['draft', 'submitted', 'under_review'].includes(existingApp.status)) {
-            console.log('⚠️ User has pending application:', existingApp.status);
             setHasActiveApplication(true);
           }
           // Check for rejected applications within 3 months
@@ -159,25 +148,19 @@ export default function TenantPropertyDetailScreen() {
             threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
             
             if (rejectedDate > threeMonthsAgo) {
-              console.log('⚠️ User was rejected within 3 months - cannot reapply yet');
               setHasActiveApplication(true);
-              // Don't set error - let the status banner show instead
             } else {
-              console.log('✅ Rejection was more than 3 months ago - user can apply');
               setHasActiveApplication(false);
             }
           }
           // Approved applications - user should not apply again
           else if (existingApp.status === 'approved') {
-            console.log('⚠️ User already has approved application');
             setHasActiveApplication(true);
           }
           else {
-            console.log('✅ Previous application was withdrawn or old rejection - user can apply');
             setHasActiveApplication(false);
           }
         } else {
-          console.log('✅ No previous application - user can apply');
           setHasActiveApplication(false);
         }
 
@@ -209,7 +192,7 @@ export default function TenantPropertyDetailScreen() {
     });
   };
 
-  const handleApply = () => {
+  const handleApply = async () => {
     if (isCurrentProperty) {
       Alert.alert('Notice', 'This is your current property. You are already living here.');
       return;
@@ -218,6 +201,40 @@ export default function TenantPropertyDetailScreen() {
       Alert.alert('Notice', 'You already have a pending application for this property.');
       return;
     }
+
+    // Profile completion gate
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id_number, email, phone, proof_of_address_url')
+        .eq('id', user.id)
+        .single();
+
+      const missing: string[] = [];
+      if (!(profile as any)?.id_number) missing.push('SA ID Number');
+      if (!(profile as any)?.email) missing.push('Email Address');
+      if (!(profile as any)?.phone) missing.push('Phone Number');
+      if (!(profile as any)?.proof_of_address_url) missing.push('Proof of Address');
+
+      if (missing.length > 0) {
+        Alert.alert(
+          'Complete Your Profile',
+          `Before you can apply, please provide:\n\n${missing.map(m => `\u2022 ${m}`).join('\n')}`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Go to Profile', onPress: () => router.push('/(tenant)/profile' as any) },
+          ]
+        );
+        return;
+      }
+    } catch (err) {
+      // If profile check fails, allow to proceed rather than block
+      console.error('Profile check error:', err);
+    }
+
     router.push(`/(tenant)/apply/${id}` as any);
   };
 
@@ -226,8 +243,15 @@ export default function TenantPropertyDetailScreen() {
     // TODO: Save to favorites table
   };
 
-  const handleShare = () => {
-    Alert.alert('Share', 'Share functionality coming soon');
+  const handleShare = async () => {
+    if (!property) return;
+    try {
+      await Share.share({
+        message: `Check out ${property.title} — R${(property.rent_amount || 0).toLocaleString()}/mo\n${property.address}, ${property.city}`,
+      });
+    } catch {
+      // User cancelled share
+    }
   };
 
   const handleContactOwner = () => {
@@ -237,19 +261,12 @@ export default function TenantPropertyDetailScreen() {
         `${property.owner.full_name}\n${property.owner.phone || ''}\n${property.owner.email || ''}`,
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Call', onPress: () => {} },
-          { text: 'Message', onPress: () => {} },
+          { text: 'Call', onPress: () => property.owner?.phone && Linking.openURL(`tel:${property.owner.phone}`) },
+          { text: 'Message', onPress: () => router.push('/(tenant)/messages' as any) },
         ]
       );
     }
   };
-
-  // Debug log before render
-  console.log('🎨 Rendering with property:', property);
-  console.log('🎨 Property owner in state:', property?.owner);
-  console.log('🔘 hasActiveApplication:', hasActiveApplication);
-  console.log('🔘 isCurrentProperty:', isCurrentProperty);
-  console.log('🔘 Button should be disabled:', isCurrentProperty || hasActiveApplication);
 
   if (loading) {
     return (
@@ -364,16 +381,6 @@ export default function TenantPropertyDetailScreen() {
               </View>
             )}
             
-            {/* Debug: Show if owner data is missing */}
-            {!property.owner && (
-              <View style={styles.ownerRow}>
-                <Ionicons name="alert-circle-outline" size={18} color="#F44336" />
-                <Text style={[styles.ownerText, { color: '#F44336' }]}>
-                  DEBUG: Owner data not loaded
-                </Text>
-              </View>
-            )}
-
             {/* Quick Stats */}
             <View style={styles.statsRow}>
               <View style={styles.statItem}>

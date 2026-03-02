@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
@@ -12,6 +11,7 @@ import {
   Alert,
   Linking,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
@@ -143,14 +143,14 @@ export default function TenantsScreen() {
   const handleContactTenant = (e: any, tenant: Lease['tenant']) => {
     e.stopPropagation();
     if (!tenant) return;
-    
+
     Alert.alert(
       'Contact Tenant',
       `${tenant.full_name}\n${tenant.phone || ''}\n${tenant.email || ''}`,
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Call', onPress: () => tenant.phone && Linking.openURL(`tel:${tenant.phone}`) },
-        { text: 'Email', onPress: () => tenant.email && Linking.openURL(`mailto:${tenant.email}`) },
+        { text: 'Message', onPress: () => router.push('/(owner)/messages' as any) },
       ]
     );
   };

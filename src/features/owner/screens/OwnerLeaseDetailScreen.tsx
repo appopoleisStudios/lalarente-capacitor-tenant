@@ -14,6 +14,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
+import { notificationsApi } from '../../notifications/api/notificationsApi';
 import SignatureModal from '../../leases/components/SignatureModal';
 import { uploadSignature } from '../../leases/api/storageService';
 import { executeLease } from '../../leases/api/leaseExecutionService';
@@ -202,7 +203,7 @@ export default function OwnerLeaseDetailScreen() {
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Call', onPress: () => lease.tenant?.phone && Linking.openURL(`tel:${lease.tenant.phone}`) },
-          { text: 'Email', onPress: () => lease.tenant?.email && Linking.openURL(`mailto:${lease.tenant.email}`) },
+          { text: 'Message', onPress: () => router.push('/(owner)/messages' as any) },
         ]
       );
     }
@@ -230,14 +231,12 @@ export default function OwnerLeaseDetailScreen() {
 
               if (updateError) throw updateError;
 
-              // TODO: Create notification for tenant when notifications table is ready
-              // await supabase.from('notifications').insert({
-              //   recipient_id: lease.tenant_id,
-              //   title: 'New Lease Agreement',
-              //   message: 'Your lease agreement is ready for signature',
-              //   type: 'lease_signature',
-              //   related_id: lease.id,
-              // });
+              // Notify tenant that lease is ready for signature
+              await notificationsApi.sendNotification({
+                user_id: lease.tenant_id,
+                type: 'lease_created' as any,
+                data: { lease_id: lease.id, property_id: lease.property_id },
+              }).catch(() => {}); // Non-blocking
 
               Alert.alert('Success', 'Lease agreement sent to tenant');
               loadLease(); // Reload to show updated status
@@ -741,6 +740,32 @@ export default function OwnerLeaseDetailScreen() {
             </View>
           )}
 
+          {/* Schedule Inspection (active leases only) */}
+          {lease.status === 'active' && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Inspections</Text>
+              <TouchableOpacity
+                style={styles.inspectionButton}
+                onPress={() => router.push({
+                  pathname: '/(owner)/inspections/new' as any,
+                  params: { leaseId: lease.id },
+                })}
+              >
+                <Ionicons name="clipboard-outline" size={20} color={RSA.blue} />
+                <Text style={styles.inspectionButtonText}>Schedule Inspection</Text>
+                <Ionicons name="chevron-forward" size={18} color={RSA.blue} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.inspectionButton, { marginTop: 8 }]}
+                onPress={() => router.push('/(owner)/inspections' as any)}
+              >
+                <Ionicons name="list-outline" size={20} color="#6B7280" />
+                <Text style={[styles.inspectionButtonText, { color: '#6B7280' }]}>View All Inspections</Text>
+                <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+              </TouchableOpacity>
+            </View>
+          )}
+
           {/* Contact Tenant */}
           <View style={styles.section}>
             <TouchableOpacity style={styles.contactButton} onPress={handleContactTenant}>
@@ -1069,6 +1094,22 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
     borderRadius: 4,
     backgroundColor: '#FAFAFA',
+  },
+  inspectionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF2FF',
+    borderRadius: 10,
+    padding: 14,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  inspectionButtonText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: RSA.blue,
   },
   contactButton: {
     flexDirection: 'row',

@@ -631,13 +631,7 @@ export default function OwnerMaintenanceDetailScreen() {
             style={styles.chatButton}
             onPress={() => {
               if (request.tenant) {
-                Alert.alert(
-                  'Chat Feature',
-                  `Chat with ${request.tenant.full_name} will be available in Phase 2`,
-                  [{ text: 'OK' }]
-                );
-                // TODO: Implement chat screen
-                // router.push(`/(owner)/maintenance/${request.id}/chat`);
+                router.push('/(owner)/messages' as any);
               } else {
                 Alert.alert('No Tenant', 'This request has no tenant assigned');
               }
@@ -753,13 +747,7 @@ export default function OwnerMaintenanceDetailScreen() {
             <TouchableOpacity
               style={styles.invoiceCard}
               onPress={() => {
-                Alert.alert(
-                  'Invoice',
-                  'Invoice details screen will be available in Phase 2',
-                  [{ text: 'OK' }]
-                );
-                // TODO: Implement invoice screen
-                // router.push(`/(owner)/maintenance/${request.id}/invoice`);
+                router.push('/(owner)/invoices' as any);
               }}
             >
               <View style={styles.invoiceHeader}>
