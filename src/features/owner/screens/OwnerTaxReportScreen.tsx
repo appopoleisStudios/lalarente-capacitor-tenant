@@ -126,11 +126,13 @@ export default function OwnerTaxReportScreen() {
         .gte('paid_date', taxYear.startDate.toISOString())
         .lte('paid_date', taxYear.endDate.toISOString());
 
-      // 3. Maintenance deductions: POs created within tax year via requests for this owner
+      // 3. Maintenance deductions: POs paid within tax year for this owner's properties
+      //    Chain: maintenance_requests → service_contracts → purchase_orders
       const { data: requests } = await supabase
         .from('maintenance_requests')
         .select('id, property_id')
-        .eq('owner_id', uid);
+        .eq('owner_id', uid)
+        .in('property_id', propertyIds);
 
       let deductionsPerProperty: Record<string, number> = {};
       let deductionCount = 0;
@@ -140,28 +142,28 @@ export default function OwnerTaxReportScreen() {
         const reqPropertyMap: Record<string, string> = {};
         requests.forEach(r => { reqPropertyMap[r.id] = r.property_id ?? ''; });
 
-        const { data: quotes } = await supabase
-          .from('quotes')
-          .select('id, request_id')
-          .in('request_id', requestIds);
+        // service_contracts link maintenance_requests to purchase_orders
+        const { data: contracts } = await supabase
+          .from('service_contracts')
+          .select('id, maintenance_request_id')
+          .in('maintenance_request_id', requestIds);
 
-        if (quotes?.length) {
-          const quoteIds = quotes.map(q => q.id);
-          const quoteRequestMap: Record<string, string> = {};
-          quotes.forEach(q => { quoteRequestMap[q.id] = q.request_id ?? ''; });
+        if (contracts?.length) {
+          const contractIds = contracts.map(c => c.id);
+          const contractRequestMap: Record<string, string> = {};
+          contracts.forEach(c => { contractRequestMap[c.id] = c.maintenance_request_id ?? ''; });
 
           const { data: pos } = await supabase
             .from('purchase_orders')
             .select('contract_id, total_amount, created_at')
-            .in('contract_id', quoteIds)
+            .in('contract_id', contractIds)
             .in('status', ['approved', 'paid', 'completed'])
             .gte('created_at', taxYear.startDate.toISOString())
             .lte('created_at', taxYear.endDate.toISOString());
 
           deductionCount = pos?.length || 0;
           pos?.forEach(po => {
-            const quoteId = po.contract_id;
-            const requestId = quoteRequestMap[quoteId || ''];
+            const requestId = contractRequestMap[po.contract_id || ''];
             const propId = requestId ? reqPropertyMap[requestId] : null;
             if (propId && po.total_amount) {
               deductionsPerProperty[propId] = (deductionsPerProperty[propId] || 0) + po.total_amount;

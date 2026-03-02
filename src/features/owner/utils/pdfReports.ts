@@ -533,26 +533,27 @@ export async function exportMonthlyStatementPdf(
       }
     });
 
-    const { data: quotes } = await supabase
-      .from('quotes')
-      .select('id, request_id')
-      .in('request_id', requestIds);
+    // service_contracts is the join between requests and purchase_orders
+    const { data: contracts } = await supabase
+      .from('service_contracts')
+      .select('id, maintenance_request_id')
+      .in('maintenance_request_id', requestIds);
 
-    if (quotes?.length) {
-      const quoteIds = quotes.map(q => q.id);
-      const quoteReqMap: Record<string, string> = {};
-      quotes.forEach(q => { if (q.id) quoteReqMap[q.id] = q.request_id || ''; });
+    if (contracts?.length) {
+      const contractIds = contracts.map(c => c.id);
+      const contractReqMap: Record<string, string> = {};
+      contracts.forEach(c => { if (c.id) contractReqMap[c.id] = c.maintenance_request_id || ''; });
 
       const { data: pos } = await supabase
         .from('purchase_orders')
         .select('id, contract_id, total_amount, created_at')
-        .in('contract_id', quoteIds)
+        .in('contract_id', contractIds)
         .in('status', ['paid', 'completed'])
         .gte('created_at', monthStart)
         .lte('created_at', monthEnd);
 
       pos?.forEach(po => {
-        const reqId = quoteReqMap[po.contract_id || ''];
+        const reqId = contractReqMap[po.contract_id || ''];
         const propId = reqId ? reqPropertyMap[reqId] : null;
         const desc = reqId ? reqDescMap[reqId] : 'Maintenance';
         if (propId) {
