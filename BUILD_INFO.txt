@@ -1,17 +1,17 @@
 LaLarente App - Build Information
 ==================================
 
-Build Date: 2026-03-28 13:32:32
+Build Date: 2026-03-28 13:53:15
 Build Type: Client Testing (Alpha)
 
 Version Information:
   Version:      1.0.0
-  Build Number: 4
-  Revision:     0
-  Full Version: 1.0.0-build.4-rev.0
+  Build Number: 3
+  Revision:     1
+  Full Version: 1.0.0-build.3-rev.1
 
 Android Information:
-  Version Code: 4
+  Version Code: 3
   Version Name: 1.0.0
   Package:      com.lalarente.app
 

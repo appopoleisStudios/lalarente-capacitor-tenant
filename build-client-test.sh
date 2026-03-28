@@ -23,8 +23,8 @@ PACKAGE_JSON="package.json"
 MAJOR=1
 MINOR=0
 PATCH=0
-BUILD_NUMBER=3
-REVISION=0
+BUILD_NUMBER=4
+REVISION=1
 
 echo -e "${BLUE}╔════════════════════════════════════════════════════════╗${NC}"
 echo -e "${BLUE}║                                                        ║${NC}"
