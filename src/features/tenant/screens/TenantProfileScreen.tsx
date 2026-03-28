@@ -177,15 +177,18 @@ export default function TenantProfileScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const ext = asset.uri.split('.').pop() || 'jpg';
+      // Reliable MIME + extension detection — strip query params from URI
+      const mimeType = asset.mimeType || 'image/jpeg';
+      const ext = mimeType.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
       const path = `proof-of-address/${user.id}/poa_${Date.now()}.${ext}`;
 
+      // ArrayBuffer upload is reliable on Android (blob can silently fail)
       const response = await fetch(asset.uri);
-      const blob = await response.blob();
+      const arrayBuffer = await response.arrayBuffer();
 
       const { error: uploadError } = await supabase.storage
         .from('documents')
-        .upload(path, blob, { contentType: `image/${ext}`, upsert: true });
+        .upload(path, arrayBuffer, { contentType: mimeType, upsert: true });
 
       if (uploadError) throw uploadError;
 
@@ -199,8 +202,8 @@ export default function TenantProfileScreen() {
         .eq('id', user.id);
 
       Alert.alert('Uploaded', 'Proof of address uploaded successfully');
-    } catch (err) {
-      Alert.alert('Error', 'Failed to upload document');
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Failed to upload document');
     }
   };
 
