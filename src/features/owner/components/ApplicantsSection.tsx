@@ -34,7 +34,13 @@ export const ApplicantsSection = ({ applicants }: ApplicantsSectionProps) => {
           onPress={() => a.id && router.push(`/(owner)/applications/${a.id}` as any)}
         >
           <View style={styles.cardInner}>
-            <Image source={{ uri: a.avatar }} style={styles.avatar} />
+            {a.avatar ? (
+              <Image source={{ uri: a.avatar }} style={styles.avatar} />
+            ) : (
+              <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                <Text style={styles.avatarInitial}>{a.name?.charAt(0)?.toUpperCase() || '?'}</Text>
+              </View>
+            )}
             <View style={styles.info}>
               <Text style={styles.name}>{a.name}</Text>
               <Text style={styles.property}>{a.property}</Text>
@@ -63,4 +69,6 @@ const styles = StyleSheet.create({
   status: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, marginRight: 8 },
   statusText: { fontSize: 10, fontWeight: '600' },
   date: { fontSize: 10, color: '#9ca3af' },
+  avatarPlaceholder: { backgroundColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center' },
+  avatarInitial: { fontSize: 14, fontWeight: '700', color: '#6b7280' },
 });

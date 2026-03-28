@@ -6,12 +6,12 @@ import {
   ScrollView,
   ActivityIndicator,
   StyleSheet,
-  SafeAreaView,
   Alert,
-  Linking,
-  Share,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import { documentsApi } from '../api/documentsApi';
 import {
@@ -38,6 +38,7 @@ export default function DocumentViewerScreen({ role = 'owner' }: Props) {
   const [document, setDocument] = useState<DocumentWithRelations | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -78,26 +79,26 @@ export default function DocumentViewerScreen({ role = 'owner' }: Props) {
     setDownloading(true);
     try {
       const downloadUrl = await documentsApi.getDownloadUrl(document.file_url);
-      await Linking.openURL(downloadUrl);
+
+      // Open the PDF immediately in the in-app browser — renders inline, no share sheet.
+      // Chrome Custom Tab (Android) and SFSafariViewController (iOS) both render PDFs natively.
+      WebBrowser.openBrowserAsync(downloadUrl, {
+        presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
+      });
+
+      // Silently save to persistent storage in parallel (doesn't block the open).
+      const ext = document.mime_type === 'application/pdf' ? 'pdf' : 'bin';
+      const safeTitle = document.title.replace(/[^a-z0-9]/gi, '_').slice(0, 60);
+      const filename = `${safeTitle}_${document.id.slice(0, 6)}.${ext}`;
+      const persistUri = `${FileSystem.documentDirectory}${filename}`;
+      await FileSystem.downloadAsync(downloadUrl, persistUri);
+
+      setSaved(true);
     } catch (error) {
-      console.error('Error downloading document:', error);
-      Alert.alert('Error', 'Failed to download document');
+      console.error('Error opening document:', error);
+      Alert.alert('Error', 'Failed to open document. Please try again.');
     } finally {
       setDownloading(false);
-    }
-  };
-
-  const handleShare = async () => {
-    if (!document?.file_url) return;
-
-    try {
-      const downloadUrl = await documentsApi.getDownloadUrl(document.file_url);
-      await Share.share({
-        message: `${document.title}\n${downloadUrl}`,
-        title: document.title,
-      });
-    } catch (error) {
-      console.error('Error sharing document:', error);
     }
   };
 
@@ -241,9 +242,7 @@ export default function DocumentViewerScreen({ role = 'owner' }: Props) {
           <Text style={styles.headerTitle} numberOfLines={1}>
             Document Details
           </Text>
-          <TouchableOpacity onPress={handleShare} style={styles.shareButton}>
-            <Ionicons name="share-outline" size={24} color="#333" />
-          </TouchableOpacity>
+          <View style={{ width: 32 }} />
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -384,16 +383,21 @@ export default function DocumentViewerScreen({ role = 'owner' }: Props) {
           {/* Actions */}
           <View style={styles.actionsSection}>
             <TouchableOpacity
-              style={[styles.actionButton, { backgroundColor: colors.primary }]}
+              style={[styles.actionButton, { backgroundColor: saved ? '#007A4D' : colors.primary }]}
               onPress={handleDownload}
               disabled={downloading}
             >
               {downloading ? (
                 <ActivityIndicator size="small" color="#FFF" />
+              ) : saved ? (
+                <>
+                  <Ionicons name="checkmark-circle-outline" size={20} color="#FFF" />
+                  <Text style={styles.actionButtonText}>Saved — Open Again</Text>
+                </>
               ) : (
                 <>
-                  <Ionicons name="download-outline" size={20} color="#FFF" />
-                  <Text style={styles.actionButtonText}>Download</Text>
+                  <Ionicons name="open-outline" size={20} color="#FFF" />
+                  <Text style={styles.actionButtonText}>Open & Save to Device</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -470,9 +474,6 @@ const styles = StyleSheet.create({
     color: '#333',
     textAlign: 'center',
     marginHorizontal: 8,
-  },
-  shareButton: {
-    padding: 4,
   },
   content: {
     flex: 1,

@@ -1,5 +1,6 @@
 import { supabase } from '../../../lib/supabase';
 import type { Database } from '../../../types/database.types';
+import { calculateLegalInterest } from '../../../shared/utils/businessDayCalculator';
 
 // Type aliases
 type Payment = Database['public']['Tables']['payments']['Row'];
@@ -40,7 +41,7 @@ export interface CreatePaymentInput {
   owner_id: string;
   property_id: string;
   
-  type: 'rent' | 'deposit' | 'application_fee' | 'late_fee' | 'utility' | 'other';
+  type: 'rent' | 'deposit' | 'application_fee' | 'interest' | 'utility' | 'other';
   amount: number;
   due_date: string;
   
@@ -517,11 +518,47 @@ export const paymentsApi = {
   },
 
   /**
-   * Calculate late fee for overdue payment
+   * Calculate legal interest on overdue payment.
+   *
+   * Replaces the previous calculateLateFee() which charged illegal flat fees.
+   * Per Prescribed Rate of Interest Act 55/1975, only simple interest may be
+   * charged on overdue amounts, capped at the prescribed rate.
+   *
+   * @param payment - The overdue payment
+   * @param annualInterestRate - Annual rate as percentage (max 2.00)
+   * @returns Interest amount in Rands
    */
-  calculateLateFee(payment: Payment, lateFeeAmount: number, graceDays: number = 0): number {
+  calculateInterestOnArrears(payment: Payment, annualInterestRate: number = 2.0): number {
     const daysOverdue = this.getDaysOverdue(payment);
-    if (daysOverdue <= graceDays) return 0;
-    return lateFeeAmount;
+    if (daysOverdue <= 0) return 0;
+    const cappedRate = Math.min(annualInterestRate, 2.0);
+    return calculateLegalInterest(payment.amount, cappedRate, daysOverdue);
+  },
+
+  /**
+   * Update interest accrual on an overdue payment in the database.
+   */
+  async updateInterestAccrual(paymentId: string, annualInterestRate: number = 2.0): Promise<Payment> {
+    const payment = await this.getPayment(paymentId);
+    const daysOverdue = this.getDaysOverdue(payment);
+    const interestAmount = this.calculateInterestOnArrears(payment, annualInterestRate);
+
+    const { data, error } = await supabase
+      .from('payments')
+      .update({
+        interest_amount: interestAmount,
+        days_overdue: daysOverdue,
+        interest_calculated_at: new Date().toISOString(),
+      })
+      .eq('id', paymentId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating interest accrual:', error);
+      throw new Error(`Failed to update interest accrual: ${error.message}`);
+    }
+
+    return data;
   },
 };

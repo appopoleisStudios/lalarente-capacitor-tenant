@@ -53,6 +53,9 @@ export default function TenantLeaseRenewalScreen() {
   const [negotiations, setNegotiations] = useState<RenewalNegotiation[]>([]);
   const [responseMode, setResponseMode] = useState<'none' | 'negotiate'>('none');
   const [counterRent, setCounterRent] = useState('');
+  const [counterLeaseType, setCounterLeaseType] = useState<'fixed' | 'month_to_month'>('fixed');
+  const [counterDuration, setCounterDuration] = useState('12');
+  const [counterEscalationRate, setCounterEscalationRate] = useState('');
   const [counterNotes, setCounterNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -104,9 +107,14 @@ export default function TenantLeaseRenewalScreen() {
       const latest = history.length > 0 ? history[history.length - 1] : null;
       setLatestNegotiation(latest);
 
-      // If there's a pending offer from the owner, pre-fill counter rent
+      // If there's a pending offer from the owner, pre-fill all counter fields
       if (latest && latest.status === 'pending' && latest.initiated_by !== user.id) {
         setCounterRent(latest.proposed_monthly_rent.toString());
+        setCounterLeaseType((latest.proposed_lease_type as 'fixed' | 'month_to_month') || 'fixed');
+        setCounterDuration(latest.proposed_duration_months?.toString() || '12');
+        setCounterEscalationRate(latest.proposed_escalation_rate
+          ? (latest.proposed_escalation_rate * 100).toString()
+          : '');
       }
     } catch (err: any) {
       console.error('Error loading lease renewal:', err);
@@ -206,10 +214,10 @@ export default function TenantLeaseRenewalScreen() {
         {
           leaseId,
           proposedRent: rentNum,
-          leaseType: latestNegotiation.proposed_lease_type,
-          durationMonths: latestNegotiation.proposed_duration_months || undefined,
+          leaseType: counterLeaseType,
+          durationMonths: counterLeaseType === 'fixed' ? (parseInt(counterDuration) || 12) : undefined,
           startDate: latestNegotiation.proposed_start_date,
-          escalationRate: latestNegotiation.proposed_escalation_rate || undefined,
+          escalationRate: counterEscalationRate ? parseFloat(counterEscalationRate) / 100 : undefined,
           notes: counterNotes.trim() || undefined,
         }
       );
@@ -408,6 +416,41 @@ export default function TenantLeaseRenewalScreen() {
         {responseMode === 'negotiate' && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Submit Counter-Offer</Text>
+
+            <Text style={styles.fieldLabel}>Lease Type</Text>
+            <View style={styles.segmentRow}>
+              <TouchableOpacity
+                style={[styles.segment, counterLeaseType === 'fixed' && styles.segmentActive]}
+                onPress={() => setCounterLeaseType('fixed')}
+              >
+                <Text style={[styles.segmentText, counterLeaseType === 'fixed' && styles.segmentTextActive]}>
+                  Fixed-Term
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.segment, counterLeaseType === 'month_to_month' && styles.segmentActive]}
+                onPress={() => setCounterLeaseType('month_to_month')}
+              >
+                <Text style={[styles.segmentText, counterLeaseType === 'month_to_month' && styles.segmentTextActive]}>
+                  Month-to-Month
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {counterLeaseType === 'fixed' && (
+              <>
+                <Text style={styles.fieldLabel}>Duration (Months) *</Text>
+                <TextInput
+                  style={styles.input}
+                  value={counterDuration}
+                  onChangeText={setCounterDuration}
+                  placeholder="e.g. 12"
+                  placeholderTextColor={colors.gray[400]}
+                  keyboardType="numeric"
+                />
+              </>
+            )}
+
             <Text style={styles.fieldLabel}>Your Proposed Monthly Rent *</Text>
             <TextInput
               style={styles.input}
@@ -417,6 +460,17 @@ export default function TenantLeaseRenewalScreen() {
               placeholderTextColor={colors.gray[400]}
               keyboardType="numeric"
             />
+
+            <Text style={styles.fieldLabel}>Annual Escalation Rate % (Optional)</Text>
+            <TextInput
+              style={styles.input}
+              value={counterEscalationRate}
+              onChangeText={setCounterEscalationRate}
+              placeholder="e.g. 5 (for 5%)"
+              placeholderTextColor={colors.gray[400]}
+              keyboardType="numeric"
+            />
+
             <Text style={styles.fieldLabel}>Notes (Optional)</Text>
             <TextInput
               style={[styles.input, styles.inputMulti]}
@@ -780,6 +834,31 @@ const styles = StyleSheet.create({
   },
   inputMulti: {
     minHeight: 80,
+  },
+  segmentRow: {
+    flexDirection: 'row',
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    marginBottom: 4,
+  },
+  segment: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    backgroundColor: colors.background.secondary,
+  },
+  segmentActive: {
+    backgroundColor: colors.rsa.green,
+  },
+  segmentText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.secondary,
+  },
+  segmentTextActive: {
+    color: colors.rsa.white,
   },
   formActions: {
     flexDirection: 'row',

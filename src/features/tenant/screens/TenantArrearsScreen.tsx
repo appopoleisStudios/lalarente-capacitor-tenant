@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/src/lib/supabase';
 import { paymentDisputesApi, type ProposeArrangementInput } from '@/src/features/payments/api/paymentDisputes.api';
 import { colors } from '@/src/shared/theme/colors';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 
 interface ArrearsRecord {
   id: string;
@@ -156,6 +157,7 @@ export default function TenantArrearsScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <KeyboardAvoidingView>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
@@ -170,7 +172,7 @@ export default function TenantArrearsScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {arrears.length === 0 ? (
           // ─── All clear ────────────────────────────────────────────────────────
           <View style={styles.allClearCard}>
@@ -334,6 +336,7 @@ export default function TenantArrearsScreen() {
       {/* ─── Payment Arrangement Modal ───────────────────────────────────── */}
       <Modal visible={showArrangementModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView>
           <View style={styles.modalSheet}>
             <Text style={styles.modalTitle}>Propose Payment Arrangement</Text>
             {selectedArrears && (
@@ -378,8 +381,10 @@ export default function TenantArrearsScreen() {
               </TouchableOpacity>
             </View>
           </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

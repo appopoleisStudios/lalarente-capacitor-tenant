@@ -23,7 +23,7 @@ PACKAGE_JSON="package.json"
 MAJOR=1
 MINOR=0
 PATCH=0
-BUILD_NUMBER=1
+BUILD_NUMBER=3
 REVISION=0
 
 echo -e "${BLUE}╔════════════════════════════════════════════════════════╗${NC}"
@@ -252,28 +252,44 @@ Build Configuration:
   Architectures: armeabi-v7a, arm64-v8a, x86, x86_64
 
 Features Included:
-  ✓ Authentication & User Management
-  ✓ Property Management (100%)
-  ✓ Viewing System (100%)
-  ✓ Rental Applications (100%)
-  ✓ Lease Management (100%)
-  ✓ Lease Signatures (80%)
-  ✓ Payment Tracking (40%)
-  ✓ Maintenance Management (60%)
-  ✓ Vendor Portal (70%)
+  ✓ Authentication & Session Persistence (fixed)
+  ✓ Property Management — CRUD, photos, search (100%)
+  ✓ Owner Profile — live data, inline editing (100%)
+  ✓ Tenant Profile — date picker, country code, ID upload (100%)
+  ✓ Viewing Requests — request, approve, decline, alt times (100%)
+  ✓ Rental Applications — apply, review, competition (100%)
+  ✓ Holding Deposits — create, track, apply to lease (100%)
+  ✓ Lease Management — create, dual-sign, PDF (100%)
+  ✓ Payment Tracking — rent, disputes, arrears, escalation (100%)
+  ✓ Maintenance Workflow — report, assign, quotes, POs, closure (100%)
+  ✓ Vendor Portal — quotes, work orders, ratings (100%)
+  ✓ Lease Renewal — CPA notices, negotiate, execute (100%)
+  ✓ Early Termination — penalty calc, deposit trigger (100%)
+  ✓ Deposit Management — interest accrual, deductions, refund (100%)
+  ✓ Inspections — schedule, conduct, sign off (100%)
+  ✓ Insurance Claims — create, upload docs, track (100%)
+  ✓ In-App Messaging — owner-tenant threads (100%)
+  ✓ Notifications — in-app notification centre (100%)
+  ✓ Documents Hub — upload, verify, FICA KYC (100%)
+  ✓ POPIA Compliance — consent, DSAR, privacy hub (100%)
+  ✓ Owner Dashboard — live analytics, activity feed, alerts (100%)
+  ✓ Tenant Dashboard — real-time updates, quick actions (100%)
 
 Known Limitations:
-  - Payment gateway not integrated
-  - Lease signature storage requires setup
-  - Messaging system not implemented
-  - Push notifications not implemented
+  - Payment gateway (PayFast/Yoco) not live — mock flows only
+  - Push notifications (FCM) not yet configured
+  - GEN-002: Email validation not enforced (intentional for testing)
 
-Testing Focus:
-  1. Property listing and search
-  2. Viewing request workflow
-  3. Application submission and approval
-  4. Lease creation and viewing
-  5. Maintenance request flow
+Testing Focus (QA Parity Flows):
+  1. Auth & session persistence — close + reopen app, stay logged in
+  2. Owner: add property → tenant: search & request viewing
+  3. Owner: approve/decline viewing with alternate times
+  4. Tenant: apply for property → owner: review & accept
+  5. Full lease creation, signing, and payment flow
+  6. Maintenance report → vendor assign → closure verification
+  7. Lease renewal negotiation end-to-end
+  8. Deposit deductions and refund flow
+  See docs/QA_PARITY_TEST_FLOWS.md for complete test cases
 
 Distribution:
   Method: Direct APK install

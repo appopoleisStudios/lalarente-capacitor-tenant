@@ -1,5 +1,5 @@
 import { supabase } from '../../../lib/supabase';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import type {
   Document,
@@ -88,6 +88,7 @@ export const documentsApi = {
           retention_period_years: retentionYears,
           delete_after: deleteAfter.toISOString(),
           tags: input.tags || null,
+          verification_status: 'verified',
         })
         .select()
         .single();
@@ -375,6 +376,26 @@ export const documentsApi = {
       totalSize,
       expiringCount: expiringDocs.length,
     };
+  },
+
+  /**
+   * Get tenant's verification documents (latest per mandatory type)
+   */
+  async getTenantVerificationDocs(tenantId: string): Promise<Document[]> {
+    const { data, error } = await supabase
+      .from('documents')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .eq('uploaded_by', tenantId)
+      .in('type', ['id_document', 'proof_of_income', 'utility_bill'])
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching verification docs:', error);
+      throw new Error(`Failed to fetch verification docs: ${error.message}`);
+    }
+
+    return data || [];
   },
 
   /**

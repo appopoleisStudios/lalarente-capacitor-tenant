@@ -20,7 +20,7 @@ import { uploadSignature } from '../../leases/api/storageService';
 import { executeLease } from '../../leases/api/leaseExecutionService';
 import { regenerateLeasePDF } from '../../leases/api/regenerateLeasePDF';
 import * as Sharing from 'expo-sharing';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 const RSA = { blue: '#002395', gold: '#FFB81C' }; // Owner colors
 

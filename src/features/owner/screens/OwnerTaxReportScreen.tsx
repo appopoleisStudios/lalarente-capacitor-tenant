@@ -217,26 +217,37 @@ export default function OwnerTaxReportScreen() {
   const fmt = (n: number) => `R ${n.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`;
 
   const handleExportPdf = async () => {
-    if (!summary) return;
+    if (!summary || !ownerId) return;
     setExporting(true);
     try {
-      await exportTaxStatementPdf({
-        ownerName,
-        taxYearLabel: selectedYear.label,
-        startDate: selectedYear.startDate.toISOString(),
-        endDate: selectedYear.endDate.toISOString(),
-        grossRentalIncome: summary.grossRentalIncome,
-        maintenanceDeductions: summary.maintenanceDeductions,
-        netTaxableEstimate: summary.netTaxableEstimate,
-        paymentCount: summary.paymentCount,
-        deductionCount: summary.deductionCount,
-        propertyBreakdown: summary.propertyBreakdown.map(pb => ({
-          propertyTitle: pb.propertyTitle,
-          grossIncome: pb.grossIncome,
-          deductions: pb.deductions,
-          net: pb.net,
-        })),
-      });
+      const documentId = await exportTaxStatementPdf(
+        {
+          ownerName,
+          taxYearLabel: selectedYear.label,
+          startDate: selectedYear.startDate.toISOString(),
+          endDate: selectedYear.endDate.toISOString(),
+          grossRentalIncome: summary.grossRentalIncome,
+          maintenanceDeductions: summary.maintenanceDeductions,
+          netTaxableEstimate: summary.netTaxableEstimate,
+          paymentCount: summary.paymentCount,
+          deductionCount: summary.deductionCount,
+          propertyBreakdown: summary.propertyBreakdown.map(pb => ({
+            propertyTitle: pb.propertyTitle,
+            grossIncome: pb.grossIncome,
+            deductions: pb.deductions,
+            net: pb.net,
+          })),
+        },
+        ownerId,
+      );
+      Alert.alert(
+        'Statement Saved',
+        'Your tax statement has been saved to Documents.',
+        [
+          { text: 'View', onPress: () => router.push(`/(owner)/documents/${documentId}` as any) },
+          { text: 'OK' },
+        ],
+      );
     } catch (err: any) {
       Alert.alert('Export Failed', err?.message || 'Unable to generate PDF. Please try again.');
     } finally {

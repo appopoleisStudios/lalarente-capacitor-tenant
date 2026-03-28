@@ -20,6 +20,7 @@ import {
   holdingDepositApi,
   HoldingDeposit,
 } from '../../applications/api/holdingDeposit.api';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 
 export default function OwnerApplicationDetailScreen() {
   const router = useRouter();
@@ -211,6 +212,7 @@ export default function OwnerApplicationDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView>
       <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
@@ -566,6 +568,7 @@ export default function OwnerApplicationDetailScreen() {
       {/* Request Holding Deposit Modal */}
       <Modal visible={showDepositModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView>
           <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>Request Holding Deposit</Text>
             <Text style={styles.modalSubtitle}>
@@ -601,9 +604,11 @@ export default function OwnerApplicationDetailScreen() {
               </TouchableOpacity>
             </View>
           </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
       </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

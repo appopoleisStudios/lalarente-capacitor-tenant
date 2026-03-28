@@ -120,11 +120,12 @@ export async function getOwnerDashboardData(ownerId: string): Promise<OwnerDashb
 
     // Fetch holding deposits count for owner's properties (pending + paid = "active")
     const propertyIds = properties.map((p: any) => p.id);
-    const [holdingDepositsActive, pendingTerminations, processingPayments, openDisputes] = await Promise.all([
+    const [holdingDepositsActive, pendingTerminations, processingPayments, openDisputes, recentViewings] = await Promise.all([
       fetchHoldingDepositsCount(propertyIds),
       fetchPendingTerminationsCount(ownerId),
       fetchProcessingPaymentsCount(propertyIds),
       fetchOpenDisputesCount(ownerId),
+      fetchRecentViewings(ownerId),
     ]);
 
     // Batch-fetch accepted quotes for active maintenance requests (single extra query)
@@ -149,7 +150,7 @@ export async function getOwnerDashboardData(ownerId: string): Promise<OwnerDashb
     const analytics = calculateAnalytics(properties, payments, maintenanceRequests);
     const maintenance = formatMaintenanceItems(maintenanceRequests, quotesMap);
     const applicants = formatApplicants(applications);
-    const recentActivity = buildActivityFeed(payments, maintenanceRequests, applications);
+    const recentActivity = buildActivityFeed(payments, maintenanceRequests, applications, recentViewings);
     const documents = calculateDocumentStats(properties, payments, maintenanceRequests, holdingDepositsActive);
 
     return {
@@ -212,6 +213,21 @@ async function fetchProcessingPaymentsCount(propertyIds: string[]): Promise<numb
     .in('property_id', propertyIds)
     .eq('status', 'processing');
   return count || 0;
+}
+
+/**
+ * Fetches viewing requests from the last 7 days for activity feed.
+ */
+async function fetchRecentViewings(ownerId: string): Promise<any[]> {
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const { data } = await supabase
+    .from('viewing_requests')
+    .select('id, status, requested_date, requested_time, alternative_times, created_at, updated_at, property:properties!property_id(title), tenant:profiles!tenant_id(full_name)')
+    .eq('owner_id', ownerId)
+    .gte('created_at', sevenDaysAgo)
+    .order('created_at', { ascending: false })
+    .limit(10);
+  return data || [];
 }
 
 async function fetchOpenDisputesCount(ownerId: string): Promise<number> {
@@ -400,18 +416,20 @@ function formatApplicants(applications: any[]): ApplicantItem[] {
 
 /**
  * Builds unified activity feed from multiple sources
- * Combines payments, maintenance, and applications into single timeline
+ * Combines payments, maintenance, applications, and viewings into single timeline
  */
 function buildActivityFeed(
   payments: any[],
   maintenanceRequests: any[],
-  applications: any[]
+  applications: any[],
+  viewings: any[] = []
 ): ActivityItem[] {
   const activities: (ActivityItem & { timestamp: Date })[] = [];
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-  // Add completed payments
+  // Add completed payments (last 30 days only)
   payments
-    .filter(p => p.status === 'completed' && p.paid_date)
+    .filter(p => p.status === 'completed' && p.paid_date && new Date(p.paid_date) >= thirtyDaysAgo)
     .slice(0, 3)
     .forEach(p => {
       activities.push({
@@ -423,13 +441,13 @@ function buildActivityFeed(
       });
     });
 
-  // Add arrears notices
+  // Add arrears notices (last 30 days only)
   const now = new Date();
   payments
     .filter(p => {
       if (!p.due_date) return false;
       const dueDate = new Date(p.due_date);
-      return dueDate < now && (p.status === 'pending' || p.status === 'overdue');
+      return dueDate < now && dueDate >= thirtyDaysAgo && (p.status === 'pending' || p.status === 'overdue');
     })
     .slice(0, 2)
     .forEach(p => {
@@ -442,9 +460,9 @@ function buildActivityFeed(
       });
     });
 
-  // Add new maintenance requests
+  // Add new maintenance requests (last 30 days only)
   maintenanceRequests
-    .filter(m => m.status === 'open')
+    .filter(m => m.status === 'open' && new Date(m.created_at) >= thirtyDaysAgo)
     .slice(0, 2)
     .forEach(m => {
       const property = m.property as any;
@@ -457,8 +475,9 @@ function buildActivityFeed(
       });
     });
 
-  // Add new applications
+  // Add new applications (last 30 days only)
   applications
+    .filter(a => new Date(a.created_at) >= thirtyDaysAgo)
     .slice(0, 2)
     .forEach(a => {
       const property = a.property as any;
@@ -470,6 +489,39 @@ function buildActivityFeed(
         timestamp: new Date(a.created_at),
       });
     });
+
+  // Add viewing events
+  viewings.forEach(v => {
+    const property = v.property as any;
+    const tenant = v.tenant as any;
+    const propertyName = property?.title || 'Property';
+    const tenantName = tenant?.full_name || 'Tenant';
+    const eventDate = v.updated_at || v.created_at;
+    const timestamp = new Date(eventDate);
+
+    let icon = '📅';
+    let label = 'Viewing Request';
+    let value = `${tenantName} · ${propertyName}`;
+
+    if (v.status === 'approved') {
+      icon = '✅';
+      label = 'Viewing Confirmed';
+    } else if (v.status === 'declined') {
+      icon = '🔄';
+      label = 'Viewing Declined';
+      if (v.alternative_times && v.alternative_times.length > 0) {
+        label = 'Alt. Times Offered';
+      }
+    } else if (v.status === 'completed') {
+      icon = '🏠';
+      label = 'Viewing Completed';
+    } else if (v.status === 'cancelled') {
+      icon = '❌';
+      label = 'Viewing Cancelled';
+    }
+
+    activities.push({ icon, label, value, date: formatRelativeTime(timestamp), timestamp });
+  });
 
   // Sort by most recent first and return without timestamp field
   return activities
@@ -489,12 +541,7 @@ function calculateDocumentStats(
 ): DocumentStats {
   const activeLeases = properties.filter(p => p.status === 'rented').length;
 
-  const monthStart = new Date();
-  monthStart.setDate(1);
-  monthStart.setHours(0, 0, 0, 0);
-  const recentInvoices = payments.filter(
-    p => p.status === 'completed' && p.paid_date && new Date(p.paid_date) >= monthStart
-  ).length;
+  const recentInvoices = payments.filter(p => p.status === 'completed').length;
 
   const pendingQuotes = maintenanceRequests.filter(r => r.status === 'quote_received').length;
 

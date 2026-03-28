@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, SafeAreaView, TextInput, Alert, Switch, Image, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TextInput, Alert, Switch, Image, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
@@ -7,6 +8,7 @@ import { AnimatedButton } from '../components/AnimatedButton';
 import { LocationPicker } from '../components/LocationPicker';
 import { propertiesApi } from '../../properties/api/propertiesApi';
 import { supabase } from '../../../lib/supabase';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { styles } from './EditPropertyScreen.styles';
 
 interface PropertyForm {
@@ -268,6 +270,7 @@ export default function EditPropertyScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -613,6 +616,7 @@ export default function EditPropertyScreen() {
           </AnimatedButton>
         </ScrollView>
       </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

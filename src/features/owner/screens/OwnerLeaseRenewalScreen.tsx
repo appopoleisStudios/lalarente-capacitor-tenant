@@ -24,6 +24,7 @@ import { supabase } from '@/src/lib/supabase';
 import { leaseExpiryApi, LeaseExpiryInfo, ExpiringLease } from '@/src/features/leases/api/leaseExpiry.api';
 import { leaseRenewalApi, RenewalNegotiation } from '@/src/features/leases/api/leaseRenewal.api';
 import { colors } from '@/src/shared/theme/colors';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -146,6 +147,48 @@ export default function OwnerLeaseRenewalScreen() {
     }
   };
 
+  const handleAcceptTenantOffer = async (negotiationId: string) => {
+    if (!userId) return;
+    Alert.alert(
+      'Accept Tenant Terms',
+      'Are you sure you want to accept the tenant\'s proposed terms? A new lease will be drafted for both parties to sign.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Accept',
+          style: 'default',
+          onPress: async () => {
+            try {
+              await leaseRenewalApi.acceptRenewal(negotiationId, userId);
+              Alert.alert('Accepted', 'You have accepted the tenant\'s terms. Execute the renewal to create the new lease.');
+              loadExpiringLeases();
+            } catch (err: any) {
+              Alert.alert('Error', err.message || 'Failed to accept offer');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleRejectTenantOffer = async (negotiationId: string) => {
+    Alert.prompt(
+      'Reject Counter-Offer',
+      'Provide a reason for rejecting the tenant\'s terms (optional):',
+      async (reason) => {
+        try {
+          await leaseRenewalApi.rejectRenewal(negotiationId, reason || undefined);
+          Alert.alert('Rejected', 'The tenant\'s counter-offer has been rejected.');
+          loadExpiringLeases();
+        } catch (err: any) {
+          Alert.alert('Error', err.message || 'Failed to reject offer');
+        }
+      },
+      'plain-text',
+      '',
+    );
+  };
+
   const handleExecuteRenewal = async (negotiationId: string, leaseId: string) => {
     Alert.alert(
       'Execute Renewal',
@@ -200,6 +243,7 @@ export default function OwnerLeaseRenewalScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -385,6 +429,39 @@ export default function OwnerLeaseRenewalScreen() {
                         )}
                       </TouchableOpacity>
                     </>
+                  ) : hasActiveOffer && latestNeg && latestNeg.status === 'pending' && latestNeg.initiated_by !== userId ? (
+                    // Tenant sent a counter — owner can accept, reject, or counter back
+                    <>
+                      <View style={styles.tenantCounterBanner}>
+                        <Ionicons name="swap-horizontal" size={14} color="#8B5CF6" />
+                        <Text style={styles.tenantCounterBannerText}>
+                          Tenant proposes {formatZAR(latestNeg.proposed_monthly_rent)}/mo · Round {latestNeg.round}
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.acceptTenantButton}
+                        onPress={() => handleAcceptTenantOffer(latestNeg.id)}
+                      >
+                        <Ionicons name="checkmark" size={16} color="#FFF" />
+                        <Text style={styles.acceptTenantButtonText}>Accept Tenant Terms</Text>
+                      </TouchableOpacity>
+                      <View style={styles.twoButtonRow}>
+                        <TouchableOpacity
+                          style={styles.rejectButton}
+                          onPress={() => handleRejectTenantOffer(latestNeg.id)}
+                        >
+                          <Ionicons name="close" size={16} color="#DC2626" />
+                          <Text style={styles.rejectButtonText}>Reject</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.counterButton}
+                          onPress={() => handleOpenOfferModal(lease.id, latestNeg.proposed_monthly_rent)}
+                        >
+                          <Ionicons name="swap-horizontal" size={16} color={colors.rsa.blue} />
+                          <Text style={styles.counterButtonText}>My Counter</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </>
                   ) : (
                     <TouchableOpacity
                       style={styles.offerButton}
@@ -419,7 +496,7 @@ export default function OwnerLeaseRenewalScreen() {
             <View style={{ width: 24 }} />
           </View>
 
-          <ScrollView contentContainerStyle={styles.modalContent}>
+          <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
             {/* Lease Type */}
             <Text style={styles.fieldLabel}>Lease Type</Text>
             <View style={styles.segmentControl}>
@@ -504,6 +581,7 @@ export default function OwnerLeaseRenewalScreen() {
           </ScrollView>
         </SafeAreaView>
       </Modal>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -840,5 +918,73 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: colors.rsa.white,
+  },
+  tenantCounterBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#F5F3FF',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 8,
+  },
+  tenantCounterBannerText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#7C3AED',
+    flex: 1,
+  },
+  acceptTenantButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: colors.rsa.green,
+    borderRadius: 10,
+    padding: 13,
+    marginBottom: 8,
+  },
+  acceptTenantButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+  twoButtonRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  rejectButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#FEF2F2',
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  rejectButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#DC2626',
+  },
+  counterButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#EFF2FF',
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  counterButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.rsa.blue,
   },
 });

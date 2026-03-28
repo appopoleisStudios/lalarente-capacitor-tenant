@@ -22,6 +22,7 @@ import { supabase } from '@/src/lib/supabase';
 import { leaseTerminationApi } from '@/src/features/leases/api/leaseTermination.api';
 import { depositRefundApi } from '@/src/features/deposits/api/depositRefund.api';
 import { colors } from '@/src/shared/theme/colors';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 
 const RSA_BLUE = '#002395';
 
@@ -151,6 +152,7 @@ export default function OwnerEarlyTerminationScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <KeyboardAvoidingView>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
@@ -311,6 +313,7 @@ export default function OwnerEarlyTerminationScreen() {
       {/* Decline Modal */}
       <Modal visible={showDeclineModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView>
           <View style={styles.modalSheet}>
             <Text style={styles.modalTitle}>Decline Request</Text>
             <Text style={styles.modalSubtitle}>
@@ -345,8 +348,10 @@ export default function OwnerEarlyTerminationScreen() {
               </TouchableOpacity>
             </View>
           </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

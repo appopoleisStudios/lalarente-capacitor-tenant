@@ -208,6 +208,18 @@ export default function TenantLayout() {
           href: null, // Hidden from tabs - accessed from payments or dashboard
         }}
       />
+      <Tabs.Screen
+        name="inspections/[id]"
+        options={{
+          href: null, // Hidden from tabs - inspection detail (sign off)
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          href: null, // Hidden from tabs - notification list from bell icon
+        }}
+      />
     </Tabs>
   );
 }

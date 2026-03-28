@@ -1,0 +1,117 @@
+LaLarente App - Build Information
+==================================
+
+Version: 1.0.3
+Build Number: 3
+Build Date: February 7, 2026
+Build Type: Preview (APK)
+Build Profile: preview
+
+==================================
+FEATURES INCLUDED IN THIS BUILD
+==================================
+
+✅ COMPLETED FEATURES:
+
+1. DATABASE & BACKEND:
+   - Tenant verification workflow (Migration 018)
+   - Closure mediation messages (Migration 019)
+   - Lease signature storage policies
+   - Notification preferences structure (Migration 020 - pending manual execution)
+
+2. TENANT FEATURES:
+   - Simplified 6-stage progress tracker
+   - Work verification screen (approve/reject)
+   - Photo upload for rejection evidence
+   - Maintenance detail with verification CTA
+   - Maintenance list and reporting
+
+3. OWNER FEATURES:
+   - PO sending screen with work schedule
+   - PO management with date/time pickers
+   - Work instructions for vendors
+   - Maintenance detail view
+   - Dashboard with property overview
+
+4. VENDOR FEATURES:
+   - PO detail with work schedule display
+   - PO accept/reject with validation
+   - Work instructions view
+   - Enhanced vendor assignment
+
+5. API LAYER:
+   - tenantVerification.api.ts (9 functions)
+     - forwardClosureToTenant()
+     - tenantApproveCompletion()
+     - tenantRejectCompletion()
+     - overrideTenantVerification()
+     - markAsEmergencyRepair()
+     - autoApproveExpiredClosures()
+     - addMediationMessage()
+     - getMediationMessages()
+     - flagForMediation()
+   - Enhanced PO actions (accept/reject with authorization)
+   - Closure workflow with tenant approval checks
+
+==================================
+PENDING FEATURES (NOT IN THIS BUILD):
+==================================
+
+❌ Owner mediation UI for dispute resolution
+❌ Auto-approval cron job (72hr timeout)
+❌ PayFast payment gateway integration
+❌ Tenant verification notification types
+❌ Full end-to-end testing
+
+==================================
+KNOWN ISSUES:
+==================================
+
+⚠️ Notification preferences table needs manual creation
+   - Execute: database/migrations/020_create_notification_preferences.sql
+   - In Supabase SQL Editor before testing notifications
+
+⚠️ TypeScript errors in inspection/documents modules
+   - Non-blocking for current features
+   - Should be fixed in next build
+
+==================================
+TESTING CHECKLIST:
+==================================
+
+□ Tenant can report maintenance issues
+□ Tenant can view simplified progress (6 stages)
+□ Tenant can verify completed work
+□ Tenant can reject work with photos
+□ Owner can send PO with schedule
+□ Vendor can view work schedule
+□ Vendor can accept/reject PO
+□ Maintenance workflow: report → acknowledge → assign → complete
+□ Lease signatures (if storage SQL executed)
+
+==================================
+BUILD COMMAND USED:
+==================================
+
+eas build --platform android --profile preview --non-interactive
+
+==================================
+DEPLOYMENT NOTES:
+==================================
+
+1. This is a PREVIEW build for client testing
+2. Uses bundled JavaScript (not OTA updates)
+3. Build number incremented to track versions
+4. Suitable for sideloading on Android devices
+5. NOT for Play Store submission (use production profile for that)
+
+==================================
+NEXT STEPS AFTER TESTING:
+==================================
+
+1. Client tests all maintenance workflows
+2. Execute notification_preferences migration in Supabase
+3. Complete owner mediation UI (Task #7)
+4. Implement PayFast payment gateway (Task #10)
+5. Add auto-approval cron job (Task #11)
+6. Build final production APK after UAT approval

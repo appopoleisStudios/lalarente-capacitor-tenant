@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { supabase } from '../../../lib/supabase';
 
 const RSA = { blue: '#002395', gold: '#FFB81C' }; // Owner colors
@@ -225,6 +226,7 @@ export default function OwnerLeaseCreateScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -235,7 +237,7 @@ export default function OwnerLeaseCreateScreen() {
           <View style={{ width: 24 }} />
         </View>
 
-        <ScrollView style={styles.scrollView}>
+        <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
           {/* Application Info */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Application Details</Text>
@@ -456,6 +458,7 @@ export default function OwnerLeaseCreateScreen() {
           </View>
         </ScrollView>
       </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

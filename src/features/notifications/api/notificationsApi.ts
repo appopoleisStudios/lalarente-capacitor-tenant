@@ -45,7 +45,10 @@ export const notificationsApi = {
       const content = this.getNotificationContent(input.type, input.data);
 
       // Create notification record
-      const { data: notification, error: notifError } = await notifTable()
+      // NOTE: Do NOT chain .select() — the SELECT RLS policy requires
+      // auth.uid() = user_id, but the inserter (e.g. owner) differs from
+      // the recipient (e.g. tenant). Postgres generates the UUID via default.
+      const { error: notifError } = await notifTable()
         .insert({
           user_id: input.user_id,
           type: input.type,
@@ -54,17 +57,15 @@ export const notificationsApi = {
           data: input.data,
           channels,
           priority: input.priority || 'normal',
-          status: 'pending',
-        })
-        .select()
-        .single();
+          status: 'sent',
+        });
 
       if (notifError) {
         console.error('Error creating notification:', notifError);
         return null;
       }
 
-      // Send via each channel
+      // Send via each channel (non-blocking, best-effort)
       const sendPromises: Promise<void>[] = [];
 
       if (channels.includes('email') && user.email) {
@@ -87,15 +88,14 @@ export const notificationsApi = {
         sendPromises.push(this.sendPushNotification(input.user_id, content.title, content.body, input.data));
       }
 
-      // Execute all sends
       await Promise.allSettled(sendPromises);
 
-      // Update notification status
-      await notifTable()
-        .update({ status: 'sent', sent_at: new Date().toISOString() })
-        .eq('id', notification.id);
-
-      return notification;
+      return {
+        user_id: input.user_id,
+        type: input.type,
+        title: content.title,
+        body: content.body,
+      } as any;
     } catch (error) {
       console.error('Error sending notification:', error);
       return null;

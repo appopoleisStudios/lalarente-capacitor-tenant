@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
-  SafeAreaView,
   RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { viewingsApi, ViewingWithRelations } from '../../properties/api/viewingsApi';
@@ -65,6 +65,7 @@ export default function OwnerViewingsScreen() {
   const router = useRouter();
 
   const [userId, setUserId] = useState<string | null>(null);
+  const userIdRef = React.useRef<string | null>(null);
   const [viewings, setViewings] = useState<ViewingWithRelations[]>([]);
   const [filteredViewings, setFilteredViewings] = useState<ViewingWithRelations[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<ViewingStatus>('all');
@@ -77,10 +78,11 @@ export default function OwnerViewingsScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (userId) {
-        loadViewings();
+      const id = userIdRef.current;
+      if (id) {
+        loadViewings(id);
       }
-    }, [userId])
+    }, [])
   );
 
   useEffect(() => {
@@ -103,8 +105,7 @@ export default function OwnerViewingsScreen() {
         },
         (payload) => {
           console.log('Viewing request change:', payload);
-          // Reload viewings when any change occurs
-          loadViewings();
+          loadViewings(userId);
         }
       )
       .subscribe();
@@ -115,20 +116,33 @@ export default function OwnerViewingsScreen() {
   }, [userId]);
 
   const initUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      setUserId(user.id);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        userIdRef.current = user.id;
+        loadViewings(user.id);
+      } else {
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error('[OwnerViewings] initUser error:', err);
+      setLoading(false);
     }
   };
 
-  const loadViewings = async () => {
-    if (!userId) return;
+  const loadViewings = async (uid?: string) => {
+    const id = uid || userIdRef.current;
+    if (!id) {
+      setLoading(false);
+      return;
+    }
 
     try {
-      const data = await viewingsApi.getOwnerViewings(userId);
+      const data = await viewingsApi.getOwnerViewings(id);
       setViewings(data);
     } catch (error) {
-      console.error('Error loading viewings:', error);
+      console.error('[OwnerViewings] Error loading viewings:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -294,7 +308,7 @@ export default function OwnerViewingsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.container}>
           <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -312,7 +326,7 @@ export default function OwnerViewingsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>

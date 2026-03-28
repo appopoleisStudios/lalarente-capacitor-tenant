@@ -7,9 +7,9 @@ import {
   ScrollView,
   ActivityIndicator,
   StyleSheet,
-  SafeAreaView,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
@@ -21,6 +21,7 @@ import {
   FileInfo,
 } from '../types';
 import { supabase } from '../../../lib/supabase';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 
 const COLORS = {
   owner: { primary: '#002395', secondary: '#FFB81C' },
@@ -219,17 +220,18 @@ export default function DocumentUploadScreen({
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Upload Document</Text>
-          <View style={styles.placeholder} />
-        </View>
+      <KeyboardAvoidingView>
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color="#333" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Upload Document</Text>
+            <View style={styles.placeholder} />
+          </View>
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <ScrollView style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           {/* File Picker */}
           <TouchableOpacity style={styles.filePicker} onPress={pickDocument}>
             {selectedFile ? (
@@ -380,8 +382,9 @@ export default function DocumentUploadScreen({
         </View>
       </View>
 
-      {/* Type Picker Modal */}
-      {renderTypePicker()}
+        {/* Type Picker Modal */}
+        {renderTypePicker()}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

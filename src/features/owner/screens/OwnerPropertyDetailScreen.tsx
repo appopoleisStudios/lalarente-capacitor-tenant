@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, SafeAreaView, Image, Alert, ActivityIndicator, Modal, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, ScrollView, Image, Alert, ActivityIndicator, Modal, TouchableOpacity, Dimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { AnimatedButton } from '../components/AnimatedButton';
@@ -217,7 +218,7 @@ export default function OwnerPropertyDetailScreen() {
             </View>
           ) : (
             <View style={styles.noPhotos}>
-              <Text style={styles.noPhotosText}>📷 No photos</Text>
+              <Text style={styles.noPhotosText}>No photos</Text>
             </View>
           )}
 
@@ -238,7 +239,7 @@ export default function OwnerPropertyDetailScreen() {
 
             {/* Address */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>📍 Location</Text>
+              <Text style={styles.sectionTitle}>Location</Text>
               <Text style={styles.address}>
                 {property.address}
                 {'\n'}
@@ -249,7 +250,7 @@ export default function OwnerPropertyDetailScreen() {
 
             {/* Property Details */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>🏠 Property Details</Text>
+              <Text style={styles.sectionTitle}>Property Details</Text>
               <View style={styles.detailsGrid}>
                 <View style={styles.detailItem}>
                   <Text style={styles.detailLabel}>Type</Text>
@@ -285,7 +286,7 @@ export default function OwnerPropertyDetailScreen() {
             {/* Lease Terms */}
             {(property.minimum_lease_months || property.pets_allowed !== null || property.smoking_allowed !== null) && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>📋 Lease Terms</Text>
+                <Text style={styles.sectionTitle}>Lease Terms</Text>
                 <View style={styles.termsGrid}>
                   {property.minimum_lease_months && (
                     <View style={styles.termItem}>
@@ -296,13 +297,13 @@ export default function OwnerPropertyDetailScreen() {
                   {property.pets_allowed !== null && (
                     <View style={styles.termItem}>
                       <Text style={styles.termLabel}>Pets</Text>
-                      <Text style={styles.termValue}>{property.pets_allowed ? '✅ Allowed' : '❌ Not Allowed'}</Text>
+                      <Text style={styles.termValue}>{property.pets_allowed ? 'Allowed' : 'Not Allowed'}</Text>
                     </View>
                   )}
                   {property.smoking_allowed !== null && (
                     <View style={styles.termItem}>
                       <Text style={styles.termLabel}>Smoking</Text>
-                      <Text style={styles.termValue}>{property.smoking_allowed ? '✅ Allowed' : '❌ Not Allowed'}</Text>
+                      <Text style={styles.termValue}>{property.smoking_allowed ? 'Allowed' : 'Not Allowed'}</Text>
                     </View>
                   )}
                   {property.available_from && (
@@ -320,7 +321,7 @@ export default function OwnerPropertyDetailScreen() {
             {/* Amenities */}
             {property.amenities && property.amenities.length > 0 && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>✨ Amenities</Text>
+                <Text style={styles.sectionTitle}>Amenities</Text>
                 <View style={styles.amenitiesGrid}>
                   {property.amenities.map((amenity, index) => (
                     <View key={index} style={styles.amenityChip}>
@@ -334,7 +335,7 @@ export default function OwnerPropertyDetailScreen() {
             {/* Description */}
             {property.description && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>📝 Description</Text>
+                <Text style={styles.sectionTitle}>Description</Text>
                 <Text style={styles.description}>{property.description}</Text>
               </View>
             )}
@@ -342,7 +343,7 @@ export default function OwnerPropertyDetailScreen() {
             {/* Current Tenant/Lease */}
             {activeLease && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>👤 Current Tenant</Text>
+                <Text style={styles.sectionTitle}>Current Tenant</Text>
                 <View style={styles.tenantCard}>
                   <View style={styles.tenantInfo}>
                     <Text style={styles.tenantName}>{activeLease.tenant?.full_name}</Text>

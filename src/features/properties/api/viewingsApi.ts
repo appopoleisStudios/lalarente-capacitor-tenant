@@ -138,6 +138,7 @@ export const viewingsApi = {
         confirmed_date: confirmedDate,
         owner_response: input.owner_notes || 'Viewing approved',
         owner_notes: input.owner_notes || null,
+        updated_at: new Date().toISOString(),
       })
       .eq('id', input.viewing_id)
       .select()
@@ -192,6 +193,7 @@ export const viewingsApi = {
         status: 'declined',
         owner_response: input.owner_response,
         alternative_times: input.alternative_times || null,
+        updated_at: new Date().toISOString(),
       })
       .eq('id', input.viewing_id)
       .select()
@@ -245,6 +247,7 @@ export const viewingsApi = {
         status: 'cancelled',
         owner_response: reason || `Cancelled by ${cancelledBy}`,
         cancelled_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .eq('id', viewingId)
       .select()
@@ -302,6 +305,7 @@ export const viewingsApi = {
         status: 'completed',
         completed_at: new Date().toISOString(),
         owner_notes: notes || viewing.owner_notes,
+        updated_at: new Date().toISOString(),
       })
       .eq('id', viewingId)
       .select()

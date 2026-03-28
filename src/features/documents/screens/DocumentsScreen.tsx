@@ -6,10 +6,10 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
-  SafeAreaView,
   RefreshControl,
   TextInput,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { documentsApi } from '../api/documentsApi';
@@ -20,6 +20,7 @@ import {
   DOCUMENT_CATEGORIES,
 } from '../types';
 import { supabase } from '../../../lib/supabase';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 
 const COLORS = {
   owner: { primary: '#002395', secondary: '#FFB81C' },
@@ -142,6 +143,9 @@ export default function DocumentsScreen({ role = 'owner', propertyId, leaseId }:
       utility_bill: 'flash',
       tax_certificate: 'document',
       police_clearance: 'shield-checkmark',
+      owner_statement: 'bar-chart',
+      tax_statement: 'calculator',
+      invoice: 'receipt',
       other: 'folder',
     };
     return iconMap[type] || 'document';
@@ -260,58 +264,61 @@ export default function DocumentsScreen({ role = 'owner', propertyId, leaseId }:
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Documents</Text>
-          <TouchableOpacity
-            style={[styles.addButton, { backgroundColor: colors.primary }]}
-            onPress={navigateToUpload}
-          >
-            <Ionicons name="add" size={24} color="#FFF" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
-            <Ionicons name="search" size={20} color="#999" />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search documents..."
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              onSubmitEditing={handleSearch}
-              returnKeyType="search"
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => { setSearchQuery(''); loadDocuments(); }}>
-                <Ionicons name="close-circle" size={20} color="#999" />
-              </TouchableOpacity>
-            )}
+      <KeyboardAvoidingView>
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Documents</Text>
+            <TouchableOpacity
+              style={[styles.addButton, { backgroundColor: colors.primary }]}
+              onPress={navigateToUpload}
+            >
+              <Ionicons name="add" size={24} color="#FFF" />
+            </TouchableOpacity>
           </View>
+
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <View style={styles.searchBar}>
+              <Ionicons name="search" size={20} color="#999" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search documents..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                onSubmitEditing={handleSearch}
+                returnKeyType="search"
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => { setSearchQuery(''); loadDocuments(); }}>
+                  <Ionicons name="close-circle" size={20} color="#999" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          {/* Filters */}
+          {renderFilters()}
+
+          {/* Document List */}
+          <FlatList
+            data={documents}
+            keyExtractor={item => item.id}
+            renderItem={renderDocument}
+            ListEmptyComponent={renderEmpty}
+            keyboardShouldPersistTaps="handled"
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[colors.primary]}
+                tintColor={colors.primary}
+              />
+            }
+            contentContainerStyle={documents.length === 0 && styles.emptyList}
+          />
         </View>
-
-        {/* Filters */}
-        {renderFilters()}
-
-        {/* Document List */}
-        <FlatList
-          data={documents}
-          keyExtractor={item => item.id}
-          renderItem={renderDocument}
-          ListEmptyComponent={renderEmpty}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[colors.primary]}
-              tintColor={colors.primary}
-            />
-          }
-          contentContainerStyle={documents.length === 0 && styles.emptyList}
-        />
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -43,6 +44,11 @@ export default function TenantDashboardScreen() {
     income: false,
     references: false,
   });
+  const [pendingInspection, setPendingInspection] = useState<any>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [viewingAlerts, setViewingAlerts] = useState<any[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -50,10 +56,31 @@ export default function TenantDashboardScreen() {
     }, [])
   );
 
+  // Real-time subscription: reload viewingAlerts when owner responds to a request
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel('tenant-dashboard-viewings')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'viewing_requests', filter: `tenant_id=eq.${userId}` },
+        () => { loadDashboardData(); }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [userId]);
+
+  const handlePullToRefresh = async () => {
+    setRefreshing(true);
+    await loadDashboardData();
+    setRefreshing(false);
+  };
+
   const loadDashboardData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      setUserId(user.id);
 
       // Get user profile
       const { data: profile } = await supabase
@@ -101,20 +128,83 @@ export default function TenantDashboardScreen() {
 
       setMaintenanceRequests(maintenance ?? []);
 
-      // Get upcoming viewings (approved or pending, future dates)
+      // Get upcoming viewings (approved or pending)
       const { data: viewings } = await supabase
         .from('viewing_requests')
-        .select(`
-          id, proposed_date, status, message,
-          property:properties!property_id(id, title, address)
-        `)
+        .select('id, requested_date, requested_time, confirmed_date, status, owner_response, property:properties!property_id(id, title, address)')
         .eq('tenant_id', user.id)
         .in('status', ['approved', 'pending'])
-        .gte('proposed_date', new Date().toISOString())
-        .order('proposed_date', { ascending: true })
+        .order('requested_date', { ascending: true })
         .limit(3);
 
       setUpcomingViewings(viewings ?? []);
+
+      // Get recently declined viewings (last 14 days) as alert cards
+      // Filter out declined viewings where tenant already has a newer pending/approved
+      // request for the same property (i.e. tenant already acted on the decline)
+      const twoWeeksAgo = new Date();
+      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+      const { data: recentDeclined } = await supabase
+        .from('viewing_requests')
+        .select('id, status, requested_date, requested_time, confirmed_date, owner_response, alternative_times, updated_at, created_at, property_id, property:properties!property_id(id, title)')
+        .eq('tenant_id', user.id)
+        .eq('status', 'declined')
+        .gte('created_at', twoWeeksAgo.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      // Filter out declined viewings where tenant already re-requested for that property
+      let filteredAlerts = recentDeclined ?? [];
+      if (filteredAlerts.length > 0) {
+        const declinedPropertyIds = [...new Set(filteredAlerts.map((v: any) => v.property_id))];
+        const { data: activeForProps } = await supabase
+          .from('viewing_requests')
+          .select('property_id')
+          .eq('tenant_id', user.id)
+          .in('status', ['pending', 'approved'])
+          .in('property_id', declinedPropertyIds);
+
+        const activePropertyIds = new Set(
+          (activeForProps ?? []).map((v: any) => v.property_id)
+        );
+        filteredAlerts = filteredAlerts.filter(
+          (v: any) => !activePropertyIds.has(v.property_id)
+        );
+      }
+
+      // Also filter out declined viewings where the notification was already read
+      // (user already saw it on the notifications screen)
+      if (filteredAlerts.length > 0) {
+        const viewingIds = filteredAlerts.map((v: any) => v.id);
+        const { data: readNotifs } = await (supabase as any)
+          .from('notifications')
+          .select('data')
+          .eq('user_id', user.id)
+          .in('type', ['viewing_declined', 'viewing_approved'])
+          .not('read_at', 'is', null);
+
+        if (readNotifs && readNotifs.length > 0) {
+          const readViewingIds = new Set(
+            readNotifs.map((n: any) => n.data?.viewingId).filter(Boolean)
+          );
+          filteredAlerts = filteredAlerts.filter(
+            (v: any) => !readViewingIds.has(v.id)
+          );
+        }
+      }
+
+      setViewingAlerts(filteredAlerts);
+
+      // Get unread notifications (table exists but not in generated types yet)
+      const { data: unreadNotifs } = await (supabase as any)
+        .from('notifications')
+        .select('id, type, title, body, data, created_at')
+        .eq('user_id', user.id)
+        .is('read_at', null)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      setNotifications(unreadNotifs ?? []);
 
       // Get pending applications
       const { data: apps } = await supabase
@@ -149,20 +239,34 @@ export default function TenantDashboardScreen() {
         category: t.category,
       })));
 
-      // Check verification status from latest application
-      const { data: latestApp } = await supabase
-        .from('rental_applications')
-        .select('identity_verification_status, id_document_url, proof_of_income_urls, reference_urls')
+      // Check for pending inspection that needs tenant signature
+      const { data: pendingInsp } = await supabase
+        .from('inspections')
+        .select('id, type, scheduled_date, property:properties!property_id(title)')
         .eq('tenant_id', user.id)
-        .order('created_at', { ascending: false })
+        .eq('status', 'pending_signatures')
         .limit(1)
         .maybeSingle();
 
-      if (latestApp) {
+      setPendingInspection(pendingInsp ?? null);
+
+      // Check verification status from profile (most reliable — always populated)
+      const { data: verifyProfile } = await supabase
+        .from('profiles')
+        .select('id_number, monthly_income, proof_of_address_url, fica_documents')
+        .eq('id', user.id)
+        .single();
+
+      if (verifyProfile) {
+        const p = verifyProfile as any;
+        const ficaDocs = p.fica_documents || {};
+        const hasIdNumber = !!(p.id_number || ficaDocs.id_number);
+        const hasIncome = !!(p.monthly_income || ficaDocs.monthly_income);
+        const hasAddress = !!(p.proof_of_address_url);
         setVerificationStatus({
-          identity: latestApp.identity_verification_status === 'verified',
-          income: (latestApp.proof_of_income_urls?.length || 0) > 0,
-          references: (latestApp.reference_urls?.length || 0) > 0,
+          identity: hasIdNumber,
+          income: hasIncome,
+          references: hasAddress,
         });
       }
 
@@ -183,10 +287,15 @@ export default function TenantDashboardScreen() {
     );
   }
 
-  const notificationCount = maintenanceRequests.length
-    + (nextPayment ? 1 : 0)
-    + (activeLease?.status === 'pending_tenant_signature' ? 1 : 0)
-    + totalUnreadMessages;
+  const dismissNotification = async (notifId: string) => {
+    await (supabase as any).from('notifications').update({ read_at: new Date().toISOString() }).eq('id', notifId);
+    setNotifications(prev => prev.filter(n => n.id !== notifId));
+  };
+
+  // Bell badge = unread notifications (from DB) + unactioned viewing declines
+  // These are the only "dismissible" items. Active maintenance, pending payments,
+  // etc. are persistent status items — they belong in the list but not the badge.
+  const notificationCount = notifications.length + viewingAlerts.length;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -199,17 +308,7 @@ export default function TenantDashboardScreen() {
           </View>
           <TouchableOpacity
             style={styles.notificationButton}
-            onPress={() => {
-              if (totalUnreadMessages > 0) {
-                router.push('/(tenant)/messages' as any);
-              } else if (activeLease?.status === 'pending_tenant_signature') {
-                router.push('/(tenant)/lease' as any);
-              } else if (nextPayment) {
-                router.push('/(tenant)/payments' as any);
-              } else if (maintenanceRequests.length > 0) {
-                router.push('/(tenant)/maintenance' as any);
-              }
-            }}
+            onPress={() => router.push('/(tenant)/notifications' as any)}
           >
             <Ionicons name="notifications-outline" size={24} color={colors.text.primary} />
             {notificationCount > 0 && (
@@ -220,7 +319,105 @@ export default function TenantDashboardScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handlePullToRefresh} tintColor="#007A4D" />
+          }
+        >
+          {/* Viewing Response Alert Cards — from viewing_requests directly */}
+          {viewingAlerts.length > 0 && (
+            <View style={styles.section}>
+              {viewingAlerts.map(v => {
+                const isApproved = v.status === 'approved';
+                const cardBg = isApproved ? '#E8F5E9' : '#FFF3E0';
+                const borderClr = isApproved ? '#4CAF50' : '#FF9800';
+                const iconClr = isApproved ? '#4CAF50' : '#E65100';
+                const altTimes = v.alternative_times as string[] | null;
+
+                return (
+                  <TouchableOpacity
+                    key={v.id}
+                    style={[styles.notifCard, { backgroundColor: cardBg, borderLeftColor: borderClr }]}
+                    onPress={() => router.push(`/(tenant)/viewings/${v.id}` as any)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={isApproved ? 'checkmark-circle' : 'alert-circle'}
+                      size={24}
+                      color={iconClr}
+                    />
+                    <View style={styles.notifContent}>
+                      <Text style={styles.notifTitle}>
+                        {isApproved ? 'Viewing Approved!' : 'Viewing Declined'}
+                      </Text>
+                      <Text style={styles.notifBody} numberOfLines={1}>
+                        {v.property?.title || 'Property'}
+                      </Text>
+                      {v.owner_response ? (
+                        <Text style={styles.notifBody} numberOfLines={2}>
+                          Owner: "{v.owner_response}"
+                        </Text>
+                      ) : null}
+                      {!isApproved && altTimes && altTimes.length > 0 ? (
+                        <Text style={[styles.notifBody, { fontWeight: '600', color: '#E65100' }]}>
+                          {altTimes.length} alternative time{altTimes.length > 1 ? 's' : ''} proposed
+                        </Text>
+                      ) : null}
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={iconClr} />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+
+          {/* Notification Alert Cards (from notifications table) */}
+          {notifications.length > 0 && (
+            <View style={styles.section}>
+              {notifications.map(notif => {
+                const isApproved = notif.type === 'viewing_approved';
+                const isDeclined = notif.type === 'viewing_declined';
+                const viewingId = notif.data?.viewing_id || notif.data?.viewingId;
+
+                const cardColor = isApproved ? '#E8F5E9' : isDeclined ? '#FFF3E0' : '#E3F2FD';
+                const borderColor = isApproved ? '#4CAF50' : isDeclined ? '#FF9800' : '#2196F3';
+                const iconName = isApproved ? 'checkmark-circle' : isDeclined ? 'close-circle' : 'information-circle';
+                const iconColor = isApproved ? '#4CAF50' : isDeclined ? '#FF9800' : '#2196F3';
+
+                return (
+                  <TouchableOpacity
+                    key={notif.id}
+                    style={[styles.notifCard, { backgroundColor: cardColor, borderLeftColor: borderColor }]}
+                    onPress={() => {
+                      dismissNotification(notif.id);
+                      if ((isApproved || isDeclined) && viewingId) {
+                        router.push(`/(tenant)/viewings/${viewingId}` as any);
+                      }
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name={iconName as any} size={24} color={iconColor} />
+                    <View style={styles.notifContent}>
+                      <Text style={styles.notifTitle}>{notif.title}</Text>
+                      <Text style={styles.notifBody} numberOfLines={2}>{notif.body}</Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        dismissNotification(notif.id);
+                      }}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Ionicons name="close" size={18} color="#999" />
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+
           {/* Verification Status */}
           {(!verificationStatus.identity || !verificationStatus.income || !verificationStatus.references) && (
             <View style={styles.section}>
@@ -279,6 +476,33 @@ export default function TenantDashboardScreen() {
                   <Text style={styles.signatureAlertButtonText}>Sign Lease Now</Text>
                 </TouchableOpacity>
               </View>
+            </View>
+          )}
+
+          {/* Pending Inspection Alert */}
+          {pendingInspection && (
+            <View style={styles.section}>
+              <TouchableOpacity
+                style={styles.inspectionAlertCard}
+                onPress={() => router.push({
+                  pathname: '/(tenant)/inspections/[id]' as any,
+                  params: { id: pendingInspection.id },
+                })}
+                activeOpacity={0.8}
+              >
+                <View style={styles.inspectionAlertHeader}>
+                  <Ionicons name="clipboard-outline" size={28} color="#8B5CF6" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.inspectionAlertTitle}>
+                      Inspection Awaiting Your Signature
+                    </Text>
+                    <Text style={styles.inspectionAlertSub}>
+                      {pendingInspection.type === 'move_in' ? 'Move-In' : pendingInspection.type === 'move_out' ? 'Move-Out' : 'Periodic'} inspection at {pendingInspection.property?.title || 'your property'}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="#8B5CF6" />
+                </View>
+              </TouchableOpacity>
             </View>
           )}
 
@@ -419,10 +643,9 @@ export default function TenantDashboardScreen() {
                       {viewing.property?.title || 'Property'}
                     </Text>
                     <Text style={styles.viewingDate}>
-                      {new Date(viewing.proposed_date).toLocaleDateString('en-ZA', {
+                      {new Date(viewing.requested_date + 'T' + (viewing.requested_time || '09:00')).toLocaleDateString('en-ZA', {
                         weekday: 'short', day: 'numeric', month: 'short',
-                        hour: '2-digit', minute: '2-digit',
-                      })}
+                      })} at {viewing.requested_time?.slice(0, 5) || '09:00'}
                     </Text>
                   </View>
                   <View style={[
@@ -1489,6 +1712,34 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  inspectionAlertCard: {
+    backgroundColor: '#F5F3FF',
+    borderRadius: 12,
+    padding: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#8B5CF6',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+  },
+  inspectionAlertHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  inspectionAlertTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#4C1D95',
+    marginBottom: 3,
+  },
+  inspectionAlertSub: {
+    fontSize: 13,
+    color: '#7C3AED',
+    lineHeight: 18,
+  },
   unreadBadge: {
     backgroundColor: colors.rsa.green,
     borderRadius: 10,
@@ -1551,5 +1802,28 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: colors.text.inverse,
+  },
+  notifCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 8,
+    borderLeftWidth: 4,
+    gap: 12,
+  },
+  notifContent: {
+    flex: 1,
+  },
+  notifTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text.primary,
+    marginBottom: 2,
+  },
+  notifBody: {
+    fontSize: 13,
+    color: colors.text.secondary,
+    lineHeight: 18,
   },
 });

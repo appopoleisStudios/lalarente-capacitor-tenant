@@ -22,10 +22,12 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '@/src/lib/supabase';
+import { uploadFile } from '@/src/lib/storage';
 import {
   tenantApproveCompletion,
   tenantRejectCompletion,
 } from '@/src/features/maintenance/api/work/tenantVerification.api';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 
 export default function TenantVerificationScreen() {
   const router = useRouter();
@@ -67,8 +69,6 @@ export default function TenantVerificationScreen() {
     });
 
     if (!result.canceled && result.assets[0]) {
-      // TODO: Upload to Supabase Storage and get URL
-      // For now, using local URI (will need storage integration)
       const photoUri = result.assets[0].uri;
       setRejectionPhotos([...rejectionPhotos, photoUri]);
     }
@@ -127,11 +127,27 @@ export default function TenantVerificationScreen() {
     try {
       setIsSubmitting(true);
 
+      // Upload rejection photos to Supabase Storage
+      const uploadedUrls: string[] = [];
+      for (const uri of rejectionPhotos) {
+        const result = await uploadFile('MAINTENANCE_MEDIA', {
+          uri,
+          name: `rejection_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.jpg`,
+          type: 'image/jpeg',
+        }, `rejections/${requestId}`);
+        if (result.error) {
+          Alert.alert('Upload Error', 'Failed to upload one or more photos. Please try again.');
+          setIsSubmitting(false);
+          return;
+        }
+        uploadedUrls.push(result.url);
+      }
+
       await tenantRejectCompletion(
         requestId,
         userId!,
         rejectionReason.trim(),
-        rejectionPhotos
+        uploadedUrls
       );
 
       Alert.alert(

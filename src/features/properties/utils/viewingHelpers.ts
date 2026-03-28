@@ -25,8 +25,12 @@ export interface ViewingActionStatus {
  * Check if a viewing request has expired
  *
  * A viewing is considered expired if:
- * 1. The viewing date/time has passed
- * 2. Less than 24 hours remain before viewing and status is still pending
+ * 1. The viewing date/time has passed, OR
+ * 2. Status is pending AND owner had at least 24h to respond (created_at > 24h ago)
+ *    AND viewing is less than 2h away
+ *
+ * This prevents newly created viewings from being instantly expired just because
+ * they're scheduled within the next 24 hours.
  *
  * @param viewing - The viewing request object
  * @returns true if expired, false otherwise
@@ -42,10 +46,16 @@ export function isViewingExpired(viewing: ViewingRequest): boolean {
     return true;
   }
 
-  // Check if less than 24 hours before viewing and still pending
-  const cutoffTime = new Date(viewingDateTime.getTime() - 24 * 60 * 60 * 1000);
-  if (viewing.status === 'pending' && now > cutoffTime) {
-    return true;
+  // For pending viewings: only expire if the owner had 24h to respond
+  // AND the viewing is less than 2 hours away
+  if (viewing.status === 'pending' && viewing.created_at) {
+    const createdAt = new Date(viewing.created_at);
+    const ownerHad24h = (now.getTime() - createdAt.getTime()) >= 24 * 60 * 60 * 1000;
+    const lessThan2hAway = (viewingDateTime.getTime() - now.getTime()) < 2 * 60 * 60 * 1000;
+
+    if (ownerHad24h && lessThan2hAway) {
+      return true;
+    }
   }
 
   return false;
@@ -135,27 +145,33 @@ export function getViewingActionStatus(viewing: ViewingRequest): ViewingActionSt
     };
   }
 
-  // Check if less than 24 hours before viewing and still pending
-  const cutoffTime = new Date(viewingDateTime.getTime() - 24 * 60 * 60 * 1000);
-  if (viewing.status === 'pending' && now > cutoffTime) {
-    return {
-      canApprove: false,
-      canDecline: false,
-      canCancel: false,
-      message: 'This viewing request has expired - response deadline (24 hours before viewing) has passed',
-      badge: 'Expired',
-      badgeColor: '#FFB81C',
-      reason: 'response_deadline_missed',
-    };
+  // Check if pending viewing should be expired:
+  // Owner had 24h to respond AND viewing is less than 2h away
+  if (viewing.status === 'pending' && viewing.created_at) {
+    const createdAt = new Date(viewing.created_at);
+    const ownerHad24h = (now.getTime() - createdAt.getTime()) >= 24 * 60 * 60 * 1000;
+    const lessThan2hAway = hoursUntil < 2;
+
+    if (ownerHad24h && lessThan2hAway) {
+      return {
+        canApprove: false,
+        canDecline: false,
+        canCancel: false,
+        message: 'This viewing request has expired - response deadline has passed',
+        badge: 'Expired',
+        badgeColor: '#FFB81C',
+        reason: 'response_deadline_missed',
+      };
+    }
   }
 
-  // Urgent: Less than 24 hours remain (but still within response window)
-  if (hoursUntil < 24 && hoursUntil > 0 && viewing.status === 'pending') {
+  // Urgent: Less than 4 hours remain and still pending
+  if (hoursUntil < 4 && hoursUntil > 0 && viewing.status === 'pending') {
     return {
       canApprove: true,
       canDecline: true,
       canCancel: false,
-      message: `Urgent: Less than ${Math.floor(hoursUntil)} hours until viewing! Please respond.`,
+      message: `Urgent: Less than ${Math.ceil(hoursUntil)} hours until viewing! Please respond.`,
       badge: 'Urgent',
       badgeColor: '#DE3831',
     };

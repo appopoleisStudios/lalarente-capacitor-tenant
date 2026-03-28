@@ -18,6 +18,9 @@ export type DocumentType =
   | 'utility_bill'
   | 'tax_certificate'
   | 'police_clearance'
+  | 'owner_statement'
+  | 'tax_statement'
+  | 'invoice'
   | 'other';
 
 // Access level enum
@@ -183,6 +186,33 @@ export const DOCUMENT_CATEGORIES: Record<DocumentType, DocumentCategory> = {
     maxSize: 5,
     acceptedTypes: ['image/*', 'application/pdf'],
     retentionYears: 5,
+  },
+  owner_statement: {
+    type: 'owner_statement',
+    label: 'Owner Statement',
+    icon: 'bar-chart',
+    description: 'Monthly owner income and expense statement',
+    maxSize: 10,
+    acceptedTypes: ['application/pdf'],
+    retentionYears: 7,
+  },
+  tax_statement: {
+    type: 'tax_statement',
+    label: 'Tax Statement',
+    icon: 'calculator',
+    description: 'SA tax year rental income summary (ITR12)',
+    maxSize: 10,
+    acceptedTypes: ['application/pdf'],
+    retentionYears: 7,
+  },
+  invoice: {
+    type: 'invoice',
+    label: 'Invoice',
+    icon: 'receipt',
+    description: 'Rent or vendor invoice export',
+    maxSize: 10,
+    acceptedTypes: ['application/pdf'],
+    retentionYears: 7,
   },
   other: {
     type: 'other',

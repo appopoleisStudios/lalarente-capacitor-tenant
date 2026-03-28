@@ -11,6 +11,7 @@ interface ViewingRequest {
   requested_date: string;
   requested_time: string;
   status: string;
+  alternative_times?: string[] | null;
 }
 
 interface ViewingRequestsSectionProps {
@@ -77,6 +78,9 @@ export const ViewingRequestsSection = ({ viewings, pendingCount }: ViewingReques
                 <Text style={styles.tenant} numberOfLines={1}>
                   {viewing.tenant_name}
                 </Text>
+                {viewing.status === 'declined' && viewing.alternative_times && viewing.alternative_times.length > 0 && (
+                  <Text style={styles.altOffered}>Alt. times offered</Text>
+                )}
               </View>
               <View style={styles.dateContainer}>
                 <Text style={styles.date}>{formatDate(viewing.requested_date)}</Text>
@@ -191,5 +195,11 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     textTransform: 'capitalize',
+  },
+  altOffered: {
+    fontSize: 10,
+    color: '#0369A1',
+    fontWeight: '600',
+    marginTop: 2,
   },
 });

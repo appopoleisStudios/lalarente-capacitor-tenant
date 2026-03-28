@@ -1097,12 +1097,16 @@ export type Database = {
           mime_type: string
           owner_id: string | null
           property_id: string | null
+          rejection_reason: string | null
           retention_period_years: number
+          reviewed_at: string | null
+          reviewed_by: string | null
           tags: string[] | null
           tenant_id: string | null
           title: string
           type: string
           uploaded_by: string
+          verification_status: string
         }
         Insert: {
           access_level: string
@@ -1119,12 +1123,16 @@ export type Database = {
           mime_type: string
           owner_id?: string | null
           property_id?: string | null
+          rejection_reason?: string | null
           retention_period_years: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           tags?: string[] | null
           tenant_id?: string | null
           title: string
           type: string
           uploaded_by: string
+          verification_status?: string
         }
         Update: {
           access_level?: string
@@ -1141,12 +1149,16 @@ export type Database = {
           mime_type?: string
           owner_id?: string | null
           property_id?: string | null
+          rejection_reason?: string | null
           retention_period_years?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           tags?: string[] | null
           tenant_id?: string | null
           title?: string
           type?: string
           uploaded_by?: string
+          verification_status?: string
         }
         Relationships: [
           {
@@ -3100,8 +3112,10 @@ export type Database = {
           onboarding_vendor_done: boolean
           phone: string | null
           position: string | null
+          proof_of_address_url: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string | null
+          utility_account_number: string | null
           verification_status: boolean | null
         }
         Insert: {
@@ -3123,8 +3137,10 @@ export type Database = {
           onboarding_vendor_done?: boolean
           phone?: string | null
           position?: string | null
+          proof_of_address_url?: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
+          utility_account_number?: string | null
           verification_status?: boolean | null
         }
         Update: {
@@ -3146,8 +3162,10 @@ export type Database = {
           onboarding_vendor_done?: boolean
           phone?: string | null
           position?: string | null
+          proof_of_address_url?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
+          utility_account_number?: string | null
           verification_status?: boolean | null
         }
         Relationships: []
@@ -5276,6 +5294,15 @@ export type Database = {
       }
     }
     Functions: {
+      accrue_deposit_interest: {
+        Args: never
+        Returns: {
+          message: string
+          processed_count: number
+          skipped_count: number
+          total_interest_accrued: number
+        }[]
+      }
       approve_quote_and_generate_po: {
         Args: { quote_id: string }
         Returns: string
@@ -5664,3 +5691,4 @@ export const Constants = {
     },
   },
 } as const
+

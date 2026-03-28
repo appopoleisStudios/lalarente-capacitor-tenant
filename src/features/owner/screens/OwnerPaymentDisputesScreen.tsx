@@ -20,6 +20,7 @@ import {
   type DisputeStatus,
 } from '@/src/features/payments/api/paymentDisputes.api';
 import { colors } from '@/src/shared/theme/colors';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   open: { label: 'Open', color: '#D97706' },
@@ -271,6 +272,7 @@ export default function OwnerPaymentDisputesScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <KeyboardAvoidingView>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
@@ -318,6 +320,7 @@ export default function OwnerPaymentDisputesScreen() {
       {/* ─── Resolve Modal ────────────────────────────────────────────────── */}
       <Modal visible={showResolveModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView>
           <View style={styles.modalSheet}>
             <Text style={styles.modalTitle}>Accept Dispute</Text>
             <Text style={styles.modalSub}>
@@ -362,12 +365,14 @@ export default function OwnerPaymentDisputesScreen() {
               </TouchableOpacity>
             </View>
           </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
 
       {/* ─── Reject Modal ─────────────────────────────────────────────────── */}
       <Modal visible={showRejectModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView>
           <View style={styles.modalSheet}>
             <Text style={styles.modalTitle}>Reject Dispute</Text>
             <Text style={styles.modalSub}>
@@ -399,8 +404,10 @@ export default function OwnerPaymentDisputesScreen() {
               </TouchableOpacity>
             </View>
           </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

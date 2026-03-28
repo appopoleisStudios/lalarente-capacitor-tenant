@@ -6,17 +6,20 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
-  SafeAreaView,
   Alert,
   TextInput,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { inspectionsApi } from '../api/inspectionsApi';
 import { uploadSignature } from '../../leases/api/storageService';
+import { supabase } from '@/src/lib/supabase';
+import { exportInspectionReportPdf } from '../../owner/utils/pdfReports';
 import SignatureModal from '../../leases/components/SignatureModal';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import {
   InspectionWithRelations,
   RoomInspection,
@@ -63,6 +66,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
   const [generalNotes, setGeneralNotes] = useState('');
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -107,8 +111,8 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
       // Initialize general notes
       setGeneralNotes((data.rooms as InspectionRooms)?.generalNotes || '');
     } catch (err) {
-      console.error('Error loading inspection:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load inspection');
+      console.error('Error loading inspection:', JSON.stringify(err));
+      setError(err instanceof Error ? err.message : 'Failed to load inspection. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -212,6 +216,12 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
   const completeInspection = async () => {
     if (!inspection) return;
 
+    // Enforce photo requirement for every room
+    if (!allRoomsHavePhotos) {
+      validatePhotosBeforeAction('Complete', () => {});
+      return;
+    }
+
     Alert.alert(
       'Complete Inspection',
       'Are you sure you want to complete this inspection? You can still sign after completion.',
@@ -246,7 +256,9 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
   };
 
   const handleSign = () => {
-    setShowSignatureModal(true);
+    validatePhotosBeforeAction('Sign', () => {
+      setShowSignatureModal(true);
+    });
   };
 
   const handleSignatureSave = async (signatureBase64: string) => {
@@ -277,6 +289,25 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
     }
   };
 
+  const handleExportReport = async () => {
+    if (!inspection) return;
+    try {
+      setExporting(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+      await exportInspectionReportPdf(inspection.id, user.id);
+      const docsPath = role === 'owner' ? '/(owner)/documents' : '/(tenant)/documents';
+      Alert.alert('Report Saved', 'Inspection report saved to your documents.', [
+        { text: 'View Documents', onPress: () => router.push(docsPath as any) },
+        { text: 'Done', style: 'cancel' },
+      ]);
+    } catch {
+      Alert.alert('Error', 'Failed to generate inspection report. Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const currentRoom = rooms[currentRoomIndex];
   const isLastRoom = currentRoomIndex === rooms.length - 1;
   const isFirstRoom = currentRoomIndex === 0;
@@ -285,6 +316,40 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
   const hasSigned = role === 'owner'
     ? !!inspection?.owner_signed_at
     : !!inspection?.tenant_signed_at;
+
+  // Photo validation — every room must have at least 1 photo (room-level or item-level)
+  const getRoomPhotoCount = (room: RoomInspection): number => {
+    const roomPhotos = room.photos?.length || 0;
+    const itemPhotos = room.items.reduce((sum, item) => sum + (item.photos?.length || 0), 0);
+    return roomPhotos + itemPhotos;
+  };
+
+  const roomsWithoutPhotos = rooms
+    .map((room, idx) => ({ name: room.name, index: idx, photos: getRoomPhotoCount(room) }))
+    .filter(r => r.photos === 0);
+
+  const allRoomsHavePhotos = roomsWithoutPhotos.length === 0;
+
+  const validatePhotosBeforeAction = (actionName: string, onValid: () => void) => {
+    if (!allRoomsHavePhotos) {
+      const missing = roomsWithoutPhotos.map(r => `  • ${r.name}`).join('\n');
+      Alert.alert(
+        `Cannot ${actionName}`,
+        `Every room requires at least one photo before you can ${actionName.toLowerCase()}.\n\nRooms missing photos:\n${missing}`,
+        [
+          { text: 'OK' },
+          ...(roomsWithoutPhotos.length > 0
+            ? [{
+                text: `Go to ${roomsWithoutPhotos[0].name}`,
+                onPress: () => setCurrentRoomIndex(roomsWithoutPhotos[0].index),
+              }]
+            : []),
+        ]
+      );
+      return;
+    }
+    onValid();
+  };
 
   if (loading) {
     return (
@@ -312,28 +377,29 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#333" />
-          </TouchableOpacity>
-          <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>
-              {inspection.type === 'move_in' ? 'Move-In' : 'Move-Out'} Inspection
-            </Text>
-            <Text style={styles.headerSubtitle}>{inspection.property?.title}</Text>
+      <KeyboardAvoidingView>
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color="#333" />
+            </TouchableOpacity>
+            <View style={styles.headerCenter}>
+              <Text style={styles.headerTitle}>
+                {inspection.type === 'move_in' ? 'Move-In' : 'Move-Out'} Inspection
+              </Text>
+              <Text style={styles.headerSubtitle}>{inspection.property?.title}</Text>
+            </View>
+            <TouchableOpacity onPress={saveProgress} disabled={saving}>
+              {saving ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Ionicons name="save-outline" size={24} color={colors.primary} />
+              )}
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity onPress={saveProgress} disabled={saving}>
-            {saving ? (
-              <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-              <Ionicons name="save-outline" size={24} color={colors.primary} />
-            )}
-          </TouchableOpacity>
-        </View>
 
-        {/* Progress Bar */}
+          {/* Progress Bar */}
         <View style={styles.progressContainer}>
           <View style={styles.progressBar}>
             <View
@@ -349,6 +415,33 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
           <Text style={styles.progressText}>
             Room {currentRoomIndex + 1} of {rooms.length}
           </Text>
+          {/* Room photo status dots */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.roomDots}>
+            {rooms.map((room, idx) => {
+              const hasPhotos = getRoomPhotoCount(room) > 0;
+              const isCurrent = idx === currentRoomIndex;
+              return (
+                <TouchableOpacity
+                  key={idx}
+                  style={[
+                    styles.roomDot,
+                    isCurrent && { borderColor: colors.primary, borderWidth: 2 },
+                    hasPhotos ? styles.roomDotGreen : styles.roomDotRed,
+                  ]}
+                  onPress={() => setCurrentRoomIndex(idx)}
+                >
+                  <Text style={styles.roomDotText} numberOfLines={1}>
+                    {room.name.length > 8 ? room.name.slice(0, 7) + '…' : room.name}
+                  </Text>
+                  {hasPhotos ? (
+                    <Ionicons name="camera" size={10} color="#4CAF50" />
+                  ) : (
+                    <Ionicons name="camera-outline" size={10} color="#F44336" />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
 
         <ScrollView style={styles.scrollView}>
@@ -382,11 +475,33 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
 
           {/* Items */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Items to Inspect</Text>
-            {currentRoom?.items.map((item, index) => (
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionTitle}>Items to Inspect</Text>
+              {currentRoom && getRoomPhotoCount(currentRoom) === 0 && (
+                <View style={styles.photoWarningBadge}>
+                  <Ionicons name="warning" size={14} color="#F44336" />
+                  <Text style={styles.photoWarningText}>Photos required</Text>
+                </View>
+              )}
+              {currentRoom && getRoomPhotoCount(currentRoom) > 0 && (
+                <View style={styles.photoCountBadge}>
+                  <Ionicons name="camera" size={14} color="#4CAF50" />
+                  <Text style={styles.photoCountText}>{getRoomPhotoCount(currentRoom)}</Text>
+                </View>
+              )}
+            </View>
+            {currentRoom?.items?.map((item, index) => (
               <View key={index} style={styles.itemCard}>
                 <View style={styles.itemHeader}>
-                  <Text style={styles.itemName}>{item.name}</Text>
+                  <View style={styles.itemNameRow}>
+                    <Text style={styles.itemName}>{item.name}</Text>
+                    {(item.photos?.length || 0) > 0 && (
+                      <View style={styles.itemPhotoBadge}>
+                        <Ionicons name="camera" size={12} color="#4CAF50" />
+                        <Text style={styles.itemPhotoCount}>{item.photos!.length}</Text>
+                      </View>
+                    )}
+                  </View>
                   <View style={styles.photoButtons}>
                     <TouchableOpacity
                       style={styles.photoButton}
@@ -452,6 +567,35 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                 )}
               </View>
             ))}
+          </View>
+
+          {/* Room Photos */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Room Photos</Text>
+            <View style={styles.roomPhotoActions}>
+              <TouchableOpacity style={[styles.roomPhotoButton, { borderColor: colors.primary }]} onPress={() => takePhoto()}>
+                <Ionicons name="camera" size={22} color={colors.primary} />
+                <Text style={[styles.roomPhotoButtonText, { color: colors.primary }]}>Take Photo</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.roomPhotoButton, { borderColor: colors.primary }]} onPress={() => pickImage()}>
+                <Ionicons name="image" size={22} color={colors.primary} />
+                <Text style={[styles.roomPhotoButtonText, { color: colors.primary }]}>Gallery</Text>
+              </TouchableOpacity>
+            </View>
+            {currentRoom?.photos && currentRoom.photos.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoScroll}>
+                {currentRoom.photos.map((photo, photoIndex) => (
+                  <Image key={photoIndex} source={{ uri: photo }} style={styles.photoThumbnail} />
+                ))}
+              </ScrollView>
+            ) : (
+              <View style={styles.noPhotosHint}>
+                <Ionicons name="alert-circle-outline" size={18} color="#F44336" />
+                <Text style={styles.noPhotosHintText}>
+                  At least one photo of this room is required before sign-off
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* Room Notes */}
@@ -621,10 +765,27 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                 )}
               </TouchableOpacity>
             ) : (
-              <View style={[styles.navButton, styles.navButtonDisabled]}>
-                <Ionicons name="checkmark-done" size={24} color="#CCC" />
-                <Text style={[styles.navButtonText, { color: '#CCC' }]}>Completed</Text>
-              </View>
+              inspection?.status === 'completed' ? (
+                <TouchableOpacity
+                  style={[styles.navButton, styles.navButtonPrimary, { backgroundColor: colors.primary }]}
+                  onPress={handleExportReport}
+                  disabled={exporting}
+                >
+                  {exporting ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <>
+                      <Ionicons name="download-outline" size={24} color="#FFF" />
+                      <Text style={[styles.navButtonText, { color: '#FFF' }]}>Export Report</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              ) : (
+                <View style={[styles.navButton, styles.navButtonDisabled]}>
+                  <Ionicons name="checkmark-done" size={24} color="#CCC" />
+                  <Text style={[styles.navButtonText, { color: '#CCC' }]}>Completed</Text>
+                </View>
+              )
             )
           ) : (
             <TouchableOpacity
@@ -647,6 +808,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
           primaryColor={colors.primary}
         />
       </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -935,5 +1097,123 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  roomDots: {
+    marginTop: 10,
+    flexDirection: 'row',
+  },
+  roomDot: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginRight: 6,
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    gap: 4,
+  },
+  roomDotGreen: {
+    backgroundColor: '#E8F5E9',
+  },
+  roomDotRed: {
+    backgroundColor: '#FFEBEE',
+  },
+  roomDotText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#333',
+    maxWidth: 60,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  photoWarningBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFEBEE',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  photoWarningText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#F44336',
+  },
+  photoCountBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  photoCountText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#4CAF50',
+  },
+  itemNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+  },
+  itemPhotoBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  itemPhotoCount: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#4CAF50',
+  },
+  roomPhotoActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  roomPhotoButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 2,
+    backgroundColor: '#FFF',
+  },
+  roomPhotoButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  noPhotosHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FFF3F0',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FFCDD2',
+  },
+  noPhotosHintText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#D32F2F',
+    lineHeight: 18,
   },
 });

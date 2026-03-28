@@ -51,8 +51,7 @@ export const inspectionsApi = {
         property:properties!property_id(id, title, address, city),
         lease:leases!lease_id(id, start_date, end_date, monthly_rent, deposit_amount),
         tenant:profiles!tenant_id(id, full_name, email, phone),
-        owner:profiles!owner_id(id, full_name, email, phone),
-        inspector:profiles!inspector_id(id, full_name)
+        owner:profiles!owner_id(id, full_name, email, phone)
       `)
       .eq('id', id)
       .single();

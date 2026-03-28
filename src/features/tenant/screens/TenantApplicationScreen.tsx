@@ -10,24 +10,31 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { supabase } from '../../../lib/supabase';
 import { applicationsApi } from '../../properties/api/applicationsApi';
 import { propertiesApi } from '../../properties/api/propertiesApi';
+import { uploadFile } from '../../../lib/storage';
 import type { PropertyWithRelations } from '../../properties/api/propertiesApi';
 
 const RSA = { green: '#007A4D', blue: '#002395' };
 
+type DocFile = { uri: string; name: string; type: string };
+
 export default function TenantApplicationScreen() {
   const router = useRouter();
   const { propertyId } = useLocalSearchParams<{ propertyId: string }>();
-  
+
   const [property, setProperty] = useState<PropertyWithRelations | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingDocs, setUploadingDocs] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
 
   // Personal Information
@@ -44,6 +51,11 @@ export default function TenantApplicationScreen() {
   const [employmentStartDate, setEmploymentStartDate] = useState('');
   const [employerContact, setEmployerContact] = useState('');
 
+  // Documents
+  const [idDocFile, setIdDocFile] = useState<DocFile | null>(null);
+  const [incomeDocFiles, setIncomeDocFiles] = useState<DocFile[]>([]);
+  const [referenceDocFiles, setReferenceDocFiles] = useState<DocFile[]>([]);
+
   // Affordability
   const [affordabilityRatio, setAffordabilityRatio] = useState<number | null>(null);
   const [isAffordable, setIsAffordable] = useState<boolean | null>(null);
@@ -58,11 +70,9 @@ export default function TenantApplicationScreen() {
 
   const loadPropertyAndProfile = async () => {
     try {
-      // Load property details
       const propertyData = await propertiesApi.getProperty(propertyId);
       setProperty(propertyData);
 
-      // Pre-fill from user profile
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data: profile } = await supabase
@@ -73,35 +83,31 @@ export default function TenantApplicationScreen() {
 
         if (profile) {
           const profileData = profile as any;
-          
-          // Personal Information
+
           setFullName(profileData.full_name || '');
           setEmail(profileData.email || user.email || '');
           setPhone(profileData.phone || '');
-          
-          // ID number: Check new column first, then JSONB field
+
           const idFromColumn = profileData.id_number;
           const idFromJson = profileData.fica_documents?.id_number;
           setIdNumber(idFromColumn || idFromJson || '');
-          
-          // Date of birth: Check new column first, then JSONB field
+
           const dobFromColumn = profileData.date_of_birth;
           const dobFromJson = profileData.fica_documents?.date_of_birth;
           setDateOfBirth(dobFromColumn || dobFromJson || '');
-          
-          // Employment Information: Check new columns first, then JSONB fields
+
           const employerFromColumn = profileData.employer;
           const employerFromJson = profileData.fica_documents?.employer;
           setEmployer(employerFromColumn || employerFromJson || '');
-          
+
           const positionFromColumn = profileData.position;
           const positionFromJson = profileData.fica_documents?.employment_status;
           setPosition(positionFromColumn || positionFromJson || '');
-          
+
           const incomeFromColumn = profileData.monthly_income;
           const incomeFromJson = profileData.fica_documents?.monthly_income;
           setMonthlyIncome((incomeFromColumn || incomeFromJson)?.toString() || '');
-          
+
           setEmploymentStartDate(profileData.employment_start_date || '');
           setEmployerContact(profileData.employer_contact || '');
         }
@@ -124,10 +130,85 @@ export default function TenantApplicationScreen() {
     const income = parseFloat(monthlyIncome);
     const rent = property.rent_amount;
     const ratio = rent / income;
-    
+
     setAffordabilityRatio(ratio);
-    setIsAffordable(ratio <= 0.3); // 30% threshold
+    setIsAffordable(ratio <= 0.3);
   };
+
+  // ── Document Pickers ──
+
+  const pickFromCamera = async (): Promise<DocFile | null> => {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('Permission Required', 'Please allow camera access to take photos');
+      return null;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets[0]) return null;
+    const asset = result.assets[0];
+    return {
+      uri: asset.uri,
+      name: asset.fileName || `photo_${Date.now()}.jpg`,
+      type: asset.mimeType || 'image/jpeg',
+    };
+  };
+
+  const pickFromFiles = async (): Promise<DocFile | null> => {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: ['image/*', 'application/pdf'],
+      copyToCacheDirectory: true,
+    });
+    if (result.canceled || !result.assets?.[0]) return null;
+    const asset = result.assets[0];
+    return {
+      uri: asset.uri,
+      name: asset.name,
+      type: asset.mimeType || 'application/octet-stream',
+    };
+  };
+
+  const showPickerSheet = (onPick: (file: DocFile) => void) => {
+    Alert.alert('Upload Document', 'Choose source', [
+      {
+        text: 'Take Photo',
+        onPress: async () => {
+          const file = await pickFromCamera();
+          if (file) onPick(file);
+        },
+      },
+      {
+        text: 'Choose File',
+        onPress: async () => {
+          const file = await pickFromFiles();
+          if (file) onPick(file);
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const pickIdDoc = () => showPickerSheet((file) => setIdDocFile(file));
+
+  const pickIncomeDoc = () => {
+    if (incomeDocFiles.length >= 3) {
+      Alert.alert('Limit Reached', 'Maximum 3 proof of income files allowed');
+      return;
+    }
+    showPickerSheet((file) => setIncomeDocFiles((prev) => [...prev, file]));
+  };
+
+  const pickReferenceDoc = () => {
+    if (referenceDocFiles.length >= 3) {
+      Alert.alert('Limit Reached', 'Maximum 3 reference files allowed');
+      return;
+    }
+    showPickerSheet((file) => setReferenceDocFiles((prev) => [...prev, file]));
+  };
+
+  // ── Validation ──
 
   const validateStep = (step: number): boolean => {
     switch (step) {
@@ -140,7 +221,7 @@ export default function TenantApplicationScreen() {
           Alert.alert('Invalid', 'Full name must be at least 3 characters');
           return false;
         }
-        
+
         if (!email.trim()) {
           Alert.alert('Required', 'Please enter your email');
           return false;
@@ -150,7 +231,7 @@ export default function TenantApplicationScreen() {
           Alert.alert('Invalid', 'Please enter a valid email address');
           return false;
         }
-        
+
         if (!phone.trim()) {
           Alert.alert('Required', 'Please enter your phone number');
           return false;
@@ -160,16 +241,12 @@ export default function TenantApplicationScreen() {
           Alert.alert('Invalid', 'Please enter a valid phone number (at least 10 digits)');
           return false;
         }
-        
+
         if (!idNumber.trim()) {
           Alert.alert('Required', 'Please enter your ID number');
           return false;
         }
-        if (idNumber.trim().length < 6) {
-          Alert.alert('Invalid', 'ID number must be at least 6 characters');
-          return false;
-        }
-        
+
         if (!dateOfBirth.trim()) {
           Alert.alert('Required', 'Please enter your date of birth');
           return false;
@@ -179,77 +256,42 @@ export default function TenantApplicationScreen() {
           Alert.alert('Invalid', 'Date of birth must be in YYYY-MM-DD format (e.g., 1990-05-15)');
           return false;
         }
-        // Validate actual date
         const dob = new Date(dateOfBirth);
         if (isNaN(dob.getTime())) {
           Alert.alert('Invalid', 'Please enter a valid date');
           return false;
         }
-        // Check month and day are valid
-        const [year, month, day] = dateOfBirth.split('-').map(Number);
-        if (month < 1 || month > 12) {
+        const [_y, dobMonth, dobDay] = dateOfBirth.split('-').map(Number);
+        if (dobMonth < 1 || dobMonth > 12) {
           Alert.alert('Invalid', 'Month must be between 01 and 12');
           return false;
         }
-        if (day < 1 || day > 31) {
+        if (dobDay < 1 || dobDay > 31) {
           Alert.alert('Invalid', 'Day must be between 01 and 31');
           return false;
         }
-        // Check if date is in the future
         const today = new Date();
         if (dob > today) {
           Alert.alert('Invalid', 'Date of birth cannot be in the future');
           return false;
         }
-        // Check if person is at least 18 years old
         const age = today.getFullYear() - dob.getFullYear();
         const monthDiff = today.getMonth() - dob.getMonth();
         const dayDiff = today.getDate() - dob.getDate();
-        const actualAge = monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? age - 1 : age;
-        if (actualAge < 18) {
-          Alert.alert('Invalid', 'You must be at least 18 years old to apply');
-          return false;
-        }
-        
         return true;
 
       case 2:
-        if (!employer.trim()) {
-          Alert.alert('Required', 'Please enter your employer name');
-          return false;
+        if (monthlyIncome.trim()) {
+          const income = parseFloat(monthlyIncome);
+          if (isNaN(income) || income < 0) {
+            Alert.alert('Invalid', 'Please enter a valid monthly income');
+            return false;
+          }
         }
-        if (employer.trim().length < 2) {
-          Alert.alert('Invalid', 'Employer name must be at least 2 characters');
-          return false;
-        }
-        
-        if (!position.trim()) {
-          Alert.alert('Required', 'Please enter your position');
-          return false;
-        }
-        if (position.trim().length < 2) {
-          Alert.alert('Invalid', 'Position must be at least 2 characters');
-          return false;
-        }
-        
-        if (!monthlyIncome.trim()) {
-          Alert.alert('Required', 'Please enter your monthly income');
-          return false;
-        }
-        const income = parseFloat(monthlyIncome);
-        if (isNaN(income) || income <= 0) {
-          Alert.alert('Invalid', 'Please enter a valid monthly income');
-          return false;
-        }
-        if (income < 1000) {
-          Alert.alert('Invalid', 'Monthly income seems too low. Please verify.');
-          return false;
-        }
-        
-        // Validate employment start date if provided
+
         if (employmentStartDate.trim()) {
-          const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-          if (!dateRegex.test(employmentStartDate.trim())) {
+          const empDateRegex = /^\d{4}-\d{2}-\d{2}$/;
+          if (!empDateRegex.test(employmentStartDate.trim())) {
             Alert.alert('Invalid', 'Employment start date must be in YYYY-MM-DD format (e.g., 2020-01-15)');
             return false;
           }
@@ -258,19 +300,29 @@ export default function TenantApplicationScreen() {
             Alert.alert('Invalid', 'Please enter a valid employment start date');
             return false;
           }
-          const [year, month, day] = employmentStartDate.split('-').map(Number);
-          if (month < 1 || month > 12 || day < 1 || day > 31) {
+          const [_ey, empM, empD] = employmentStartDate.split('-').map(Number);
+          if (empM < 1 || empM > 12 || empD < 1 || empD > 31) {
             Alert.alert('Invalid', 'Please enter a valid date (MM: 01-12, DD: 01-31)');
             return false;
           }
-          // Check if date is in the future
-          const today = new Date();
-          if (empDate > today) {
+          const todayEmp = new Date();
+          if (empDate > todayEmp) {
             Alert.alert('Invalid', 'Employment start date cannot be in the future');
             return false;
           }
         }
-        
+
+        return true;
+
+      case 3:
+        if (!idDocFile) {
+          Alert.alert('Required', 'Please upload your SA ID or passport');
+          return false;
+        }
+        if (incomeDocFiles.length === 0) {
+          Alert.alert('Required', 'Please upload at least one proof of income');
+          return false;
+        }
         return true;
 
       default:
@@ -293,9 +345,6 @@ export default function TenantApplicationScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!validateStep(2)) return;
-
-    // Check affordability warning
     if (affordabilityRatio && affordabilityRatio > 0.3) {
       Alert.alert(
         'Affordability Warning',
@@ -311,7 +360,6 @@ export default function TenantApplicationScreen() {
   };
 
   const updateProfile = async (userId: string) => {
-    // Get current profile to preserve existing data
     const { data: currentProfile } = await supabase
       .from('profiles')
       .select('fica_documents')
@@ -320,8 +368,6 @@ export default function TenantApplicationScreen() {
 
     const currentFica = (currentProfile as any)?.fica_documents || {};
 
-    // Update profile with application data
-    // Store in both new columns (if they exist) and JSONB (for backward compatibility)
     const updateData: any = {
       full_name: fullName,
       email: email,
@@ -336,7 +382,6 @@ export default function TenantApplicationScreen() {
       },
     };
 
-    // Try to update new columns (will be ignored if columns don't exist yet)
     try {
       updateData.id_number = idNumber;
       updateData.date_of_birth = dateOfBirth;
@@ -358,14 +403,36 @@ export default function TenantApplicationScreen() {
   const submitApplication = async () => {
     try {
       setSubmitting(true);
+      setUploadingDocs(true);
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || !property) throw new Error('Missing required data');
 
-      // Update profile first (for future applications)
+      // Upload ID document
+      const idResult = await uploadFile('ID_DOCUMENTS', idDocFile!, user.id);
+      if (idResult.error) throw new Error(`Failed to upload ID document: ${idResult.error}`);
+
+      // Upload proof of income files
+      const incomeUrls: string[] = [];
+      for (const file of incomeDocFiles) {
+        const result = await uploadFile('PROOF_OF_INCOME', file, user.id);
+        if (result.error) throw new Error(`Failed to upload proof of income: ${result.error}`);
+        incomeUrls.push(result.url);
+      }
+
+      // Upload reference files (optional)
+      const refUrls: string[] = [];
+      for (const file of referenceDocFiles) {
+        const result = await uploadFile('DOCUMENTS', file, `${user.id}/references`);
+        if (!result.error) refUrls.push(result.url);
+      }
+
+      setUploadingDocs(false);
+
+      // Update profile first
       await updateProfile(user.id);
 
-      // Create application
+      // Create application with document URLs
       const application = await applicationsApi.createApplication({
         property_id: propertyId,
         tenant_id: user.id,
@@ -380,9 +447,11 @@ export default function TenantApplicationScreen() {
         monthly_income: parseFloat(monthlyIncome),
         employment_start_date: employmentStartDate || undefined,
         employer_contact: employerContact || undefined,
+        id_document_url: idResult.url,
+        proof_of_income_urls: incomeUrls,
+        reference_urls: refUrls.length > 0 ? refUrls : undefined,
       });
 
-      // Submit the application (change status from draft to submitted)
       await applicationsApi.submitApplication(application.id);
 
       Alert.alert(
@@ -399,6 +468,7 @@ export default function TenantApplicationScreen() {
       Alert.alert('Error', err instanceof Error ? err.message : 'Failed to submit application');
     } finally {
       setSubmitting(false);
+      setUploadingDocs(false);
     }
   };
 
@@ -422,6 +492,8 @@ export default function TenantApplicationScreen() {
     );
   }
 
+  const STEPS = ['Personal', 'Employment', 'Documents', 'Review'];
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
@@ -437,31 +509,26 @@ export default function TenantApplicationScreen() {
           <View style={styles.placeholder} />
         </View>
 
-        {/* Progress Steps */}
+        {/* Progress Steps — 4 steps */}
         <View style={styles.progressContainer}>
           <View style={styles.progressBar}>
-            <View style={[styles.progressStep, currentStep >= 1 && styles.progressStepActive]}>
-              <Text style={[styles.progressStepText, currentStep >= 1 && styles.progressStepTextActive]}>
-                1
-              </Text>
-            </View>
-            <View style={[styles.progressLine, currentStep >= 2 && styles.progressLineActive]} />
-            <View style={[styles.progressStep, currentStep >= 2 && styles.progressStepActive]}>
-              <Text style={[styles.progressStepText, currentStep >= 2 && styles.progressStepTextActive]}>
-                2
-              </Text>
-            </View>
-            <View style={[styles.progressLine, currentStep >= 3 && styles.progressLineActive]} />
-            <View style={[styles.progressStep, currentStep >= 3 && styles.progressStepActive]}>
-              <Text style={[styles.progressStepText, currentStep >= 3 && styles.progressStepTextActive]}>
-                3
-              </Text>
-            </View>
+            {STEPS.map((_, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && (
+                  <View style={[styles.progressLine, currentStep >= i + 1 && styles.progressLineActive]} />
+                )}
+                <View style={[styles.progressStep, currentStep >= i + 1 && styles.progressStepActive]}>
+                  <Text style={[styles.progressStepText, currentStep >= i + 1 && styles.progressStepTextActive]}>
+                    {i + 1}
+                  </Text>
+                </View>
+              </React.Fragment>
+            ))}
           </View>
           <View style={styles.progressLabels}>
-            <Text style={styles.progressLabel}>Personal</Text>
-            <Text style={styles.progressLabel}>Employment</Text>
-            <Text style={styles.progressLabel}>Review</Text>
+            {STEPS.map((label) => (
+              <Text key={label} style={styles.progressLabel}>{label}</Text>
+            ))}
           </View>
         </View>
 
@@ -477,7 +544,7 @@ export default function TenantApplicationScreen() {
           {currentStep === 1 && (
             <View style={styles.formSection}>
               <Text style={styles.sectionTitle}>Personal Information</Text>
-              
+
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Full Name *</Text>
                 <TextInput
@@ -543,7 +610,7 @@ export default function TenantApplicationScreen() {
           {currentStep === 2 && (
             <View style={styles.formSection}>
               <Text style={styles.sectionTitle}>Employment Information</Text>
-              
+
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Employer *</Text>
                 <TextInput
@@ -601,7 +668,6 @@ export default function TenantApplicationScreen() {
                 />
               </View>
 
-              {/* Affordability Check */}
               {affordabilityRatio !== null && (
                 <View style={[styles.affordabilityCard, !isAffordable && styles.affordabilityWarning]}>
                   <View style={styles.affordabilityHeader}>
@@ -625,11 +691,95 @@ export default function TenantApplicationScreen() {
             </View>
           )}
 
-          {/* Step 3: Review */}
+          {/* Step 3: Documents */}
           {currentStep === 3 && (
             <View style={styles.formSection}>
+              <Text style={styles.sectionTitle}>Upload Documents</Text>
+
+              {/* SA ID / Passport */}
+              <View style={styles.docSection}>
+                <Text style={styles.label}>SA ID / Passport *</Text>
+                <Text style={styles.helperText}>Upload a clear photo or scan of your ID document</Text>
+
+                {idDocFile ? (
+                  <View style={styles.docFileRow}>
+                    <Ionicons name="document-attach" size={20} color={RSA.green} />
+                    <Text style={styles.docFileName} numberOfLines={1}>{idDocFile.name}</Text>
+                    <TouchableOpacity onPress={() => setIdDocFile(null)}>
+                      <Ionicons name="close-circle" size={22} color="#F44336" />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={styles.docPickerRow}>
+                    <TouchableOpacity style={styles.docPickerBtn} onPress={pickIdDoc}>
+                      <Ionicons name="cloud-upload-outline" size={20} color={RSA.green} />
+                      <Text style={styles.docPickerBtnText}>Upload</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+
+              {/* Proof of Income */}
+              <View style={styles.docSection}>
+                <Text style={styles.label}>Proof of Income * (max 3)</Text>
+                <Text style={styles.helperText}>Payslips, bank statements, or employment letter</Text>
+
+                {incomeDocFiles.map((file, i) => (
+                  <View key={i} style={styles.docFileRow}>
+                    <Ionicons name="document-attach" size={20} color={RSA.green} />
+                    <Text style={styles.docFileName} numberOfLines={1}>{file.name}</Text>
+                    <TouchableOpacity onPress={() => setIncomeDocFiles((prev) => prev.filter((_, idx) => idx !== i))}>
+                      <Ionicons name="close-circle" size={22} color="#F44336" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+
+                {incomeDocFiles.length < 3 && (
+                  <View style={styles.docPickerRow}>
+                    <TouchableOpacity style={styles.docPickerBtn} onPress={pickIncomeDoc}>
+                      <Ionicons name="add-circle-outline" size={20} color={RSA.green} />
+                      <Text style={styles.docPickerBtnText}>
+                        {incomeDocFiles.length > 0 ? 'Add More' : 'Upload'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+
+              {/* References */}
+              <View style={styles.docSection}>
+                <Text style={styles.label}>References (optional, max 3)</Text>
+                <Text style={styles.helperText}>Previous landlord letters or character references</Text>
+
+                {referenceDocFiles.map((file, i) => (
+                  <View key={i} style={styles.docFileRow}>
+                    <Ionicons name="document-attach" size={20} color={RSA.blue} />
+                    <Text style={styles.docFileName} numberOfLines={1}>{file.name}</Text>
+                    <TouchableOpacity onPress={() => setReferenceDocFiles((prev) => prev.filter((_, idx) => idx !== i))}>
+                      <Ionicons name="close-circle" size={22} color="#F44336" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+
+                {referenceDocFiles.length < 3 && (
+                  <View style={styles.docPickerRow}>
+                    <TouchableOpacity style={styles.docPickerBtn} onPress={pickReferenceDoc}>
+                      <Ionicons name="add-circle-outline" size={20} color={RSA.blue} />
+                      <Text style={styles.docPickerBtnText}>
+                        {referenceDocFiles.length > 0 ? 'Add More' : 'Upload'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
+
+          {/* Step 4: Review */}
+          {currentStep === 4 && (
+            <View style={styles.formSection}>
               <Text style={styles.sectionTitle}>Review Your Application</Text>
-              
+
               <View style={styles.reviewSection}>
                 <Text style={styles.reviewSectionTitle}>Personal Information</Text>
                 <ReviewRow label="Full Name" value={fullName} />
@@ -648,6 +798,34 @@ export default function TenantApplicationScreen() {
                 {employerContact && <ReviewRow label="Employer Contact" value={employerContact} />}
               </View>
 
+              <View style={styles.reviewSection}>
+                <Text style={styles.reviewSectionTitle}>Documents</Text>
+                <View style={styles.reviewRow}>
+                  <Text style={styles.reviewLabel}>ID Document</Text>
+                  <View style={styles.docCheckRow}>
+                    <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
+                    <Text style={[styles.reviewValue, { color: '#4CAF50' }]}>Uploaded</Text>
+                  </View>
+                </View>
+                <View style={styles.reviewRow}>
+                  <Text style={styles.reviewLabel}>Proof of Income</Text>
+                  <View style={styles.docCheckRow}>
+                    <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
+                    <Text style={[styles.reviewValue, { color: '#4CAF50' }]}>
+                      {incomeDocFiles.length} file{incomeDocFiles.length !== 1 ? 's' : ''}
+                    </Text>
+                  </View>
+                </View>
+                <View style={[styles.reviewRow, { borderBottomWidth: 0 }]}>
+                  <Text style={styles.reviewLabel}>References</Text>
+                  <Text style={styles.reviewValue}>
+                    {referenceDocFiles.length > 0
+                      ? `${referenceDocFiles.length} file${referenceDocFiles.length !== 1 ? 's' : ''}`
+                      : 'Not provided'}
+                  </Text>
+                </View>
+              </View>
+
               <View style={styles.disclaimer}>
                 <Ionicons name="information-circle" size={20} color="#666" />
                 <Text style={styles.disclaimerText}>
@@ -660,7 +838,7 @@ export default function TenantApplicationScreen() {
 
         {/* Action Buttons */}
         <View style={styles.actionBar}>
-          {currentStep < 3 ? (
+          {currentStep < 4 ? (
             <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
               <Text style={styles.nextButtonText}>Next</Text>
               <Ionicons name="arrow-forward" size={20} color="#FFF" />
@@ -672,7 +850,12 @@ export default function TenantApplicationScreen() {
               disabled={submitting}
             >
               {submitting ? (
-                <ActivityIndicator color="#FFF" />
+                <View style={styles.submittingRow}>
+                  <ActivityIndicator color="#FFF" />
+                  <Text style={styles.submitButtonText}>
+                    {uploadingDocs ? 'Uploading documents...' : 'Submitting...'}
+                  </Text>
+                </View>
               ) : (
                 <>
                   <Text style={styles.submitButtonText}>Submit Application</Text>
@@ -742,9 +925,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   progressStep: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: '#E0E0E0',
     alignItems: 'center',
     justifyContent: 'center',
@@ -753,7 +936,7 @@ const styles = StyleSheet.create({
     backgroundColor: RSA.green,
   },
   progressStepText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#999',
   },
@@ -764,7 +947,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 2,
     backgroundColor: '#E0E0E0',
-    marginHorizontal: 8,
+    marginHorizontal: 4,
   },
   progressLineActive: {
     backgroundColor: RSA.green,
@@ -774,7 +957,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   progressLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#666',
   },
   propertyCard: {
@@ -861,6 +1044,47 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
+  // Documents step
+  docSection: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  docFileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#F0FAF0',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+  },
+  docFileName: {
+    flex: 1,
+    fontSize: 14,
+    color: '#333',
+  },
+  docPickerRow: {
+    marginTop: 10,
+  },
+  docPickerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 2,
+    borderColor: RSA.green,
+    borderStyle: 'dashed',
+    borderRadius: 8,
+    paddingVertical: 14,
+  },
+  docPickerBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: RSA.green,
+  },
+  // Review step
   reviewSection: {
     backgroundColor: '#FFF',
     borderRadius: 12,
@@ -876,6 +1100,7 @@ const styles = StyleSheet.create({
   reviewRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
@@ -888,6 +1113,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
+  },
+  docCheckRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   disclaimer: {
     flexDirection: 'row',
@@ -945,5 +1175,10 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  submittingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
 });

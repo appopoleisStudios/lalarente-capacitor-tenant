@@ -200,7 +200,15 @@ export default function OwnerMonthlyStatementScreen() {
     if (!ownerId) return;
     setExporting(true);
     try {
-      await exportMonthlyStatementPdf(ownerId, month, year);
+      const documentId = await exportMonthlyStatementPdf(ownerId, month, year);
+      Alert.alert(
+        'Statement Saved',
+        'Your monthly statement has been saved to Documents.',
+        [
+          { text: 'View', onPress: () => router.push(`/(owner)/documents/${documentId}` as any) },
+          { text: 'OK' },
+        ],
+      );
     } catch (err: any) {
       Alert.alert('Export Failed', err?.message || 'Unable to generate PDF. Please try again.');
     } finally {

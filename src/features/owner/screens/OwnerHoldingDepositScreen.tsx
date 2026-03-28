@@ -28,6 +28,7 @@ import {
   HoldingDepositStatus,
 } from '@/src/features/applications/api/holdingDeposit.api';
 import { colors } from '@/src/shared/theme/colors';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -202,6 +203,7 @@ export default function OwnerHoldingDepositScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -298,6 +300,7 @@ export default function OwnerHoldingDepositScreen() {
         onClose={() => setShowCreateModal(false)}
         onCreated={() => { setShowCreateModal(false); loadData(); }}
       />
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

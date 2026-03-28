@@ -262,6 +262,48 @@ export default function OwnerLayout() {
           href: null, // Hidden from tabs - send PO to vendor
         }}
       />
+      <Tabs.Screen
+        name="documents"
+        options={{
+          href: null, // Hidden from tabs - accessed from dashboard "See All"
+        }}
+      />
+      <Tabs.Screen
+        name="documents/[id]"
+        options={{
+          href: null, // Hidden from tabs - document viewer
+        }}
+      />
+      <Tabs.Screen
+        name="inspections"
+        options={{
+          href: null, // Hidden from tabs - inspections list
+        }}
+      />
+      <Tabs.Screen
+        name="inspections/new"
+        options={{
+          href: null, // Hidden from tabs - schedule inspection
+        }}
+      />
+      <Tabs.Screen
+        name="inspections/[id]"
+        options={{
+          href: null, // Hidden from tabs - inspection detail
+        }}
+      />
+      <Tabs.Screen
+        name="statements"
+        options={{
+          href: null, // Hidden from tabs - monthly owner statement
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          href: null, // Hidden from tabs - notification list from bell icon
+        }}
+      />
     </Tabs>
   );
 }

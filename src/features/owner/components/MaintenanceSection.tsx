@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { AnimatedButton } from './AnimatedButton';
 
 const RSA = { blue: '#002395', green: '#007A4D' };
@@ -37,7 +38,7 @@ export const MaintenanceSection = ({ maintenance }: MaintenanceSectionProps) => 
         >
           <View style={styles.cardInner}>
             <View style={styles.left}>
-              <View style={styles.iconContainer}><Text>🔧</Text></View>
+              <View style={styles.iconContainer}><Ionicons name="construct-outline" size={16} color="#92400E" /></View>
               <View>
                 <Text style={styles.cardTitle}>{m.title}</Text>
                 <Text style={styles.unit}>{m.unit}</Text>

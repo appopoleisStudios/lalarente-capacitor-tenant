@@ -11,6 +11,7 @@ type AuthContextType = {
   profile: Profile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, role: 'owner' | 'tenant') => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 };
@@ -78,6 +79,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Sign up function
+  async function signUp(email: string, password: string, fullName: string, role: 'owner' | 'tenant') {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) throw error;
+      if (!data.user) throw new Error('Sign up failed — no user returned');
+
+      // Create profile row immediately
+      const { error: profileError } = await supabase.from('profiles').insert({
+        id: data.user.id,
+        full_name: fullName,
+        email,
+        role,
+      });
+      if (profileError) throw new Error(profileError.message);
+
+      // Fetch the newly created profile so AuthContext state is populated
+      const profile = await fetchProfile(data.user.id);
+      setProfile(profile);
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to create account');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   // Sign in function
   async function signIn(email: string, password: string) {
     try {
@@ -131,6 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         profile,
         loading,
         signIn,
+        signUp,
         signOut,
         refreshProfile,
       }}

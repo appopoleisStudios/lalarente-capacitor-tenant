@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, SafeAreaView, TextInput, Alert, Switch, Image } from 'react-native';
+import { View, Text, ScrollView, TextInput, Alert, Switch, Image } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
@@ -7,6 +8,7 @@ import { AnimatedButton } from '../components/AnimatedButton';
 import { LocationPicker } from '../components/LocationPicker';
 import { propertiesApi } from '../../properties/api/propertiesApi';
 import { supabase } from '../../../lib/supabase';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { styles } from './AddPropertyScreen.styles';
 
 interface PropertyForm {
@@ -218,6 +220,7 @@ export default function AddPropertyScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -257,7 +260,7 @@ export default function AddPropertyScreen() {
             
             <AnimatedButton onPress={pickImages}>
               <View style={styles.uploadButton}>
-                <Text style={styles.uploadButtonText}>📷 Select Photos</Text>
+                <Text style={styles.uploadButtonText}>Select Photos</Text>
               </View>
             </AnimatedButton>
 
@@ -557,12 +560,13 @@ export default function AddPropertyScreen() {
           <AnimatedButton onPress={handleSubmit}>
             <View style={[styles.submitButton, saving && styles.submitButtonDisabled]}>
               <Text style={styles.submitButtonText}>
-                {saving ? 'Saving…' : '🏠 Create Property'}
+                {saving ? 'Saving…' : 'Create Property'}
               </Text>
             </View>
           </AnimatedButton>
         </ScrollView>
       </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

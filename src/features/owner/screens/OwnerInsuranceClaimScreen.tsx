@@ -32,6 +32,7 @@ import {
   CreateClaimInput,
 } from '@/src/features/insurance/api/insuranceClaims.api';
 import { colors } from '@/src/shared/theme/colors';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -307,6 +308,7 @@ export default function OwnerInsuranceClaimScreen() {
 
     return (
       <SafeAreaView style={styles.container}>
+        <KeyboardAvoidingView>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
@@ -319,7 +321,7 @@ export default function OwnerInsuranceClaimScreen() {
           </View>
         </View>
 
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           {/* Claim Number (if assigned) */}
           {claim.claim_number && (
             <View style={styles.claimNumberCard}>
@@ -543,6 +545,7 @@ export default function OwnerInsuranceClaimScreen() {
             </ScrollView>
           </SafeAreaView>
         </Modal>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     );
   }
@@ -551,6 +554,7 @@ export default function OwnerInsuranceClaimScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
@@ -558,7 +562,7 @@ export default function OwnerInsuranceClaimScreen() {
         <Text style={styles.title}>New Insurance Claim</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {/* Policy Selection */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Select Policy</Text>
@@ -707,6 +711,7 @@ export default function OwnerInsuranceClaimScreen() {
           </ScrollView>
         </SafeAreaView>
       </Modal>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

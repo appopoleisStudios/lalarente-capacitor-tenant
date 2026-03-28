@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, SafeAreaView, TextInput, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TextInput, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { AnimatedButton } from '../components/AnimatedButton';
@@ -78,17 +79,6 @@ export default function PropertiesListScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <AnimatedButton
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                router.back();
-              }}
-              hapticType="medium"
-            >
-              <View style={styles.backButton}>
-                <Text style={styles.backIcon}>←</Text>
-              </View>
-            </AnimatedButton>
             <Text style={styles.headerTitle}>My Properties</Text>
           </View>
           <AnimatedButton onPress={() => router.push('/(owner)/add-property')}>

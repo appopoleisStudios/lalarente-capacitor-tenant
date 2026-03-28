@@ -7,14 +7,15 @@ import {
   TextInput,
   ActivityIndicator,
   StyleSheet,
-  SafeAreaView,
   Alert,
   Linking,
   Modal,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { viewingsApi, ViewingWithRelations } from '../../properties/api/viewingsApi';
 import {
@@ -42,14 +43,19 @@ export default function OwnerViewingDetailScreen() {
   const [actionType, setActionType] = useState<ActionType>(null);
   const [responseNotes, setResponseNotes] = useState('');
   const [declineReason, setDeclineReason] = useState('');
-  const [alternativeTimes, setAlternativeTimes] = useState('');
+  const [alternativeSlots, setAlternativeSlots] = useState<Array<{ date: Date; time: Date }>>([]);
 
-  // Date/time modification
+  // Date/time modification (approve)
   const [modifyDateTime, setModifyDateTime] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedTime, setSelectedTime] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+
+  // Date/time pickers for decline alternative slots
+  const [activeSlotIndex, setActiveSlotIndex] = useState<number | null>(null);
+  const [activeSlotField, setActiveSlotField] = useState<'date' | 'time'>('date');
+  const [showSlotPicker, setShowSlotPicker] = useState(false);
 
   useEffect(() => {
     loadViewing();
@@ -59,7 +65,6 @@ export default function OwnerViewingDetailScreen() {
     try {
       const data = await viewingsApi.getViewing(viewingId);
       setViewing(data);
-      // Set initial date/time from request
       const date = new Date(data.requested_date);
       const [hours, minutes] = data.requested_time.split(':');
       const time = new Date();
@@ -69,7 +74,6 @@ export default function OwnerViewingDetailScreen() {
     } catch (error) {
       console.error('Error loading viewing:', error);
       Alert.alert('Error', 'Failed to load viewing details');
-      router.back();
     } finally {
       setLoading(false);
     }
@@ -85,7 +89,7 @@ export default function OwnerViewingDetailScreen() {
   const handleDeclinePress = () => {
     setActionType('decline');
     setDeclineReason('');
-    setAlternativeTimes('');
+    setAlternativeSlots([]);
     setShowActionModal(true);
   };
 
@@ -118,10 +122,13 @@ export default function OwnerViewingDetailScreen() {
           { text: 'OK', onPress: () => router.back() },
         ]);
       } else if (actionType === 'decline') {
-        const alternatives = alternativeTimes
-          .split('\n')
-          .map(t => t.trim())
-          .filter(t => t.length > 0);
+        const alternatives = alternativeSlots.map(slot => {
+          const dateStr = slot.date.toISOString().split('T')[0];
+          const timeStr = slot.time.toLocaleTimeString('en-ZA', {
+            hour: '2-digit', minute: '2-digit', hour12: false,
+          });
+          return `${dateStr}T${timeStr}`;
+        });
 
         await viewingsApi.declineViewing({
           viewing_id: viewing.id,
@@ -184,10 +191,8 @@ export default function OwnerViewingDetailScreen() {
     }
   };
 
-  const handleEmailTenant = () => {
-    if (viewing?.tenant?.email) {
-      Linking.openURL(`mailto:${viewing.tenant.email}`);
-    }
+  const handleChatTenant = () => {
+    router.push('/(owner)/messages' as any);
   };
 
   const formatDate = (dateStr: string) => {
@@ -230,6 +235,38 @@ export default function OwnerViewingDetailScreen() {
     }
   };
 
+  // Alternative slot helpers
+  const addAlternativeSlot = () => {
+    if (alternativeSlots.length >= 3) return;
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(10, 0, 0, 0);
+    setAlternativeSlots([...alternativeSlots, { date: new Date(tomorrow), time: new Date(tomorrow) }]);
+  };
+
+  const removeAlternativeSlot = (index: number) => {
+    setAlternativeSlots(alternativeSlots.filter((_, i) => i !== index));
+  };
+
+  const openSlotPicker = (index: number, field: 'date' | 'time') => {
+    setActiveSlotIndex(index);
+    setActiveSlotField(field);
+    setShowSlotPicker(true);
+  };
+
+  const handleSlotPickerChange = (event: any, value?: Date) => {
+    setShowSlotPicker(Platform.OS === 'ios');
+    if (value != null && activeSlotIndex != null) {
+      const updated = [...alternativeSlots];
+      if (activeSlotField === 'date') {
+        updated[activeSlotIndex] = { ...updated[activeSlotIndex], date: value };
+      } else {
+        updated[activeSlotIndex] = { ...updated[activeSlotIndex], time: value };
+      }
+      setAlternativeSlots(updated);
+    }
+  };
+
   const renderActionModal = () => {
     if (!actionType) return null;
 
@@ -241,6 +278,7 @@ export default function OwnerViewingDetailScreen() {
         onRequestClose={() => setShowActionModal(false)}
       >
         <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
@@ -256,9 +294,20 @@ export default function OwnerViewingDetailScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-              {actionType === 'approve' && (
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              {actionType === 'approve' && viewing && (
                 <>
+                  {/* Show requested date prominently */}
+                  <View style={styles.requestedDateCard}>
+                    <Ionicons name="calendar" size={20} color={RSA.blue} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.requestedDateLabel}>Requested date & time</Text>
+                      <Text style={styles.requestedDateValue}>
+                        {formatDate(viewing.requested_date)} at {viewing.requested_time}
+                      </Text>
+                    </View>
+                  </View>
+
                   <View style={styles.dateTimeSection}>
                     <View style={styles.checkboxRow}>
                       <TouchableOpacity
@@ -269,7 +318,7 @@ export default function OwnerViewingDetailScreen() {
                           <Ionicons name="checkmark" size={16} color={RSA.blue} />
                         )}
                       </TouchableOpacity>
-                      <Text style={styles.checkboxLabel}>Modify date/time</Text>
+                      <Text style={styles.checkboxLabel}>Suggest a different date/time instead</Text>
                     </View>
 
                     {modifyDateTime && (
@@ -331,16 +380,50 @@ export default function OwnerViewingDetailScreen() {
                     <Text style={styles.inputLabel}>
                       Suggest Alternative Times (Optional)
                     </Text>
-                    <Text style={styles.inputHint}>One per line</Text>
-                    <TextInput
-                      style={styles.textArea}
-                      value={alternativeTimes}
-                      onChangeText={setAlternativeTimes}
-                      placeholder="e.g., Wednesday 3pm&#10;Thursday 10am"
-                      multiline
-                      numberOfLines={4}
-                      maxLength={500}
-                    />
+                    <Text style={styles.inputHint}>
+                      Offer up to 3 alternative date & time slots
+                    </Text>
+
+                    {alternativeSlots.map((slot, index) => (
+                      <View key={index} style={styles.slotRow}>
+                        <TouchableOpacity
+                          style={styles.slotButton}
+                          onPress={() => openSlotPicker(index, 'date')}
+                        >
+                          <Ionicons name="calendar-outline" size={18} color={RSA.blue} />
+                          <Text style={styles.slotButtonText}>
+                            {formatDateShort(slot.date)}
+                          </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={styles.slotButton}
+                          onPress={() => openSlotPicker(index, 'time')}
+                        >
+                          <Ionicons name="time-outline" size={18} color={RSA.blue} />
+                          <Text style={styles.slotButtonText}>
+                            {formatTime(slot.time)}
+                          </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={styles.removeSlotButton}
+                          onPress={() => removeAlternativeSlot(index)}
+                        >
+                          <Ionicons name="close-circle" size={22} color="#F44336" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+
+                    {alternativeSlots.length < 3 && (
+                      <TouchableOpacity
+                        style={styles.addSlotButton}
+                        onPress={addAlternativeSlot}
+                      >
+                        <Ionicons name="add-circle-outline" size={20} color={RSA.blue} />
+                        <Text style={styles.addSlotText}>Add Alternative</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </>
               )}
@@ -409,7 +492,22 @@ export default function OwnerViewingDetailScreen() {
                 onChange={handleTimeChange}
               />
             )}
+
+            {/* Slot picker for decline alternatives */}
+            {showSlotPicker && activeSlotIndex != null && (
+              <DateTimePicker
+                value={activeSlotField === 'date'
+                  ? alternativeSlots[activeSlotIndex]?.date ?? new Date()
+                  : alternativeSlots[activeSlotIndex]?.time ?? new Date()
+                }
+                mode={activeSlotField}
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={handleSlotPickerChange}
+                minimumDate={activeSlotField === 'date' ? new Date() : undefined}
+              />
+            )}
           </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
     );
@@ -524,29 +622,22 @@ export default function OwnerViewingDetailScreen() {
                 </View>
                 <View style={styles.tenantInfo}>
                   <Text style={styles.tenantName}>{viewing.tenant?.full_name}</Text>
-                  {viewing.tenant?.email && (
-                    <Text style={styles.tenantContact}>{viewing.tenant.email}</Text>
-                  )}
                   {viewing.tenant?.phone && (
                     <Text style={styles.tenantContact}>{viewing.tenant.phone}</Text>
                   )}
                 </View>
               </View>
 
-              {(viewing.tenant?.phone || viewing.tenant?.email) && (
+              {viewing.tenant?.phone && (
                 <View style={styles.contactActions}>
-                  {viewing.tenant.phone && (
-                    <TouchableOpacity style={styles.contactButton} onPress={handleCallTenant}>
-                      <Ionicons name="call" size={18} color={RSA.blue} />
-                      <Text style={styles.contactButtonText}>Call</Text>
-                    </TouchableOpacity>
-                  )}
-                  {viewing.tenant.email && (
-                    <TouchableOpacity style={styles.contactButton} onPress={handleEmailTenant}>
-                      <Ionicons name="mail" size={18} color={RSA.blue} />
-                      <Text style={styles.contactButtonText}>Email</Text>
-                    </TouchableOpacity>
-                  )}
+                  <TouchableOpacity style={styles.contactButton} onPress={handleCallTenant}>
+                    <Ionicons name="call" size={18} color={RSA.blue} />
+                    <Text style={styles.contactButtonText}>Call</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.contactButton} onPress={handleChatTenant}>
+                    <Ionicons name="chatbubble" size={18} color={RSA.blue} />
+                    <Text style={styles.contactButtonText}>Chat</Text>
+                  </TouchableOpacity>
                 </View>
               )}
             </View>
@@ -1103,6 +1194,68 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     color: '#333',
+  },
+  requestedDateCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EBF5FF',
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 16,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: '#BFD9F2',
+  },
+  requestedDateLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 2,
+  },
+  requestedDateValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#333',
+  },
+  slotRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  slotButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 6,
+  },
+  slotButtonText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#333',
+  },
+  removeSlotButton: {
+    padding: 4,
+  },
+  addSlotButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: RSA.blue,
+    borderStyle: 'dashed',
+    gap: 6,
+    marginTop: 4,
+  },
+  addSlotText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: RSA.blue,
   },
   inputGroup: {
     marginBottom: 20,

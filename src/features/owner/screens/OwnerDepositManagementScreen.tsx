@@ -26,6 +26,7 @@ import { supabase } from '@/src/lib/supabase';
 import { depositInterestApi, DepositInterestSummary } from '@/src/features/deposits/api/depositInterest.api';
 import { depositRefundApi, DepositRefundStatus } from '@/src/features/deposits/api/depositRefund.api';
 import { colors } from '@/src/shared/theme/colors';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -261,6 +262,7 @@ export default function OwnerDepositManagementScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -439,7 +441,7 @@ export default function OwnerDepositManagementScreen() {
             <Text style={styles.modalTitle}>Add Deposit Deduction</Text>
             <View style={{ width: 24 }} />
           </View>
-          <ScrollView contentContainerStyle={styles.modalContent}>
+          <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
             <Text style={styles.modalSubtitle}>
               {deductionModal?.tenantName} · {deductionModal?.propertyTitle}
             </Text>
@@ -501,6 +503,7 @@ export default function OwnerDepositManagementScreen() {
           </ScrollView>
         </SafeAreaView>
       </Modal>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

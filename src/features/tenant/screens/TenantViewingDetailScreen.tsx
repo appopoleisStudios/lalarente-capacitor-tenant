@@ -6,15 +6,32 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
-  SafeAreaView,
   Alert,
   Linking,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { viewingsApi, ViewingWithRelations } from '../../properties/api/viewingsApi';
+import { viewingsApi, ViewingWithRelations, RequestViewingInput } from '../../properties/api/viewingsApi';
+import { supabase } from '../../../lib/supabase';
 
 const RSA = { green: '#007A4D', gold: '#FFB81C' };
+
+const parseAlternativeTime = (alt: string) => {
+  // Handle structured ISO-ish format "YYYY-MM-DDThh:mm"
+  if (alt.includes('T')) {
+    const [datePart, timePart] = alt.split('T');
+    const date = new Date(datePart + 'T00:00:00');
+    return {
+      date: date.toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short' }),
+      time: timePart,
+      isoDate: datePart,
+      isoTime: timePart,
+    };
+  }
+  // Fallback for legacy plain text
+  return { date: alt, time: '', isoDate: '', isoTime: '' };
+};
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -58,6 +75,8 @@ export default function TenantViewingDetailScreen() {
   const [viewing, setViewing] = useState<ViewingWithRelations | null>(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
+  const [acceptedSlot, setAcceptedSlot] = useState<string | null>(null);
+  const [hasNewPending, setHasNewPending] = useState(false);
 
   useEffect(() => {
     loadViewing();
@@ -67,6 +86,22 @@ export default function TenantViewingDetailScreen() {
     try {
       const data = await viewingsApi.getViewing(viewingId);
       setViewing(data);
+
+      // If this viewing is declined, check if tenant already has a newer pending/approved
+      // request for the same property — if so, lock the alternative slots
+      if (data.status === 'declined') {
+        const { data: newer } = await supabase
+          .from('viewing_requests')
+          .select('id')
+          .eq('tenant_id', data.tenant_id)
+          .eq('property_id', data.property_id)
+          .in('status', ['pending', 'approved'])
+          .limit(1);
+
+        if (newer && newer.length > 0) {
+          setHasNewPending(true);
+        }
+      }
     } catch (error) {
       console.error('Error loading viewing:', error);
       Alert.alert('Error', 'Failed to load viewing details');
@@ -111,12 +146,6 @@ export default function TenantViewingDetailScreen() {
   const handleCallOwner = () => {
     if (viewing?.owner?.phone) {
       Linking.openURL(`tel:${viewing.owner.phone}`);
-    }
-  };
-
-  const handleEmailOwner = () => {
-    if (viewing?.owner?.email) {
-      Linking.openURL(`mailto:${viewing.owner.email}`);
     }
   };
 
@@ -269,14 +298,75 @@ export default function TenantViewingDetailScreen() {
           {viewing.alternative_times && viewing.alternative_times.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Suggested Alternative Times</Text>
-              <View style={styles.card}>
-                {viewing.alternative_times.map((time, index) => (
-                  <View key={index} style={styles.alternativeTimeRow}>
-                    <Ionicons name="time-outline" size={16} color="#666" />
-                    <Text style={styles.alternativeTimeText}>{time}</Text>
+              {(acceptedSlot || hasNewPending) ? (
+                <View style={styles.slotAcceptedCard}>
+                  <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.slotAcceptedTitle}>New request sent!</Text>
+                    <Text style={styles.slotAcceptedBody}>
+                      {acceptedSlot
+                        ? `You requested ${acceptedSlot}. The owner will be notified.`
+                        : 'You already have a pending viewing request for this property.'}
+                    </Text>
                   </View>
-                ))}
-              </View>
+                </View>
+              ) : (
+                <>
+                  <Text style={styles.altHint}>
+                    Tap a slot to request that date & time
+                  </Text>
+                  {viewing.alternative_times.map((time, index) => {
+                    const parsed = parseAlternativeTime(time);
+                    return (
+                      <TouchableOpacity
+                        key={index}
+                        style={styles.alternativeCard}
+                        onPress={() => {
+                          if (parsed.isoDate && viewing.property_id) {
+                            Alert.alert(
+                              'Request This Slot?',
+                              `${parsed.date} at ${parsed.time}`,
+                              [
+                                { text: 'Cancel', style: 'cancel' },
+                                {
+                                  text: 'Request',
+                                  onPress: async () => {
+                                    try {
+                                      await viewingsApi.requestViewing({
+                                        property_id: viewing.property_id,
+                                        tenant_id: viewing.tenant_id,
+                                        owner_id: viewing.owner_id,
+                                        requested_date: parsed.isoDate,
+                                        requested_time: parsed.isoTime,
+                                        tenant_notes: 'Re-request from declined viewing',
+                                      });
+                                      setAcceptedSlot(`${parsed.date} at ${parsed.time}`);
+                                    } catch (err) {
+                                      Alert.alert('Error', 'Failed to request viewing.');
+                                    }
+                                  },
+                                },
+                              ]
+                            );
+                          }
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.alternativeCardLeft}>
+                          <Ionicons name="calendar-outline" size={22} color={RSA.green} />
+                          <View>
+                            <Text style={styles.alternativeCardDate}>{parsed.date}</Text>
+                            {parsed.time ? (
+                              <Text style={styles.alternativeCardTime}>{parsed.time}</Text>
+                            ) : null}
+                          </View>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color="#999" />
+                      </TouchableOpacity>
+                    );
+                  })}
+                </>
+              )}
             </View>
           )}
 
@@ -291,31 +381,27 @@ export default function TenantViewingDetailScreen() {
                   </View>
                   <View style={styles.ownerInfo}>
                     <Text style={styles.ownerName}>{viewing.owner.full_name}</Text>
-                    {viewing.owner.email && (
-                      <Text style={styles.ownerContact}>{viewing.owner.email}</Text>
-                    )}
                     {viewing.owner.phone && (
                       <Text style={styles.ownerContact}>{viewing.owner.phone}</Text>
                     )}
                   </View>
                 </View>
 
-                {(viewing.owner.phone || viewing.owner.email) && (
-                  <View style={styles.contactActions}>
-                    {viewing.owner.phone && (
-                      <TouchableOpacity style={styles.contactButton} onPress={handleCallOwner}>
-                        <Ionicons name="call" size={18} color={RSA.green} />
-                        <Text style={styles.contactButtonText}>Call</Text>
-                      </TouchableOpacity>
-                    )}
-                    {viewing.owner.email && (
-                      <TouchableOpacity style={styles.contactButton} onPress={handleEmailOwner}>
-                        <Ionicons name="mail" size={18} color={RSA.green} />
-                        <Text style={styles.contactButtonText}>Email</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                )}
+                <View style={styles.contactActions}>
+                  {viewing.owner.phone && (
+                    <TouchableOpacity style={styles.contactButton} onPress={handleCallOwner}>
+                      <Ionicons name="call" size={18} color={RSA.green} />
+                      <Text style={styles.contactButtonText}>Call</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    style={styles.contactButton}
+                    onPress={() => router.push('/(tenant)/messages' as any)}
+                  >
+                    <Ionicons name="chatbubble" size={18} color={RSA.green} />
+                    <Text style={styles.contactButtonText}>Chat</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           )}
@@ -515,15 +601,36 @@ const styles = StyleSheet.create({
     color: '#999',
     marginTop: 8,
   },
-  alternativeTimeRow: {
+  altHint: {
+    fontSize: 12,
+    color: '#999',
+    marginBottom: 10,
+  },
+  alternativeCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 6,
+    justifyContent: 'space-between',
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
-  alternativeTimeText: {
-    fontSize: 14,
+  alternativeCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  alternativeCardDate: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#333',
+  },
+  alternativeCardTime: {
+    fontSize: 13,
     color: '#666',
+    marginTop: 2,
   },
   ownerHeader: {
     flexDirection: 'row',
@@ -621,5 +728,26 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.5,
+  },
+  slotAcceptedCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E9',
+    borderRadius: 12,
+    padding: 16,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
+  },
+  slotAcceptedTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#2E7D32',
+    marginBottom: 4,
+  },
+  slotAcceptedBody: {
+    fontSize: 13,
+    color: '#388E3C',
+    lineHeight: 18,
   },
 });
