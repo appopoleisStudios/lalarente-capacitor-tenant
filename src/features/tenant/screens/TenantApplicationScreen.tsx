@@ -51,10 +51,14 @@ export default function TenantApplicationScreen() {
   const [employmentStartDate, setEmploymentStartDate] = useState('');
   const [employerContact, setEmployerContact] = useState('');
 
-  // Documents
+  // Documents — new files picked this session
   const [idDocFile, setIdDocFile] = useState<DocFile | null>(null);
   const [incomeDocFiles, setIncomeDocFiles] = useState<DocFile[]>([]);
   const [referenceDocFiles, setReferenceDocFiles] = useState<DocFile[]>([]);
+
+  // Existing uploaded document URLs (from previous applications)
+  const [existingIdDocUrl, setExistingIdDocUrl] = useState<string | null>(null);
+  const [existingIncomeDocUrls, setExistingIncomeDocUrls] = useState<string[]>([]);
 
   // Affordability
   const [affordabilityRatio, setAffordabilityRatio] = useState<number | null>(null);
@@ -110,6 +114,21 @@ export default function TenantApplicationScreen() {
 
           setEmploymentStartDate(profileData.employment_start_date || '');
           setEmployerContact(profileData.employer_contact || '');
+
+          // Load existing doc URLs from most recent application
+          const { data: latestApp } = await supabase
+            .from('rental_applications')
+            .select('id_document_url, proof_of_income_urls')
+            .eq('tenant_id', user.id)
+            .not('id_document_url', 'is', null)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (latestApp) {
+            if (latestApp.id_document_url) setExistingIdDocUrl(latestApp.id_document_url);
+            if (latestApp.proof_of_income_urls?.length) setExistingIncomeDocUrls(latestApp.proof_of_income_urls);
+          }
         }
       }
     } catch (err) {
@@ -315,11 +334,11 @@ export default function TenantApplicationScreen() {
         return true;
 
       case 3:
-        if (!idDocFile) {
+        if (!idDocFile && !existingIdDocUrl) {
           Alert.alert('Required', 'Please upload your SA ID or passport');
           return false;
         }
-        if (incomeDocFiles.length === 0) {
+        if (incomeDocFiles.length === 0 && existingIncomeDocUrls.length === 0) {
           Alert.alert('Required', 'Please upload at least one proof of income');
           return false;
         }
@@ -408,12 +427,18 @@ export default function TenantApplicationScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || !property) throw new Error('Missing required data');
 
-      // Upload ID document
-      const idResult = await uploadFile('ID_DOCUMENTS', idDocFile!, user.id);
-      if (idResult.error) throw new Error(`Failed to upload ID document: ${idResult.error}`);
+      // Upload ID document (or reuse existing)
+      let idDocumentUrl: string;
+      if (idDocFile) {
+        const idResult = await uploadFile('ID_DOCUMENTS', idDocFile, user.id);
+        if (idResult.error) throw new Error(`Failed to upload ID document: ${idResult.error}`);
+        idDocumentUrl = idResult.url;
+      } else {
+        idDocumentUrl = existingIdDocUrl!;
+      }
 
-      // Upload proof of income files
-      const incomeUrls: string[] = [];
+      // Upload proof of income files (or reuse existing)
+      const incomeUrls: string[] = [...existingIncomeDocUrls];
       for (const file of incomeDocFiles) {
         const result = await uploadFile('PROOF_OF_INCOME', file, user.id);
         if (result.error) throw new Error(`Failed to upload proof of income: ${result.error}`);
@@ -447,7 +472,7 @@ export default function TenantApplicationScreen() {
         monthly_income: parseFloat(monthlyIncome),
         employment_start_date: employmentStartDate || undefined,
         employer_contact: employerContact || undefined,
-        id_document_url: idResult.url,
+        id_document_url: idDocumentUrl,
         proof_of_income_urls: incomeUrls,
         reference_urls: refUrls.length > 0 ? refUrls : undefined,
       });
@@ -709,6 +734,14 @@ export default function TenantApplicationScreen() {
                       <Ionicons name="close-circle" size={22} color="#F44336" />
                     </TouchableOpacity>
                   </View>
+                ) : existingIdDocUrl ? (
+                  <View style={styles.docExistingRow}>
+                    <Ionicons name="time-outline" size={20} color="#F59E0B" />
+                    <Text style={styles.docExistingText}>Previously uploaded — pending verification</Text>
+                    <TouchableOpacity onPress={pickIdDoc}>
+                      <Text style={styles.docReplaceText}>Replace</Text>
+                    </TouchableOpacity>
+                  </View>
                 ) : (
                   <View style={styles.docPickerRow}>
                     <TouchableOpacity style={styles.docPickerBtn} onPress={pickIdDoc}>
@@ -724,25 +757,39 @@ export default function TenantApplicationScreen() {
                 <Text style={styles.label}>Proof of Income * (max 3)</Text>
                 <Text style={styles.helperText}>Payslips, bank statements, or employment letter</Text>
 
-                {incomeDocFiles.map((file, i) => (
-                  <View key={i} style={styles.docFileRow}>
-                    <Ionicons name="document-attach" size={20} color={RSA.green} />
-                    <Text style={styles.docFileName} numberOfLines={1}>{file.name}</Text>
-                    <TouchableOpacity onPress={() => setIncomeDocFiles((prev) => prev.filter((_, idx) => idx !== i))}>
-                      <Ionicons name="close-circle" size={22} color="#F44336" />
+                {existingIncomeDocUrls.length > 0 && incomeDocFiles.length === 0 ? (
+                  <View style={styles.docExistingRow}>
+                    <Ionicons name="time-outline" size={20} color="#F59E0B" />
+                    <Text style={styles.docExistingText}>
+                      {existingIncomeDocUrls.length} file{existingIncomeDocUrls.length > 1 ? 's' : ''} previously uploaded — pending verification
+                    </Text>
+                    <TouchableOpacity onPress={pickIncomeDoc}>
+                      <Text style={styles.docReplaceText}>Add New</Text>
                     </TouchableOpacity>
                   </View>
-                ))}
+                ) : (
+                  <>
+                    {incomeDocFiles.map((file, i) => (
+                      <View key={i} style={styles.docFileRow}>
+                        <Ionicons name="document-attach" size={20} color={RSA.green} />
+                        <Text style={styles.docFileName} numberOfLines={1}>{file.name}</Text>
+                        <TouchableOpacity onPress={() => setIncomeDocFiles((prev) => prev.filter((_, idx) => idx !== i))}>
+                          <Ionicons name="close-circle" size={22} color="#F44336" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
 
-                {incomeDocFiles.length < 3 && (
-                  <View style={styles.docPickerRow}>
-                    <TouchableOpacity style={styles.docPickerBtn} onPress={pickIncomeDoc}>
-                      <Ionicons name="add-circle-outline" size={20} color={RSA.green} />
-                      <Text style={styles.docPickerBtnText}>
-                        {incomeDocFiles.length > 0 ? 'Add More' : 'Upload'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
+                    {incomeDocFiles.length < 3 && (
+                      <View style={styles.docPickerRow}>
+                        <TouchableOpacity style={styles.docPickerBtn} onPress={pickIncomeDoc}>
+                          <Ionicons name="add-circle-outline" size={20} color={RSA.green} />
+                          <Text style={styles.docPickerBtnText}>
+                            {incomeDocFiles.length > 0 ? 'Add More' : 'Upload'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </>
                 )}
               </View>
 
@@ -1081,6 +1128,27 @@ const styles = StyleSheet.create({
   },
   docPickerBtnText: {
     fontSize: 14,
+    fontWeight: '600',
+    color: RSA.green,
+  },
+  docExistingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+  },
+  docExistingText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#92400E',
+  },
+  docReplaceText: {
+    fontSize: 13,
     fontWeight: '600',
     color: RSA.green,
   },

@@ -1,3 +1,5 @@
+import * as FileSystem from 'expo-file-system/legacy';
+import { decode } from 'base64-arraybuffer';
 import { supabase, STORAGE_BUCKETS } from './supabase';
 
 // Re-export STORAGE_BUCKETS for convenience
@@ -27,13 +29,15 @@ export async function uploadFile(
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
     const filePath = folder ? `${folder}/${fileName}` : fileName;
 
-    // Convert URI to blob for upload
-    const response = await fetch(file.uri);
-    const blob = await response.blob();
+    // Read as base64 then decode to ArrayBuffer — fetch().blob() is not available on Hermes/RN
+    const base64 = await FileSystem.readAsStringAsync(file.uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    const arrayBuffer = decode(base64);
 
     const { data, error } = await supabase.storage
       .from(bucketName)
-      .upload(filePath, blob, {
+      .upload(filePath, arrayBuffer, {
         contentType: file.type,
         upsert: false,
       });
