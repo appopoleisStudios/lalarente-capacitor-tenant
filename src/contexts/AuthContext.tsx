@@ -98,6 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Fetch the newly created profile so AuthContext state is populated
       const profile = await fetchProfile(data.user.id);
+      if (!profile) throw new Error('Profile creation failed — please try again');
       setProfile(profile);
     } catch (error: any) {
       throw new Error(error.message || 'Failed to create account');

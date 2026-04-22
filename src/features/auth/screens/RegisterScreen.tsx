@@ -63,8 +63,12 @@ export default function RegisterScreen() {
       Alert.alert('Invalid', 'Please enter a valid email address');
       return;
     }
-    if (password.length < 6) {
-      Alert.alert('Invalid', 'Password must be at least 6 characters');
+    if (password.length < 8) {
+      Alert.alert('Invalid', 'Password must be at least 8 characters');
+      return;
+    }
+    if (!/[0-9!@#$%^&*()_+\-=\[\]{}|;':",.<>?/`~]/.test(password)) {
+      Alert.alert('Invalid', 'Password must contain at least one number or special character');
       return;
     }
     if (password !== confirmPassword) {
@@ -169,7 +173,7 @@ export default function RegisterScreen() {
                 <Ionicons name="lock-closed-outline" size={20} color={RSA.textGray} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Min. 6 characters"
+                  placeholder="Min. 8 chars + number or symbol"
                   placeholderTextColor={RSA.textGray}
                   value={password}
                   onChangeText={setPassword}

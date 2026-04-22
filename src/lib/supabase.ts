@@ -19,6 +19,7 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   console.error('SUPABASE_URL:', SUPABASE_URL ? '✓' : '✗');
   console.error('SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? '✓' : '✗');
   console.error('Make sure .env file exists and Metro bundler is restarted');
+  throw new Error('Missing Supabase environment variables — check .env and restart Metro');
 }
 
 // Create typed Supabase client

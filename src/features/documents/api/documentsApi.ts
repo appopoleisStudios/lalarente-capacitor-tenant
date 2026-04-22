@@ -22,11 +22,21 @@ export const documentsApi = {
     uploaderId: string
   ): Promise<Document> {
     try {
-      // Validate file size
+      // Validate file size and MIME type
       const category = (await import('../types')).DOCUMENT_CATEGORIES[input.type];
       const maxSizeBytes = category.maxSize * 1024 * 1024;
       if (file.size > maxSizeBytes) {
         throw new Error(`File size exceeds maximum of ${category.maxSize}MB`);
+      }
+
+      const mimeIsAllowed = category.acceptedTypes.some((accepted: string) => {
+        if (accepted.endsWith('/*')) {
+          return file.mimeType.startsWith(accepted.slice(0, -2));
+        }
+        return file.mimeType === accepted;
+      });
+      if (!mimeIsAllowed) {
+        throw new Error(`File type "${file.mimeType}" is not allowed for ${category.label}`);
       }
 
       // Read file as base64
