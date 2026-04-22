@@ -21,12 +21,5 @@ export default [
       '*.config.js',
     ],
   },
-  ...compat.extends('expo', 'prettier'),
-  {
-    rules: {
-      'prettier/prettier': 'warn',
-      '@typescript-eslint/no-unused-vars': 'warn',
-      'react/react-in-jsx-scope': 'off',
-    },
-  },
+  ...compat.extends('expo'),
 ];

@@ -309,14 +309,28 @@ export const applicationsApi = {
   /**
    * Reject an application with reason
    */
-  async rejectApplication(id: string, reason: string): Promise<RentalApplication> {
+  async rejectApplication(id: string, reason?: string): Promise<RentalApplication> {
+    console.log('❌ Rejecting application:', id, 'with reason:', reason);
+    
+    const updateData: any = {
+      status: 'rejected',
+      reviewed_at: new Date().toISOString(),
+      rejected_at: new Date().toISOString(),
+    };
+    
+    // Add rejection reason if provided
+    if (reason) {
+      updateData.rejection_reason = reason;
+      console.log('✅ Adding rejection_reason to update:', reason);
+    } else {
+      console.log('⚠️ No rejection reason provided');
+    }
+    
+    console.log('📝 Update data:', updateData);
+    
     const { data, error } = await supabase
       .from('rental_applications')
-      .update({
-        status: 'rejected',
-        reviewed_at: new Date().toISOString(),
-        // Note: rejection_reason field would need to be added to schema
-      })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();

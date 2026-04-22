@@ -95,7 +95,7 @@ export async function getPOWithDetails(poId: string): Promise<PurchaseOrderWithD
     .single();
 
   if (error) throw error;
-  return data as PurchaseOrderWithDetails;
+  return data as unknown as PurchaseOrderWithDetails;
 }
 
 /**

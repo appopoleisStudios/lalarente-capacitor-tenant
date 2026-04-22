@@ -20,6 +20,7 @@ import Animated, {
   FadeIn,
 } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 // South African flag colors
 const RSA_COLORS = {
@@ -52,8 +53,7 @@ export default function LoginScreen() {
       if (profile.role === 'owner') {
         router.replace('/(owner)/dashboard');
       } else if (profile.role === 'tenant') {
-        // TODO: Create tenant dashboard
-        router.replace('/(owner)/dashboard'); // Temporary
+        router.replace('/(tenant)/dashboard');
       } else if (profile.role === 'vendor') {
         router.replace('/(vendor)/dashboard');
       }
@@ -143,7 +143,7 @@ export default function LoginScreen() {
             <Animated.View entering={FadeInDown.delay(300).duration(600)}>
               <Text style={styles.inputLabel}>Email</Text>
               <View style={styles.inputContainer}>
-                <Text style={styles.inputIcon}>✉️</Text>
+                <Ionicons name="mail-outline" size={20} color={RSA_COLORS.textGray} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="your@email.com"
@@ -162,7 +162,7 @@ export default function LoginScreen() {
             <Animated.View entering={FadeInDown.delay(400).duration(600)}>
               <Text style={styles.inputLabel}>Password</Text>
               <View style={styles.inputContainer}>
-                <Text style={styles.inputIcon}>🔒</Text>
+                <Ionicons name="lock-closed-outline" size={20} color={RSA_COLORS.textGray} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="Enter your password"
@@ -178,7 +178,7 @@ export default function LoginScreen() {
                   style={styles.eyeButton}
                   onPress={() => setShowPassword(!showPassword)}
                 >
-                  <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={RSA_COLORS.textGray} />
                 </Pressable>
               </View>
             </Animated.View>
@@ -199,11 +199,12 @@ export default function LoginScreen() {
               </Pressable>
             </Animated.View>
 
-            {/* Helper Text */}
-            <Animated.View entering={FadeInDown.delay(600).duration(600)}>
-              <Text style={styles.helperText}>
-                Your role will be determined by your profile
-              </Text>
+            {/* Register Link */}
+            <Animated.View entering={FadeInDown.delay(600).duration(600)} style={styles.registerRow}>
+              <Text style={styles.registerText}>Don't have an account? </Text>
+              <Pressable onPress={() => router.push('/auth/register' as any)}>
+                <Text style={styles.registerLink}>Create Account</Text>
+              </Pressable>
             </Animated.View>
           </Animated.View>
         </ScrollView>
@@ -221,7 +222,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    flexGrow: 1,
     paddingHorizontal: 24,
     paddingTop: 60,
     paddingBottom: 40,
@@ -339,5 +339,18 @@ const styles = StyleSheet.create({
     color: RSA_COLORS.white,
     letterSpacing: 0.3,
   },
-
+  registerRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 16,
+  },
+  registerText: {
+    fontSize: 14,
+    color: RSA_COLORS.textGray,
+  },
+  registerLink: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: RSA_COLORS.green,
+  },
 });

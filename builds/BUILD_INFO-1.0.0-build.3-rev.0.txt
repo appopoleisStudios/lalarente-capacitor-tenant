@@ -1,0 +1,57 @@
+LaLarente App - Build Information
+==================================
+
+Build Date: 2026-03-07 11:41:38
+Build Type: Client Testing (Alpha)
+
+Version Information:
+  Version:      1.0.0
+  Build Number: 2
+  Revision:     0
+  Full Version: 1.0.0-build.2-rev.0
+
+Android Information:
+  Version Code: 2
+  Version Name: 1.0.0
+  Package:      com.lalarente.app
+
+Build Configuration:
+  Platform:     Android
+  Build Type:   APK (Release)
+  Build Method: Local Gradle
+  Minify:       Enabled
+  Hermes:       Enabled
+  Architectures: armeabi-v7a, arm64-v8a, x86, x86_64
+
+Features Included:
+  ✓ Authentication & User Management
+  ✓ Property Management (100%)
+  ✓ Viewing System (100%)
+  ✓ Rental Applications (100%)
+  ✓ Lease Management (100%)
+  ✓ Lease Signatures (80%)
+  ✓ Payment Tracking (40%)
+  ✓ Maintenance Management (60%)
+  ✓ Vendor Portal (70%)
+
+Known Limitations:
+  - Payment gateway not integrated
+  - Lease signature storage requires setup
+  - Messaging system not implemented
+  - Push notifications not implemented
+
+Testing Focus:
+  1. Property listing and search
+  2. Viewing request workflow
+  3. Application submission and approval
+  4. Lease creation and viewing
+  5. Maintenance request flow
+
+Distribution:
+  Method: Direct APK install
+  Requires: "Install from unknown sources" enabled
+
+Support:
+  For issues, contact development team
+  Include this build number in bug reports
+

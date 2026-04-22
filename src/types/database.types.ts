@@ -12,79 +12,233 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
+      arrears_escalations: {
+        Row: {
+          amount_owed: number
+          breach_notice_url: string | null
+          created_at: string | null
+          cure_period_ends_at: string | null
+          cure_period_starts_at: string | null
+          demand_letter_url: string | null
+          escalated_at: string
+          id: string
+          interest_accrued: number | null
+          lease_id: string
+          notes: string | null
+          notification_method: string | null
+          notification_sent: boolean | null
+          notification_sent_at: string | null
+          owner_id: string
+          payment_id: string
+          property_id: string
+          resolved_at: string | null
+          stage: string
+          tenant_id: string
+          total_owed: number
+          updated_at: string | null
+        }
+        Insert: {
+          amount_owed: number
+          breach_notice_url?: string | null
+          created_at?: string | null
+          cure_period_ends_at?: string | null
+          cure_period_starts_at?: string | null
+          demand_letter_url?: string | null
+          escalated_at?: string
+          id?: string
+          interest_accrued?: number | null
+          lease_id: string
+          notes?: string | null
+          notification_method?: string | null
+          notification_sent?: boolean | null
+          notification_sent_at?: string | null
+          owner_id: string
+          payment_id: string
+          property_id: string
+          resolved_at?: string | null
+          stage: string
+          tenant_id: string
+          total_owed: number
+          updated_at?: string | null
+        }
+        Update: {
+          amount_owed?: number
+          breach_notice_url?: string | null
+          created_at?: string | null
+          cure_period_ends_at?: string | null
+          cure_period_starts_at?: string | null
+          demand_letter_url?: string | null
+          escalated_at?: string
+          id?: string
+          interest_accrued?: number | null
+          lease_id?: string
+          notes?: string | null
+          notification_method?: string | null
+          notification_sent?: boolean | null
+          notification_sent_at?: string | null
+          owner_id?: string
+          payment_id?: string
+          property_id?: string
+          resolved_at?: string | null
+          stage?: string
+          tenant_id?: string
+          total_owed?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arrears_escalations_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "leases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "arrears_escalations_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "arrears_escalations_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "arrears_escalations_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "arrears_escalations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      closure_mediation_messages: {
+        Row: {
+          closure_report_id: string
+          created_at: string | null
+          id: string
+          message: string
+          photos: string[] | null
+          sender_id: string
+          sender_role: string
+        }
+        Insert: {
+          closure_report_id: string
+          created_at?: string | null
+          id?: string
+          message: string
+          photos?: string[] | null
+          sender_id: string
+          sender_role: string
+        }
+        Update: {
+          closure_report_id?: string
+          created_at?: string | null
+          id?: string
+          message?: string
+          photos?: string[] | null
+          sender_id?: string
+          sender_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "closure_mediation_messages_closure_report_id_fkey"
+            columns: ["closure_report_id"]
+            isOneToOne: false
+            referencedRelation: "closure_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       closure_reports: {
         Row: {
+          auto_approve_at: string | null
           closed_at: string | null
           completion_notes: string | null
           completion_photos: string[] | null
           created_at: string | null
+          forwarded_to_tenant_at: string | null
           id: string
           maintenance_request_id: string
+          mediation_reason: string | null
+          mediation_required: boolean | null
           owner_accept_at: string | null
+          owner_override_at: string | null
+          owner_override_reason: string | null
           rejected_at: string | null
           rejected_by: string | null
+          rejection_count: number | null
           rejection_reason: string | null
           status: string | null
           tenant_ack_at: string | null
+          tenant_notes: string | null
+          tenant_rejection_photos: string[] | null
+          tenant_verification_status: string | null
           updated_at: string | null
           vendor_notes: string | null
         }
         Insert: {
+          auto_approve_at?: string | null
           closed_at?: string | null
           completion_notes?: string | null
           completion_photos?: string[] | null
           created_at?: string | null
+          forwarded_to_tenant_at?: string | null
           id?: string
           maintenance_request_id: string
+          mediation_reason?: string | null
+          mediation_required?: boolean | null
           owner_accept_at?: string | null
+          owner_override_at?: string | null
+          owner_override_reason?: string | null
           rejected_at?: string | null
           rejected_by?: string | null
+          rejection_count?: number | null
           rejection_reason?: string | null
           status?: string | null
           tenant_ack_at?: string | null
+          tenant_notes?: string | null
+          tenant_rejection_photos?: string[] | null
+          tenant_verification_status?: string | null
           updated_at?: string | null
           vendor_notes?: string | null
         }
         Update: {
+          auto_approve_at?: string | null
           closed_at?: string | null
           completion_notes?: string | null
           completion_photos?: string[] | null
           created_at?: string | null
+          forwarded_to_tenant_at?: string | null
           id?: string
           maintenance_request_id?: string
+          mediation_reason?: string | null
+          mediation_required?: boolean | null
           owner_accept_at?: string | null
+          owner_override_at?: string | null
+          owner_override_reason?: string | null
           rejected_at?: string | null
           rejected_by?: string | null
+          rejection_count?: number | null
           rejection_reason?: string | null
           status?: string | null
           tenant_ack_at?: string | null
+          tenant_notes?: string | null
+          tenant_rejection_photos?: string[] | null
+          tenant_verification_status?: string | null
           updated_at?: string | null
           vendor_notes?: string | null
         }
@@ -155,6 +309,68 @@ export type Database = {
             columns: ["primary_application_id"]
             isOneToOne: false
             referencedRelation: "rental_applications_with_details"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      consent_records: {
+        Row: {
+          capture_method: string
+          consent_text: string
+          consent_type: string
+          created_at: string | null
+          device_id: string | null
+          expires_at: string | null
+          granted_at: string
+          id: string
+          ip_address: unknown
+          privacy_notice_version: string
+          status: string
+          updated_at: string | null
+          user_agent: string | null
+          user_id: string
+          withdrawn_at: string | null
+        }
+        Insert: {
+          capture_method: string
+          consent_text: string
+          consent_type: string
+          created_at?: string | null
+          device_id?: string | null
+          expires_at?: string | null
+          granted_at?: string
+          id?: string
+          ip_address?: unknown
+          privacy_notice_version?: string
+          status?: string
+          updated_at?: string | null
+          user_agent?: string | null
+          user_id: string
+          withdrawn_at?: string | null
+        }
+        Update: {
+          capture_method?: string
+          consent_text?: string
+          consent_type?: string
+          created_at?: string | null
+          device_id?: string | null
+          expires_at?: string | null
+          granted_at?: string
+          id?: string
+          ip_address?: unknown
+          privacy_notice_version?: string
+          status?: string
+          updated_at?: string | null
+          user_agent?: string | null
+          user_id?: string
+          withdrawn_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consent_records_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -359,6 +575,209 @@ export type Database = {
           },
         ]
       }
+      data_access_requests: {
+        Row: {
+          created_at: string | null
+          deadline_at: string
+          description: string | null
+          export_file_url: string | null
+          export_format: string | null
+          export_generated_at: string | null
+          id: string
+          identity_verified: boolean | null
+          received_at: string
+          rejection_reason: string | null
+          request_type: string
+          responded_at: string | null
+          response_notes: string | null
+          status: string
+          updated_at: string | null
+          user_id: string
+          verification_method: string | null
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          deadline_at: string
+          description?: string | null
+          export_file_url?: string | null
+          export_format?: string | null
+          export_generated_at?: string | null
+          id?: string
+          identity_verified?: boolean | null
+          received_at?: string
+          rejection_reason?: string | null
+          request_type?: string
+          responded_at?: string | null
+          response_notes?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id: string
+          verification_method?: string | null
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          deadline_at?: string
+          description?: string | null
+          export_file_url?: string | null
+          export_format?: string | null
+          export_generated_at?: string | null
+          id?: string
+          identity_verified?: boolean | null
+          received_at?: string
+          rejection_reason?: string | null
+          request_type?: string
+          responded_at?: string | null
+          response_notes?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+          verification_method?: string | null
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_access_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      data_correction_requests: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          current_value: string | null
+          field_name: string
+          id: string
+          justification: string | null
+          rejection_reason: string | null
+          requested_value: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          current_value?: string | null
+          field_name: string
+          id?: string
+          justification?: string | null
+          rejection_reason?: string | null
+          requested_value: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          current_value?: string | null
+          field_name?: string
+          id?: string
+          justification?: string | null
+          rejection_reason?: string | null
+          requested_value?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_correction_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "data_correction_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      data_deletion_requests: {
+        Row: {
+          created_at: string | null
+          data_retained: Json | null
+          deletion_certificate_url: string | null
+          executed_at: string | null
+          id: string
+          reason: string | null
+          rejection_reason: string | null
+          retention_check_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          scope: string
+          specific_categories: string[] | null
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          data_retained?: Json | null
+          deletion_certificate_url?: string | null
+          executed_at?: string | null
+          id?: string
+          reason?: string | null
+          rejection_reason?: string | null
+          retention_check_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          scope?: string
+          specific_categories?: string[] | null
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          data_retained?: Json | null
+          deletion_certificate_url?: string | null
+          executed_at?: string | null
+          id?: string
+          reason?: string | null
+          rejection_reason?: string | null
+          retention_check_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          scope?: string
+          specific_categories?: string[] | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_deletion_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "data_deletion_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dedicated_vendors: {
         Row: {
           category_id: string | null
@@ -405,6 +824,215 @@ export type Database = {
           {
             foreignKeyName: "dedicated_vendors_vendor_id_fkey"
             columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deposit_deductions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          deduction_type: string
+          description: string
+          evidence_urls: string[] | null
+          id: string
+          lease_id: string
+          owner_id: string
+          status: string
+          tenant_agreed: boolean | null
+          tenant_dispute_reason: string | null
+          tenant_id: string
+          tenant_response_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          deduction_type: string
+          description: string
+          evidence_urls?: string[] | null
+          id?: string
+          lease_id: string
+          owner_id: string
+          status?: string
+          tenant_agreed?: boolean | null
+          tenant_dispute_reason?: string | null
+          tenant_id: string
+          tenant_response_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          deduction_type?: string
+          description?: string
+          evidence_urls?: string[] | null
+          id?: string
+          lease_id?: string
+          owner_id?: string
+          status?: string
+          tenant_agreed?: boolean | null
+          tenant_dispute_reason?: string | null
+          tenant_id?: string
+          tenant_response_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deposit_deductions_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "leases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deposit_deductions_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deposit_deductions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deposit_disputes: {
+        Row: {
+          created_at: string | null
+          description: string
+          dispute_type: string
+          disputed_amount: number
+          escalated_to_rth_at: string | null
+          id: string
+          lease_id: string
+          owner_id: string
+          resolution_notes: string | null
+          resolved_amount: number | null
+          resolved_at: string | null
+          rth_case_number: string | null
+          status: string
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          dispute_type: string
+          disputed_amount: number
+          escalated_to_rth_at?: string | null
+          id?: string
+          lease_id: string
+          owner_id: string
+          resolution_notes?: string | null
+          resolved_amount?: number | null
+          resolved_at?: string | null
+          rth_case_number?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          dispute_type?: string
+          disputed_amount?: number
+          escalated_to_rth_at?: string | null
+          id?: string
+          lease_id?: string
+          owner_id?: string
+          resolution_notes?: string | null
+          resolved_amount?: number | null
+          resolved_at?: string | null
+          rth_case_number?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deposit_disputes_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "leases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deposit_disputes_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deposit_disputes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deposit_interest_accruals: {
+        Row: {
+          accrual_period_end: string
+          accrual_period_start: string
+          balance_after_interest: number
+          calculated_at: string
+          created_at: string | null
+          cumulative_interest: number
+          deposit_amount: number
+          id: string
+          interest_earned: number
+          interest_rate: number
+          lease_id: string
+          tenant_id: string
+        }
+        Insert: {
+          accrual_period_end: string
+          accrual_period_start: string
+          balance_after_interest: number
+          calculated_at?: string
+          created_at?: string | null
+          cumulative_interest: number
+          deposit_amount: number
+          id?: string
+          interest_earned: number
+          interest_rate: number
+          lease_id: string
+          tenant_id: string
+        }
+        Update: {
+          accrual_period_end?: string
+          accrual_period_start?: string
+          balance_after_interest?: number
+          calculated_at?: string
+          created_at?: string | null
+          cumulative_interest?: number
+          deposit_amount?: number
+          id?: string
+          interest_earned?: number
+          interest_rate?: number
+          lease_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deposit_interest_accruals_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "leases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deposit_interest_accruals_tenant_id_fkey"
+            columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -469,12 +1097,16 @@ export type Database = {
           mime_type: string
           owner_id: string | null
           property_id: string | null
+          rejection_reason: string | null
           retention_period_years: number
+          reviewed_at: string | null
+          reviewed_by: string | null
           tags: string[] | null
           tenant_id: string | null
           title: string
           type: string
           uploaded_by: string
+          verification_status: string
         }
         Insert: {
           access_level: string
@@ -491,12 +1123,16 @@ export type Database = {
           mime_type: string
           owner_id?: string | null
           property_id?: string | null
+          rejection_reason?: string | null
           retention_period_years: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           tags?: string[] | null
           tenant_id?: string | null
           title: string
           type: string
           uploaded_by: string
+          verification_status?: string
         }
         Update: {
           access_level?: string
@@ -513,12 +1149,16 @@ export type Database = {
           mime_type?: string
           owner_id?: string | null
           property_id?: string | null
+          rejection_reason?: string | null
           retention_period_years?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           tags?: string[] | null
           tenant_id?: string | null
           title?: string
           type?: string
           uploaded_by?: string
+          verification_status?: string
         }
         Relationships: [
           {
@@ -552,6 +1192,104 @@ export type Database = {
           {
             foreignKeyName: "documents_uploaded_by_fkey"
             columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      holding_deposits: {
+        Row: {
+          amount: number
+          application_id: string | null
+          applied_at: string | null
+          created_at: string | null
+          decision_deadline: string | null
+          forfeited_at: string | null
+          hold_expires_at: string | null
+          id: string
+          notes: string | null
+          paid_at: string | null
+          payment_deadline: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          property_id: string
+          refund_reason: string | null
+          refunded_at: string | null
+          status: string
+          tenant_id: string
+          transaction_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          application_id?: string | null
+          applied_at?: string | null
+          created_at?: string | null
+          decision_deadline?: string | null
+          forfeited_at?: string | null
+          hold_expires_at?: string | null
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          payment_deadline?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          property_id: string
+          refund_reason?: string | null
+          refunded_at?: string | null
+          status?: string
+          tenant_id: string
+          transaction_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          application_id?: string | null
+          applied_at?: string | null
+          created_at?: string | null
+          decision_deadline?: string | null
+          forfeited_at?: string | null
+          hold_expires_at?: string | null
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          payment_deadline?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          property_id?: string
+          refund_reason?: string | null
+          refunded_at?: string | null
+          status?: string
+          tenant_id?: string
+          transaction_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "holding_deposits_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "rental_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "holding_deposits_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "rental_applications_with_details"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "holding_deposits_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "holding_deposits_tenant_id_fkey"
+            columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -735,6 +1473,257 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insurance_claim_documents: {
+        Row: {
+          claim_id: string
+          created_at: string | null
+          document_type: string
+          file_size: number | null
+          file_url: string
+          id: string
+          title: string
+          uploaded_by: string
+        }
+        Insert: {
+          claim_id: string
+          created_at?: string | null
+          document_type: string
+          file_size?: number | null
+          file_url: string
+          id?: string
+          title: string
+          uploaded_by: string
+        }
+        Update: {
+          claim_id?: string
+          created_at?: string | null
+          document_type?: string
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          title?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insurance_claim_documents_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "insurance_claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insurance_claim_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insurance_claims: {
+        Row: {
+          acknowledged_at: string | null
+          approved_amount: number | null
+          approved_at: string | null
+          assessment_date: string | null
+          assessment_notes: string | null
+          assessor_contact: string | null
+          assessor_name: string | null
+          claim_number: string | null
+          claim_type: string
+          claimed_amount: number | null
+          closed_at: string | null
+          created_at: string | null
+          description: string
+          estimated_cost: number
+          excess_paid: number | null
+          id: string
+          incident_date: string
+          maintenance_request_id: string | null
+          notes: string | null
+          owner_id: string
+          paid_out_at: string | null
+          payout_received: number | null
+          policy_id: string
+          property_id: string
+          rejection_reason: string | null
+          status: string
+          submitted_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          approved_amount?: number | null
+          approved_at?: string | null
+          assessment_date?: string | null
+          assessment_notes?: string | null
+          assessor_contact?: string | null
+          assessor_name?: string | null
+          claim_number?: string | null
+          claim_type: string
+          claimed_amount?: number | null
+          closed_at?: string | null
+          created_at?: string | null
+          description: string
+          estimated_cost: number
+          excess_paid?: number | null
+          id?: string
+          incident_date: string
+          maintenance_request_id?: string | null
+          notes?: string | null
+          owner_id: string
+          paid_out_at?: string | null
+          payout_received?: number | null
+          policy_id: string
+          property_id: string
+          rejection_reason?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          approved_amount?: number | null
+          approved_at?: string | null
+          assessment_date?: string | null
+          assessment_notes?: string | null
+          assessor_contact?: string | null
+          assessor_name?: string | null
+          claim_number?: string | null
+          claim_type?: string
+          claimed_amount?: number | null
+          closed_at?: string | null
+          created_at?: string | null
+          description?: string
+          estimated_cost?: number
+          excess_paid?: number | null
+          id?: string
+          incident_date?: string
+          maintenance_request_id?: string | null
+          notes?: string | null
+          owner_id?: string
+          paid_out_at?: string | null
+          payout_received?: number | null
+          policy_id?: string
+          property_id?: string
+          rejection_reason?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insurance_claims_maintenance_request_id_fkey"
+            columns: ["maintenance_request_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insurance_claims_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insurance_claims_policy_id_fkey"
+            columns: ["policy_id"]
+            isOneToOne: false
+            referencedRelation: "insurance_policies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insurance_claims_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insurance_policies: {
+        Row: {
+          cover_amount: number | null
+          created_at: string | null
+          end_date: string
+          excess_amount: number | null
+          id: string
+          insurer_contact: string | null
+          insurer_email: string | null
+          insurer_name: string
+          notes: string | null
+          owner_id: string
+          policy_document_url: string | null
+          policy_number: string
+          policy_type: string
+          premium_amount: number | null
+          premium_frequency: string | null
+          property_id: string
+          start_date: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          cover_amount?: number | null
+          created_at?: string | null
+          end_date: string
+          excess_amount?: number | null
+          id?: string
+          insurer_contact?: string | null
+          insurer_email?: string | null
+          insurer_name: string
+          notes?: string | null
+          owner_id: string
+          policy_document_url?: string | null
+          policy_number: string
+          policy_type: string
+          premium_amount?: number | null
+          premium_frequency?: string | null
+          property_id: string
+          start_date: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          cover_amount?: number | null
+          created_at?: string | null
+          end_date?: string
+          excess_amount?: number | null
+          id?: string
+          insurer_contact?: string | null
+          insurer_email?: string | null
+          insurer_name?: string
+          notes?: string | null
+          owner_id?: string
+          policy_document_url?: string | null
+          policy_number?: string
+          policy_type?: string
+          premium_amount?: number | null
+          premium_frequency?: string | null
+          property_id?: string
+          start_date?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insurance_policies_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insurance_policies_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
             referencedColumns: ["id"]
           },
         ]
@@ -993,28 +1982,54 @@ export type Database = {
       leases: {
         Row: {
           application_id: string | null
+          auto_converted_to_mtm: boolean | null
+          converted_to_mtm_at: string | null
           created_at: string | null
+          deposit_account_number: string | null
           deposit_amount: number | null
+          deposit_bank_name: string | null
+          deposit_interest_rate: number | null
+          deposit_refund_amount: number | null
+          deposit_refund_deadline: string | null
+          deposit_refund_status: string | null
+          deposit_refunded_at: string | null
+          deposit_total_interest: number | null
           document_template_id: string | null
+          early_termination_effective_date: string | null
+          early_termination_notice_period_days: number | null
+          early_termination_penalty: number | null
+          early_termination_reason: string | null
+          early_termination_requested_at: string | null
+          early_termination_requested_by: string | null
           end_date: string
+          escalation_history: Json | null
           executed_at: string | null
           id: string
-          late_fee_amount: number | null
-          late_fee_grace_days: number | null
+          interest_on_arrears_rate: number | null
+          last_escalation_amount: number | null
+          last_escalation_date: string | null
           lease_document_url: string | null
           lease_type: string | null
           monthly_rent: number
+          next_escalation_date: string | null
+          notice_40_sent_at: string | null
+          notice_60_sent_at: string | null
+          notice_80_sent_at: string | null
+          original_lease_id: string | null
           owner_id: string | null
           owner_signature_url: string | null
           owner_signed_at: string | null
           payment_due_day: number | null
           property_id: string | null
+          renewal_count: number | null
           rent_escalation_frequency_months: number | null
           rent_escalation_type: string | null
           rent_escalation_value: number | null
           start_date: string
           status: string | null
           tenant_id: string | null
+          tenant_renewal_response: string | null
+          tenant_response_at: string | null
           tenant_signature_url: string | null
           tenant_signed_at: string | null
           terminated_at: string | null
@@ -1022,28 +2037,54 @@ export type Database = {
         }
         Insert: {
           application_id?: string | null
+          auto_converted_to_mtm?: boolean | null
+          converted_to_mtm_at?: string | null
           created_at?: string | null
+          deposit_account_number?: string | null
           deposit_amount?: number | null
+          deposit_bank_name?: string | null
+          deposit_interest_rate?: number | null
+          deposit_refund_amount?: number | null
+          deposit_refund_deadline?: string | null
+          deposit_refund_status?: string | null
+          deposit_refunded_at?: string | null
+          deposit_total_interest?: number | null
           document_template_id?: string | null
+          early_termination_effective_date?: string | null
+          early_termination_notice_period_days?: number | null
+          early_termination_penalty?: number | null
+          early_termination_reason?: string | null
+          early_termination_requested_at?: string | null
+          early_termination_requested_by?: string | null
           end_date: string
+          escalation_history?: Json | null
           executed_at?: string | null
           id?: string
-          late_fee_amount?: number | null
-          late_fee_grace_days?: number | null
+          interest_on_arrears_rate?: number | null
+          last_escalation_amount?: number | null
+          last_escalation_date?: string | null
           lease_document_url?: string | null
           lease_type?: string | null
           monthly_rent: number
+          next_escalation_date?: string | null
+          notice_40_sent_at?: string | null
+          notice_60_sent_at?: string | null
+          notice_80_sent_at?: string | null
+          original_lease_id?: string | null
           owner_id?: string | null
           owner_signature_url?: string | null
           owner_signed_at?: string | null
           payment_due_day?: number | null
           property_id?: string | null
+          renewal_count?: number | null
           rent_escalation_frequency_months?: number | null
           rent_escalation_type?: string | null
           rent_escalation_value?: number | null
           start_date: string
           status?: string | null
           tenant_id?: string | null
+          tenant_renewal_response?: string | null
+          tenant_response_at?: string | null
           tenant_signature_url?: string | null
           tenant_signed_at?: string | null
           terminated_at?: string | null
@@ -1051,28 +2092,54 @@ export type Database = {
         }
         Update: {
           application_id?: string | null
+          auto_converted_to_mtm?: boolean | null
+          converted_to_mtm_at?: string | null
           created_at?: string | null
+          deposit_account_number?: string | null
           deposit_amount?: number | null
+          deposit_bank_name?: string | null
+          deposit_interest_rate?: number | null
+          deposit_refund_amount?: number | null
+          deposit_refund_deadline?: string | null
+          deposit_refund_status?: string | null
+          deposit_refunded_at?: string | null
+          deposit_total_interest?: number | null
           document_template_id?: string | null
+          early_termination_effective_date?: string | null
+          early_termination_notice_period_days?: number | null
+          early_termination_penalty?: number | null
+          early_termination_reason?: string | null
+          early_termination_requested_at?: string | null
+          early_termination_requested_by?: string | null
           end_date?: string
+          escalation_history?: Json | null
           executed_at?: string | null
           id?: string
-          late_fee_amount?: number | null
-          late_fee_grace_days?: number | null
+          interest_on_arrears_rate?: number | null
+          last_escalation_amount?: number | null
+          last_escalation_date?: string | null
           lease_document_url?: string | null
           lease_type?: string | null
           monthly_rent?: number
+          next_escalation_date?: string | null
+          notice_40_sent_at?: string | null
+          notice_60_sent_at?: string | null
+          notice_80_sent_at?: string | null
+          original_lease_id?: string | null
           owner_id?: string | null
           owner_signature_url?: string | null
           owner_signed_at?: string | null
           payment_due_day?: number | null
           property_id?: string | null
+          renewal_count?: number | null
           rent_escalation_frequency_months?: number | null
           rent_escalation_type?: string | null
           rent_escalation_value?: number | null
           start_date?: string
           status?: string | null
           tenant_id?: string | null
+          tenant_renewal_response?: string | null
+          tenant_response_at?: string | null
           tenant_signature_url?: string | null
           tenant_signed_at?: string | null
           terminated_at?: string | null
@@ -1091,6 +2158,20 @@ export type Database = {
             columns: ["application_id"]
             isOneToOne: false
             referencedRelation: "rental_applications_with_details"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leases_early_termination_requested_by_fkey"
+            columns: ["early_termination_requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leases_original_lease_id_fkey"
+            columns: ["original_lease_id"]
+            isOneToOne: false
+            referencedRelation: "leases"
             referencedColumns: ["id"]
           },
           {
@@ -1478,6 +2559,224 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          created_at: string | null
+          email_enabled: boolean | null
+          id: string
+          preferences: Json | null
+          push_enabled: boolean | null
+          sms_enabled: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email_enabled?: boolean | null
+          id?: string
+          preferences?: Json | null
+          push_enabled?: boolean | null
+          sms_enabled?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email_enabled?: boolean | null
+          id?: string
+          preferences?: Json | null
+          push_enabled?: boolean | null
+          sms_enabled?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      payment_arrangements: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          amount_paid: number | null
+          created_at: string | null
+          end_date: string
+          id: string
+          instalments_paid: number | null
+          lease_id: string
+          monthly_instalment: number
+          next_due_date: string | null
+          notes: string | null
+          number_of_instalments: number
+          owner_id: string
+          proposed_by: string
+          start_date: string
+          status: string
+          tenant_id: string
+          total_owed: number
+          updated_at: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          amount_paid?: number | null
+          created_at?: string | null
+          end_date: string
+          id?: string
+          instalments_paid?: number | null
+          lease_id: string
+          monthly_instalment: number
+          next_due_date?: string | null
+          notes?: string | null
+          number_of_instalments: number
+          owner_id: string
+          proposed_by: string
+          start_date: string
+          status?: string
+          tenant_id: string
+          total_owed: number
+          updated_at?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          amount_paid?: number | null
+          created_at?: string | null
+          end_date?: string
+          id?: string
+          instalments_paid?: number | null
+          lease_id?: string
+          monthly_instalment?: number
+          next_due_date?: string | null
+          notes?: string | null
+          number_of_instalments?: number
+          owner_id?: string
+          proposed_by?: string
+          start_date?: string
+          status?: string
+          tenant_id?: string
+          total_owed?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_arrangements_accepted_by_fkey"
+            columns: ["accepted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_arrangements_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "leases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_arrangements_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_arrangements_proposed_by_fkey"
+            columns: ["proposed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_arrangements_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_disputes: {
+        Row: {
+          created_at: string | null
+          description: string
+          disputed_amount: number
+          evidence_urls: string[] | null
+          id: string
+          lease_id: string
+          payment_id: string
+          raised_by: string
+          reason: string
+          resolution_amount: number | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          disputed_amount: number
+          evidence_urls?: string[] | null
+          id?: string
+          lease_id: string
+          payment_id: string
+          raised_by: string
+          reason: string
+          resolution_amount?: number | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          disputed_amount?: number
+          evidence_urls?: string[] | null
+          id?: string
+          lease_id?: string
+          payment_id?: string
+          raised_by?: string
+          reason?: string
+          resolution_amount?: number | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_disputes_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "leases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_disputes_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_disputes_raised_by_fkey"
+            columns: ["raised_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_disputes_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_schedules: {
         Row: {
           active: boolean | null
@@ -1544,19 +2843,29 @@ export type Database = {
       payments: {
         Row: {
           amount: number
+          amount_outstanding: number | null
+          amount_paid: number | null
           created_at: string | null
+          credit_balance: number | null
+          days_overdue: number | null
           due_date: string
           failure_reason: string | null
           fee_paid_by: string | null
           id: string
+          interest_amount: number | null
+          interest_calculated_at: string | null
           last_retry_at: string | null
           lease_id: string
           max_retry_count: number | null
           next_retry_at: string | null
+          notes: string | null
+          original_amount: number | null
           owner_id: string
           paid_date: string | null
+          parent_payment_id: string | null
           payment_gateway: string | null
           payment_method: string | null
+          payment_variant: string | null
           property_id: string
           retry_count: number | null
           status: string
@@ -1568,19 +2877,29 @@ export type Database = {
         }
         Insert: {
           amount: number
+          amount_outstanding?: number | null
+          amount_paid?: number | null
           created_at?: string | null
+          credit_balance?: number | null
+          days_overdue?: number | null
           due_date: string
           failure_reason?: string | null
           fee_paid_by?: string | null
           id?: string
+          interest_amount?: number | null
+          interest_calculated_at?: string | null
           last_retry_at?: string | null
           lease_id: string
           max_retry_count?: number | null
           next_retry_at?: string | null
+          notes?: string | null
+          original_amount?: number | null
           owner_id: string
           paid_date?: string | null
+          parent_payment_id?: string | null
           payment_gateway?: string | null
           payment_method?: string | null
+          payment_variant?: string | null
           property_id: string
           retry_count?: number | null
           status?: string
@@ -1592,19 +2911,29 @@ export type Database = {
         }
         Update: {
           amount?: number
+          amount_outstanding?: number | null
+          amount_paid?: number | null
           created_at?: string | null
+          credit_balance?: number | null
+          days_overdue?: number | null
           due_date?: string
           failure_reason?: string | null
           fee_paid_by?: string | null
           id?: string
+          interest_amount?: number | null
+          interest_calculated_at?: string | null
           last_retry_at?: string | null
           lease_id?: string
           max_retry_count?: number | null
           next_retry_at?: string | null
+          notes?: string | null
+          original_amount?: number | null
           owner_id?: string
           paid_date?: string | null
+          parent_payment_id?: string | null
           payment_gateway?: string | null
           payment_method?: string | null
+          payment_variant?: string | null
           property_id?: string
           retry_count?: number | null
           status?: string
@@ -1627,6 +2956,13 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_parent_payment_id_fkey"
+            columns: ["parent_payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
             referencedColumns: ["id"]
           },
           {
@@ -1699,53 +3035,137 @@ export type Database = {
           },
         ]
       }
+      privacy_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_type: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_address: unknown
+          resource_id: string | null
+          resource_type: string | null
+          target_user_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_type: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown
+          resource_id?: string | null
+          resource_type?: string | null
+          target_user_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_type?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown
+          resource_id?: string | null
+          resource_type?: string | null
+          target_user_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "privacy_audit_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "privacy_audit_log_target_user_id_fkey"
+            columns: ["target_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           bank_details: Json | null
           created_at: string | null
+          date_of_birth: string | null
           email: string | null
+          employer: string | null
+          employer_contact: string | null
+          employment_start_date: string | null
           fica_documents: Json | null
           full_name: string
           id: string
+          id_number: string | null
+          monthly_income: number | null
           onboarding_owner_done: boolean
           onboarding_tenant_done: boolean
           onboarding_vendor_done: boolean
           phone: string | null
+          position: string | null
+          proof_of_address_url: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string | null
+          utility_account_number: string | null
           verification_status: boolean | null
         }
         Insert: {
           avatar_url?: string | null
           bank_details?: Json | null
           created_at?: string | null
+          date_of_birth?: string | null
           email?: string | null
+          employer?: string | null
+          employer_contact?: string | null
+          employment_start_date?: string | null
           fica_documents?: Json | null
           full_name: string
           id: string
+          id_number?: string | null
+          monthly_income?: number | null
           onboarding_owner_done?: boolean
           onboarding_tenant_done?: boolean
           onboarding_vendor_done?: boolean
           phone?: string | null
+          position?: string | null
+          proof_of_address_url?: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
+          utility_account_number?: string | null
           verification_status?: boolean | null
         }
         Update: {
           avatar_url?: string | null
           bank_details?: Json | null
           created_at?: string | null
+          date_of_birth?: string | null
           email?: string | null
+          employer?: string | null
+          employer_contact?: string | null
+          employment_start_date?: string | null
           fica_documents?: Json | null
           full_name?: string
           id?: string
+          id_number?: string | null
+          monthly_income?: number | null
           onboarding_owner_done?: boolean
           onboarding_tenant_done?: boolean
           onboarding_vendor_done?: boolean
           phone?: string | null
+          position?: string | null
+          proof_of_address_url?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
+          utility_account_number?: string | null
           verification_status?: boolean | null
         }
         Relationships: []
@@ -1766,7 +3186,9 @@ export type Database = {
           id: string
           images: string[] | null
           inquiry_count: number | null
+          latitude: number | null
           lease_terms: Json | null
+          longitude: number | null
           minimum_lease_months: number | null
           owner_id: string
           parking_spaces: number | null
@@ -1798,7 +3220,9 @@ export type Database = {
           id?: string
           images?: string[] | null
           inquiry_count?: number | null
+          latitude?: number | null
           lease_terms?: Json | null
+          longitude?: number | null
           minimum_lease_months?: number | null
           owner_id: string
           parking_spaces?: number | null
@@ -1830,7 +3254,9 @@ export type Database = {
           id?: string
           images?: string[] | null
           inquiry_count?: number | null
+          latitude?: number | null
           lease_terms?: Json | null
+          longitude?: number | null
           minimum_lease_months?: number | null
           owner_id?: string
           parking_spaces?: number | null
@@ -2475,6 +3901,98 @@ export type Database = {
           },
         ]
       }
+      renewal_negotiations: {
+        Row: {
+          created_at: string | null
+          id: string
+          initiated_by: string
+          lease_id: string
+          owner_id: string
+          proposed_duration_months: number | null
+          proposed_escalation_rate: number | null
+          proposed_lease_type: string
+          proposed_monthly_rent: number
+          proposed_start_date: string
+          proposed_terms_notes: string | null
+          response_at: string | null
+          response_deadline: string | null
+          response_notes: string | null
+          round: number
+          status: string
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          initiated_by: string
+          lease_id: string
+          owner_id: string
+          proposed_duration_months?: number | null
+          proposed_escalation_rate?: number | null
+          proposed_lease_type: string
+          proposed_monthly_rent: number
+          proposed_start_date: string
+          proposed_terms_notes?: string | null
+          response_at?: string | null
+          response_deadline?: string | null
+          response_notes?: string | null
+          round?: number
+          status?: string
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          initiated_by?: string
+          lease_id?: string
+          owner_id?: string
+          proposed_duration_months?: number | null
+          proposed_escalation_rate?: number | null
+          proposed_lease_type?: string
+          proposed_monthly_rent?: number
+          proposed_start_date?: string
+          proposed_terms_notes?: string | null
+          response_at?: string | null
+          response_deadline?: string | null
+          response_notes?: string | null
+          round?: number
+          status?: string
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "renewal_negotiations_initiated_by_fkey"
+            columns: ["initiated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renewal_negotiations_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "leases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renewal_negotiations_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renewal_negotiations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rental_applications: {
         Row: {
           affordability_ratio: number | null
@@ -2483,7 +4001,9 @@ export type Database = {
           approved_by: string | null
           background_check_result: Json | null
           background_check_status: string | null
+          backup_rank: number | null
           created_at: string | null
+          credit_check_at: string | null
           credit_check_result: Json | null
           credit_check_status: string | null
           date_of_birth: string
@@ -2492,6 +4012,7 @@ export type Database = {
           employer_contact: string | null
           employment_start_date: string | null
           full_name: string
+          holding_deposit_id: string | null
           id: string
           id_document_url: string | null
           id_number: string
@@ -2510,6 +4031,9 @@ export type Database = {
           rental_history: Json | null
           reviewed_at: string | null
           risk_level: string | null
+          score: number | null
+          shortlisted: boolean | null
+          shortlisted_at: string | null
           status: string
           submitted_at: string | null
           tenant_id: string
@@ -2523,7 +4047,9 @@ export type Database = {
           approved_by?: string | null
           background_check_result?: Json | null
           background_check_status?: string | null
+          backup_rank?: number | null
           created_at?: string | null
+          credit_check_at?: string | null
           credit_check_result?: Json | null
           credit_check_status?: string | null
           date_of_birth: string
@@ -2532,6 +4058,7 @@ export type Database = {
           employer_contact?: string | null
           employment_start_date?: string | null
           full_name: string
+          holding_deposit_id?: string | null
           id?: string
           id_document_url?: string | null
           id_number: string
@@ -2550,6 +4077,9 @@ export type Database = {
           rental_history?: Json | null
           reviewed_at?: string | null
           risk_level?: string | null
+          score?: number | null
+          shortlisted?: boolean | null
+          shortlisted_at?: string | null
           status?: string
           submitted_at?: string | null
           tenant_id: string
@@ -2563,7 +4093,9 @@ export type Database = {
           approved_by?: string | null
           background_check_result?: Json | null
           background_check_status?: string | null
+          backup_rank?: number | null
           created_at?: string | null
+          credit_check_at?: string | null
           credit_check_result?: Json | null
           credit_check_status?: string | null
           date_of_birth?: string
@@ -2572,6 +4104,7 @@ export type Database = {
           employer_contact?: string | null
           employment_start_date?: string | null
           full_name?: string
+          holding_deposit_id?: string | null
           id?: string
           id_document_url?: string | null
           id_number?: string
@@ -2590,6 +4123,9 @@ export type Database = {
           rental_history?: Json | null
           reviewed_at?: string | null
           risk_level?: string | null
+          score?: number | null
+          shortlisted?: boolean | null
+          shortlisted_at?: string | null
           status?: string
           submitted_at?: string | null
           tenant_id?: string
@@ -2602,6 +4138,13 @@ export type Database = {
             columns: ["approved_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rental_applications_holding_deposit_id_fkey"
+            columns: ["holding_deposit_id"]
+            isOneToOne: false
+            referencedRelation: "holding_deposits"
             referencedColumns: ["id"]
           },
           {
@@ -2633,6 +4176,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      retention_policies: {
+        Row: {
+          auto_delete: boolean | null
+          created_at: string | null
+          data_category: string
+          description: string
+          id: string
+          legal_basis: string
+          notify_before_delete_days: number | null
+          retention_days: number
+          updated_at: string | null
+        }
+        Insert: {
+          auto_delete?: boolean | null
+          created_at?: string | null
+          data_category: string
+          description: string
+          id?: string
+          legal_basis: string
+          notify_before_delete_days?: number | null
+          retention_days: number
+          updated_at?: string | null
+        }
+        Update: {
+          auto_delete?: boolean | null
+          created_at?: string | null
+          data_category?: string
+          description?: string
+          id?: string
+          legal_basis?: string
+          notify_before_delete_days?: number | null
+          retention_days?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      sa_public_holidays: {
+        Row: {
+          created_at: string | null
+          holiday_date: string
+          holiday_name: string
+          id: string
+          is_observed: boolean | null
+          original_date: string | null
+          year: number
+        }
+        Insert: {
+          created_at?: string | null
+          holiday_date: string
+          holiday_name: string
+          id?: string
+          is_observed?: boolean | null
+          original_date?: string | null
+          year?: number
+        }
+        Update: {
+          created_at?: string | null
+          holiday_date?: string
+          holiday_name?: string
+          id?: string
+          is_observed?: boolean | null
+          original_date?: string | null
+          year?: number
+        }
+        Relationships: []
       }
       service_categories: {
         Row: {
@@ -3359,6 +4968,64 @@ export type Database = {
           },
         ]
       }
+      viewing_cancellations: {
+        Row: {
+          cancelled_at: string
+          cancelled_by: string
+          created_at: string | null
+          description: string | null
+          id: string
+          reason: string
+          reschedule_requested: boolean | null
+          rescheduled_to: string | null
+          viewing_request_id: string
+        }
+        Insert: {
+          cancelled_at?: string
+          cancelled_by: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          reason: string
+          reschedule_requested?: boolean | null
+          rescheduled_to?: string | null
+          viewing_request_id: string
+        }
+        Update: {
+          cancelled_at?: string
+          cancelled_by?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          reason?: string
+          reschedule_requested?: boolean | null
+          rescheduled_to?: string | null
+          viewing_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "viewing_cancellations_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "viewing_cancellations_viewing_request_id_fkey"
+            columns: ["viewing_request_id"]
+            isOneToOne: false
+            referencedRelation: "viewing_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "viewing_cancellations_viewing_request_id_fkey"
+            columns: ["viewing_request_id"]
+            isOneToOne: false
+            referencedRelation: "viewing_requests_with_details"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       viewing_requests: {
         Row: {
           alternative_times: string[] | null
@@ -3368,6 +5035,8 @@ export type Database = {
           completed_at: string | null
           confirmed_date: string | null
           created_at: string | null
+          expired_at: string | null
+          expiry_reason: string | null
           id: string
           owner_id: string
           owner_notes: string | null
@@ -3393,6 +5062,8 @@ export type Database = {
           completed_at?: string | null
           confirmed_date?: string | null
           created_at?: string | null
+          expired_at?: string | null
+          expiry_reason?: string | null
           id?: string
           owner_id: string
           owner_notes?: string | null
@@ -3418,6 +5089,8 @@ export type Database = {
           completed_at?: string | null
           confirmed_date?: string | null
           created_at?: string | null
+          expired_at?: string | null
+          expiry_reason?: string | null
           id?: string
           owner_id?: string
           owner_notes?: string | null
@@ -3621,9 +5294,26 @@ export type Database = {
       }
     }
     Functions: {
+      accrue_deposit_interest: {
+        Args: never
+        Returns: {
+          message: string
+          processed_count: number
+          skipped_count: number
+          total_interest_accrued: number
+        }[]
+      }
       approve_quote_and_generate_po: {
         Args: { quote_id: string }
         Returns: string
+      }
+      auto_expire_viewing_requests: {
+        Args: never
+        Returns: {
+          completed_count: number
+          expired_count: number
+          message: string
+        }[]
       }
       calculate_affordability_ratio: {
         Args: { monthly_income: number; rent_amount: number }
@@ -3840,6 +5530,12 @@ export type Database = {
         | "vacant"
         | "rented"
         | "archived"
+        | "draft"
+        | "viewing_active"
+        | "applications_open"
+        | "holding_deposit"
+        | "lease_pending"
+        | "delisted"
       user_role: "tenant" | "owner" | "vendor" | "admin"
     }
     CompositeTypes: {
@@ -3966,9 +5662,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       inspection_type: ["move_in", "routine", "move_out"],
@@ -3987,8 +5680,15 @@ export const Constants = {
         "vacant",
         "rented",
         "archived",
+        "draft",
+        "viewing_active",
+        "applications_open",
+        "holding_deposit",
+        "lease_pending",
+        "delisted",
       ],
       user_role: ["tenant", "owner", "vendor", "admin"],
     },
   },
 } as const
+

@@ -1,4 +1,10 @@
 module.exports = {
+  ignorePatterns: [
+    'supabase/functions/**', // Deno — uses URL imports incompatible with ESLint
+    'node_modules/**',
+    '.expo/**',
+    'dist/**',
+  ],
   extends: [
     'expo',
     'eslint:recommended',

@@ -57,7 +57,7 @@ export async function getMaintenanceRequests(
   const { data, error } = await query;
 
   if (error) throw error;
-  return (data || []) as MaintenanceRequestWithRelations[];
+  return (data || []) as unknown as MaintenanceRequestWithRelations[];
 }
 
 /**
@@ -96,7 +96,7 @@ export async function getMaintenanceRequestById(
     .single();
 
   if (error) throw error;
-  return data as MaintenanceRequestWithRelations;
+  return data as unknown as MaintenanceRequestWithRelations;
 }
 
 /**
@@ -149,7 +149,7 @@ export async function createMaintenanceRequest(
     .single();
 
   if (error) throw error;
-  return data as MaintenanceRequest;
+  return data as unknown as MaintenanceRequest;
 }
 
 /**
@@ -179,7 +179,7 @@ export async function updateMaintenanceRequest(
     .single();
 
   if (error) throw error;
-  return data as MaintenanceRequest;
+  return data as unknown as MaintenanceRequest;
 }
 
 /**

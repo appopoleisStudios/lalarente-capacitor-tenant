@@ -28,7 +28,7 @@ const PRIORITY_CONFIG = {
 };
 
 export function PriorityIndicator({ priority, size = 'medium' }: PriorityIndicatorProps) {
-  const config = PRIORITY_CONFIG[priority];
+  const config = PRIORITY_CONFIG[priority] ?? PRIORITY_CONFIG.medium;
   
   return (
     <View

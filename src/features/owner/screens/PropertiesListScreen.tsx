@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, SafeAreaView, TextInput, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TextInput, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { AnimatedButton } from '../components/AnimatedButton';
@@ -63,12 +64,13 @@ export default function PropertiesListScreen() {
 
   const handleView = (id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Navigate to property detail
+    router.push(`/(owner)/properties/${id}`);
   };
 
   const handleEdit = (id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Navigate to edit property
+    // TODO: Navigate to edit property screen
+    router.push(`/(owner)/properties/${id}`);
   };
 
   return (
@@ -77,17 +79,6 @@ export default function PropertiesListScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <AnimatedButton
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                router.back();
-              }}
-              hapticType="medium"
-            >
-              <View style={styles.backButton}>
-                <Text style={styles.backIcon}>←</Text>
-              </View>
-            </AnimatedButton>
             <Text style={styles.headerTitle}>My Properties</Text>
           </View>
           <AnimatedButton onPress={() => router.push('/(owner)/add-property')}>
@@ -167,7 +158,7 @@ export default function PropertiesListScreen() {
           <FlatList
             data={filteredProperties}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <PropertyCard property={item} onView={handleView} onEdit={handleEdit} />}
+            renderItem={({ item }) => <PropertyCard property={item as any} onView={handleView} onEdit={handleEdit} />}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
             refreshControl={
@@ -182,7 +173,7 @@ export default function PropertiesListScreen() {
               <View style={styles.emptyState}>
                 <Text style={styles.emptyTitle}>No properties yet</Text>
                 <Text style={styles.emptyText}>Add your first property to start managing rent and maintenance.</Text>
-                <AnimatedButton onPress={() => router.push('/owner/add-property')}>
+                <AnimatedButton onPress={() => router.push('/(owner)/add-property')}>
                   <View style={styles.emptyButton}>
                     <Text style={styles.emptyButtonText}>+ Add Property</Text>
                   </View>

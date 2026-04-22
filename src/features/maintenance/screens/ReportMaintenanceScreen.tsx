@@ -10,6 +10,7 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { useMediaUpload } from '../hooks';
 import { maintenanceApi } from '../api';
 import { colors } from '@/src/shared/theme/colors';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { StyleSheet } from 'react-native';
 
 const RSA = { blue: '#002395' };

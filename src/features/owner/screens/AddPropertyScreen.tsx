@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, SafeAreaView, TextInput, Alert, Switch, Image } from 'react-native';
+import { View, Text, ScrollView, TextInput, Alert, Switch, Image } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { AnimatedButton } from '../components/AnimatedButton';
-import { LocationPicker } from '../components/LocationPicker';
 import { propertiesApi } from '../../properties/api/propertiesApi';
 import { supabase } from '../../../lib/supabase';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { styles } from './AddPropertyScreen.styles';
 
 interface PropertyForm {
@@ -218,6 +219,7 @@ export default function AddPropertyScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -257,7 +259,7 @@ export default function AddPropertyScreen() {
             
             <AnimatedButton onPress={pickImages}>
               <View style={styles.uploadButton}>
-                <Text style={styles.uploadButtonText}>📷 Select Photos</Text>
+                <Text style={styles.uploadButtonText}>Select Photos</Text>
               </View>
             </AnimatedButton>
 
@@ -389,23 +391,52 @@ export default function AddPropertyScreen() {
             />
           </View>
 
-          {/* Location Picker with Map */}
-          <LocationPicker
-            initialAddress={form.address}
-            initialLatitude={form.latitude || undefined}
-            initialLongitude={form.longitude || undefined}
-            onLocationSelect={(location) => {
-              setForm({
-                ...form,
-                address: location.address,
-                city: location.city,
-                province: location.province,
-                postal_code: location.postalCode,
-                latitude: location.latitude,
-                longitude: location.longitude,
-              });
-            }}
-          />
+          {/* Address Fields */}
+          <View style={styles.section}>
+            <Text style={styles.label}>Street Address *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g., 12 Main Street, Rosebank"
+              placeholderTextColor="#9ca3af"
+              value={form.address}
+              onChangeText={(text) => setForm({ ...form, address: text })}
+            />
+          </View>
+
+          <View style={styles.row}>
+            <View style={[styles.section, { flex: 2 }]}>
+              <Text style={styles.label}>City *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., Johannesburg"
+                placeholderTextColor="#9ca3af"
+                value={form.city}
+                onChangeText={(text) => setForm({ ...form, city: text })}
+              />
+            </View>
+            <View style={[styles.section, { flex: 1 }]}>
+              <Text style={styles.label}>Postal Code</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="2196"
+                placeholderTextColor="#9ca3af"
+                keyboardType="numeric"
+                value={form.postal_code}
+                onChangeText={(text) => setForm({ ...form, postal_code: text })}
+              />
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.label}>Province *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g., Gauteng"
+              placeholderTextColor="#9ca3af"
+              value={form.province}
+              onChangeText={(text) => setForm({ ...form, province: text })}
+            />
+          </View>
 
           {/* Property Type */}
           <View style={styles.section}>
@@ -557,12 +588,13 @@ export default function AddPropertyScreen() {
           <AnimatedButton onPress={handleSubmit}>
             <View style={[styles.submitButton, saving && styles.submitButtonDisabled]}>
               <Text style={styles.submitButtonText}>
-                {saving ? 'Saving…' : '🏠 Create Property'}
+                {saving ? 'Saving…' : 'Create Property'}
               </Text>
             </View>
           </AnimatedButton>
         </ScrollView>
       </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

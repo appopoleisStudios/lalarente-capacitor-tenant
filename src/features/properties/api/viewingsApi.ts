@@ -1,5 +1,6 @@
 import { supabase } from '../../../lib/supabase';
 import type { Database } from '../../../types/database.types';
+import { notificationsApi } from '../../notifications/api/notificationsApi';
 
 // Type aliases
 type ViewingRequest = Database['public']['Tables']['viewing_requests']['Row'];
@@ -35,13 +36,12 @@ export interface RequestViewingInput {
   owner_id: string;
   requested_date: string;
   requested_time: string;
-  message?: string;
+  tenant_notes?: string;
 }
 
 export interface ApproveViewingInput {
   viewing_id: string;
   confirmed_date?: string;
-  confirmed_time?: string;
   owner_notes?: string;
 }
 
@@ -73,7 +73,7 @@ export const viewingsApi = {
         owner_id: input.owner_id,
         requested_date: input.requested_date,
         requested_time: input.requested_time,
-        message: input.message || null,
+        tenant_notes: input.tenant_notes || null,
         status: 'pending',
       })
       .select()
@@ -84,7 +84,37 @@ export const viewingsApi = {
       throw new Error(`Failed to request viewing: ${error.message}`);
     }
 
-    // TODO: Send notification to owner
+    // Send notification to owner
+    try {
+      const { data: property } = await supabase
+        .from('properties')
+        .select('title')
+        .eq('id', input.property_id)
+        .single();
+
+      const { data: tenant } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', input.tenant_id)
+        .single();
+
+      await notificationsApi.sendNotification({
+        user_id: input.owner_id,
+        type: 'viewing_requested',
+        data: {
+          viewingId: data.id,
+          propertyId: input.property_id,
+          propertyTitle: property?.title || 'Your property',
+          tenantId: input.tenant_id,
+          tenantName: tenant?.full_name || 'A tenant',
+          requestedDate: input.requested_date,
+          requestedTime: input.requested_time,
+        },
+      });
+    } catch (notifError) {
+      console.error('Error sending viewing request notification:', notifError);
+      // Don't fail the request if notification fails
+    }
 
     return data;
   },
@@ -99,14 +129,16 @@ export const viewingsApi = {
       throw new Error('Only pending viewing requests can be approved');
     }
 
+    const confirmedDate = input.confirmed_date || viewing.requested_date;
+
     const { data, error } = await supabase
       .from('viewing_requests')
       .update({
         status: 'approved',
-        confirmed_date: input.confirmed_date || viewing.requested_date,
-        confirmed_time: input.confirmed_time || viewing.requested_time,
+        confirmed_date: confirmedDate,
         owner_response: input.owner_notes || 'Viewing approved',
-        responded_at: new Date().toISOString(),
+        owner_notes: input.owner_notes || null,
+        updated_at: new Date().toISOString(),
       })
       .eq('id', input.viewing_id)
       .select()
@@ -117,8 +149,30 @@ export const viewingsApi = {
       throw new Error(`Failed to approve viewing: ${error.message}`);
     }
 
-    // TODO: Send confirmation to tenant
-    // TODO: Add to calendar
+    // Send confirmation to tenant
+    try {
+      const { data: property } = await supabase
+        .from('properties')
+        .select('title')
+        .eq('id', viewing.property_id)
+        .single();
+
+      await notificationsApi.sendNotification({
+        user_id: viewing.tenant_id,
+        type: 'viewing_approved',
+        data: {
+          viewingId: data.id,
+          propertyId: viewing.property_id,
+          propertyTitle: property?.title || 'the property',
+          confirmedDate: confirmedDate,
+          confirmedTime: viewing.requested_time,
+          ownerNotes: input.owner_notes,
+        },
+      });
+    } catch (notifError) {
+      console.error('Error sending viewing approval notification:', notifError);
+      // Don't fail the approval if notification fails
+    }
 
     return data;
   },
@@ -139,7 +193,7 @@ export const viewingsApi = {
         status: 'declined',
         owner_response: input.owner_response,
         alternative_times: input.alternative_times || null,
-        responded_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .eq('id', input.viewing_id)
       .select()
@@ -150,7 +204,29 @@ export const viewingsApi = {
       throw new Error(`Failed to decline viewing: ${error.message}`);
     }
 
-    // TODO: Send notification to tenant with alternative times
+    // Send notification to tenant with alternative times
+    try {
+      const { data: property } = await supabase
+        .from('properties')
+        .select('title')
+        .eq('id', viewing.property_id)
+        .single();
+
+      await notificationsApi.sendNotification({
+        user_id: viewing.tenant_id,
+        type: 'viewing_declined',
+        data: {
+          viewingId: data.id,
+          propertyId: viewing.property_id,
+          propertyTitle: property?.title || 'the property',
+          ownerResponse: input.owner_response,
+          alternativeTimes: input.alternative_times,
+        },
+      });
+    } catch (notifError) {
+      console.error('Error sending viewing decline notification:', notifError);
+      // Don't fail the decline if notification fails
+    }
 
     return data;
   },
@@ -170,6 +246,8 @@ export const viewingsApi = {
       .update({
         status: 'cancelled',
         owner_response: reason || `Cancelled by ${cancelledBy}`,
+        cancelled_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .eq('id', viewingId)
       .select()
@@ -180,7 +258,33 @@ export const viewingsApi = {
       throw new Error(`Failed to cancel viewing: ${error.message}`);
     }
 
-    // TODO: Send cancellation notification to other party
+    // Send cancellation notification to other party
+    try {
+      const { data: property } = await supabase
+        .from('properties')
+        .select('title')
+        .eq('id', viewing.property_id)
+        .single();
+
+      const recipientId = cancelledBy === 'tenant' ? viewing.owner_id : viewing.tenant_id;
+
+      await notificationsApi.sendNotification({
+        user_id: recipientId,
+        type: 'viewing_cancelled',
+        data: {
+          viewingId: data.id,
+          propertyId: viewing.property_id,
+          propertyTitle: property?.title || 'the property',
+          viewingDate: viewing.confirmed_date || viewing.requested_date,
+          viewingTime: viewing.requested_time,
+          cancelledBy,
+          reason,
+        },
+      });
+    } catch (notifError) {
+      console.error('Error sending viewing cancellation notification:', notifError);
+      // Don't fail the cancellation if notification fails
+    }
 
     return data;
   },
@@ -200,7 +304,8 @@ export const viewingsApi = {
       .update({
         status: 'completed',
         completed_at: new Date().toISOString(),
-        owner_response: notes || viewing.owner_response,
+        owner_notes: notes || viewing.owner_notes,
+        updated_at: new Date().toISOString(),
       })
       .eq('id', viewingId)
       .select()
@@ -211,7 +316,28 @@ export const viewingsApi = {
       throw new Error(`Failed to complete viewing: ${error.message}`);
     }
 
-    // TODO: Send follow-up to tenant (ask for feedback, prompt to apply)
+    // Send follow-up to tenant (ask for feedback, prompt to apply)
+    try {
+      const { data: property } = await supabase
+        .from('properties')
+        .select('title')
+        .eq('id', viewing.property_id)
+        .single();
+
+      await notificationsApi.sendNotification({
+        user_id: viewing.tenant_id,
+        type: 'viewing_completed',
+        data: {
+          viewingId: data.id,
+          propertyId: viewing.property_id,
+          propertyTitle: property?.title || 'the property',
+          ownerNotes: notes,
+        },
+      });
+    } catch (notifError) {
+      console.error('Error sending viewing completion notification:', notifError);
+      // Don't fail the completion if notification fails
+    }
 
     return data;
   },
@@ -238,13 +364,11 @@ export const viewingsApi = {
 
     if (rescheduledBy === 'owner') {
       updateData.confirmed_date = newDate;
-      updateData.confirmed_time = newTime;
       updateData.owner_response = 'Viewing rescheduled by owner';
     } else {
       // If tenant reschedules, reset to pending
       updateData.status = 'pending';
       updateData.confirmed_date = null;
-      updateData.confirmed_time = null;
     }
 
     const { data, error } = await supabase

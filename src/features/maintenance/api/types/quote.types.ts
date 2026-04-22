@@ -85,6 +85,7 @@ export interface QuoteRevisionData {
   total_amount: number;
   notes?: string;
   revision_reason?: string;
+  revision_number?: number;
 }
 
 export interface QuoteLine {

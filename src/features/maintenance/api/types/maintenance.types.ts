@@ -146,6 +146,13 @@ export interface ClosureReport {
   completion_photos: string[];
   status: 'pending' | 'approved' | 'rejected';
   rejection_reason?: string | null;
+  // Migration 018: Tenant verification fields
+  tenant_verification_status?: 'pending_tenant' | 'tenant_approved' | 'tenant_rejected' | 'auto_approved' | null;
+  rejection_count?: number | null;
+  forwarded_to_tenant_at?: string | null;
+  tenant_verified_at?: string | null;
+  tenant_rejection_reason?: string | null;
+  tenant_rejection_photos?: string[] | null;
   created_at: string;
   updated_at: string;
 }

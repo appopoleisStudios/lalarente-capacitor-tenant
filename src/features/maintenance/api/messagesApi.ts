@@ -52,12 +52,12 @@ export const messagesApi = {
       .order('created_at', { ascending: true });
 
     if (error) throw error;
-    return data as Message[];
+    return data as unknown as Message[];
   },
 
   // Send a message
   async sendMessage(input: SendMessageInput) {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('messages')
       .insert({
         property_id: input.property_id,
@@ -78,7 +78,7 @@ export const messagesApi = {
       .single();
 
     if (error) throw error;
-    return data as Message;
+    return data as unknown as Message;
   },
 
   // Mark messages as read
@@ -139,7 +139,7 @@ export const messagesApi = {
             .single();
 
           if (data) {
-            callback(data as Message);
+            callback(data as unknown as Message);
           }
         }
       )

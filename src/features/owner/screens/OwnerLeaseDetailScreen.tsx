@@ -1,0 +1,1197 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  StyleSheet,
+  SafeAreaView,
+  Alert,
+  Linking,
+  Image,
+} from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '../../../lib/supabase';
+import { notificationsApi } from '../../notifications/api/notificationsApi';
+import SignatureModal from '../../leases/components/SignatureModal';
+import { uploadSignature } from '../../leases/api/storageService';
+import { executeLease } from '../../leases/api/leaseExecutionService';
+import { regenerateLeasePDF } from '../../leases/api/regenerateLeasePDF';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system/legacy';
+
+const RSA = { blue: '#002395', gold: '#FFB81C' }; // Owner colors
+
+interface Lease {
+  id: string;
+  property_id: string;
+  tenant_id: string;
+  start_date: string;
+  end_date: string;
+  monthly_rent: number;
+  deposit_amount: number | null;
+  payment_due_day: number | null;
+  status: string | null;
+  lease_type: string | null;
+  lease_document_url: string | null;
+  owner_signed_at: string | null;
+  tenant_signed_at: string | null;
+  owner_signature_url: string | null;
+  tenant_signature_url: string | null;
+  rent_escalation_type: string | null;
+  rent_escalation_value: number | null;
+  rent_escalation_frequency_months: number | null;
+  executed_at: string | null;
+  terminated_at: string | null;
+  property?: {
+    title: string;
+    address: string;
+    city: string;
+  };
+  tenant?: {
+    full_name: string;
+    email: string | null;
+    phone: string | null;
+  };
+}
+
+export default function OwnerLeaseDetailScreen() {
+  const router = useRouter();
+  const { id } = useLocalSearchParams();
+  const [lease, setLease] = useState<Lease | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showSignatureModal, setShowSignatureModal] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  useEffect(() => {
+    if (id) {
+      loadLease();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  const loadLease = async () => {
+    try {
+      setError(null);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const leaseId = Array.isArray(id) ? id[0] : id;
+      if (!leaseId) throw new Error('Invalid lease ID');
+
+      const { data, error: leaseError } = await supabase
+        .from('leases')
+        .select(`
+          *,
+          property:properties!property_id(title, address, city),
+          tenant:profiles!tenant_id(full_name, email, phone)
+        `)
+        .eq('id', leaseId)
+        .eq('owner_id', user.id)
+        .single();
+
+      if (leaseError) throw leaseError;
+      setLease(data as Lease);
+    } catch (err) {
+      console.error('Error loading lease:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load lease');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleViewDocument = () => {
+    if (lease?.lease_document_url) {
+      Linking.openURL(lease.lease_document_url).catch(() => {
+        Alert.alert('Error', 'Could not open lease document');
+      });
+    } else {
+      Alert.alert('Notice', 'Lease document is not available yet');
+    }
+  };
+
+  const handleRegeneratePDF = async () => {
+    if (!lease) return;
+
+    Alert.alert(
+      'Regenerate PDF',
+      'This will generate the lease PDF document. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Generate',
+          onPress: async () => {
+            try {
+              setActionLoading(true);
+              await regenerateLeasePDF(lease.id);
+              Alert.alert('Success', 'PDF generated successfully! Refreshing...');
+              await loadLease(); // Reload to show the PDF
+            } catch (error) {
+              console.error('Error regenerating PDF:', error);
+              Alert.alert('Error', 'Failed to generate PDF. Check console for details.');
+            } finally {
+              setActionLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDownloadDocument = async () => {
+    if (!lease?.lease_document_url) {
+      Alert.alert('Notice', 'Lease document is not available yet');
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+
+      // Check if sharing is available
+      const isAvailable = await Sharing.isAvailableAsync();
+      if (!isAvailable) {
+        Alert.alert('Error', 'Sharing is not available on this device');
+        return;
+      }
+
+      // Download and share the file
+      const filename = `Lease_${lease.property?.title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+
+      // Fetch the PDF
+      const response = await fetch(lease.lease_document_url);
+      const blob = await response.blob();
+      const reader = new FileReader();
+
+      reader.onloadend = async () => {
+        const base64data = reader.result as string;
+        // Use Paths.document for newer expo-file-system or fallback
+        const docDir = (FileSystem as any).documentDirectory || new (FileSystem as any).Directory((FileSystem as any).Paths?.document).uri;
+        const localUri = `${docDir}${filename}`;
+
+        // Write to local file
+        await FileSystem.writeAsStringAsync(
+          localUri,
+          base64data.split(',')[1],
+          { encoding: 'base64' }
+        );
+
+        // Share the file
+        await Sharing.shareAsync(localUri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Download Lease Agreement',
+          UTI: 'com.adobe.pdf',
+        });
+      };
+
+      reader.readAsDataURL(blob);
+    } catch (error) {
+      console.error('Error downloading lease document:', error);
+      Alert.alert('Error', 'Failed to download lease document. Please try again.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleContactTenant = () => {
+    if (lease?.tenant) {
+      Alert.alert(
+        'Contact Tenant',
+        `${lease.tenant.full_name}\n${lease.tenant.phone || ''}\n${lease.tenant.email || ''}`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Call', onPress: () => lease.tenant?.phone && Linking.openURL(`tel:${lease.tenant.phone}`) },
+          { text: 'Message', onPress: () => router.push('/(owner)/messages' as any) },
+        ]
+      );
+    }
+  };
+
+  const handleSendToTenant = () => {
+    if (!lease) return;
+    
+    Alert.alert(
+      'Send Lease Agreement',
+      `Send lease agreement to ${lease.tenant?.full_name} for signature?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Send',
+          onPress: async () => {
+            try {
+              setActionLoading(true);
+              
+              // Update lease status
+              const { error: updateError } = await supabase
+                .from('leases')
+                .update({ status: 'pending_tenant_signature' })
+                .eq('id', lease.id);
+
+              if (updateError) throw updateError;
+
+              // Notify tenant that lease is ready for signature
+              await notificationsApi.sendNotification({
+                user_id: lease.tenant_id,
+                type: 'lease_created' as any,
+                data: { lease_id: lease.id, property_id: lease.property_id },
+              }).catch(() => {}); // Non-blocking
+
+              Alert.alert('Success', 'Lease agreement sent to tenant');
+              loadLease(); // Reload to show updated status
+            } catch (err) {
+              console.error('Error sending lease:', err);
+              Alert.alert('Error', 'Failed to send lease agreement');
+            } finally {
+              setActionLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleSignLease = () => {
+    setShowSignatureModal(true);
+  };
+
+  const handleSignatureSave = async (signatureBase64: string) => {
+    if (!lease) return;
+
+    try {
+      setActionLoading(true);
+
+      // Upload signature to storage (with automatic retry logic)
+      const signatureUrl = await uploadSignature(lease.id, 'owner', signatureBase64);
+
+      // Update lease with signature (with retry logic for network errors)
+      let updateSuccess = false;
+      let lastError: any;
+      const maxRetries = 3;
+      
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+          const { error: updateError } = await supabase
+            .from('leases')
+            .update({
+              owner_signature_url: signatureUrl,
+              owner_signed_at: new Date().toISOString(),
+              status: 'active',
+              executed_at: new Date().toISOString(),
+            })
+            .eq('id', lease.id);
+
+          if (updateError) {
+            // Check if it's a network error
+            const errorMessage = updateError.message?.toLowerCase() || '';
+            const isNetworkError = 
+              errorMessage.includes('network') ||
+              errorMessage.includes('timeout') ||
+              errorMessage.includes('fetch failed') ||
+              errorMessage.includes('connection');
+
+            if (isNetworkError && attempt < maxRetries - 1) {
+              console.warn(`Database update attempt ${attempt + 1} failed, retrying...`);
+              lastError = updateError;
+              await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+              continue;
+            }
+            throw updateError;
+          }
+
+          updateSuccess = true;
+          break;
+        } catch (error) {
+          lastError = error;
+          if (attempt === maxRetries - 1) {
+            throw error;
+          }
+        }
+      }
+
+      if (!updateSuccess) {
+        throw lastError || new Error('Failed to update lease after multiple attempts');
+      }
+
+      // Execute lease (update property, create payment, notify) with retry logic
+      let executeSuccess = false;
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+          await executeLease(lease.id);
+          executeSuccess = true;
+          break;
+        } catch (error: any) {
+          const errorMessage = error?.message?.toLowerCase() || '';
+          const isNetworkError = 
+            errorMessage.includes('network') ||
+            errorMessage.includes('timeout') ||
+            errorMessage.includes('fetch failed') ||
+            errorMessage.includes('connection');
+
+          if (isNetworkError && attempt < maxRetries - 1) {
+            console.warn(`Lease execution attempt ${attempt + 1} failed, retrying...`);
+            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+            continue;
+          }
+          
+          // If lease execution fails, log but don't fail the whole operation
+          // The lease is already signed and active
+          console.error('Error executing lease (non-critical):', error);
+          Alert.alert(
+            'Partial Success',
+            'Lease signed successfully, but some automated tasks may need manual completion. Please contact support if needed.',
+            [{ text: 'OK', onPress: () => loadLease() }]
+          );
+          return;
+        }
+      }
+
+      Alert.alert(
+        'Success',
+        'Lease agreement signed and activated!',
+        [{ text: 'OK', onPress: () => loadLease() }]
+      );
+    } catch (err: any) {
+      console.error('Error signing lease:', err);
+      
+      // Provide user-friendly error messages based on error type
+      let errorTitle = 'Signing Failed';
+      let errorMessage = 'Failed to sign lease agreement. Please try again.';
+
+      // Check for network errors
+      const errorString = err?.message?.toLowerCase() || '';
+      if (
+        errorString.includes('network') ||
+        errorString.includes('timeout') ||
+        errorString.includes('fetch failed') ||
+        errorString.includes('connection') ||
+        err?.name === 'NetworkError'
+      ) {
+        errorTitle = 'Connection Error';
+        errorMessage = 'Network connection failed. Please check your internet connection and try again.';
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+
+      Alert.alert(errorTitle, errorMessage, [
+        { text: 'OK', style: 'default' }
+      ]);
+    } finally {
+      setActionLoading(false);
+      setShowSignatureModal(false);
+    }
+  };
+
+  const getDaysRemaining = () => {
+    if (!lease) return 0;
+    const endDate = new Date(lease.end_date);
+    const today = new Date();
+    const diffTime = endDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const getLeaseProgress = () => {
+    if (!lease) return 0;
+    const startDate = new Date(lease.start_date);
+    const endDate = new Date(lease.end_date);
+    const today = new Date();
+    const total = endDate.getTime() - startDate.getTime();
+    const elapsed = today.getTime() - startDate.getTime();
+    return Math.min(Math.max((elapsed / total) * 100, 0), 100);
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={RSA.blue} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error || !lease) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.centerContainer}>
+          <Ionicons name="alert-circle-outline" size={64} color="#F44336" />
+          <Text style={styles.errorText}>{error || 'Failed to load lease'}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadLease}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const daysRemaining = getDaysRemaining();
+  const progress = getLeaseProgress();
+  const isExpiringSoon = daysRemaining <= 60 && daysRemaining > 0;
+  const isExpired = daysRemaining <= 0;
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Lease Details</Text>
+          <View style={{ width: 24 }} />
+        </View>
+
+        <ScrollView style={styles.scrollView}>
+          {/* Expiry Warning */}
+          {isExpiringSoon && (
+            <View style={styles.warningBanner}>
+              <Ionicons name="warning" size={20} color="#FF9800" />
+              <Text style={styles.warningText}>
+                Lease expires in {daysRemaining} days
+              </Text>
+            </View>
+          )}
+
+          {isExpired && (
+            <View style={[styles.warningBanner, { backgroundColor: '#FFEBEE' }]}>
+              <Ionicons name="alert-circle" size={20} color="#F44336" />
+              <Text style={[styles.warningText, { color: '#F44336' }]}>
+                Lease has expired
+              </Text>
+            </View>
+          )}
+
+          {/* Tenant Info */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Tenant</Text>
+            <View style={styles.card}>
+              <View style={styles.tenantHeader}>
+                <Ionicons name="person-circle" size={48} color={RSA.blue} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.tenantName}>{lease.tenant?.full_name}</Text>
+                  {lease.tenant?.email && (
+                    <Text style={styles.tenantContact}>{lease.tenant.email}</Text>
+                  )}
+                  {lease.tenant?.phone && (
+                    <Text style={styles.tenantContact}>{lease.tenant.phone}</Text>
+                  )}
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Property Info */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Property</Text>
+            <View style={styles.card}>
+              <Text style={styles.propertyTitle}>{lease.property?.title}</Text>
+              <View style={styles.locationRow}>
+                <Ionicons name="location" size={16} color="#666" />
+                <Text style={styles.locationText}>
+                  {lease.property?.address}, {lease.property?.city}
+                </Text>
+              </View>
+              {lease.tenant?.full_name && (
+                <View style={styles.tenantRow}>
+                  <Ionicons name="person" size={16} color="#666" />
+                  <Text style={styles.tenantText}>
+                    Tenant: {lease.tenant.full_name}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Lease Timeline */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Lease Period</Text>
+            <View style={styles.card}>
+              <View style={styles.dateRow}>
+                <View style={styles.dateItem}>
+                  <Text style={styles.dateLabel}>Start Date</Text>
+                  <Text style={styles.dateValue}>
+                    {new Date(lease.start_date).toLocaleDateString()}
+                  </Text>
+                </View>
+                <Ionicons name="arrow-forward" size={20} color="#CCC" />
+                <View style={styles.dateItem}>
+                  <Text style={styles.dateLabel}>End Date</Text>
+                  <Text style={styles.dateValue}>
+                    {new Date(lease.end_date).toLocaleDateString()}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Progress Bar */}
+              <View style={styles.progressContainer}>
+                <View style={styles.progressBar}>
+                  <View style={[styles.progressFill, { width: `${progress}%` }]} />
+                </View>
+                <Text style={styles.progressText}>
+                  {daysRemaining > 0 ? `${daysRemaining} days remaining` : 'Expired'}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Financial Details */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Financial Details</Text>
+            <View style={styles.card}>
+              <DetailRow
+                icon="cash"
+                label="Monthly Rent"
+                value={`R ${lease.monthly_rent.toLocaleString()}`}
+              />
+              {lease.deposit_amount && (
+                <DetailRow
+                  icon="wallet"
+                  label="Deposit Received"
+                  value={`R ${lease.deposit_amount.toLocaleString()}`}
+                />
+              )}
+              {lease.payment_due_day && (
+                <DetailRow
+                  icon="calendar"
+                  label="Payment Due Day"
+                  value={`${lease.payment_due_day}${getDaySuffix(lease.payment_due_day)} of each month`}
+                />
+              )}
+            </View>
+          </View>
+
+          {/* Lease Terms */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Lease Terms</Text>
+            <View style={styles.card}>
+              {lease.lease_type && (
+                <DetailRow
+                  icon="document-text"
+                  label="Lease Type"
+                  value={lease.lease_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                />
+              )}
+              {lease.executed_at && (
+                <DetailRow
+                  icon="checkmark-circle"
+                  label="Lease Executed"
+                  value={new Date(lease.executed_at).toLocaleDateString()}
+                />
+              )}
+              {lease.rent_escalation_type && lease.rent_escalation_value && (
+                <DetailRow
+                  icon="trending-up"
+                  label="Rent Escalation"
+                  value={`${
+                    lease.rent_escalation_type === 'percentage'
+                      ? `${lease.rent_escalation_value}%`
+                      : `R ${lease.rent_escalation_value}`
+                  }${
+                    lease.rent_escalation_frequency_months
+                      ? ` every ${lease.rent_escalation_frequency_months} months`
+                      : ''
+                  }`}
+                />
+              )}
+            </View>
+          </View>
+
+          {/* Lease Document */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Lease Document</Text>
+            {lease.lease_document_url ? (
+              <View>
+                <TouchableOpacity style={styles.documentCard} onPress={handleViewDocument}>
+                  <View style={styles.documentIcon}>
+                    <Ionicons name="document-text" size={32} color={RSA.blue} />
+                  </View>
+                  <View style={styles.documentInfo}>
+                    <Text style={styles.documentTitle}>Lease Agreement</Text>
+                    <Text style={styles.documentSubtitle}>Tap to view in browser</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#CCC" />
+                </TouchableOpacity>
+
+                {/* Download Button */}
+                <TouchableOpacity
+                  style={[styles.downloadButton, actionLoading && styles.buttonDisabled]}
+                  onPress={handleDownloadDocument}
+                  disabled={actionLoading}
+                >
+                  {actionLoading ? (
+                    <ActivityIndicator color={RSA.blue} size="small" />
+                  ) : (
+                    <>
+                      <Ionicons name="download-outline" size={20} color={RSA.blue} />
+                      <Text style={styles.downloadButtonText}>Download PDF</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View>
+                <TouchableOpacity style={styles.documentCard} disabled>
+                  <View style={styles.documentIcon}>
+                    <Ionicons name="document-text" size={32} color="#CCC" />
+                  </View>
+                  <View style={styles.documentInfo}>
+                    <Text style={[styles.documentTitle, { color: '#999' }]}>Lease Agreement</Text>
+                    <Text style={styles.documentSubtitle}>
+                      {lease.status === 'active' ? 'PDF not generated' : 'Available after both parties sign'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Temporary button to regenerate PDF for old leases */}
+                {lease.status === 'active' && (
+                  <TouchableOpacity
+                    style={[styles.downloadButton, { borderColor: '#FF9800' }, actionLoading && styles.buttonDisabled]}
+                    onPress={handleRegeneratePDF}
+                    disabled={actionLoading}
+                  >
+                    {actionLoading ? (
+                      <ActivityIndicator color="#FF9800" size="small" />
+                    ) : (
+                      <>
+                        <Ionicons name="refresh-outline" size={20} color="#FF9800" />
+                        <Text style={[styles.downloadButtonText, { color: '#FF9800' }]}>Generate PDF</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          </View>
+
+          {/* Signatures */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Signatures</Text>
+            <View style={styles.card}>
+              <SignatureRow
+                label="Owner"
+                name="You"
+                signedAt={lease.owner_signed_at}
+                signatureUrl={lease.owner_signature_url}
+              />
+              <SignatureRow
+                label="Tenant"
+                name={lease.tenant?.full_name || 'Tenant'}
+                signedAt={lease.tenant_signed_at}
+                signatureUrl={lease.tenant_signature_url}
+              />
+            </View>
+          </View>
+
+          {/* Action Buttons */}
+          {lease.status === 'draft' && (
+            <View style={styles.section}>
+              <TouchableOpacity
+                style={[styles.primaryButton, actionLoading && styles.buttonDisabled]}
+                onPress={handleSendToTenant}
+                disabled={actionLoading}
+              >
+                {actionLoading ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <>
+                    <Ionicons name="send" size={20} color="#FFF" />
+                    <Text style={styles.primaryButtonText}>Send to Tenant for Signature</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {lease.status === 'pending_owner_signature' && (
+            <View style={styles.section}>
+              <View style={styles.infoBox}>
+                <Ionicons name="information-circle" size={20} color={RSA.blue} />
+                <Text style={styles.infoText}>
+                  Tenant has signed the lease. Review and sign to activate.
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.primaryButton, actionLoading && styles.buttonDisabled]}
+                onPress={handleSignLease}
+                disabled={actionLoading}
+              >
+                {actionLoading ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <>
+                    <Ionicons name="create" size={20} color="#FFF" />
+                    <Text style={styles.primaryButtonText}>Sign to Activate Lease</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {lease.status === 'pending_tenant_signature' && (
+            <View style={styles.section}>
+              <View style={styles.infoBox}>
+                <Ionicons name="time" size={20} color="#FFA500" />
+                <Text style={styles.infoText}>
+                  Waiting for tenant to sign the lease agreement.
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Schedule Inspection (active leases only) */}
+          {lease.status === 'active' && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Inspections</Text>
+              <TouchableOpacity
+                style={styles.inspectionButton}
+                onPress={() => router.push({
+                  pathname: '/(owner)/inspections/new' as any,
+                  params: { leaseId: lease.id },
+                })}
+              >
+                <Ionicons name="clipboard-outline" size={20} color={RSA.blue} />
+                <Text style={styles.inspectionButtonText}>Schedule Inspection</Text>
+                <Ionicons name="chevron-forward" size={18} color={RSA.blue} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.inspectionButton, { marginTop: 8 }]}
+                onPress={() => router.push('/(owner)/inspections' as any)}
+              >
+                <Ionicons name="list-outline" size={20} color="#6B7280" />
+                <Text style={[styles.inspectionButtonText, { color: '#6B7280' }]}>View All Inspections</Text>
+                <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Contact Tenant */}
+          <View style={styles.section}>
+            <TouchableOpacity style={styles.contactButton} onPress={handleContactTenant}>
+              <Ionicons name="chatbubble-outline" size={20} color={RSA.blue} />
+              <Text style={styles.contactButtonText}>Contact Tenant</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+
+        {/* Signature Modal */}
+        <SignatureModal
+          visible={showSignatureModal}
+          onClose={() => setShowSignatureModal(false)}
+          onSave={handleSignatureSave}
+          title="Sign Lease Agreement"
+          description="By signing below, you confirm that you agree to all terms and conditions of this lease agreement."
+          primaryColor={RSA.blue}
+        />
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const DetailRow = ({ icon, label, value }: { icon: any; label: string; value: string }) => (
+  <View style={styles.detailRow}>
+    <View style={styles.detailLeft}>
+      <Ionicons name={icon} size={20} color="#666" />
+      <Text style={styles.detailLabel}>{label}</Text>
+    </View>
+    <Text style={styles.detailValue}>{value}</Text>
+  </View>
+);
+
+const SignatureRow = ({
+  label,
+  name,
+  signedAt,
+  signatureUrl,
+}: {
+  label: string;
+  name: string;
+  signedAt: string | null;
+  signatureUrl?: string | null;
+}) => (
+  <View style={styles.signatureRow}>
+    <View style={styles.signatureLeft}>
+      <Ionicons
+        name={signedAt ? 'checkmark-circle' : 'time-outline'}
+        size={20}
+        color={signedAt ? RSA.blue : '#FFA500'}
+      />
+      <View style={{ flex: 1 }}>
+        <Text style={styles.signatureLabel}>{label}</Text>
+        <Text style={styles.signatureName}>{name}</Text>
+        {signatureUrl && (
+          <Image
+            source={{ uri: signatureUrl }}
+            style={styles.signatureImage}
+            resizeMode="contain"
+          />
+        )}
+      </View>
+    </View>
+    <Text style={[styles.signatureStatus, signedAt && styles.signatureStatusSigned]}>
+      {signedAt ? `Signed ${new Date(signedAt).toLocaleDateString()}` : 'Pending'}
+    </Text>
+  </View>
+);
+
+const getDaySuffix = (day: number) => {
+  if (day >= 11 && day <= 13) return 'th';
+  switch (day % 10) {
+    case 1:
+      return 'st';
+    case 2:
+      return 'nd';
+    case 3:
+      return 'rd';
+    default:
+      return 'th';
+  }
+};
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFF',
+  },
+  container: {
+    flex: 1,
+    backgroundColor: '#F5F5F5',
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: '#FFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  backButton: {
+    padding: 4,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#333',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  warningBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF3E0',
+    padding: 16,
+    gap: 12,
+  },
+  warningText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FF9800',
+  },
+  section: {
+    padding: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 12,
+  },
+  card: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  tenantHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  tenantName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  tenantContact: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 2,
+  },
+  propertyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  locationText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  tenantRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  tenantText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  dateItem: {
+    flex: 1,
+  },
+  dateLabel: {
+    fontSize: 12,
+    color: '#999',
+    marginBottom: 4,
+  },
+  dateValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  progressContainer: {
+    gap: 8,
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: RSA.blue,
+  },
+  progressText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  detailLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  detailLabel: {
+    fontSize: 16,
+    color: '#666',
+  },
+  detailValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: 'right',
+  },
+  documentCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    gap: 16,
+  },
+  documentIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#E8F5E9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  documentInfo: {
+    flex: 1,
+  },
+  documentTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  documentSubtitle: {
+    fontSize: 14,
+    color: '#666',
+  },
+  signatureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  signatureLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  signatureLabel: {
+    fontSize: 12,
+    color: '#999',
+  },
+  signatureName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  signatureStatus: {
+    fontSize: 14,
+    color: '#FFA500',
+  },
+  signatureStatusSigned: {
+    color: RSA.blue,
+  },
+  signatureImage: {
+    width: 120,
+    height: 60,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 4,
+    backgroundColor: '#FAFAFA',
+  },
+  inspectionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF2FF',
+    borderRadius: 10,
+    padding: 14,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  inspectionButtonText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: RSA.blue,
+  },
+  contactButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: RSA.blue,
+    gap: 8,
+  },
+  contactButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: RSA.blue,
+  },
+  downloadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    padding: 14,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: RSA.blue,
+    gap: 8,
+  },
+  downloadButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: RSA.blue,
+  },
+  errorText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#F44336',
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: RSA.blue,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: RSA.blue,
+    borderRadius: 8,
+    padding: 16,
+    gap: 8,
+  },
+  primaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E3F2FD',
+    borderRadius: 8,
+    padding: 16,
+    gap: 12,
+    marginBottom: 16,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#1976D2',
+    lineHeight: 20,
+  },
+});

@@ -30,7 +30,7 @@ export async function updateStatus(
     .single();
 
   if (error) throw error;
-  return data as MaintenanceRequest;
+  return data as unknown as MaintenanceRequest;
 }
 
 /**
@@ -66,7 +66,7 @@ export async function updateMmsStatus(
     .single();
 
   if (error) throw error;
-  return data as MaintenanceRequest;
+  return data as unknown as MaintenanceRequest;
 }
 
 /**
@@ -93,7 +93,7 @@ export async function updatePriority(
     .single();
 
   if (error) throw error;
-  return data as MaintenanceRequest;
+  return data as unknown as MaintenanceRequest;
 }
 
 /**
@@ -120,7 +120,7 @@ export async function acknowledgeRequest(id: string): Promise<MaintenanceRequest
     .single();
 
   if (error) throw error;
-  return data as MaintenanceRequest;
+  return data as unknown as MaintenanceRequest;
 }
 
 /**
@@ -147,5 +147,5 @@ export async function closeRequest(id: string): Promise<MaintenanceRequest> {
     .single();
 
   if (error) throw error;
-  return data as MaintenanceRequest;
+  return data as unknown as MaintenanceRequest;
 }

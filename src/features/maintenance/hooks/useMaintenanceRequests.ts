@@ -10,7 +10,7 @@ import {
 
 export function useMaintenanceRequests() {
   const { user, profile } = useAuth();
-  const [requests, setRequests] = useState([]);
+  const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);

@@ -5,7 +5,7 @@ import type {
   MaintenanceRequestInsert,
   MaintenanceRequestWithRelations,
   ServiceCategory
-} from '@/src/types/database.types';
+} from '@/src/types/maintenance.types';
 
 // Feature flag for mock mode
 const USE_MOCK_DATA = false; // ✅ Changed to false - using real data now
@@ -354,9 +354,7 @@ export const maintenanceApi = {
           full_name,
           email,
           phone,
-          avatar_url,
-          business_name,
-          rating
+          avatar_url
         )
       `)
       .eq('category_id', categoryId)
@@ -385,9 +383,7 @@ export const maintenanceApi = {
           full_name,
           email,
           phone,
-          avatar_url,
-          business_name,
-          rating
+          avatar_url
         )
       `)
       .eq('property_id', propertyId)
@@ -444,8 +440,6 @@ export const maintenanceApi = {
         email,
         phone,
         avatar_url,
-        business_name,
-        rating,
         role
       `)
       .eq('email', email.toLowerCase().trim())

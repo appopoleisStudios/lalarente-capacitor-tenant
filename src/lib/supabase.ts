@@ -1,15 +1,25 @@
 import { createClient } from '@supabase/supabase-js';
+import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Database } from '@/src/types/database.types';
 
-// Environment variables (using Expo naming convention)
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+// Debug: Log what Constants.expoConfig contains
+console.log('🔍 DEBUG Constants.expoConfig:', JSON.stringify(Constants.expoConfig?.extra, null, 2));
+
+// Environment variables (accessed via Constants.expoConfig.extra for React Native)
+const SUPABASE_URL = Constants.expoConfig?.extra?.supabaseUrl || '';
+const SUPABASE_ANON_KEY = Constants.expoConfig?.extra?.supabaseAnonKey || '';
 
 // Validate environment variables
+console.log('🔍 DEBUG SUPABASE_URL:', SUPABASE_URL ? `${SUPABASE_URL.substring(0, 30)}...` : '❌ MISSING');
+console.log('🔍 DEBUG SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? `${SUPABASE_ANON_KEY.substring(0, 30)}...` : '❌ MISSING');
+
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.error('Missing Supabase environment variables!');
-  console.error('EXPO_PUBLIC_SUPABASE_URL:', SUPABASE_URL ? '✓' : '✗');
-  console.error('EXPO_PUBLIC_SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? '✓' : '✗');
+  console.error('❌ Missing Supabase environment variables!');
+  console.error('SUPABASE_URL:', SUPABASE_URL ? '✓' : '✗');
+  console.error('SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? '✓' : '✗');
+  console.error('Make sure .env file exists and Metro bundler is restarted');
+  throw new Error('Missing Supabase environment variables — check .env and restart Metro');
 }
 
 // Create typed Supabase client
@@ -18,6 +28,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, 
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
+    storage: AsyncStorage,
   },
 });
 

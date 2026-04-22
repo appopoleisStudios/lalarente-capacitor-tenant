@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { getQuotesByRequest, subscribeToQuotes, unsubscribeFromQuotes } from '../api';
 
 export function useQuotes(requestId: string) {
-  const [quotes, setQuotes] = useState([]);
+  const [quotes, setQuotes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

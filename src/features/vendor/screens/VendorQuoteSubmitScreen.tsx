@@ -94,6 +94,17 @@ export default function VendorQuoteSubmitScreen() {
     }
   }, [id, user?.id]);
 
+  const handleUseTemplate = (template: typeof COMMON_ITEMS[0]) => {
+    const newItem: LineItem = {
+      id: Date.now().toString(),
+      name: template.name,
+      quantity: 1,
+      unit_price: template.typical_price,
+    };
+    setLineItems([...lineItems, newItem]);
+    setShowTemplates(false);
+  };
+
   const loadDraftIfExists = async () => {
     try {
       // TODO: Implement draft loading once AsyncStorage is properly configured
@@ -592,7 +603,7 @@ export default function VendorQuoteSubmitScreen() {
                 <TouchableOpacity
                   key={index}
                   style={styles.templateItem}
-                  onPress={() => useTemplate(template)}
+                  onPress={() => handleUseTemplate(template)}
                 >
                   <Text style={styles.templateName}>{template.name}</Text>
                   <Text style={styles.templatePrice}>R {template.typical_price}</Text>

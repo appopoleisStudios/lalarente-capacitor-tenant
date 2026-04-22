@@ -1,4 +1,6 @@
-import { Profile } from '@/src/types/database.types';
+import { Database } from '@/src/types/database.types';
+
+type Profile = Database['public']['Tables']['profiles']['Row'];
 
 // Mock Users for Testing
 export const MOCK_USERS = {

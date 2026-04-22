@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, SafeAreaView, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';

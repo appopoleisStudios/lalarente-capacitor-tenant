@@ -1,0 +1,101 @@
+LALARENTE APP - BUILD INFORMATION
+=====================================
+
+Build Details:
+- Version: 1.0.1
+- Build Number: 2
+- Build Date: February 3, 2026 19:11
+- Package: com.lalarente.app
+- APK File: lalarente-v1.0.1-build2-20260203-1911.apk
+- APK Size: 79 MB
+
+Build Configuration:
+- Platform: Android
+- Build Type: Release (Production)
+- Min SDK: 24 (Android 7.0)
+- Target SDK: 36 (Android 14+)
+- Compiled SDK: 36
+- Architecture: Universal (arm64-v8a, armeabi-v7a, x86, x86_64)
+- JavaScript Engine: Hermes
+- Bundle: Embedded (standalone)
+
+Environment:
+- Supabase URL: https://vvepwaolnkzfzhzgxlwr.supabase.co
+- Google Maps API: Configured
+- PayFast: Sandbox mode (production credentials pending)
+
+Features Included:
+✓ Owner Dashboard
+  - Property management (add, edit, view)
+  - Tenant management
+  - Viewing requests
+  - Rental applications
+  - Lease management
+  - Payment tracking
+  - Maintenance requests
+  - Document management
+
+✓ Tenant Dashboard
+  - Property search
+  - Viewing requests
+  - Application submission
+  - Lease viewing
+  - Payment history
+  - Maintenance requests
+  - Document access
+
+✓ Core Features
+  - Authentication (Supabase)
+  - Google Maps integration
+  - Image galleries
+  - Document viewer
+  - Camera/photo upload
+  - Push notifications (configured)
+  - Offline capability (partial)
+
+Known Limitations:
+- PayFast integration requires production credentials
+- Some vendor features still in development
+- TypeScript type errors present (non-blocking)
+
+Installation Instructions:
+1. Transfer APK to Android device
+2. Enable "Install from Unknown Sources" in Settings
+3. Open APK file and install
+4. Launch "Lalarente App"
+5. Login with provided credentials
+
+Testing Checklist:
+□ App launches successfully
+□ Login works
+□ Owner can view/add properties
+□ Property images load correctly
+□ Google Maps displays properly
+□ Tenant can browse properties
+□ Viewing requests can be created
+□ Applications can be submitted
+□ Navigation between screens works
+□ Camera/photo upload functions
+□ Documents can be viewed
+
+Build Command Used:
+cd lalarente-app
+npx expo export --platform android
+cd android
+./gradlew assembleRelease
+
+Build Output Location:
+android/app/build/outputs/apk/release/app-release.apk
+
+Next Build:
+To create version 1.0.2 (Build 3):
+1. Update app.json: "version": "1.0.2"
+2. Update android/app/build.gradle: versionCode 3, versionName "1.0.2"
+3. Update package.json: "version": "1.0.2"
+4. Run: npx expo export --platform android && cd android && ./gradlew assembleRelease
+
+Notes:
+- This is a standalone APK that doesn't require Metro bundler
+- All JavaScript is bundled and optimized
+- App can be distributed directly to client
+- No Expo Go required
