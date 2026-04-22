@@ -91,16 +91,20 @@ export default function LoginScreen() {
       return;
     }
 
+    // Safety timeout: if navigation doesn't fire within 15 s, reset the button
+    // so the user can try again rather than being permanently stuck.
+    const timeout = setTimeout(() => setLoading(false), 15000);
+
     try {
       setLoading(true);
       await signIn(email.trim(), password);
-      
-      // Note: Navigation will be handled by useEffect watching profile changes
-      // See useEffect below that redirects based on role
+      // Navigation is handled by the useEffect watching profile + authLoading.
     } catch (error: any) {
       console.error('Login error:', error);
       alert(error.message || 'Login failed. Please check your credentials.');
       setLoading(false);
+    } finally {
+      clearTimeout(timeout);
     }
   };
 

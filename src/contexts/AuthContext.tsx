@@ -47,15 +47,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Initialize auth state
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Get initial session — explicitly handle expired cached sessions.
+    // After 3+ days the access token in AsyncStorage is stale. If the
+    // refresh token is also expired, the Supabase client can enter a broken
+    // state that causes signInWithPassword to hang. We detect that here and
+    // clear the cache so the client starts clean.
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session) {
+        const nowSecs = Date.now() / 1000;
+        const isExpired = (session.expires_at ?? 0) < nowSecs;
+        if (isExpired) {
+          // Try to refresh — if the refresh token is still valid, great.
+          const { data: refreshed } = await supabase.auth.refreshSession();
+          if (!refreshed.session) {
+            // Refresh token also expired: clear the stale cache locally.
+            await supabase.auth.signOut({ scope: 'local' });
+            setLoading(false);
+            return;
+          }
+          // Refreshed successfully — use the new session.
+          setSession(refreshed.session);
+          setUser(refreshed.session.user);
+          fetchProfile(refreshed.session.user.id).then(setProfile);
+          setLoading(false);
+          return;
+        }
+      }
+
       setSession(session);
       setUser(session?.user ?? null);
-
       if (session?.user) {
         fetchProfile(session.user.id).then(setProfile);
       }
-
       setLoading(false);
     });
 
@@ -111,6 +134,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function signIn(email: string, password: string) {
     try {
       setLoading(true);
+      // Purge any stale cached session before signing in.
+      // scope:'local' = clears AsyncStorage only, no server call.
+      // Prevents an expired cached session from causing signInWithPassword to hang.
+      await supabase.auth.signOut({ scope: 'local' });
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
