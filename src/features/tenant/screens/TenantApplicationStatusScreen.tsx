@@ -44,7 +44,7 @@ interface ApplicationRecord {
     id: string;
     title: string;
     address: string;
-    monthly_rent: number | null;
+    rent_amount: number | null;
   };
 }
 
@@ -105,7 +105,7 @@ export default function TenantApplicationStatusScreen() {
         .select(`
           id, property_id, status, backup_rank, shortlisted,
           affordability_ratio, credit_check_status, created_at,
-          property:properties!property_id(id, title, address, monthly_rent)
+          property:properties!property_id(id, title, address, rent_amount)
         `)
         .eq('tenant_id', user.id)
         .order('created_at', { ascending: false });
@@ -299,9 +299,9 @@ function ApplicationCard({
         <Text style={styles.propertyAddress} numberOfLines={1}>
           {app.property?.address || ''}
         </Text>
-        {app.property?.monthly_rent && (
+        {app.property?.rent_amount && (
           <Text style={styles.rentText}>
-            R {app.property.monthly_rent.toLocaleString('en-ZA')}/month
+            R {app.property.rent_amount.toLocaleString('en-ZA')}/month
           </Text>
         )}
 
