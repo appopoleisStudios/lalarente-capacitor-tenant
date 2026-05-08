@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from supabase import create_client
 from fastapi.middleware.cors import CORSMiddleware
 
-# 1. SETUP PATHS: Ensure Vercel can find the 'hermes-agent' folder
+# SETUP PATHS
 base_path = os.path.dirname(os.path.abspath(__file__))
 agent_path = os.path.join(base_path, "..", "hermes-agent")
 sys.path.append(agent_path)
@@ -22,7 +22,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 2. CLIENTS: Initialize with .strip() to remove invisible newline characters
+# CLIENTS
 try:
     SUPABASE_URL = os.getenv("SUPABASE_URL", "").strip()
     SUPABASE_KEY = os.getenv("SUPABASE_KEY", "").strip()
@@ -35,7 +35,6 @@ class ChatRequest(BaseModel):
     tenant_id: str
 
 def get_property_context() -> str:
-    """Helper to fetch property data for the Hermes brain."""
     try:
         res = supabase.table('properties').select('*').limit(5).execute()
         if res.data:
@@ -51,13 +50,11 @@ async def root():
 @app.post("/agent")
 async def chat_endpoint(req: ChatRequest):
     try:
-        # Import the agent logic from your hermes-agent folder
         from run_agent import AIAgent
         
-        # Get the latest data from Supabase
         prop_data = get_property_context()
 
-        # Initialize the REAL Hermes with Serverless-Safety flags
+        # Removed 'no_log' because your AIAgent class doesn't support it
         hermes = AIAgent(
             model=os.getenv("ASSISTANT_MODEL", "llama-3.1-8b-instant").strip(),
             ephemeral_system_prompt=(
@@ -67,23 +64,19 @@ async def chat_endpoint(req: ChatRequest):
                 f"AVAILABLE PROPERTIES:\n{prop_data}"
             ),
             quiet_mode=True,
-            skip_memory=True,         # CRITICAL: Vercel doesn't allow writing local memory files
-            skip_context_files=True,  # CRITICAL: Vercel can't read local PDF/Docs indexes easily
-            no_log=True               # CRITICAL: Vercel doesn't allow writing local log files
+            skip_memory=True,         
+            skip_context_files=True
         )
 
-        # Process the chat through the Hermes Agent Layer
         response = hermes.chat(req.text)
-        
         return {"reply": response}
 
     except ImportError as e:
         print(f"IMPORT ERROR: {e}")
         raise HTTPException(status_code=500, detail=f"Hermes Agent folder not found: {str(e)}")
     except Exception as e:
-        # This will print the full error in your 'vercel logs'
         print(f"RUNTIME ERROR: {traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail="Hermes Agent crashed. Check Vercel logs for traceback.")
+        raise HTTPException(status_code=500, detail=f"Hermes Agent crashed: {str(e)}")
 
 @app.get("/health")
 async def health_check():
