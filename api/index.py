@@ -27,49 +27,37 @@ class ChatResponse(BaseModel):
     reply: str
     properties: List[dict] = []
 
-def get_real_properties() -> List[dict]:
-    try:
-        # SELECT specific columns to ensure we get the image_url
-        res = supabase.table('properties').select('id, title, price, location, image_url').limit(3).execute()
-        return res.data if res.data else []
-    except:
-        return []
-
 @app.post("/agent", response_model=ChatResponse)
 async def chat_endpoint(req: ChatRequest):
-    raw_props = get_real_properties()
+    # DEBUG: See what is actually in the table
+    try:
+        res = supabase.table('properties').select('*').limit(5).execute()
+        raw_props = res.data
+        print(f"DEBUG DATA: {raw_props}")
+    except Exception as e:
+        print(f"SUPABASE ERROR: {e}")
+        raw_props = []
     
-    # Format properties for the AI's "Eyes"
-    context_string = ""
-    for p in raw_props:
-        context_string += f"- {p.get('title')}: ${p.get('price')} in {p.get('location')}\n"
+    if not raw_props:
+        return {
+            "reply": "I am connected to the database, but your 'properties' table appears to be empty or inaccessible. Please check your Supabase dashboard.",
+            "properties": []
+        }
 
-    # THE MASTER PROMPT (Grounding + Conciseness)
+    context_string = "\n".join([f"- {p.get('title')}: ${p.get('price')} ({p.get('location')})" for p in raw_props])
+
     system_instruction = (
-        "You are the Lalarente Assistant. "
-        "STRICT RULES:\n"
-        "1. ONLY discuss properties listed in the 'REAL_DATA' section below.\n"
-        "2. If a property is not in 'REAL_DATA', say you don't have information on it.\n"
-        "3. NEVER invent addresses (like Dolphin Crescent).\n"
-        "4. Be extremely concise. Max 2 short sentences.\n"
-        "5. Tone: Professional and direct.\n\n"
-        f"REAL_DATA:\n{context_string if context_string else 'No properties currently available.'}"
+        "You are the Lalarente Assistant. Be concise (max 2 sentences). "
+        "Only talk about these properties:\n" + context_string
     )
 
     response = groq_client.chat.completions.create(
         model="llama-3.1-8b-instant",
-        messages=[
-            {"role": "system", "content": system_instruction},
-            {"role": "user", "content": req.text}
-        ],
-        temperature=0.1, # Lower temperature = less hallucination
-        max_tokens=100   # Hard limit on length
+        messages=[{"role": "system", "content": system_instruction}, {"role": "user", "content": req.text}],
+        temperature=0.1
     )
     
-    return {
-        "reply": response.choices[0].message.content,
-        "properties": raw_props # The app uses this for images
-    }
+    return {"reply": response.choices[0].message.content, "properties": raw_props}
 
 @app.get("/health")
 async def health_check():
