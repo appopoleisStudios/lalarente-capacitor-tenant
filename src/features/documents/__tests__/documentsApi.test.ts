@@ -31,7 +31,9 @@ const storageChain = {
   createSignedUrl: mockCreateSignedUrl,
 };
 
-const fromStorage = jest.fn(() => storageChain);
+function mockFromStorage() {
+  return storageChain;
+}
 
 const dbChain = {
   insert: mockInsert,
@@ -41,12 +43,14 @@ const dbChain = {
   eq: mockEq,
 };
 
-const fromDb = jest.fn(() => dbChain);
+function mockFromDb() {
+  return dbChain;
+}
 
 jest.mock('../../../lib/supabase', () => ({
   supabase: {
-    storage: { from: fromStorage },
-    from: fromDb,
+    storage: { from: mockFromStorage },
+    from: mockFromDb,
   },
 }));
 

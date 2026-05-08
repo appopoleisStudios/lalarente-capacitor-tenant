@@ -104,41 +104,89 @@ export const applicationsApi = {
       }
     }
 
+    const payload: RentalApplicationInsert = {
+      property_id: input.property_id,
+      tenant_id: input.tenant_id,
+      owner_id: input.owner_id,
+      status: 'draft',
+
+      // Personal info
+      full_name: input.full_name,
+      email: input.email,
+      phone: input.phone,
+      id_number: input.id_number,
+      date_of_birth: input.date_of_birth,
+
+      // Employment
+      employer: input.employer || null,
+      position: input.position || null,
+      monthly_income: input.monthly_income || null,
+      employment_start_date: input.employment_start_date || null,
+      employer_contact: input.employer_contact || null,
+
+      // Documents
+      id_document_url: input.id_document_url || null,
+      proof_of_income_urls: input.proof_of_income_urls || null,
+      reference_urls: input.reference_urls || null,
+
+      // Screening
+      affordability_ratio: affordabilityRatio,
+    };
+
+    const { data: existingApplication } = await supabase
+      .from('rental_applications')
+      .select('id, status, rejected_at')
+      .eq('property_id', input.property_id)
+      .eq('tenant_id', input.tenant_id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existingApplication) {
+      if (existingApplication.status === 'draft') {
+        const { data, error } = await supabase
+          .from('rental_applications')
+          .update(payload as RentalApplicationUpdate)
+          .eq('id', existingApplication.id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error updating draft application:', error);
+          throw new Error(`Failed to update draft application: ${error.message}`);
+        }
+
+        return data;
+      }
+
+      if (
+        ['submitted', 'under_review', 'shortlisted', 'backup', 'lease_offered', 'lease_signed'].includes(
+          existingApplication.status
+        )
+      ) {
+        throw new Error('You already have an active application for this property.');
+      }
+
+      if (existingApplication.status === 'approved') {
+        throw new Error('You already have an approved application for this property.');
+      }
+
+      if (existingApplication.status === 'withdrawn') {
+        throw new Error('Your previous application for this property was withdrawn and cannot be resubmitted yet.');
+      }
+    }
+
     const { data, error } = await supabase
       .from('rental_applications')
-      .insert({
-        property_id: input.property_id,
-        tenant_id: input.tenant_id,
-        owner_id: input.owner_id,
-        status: 'draft',
-        
-        // Personal info
-        full_name: input.full_name,
-        email: input.email,
-        phone: input.phone,
-        id_number: input.id_number,
-        date_of_birth: input.date_of_birth,
-        
-        // Employment
-        employer: input.employer || null,
-        position: input.position || null,
-        monthly_income: input.monthly_income || null,
-        employment_start_date: input.employment_start_date || null,
-        employer_contact: input.employer_contact || null,
-        
-        // Documents
-        id_document_url: input.id_document_url || null,
-        proof_of_income_urls: input.proof_of_income_urls || null,
-        reference_urls: input.reference_urls || null,
-        
-        // Screening
-        affordability_ratio: affordabilityRatio,
-      })
+      .insert(payload)
       .select()
       .single();
 
     if (error) {
       console.error('Error creating application:', error);
+      if (error.code === '23505') {
+        throw new Error('You already have an active application for this property.');
+      }
       throw new Error(`Failed to create application: ${error.message}`);
     }
 

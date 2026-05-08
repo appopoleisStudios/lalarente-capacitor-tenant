@@ -21,6 +21,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@/src/contexts/AuthContext';
 
 // South African flag colors
 const RSA_COLORS = {
@@ -34,11 +35,9 @@ const RSA_COLORS = {
   textGray: '#737373',
 };
 
-import { useAuth } from '@/src/contexts/AuthContext';
-
 export default function LoginScreen() {
   const router = useRouter();
-  const { signIn, profile, loading: authLoading } = useAuth();
+  const { signIn, session, profile, loading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -46,7 +45,7 @@ export default function LoginScreen() {
 
   // Redirect based on role when profile loads after login
   useEffect(() => {
-    if (profile && !authLoading) {
+    if (session && profile && !authLoading) {
       setLoading(false);
       
       // Role-based navigation
@@ -58,7 +57,7 @@ export default function LoginScreen() {
         router.replace('/(vendor)/dashboard');
       }
     }
-  }, [profile, authLoading]);
+  }, [session, profile, authLoading, router]);
 
   // Animations
   const logoScale = useSharedValue(0.8);
@@ -76,7 +75,7 @@ export default function LoginScreen() {
       }),
       -1
     );
-  }, []);
+  }, [logoRotate, logoScale]);
 
   const logoAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -91,20 +90,14 @@ export default function LoginScreen() {
       return;
     }
 
-    // Safety timeout: if navigation doesn't fire within 15 s, reset the button
-    // so the user can try again rather than being permanently stuck.
-    const timeout = setTimeout(() => setLoading(false), 15000);
-
     try {
       setLoading(true);
       await signIn(email.trim(), password);
-      // Navigation is handled by the useEffect watching profile + authLoading.
+      // Navigation is handled by the useEffect watching session + profile.
     } catch (error: any) {
       console.error('Login error:', error);
       alert(error.message || 'Login failed. Please check your credentials.');
       setLoading(false);
-    } finally {
-      clearTimeout(timeout);
     }
   };
 

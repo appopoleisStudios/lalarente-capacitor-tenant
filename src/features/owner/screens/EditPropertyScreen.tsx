@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, TextInput, Alert, Switch, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -7,9 +7,23 @@ import * as ImagePicker from 'expo-image-picker';
 import { AnimatedButton } from '../components/AnimatedButton';
 import { LocationPicker } from '../components/LocationPicker';
 import { propertiesApi } from '../../properties/api/propertiesApi';
-import { supabase } from '../../../lib/supabase';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { styles } from './EditPropertyScreen.styles';
+
+const isLocalAssetUri = (uri: string) =>
+  uri.startsWith('file://') || uri.startsWith('content://') || uri.startsWith('data:');
+
+const getPhotoUploadPayload = (uri: string, index: number) => {
+  const extensionMatch = uri.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
+  const extension = extensionMatch?.[1]?.toLowerCase() || 'jpg';
+  const mimeType = extension === 'png' ? 'image/png' : extension === 'webp' ? 'image/webp' : 'image/jpeg';
+
+  return {
+    uri,
+    name: `property-photo-${Date.now()}-${index}.${extension}`,
+    type: mimeType,
+  };
+};
 
 interface PropertyForm {
   title: string;
@@ -83,21 +97,7 @@ export default function EditPropertyScreen() {
   });
   const [newAmenity, setNewAmenity] = useState('');
   const [newService, setNewService] = useState('');
-  const [userId, setUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUserId(data.user?.id || null);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (id) {
-      loadPropertyData();
-    }
-  }, [id]);
-
-  const loadPropertyData = async () => {
+  const loadPropertyData = useCallback(async () => {
     try {
       setLoading(true);
       const property = await propertiesApi.getProperty(id);
@@ -134,7 +134,13 @@ export default function EditPropertyScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, router]);
+
+  useEffect(() => {
+    if (id) {
+      loadPropertyData();
+    }
+  }, [id, loadPropertyData]);
 
   const toggleAmenity = (value: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -219,6 +225,9 @@ export default function EditPropertyScreen() {
     setSaving(true);
     
     try {
+      const existingRemotePhotos = form.photos.filter((photo) => !isLocalAssetUri(photo));
+      const localPhotos = form.photos.filter(isLocalAssetUri);
+
       // Update property
       await propertiesApi.updateProperty(id, {
         title: form.title,
@@ -241,8 +250,15 @@ export default function EditPropertyScreen() {
         smoking_allowed: form.smoking_allowed,
         latitude: form.latitude,
         longitude: form.longitude,
-        images: form.photos.length > 0 ? form.photos : null,
+        images: existingRemotePhotos.length > 0 ? existingRemotePhotos : null,
       });
+
+      if (localPhotos.length > 0) {
+        await propertiesApi.uploadPropertyPhotos(
+          id,
+          localPhotos.map((uri, index) => getPhotoUploadPayload(uri, index))
+        );
+      }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Success', 'Property updated successfully!', [

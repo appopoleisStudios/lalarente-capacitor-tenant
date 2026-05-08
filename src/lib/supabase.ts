@@ -3,27 +3,25 @@ import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Database } from '@/src/types/database.types';
 
-// Debug: Log what Constants.expoConfig contains
-console.log('🔍 DEBUG Constants.expoConfig:', JSON.stringify(Constants.expoConfig?.extra, null, 2));
+const extra = Constants.expoConfig?.extra ?? {};
+const SUPABASE_URL = extra.supabaseUrl || process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+const SUPABASE_ANON_KEY =
+  extra.supabaseAnonKey || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
 
-// Environment variables (accessed via Constants.expoConfig.extra for React Native)
-const SUPABASE_URL = Constants.expoConfig?.extra?.supabaseUrl || '';
-const SUPABASE_ANON_KEY = Constants.expoConfig?.extra?.supabaseAnonKey || '';
+export const hasSupabaseConfig = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 
-// Validate environment variables
-console.log('🔍 DEBUG SUPABASE_URL:', SUPABASE_URL ? `${SUPABASE_URL.substring(0, 30)}...` : '❌ MISSING');
-console.log('🔍 DEBUG SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? `${SUPABASE_ANON_KEY.substring(0, 30)}...` : '❌ MISSING');
-
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.error('❌ Missing Supabase environment variables!');
-  console.error('SUPABASE_URL:', SUPABASE_URL ? '✓' : '✗');
-  console.error('SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? '✓' : '✗');
-  console.error('Make sure .env file exists and Metro bundler is restarted');
-  throw new Error('Missing Supabase environment variables — check .env and restart Metro');
+if (!hasSupabaseConfig) {
+  console.error(
+    'Missing Supabase configuration. The app will start, but authentication and data features will be unavailable until EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY are set.'
+  );
 }
 
+// Use valid placeholders so the app can render even when config is missing.
+const supabaseUrl = hasSupabaseConfig ? SUPABASE_URL : 'https://placeholder.invalid';
+const supabaseAnonKey = hasSupabaseConfig ? SUPABASE_ANON_KEY : 'missing-anon-key';
+
 // Create typed Supabase client
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,

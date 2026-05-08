@@ -1,7 +1,0 @@
-# Deno Edge Functions — use Deno-specific tooling, not ESLint
-supabase/functions/
-
-# Build artifacts
-.expo/
-dist/
-node_modules/

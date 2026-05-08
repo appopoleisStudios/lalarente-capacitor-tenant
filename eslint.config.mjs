@@ -18,6 +18,7 @@ export default [
       '.expo/**',
       'dist/**',
       'build/**',
+      'supabase/functions/**',
       '*.config.js',
     ],
   },

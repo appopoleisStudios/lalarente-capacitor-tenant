@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { Database } from '@/src/types/database.types';
-import { supabase } from '@/src/lib/supabase';
+import { hasSupabaseConfig, supabase } from '@/src/lib/supabase';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
@@ -23,9 +23,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const lastProfileUserIdRef = useRef<string | null>(null);
+
+  const assertSupabaseConfigured = () => {
+    if (!hasSupabaseConfig) {
+      throw new Error(
+        'App configuration is incomplete. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY for this build.'
+      );
+    }
+  };
 
   // Fetch user profile from database
   const fetchProfile = async (userId: string): Promise<Profile | null> => {
+    if (!hasSupabaseConfig) {
+      return null;
+    }
+
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -45,8 +58,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const loadProfile = async (userId: string): Promise<Profile | null> => {
+    const nextProfile = await fetchProfile(userId);
+    lastProfileUserIdRef.current = nextProfile ? userId : null;
+    setProfile(nextProfile);
+    return nextProfile;
+  };
+
   // Initialize auth state
   useEffect(() => {
+    if (!hasSupabaseConfig) {
+      setLoading(false);
+      return;
+    }
+
     // Get initial session — explicitly handle expired cached sessions.
     // After 3+ days the access token in AsyncStorage is stale. If the
     // refresh token is also expired, the Supabase client can enter a broken
@@ -68,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Refreshed successfully — use the new session.
           setSession(refreshed.session);
           setUser(refreshed.session.user);
-          fetchProfile(refreshed.session.user.id).then(setProfile);
+          loadProfile(refreshed.session.user.id);
           setLoading(false);
           return;
         }
@@ -77,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id).then(setProfile);
+        loadProfile(session.user.id);
       }
       setLoading(false);
     });
@@ -88,15 +113,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      setLoading(false);
 
       if (session?.user) {
-        const profile = await fetchProfile(session.user.id);
-        setProfile(profile);
+        if (lastProfileUserIdRef.current !== session.user.id) {
+          await loadProfile(session.user.id);
+        }
       } else {
+        lastProfileUserIdRef.current = null;
         setProfile(null);
       }
-
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -105,6 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Sign up function
   async function signUp(email: string, password: string, fullName: string, role: 'owner' | 'tenant') {
     try {
+      assertSupabaseConfigured();
       setLoading(true);
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
@@ -133,18 +160,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Sign in function
   async function signIn(email: string, password: string) {
     try {
+      assertSupabaseConfigured();
       setLoading(true);
-      // Purge any stale cached session before signing in.
-      // scope:'local' = clears AsyncStorage only, no server call.
-      // Prevents an expired cached session from causing signInWithPassword to hang.
-      await supabase.auth.signOut({ scope: 'local' });
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: { session: existingSession } } = await supabase.auth.getSession();
+      const nowSecs = Date.now() / 1000;
+      const hasExpiredSession =
+        !!existingSession && (existingSession.expires_at ?? 0) < nowSecs;
+
+      // Clear cached auth state only when it is known to be stale.
+      if (hasExpiredSession) {
+        await supabase.auth.signOut({ scope: 'local' });
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
         throw error;
+      }
+
+      const nextSession = data.session;
+      const nextUser = data.user ?? nextSession?.user ?? null;
+
+      setSession(nextSession ?? null);
+      setUser(nextUser);
+
+      if (!nextUser) {
+        throw new Error('Sign in failed — no user returned');
+      }
+
+      const nextProfile = await loadProfile(nextUser.id);
+
+      if (!nextProfile) {
+        await supabase.auth.signOut({ scope: 'local' });
+        lastProfileUserIdRef.current = null;
+        setSession(null);
+        setUser(null);
+        throw new Error('Login succeeded, but no profile was found for this account.');
       }
     } catch (error: any) {
       console.error('Sign in error:', error);
@@ -157,6 +211,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Sign out function
   async function signOut() {
     try {
+      assertSupabaseConfigured();
       setLoading(true);
       const { error } = await supabase.auth.signOut();
 
@@ -173,9 +228,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Refresh profile
   async function refreshProfile() {
+    assertSupabaseConfigured();
     if (user) {
-      const profile = await fetchProfile(user.id);
-      setProfile(profile);
+      await loadProfile(user.id);
     }
   }
 

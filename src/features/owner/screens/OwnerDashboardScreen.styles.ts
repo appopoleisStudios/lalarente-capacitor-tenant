@@ -45,6 +45,22 @@ export const styles = StyleSheet.create({
   badgeText: { color: '#ffffff', fontSize: 10, fontWeight: '700' },
   scrollView: { flex: 1 },
   scrollContent: { padding: 16, paddingBottom: 120 },
+  floatingAssistantButton: {
+    position: 'absolute',
+    right: 24,
+    bottom: 24,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#007A4D',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
 
   // Loading, Error, and Empty States
   centerContent: {

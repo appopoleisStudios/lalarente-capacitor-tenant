@@ -34,9 +34,14 @@ export default function TenantVerificationScreen() {
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setUserId(user.id);
-    });
+    supabase.auth
+      .getUser()
+      .then(({ data: { user } }) => {
+        if (user) setUserId(user.id);
+      })
+      .catch((error) => {
+        console.error('Error loading tenant user:', error);
+      });
   }, []);
   const params = useLocalSearchParams();
 
@@ -44,7 +49,19 @@ export default function TenantVerificationScreen() {
   const requestId = params.requestId as string;
   const completionNotes = params.completionNotes as string;
   const completionPhotosJson = params.completionPhotos as string;
-  const completionPhotos = completionPhotosJson ? JSON.parse(completionPhotosJson) : [];
+  const completionPhotos = React.useMemo(() => {
+    if (!completionPhotosJson) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(completionPhotosJson);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      console.error('Invalid completion photos payload:', error);
+      return [];
+    }
+  }, [completionPhotosJson]);
 
   // State
   const [mode, setMode] = useState<'select' | 'approve' | 'reject'>('select');

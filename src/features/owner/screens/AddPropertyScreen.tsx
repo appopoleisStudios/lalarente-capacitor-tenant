@@ -10,6 +10,21 @@ import { supabase } from '../../../lib/supabase';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { styles } from './AddPropertyScreen.styles';
 
+const isLocalAssetUri = (uri: string) =>
+  uri.startsWith('file://') || uri.startsWith('content://') || uri.startsWith('data:');
+
+const getPhotoUploadPayload = (uri: string, index: number) => {
+  const extensionMatch = uri.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
+  const extension = extensionMatch?.[1]?.toLowerCase() || 'jpg';
+  const mimeType = extension === 'png' ? 'image/png' : extension === 'webp' ? 'image/webp' : 'image/jpeg';
+
+  return {
+    uri,
+    name: `property-photo-${Date.now()}-${index}.${extension}`,
+    type: mimeType,
+  };
+};
+
 interface PropertyForm {
   title: string;
   address: string;
@@ -201,8 +216,13 @@ export default function AddPropertyScreen() {
         longitude: form.longitude,
       });
 
-      // TODO: Upload photos to Supabase Storage
-      // For now, we'll skip photo upload as it requires storage setup
+      const localPhotos = form.photos.filter(isLocalAssetUri);
+      if (localPhotos.length > 0) {
+        await propertiesApi.uploadPropertyPhotos(
+          property.id,
+          localPhotos.map((uri, index) => getPhotoUploadPayload(uri, index))
+        );
+      }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Success', 'Property created successfully!', [

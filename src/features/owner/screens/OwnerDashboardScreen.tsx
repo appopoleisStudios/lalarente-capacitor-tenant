@@ -50,57 +50,7 @@ export default function OwnerDashboardScreen() {
   // Use custom hook for dashboard data (enterprise pattern)
   const { data: dashboardData, loading, error, refetch } = useOwnerDashboard(ownerId);
 
-  useEffect(() => {
-    initOwner();
-  }, []);
-
-  // Re-load viewings + messages + unread notif count on every screen focus
-  useFocusEffect(
-    useCallback(() => {
-      const id = ownerIdRef.current;
-      if (id) {
-        loadViewingRequests(id);
-        loadMessages(id);
-        loadRecentCancellations(id);
-        refetch();
-        // Refresh unread notification count from DB
-        (async () => {
-          const { count } = await (supabase as any)
-            .from('notifications')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', id)
-            .is('read_at', null);
-          setUnreadNotifCount(count || 0);
-        })();
-      }
-    }, [])
-  );
-
-  const handlePullToRefresh = async () => {
-    setRefreshing(true);
-    const id = ownerIdRef.current;
-    if (id) {
-      await Promise.all([
-        loadViewingRequests(id),
-        loadMessages(id),
-        loadRecentCancellations(id),
-        refetch(),
-      ]);
-    }
-    setRefreshing(false);
-  };
-
-  const initOwner = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      ownerIdRef.current = user.id;
-      setOwnerId(user.id);
-      loadViewingRequests(user.id);
-      loadMessages(user.id);
-    }
-  };
-
-  const loadMessages = async (userId: string) => {
+  const loadMessages = useCallback(async (userId: string) => {
     try {
       const threads = await messagesApi.getUserThreads(userId, 'owner');
       // Sort by unread first, then by recency
@@ -124,9 +74,9 @@ export default function OwnerDashboardScreen() {
     } catch (err) {
       console.error('Error loading messages for dashboard:', err);
     }
-  };
+  }, []);
 
-  const loadViewingRequests = async (userId?: string) => {
+  const loadViewingRequests = useCallback(async (userId?: string) => {
     try {
       const ownerIdToUse = userId || ownerId;
       if (!ownerIdToUse) return;
@@ -167,7 +117,6 @@ export default function OwnerDashboardScreen() {
       setViewingRequests(formattedViewings);
       setPendingViewingsCount(viewings.filter(v => v.status === 'pending').length);
 
-      // Count declined viewings where owner offered alternatives (last 7 days)
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
       const withAlt = viewings.filter(
         v => v.status === 'declined' &&
@@ -178,9 +127,9 @@ export default function OwnerDashboardScreen() {
     } catch (error) {
       console.error('Error loading viewing requests:', error);
     }
-  };
+  }, [ownerId]);
 
-  const loadRecentCancellations = async (userId: string) => {
+  const loadRecentCancellations = useCallback(async (userId: string) => {
     try {
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { data } = await supabase
@@ -200,6 +149,55 @@ export default function OwnerDashboardScreen() {
     } catch (err) {
       console.error('Error loading recent cancellations:', err);
     }
+  }, []);
+
+  const initOwner = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      ownerIdRef.current = user.id;
+      setOwnerId(user.id);
+      loadViewingRequests(user.id);
+      loadMessages(user.id);
+    }
+  }, [loadMessages, loadViewingRequests]);
+
+  useEffect(() => {
+    initOwner();
+  }, [initOwner]);
+
+  // Re-load viewings + messages + unread notif count on every screen focus
+  useFocusEffect(
+    useCallback(() => {
+      const id = ownerIdRef.current;
+      if (id) {
+        loadViewingRequests(id);
+        loadMessages(id);
+        loadRecentCancellations(id);
+        refetch();
+        (async () => {
+          const { count } = await (supabase as any)
+            .from('notifications')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', id)
+            .is('read_at', null);
+          setUnreadNotifCount(count || 0);
+        })();
+      }
+    }, [loadMessages, loadRecentCancellations, loadViewingRequests, refetch])
+  );
+
+  const handlePullToRefresh = async () => {
+    setRefreshing(true);
+    const id = ownerIdRef.current;
+    if (id) {
+      await Promise.all([
+        loadViewingRequests(id),
+        loadMessages(id),
+        loadRecentCancellations(id),
+        refetch(),
+      ]);
+    }
+    setRefreshing(false);
   };
 
   // Loading state
@@ -477,7 +475,14 @@ export default function OwnerDashboardScreen() {
 
         </ScrollView>
       </View>
+
+      <TouchableOpacity
+        onPress={() => router.push('/(owner)/agent-chat' as any)}
+        style={styles.floatingAssistantButton}
+        activeOpacity={0.85}
+      >
+        <Ionicons name="chatbubble-ellipses" size={26} color="#FFFFFF" />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
-

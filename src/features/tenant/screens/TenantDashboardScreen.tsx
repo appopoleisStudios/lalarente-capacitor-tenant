@@ -175,7 +175,6 @@ export default function TenantDashboardScreen() {
       // Also filter out declined viewings where the notification was already read
       // (user already saw it on the notifications screen)
       if (filteredAlerts.length > 0) {
-        const viewingIds = filteredAlerts.map((v: any) => v.id);
         const { data: readNotifs } = await (supabase as any)
           .from('notifications')
           .select('data')
@@ -1062,6 +1061,28 @@ export default function TenantDashboardScreen() {
           <View style={{ height: 100 }} />
         </ScrollView>
       </View>
+
+      {/* Floating AI Assistant Button */}
+      <TouchableOpacity
+        onPress={() => router.push('/(tenant)/agent-chat')}
+        style={{
+          position: 'absolute',
+          bottom: 24,
+          right: 24,
+          backgroundColor: colors.rsa.green,
+          width: 60,
+          height: 60,
+          borderRadius: 30,
+          justifyContent: 'center',
+          alignItems: 'center',
+          shadowColor: '#000',
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+          elevation: 8,
+        }}>
+        <Ionicons name="chatbubble-ellipses" size={26} color={colors.background.default} />
+      </TouchableOpacity>
+
     </SafeAreaView>
   );
 }

@@ -191,6 +191,12 @@ export default function OwnerLayout() {
         }}
       />
       <Tabs.Screen
+        name="agent-chat"
+        options={{
+          href: null, // Hidden from tabs - accessed via floating button
+        }}
+      />
+      <Tabs.Screen
         name="deposits"
         options={{
           href: null, // Hidden from tabs - accessed from dashboard
@@ -266,6 +272,12 @@ export default function OwnerLayout() {
         name="documents"
         options={{
           href: null, // Hidden from tabs - accessed from dashboard "See All"
+        }}
+      />
+      <Tabs.Screen
+        name="documents/upload"
+        options={{
+          href: null, // Hidden from tabs - upload screen
         }}
       />
       <Tabs.Screen

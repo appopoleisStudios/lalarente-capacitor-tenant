@@ -3,7 +3,6 @@ import type { Database } from '@/src/types/database.types';
 
 // Type aliases for cleaner code
 type Property = Database['public']['Tables']['properties']['Row'];
-type PropertyInsert = Database['public']['Tables']['properties']['Insert'];
 type PropertyUpdate = Database['public']['Tables']['properties']['Update'];
 type PropertyStatus = Database['public']['Enums']['property_status'];
 
@@ -15,7 +14,7 @@ export interface PropertyWithRelations extends Property {
     email: string | null;
     phone: string | null;
   };
-  leases?: Array<{
+  leases?: {
     id: string;
     start_date: string;
     end_date: string;
@@ -27,7 +26,7 @@ export interface PropertyWithRelations extends Property {
       email: string | null;
       phone: string | null;
     };
-  }>;
+  }[];
 }
 
 
@@ -298,11 +297,9 @@ export const propertiesApi = {
   ): Promise<PropertyWithRelations[]> {
     let query = supabase
       .from('properties')
-      .select(`
-        *,
-        owner:profiles!owner_id(id, full_name, email, phone)
-      `)
-      .eq('owner_id', ownerId);
+      .select('*')
+      .eq('owner_id', ownerId)
+      .neq('status', 'vacant');
 
     // Apply filters
     if (filters) {
@@ -647,7 +644,7 @@ export const propertiesApi = {
    */
   async uploadPropertyPhotos(
     propertyId: string,
-    files: Array<{ uri: string; name: string; type: string }>
+    files: { uri: string; name: string; type: string }[]
   ): Promise<string[]> {
     const uploadedUrls: string[] = [];
 

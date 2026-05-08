@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "lalarente-app",
+    "name": "Lalarente",
     "slug": "lalarente-app",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "lalarenteapp",
@@ -15,6 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
+      "buildNumber": "3",
       "bundleIdentifier": "com.lalarente.app",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "This app needs access to your location to help you find properties nearby."
@@ -24,6 +25,7 @@
       }
     },
     "android": {
+      "versionCode": 3,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -55,9 +57,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "616e56ad-07ff-4f94-b0ef-a8f778468a92"
+        "projectId": "25439f9c-1f86-4ae3-a4f1-a724ab57cbfc"
       }
     },
-    "owner": "arsalanahmed82"
+    "owner": "oxii"
   }
 }

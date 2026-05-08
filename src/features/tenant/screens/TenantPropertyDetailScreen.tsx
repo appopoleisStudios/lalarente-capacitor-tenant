@@ -137,8 +137,20 @@ export default function TenantPropertyDetailScreen() {
           setApplicationStatus(existingApp.status);
           setApplicationId(existingApp.id);
           
-          // Check for pending applications (draft, submitted, under_review)
-          if (['draft', 'submitted', 'under_review'].includes(existingApp.status)) {
+          // Keep UI aligned with the DB uniqueness rule for non-rejected applications.
+          if (
+            [
+              'draft',
+              'submitted',
+              'under_review',
+              'shortlisted',
+              'backup',
+              'approved',
+              'lease_offered',
+              'lease_signed',
+              'withdrawn',
+            ].includes(existingApp.status)
+          ) {
             setHasActiveApplication(true);
           }
           // Check for rejected applications within 3 months
@@ -152,10 +164,6 @@ export default function TenantPropertyDetailScreen() {
             } else {
               setHasActiveApplication(false);
             }
-          }
-          // Approved applications - user should not apply again
-          else if (existingApp.status === 'approved') {
-            setHasActiveApplication(true);
           }
           else {
             setHasActiveApplication(false);
@@ -534,6 +542,8 @@ export default function TenantPropertyDetailScreen() {
                   : hasActiveApplication 
                     ? applicationStatus === 'rejected'
                       ? 'Cannot Reapply Yet'
+                      : applicationStatus === 'withdrawn'
+                        ? 'Application Withdrawn'
                       : applicationStatus === 'approved'
                         ? 'Already Approved'
                         : 'Application Pending'

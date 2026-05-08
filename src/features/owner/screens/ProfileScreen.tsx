@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '@/src/lib/supabase';
+import { APP_INFO } from '@/src/shared/config/appInfo';
 
 const RSA = { blue: '#002395', red: '#DE3831' };
 
@@ -187,7 +188,7 @@ export default function ProfileScreen() {
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
 
-        <Text style={styles.version}>Version 1.0.3</Text>
+        <Text style={styles.version}>{APP_INFO.versionLabel}</Text>
       </ScrollView>
     </SafeAreaView>
   );

@@ -119,6 +119,12 @@ export default function TenantLayout() {
         }}
       />
       <Tabs.Screen
+        name="documents/upload"
+        options={{
+          href: null, // Hidden from tabs - document upload screen
+        }}
+      />
+      <Tabs.Screen
         name="reports"
         options={{
           href: null, // Hidden from tabs - inspections + maintenance verification
@@ -220,6 +226,12 @@ export default function TenantLayout() {
           href: null, // Hidden from tabs - notification list from bell icon
         }}
       />
-    </Tabs>
+      <Tabs.Screen
+        name="agent-chat"
+        options={{
+          href: null, // Hidden from tabs - accessed via floating button only
+        }}
+      />
+     </Tabs>
   );
 }

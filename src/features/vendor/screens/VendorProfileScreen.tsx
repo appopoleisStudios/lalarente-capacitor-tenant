@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { colors } from '@/src/shared/theme/colors';
 import { vendorProfileApi, VendorProfile } from '@/src/features/vendor/api/profileApi';
+import { APP_INFO } from '@/src/shared/config/appInfo';
 
 export default function VendorProfileScreen() {
   const router = useRouter();
@@ -270,7 +271,7 @@ export default function VendorProfileScreen() {
           <Text style={styles.logoutText}>Logout</Text>
         </Pressable>
 
-        <Text style={styles.version}>Version 1.0.0</Text>
+        <Text style={styles.version}>{APP_INFO.versionLabel}</Text>
       </ScrollView>
     </SafeAreaView>
   );

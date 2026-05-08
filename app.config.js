@@ -1,22 +1,23 @@
 module.exports = ({ config }) => {
   return {
     ...config,
-    name: "lalarente-app",
+    name: "Lalarente",
     slug: "lalarente-app",
-    version: "1.0.0",
+    version: "1.0.2",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
     scheme: "lalarenteapp",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
-    owner: "arsalanahmed82",
+    owner: "oxii",
     extra: {
       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
       supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
       googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
+      agentUrl: process.env.EXPO_PUBLIC_AGENT_URL,
       router: {},
       eas: {
-        projectId: "616e56ad-07ff-4f94-b0ef-a8f778468a92"
+        projectId: "25439f9c-1f86-4ae3-a4f1-a724ab57cbfc"
       }
     },
     splash: {
@@ -26,6 +27,7 @@ module.exports = ({ config }) => {
     },
     ios: {
       supportsTablet: true,
+      buildNumber: "3",
       bundleIdentifier: "com.lalarente.app",
       infoPlist: {
         NSLocationWhenInUseUsageDescription: "This app needs access to your location to help you find properties nearby."
@@ -35,6 +37,7 @@ module.exports = ({ config }) => {
       }
     },
     android: {
+      versionCode: 3,
       adaptiveIcon: {
         foregroundImage: "./assets/images/adaptive-icon.png",
         backgroundColor: "#ffffff"

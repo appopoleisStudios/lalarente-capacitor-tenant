@@ -6,11 +6,11 @@
 - **Revision**: Incremental integer for hotfixes within same build (0, 1, 2...)
 
 ## Current Version
-- **Version**: 1.0.0
-- **Build Number**: 1
+- **Version**: 1.0.2
+- **Build Number**: 3
 - **Revision**: 0
-- **Full Version String**: 1.0.0-build.1-rev.0
-- **Release Date**: January 21, 2026
+- **Full Version String**: 1.0.2-build.3-rev.0
+- **Release Date**: May 6, 2026
 - **Release Type**: Client Testing (Alpha)
 
 ---

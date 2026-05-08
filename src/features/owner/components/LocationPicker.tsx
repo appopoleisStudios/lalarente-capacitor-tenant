@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import Constants from 'expo-constants';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 
@@ -23,6 +24,8 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
   initialLongitude = 28.0473,
   onLocationSelect,
 }) => {
+  const googleMapsApiKey = Constants.expoConfig?.extra?.googleMapsApiKey || '';
+  const hasGoogleMapsApiKey = Boolean(googleMapsApiKey);
   const [region, setRegion] = useState({
     latitude: initialLatitude,
     longitude: initialLongitude,
@@ -39,7 +42,10 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
   const handlePlaceSelect = (data: any, details: any) => {
     if (!details) return;
 
-    const { geometry, address_components, formatted_address } = details;
+    const { geometry, formatted_address } = details;
+    const addressComponents = Array.isArray(details.address_components)
+      ? details.address_components
+      : [];
     const { lat, lng } = geometry.location;
 
     // Extract address components
@@ -47,7 +53,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
     let province = '';
     let postalCode = '';
 
-    address_components.forEach((component: any) => {
+    addressComponents.forEach((component: any) => {
       const types = component.types;
       if (types.includes('locality')) {
         city = component.long_name;
@@ -92,22 +98,28 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
   };
 
   const reverseGeocode = async (latitude: number, longitude: number) => {
+    if (!hasGoogleMapsApiKey) {
+      return;
+    }
+
     try {
-      const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '';
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${googleMapsApiKey}`
       );
       const data = await response.json();
 
       if (data.results && data.results.length > 0) {
         const result = data.results[0];
-        const { address_components, formatted_address } = result;
+        const { formatted_address } = result;
+        const addressComponents = Array.isArray(result.address_components)
+          ? result.address_components
+          : [];
 
         let city = '';
         let province = '';
         let postalCode = '';
 
-        address_components.forEach((component: any) => {
+        addressComponents.forEach((component: any) => {
           const types = component.types;
           if (types.includes('locality')) {
             city = component.long_name;
@@ -140,27 +152,35 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
       <Text style={styles.helperText}>Search for address or tap on map to adjust pin</Text>
 
       {/* Google Places Autocomplete */}
-      <GooglePlacesAutocomplete
-        placeholder="Search for address..."
-        onPress={handlePlaceSelect}
-        query={{
-          key: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-          language: 'en',
-          components: 'country:za', // Restrict to South Africa
-        }}
-        fetchDetails={true}
-        enablePoweredByContainer={false}
-        listViewDisplayed={false}
-        keepResultsAfterBlur={true}
-        styles={{
-          container: styles.autocompleteContainer,
-          textInput: styles.autocompleteInput,
-          listView: styles.autocompleteList,
-        }}
-        textInputProps={{
-          placeholderTextColor: '#9ca3af',
-        }}
-      />
+      {hasGoogleMapsApiKey ? (
+        <GooglePlacesAutocomplete
+          placeholder="Search for address..."
+          onPress={handlePlaceSelect}
+          query={{
+            key: googleMapsApiKey,
+            language: 'en',
+            components: 'country:za', // Restrict to South Africa
+          }}
+          fetchDetails={true}
+          enablePoweredByContainer={false}
+          listViewDisplayed={false}
+          keepResultsAfterBlur={true}
+          styles={{
+            container: styles.autocompleteContainer,
+            textInput: styles.autocompleteInput,
+            listView: styles.autocompleteList,
+          }}
+          textInputProps={{
+            placeholderTextColor: '#9ca3af',
+          }}
+        />
+      ) : (
+        <View style={styles.missingApiKeyNotice}>
+          <Text style={styles.missingApiKeyText}>
+            Google Maps search is unavailable in this build. You can still drag the pin to set a location.
+          </Text>
+        </View>
+      )}
 
       {/* Selected Address Display */}
       {selectedAddress ? (
@@ -174,7 +194,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
       <View style={styles.mapContainer}>
         <MapView
           ref={mapRef}
-          provider={PROVIDER_GOOGLE}
+          provider={hasGoogleMapsApiKey ? PROVIDER_GOOGLE : undefined}
           style={styles.map}
           region={region}
           onPress={handleMapPress}
@@ -261,6 +281,18 @@ const styles = StyleSheet.create({
     marginTop: 12,
     borderWidth: 1,
     borderColor: '#e5e7eb',
+  },
+  missingApiKeyNotice: {
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fcd34d',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+  },
+  missingApiKeyText: {
+    fontSize: 12,
+    color: '#92400e',
   },
   map: {
     flex: 1,

@@ -51,7 +51,7 @@ export default function RegisterScreen() {
         router.replace('/(tenant)/dashboard');
       }
     }
-  }, [profile, authLoading]);
+  }, [profile, authLoading, router]);
 
   const handleRegister = async () => {
     if (!fullName.trim() || fullName.trim().length < 2) {

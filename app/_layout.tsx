@@ -12,7 +12,7 @@ function RootLayoutNav() {
     if (!loading && !session) {
       router.replace('/auth/login');
     }
-  }, [session, loading]);
+  }, [session, loading, router]);
 
   // Stack is always rendered — never conditionally unmount it, as doing so
   // destroys the navigator context and breaks any in-flight router.replace calls

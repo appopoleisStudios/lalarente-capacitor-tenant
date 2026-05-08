@@ -8,6 +8,7 @@ import type {
   DocumentFilter,
   FileInfo,
 } from '../types';
+import { DOCUMENT_CATEGORIES } from '../types';
 
 // Storage bucket for documents
 const DOCUMENTS_BUCKET = 'documents';
@@ -23,7 +24,7 @@ export const documentsApi = {
   ): Promise<Document> {
     try {
       // Validate file size and MIME type
-      const category = (await import('../types')).DOCUMENT_CATEGORIES[input.type];
+      const category = DOCUMENT_CATEGORIES[input.type];
       const maxSizeBytes = category.maxSize * 1024 * 1024;
       if (file.size > maxSizeBytes) {
         throw new Error(`File size exceeds maximum of ${category.maxSize}MB`);

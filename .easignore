@@ -1,0 +1,17 @@
+.git
+.expo
+node_modules
+dist
+dist-android
+builds
+docs
+*.backup
+*.md
+*.pdf
+*.csv
+*.sql
+*.sh
+*.txt
+.env
+.env.*
+supabase
