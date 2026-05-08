@@ -3,7 +3,7 @@ import Constants from 'expo-constants';
 const AGENT_URL =
   Constants.expoConfig?.extra?.agentUrl ||
   process.env.EXPO_PUBLIC_AGENT_URL ||
-  'http://10.43.178.251:8000';
+  'https://lalarente-backend.vercel.app';
 
 export async function sendMessageToAgent(text: string, tenantId: string): Promise<string> {
   const response = await fetch(`${AGENT_URL}/agent`, {
