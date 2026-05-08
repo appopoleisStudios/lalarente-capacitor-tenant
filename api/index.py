@@ -1,4 +1,5 @@
 import os
+from typing import List
 from fastapi import FastAPI
 from pydantic import BaseModel
 from supabase import create_client
@@ -15,36 +16,61 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# .strip() automatically scrubs out those invisible \n characters!
+# Initialize clients
 supabase = create_client(os.getenv("SUPABASE_URL").strip(), os.getenv("SUPABASE_KEY").strip())
 groq_client = Groq(api_key=os.getenv("ASSISTANT_API_KEY").strip())
 
+# Models for structured communication
 class ChatRequest(BaseModel):
     text: str
     tenant_id: str
 
-def get_properties() -> str:
+class ChatResponse(BaseModel):
+    reply: str
+    properties: List[dict] = [] # This allows the app to show images
+
+def fetch_property_data() -> List[dict]:
+    """Fetches full property records including image_url from Supabase."""
     try:
-        res = supabase.table('properties').select('*').limit(5).execute()
-        return str(res.data) if res.data else "No properties available."
+        # Ensure your Supabase table has a column named 'image_url' or similar
+        res = supabase.table('properties').select('*').limit(3).execute()
+        return res.data if res.data else []
     except Exception as e:
-        return f"Database error: {e}"
+        print(f"Database error: {e}")
+        return []
 
-@app.get("/")
-async def root():
-    return {"message": "Lalarente AI Backend is Online", "docs": "/docs"}
-
-@app.post("/agent")
+@app.post("/agent", response_model=ChatResponse)
 async def chat_endpoint(req: ChatRequest):
-    prop_data = get_properties()
+    # 1. Get the raw data from Supabase
+    property_list = fetch_property_data()
+    
+    # 2. Convert data to a string for the AI's "eyes"
+    context_data = "\n".join([
+        f"- {p.get('title', 'Property')}: ${p.get('price', 'N/A')}. Location: {p.get('location', 'N/A')}" 
+        for p in property_list
+    ])
+
+    system_instruction = (
+        "You are the Lalarente Executive Assistant. "
+        "Your tone is professional, sophisticated, minimalist, and humanzie. "
+        "Mention specific properties from the data provided if relevant. "
+        f"AVAILABLE PROPERTIES:\n{context_data}"
+    )
+
+    # 3. Get the AI's sophisticated reply
     response = groq_client.chat.completions.create(
-        model="llama-3.1-8b-instant", # Upgraded to Groq's current supported model
+        model="llama-3.1-8b-instant",
         messages=[
-            {"role": "system", "content": f"You are Hermes, the Lalarente AI assistant. Properties: {prop_data}"},
+            {"role": "system", "content": system_instruction},
             {"role": "user", "content": req.text}
         ]
     )
-    return {"reply": response.choices[0].message.content}
+    
+    # 4. Return the Text AND the Data (which includes image URLs)
+    return {
+        "reply": response.choices[0].message.content,
+        "properties": property_list
+    }
 
 @app.get("/health")
 async def health_check():
