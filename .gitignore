@@ -50,3 +50,4 @@ yarn-error.*
 supabase/.branches
 supabase/.temp
 dist-android/
+dist-android/
