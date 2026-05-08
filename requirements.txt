@@ -5,3 +5,4 @@ groq
 pydantic
 httpx
 python-dotenv
+PyYAML
