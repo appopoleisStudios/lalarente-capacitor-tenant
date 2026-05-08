@@ -27,34 +27,43 @@ class ChatResponse(BaseModel):
     reply: str
     properties: List[dict] = []
 
+def get_val(item, keys):
+    """Helper to find data even if column names are slightly different."""
+    for k in keys:
+        if k in item and item[k] is not None:
+            return item[k]
+    return "Contact for Price" if "price" in keys[0] else "Unknown Location"
+
 @app.post("/agent", response_model=ChatResponse)
 async def chat_endpoint(req: ChatRequest):
-    # DEBUG: See what is actually in the table
     try:
         res = supabase.table('properties').select('*').limit(5).execute()
-        raw_props = res.data
-        print(f"DEBUG DATA: {raw_props}")
-    except Exception as e:
-        print(f"SUPABASE ERROR: {e}")
+        raw_props = res.data or []
+    except:
         raw_props = []
     
-    if not raw_props:
-        return {
-            "reply": "I am connected to the database, but your 'properties' table appears to be empty or inaccessible. Please check your Supabase dashboard.",
-            "properties": []
-        }
-
-    context_string = "\n".join([f"- {p.get('title')}: ${p.get('price')} ({p.get('location')})" for p in raw_props])
+    # Create the context string for the AI
+    context_string = ""
+    for p in raw_props:
+        # Tries to match common column names automatically
+        name = get_val(p, ['title', 'name', 'heading'])
+        price = get_val(p, ['price', 'rent', 'amount', 'cost'])
+        loc = get_val(p, ['location', 'address', 'city', 'area'])
+        context_string += f"- {name}: {price} in {loc}\n"
 
     system_instruction = (
-        "You are the Lalarente Assistant. Be concise (max 2 sentences). "
-        "Only talk about these properties:\n" + context_string
+        "You are the Lalarente Assistant. "
+        "STRICT RULES:\n"
+        "1. ONLY use the provided data. If data is missing or says 'Unknown', tell the user you don't have that info yet.\n"
+        "2. Do NOT mention 'Test Property A' or any property not in the list.\n"
+        "3. Be brief (1-2 sentences). No fluff.\n\n"
+        f"CURRENT DATA FROM DATABASE:\n{context_string if context_string else 'NO DATA FOUND.'}"
     )
 
     response = groq_client.chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[{"role": "system", "content": system_instruction}, {"role": "user", "content": req.text}],
-        temperature=0.1
+        temperature=0.0 # Force accuracy
     )
     
     return {"reply": response.choices[0].message.content, "properties": raw_props}
