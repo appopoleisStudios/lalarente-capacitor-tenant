@@ -15,8 +15,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
-groq_client = Groq(api_key=os.getenv("ASSISTANT_API_KEY"))
+# .strip() automatically scrubs out those invisible \n characters!
+supabase = create_client(os.getenv("SUPABASE_URL").strip(), os.getenv("SUPABASE_KEY").strip())
+groq_client = Groq(api_key=os.getenv("ASSISTANT_API_KEY").strip())
 
 class ChatRequest(BaseModel):
     text: str
@@ -29,13 +30,17 @@ def get_properties() -> str:
     except Exception as e:
         return f"Database error: {e}"
 
+@app.get("/")
+async def root():
+    return {"message": "Lalarente AI Backend is Online", "docs": "/docs"}
+
 @app.post("/agent")
 async def chat_endpoint(req: ChatRequest):
     prop_data = get_properties()
     response = groq_client.chat.completions.create(
-        model=os.getenv("ASSISTANT_MODEL", "llama3-8b-8192"),
+        model="llama-3.1-8b-instant", # Upgraded to Groq's current supported model
         messages=[
-            {"role": "system", "content": f"You are Hermes, the Lalarente AI assistant. Be professional and concise. Properties: {prop_data}"},
+            {"role": "system", "content": f"You are Hermes, the Lalarente AI assistant. Properties: {prop_data}"},
             {"role": "user", "content": req.text}
         ]
     )
