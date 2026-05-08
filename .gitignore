@@ -49,3 +49,4 @@ yarn-error.*
 # Supabase
 supabase/.branches
 supabase/.temp
+dist-android/
