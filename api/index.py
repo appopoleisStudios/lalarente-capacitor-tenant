@@ -7,6 +7,10 @@ from pydantic import BaseModel
 from supabase import create_client
 from fastapi.middleware.cors import CORSMiddleware
 
+# 1. THE "HOME TRICK": Force the agent to use /tmp for any hidden writes
+os.environ["HOME"] = "/tmp"
+os.environ["XDG_CACHE_HOME"] = "/tmp"
+
 # SETUP PATHS
 base_path = os.path.dirname(os.path.abspath(__file__))
 agent_path = os.path.join(base_path, "..", "hermes-agent")
@@ -54,13 +58,12 @@ async def chat_endpoint(req: ChatRequest):
         
         prop_data = get_property_context()
 
-        # Removed 'no_log' because your AIAgent class doesn't support it
+        # Initialize the Agent
         hermes = AIAgent(
             model=os.getenv("ASSISTANT_MODEL", "llama-3.1-8b-instant").strip(),
             ephemeral_system_prompt=(
                 "You are Hermes, the Lalarente Executive Assistant. "
-                "Your tone is professional, sophisticated, and minimalist. "
-                "STRICT RULE: Use ONLY the following property data. Do not hallucinate addresses.\n"
+                "Tone: Professional, sophisticated, and minimalist. "
                 f"AVAILABLE PROPERTIES:\n{prop_data}"
             ),
             quiet_mode=True,
@@ -71,13 +74,12 @@ async def chat_endpoint(req: ChatRequest):
         response = hermes.chat(req.text)
         return {"reply": response}
 
-    except ImportError as e:
-        print(f"IMPORT ERROR: {e}")
-        raise HTTPException(status_code=500, detail=f"Hermes Agent folder not found: {str(e)}")
     except Exception as e:
-        print(f"RUNTIME ERROR: {traceback.format_exc()}")
+        # If it still crashes, we see exactly where it is trying to write
+        error_msg = traceback.format_exc()
+        print(f"RUNTIME ERROR: {error_msg}")
         raise HTTPException(status_code=500, detail=f"Hermes Agent crashed: {str(e)}")
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "vercel": True, "agent_layer": "hermes-agent-detected"}
+    return {"status": "ok", "home_dir": os.environ.get("HOME")}
