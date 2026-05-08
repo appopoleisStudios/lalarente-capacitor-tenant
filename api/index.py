@@ -1,17 +1,12 @@
 import os
-import sys
 from fastapi import FastAPI
 from pydantic import BaseModel
 from supabase import create_client
 from fastapi.middleware.cors import CORSMiddleware
-
-# Point to the packaged Hermes folder
-sys.path.insert(0, './hermes-agent')
-from run_agent import AIAgent
+from groq import Groq
 
 app = FastAPI()
 
-# Crucial for React Native / Web communication
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -20,10 +15,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Connect to Supabase
-supabase_url = os.getenv("SUPABASE_URL")
-supabase_key = os.getenv("SUPABASE_KEY")
-supabase = create_client(supabase_url, supabase_key)
+supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
+groq_client = Groq(api_key=os.getenv("ASSISTANT_API_KEY"))
 
 class ChatRequest(BaseModel):
     text: str
@@ -38,30 +31,15 @@ def get_properties() -> str:
 
 @app.post("/agent")
 async def chat_endpoint(req: ChatRequest):
-    print(f"📩 App message from Tenant {req.tenant_id}: {req.text}")
-    
     prop_data = get_properties()
-    
-    context = (
-        "You are the Lalarente Executive Assistant. You provide high-end property management support. "
-        "Your tone is professional, sophisticated, and minimalist.\n\n"
-        "STRICT UI RULES:\n"
-        "1. NO markdown tables. NO ASCII boxes.\n"
-        "2. Keep formatting simple for mobile rendering.\n"
-        f"\nAVAILABLE DATA:\n{prop_data}"
-    )
-    
-    # Spin up Hermes (It will grab Groq settings automatically from Vercel's env variables)
-    hermes = AIAgent(
+    response = groq_client.chat.completions.create(
         model=os.getenv("ASSISTANT_MODEL", "llama3-8b-8192"),
-        ephemeral_system_prompt=context,
-        quiet_mode=True,
-        skip_memory=True,
-        skip_context_files=True,
+        messages=[
+            {"role": "system", "content": f"You are Hermes, the Lalarente AI assistant. Be professional and concise. Properties: {prop_data}"},
+            {"role": "user", "content": req.text}
+        ]
     )
-    
-    response = hermes.chat(req.text)
-    return {"reply": response}
+    return {"reply": response.choices[0].message.content}
 
 @app.get("/health")
 async def health_check():
