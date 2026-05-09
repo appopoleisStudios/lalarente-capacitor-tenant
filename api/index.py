@@ -7,9 +7,14 @@ from pydantic import BaseModel
 from supabase import create_client
 from fastapi.middleware.cors import CORSMiddleware
 
-# 1. THE "HOME TRICK": Force the agent to use /tmp for any hidden writes
+# 1. THE CLOUD WORKAROUND: Trick Hermes into thinking it's already set up
 os.environ["HOME"] = "/tmp"
-os.environ["XDG_CACHE_HOME"] = "/tmp"
+os.environ["HERMES_HOME"] = "/tmp/.hermes"
+os.makedirs("/tmp/.hermes", exist_ok=True)
+
+# 2. MAP API KEYS: Ensure Groq can find its key under the standard name
+GROQ_KEY = os.getenv("ASSISTANT_API_KEY", "").strip()
+os.environ["GROQ_API_KEY"] = GROQ_KEY
 
 # SETUP PATHS
 base_path = os.path.dirname(os.path.abspath(__file__))
@@ -26,13 +31,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# CLIENTS
+# INIT SUPABASE
 try:
     SUPABASE_URL = os.getenv("SUPABASE_URL", "").strip()
     SUPABASE_KEY = os.getenv("SUPABASE_KEY", "").strip()
     supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 except Exception as e:
-    print(f"FAILED TO INIT SUPABASE: {e}")
+    print(f"SUPABASE INIT FAILED: {e}")
 
 class ChatRequest(BaseModel):
     text: str
@@ -47,10 +52,6 @@ def get_property_context() -> str:
     except Exception as e:
         return f"Property data unavailable (DB Error: {e})"
 
-@app.get("/")
-async def root():
-    return {"message": "Lalarente AI Backend is Online", "docs": "/docs"}
-
 @app.post("/agent")
 async def chat_endpoint(req: ChatRequest):
     try:
@@ -58,8 +59,11 @@ async def chat_endpoint(req: ChatRequest):
         
         prop_data = get_property_context()
 
-        # Initialize the Agent
+        # 3. INITIALIZE WITH EXPLICIT PROVIDER
+        # This bypasses the need for a 'config.yaml' file
         hermes = AIAgent(
+            provider="groq",
+            api_key=GROQ_KEY,
             model=os.getenv("ASSISTANT_MODEL", "llama-3.1-8b-instant").strip(),
             ephemeral_system_prompt=(
                 "You are Hermes, the Lalarente Executive Assistant. "
@@ -75,11 +79,10 @@ async def chat_endpoint(req: ChatRequest):
         return {"reply": response}
 
     except Exception as e:
-        # If it still crashes, we see exactly where it is trying to write
         error_msg = traceback.format_exc()
         print(f"RUNTIME ERROR: {error_msg}")
         raise HTTPException(status_code=500, detail=f"Hermes Agent crashed: {str(e)}")
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "home_dir": os.environ.get("HOME")}
+    return {"status": "ok", "vercel": True, "hermes_home": os.environ.get("HERMES_HOME")}
