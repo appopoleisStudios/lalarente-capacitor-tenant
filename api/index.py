@@ -1,20 +1,15 @@
 import os
 import sys
 import traceback
-from typing import List
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from supabase import create_client
 from fastapi.middleware.cors import CORSMiddleware
 
-# 1. THE CLOUD WORKAROUND: Trick Hermes into thinking it's already set up
+# Force Hermes Home
 os.environ["HOME"] = "/tmp"
 os.environ["HERMES_HOME"] = "/tmp/.hermes"
 os.makedirs("/tmp/.hermes", exist_ok=True)
-
-# 2. MAP API KEYS: Ensure Groq can find its key under the standard name
-GROQ_KEY = os.getenv("ASSISTANT_API_KEY", "").strip()
-os.environ["GROQ_API_KEY"] = GROQ_KEY
 
 # SETUP PATHS
 base_path = os.path.dirname(os.path.abspath(__file__))
@@ -22,14 +17,7 @@ agent_path = os.path.join(base_path, "..", "hermes-agent")
 sys.path.append(agent_path)
 
 app = FastAPI(title="Lalarente Hermes Backend")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 # INIT SUPABASE
 try:
@@ -43,33 +31,30 @@ class ChatRequest(BaseModel):
     text: str
     tenant_id: str
 
-def get_property_context() -> str:
-    try:
-        res = supabase.table('properties').select('*').limit(5).execute()
-        if res.data:
-            return "\n".join([f"- {p.get('title', 'Property')}: {p.get('price', 'N/A')} in {p.get('location', 'N/A')}" for p in res.data])
-        return "No properties currently available."
-    except Exception as e:
-        return f"Property data unavailable (DB Error: {e})"
-
 @app.post("/agent")
 async def chat_endpoint(req: ChatRequest):
+    # 1. THE X-RAY CHECK
+    # We check both variable names just to be safe.
+    actual_key = os.environ.get("GROQ_API_KEY") or os.environ.get("ASSISTANT_API_KEY")
+    
+    if not actual_key:
+        return {"reply": "VERCEL ERROR: Vercel is NOT passing the GROQ_API_KEY to the backend. Please check your Vercel Dashboard Environment Variables and ensure 'Production' is checked."}
+
+    # Force the key into the environment so Hermes can't miss it
+    os.environ["GROQ_API_KEY"] = actual_key.strip()
+
     try:
         from run_agent import AIAgent
         
-        prop_data = get_property_context()
+        # Fetch properties
+        res = supabase.table('properties').select('*').limit(5).execute()
+        prop_data = "\n".join([f"- {p.get('title')}: {p.get('price')}" for p in res.data]) if res.data else "No properties."
 
-        # 3. INITIALIZE WITH EXPLICIT PROVIDER
-        # This bypasses the need for a 'config.yaml' file
         hermes = AIAgent(
             provider="groq",
-            api_key=GROQ_KEY,
-            model=os.getenv("ASSISTANT_MODEL", "llama-3.1-8b-instant").strip(),
-            ephemeral_system_prompt=(
-                "You are Hermes, the Lalarente Executive Assistant. "
-                "Tone: Professional, sophisticated, and minimalist. "
-                f"AVAILABLE PROPERTIES:\n{prop_data}"
-            ),
+            api_key=os.environ["GROQ_API_KEY"],
+            model="llama-3.1-8b-instant",
+            ephemeral_system_prompt=f"You are Hermes. AVAILABLE PROPERTIES:\n{prop_data}",
             quiet_mode=True,
             skip_memory=True,         
             skip_context_files=True
@@ -79,10 +64,9 @@ async def chat_endpoint(req: ChatRequest):
         return {"reply": response}
 
     except Exception as e:
-        error_msg = traceback.format_exc()
-        print(f"RUNTIME ERROR: {error_msg}")
+        print(f"RUNTIME ERROR: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Hermes Agent crashed: {str(e)}")
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "vercel": True, "hermes_home": os.environ.get("HERMES_HOME")}
+    return {"status": "ok"}
