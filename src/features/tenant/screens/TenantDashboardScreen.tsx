@@ -1,21 +1,21 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-  RefreshControl,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { colors } from '@/src/shared/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../../lib/supabase';
-import { paymentsApi } from '../../properties/api/paymentsApi';
 import { messagesApi } from '../../messaging/api/messagesApi';
-import { colors } from '@/src/shared/theme/colors';
+import { paymentsApi } from '../../properties/api/paymentsApi';
 
 const getMaintenanceStatusStyle = (status: string) => {
   switch (status) {
@@ -998,6 +998,16 @@ export default function TenantDashboardScreen() {
                   <Ionicons name="chatbubbles" size={24} color={colors.rsa.green} />
                 </View>
                 <Text style={styles.actionText}>Messages</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => router.push('/(tenant)/ai-chat' as any)}
+              >
+                <View style={[styles.actionIcon, { backgroundColor: '#E8F5E9' }]}>
+                  <Ionicons name="sparkles" size={24} color={colors.rsa.green} />
+                </View>
+                <Text style={styles.actionText}>Lala AI</Text>
               </TouchableOpacity>
             </View>
           </View>
