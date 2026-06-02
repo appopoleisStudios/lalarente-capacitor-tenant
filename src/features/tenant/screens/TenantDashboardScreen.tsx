@@ -1,21 +1,21 @@
-import { colors } from '@/src/shared/theme/colors';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../../lib/supabase';
-import { messagesApi } from '../../messaging/api/messagesApi';
 import { paymentsApi } from '../../properties/api/paymentsApi';
+import { messagesApi } from '../../messaging/api/messagesApi';
+import { colors } from '@/src/shared/theme/colors';
 
 const getMaintenanceStatusStyle = (status: string) => {
   switch (status) {
