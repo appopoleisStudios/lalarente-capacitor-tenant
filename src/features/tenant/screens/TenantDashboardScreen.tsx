@@ -296,7 +296,7 @@ export default function TenantDashboardScreen() {
   // These are the only "dismissible" items. Active maintenance, pending payments,
   // etc. are persistent status items — they belong in the list but not the badge.
   const notificationCount = notifications.length + viewingAlerts.length;
-  const AI_CHAT_ROUTE = "/(tenant)/ai-chat" as const;
+  const AI_CHAT_ROUTE = "/(tenant)/ai-chat";
 
   return (
     <SafeAreaView style={styles.safeArea}>
