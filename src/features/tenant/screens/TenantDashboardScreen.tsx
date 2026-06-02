@@ -4,13 +4,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../../lib/supabase';
@@ -296,6 +296,7 @@ export default function TenantDashboardScreen() {
   // These are the only "dismissible" items. Active maintenance, pending payments,
   // etc. are persistent status items — they belong in the list but not the badge.
   const notificationCount = notifications.length + viewingAlerts.length;
+  const AI_CHAT_ROUTE = "/(tenant)/ai-chat" as const;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -1002,7 +1003,7 @@ export default function TenantDashboardScreen() {
 
               <TouchableOpacity
                 style={styles.actionCard}
-                onPress={() => router.push('/(tenant)/ai-chat' as any)}
+                onPress={() => router.push(AI_CHAT_ROUTE)}
               >
                 <View style={[styles.actionIcon, { backgroundColor: '#E8F5E9' }]}>
                   <Ionicons name="sparkles" size={24} color={colors.rsa.green} />

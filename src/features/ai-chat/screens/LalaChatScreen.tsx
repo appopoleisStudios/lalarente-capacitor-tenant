@@ -12,7 +12,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-//Temp import will be replaced when backend is ready
 import { sendChatMessage } from '../../../mocks/lalaChatMocks';
 
 type Message = {
@@ -47,7 +46,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 10,
-  
   },
   userBubble: { alignSelf: 'flex-end', backgroundColor: '#007A4D' },
   aiBubble: {
@@ -137,10 +135,10 @@ export default function LalaChatScreen() {
     setIsLoading(true);
     setError(null);
     try {
-      const { reply } = await sendChatMessage(userText);
+      const response = await sendChatMessage(userText);
       const newAiMsg: Message = {
-        id: Date.now().toString() + '-ai',
-        text: reply,
+        id: response.conversation_id + '-' + Date.now(),
+        text: response.reply,
         role: 'ai',
       };
       setMessages(prev => [...prev, newAiMsg]);
@@ -164,7 +162,8 @@ export default function LalaChatScreen() {
 
     setMessages(prev => [...prev, newUserMsg]);
     setInputText('');
-    fetchAiResponse(userText);
+    fetchAiResponse(userText); //if we put await fetchAiResponse inside the handlesend it can freeze the entire user interface while that await happens like user can experince in laggy keyboard typing etc.
+    //inside the fetchAiResponse the errors are caught and handle locally, it uses own try/catch to handle error states, and i think it can be acceptable in mobile apps
   };
 
   const handleRetry = () => {
@@ -180,7 +179,6 @@ export default function LalaChatScreen() {
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-      
         <View style={styles.header}>
           <Ionicons name="chatbubble-ellipses-outline" size={20} color="#007A4D" />
           <View style={{ marginLeft: 10 }}>
@@ -188,7 +186,6 @@ export default function LalaChatScreen() {
             <Text style={styles.headerSub}>Property Support</Text>
           </View>
         </View>
-
         <FlatList
           ref={flatListRef}
           data={messages}
@@ -214,14 +211,11 @@ export default function LalaChatScreen() {
                 item.role === 'user' ? styles.userRow : styles.aiRow,
               ]}
             >
-              {/* Show the AI Icon only if the sender is 'ai' */}
               {item.role === 'ai' && (
                 <View style={styles.aiAvatar}>
                   <Ionicons name="chatbubble-ellipses-outline" size={16} color="#007A4D" />
                 </View>
               )}
-
-              
               <View
                 style={[
                   styles.bubble,
@@ -236,15 +230,12 @@ export default function LalaChatScreen() {
           )}
         />
 
-        
         {isLoading && (
           <View style={styles.loadingRow}>
             <ActivityIndicator size="small" color="#007A4D" />
             <Text style={styles.loadingText}>Lala is typing...</Text>
           </View>
         )}
-
-        {/* Error state */}
         {error && (
           <View style={styles.errorRow}>
             <Text style={styles.errorText}>{error}</Text>
@@ -253,8 +244,6 @@ export default function LalaChatScreen() {
             </Pressable>
           </View>
         )}
-
-        
         <View style={styles.inputBar}>
           <TextInput
             style={styles.input}
