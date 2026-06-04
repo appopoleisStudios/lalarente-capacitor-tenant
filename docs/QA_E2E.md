@@ -97,5 +97,19 @@ See [QA_E2E_COVERAGE.md](./QA_E2E_COVERAGE.md) for the full PR / Sheet 2 mapping
 
 ```bash
 ls -la ~/.maestro/bin/maestro
+git pull origin main --no-edit   # avoids opening vim for merge messages
 npm run test:e2e
 ```
+
+### `git pull` opens vim
+
+That usually means Git wants a **merge commit message** or you have a **merge conflict**.
+
+- Exit vim: press `Esc`, type `:wq` and Enter (save and quit), or `:q!` and Enter (quit without saving).
+- Pull without opening an editor:
+  ```bash
+  GIT_EDITOR=true git pull origin main --no-edit
+  ```
+- If pull failed with conflicts: `git status`, fix conflicted files, then `git add .` and `git commit` (or `git merge --abort` to undo the merge).
+
+Keep local changes before pull: `git stash -u && git pull origin main --no-edit && git stash pop`
