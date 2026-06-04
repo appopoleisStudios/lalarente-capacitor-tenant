@@ -1,0 +1,19 @@
+# Runs all Build 5 shipped client-fix flows (no video). Watch simulator while it runs.
+appId: com.lalarente.app
+---
+- runFlow: 01-tenant-dashboard.yaml
+- runFlow: 05-pr7-tenant-tenancy-shortcuts.yaml
+- runFlow: 06-pr7-tenant-disputes-empty.yaml
+- runFlow: 07-pr7-tenant-application-pdf.yaml
+- runFlow: 08-pr9-tenant-inspections.yaml
+- runFlow: 03-tenant-maintenance.yaml
+- runFlow: 11-pr10-tenant-maintenance-message.yaml
+- runFlow: 12-pr10-tenant-messaging-keyboard.yaml
+- runFlow: 13-pr10-tenant-lease-pdf.yaml
+- runFlow: 14-pr10-tenant-maintenance-camera.yaml
+- runFlow: 02-tenant-lala-ai.yaml
+- runFlow: 04-owner-dashboard.yaml
+- runFlow: 09-pr9-owner-inspection-conduct.yaml
+- runFlow: 10-pr9-owner-inspection-readonly.yaml
+- runFlow: 15-pr7-owner-disputes-empty.yaml
+- runFlow: 16-pr6-owner-lala-ai.yaml

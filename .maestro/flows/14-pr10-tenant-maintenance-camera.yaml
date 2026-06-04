@@ -1,0 +1,15 @@
+# PR #10 — Maintenance report shows Camera action (S2-36 upload path entry)
+appId: com.lalarente.app
+---
+- launchApp
+- runFlow: ../subflows/login-tenant.yaml
+
+- tapOn: "Maintenance"
+- assertVisible: "Maintenance"
+
+- tapOn: "Report an Issue"
+- extendedWaitUntil:
+    visible: "Camera"
+    timeout: 15000
+
+- assertVisible: "Photos & Videos"

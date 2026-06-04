@@ -32,10 +32,17 @@ These tests **use the app like a human**: you watch the simulator/emulator while
    # Edit .maestro/.env with tenant + owner QA logins
    ```
 
-## Run smoke tests (watch the simulator)
+## Run tests (watch the simulator)
 
 ```bash
+# Quick smoke (4 flows)
 npm run test:e2e
+
+# All shipped Build 5 client fixes (16 flows)
+npm run test:e2e:shipped
+
+# Record MP4 per flow for client demo
+npm run test:e2e:video
 ```
 
 Single flow:
@@ -43,6 +50,8 @@ Single flow:
 ```bash
 npm run test:e2e -- .maestro/flows/02-tenant-lala-ai.yaml
 ```
+
+Full coverage map: [QA_E2E_COVERAGE.md](./QA_E2E_COVERAGE.md)
 
 ## Record new tests by using the app
 
@@ -56,12 +65,7 @@ Maestro opens the app; you log in, navigate, tap — it **records** visible inte
 
 ## Flows included
 
-| Flow | What you see |
-|------|----------------|
-| `01-tenant-dashboard` | Login → "Your tenancy" → quick actions |
-| `02-tenant-lala-ai` | Login → Lala AI → type question → reply |
-| `03-tenant-maintenance` | Login → Maintenance screen |
-| `04-owner-dashboard` | Owner login → Portfolio Dashboard |
+See [QA_E2E_COVERAGE.md](./QA_E2E_COVERAGE.md) for the full PR / Sheet 2 mapping (16 flows covering merged #6–#10).
 
 ## Tips
 

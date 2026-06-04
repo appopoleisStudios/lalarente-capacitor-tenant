@@ -1,0 +1,21 @@
+# PR #7 — Your tenancy shortcuts (T9–T12 nav)
+appId: com.lalarente.app
+---
+- launchApp
+- runFlow: ../subflows/login-tenant.yaml
+- runFlow: ../subflows/scroll-tenancy.yaml
+
+- tapOn: "Payments & arrears"
+- assertVisible: "Payments"
+- back
+
+- tapOn: "Payment disputes"
+- assertVisible: "Payment Disputes"
+- back
+
+- tapOn: "Holding deposits"
+- assertVisible: "Holding Deposits"
+- back
+
+- tapOn: "Reports & inspections"
+- assertVisible: "Reports"

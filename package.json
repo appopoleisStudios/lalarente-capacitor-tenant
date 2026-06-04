@@ -13,6 +13,8 @@
     "type-check": "tsc --noEmit --skipLibCheck",
     "test": "jest",
     "test:e2e": "bash scripts/run-e2e.sh",
+    "test:e2e:shipped": "bash scripts/run-e2e.sh .maestro/flows/build5-shipped-suite.yaml",
+    "test:e2e:video": "bash scripts/run-e2e-video.sh",
     "test:e2e:record": "bash scripts/record-e2e.sh",
     "supabase:types": "npx supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > src/core/types/database.ts",
     "prepare": "husky install"

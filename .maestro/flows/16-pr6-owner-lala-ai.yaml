@@ -1,0 +1,17 @@
+# PR #6 — Owner Lala AI
+appId: com.lalarente.app
+---
+- launchApp
+- runFlow: ../subflows/login-owner.yaml
+
+- tapOn: "Lala AI"
+- assertVisible: "Lala Assistant"
+
+- tapOn:
+    text: "Type your message..."
+- inputText: "How many active leases do I have?"
+- pressKey: Enter
+
+- extendedWaitUntil:
+    notVisible: "Network error"
+    timeout: 45000

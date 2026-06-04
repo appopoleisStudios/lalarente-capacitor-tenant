@@ -1,0 +1,19 @@
+# PR #7 — Owner payment disputes empty state
+appId: com.lalarente.app
+---
+- launchApp
+- runFlow: ../subflows/login-owner.yaml
+
+- scrollUntilVisible:
+    text: "My Documents"
+    direction: DOWN
+    timeout: 20000
+
+- tapOn: "Disputes"
+- assertVisible:
+    text: "Payment"
+    optional: true
+
+- assertVisible:
+    text: "No payment disputes yet"
+    optional: true
