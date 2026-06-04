@@ -1063,12 +1063,21 @@ export default function TenantDashboardScreen() {
 
               <TouchableOpacity
                 style={styles.actionCard}
+<<<<<<< HEAD
                 onPress={() => router.push('/(tenant)/reports' as any)}
               >
                 <View style={[styles.actionIcon, { backgroundColor: '#F3E8FF' }]}>
                   <Ionicons name="clipboard-outline" size={24} color="#8B5CF6" />
                 </View>
                 <Text style={styles.actionText}>Reports</Text>
+=======
+                onPress={() => router.push('/(tenant)/ai-chat' as any)}
+              >
+                <View style={[styles.actionIcon, { backgroundColor: '#E8F5E9' }]}>
+                  <Ionicons name="sparkles" size={24} color={colors.rsa.green} />
+                </View>
+                <Text style={styles.actionText}>Lala AI</Text>
+>>>>>>> 1afb865 (feat(ai-chat): Lala AI tab, Edge function, and Supabase invoke API)
               </TouchableOpacity>
             </View>
           </View>
