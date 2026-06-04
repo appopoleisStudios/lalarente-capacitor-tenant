@@ -678,6 +678,7 @@ export default function OwnerMaintenanceDetailScreen() {
           purchaseOrder={purchaseOrder}
           requestId={id}
           onPress={() => purchaseOrder && router.push(`/(owner)/maintenance/${id}/po/${purchaseOrder.id}`)}
+          onSendPO={() => purchaseOrder && router.push(`/(owner)/maintenance/${id}/po/${purchaseOrder.id}`)}
         />
 
         {/* Closure Request */}

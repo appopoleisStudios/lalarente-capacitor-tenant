@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, Image, Alert, ActivityIndicator, Modal, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { AnimatedButton } from '../components/AnimatedButton';
 import { propertiesApi } from '../../properties/api/propertiesApi';
@@ -29,21 +29,20 @@ export default function OwnerPropertyDetailScreen() {
     }
   }, [id]);
 
-  const loadPropertyDetails = async () => {
+  const loadPropertyDetails = useCallback(async () => {
+    if (!id) return;
     try {
       setLoading(true);
       setError(null);
 
-      // Fetch property details
       const propertyData = await propertiesApi.getProperty(id);
       setProperty(propertyData);
 
-      // Fetch active lease if property is rented
       if (propertyData.status === 'rented') {
         try {
           const lease = await leasesApi.getActiveLease(id);
           setActiveLease(lease);
-        } catch (err) {
+        } catch {
           console.log('No active lease found');
         }
       }
@@ -53,7 +52,13 @@ export default function OwnerPropertyDetailScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadPropertyDetails();
+    }, [loadPropertyDetails])
+  );
 
   const handleEdit = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

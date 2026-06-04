@@ -9,17 +9,27 @@ interface RequestPOSectionProps {
   purchaseOrder: any;
   requestId: string;
   onPress: () => void;
+  onSendPO?: () => void;
 }
 
-export function RequestPOSection({ purchaseOrder, requestId, onPress }: RequestPOSectionProps) {
+export function RequestPOSection({ purchaseOrder, requestId, onPress, onSendPO }: RequestPOSectionProps) {
   if (!purchaseOrder) return null;
+
+  const awaitingSend = !purchaseOrder.sent_to_vendor_at;
 
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Purchase Order</Text>
-        <Text style={[styles.sectionBadge, { backgroundColor: colors.success[50], color: colors.success[700] }]}>
-          Issued
+        <Text
+          style={[
+            styles.sectionBadge,
+            awaitingSend
+              ? { backgroundColor: colors.warning[50], color: colors.warning[700] }
+              : { backgroundColor: colors.success[50], color: colors.success[700] },
+          ]}
+        >
+          {awaitingSend ? 'Awaiting send' : 'Issued'}
         </Text>
       </View>
       <TouchableOpacity style={styles.poCard} onPress={onPress} activeOpacity={0.7}>
@@ -29,7 +39,6 @@ export function RequestPOSection({ purchaseOrder, requestId, onPress }: RequestP
             <Text style={styles.poNumber}>{purchaseOrder.po_number}</Text>
             <Text style={styles.poAmount}>R {purchaseOrder.total_amount?.toLocaleString() || '0'}</Text>
 
-            {/* Contract Reference */}
             {purchaseOrder.contract && (
               <View style={styles.poContractRef}>
                 <Ionicons name="link-outline" size={14} color={colors.gray[500]} />
@@ -42,6 +51,12 @@ export function RequestPOSection({ purchaseOrder, requestId, onPress }: RequestP
           <Ionicons name="chevron-forward" size={20} color={colors.gray[400]} />
         </View>
       </TouchableOpacity>
+      {awaitingSend && onSendPO && (
+        <TouchableOpacity style={styles.sendButton} onPress={onSendPO} activeOpacity={0.8}>
+          <Ionicons name="send" size={18} color={colors.text.inverse} />
+          <Text style={styles.sendButtonText}>Send PO to Vendor</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -105,5 +120,21 @@ const styles = StyleSheet.create({
   poContractText: {
     fontSize: 12,
     color: colors.gray[600],
+  },
+  sendButton: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: RSA.blue,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  sendButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text.inverse,
   },
 });

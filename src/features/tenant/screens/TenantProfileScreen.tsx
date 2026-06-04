@@ -15,10 +15,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { supabase } from '../../../lib/supabase';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 
 const RSA = { green: '#007A4D', blue: '#002395' };
+
+function proofOfAddressUploadError(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  return 'Failed to upload document';
+}
 
 export default function TenantProfileScreen() {
   const router = useRouter();
@@ -163,48 +169,98 @@ export default function TenantProfileScreen() {
     }
   };
 
-  const handleUploadProofOfAddress = async () => {
+  const runProofOfAddressPicker = async (pick: () => Promise<void>) => {
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        quality: 0.7,
-        allowsEditing: false,
-      });
-
-      if (result.canceled || !result.assets?.length) return;
-
-      const asset = result.assets[0];
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Reliable MIME + extension detection — strip query params from URI
-      const mimeType = asset.mimeType || 'image/jpeg';
-      const ext = mimeType.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
-      const path = `proof-of-address/${user.id}/poa_${Date.now()}.${ext}`;
-
-      // ArrayBuffer upload is reliable on Android (blob can silently fail)
-      const response = await fetch(asset.uri);
-      const arrayBuffer = await response.arrayBuffer();
-
-      const { error: uploadError } = await supabase.storage
-        .from('documents')
-        .upload(path, arrayBuffer, { contentType: mimeType, upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage.from('documents').getPublicUrl(path);
-      setProofOfAddressUrl(urlData.publicUrl);
-
-      // Auto-save the URL
-      await supabase
-        .from('profiles')
-        .update({ proof_of_address_url: urlData.publicUrl })
-        .eq('id', user.id);
-
-      Alert.alert('Uploaded', 'Proof of address uploaded successfully');
-    } catch (err: any) {
-      Alert.alert('Error', err?.message || 'Failed to upload document');
+      await pick();
+    } catch (err: unknown) {
+      Alert.alert('Error', proofOfAddressUploadError(err));
     }
+  };
+
+  const uploadProofOfAddress = async (uri: string, mimeType: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const ext = mimeType === 'application/pdf'
+      ? 'pdf'
+      : mimeType.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
+    const path = `proof-of-address/${user.id}/poa_${Date.now()}.${ext}`;
+
+    const response = await fetch(uri);
+    const arrayBuffer = await response.arrayBuffer();
+
+    const { error: uploadError } = await supabase.storage
+      .from('documents')
+      .upload(path, arrayBuffer, { contentType: mimeType, upsert: true });
+
+    if (uploadError) throw uploadError;
+
+    const { data: urlData } = supabase.storage.from('documents').getPublicUrl(path);
+    const publicUrl = urlData.publicUrl;
+
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ proof_of_address_url: publicUrl })
+      .eq('id', user.id);
+
+    if (profileError) throw profileError;
+
+    setProofOfAddressUrl(publicUrl);
+    Alert.alert('Uploaded', 'Proof of address uploaded successfully');
+  };
+
+  const handleUploadProofOfAddress = () => {
+    Alert.alert('Upload Document', 'Choose source', [
+      {
+        text: 'Take Photo',
+        onPress: () =>
+          runProofOfAddressPicker(async () => {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert('Permission Required', 'Camera access is needed to take a photo');
+              return;
+            }
+            const result = await ImagePicker.launchCameraAsync({
+              mediaTypes: ['images'],
+              quality: 0.7,
+            });
+            if (result.canceled || !result.assets?.length) return;
+            const asset = result.assets[0];
+            await uploadProofOfAddress(asset.uri, asset.mimeType || 'image/jpeg');
+          }),
+      },
+      {
+        text: 'Photo Library',
+        onPress: () =>
+          runProofOfAddressPicker(async () => {
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ['images'],
+              quality: 0.7,
+              allowsEditing: false,
+            });
+            if (result.canceled || !result.assets?.length) return;
+            const asset = result.assets[0];
+            await uploadProofOfAddress(asset.uri, asset.mimeType || 'image/jpeg');
+          }),
+      },
+      {
+        text: 'Choose File (PDF or image)',
+        onPress: () =>
+          runProofOfAddressPicker(async () => {
+            const result = await DocumentPicker.getDocumentAsync({
+              type: ['image/*', 'application/pdf'],
+              copyToCacheDirectory: true,
+            });
+            if (result.canceled || !result.assets?.[0]) return;
+            const asset = result.assets[0];
+            await uploadProofOfAddress(
+              asset.uri,
+              asset.mimeType || 'application/octet-stream'
+            );
+          }),
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   // Profile completion check
@@ -470,7 +526,7 @@ export default function TenantProfileScreen() {
                 </TouchableOpacity>
               )}
               <Text style={styles.uploadHint}>
-                Recent utility bill, bank statement, or municipal account (not older than 3 months)
+                Recent utility bill, bank statement, or municipal account (photo or PDF, not older than 3 months)
               </Text>
             </View>
           </View>
