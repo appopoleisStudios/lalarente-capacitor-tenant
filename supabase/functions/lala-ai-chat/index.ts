@@ -1,4 +1,3 @@
-/* eslint-disable */
 // Lala AI — Supabase Edge Function (Groq + property context)
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
@@ -157,8 +156,18 @@ serve(async (req) => {
       });
     }
 
-    const { data: profile } = await userClient.from('profiles').select('role').eq('id', user.id).single();
-    const profileRole = (profile?.role as string) || role;
+    const { data: profile, error: profileError } = await userClient
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    if (profileError || !profile?.role) {
+      return new Response(JSON.stringify({ error: 'Profile not found' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const profileRole = String(profile.role);
     if (profileRole !== role && profileRole !== 'admin') {
       return new Response(JSON.stringify({ error: 'Role mismatch' }), {
         status: 403,

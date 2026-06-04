@@ -33,37 +33,54 @@ export default function LalaChatScreen() {
   const [propertyId, setPropertyId] = useState<string | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
   const flatListRef = useRef<FlatList<Message>>(null);
+  const messageIdRef = useRef(0);
+  const nextMessageId = () => `lala-${++messageIdRef.current}`;
 
   const loadSession = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        setError('Could not load your session. Please sign in again.');
+        return;
+      }
+      if (!user) {
+        setError('Please sign in to use Lala.');
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        setError('Could not load your profile.');
+        return;
+      }
+
+      const role = profile?.role === 'owner' ? 'owner' : 'tenant';
+      setChatRole(role);
+
+      if (role === 'tenant') {
+        const { data: lease } = await supabase
+          .from('leases')
+          .select('property_id')
+          .eq('tenant_id', user.id)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        setPropertyId(lease?.property_id ?? null);
+      } else {
+        setPropertyId(null);
+      }
+    } catch (err) {
+      console.error('Lala session load error:', err);
+      setError('Something went wrong loading chat. Pull to refresh or reopen.');
+    } finally {
       setSessionReady(true);
-      return;
     }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    const role = profile?.role === 'owner' ? 'owner' : 'tenant';
-    setChatRole(role);
-
-    if (role === 'tenant') {
-      const { data: lease } = await supabase
-        .from('leases')
-        .select('property_id')
-        .eq('tenant_id', user.id)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      setPropertyId(lease?.property_id ?? null);
-    } else {
-      setPropertyId(null);
-    }
-    setSessionReady(true);
   }, []);
 
   useEffect(() => {
@@ -88,7 +105,7 @@ export default function LalaChatScreen() {
       });
       setMessages((prev) => [
         ...prev,
-        { id: `${Date.now()}-ai`, text: reply, role: 'ai' },
+        { id: nextMessageId(), text: reply, role: 'ai' },
       ]);
     } catch (err) {
       console.error('Chat error:', err);
@@ -103,7 +120,7 @@ export default function LalaChatScreen() {
 
     const userText = inputText.trim();
     const newUserMsg: Message = {
-      id: `${Date.now()}-user`,
+      id: nextMessageId(),
       text: userText,
       role: 'user',
     };
