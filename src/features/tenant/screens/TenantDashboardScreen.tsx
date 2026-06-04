@@ -54,6 +54,30 @@ const TENANCY_SHORTCUTS: {
   },
 ];
 
+/** Always visible — S2-43 / S2-44 (not only when list rows exist) */
+const VIEWINGS_APPLICATIONS_SHORTCUTS: {
+  href: Href;
+  icon: keyof typeof Ionicons.glyphMap;
+  iconColor: string;
+  title: string;
+  subtitle: string;
+}[] = [
+  {
+    href: '/(tenant)/viewings',
+    icon: 'calendar-outline',
+    iconColor: colors.info[500],
+    title: 'Viewing history',
+    subtitle: 'Scheduled and past property viewings',
+  },
+  {
+    href: '/(tenant)/application-status',
+    icon: 'document-text-outline',
+    iconColor: colors.primary[500],
+    title: 'Application status',
+    subtitle: 'Track rentals you applied for',
+  },
+];
+
 function inspectionPropertyTitle(property: unknown): string {
   if (Array.isArray(property)) {
     return (property[0] as { title?: string } | undefined)?.title ?? 'your property';
@@ -555,6 +579,28 @@ export default function TenantDashboardScreen() {
               </TouchableOpacity>
             </View>
           )}
+
+          {/* Viewings & applications — always reachable (S2-43, S2-44) */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Viewings & applications</Text>
+            {VIEWINGS_APPLICATIONS_SHORTCUTS.map((item, index) => (
+              <TouchableOpacity
+                key={String(item.href)}
+                style={[styles.depositCard, index > 0 && { marginTop: 8 }]}
+                onPress={() => router.push(item.href)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.depositLeft}>
+                  <Ionicons name={item.icon} size={24} color={item.iconColor} />
+                  <View>
+                    <Text style={styles.depositTitle}>{item.title}</Text>
+                    <Text style={styles.depositSub}>{item.subtitle}</Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
+              </TouchableOpacity>
+            ))}
+          </View>
 
           {/* Active Lease Card */}
           {activeLease ? (
