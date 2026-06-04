@@ -260,6 +260,7 @@ export default function OwnerDashboardScreen() {
     { name: 'Lease Renewals', icon: 'refresh-outline', type: 'renewals', info: 'CPA Notices' },
     { name: 'Insurance', icon: 'umbrella-outline', type: 'insurance', info: 'Claims Tracker' },
     { name: 'Disputes', icon: 'alert-circle-outline', type: 'payment-disputes', info: dashboardData.openDisputes > 0 ? `${dashboardData.openDisputes} Open` : 'Payment Queries' },
+    { name: 'Applications', icon: 'people-outline', type: 'applications', info: dashboardData.applicants.length > 0 ? `${dashboardData.applicants.length} Recent` : 'Review & Compare' },
     { name: 'Inspections', icon: 'search-outline', type: 'inspections', info: 'Move-In / Out' },
     { name: 'Statements', icon: 'bar-chart-outline', type: 'statements', info: 'Monthly Income' },
   ];
