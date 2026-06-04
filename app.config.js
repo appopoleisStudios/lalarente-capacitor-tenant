@@ -41,6 +41,7 @@ module.exports = ({ config }) => {
       },
       package: "com.lalarente.app",
       edgeToEdgeEnabled: true,
+      softwareKeyboardLayoutMode: "resize",
       predictiveBackGestureEnabled: false,
       permissions: [
         "ACCESS_FINE_LOCATION",

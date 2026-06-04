@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import * as FileSystem from 'expo-file-system/legacy';
+import { decode } from 'base64-arraybuffer';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase, STORAGE_BUCKETS } from '@/src/lib/supabase';
-import { Alert, Platform } from 'react-native';
+import { Alert } from 'react-native';
 
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB (Supabase limit)
 
@@ -146,10 +147,11 @@ export function useMediaUpload(maxFiles: number = 10) {
         const fileName = `${timestamp}-${random}.${ext}`;
         const filePath = `${requestId}/${fileName}`;
 
-        // For React Native, we need to use FormData or ArrayBuffer
-        // Get the file as ArrayBuffer
-        const response = await fetch(file.uri);
-        const arrayBuffer = await response.arrayBuffer();
+        // React Native: read local URI as base64 (camera content:// URIs fail with fetch)
+        const base64 = await FileSystem.readAsStringAsync(file.uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        const arrayBuffer = decode(base64);
 
         // Upload to Supabase Storage using ArrayBuffer
         const { error: uploadError } = await supabase.storage

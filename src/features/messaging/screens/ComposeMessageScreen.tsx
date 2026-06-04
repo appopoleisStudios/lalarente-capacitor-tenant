@@ -15,10 +15,10 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/src/shared/theme/colors';
@@ -50,6 +50,7 @@ const CATEGORIES: { value: ThreadCategory; label: string; icon: string }[] = [
 
 export default function ComposeMessageScreen({ role = 'tenant' }: Props) {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const primaryColor = role === 'tenant' ? colors.rsa.green : colors.rsa.blue;
 
   const [loading, setLoading] = useState(true);
@@ -268,7 +269,7 @@ export default function ComposeMessageScreen({ role = 'tenant' }: Props) {
 
   // ── Compose form ─────────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="close" size={24} color={colors.text.primary} />
@@ -289,9 +290,15 @@ export default function ComposeMessageScreen({ role = 'tenant' }: Props) {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
       >
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 24) }}
+        >
           {/* To */}
           <View style={styles.fieldRow}>
             <Text style={styles.fieldLabel}>To</Text>

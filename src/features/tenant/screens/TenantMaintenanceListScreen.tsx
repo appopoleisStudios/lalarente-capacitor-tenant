@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, SafeAreaView, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, SafeAreaView, ActivityIndicator, RefreshControl, TouchableOpacity, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { messagesApi } from '@/src/features/messaging/api/messagesApi';
 import { useRouter, useFocusEffect } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -66,6 +68,32 @@ export default function TenantMaintenanceListScreen() {
   const handleCardPress = (requestId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     router.push(`/(tenant)/maintenance/${requestId}`);
+  };
+
+  const handleMessageLandlord = async (request: {
+    id: string;
+    title: string;
+    owner_id?: string | null;
+    tenant_id?: string | null;
+    property_id?: string | null;
+  }) => {
+    if (!request.owner_id || !request.tenant_id) {
+      Alert.alert('Unavailable', 'Cannot open messages for this request.');
+      return;
+    }
+    try {
+      const thread = await messagesApi.getOrCreateThread(
+        request.owner_id,
+        request.tenant_id,
+        request.property_id ?? undefined,
+        `Maintenance: ${request.title}`,
+        'maintenance'
+      );
+      router.push(`/(tenant)/messages/${thread.id}`);
+    } catch (err) {
+      console.error('Open maintenance thread error:', err);
+      Alert.alert('Error', 'Could not open messages.');
+    }
   };
 
   // Loading state
@@ -201,11 +229,19 @@ export default function TenantMaintenanceListScreen() {
                       {/* Property & Category */}
                       <View style={styles.meta}>
                         {request.property && (
-                          <View style={styles.metaItem}>
+                          <View style={[styles.metaItem, styles.metaItemStacked]}>
                             <Text style={styles.metaIcon}>📍</Text>
-                            <Text style={styles.metaText} numberOfLines={1}>
-                              {request.property.title}
-                            </Text>
+                            <View style={styles.metaTextBlock}>
+                              <Text style={styles.metaText} numberOfLines={1}>
+                                {request.property.title}
+                              </Text>
+                              {request.property.address ? (
+                                <Text style={styles.metaSubText} numberOfLines={1}>
+                                  {request.property.address}
+                                  {request.property.city ? `, ${request.property.city}` : ''}
+                                </Text>
+                              ) : null}
+                            </View>
                           </View>
                         )}
                         {request.category && (
@@ -223,6 +259,17 @@ export default function TenantMaintenanceListScreen() {
                           <Text style={styles.vendorName}>{request.assigned_vendor.company_name || request.assigned_vendor.full_name}</Text>
                         </View>
                       )}
+
+                      <View style={styles.cardActions}>
+                        <TouchableOpacity
+                          style={styles.messageBtn}
+                          onPress={() => handleMessageLandlord(request)}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="chatbubble-outline" size={16} color="#007A4D" />
+                          <Text style={styles.messageBtnText}>Message landlord</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   </AnimatedButton>
                 ))}

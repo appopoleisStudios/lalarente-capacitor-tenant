@@ -200,6 +200,19 @@ export const styles = StyleSheet.create({
     color: '#6b7280',
     fontWeight: '600',
   },
+  metaItemStacked: {
+    alignItems: 'flex-start',
+    flex: 1,
+    minWidth: '100%',
+  },
+  metaTextBlock: {
+    flex: 1,
+  },
+  metaSubText: {
+    fontSize: 12,
+    color: '#9ca3af',
+    marginTop: 2,
+  },
   vendorInfo: {
     marginTop: 12,
     paddingTop: 12,
@@ -218,5 +231,26 @@ export const styles = StyleSheet.create({
     fontSize: 13,
     color: RSA.green,
     fontWeight: '700',
+  },
+  cardActions: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  messageBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    backgroundColor: '#e6f7f0',
+  },
+  messageBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: RSA.green,
   },
 });
