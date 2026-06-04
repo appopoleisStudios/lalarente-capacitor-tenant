@@ -1,0 +1,10 @@
+# Maestro E2E — visible UI automation (simulator / device)
+# Credentials: copy .maestro/.env.example → .maestro/.env (gitignored)
+
+appId: com.lalarente.app
+
+env:
+  TENANT_EMAIL: ""
+  TENANT_PASSWORD: ""
+  OWNER_EMAIL: ""
+  OWNER_PASSWORD: ""

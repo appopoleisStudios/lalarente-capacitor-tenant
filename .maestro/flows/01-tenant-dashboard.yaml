@@ -1,0 +1,7 @@
+# Watch on simulator: login → tenant dashboard loads
+appId: com.lalarente.app
+---
+- launchApp
+- runFlow: ../subflows/login-tenant.yaml
+- assertVisible: "Maintenance"
+- assertVisible: "Lala AI"

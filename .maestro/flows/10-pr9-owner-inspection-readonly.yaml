@@ -1,0 +1,30 @@
+# PR #9 — Completed inspection opens read-only detail (not conduct checklist)
+appId: com.lalarente.app
+---
+- launchApp
+- runFlow: ../subflows/login-owner.yaml
+
+- scrollUntilVisible:
+    text: "My Documents"
+    direction: DOWN
+    timeout: 20000
+
+- tapOn: "Inspections"
+- tapOn: "Completed"
+
+- tapOn:
+    text: "Move-In"
+    index: 0
+    optional: true
+
+- tapOn:
+    text: "completed"
+    index: 0
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Completed"
+    timeout: 15000
+    optional: true
+
+- assertNotVisible: "Room 1 of"

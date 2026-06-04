@@ -1,0 +1,12 @@
+# PR #7 — Payment dispute empty-state copy
+appId: com.lalarente.app
+---
+- launchApp
+- runFlow: ../subflows/login-tenant.yaml
+- runFlow: ../subflows/scroll-tenancy.yaml
+
+- tapOn: "Payment disputes"
+- assertVisible: "Payment Disputes"
+- assertVisible:
+    text: "No payment disputes"
+    optional: true

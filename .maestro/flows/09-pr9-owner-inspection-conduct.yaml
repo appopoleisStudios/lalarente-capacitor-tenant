@@ -1,0 +1,30 @@
+# PR #9 — Owner conduct inspection, rooms render (S2-17, S2-18)
+appId: com.lalarente.app
+---
+- launchApp
+- runFlow: ../subflows/login-owner.yaml
+
+- scrollUntilVisible:
+    text: "My Documents"
+    direction: DOWN
+    timeout: 20000
+
+- tapOn: "Inspections"
+- assertVisible: "Inspections"
+
+- tapOn: "In Progress"
+- tapOn:
+    text: "Move-In"
+    index: 0
+    optional: true
+
+- tapOn:
+    text: "in progress"
+    index: 0
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Room 1 of"
+    timeout: 20000
+
+- assertVisible: "Excellent"

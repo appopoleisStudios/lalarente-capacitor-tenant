@@ -1,0 +1,40 @@
+# PR #10 — Messaging thread keyboard / input visible (S2-10, S2-15)
+appId: com.lalarente.app
+---
+- launchApp
+- runFlow: ../subflows/login-tenant.yaml
+
+- scrollUntilVisible:
+    text: "Messages"
+    direction: DOWN
+    timeout: 20000
+
+- tapOn:
+    text: "Messages"
+    below: "Maintenance"
+    optional: true
+
+- tapOn: "Messages"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Messages"
+    timeout: 15000
+
+- tapOn:
+    point: "50%,45%"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Type a message..."
+    timeout: 15000
+    optional: true
+
+- tapOn:
+    text: "Type a message..."
+    optional: true
+
+- inputText: "QA keyboard visibility check"
+- hideKeyboard
+
+- assertVisible: "QA keyboard visibility check"

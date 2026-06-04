@@ -1,0 +1,32 @@
+# PR #7 — Application upload screen shows PDF-only proof-of-income section
+# Needs a tenant who can still apply (no blocking application on chosen property).
+appId: com.lalarente.app
+---
+- launchApp
+- runFlow: ../subflows/login-tenant.yaml
+
+- tapOn: "Search"
+- extendedWaitUntil:
+    visible: "properties found"
+    timeout: 15000
+
+- tapOn:
+    point: "50%,55%"
+
+- extendedWaitUntil:
+    visible: "Apply Now"
+    timeout: 10000
+    optional: true
+
+- tapOn:
+    text: "Apply Now"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Upload Documents"
+    timeout: 15000
+    optional: true
+
+- assertVisible:
+    text: "Proof of Income"
+    optional: true

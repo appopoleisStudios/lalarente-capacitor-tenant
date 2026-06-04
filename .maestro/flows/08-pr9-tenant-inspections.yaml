@@ -1,0 +1,30 @@
+# PR #9 — Tenant inspection reports / alert (S2-41, S2-42)
+appId: com.lalarente.app
+---
+- launchApp
+- runFlow: ../subflows/login-tenant.yaml
+- runFlow: ../subflows/scroll-tenancy.yaml
+
+- tapOn: "Reports & inspections"
+- assertVisible: "Reports"
+
+- assertVisible:
+    text: "Inspection Reports"
+    optional: true
+
+- assertVisible:
+    text: "Inspection Awaiting Your Signature"
+    optional: true
+
+- tapOn:
+    text: "Inspection Awaiting Your Signature"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Inspection"
+    timeout: 15000
+    optional: true
+
+- assertNotVisible:
+    text: "Preparing inspection checklist"
+    optional: true

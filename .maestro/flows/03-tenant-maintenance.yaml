@@ -1,0 +1,10 @@
+# Watch on simulator: login → open maintenance list
+appId: com.lalarente.app
+---
+- launchApp
+- runFlow: ../subflows/login-tenant.yaml
+
+- tapOn: "Maintenance"
+- extendedWaitUntil:
+    visible: "Maintenance"
+    timeout: 10000

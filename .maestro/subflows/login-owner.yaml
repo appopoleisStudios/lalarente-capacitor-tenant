@@ -1,0 +1,18 @@
+appId: com.lalarente.app
+---
+- assertVisible: "Welcome Back"
+
+- tapOn:
+    text: "your@email.com"
+- inputText: ${OWNER_EMAIL}
+
+- tapOn:
+    text: "Enter your password"
+- inputText: ${OWNER_PASSWORD}
+
+- hideKeyboard
+- tapOn: "Sign In"
+
+- extendedWaitUntil:
+    visible: "Portfolio Dashboard"
+    timeout: 20000
