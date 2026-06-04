@@ -1,15 +1,15 @@
-# Reusable tenant login — taps visible labels/placeholders, types like a user
+# Reusable tenant login — tap Email/Password labels, type in each field
 appId: com.lalarente.app
 ---
 - assertVisible: "Welcome Back"
 - assertVisible: "Sign in to your account"
 
-- tapOn:
-    text: "your@email.com"
+- tapOn: "Email"
 - inputText: ${TENANT_EMAIL}
 
-- tapOn:
-    text: "Enter your password"
+- hideKeyboard
+
+- tapOn: "Password"
 - inputText: ${TENANT_PASSWORD}
 
 - hideKeyboard

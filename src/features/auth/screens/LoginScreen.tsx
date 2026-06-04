@@ -145,13 +145,14 @@ export default function LoginScreen() {
 
             {/* Email Input */}
             <Animated.View entering={FadeInDown.delay(300).duration(600)}>
-              <Text style={styles.inputLabel}>Email</Text>
+              <Text style={styles.inputLabel} accessible={false}>Email</Text>
               <View style={styles.inputContainer}>
                 <Ionicons name="mail-outline" size={20} color={RSA_COLORS.textGray} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="your@email.com"
                   placeholderTextColor={RSA_COLORS.textGray}
+                  accessibilityLabel="Email"
                   value={email}
                   onChangeText={setEmail}
                   autoCapitalize="none"
@@ -164,13 +165,14 @@ export default function LoginScreen() {
 
             {/* Password Input */}
             <Animated.View entering={FadeInDown.delay(400).duration(600)}>
-              <Text style={styles.inputLabel}>Password</Text>
+              <Text style={styles.inputLabel} accessible={false}>Password</Text>
               <View style={styles.inputContainer}>
                 <Ionicons name="lock-closed-outline" size={20} color={RSA_COLORS.textGray} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="Enter your password"
                   placeholderTextColor={RSA_COLORS.textGray}
+                  accessibilityLabel="Password"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
