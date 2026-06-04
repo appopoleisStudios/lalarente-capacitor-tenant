@@ -1,7 +1,7 @@
 # Client hands-on test run — build 4 (Sheet 2)
 
 **Source:** `navins_feedback/Feedback on Architecture (1).xlsx` → tab **Feedback 2**  
-**Tester:** Navin (owner `indraj.navin@gmail.com`, tenant `navin.indraj@yahoo.com`)  
+**Tester:** Client QA personas — owner and tenant logins in team vault only (not in git)  
 **Purpose:** Actionable bugs from real device testing — **not** the same as Sheet 1 architecture checklist.
 
 Link from matrix: [CLIENT_FEEDBACK_MATRIX.md](./CLIENT_FEEDBACK_MATRIX.md) § Sheet 2.
@@ -42,7 +42,7 @@ Link from matrix: [CLIENT_FEEDBACK_MATRIX.md](./CLIENT_FEEDBACK_MATRIX.md) § Sh
 | S2-22 | Add property 12E Ocean | OK | OK | — |
 | S2-23 | Edit property add photo | OK on edit screen | OK | — |
 
-## Tenant test script (`navin.indraj@yahoo.com`)
+## Tenant test script (QA tenant login)
 
 | S2 | Step | Client result | Severity | Tracker / PR |
 |----|------|---------------|----------|--------------|

@@ -4,7 +4,7 @@
 
 - **project_ref:** `vvepwaolnkzfzhzgxlwr`
 - **API URL:** `https://vvepwaolnkzfzhzgxlwr.supabase.co`
-- **MCP (this repo):** [`.cursor/mcp.json`](../.cursor/mcp.json)
+- **MCP (local):** [SUPABASE_MCP_SETUP.md](./SUPABASE_MCP_SETUP.md) — create `.cursor/mcp.json` locally (gitignored)
 
 ## SDLC (every feature / PR)
 
@@ -34,12 +34,12 @@
 
 ## QA logins
 
-| Role | Email |
-|------|-------|
-| Owner (Navin) | indraj.navin@gmail.com |
-| Tenant (Nashin) | navin.indraj@yahoo.com |
+| Role | Where stored |
+|------|----------------|
+| Owner QA persona | Team vault / Plane (not in git) |
+| Tenant QA persona | Team vault / Plane (not in git) |
 
-See [DB_AUDIT_BUILD5.md](./DB_AUDIT_BUILD5.md) for IDs and lease.
+See [DB_AUDIT_BUILD5.md](./DB_AUDIT_BUILD5.md) for data snapshot (no PII).
 
 ## Build numbering
 

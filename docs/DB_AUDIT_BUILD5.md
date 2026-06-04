@@ -1,55 +1,56 @@
 # DB audit — build 5
 
-**Project:** LaLarente  
-**Supabase URL:** `https://vvepwaolnkzfzhzgxlwr.supabase.co`  
-**project_ref:** `vvepwaolnkzfzhzgxlwr`  
+**Project:** LaLarente (Supabase project ref in team vault)  
 **Audit date:** 2026-06-04  
-**Method:** Supabase MCP (read-only)
+**Auditor:** Engineering (manual review of query results against staging)
 
-## QA accounts
+## Purpose
 
-| Role | Name | Profile ID | Email |
-|------|------|------------|-------|
-| Owner | Navin Indraj | `e7f57cdd-78dd-41ab-9f4c-4333dd9776e6` | indraj.navin@gmail.com |
-| Tenant | Nashin Indraj | `763dea05-493e-4f38-9d34-509da8e43bd8` | navin.indraj@yahoo.com |
+Confirm what QA data already exists before writing seed SQL or assuming “empty” screens are missing features.
 
-## Active lease (Navin ↔ Nashin)
+## QA personas (credentials not in git)
 
-| Field | Value |
-|-------|-------|
-| Lease ID | `a1b2c3d4-0001-4000-a000-000000000001` |
-| Status | `active` |
-| Property | 4B Dolphin Crescent (`217247dd-832b-49da-843b-8002909f5553`) |
+| Role | Notes |
+|------|--------|
+| Owner QA account | Named client persona used for owner-side test script |
+| Tenant QA account | Separate login used for tenant test script |
 
-## Row counts (relevant)
+Login emails and profile UUIDs live in the **team password vault / Plane only** — never commit to the repository (POPIA).
 
-| Table | Rows | Note |
-|-------|------|------|
+## Lease and property state
+
+- One **active lease** links the QA tenant to the QA owner on a Dolphin Crescent property.
+- Owner QA account has multiple properties (mix of rented and available).
+- Messaging threads exist between the two QA personas.
+
+## Table row counts (snapshot)
+
+| Area | Approx. rows | Implication for UI |
+|------|--------------|-------------------|
 | profiles | 29 | |
-| properties | 13 | Navin owns 13 |
-| leases | 5 | 3 active, 2 early_terminated |
+| properties | 13 | Owner QA has portfolio |
+| leases | 5 | 3 active, 2 early-terminated |
 | rental_applications | 5 | |
 | maintenance_requests | 11 | |
-| message_threads | 4 | 3 involve Navin/Nashin |
-| messages | 19 | |
-| payment_disputes | **0** | UI empty for client |
-| holding_deposits | **0** | |
-| arrears_escalations | **0** | |
-| payment_arrangements | **0** | |
+| message_threads / messages | 4 / 19 | Messaging works with data |
+| payment_disputes | 0 | Empty states, not missing screens |
+| holding_deposits | 0 | |
+| arrears_escalations | 0 | |
+| payment_arrangements | 0 | |
 | inspections | 4 | |
 | notifications | 40 | |
 
 ## Seed recommendations
 
-- **Do not** recreate Navin/Nashin or primary lease.
-- **Optional** (demo only): 2nd application on same property (Compare UI), 1 payment_dispute, 1 holding_deposit, 1 maintenance_request on 4B Dolphin.
-- Investigate app session: tenant flows hidden if login ≠ Nashin or `activeLease` query fails.
+- Do **not** recreate QA users or the primary active lease.
+- Optional demo rows only: second applicant on same property (Compare UI), one open dispute, one pending holding deposit.
+- If tenant flows look “missing”, verify the tester used the **tenant** QA login and an session with `activeLease` loaded.
 
-## Security advisory (MCP)
+## Security follow-up
 
-RLS disabled on: `message_threads`, `messages`, `message_attachments`, `documents`, `document_access_log`, `property_waitlist`, `standard_amenities`. Track in security PR **N2** — enable RLS with policies, do not enable without policies.
+Open RLS hardening is tracked as matrix row **N2** in [CLIENT_FEEDBACK_MATRIX.md](./CLIENT_FEEDBACK_MATRIX.md). Table-level detail is kept in the **private** security backlog (GitHub/Plane), not in this file.
 
 ## Edge functions deployed
 
-- `accrue-deposit-interest` (ACTIVE)
-- `lala-ai-chat` — **not deployed** (pending PR 1)
+- `accrue-deposit-interest` — active
+- `lala-ai-chat` — pending merge + deploy (build 5)
