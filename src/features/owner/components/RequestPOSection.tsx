@@ -53,7 +53,7 @@ export function RequestPOSection({ purchaseOrder, requestId, onPress, onSendPO }
       </TouchableOpacity>
       {awaitingSend && onSendPO && (
         <TouchableOpacity style={styles.sendButton} onPress={onSendPO} activeOpacity={0.8}>
-          <Ionicons name="send" size={18} color="#FFFFFF" />
+          <Ionicons name="send" size={18} color={colors.text.inverse} />
           <Text style={styles.sendButtonText}>Send PO to Vendor</Text>
         </TouchableOpacity>
       )}
@@ -135,6 +135,6 @@ const styles = StyleSheet.create({
   sendButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.common.white,
   },
 });
