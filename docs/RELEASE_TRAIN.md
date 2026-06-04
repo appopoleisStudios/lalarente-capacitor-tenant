@@ -50,9 +50,13 @@ Next target: **1.0.0-build.5-rev.0**
 
 | Order | Branch | Matrix |
 |-------|--------|--------|
-| 0 | `docs/release-control-sdlc` | Docs + MCP config |
-| 1 | `feat/ai-chat-edge` | N1 |
-| 2 | `feat/p0-tenant-ux` | T7, T9–T13, T11, T16–T21 |
-| 3 | `feat/qa-seed-build5` | O5–O6, O13–O14, T10–T12 |
-| 4 | `chore/security-rls-messaging` | N2 |
-| 5 | `chore/build-5-apk` | Version bump |
+| 0 | `docs/release-control-sdlc` | Sheet 1 + **Sheet 2** tracker, [CLIENT_TEST_RUN_BUILD4.md](./CLIENT_TEST_RUN_BUILD4.md) |
+| 1 | `feat/p0-tenant-ux` | T7; partial **Nav-gap** T9–T13, T16–T17 (not a substitute for Sheet 2 bugs) |
+| 2 | `feat/ai-chat-edge` | N1 |
+| 3 | `feat/qa-seed-build5` | **Data only** — does not fix Nav-gap or S2 crashes |
+| 4 | `fix/inspection-crash-tenant` | S2-41, S2-42 (P0) |
+| 5 | `fix/owner-inspection-rooms` | S2-17, S2-18 (P0) |
+| 6 | `fix/messaging-keyboard` | S2-10, S2-15 |
+| 7+ | See Sheet 2 table | Maintenance, lease PDF, property photos, owner Applications nav, etc. |
+| — | `chore/security-rls-messaging` | N2 |
+| — | `chore/build-5-apk` | After P0 Sheet 2 crashes fixed |
