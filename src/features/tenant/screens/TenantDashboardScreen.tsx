@@ -54,6 +54,16 @@ const TENANCY_SHORTCUTS: {
   },
 ];
 
+function inspectionPropertyTitle(property: unknown): string {
+  if (Array.isArray(property)) {
+    return (property[0] as { title?: string } | undefined)?.title ?? 'your property';
+  }
+  if (property && typeof property === 'object' && 'title' in property) {
+    return String((property as { title?: string }).title ?? 'your property');
+  }
+  return 'your property';
+}
+
 const getMaintenanceStatusStyle = (status: string) => {
   switch (status) {
     case 'open': return { backgroundColor: colors.warning[50] };
@@ -521,10 +531,13 @@ export default function TenantDashboardScreen() {
             <View style={styles.section}>
               <TouchableOpacity
                 style={styles.inspectionAlertCard}
-                onPress={() => router.push({
-                  pathname: '/(tenant)/inspections/[id]' as any,
-                  params: { id: pendingInspection.id },
-                })}
+                onPress={() => {
+                  if (!pendingInspection?.id) return;
+                  router.push({
+                    pathname: '/(tenant)/inspections/[id]',
+                    params: { id: String(pendingInspection.id) },
+                  } as Href);
+                }}
                 activeOpacity={0.8}
               >
                 <View style={styles.inspectionAlertHeader}>
@@ -534,7 +547,7 @@ export default function TenantDashboardScreen() {
                       Inspection Awaiting Your Signature
                     </Text>
                     <Text style={styles.inspectionAlertSub}>
-                      {pendingInspection.type === 'move_in' ? 'Move-In' : pendingInspection.type === 'move_out' ? 'Move-Out' : 'Periodic'} inspection at {pendingInspection.property?.title || 'your property'}
+                      {pendingInspection.type === 'move_in' ? 'Move-In' : pendingInspection.type === 'move_out' ? 'Move-Out' : 'Periodic'} inspection at {inspectionPropertyTitle(pendingInspection.property)}
                     </Text>
                   </View>
                   <Ionicons name="chevron-forward" size={18} color="#8B5CF6" />

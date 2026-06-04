@@ -1,3 +1,6 @@
-import OwnerInspectionDetailScreen from '@/src/features/inspections/screens/OwnerInspectionDetailScreen';
+import InspectionScreen from '@/src/features/inspections/screens/InspectionScreen';
 
-export default OwnerInspectionDetailScreen;
+/** Owner conducts inspections (room checklist, photos, sign-off) — S2-17/18 */
+export default function OwnerInspectionConductScreen() {
+  return <InspectionScreen role="owner" />;
+}

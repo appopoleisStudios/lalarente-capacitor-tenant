@@ -25,10 +25,9 @@ import {
   RoomInspection,
   RoomCondition,
   InspectionRooms,
-  DEFAULT_ROOMS,
-  ROOM_ITEMS,
   KeyHandover,
 } from '../types';
+import { parseInspectionRoomsField } from '../utils/normalizeRooms';
 
 const COLORS = {
   owner: { primary: '#002395', secondary: '#FFB81C' }, // RSA Blue
@@ -81,35 +80,16 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
       const data = await inspectionsApi.getInspection(inspectionId);
       setInspection(data);
 
-      // Initialize rooms from existing data or defaults
-      const existingRooms = (data.rooms as InspectionRooms)?.rooms || [];
-      if (existingRooms.length > 0) {
-        setRooms(existingRooms);
-      } else {
-        // Initialize with default rooms
-        const initialRooms: RoomInspection[] = DEFAULT_ROOMS.map(roomName => ({
-          name: roomName,
-          items: (ROOM_ITEMS[roomName] || []).map(item => ({
-            name: item,
-            condition: 'good' as RoomCondition,
-            notes: '',
-            photos: [],
-          })),
-          overallCondition: 'good' as RoomCondition,
-          notes: '',
-          photos: [],
-        }));
-        setRooms(initialRooms);
-      }
-
-      // Initialize keys
-      const existingKeys = (data.rooms as InspectionRooms)?.keys;
-      if (existingKeys) {
-        setKeys(existingKeys);
-      }
-
-      // Initialize general notes
-      setGeneralNotes((data.rooms as InspectionRooms)?.generalNotes || '');
+      const roomsPayload = parseInspectionRoomsField(data.rooms);
+      setRooms(roomsPayload.rooms);
+      setKeys(roomsPayload.keys ?? {
+        physicalKeys: 0,
+        accessCards: 0,
+        remoteControls: 0,
+        accessCodes: [],
+      });
+      setGeneralNotes(roomsPayload.generalNotes ?? '');
+      setCurrentRoomIndex(0);
     } catch (err) {
       console.error('Error loading inspection:', JSON.stringify(err));
       setError(err instanceof Error ? err.message : 'Failed to load inspection. Please try again.');
@@ -119,26 +99,44 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
   };
 
   const updateItemCondition = (itemIndex: number, condition: RoomCondition) => {
+    const room = rooms[currentRoomIndex];
+    if (!room?.items?.[itemIndex]) return;
     const updatedRooms = [...rooms];
-    updatedRooms[currentRoomIndex].items[itemIndex].condition = condition;
+    updatedRooms[currentRoomIndex] = {
+      ...room,
+      items: room.items.map((item, i) =>
+        i === itemIndex ? { ...item, condition } : item
+      ),
+    };
     setRooms(updatedRooms);
   };
 
   const updateItemNotes = (itemIndex: number, notes: string) => {
+    const room = rooms[currentRoomIndex];
+    if (!room?.items?.[itemIndex]) return;
     const updatedRooms = [...rooms];
-    updatedRooms[currentRoomIndex].items[itemIndex].notes = notes;
+    updatedRooms[currentRoomIndex] = {
+      ...room,
+      items: room.items.map((item, i) =>
+        i === itemIndex ? { ...item, notes } : item
+      ),
+    };
     setRooms(updatedRooms);
   };
 
   const updateRoomCondition = (condition: RoomCondition) => {
+    const room = rooms[currentRoomIndex];
+    if (!room) return;
     const updatedRooms = [...rooms];
-    updatedRooms[currentRoomIndex].overallCondition = condition;
+    updatedRooms[currentRoomIndex] = { ...room, overallCondition: condition };
     setRooms(updatedRooms);
   };
 
   const updateRoomNotes = (notes: string) => {
+    const room = rooms[currentRoomIndex];
+    if (!room) return;
     const updatedRooms = [...rooms];
-    updatedRooms[currentRoomIndex].notes = notes;
+    updatedRooms[currentRoomIndex] = { ...room, notes };
     setRooms(updatedRooms);
   };
 
@@ -150,17 +148,24 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
     });
 
     if (!result.canceled && result.assets[0]) {
+      if (rooms.length === 0) return;
+      const roomIdx = Math.min(Math.max(currentRoomIndex, 0), rooms.length - 1);
       const updatedRooms = [...rooms];
-      if (itemIndex !== undefined) {
-        // Add to item photos
-        const photos = updatedRooms[currentRoomIndex].items[itemIndex].photos || [];
-        photos.push(result.assets[0].uri);
-        updatedRooms[currentRoomIndex].items[itemIndex].photos = photos;
+      const room = updatedRooms[roomIdx];
+      if (!room) return;
+      if (itemIndex !== undefined && room.items[itemIndex]) {
+        const photos = [...(room.items[itemIndex].photos || []), result.assets[0].uri];
+        updatedRooms[roomIdx] = {
+          ...room,
+          items: room.items.map((item, i) =>
+            i === itemIndex ? { ...item, photos } : item
+          ),
+        };
       } else {
-        // Add to room photos
-        const photos = updatedRooms[currentRoomIndex].photos || [];
-        photos.push(result.assets[0].uri);
-        updatedRooms[currentRoomIndex].photos = photos;
+        updatedRooms[roomIdx] = {
+          ...room,
+          photos: [...(room.photos || []), result.assets[0].uri],
+        };
       }
       setRooms(updatedRooms);
     }
@@ -179,15 +184,24 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
     });
 
     if (!result.canceled && result.assets[0]) {
+      if (rooms.length === 0) return;
+      const roomIdx = Math.min(Math.max(currentRoomIndex, 0), rooms.length - 1);
       const updatedRooms = [...rooms];
-      if (itemIndex !== undefined) {
-        const photos = updatedRooms[currentRoomIndex].items[itemIndex].photos || [];
-        photos.push(result.assets[0].uri);
-        updatedRooms[currentRoomIndex].items[itemIndex].photos = photos;
+      const room = updatedRooms[roomIdx];
+      if (!room) return;
+      if (itemIndex !== undefined && room.items[itemIndex]) {
+        const photos = [...(room.items[itemIndex].photos || []), result.assets[0].uri];
+        updatedRooms[roomIdx] = {
+          ...room,
+          items: room.items.map((item, i) =>
+            i === itemIndex ? { ...item, photos } : item
+          ),
+        };
       } else {
-        const photos = updatedRooms[currentRoomIndex].photos || [];
-        photos.push(result.assets[0].uri);
-        updatedRooms[currentRoomIndex].photos = photos;
+        updatedRooms[roomIdx] = {
+          ...room,
+          photos: [...(room.photos || []), result.assets[0].uri],
+        };
       }
       setRooms(updatedRooms);
     }
@@ -308,9 +322,12 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
     }
   };
 
-  const currentRoom = rooms[currentRoomIndex];
-  const isLastRoom = currentRoomIndex === rooms.length - 1;
-  const isFirstRoom = currentRoomIndex === 0;
+  const roomCount = rooms.length;
+  const safeRoomIndex =
+    roomCount > 0 ? Math.min(Math.max(currentRoomIndex, 0), roomCount - 1) : 0;
+  const currentRoom = roomCount > 0 ? rooms[safeRoomIndex] : undefined;
+  const isLastRoom = roomCount > 0 && safeRoomIndex === roomCount - 1;
+  const isFirstRoom = safeRoomIndex === 0;
   const canComplete = inspection?.status === 'in_progress' || inspection?.status === 'scheduled';
   const canSign = inspection?.status === 'pending_signatures';
   const hasSigned = role === 'owner'
@@ -318,9 +335,13 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
     : !!inspection?.tenant_signed_at;
 
   // Photo validation — every room must have at least 1 photo (room-level or item-level)
-  const getRoomPhotoCount = (room: RoomInspection): number => {
+  const getRoomPhotoCount = (room: RoomInspection | undefined): number => {
+    if (!room) return 0;
     const roomPhotos = room.photos?.length || 0;
-    const itemPhotos = room.items.reduce((sum, item) => sum + (item.photos?.length || 0), 0);
+    const itemPhotos = (room.items ?? []).reduce(
+      (sum, item) => sum + (item.photos?.length || 0),
+      0
+    );
     return roomPhotos + itemPhotos;
   };
 
@@ -375,6 +396,17 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
     );
   }
 
+  if (roomCount === 0) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.errorText, { color: '#666' }]}>Preparing inspection checklist…</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView>
@@ -406,20 +438,20 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
               style={[
                 styles.progressFill,
                 {
-                  width: `${((currentRoomIndex + 1) / rooms.length) * 100}%`,
+                  width: `${((safeRoomIndex + 1) / roomCount) * 100}%`,
                   backgroundColor: colors.primary,
                 },
               ]}
             />
           </View>
           <Text style={styles.progressText}>
-            Room {currentRoomIndex + 1} of {rooms.length}
+            Room {safeRoomIndex + 1} of {roomCount}
           </Text>
           {/* Room photo status dots */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.roomDots}>
             {rooms.map((room, idx) => {
               const hasPhotos = getRoomPhotoCount(room) > 0;
-              const isCurrent = idx === currentRoomIndex;
+              const isCurrent = idx === safeRoomIndex;
               return (
                 <TouchableOpacity
                   key={idx}
@@ -725,7 +757,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
         <View style={styles.navigationButtons}>
           <TouchableOpacity
             style={[styles.navButton, isFirstRoom && styles.navButtonDisabled]}
-            onPress={() => setCurrentRoomIndex(currentRoomIndex - 1)}
+            onPress={() => setCurrentRoomIndex(safeRoomIndex - 1)}
             disabled={isFirstRoom}
           >
             <Ionicons name="chevron-back" size={24} color={isFirstRoom ? '#CCC' : colors.primary} />
@@ -790,7 +822,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
           ) : (
             <TouchableOpacity
               style={[styles.navButton, { borderColor: colors.primary }]}
-              onPress={() => setCurrentRoomIndex(currentRoomIndex + 1)}
+              onPress={() => setCurrentRoomIndex(safeRoomIndex + 1)}
             >
               <Text style={[styles.navButtonText, { color: colors.primary }]}>Next</Text>
               <Ionicons name="chevron-forward" size={24} color={colors.primary} />
