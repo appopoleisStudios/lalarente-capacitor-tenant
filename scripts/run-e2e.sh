@@ -6,15 +6,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ENV_FILE="$ROOT/.maestro/.env"
 
-if ! command -v maestro >/dev/null 2>&1; then
-  echo "Maestro is not installed."
-  echo ""
-  echo "Install (macOS/Linux):"
-  echo "  curl -Ls \"https://get.maestro.mobile.dev\" | bash"
-  echo ""
-  echo "Then re-run: npm run test:e2e"
-  exit 1
-fi
+# shellcheck source=lib/resolve-maestro.sh
+source "$ROOT/scripts/lib/resolve-maestro.sh"
 
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "Missing $ENV_FILE"
@@ -38,10 +31,11 @@ cd "$ROOT"
 
 FLOW="${1:-.maestro/flows}"
 echo "▶ Maestro UI tests — watch your simulator/emulator"
+echo "  CLI: $MAESTRO_BIN"
 echo "  Flows: $FLOW"
 echo ""
 
-maestro test "$FLOW" \
+"$MAESTRO_BIN" test "$FLOW" \
   --env TENANT_EMAIL="$TENANT_EMAIL" \
   --env TENANT_PASSWORD="$TENANT_PASSWORD" \
   --env OWNER_EMAIL="$OWNER_EMAIL" \

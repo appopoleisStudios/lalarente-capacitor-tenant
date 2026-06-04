@@ -6,10 +6,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="${1:-}"
 
-if ! command -v maestro >/dev/null 2>&1; then
-  echo "Install Maestro: curl -Ls \"https://get.maestro.mobile.dev\" | bash"
-  exit 1
-fi
+# shellcheck source=lib/resolve-maestro.sh
+source "$ROOT/scripts/lib/resolve-maestro.sh"
 
 if [[ -z "$OUT" ]]; then
   echo "Usage: $0 .maestro/flows/my-flow.yaml"
@@ -18,8 +16,9 @@ fi
 
 mkdir -p "$(dirname "$ROOT/$OUT")"
 echo "▶ Use the app normally — Maestro records taps and typing"
+echo "  CLI: $MAESTRO_BIN"
 echo "  Output: $OUT"
 echo ""
 
 cd "$ROOT"
-maestro record "$OUT"
+"$MAESTRO_BIN" record "$OUT"

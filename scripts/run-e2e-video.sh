@@ -7,10 +7,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ENV_FILE="$ROOT/.maestro/.env"
 OUT_DIR="$ROOT/qa-videos/$(date +%Y%m%d-%H%M%S)"
 
-if ! command -v maestro >/dev/null 2>&1; then
-  echo "Install Maestro: curl -Ls \"https://get.maestro.mobile.dev\" | bash"
-  exit 1
-fi
+# shellcheck source=lib/resolve-maestro.sh
+source "$ROOT/scripts/lib/resolve-maestro.sh"
 
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "Copy .maestro/.env.example → .maestro/.env and set QA credentials."
@@ -66,7 +64,7 @@ for flow in "${FLOWS[@]}"; do
   echo ""
   echo "▶ Recording $flow → $out_mp4"
   echo "  (Watch the simulator — Maestro taps and types visibly)"
-  if maestro record --local "${ENV_ARGS[@]}" ".maestro/flows/$flow" "$out_mp4"; then
+  if "$MAESTRO_BIN" record --local "${ENV_ARGS[@]}" ".maestro/flows/$flow" "$out_mp4"; then
     echo "  ✓ $name"
   else
     echo "  ✗ $name (see logs)"

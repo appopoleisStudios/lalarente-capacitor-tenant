@@ -18,7 +18,16 @@ These tests **use the app like a human**: you watch the simulator/emulator while
    curl -Ls "https://get.maestro.mobile.dev" | bash
    ```
 
-2. **Build or run the app on a simulator** (same bundle id as production dev build)
+2. **Add Maestro to your shell PATH** (installer uses `~/.maestro/bin` — npm does not load `.zshrc`)
+   ```bash
+   echo 'export PATH="$PATH:$HOME/.maestro/bin"' >> ~/.zshrc
+   source ~/.zshrc
+   ~/.maestro/bin/maestro --version
+   ```
+   Our npm scripts also auto-detect `~/.maestro/bin/maestro` if PATH is missing. You can override with:
+   `export MAESTRO_BIN="$HOME/.maestro/bin/maestro"`
+
+3. **Build or run the app on a simulator** (same bundle id as production dev build)
    ```bash
    npx expo run:ios
    # or
@@ -26,7 +35,7 @@ These tests **use the app like a human**: you watch the simulator/emulator while
    ```
    App id: `com.lalarente.app` (not Expo Go).
 
-3. **Credentials**
+4. **Credentials**
    ```bash
    cp .maestro/.env.example .maestro/.env
    # Edit .maestro/.env with tenant + owner QA logins
@@ -78,7 +87,15 @@ See [QA_E2E_COVERAGE.md](./QA_E2E_COVERAGE.md) for the full PR / Sheet 2 mapping
 
 | Problem | Fix |
 |---------|-----|
+| "Maestro is not installed" | Add `export PATH="$PATH:$HOME/.maestro/bin"` to `~/.zshrc`, or run `~/.maestro/bin/maestro --version` to confirm install |
 | "App not found" | Install dev build with `npx expo run:ios` first |
 | Login timeout | Check `.maestro/.env` credentials |
 | Lala AI fails | Confirm `GROQ_API_KEY` on Supabase Edge |
 | Wrong screen | Re-record with `npm run test:e2e:record` |
+
+## Quick check on Mac mini
+
+```bash
+ls -la ~/.maestro/bin/maestro
+npm run test:e2e
+```
