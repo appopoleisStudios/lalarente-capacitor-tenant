@@ -10,11 +10,11 @@ appId: com.lalarente.app
     timeout: 20000
 
 - tapOn:
-    text: "Messages"
-    below: "Maintenance"
+    text: "See All"
     optional: true
 
-- tapOn: "Messages"
+- tapOn:
+    text: "Messages"
     optional: true
 
 - extendedWaitUntil:
@@ -27,8 +27,7 @@ appId: com.lalarente.app
 
 - extendedWaitUntil:
     visible: "Type a message..."
-    timeout: 15000
-    optional: true
+    timeout: 20000
 
 - tapOn:
     text: "Type a message..."
