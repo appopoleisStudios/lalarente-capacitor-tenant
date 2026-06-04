@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "supabase-lalarente": {
+      "url": "https://mcp.supabase.com/mcp?project_ref=vvepwaolnkzfzhzgxlwr&read_only=true"
+    }
+  }
+}
