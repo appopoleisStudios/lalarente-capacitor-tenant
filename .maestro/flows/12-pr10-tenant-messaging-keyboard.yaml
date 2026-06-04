@@ -5,7 +5,7 @@ appId: com.lalarente.app
 - runFlow: ../subflows/login-tenant.yaml
 
 - scrollUntilVisible:
-    text: "Messages"
+    element: "Messages"
     direction: DOWN
     timeout: 20000
 

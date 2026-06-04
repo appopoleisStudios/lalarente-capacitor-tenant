@@ -5,7 +5,7 @@ appId: com.lalarente.app
 - runFlow: ../subflows/login-tenant.yaml
 
 - scrollUntilVisible:
-    text: "View Lease Details"
+    element: "View Lease Details"
     direction: DOWN
     timeout: 20000
 

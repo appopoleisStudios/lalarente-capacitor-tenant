@@ -29,13 +29,21 @@ done
 
 cd "$ROOT"
 
-FLOW="${1:-.maestro/flows}"
+if [[ -n "${1:-}" ]]; then
+  FLOW_ARGS=("$1")
+else
+  # Numbered flows only — skip build5-shipped-suite.yaml (orchestrator, not a standalone test)
+  shopt -s nullglob
+  FLOW_ARGS=(.maestro/flows/[0-9]*.yaml)
+  shopt -u nullglob
+fi
+
 echo "▶ Maestro UI tests — watch your simulator/emulator"
 echo "  CLI: $MAESTRO_BIN"
-echo "  Flows: $FLOW"
+echo "  Flows: ${FLOW_ARGS[*]}"
 echo ""
 
-"$MAESTRO_BIN" test "$FLOW" \
+"$MAESTRO_BIN" test "${FLOW_ARGS[@]}" \
   --env TENANT_EMAIL="$TENANT_EMAIL" \
   --env TENANT_PASSWORD="$TENANT_PASSWORD" \
   --env OWNER_EMAIL="$OWNER_EMAIL" \

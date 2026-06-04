@@ -8,7 +8,7 @@ appId: com.lalarente.app
 - assertVisible: "Maintenance"
 
 - scrollUntilVisible:
-    text: "Message landlord"
+    element: "Message landlord"
     direction: DOWN
     timeout: 15000
     optional: true

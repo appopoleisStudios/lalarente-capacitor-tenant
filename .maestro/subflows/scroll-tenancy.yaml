@@ -1,6 +1,6 @@
 appId: com.lalarente.app
 ---
 - scrollUntilVisible:
-    text: "Your tenancy"
+    element: "Your tenancy"
     direction: DOWN
     timeout: 15000
