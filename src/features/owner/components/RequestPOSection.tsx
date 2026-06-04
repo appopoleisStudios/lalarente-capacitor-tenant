@@ -135,6 +135,6 @@ const styles = StyleSheet.create({
   sendButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: colors.common.white,
+    color: colors.text.inverse,
   },
 });
