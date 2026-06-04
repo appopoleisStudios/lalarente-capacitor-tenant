@@ -619,6 +619,69 @@ export default function TenantDashboardScreen() {
             </View>
           )}
 
+          {/* Tenancy shortcuts — visible when tenant has an active lease */}
+          {activeLease && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Your tenancy</Text>
+              <TouchableOpacity
+                style={styles.depositCard}
+                onPress={() => router.push('/(tenant)/payments' as any)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.depositLeft}>
+                  <Ionicons name="card-outline" size={24} color={colors.rsa.blue} />
+                  <View>
+                    <Text style={styles.depositTitle}>Payments & arrears</Text>
+                    <Text style={styles.depositSub}>Rent, disputes, and escalation status</Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.depositCard, { marginTop: 8 }]}
+                onPress={() => router.push('/(tenant)/payment-disputes' as any)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.depositLeft}>
+                  <Ionicons name="alert-circle-outline" size={24} color="#D97706" />
+                  <View>
+                    <Text style={styles.depositTitle}>Payment disputes</Text>
+                    <Text style={styles.depositSub}>Raise or track a payment query</Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.depositCard, { marginTop: 8 }]}
+                onPress={() => router.push('/(tenant)/holding-deposit' as any)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.depositLeft}>
+                  <Ionicons name="shield-checkmark-outline" size={24} color={colors.rsa.green} />
+                  <View>
+                    <Text style={styles.depositTitle}>Holding deposits</Text>
+                    <Text style={styles.depositSub}>Application deposits and RHA rights</Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.depositCard, { marginTop: 8 }]}
+                onPress={() => router.push('/(tenant)/reports' as any)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.depositLeft}>
+                  <Ionicons name="clipboard-outline" size={24} color="#8B5CF6" />
+                  <View>
+                    <Text style={styles.depositTitle}>Reports & inspections</Text>
+                    <Text style={styles.depositSub}>Inspection history and work verification</Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
+              </TouchableOpacity>
+            </View>
+          )}
+
           {/* Upcoming Viewings */}
           {upcomingViewings.length > 0 && (
             <View style={styles.section}>
@@ -998,6 +1061,16 @@ export default function TenantDashboardScreen() {
                   <Ionicons name="chatbubbles" size={24} color={colors.rsa.green} />
                 </View>
                 <Text style={styles.actionText}>Messages</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => router.push('/(tenant)/reports' as any)}
+              >
+                <View style={[styles.actionIcon, { backgroundColor: '#F3E8FF' }]}>
+                  <Ionicons name="clipboard-outline" size={24} color="#8B5CF6" />
+                </View>
+                <Text style={styles.actionText}>Reports</Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -291,8 +291,12 @@ export default function OwnerPaymentDisputesScreen() {
         {disputes.length === 0 ? (
           <View style={styles.emptyCard}>
             <Ionicons name="shield-checkmark-outline" size={48} color="#9CA3AF" />
-            <Text style={styles.emptyTitle}>No Disputes</Text>
-            <Text style={styles.emptySubtitle}>No payment disputes have been raised</Text>
+            <Text style={styles.emptyTitle}>No payment disputes yet</Text>
+            <Text style={styles.emptySubtitle}>
+              When a tenant disputes a charge, it appears here. You can mark under review,
+              accept (resolve), or reject with a reason. Tenants raise disputes from
+              Payments → Dispute a Payment.
+            </Text>
           </View>
         ) : (
           <>
