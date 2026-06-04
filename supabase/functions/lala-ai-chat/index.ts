@@ -215,8 +215,17 @@ serve(async (req) => {
     });
 
     if (!groqRes.ok) {
-      const errText = await groqRes.text();
-      console.error('Groq error:', groqRes.status, errText);
+      let errSummary = groqRes.statusText || 'unknown';
+      try {
+        const errJson = await groqRes.json();
+        const msg = errJson?.error?.message ?? errJson?.message;
+        if (typeof msg === 'string' && msg.length > 0) {
+          errSummary = msg.slice(0, 200);
+        }
+      } catch {
+        /* ignore non-JSON body */
+      }
+      console.error('Groq error:', groqRes.status, errSummary);
       return new Response(JSON.stringify({ error: 'AI provider error' }), {
         status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

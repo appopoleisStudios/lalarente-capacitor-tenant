@@ -128,17 +128,19 @@ export default function LalaChatScreen() {
     const nextMessages = [...messages, newUserMsg];
     setMessages(nextMessages);
     setInputText('');
-    fetchAiResponse(userText, messages);
+    fetchAiResponse(userText, nextMessages);
   };
 
   const handleRetry = () => {
-    const lastUserMsg = messages.filter((m) => m.role === 'user').pop();
+    let history = messages;
+    const last = messages[messages.length - 1];
+    if (last?.role === 'ai') {
+      history = messages.slice(0, -1);
+      setMessages(history);
+    }
+    const lastUserMsg = history.filter((m) => m.role === 'user').pop();
     if (lastUserMsg) {
-      const prior = messages.slice(0, -1);
-      const lastAiIndex = prior.map((m) => m.role).lastIndexOf('ai');
-      const withoutFailedAi = lastAiIndex >= 0 ? prior.slice(0, lastAiIndex) : prior;
-      setMessages(withoutFailedAi);
-      fetchAiResponse(lastUserMsg.text, withoutFailedAi);
+      fetchAiResponse(lastUserMsg.text, history);
     }
   };
 
