@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { supabase } from '../../../lib/supabase';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 
@@ -163,48 +164,96 @@ export default function TenantProfileScreen() {
     }
   };
 
-  const handleUploadProofOfAddress = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        quality: 0.7,
-        allowsEditing: false,
-      });
+  const uploadProofOfAddress = async (uri: string, mimeType: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
-      if (result.canceled || !result.assets?.length) return;
+    const ext = mimeType === 'application/pdf'
+      ? 'pdf'
+      : mimeType.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
+    const path = `proof-of-address/${user.id}/poa_${Date.now()}.${ext}`;
 
-      const asset = result.assets[0];
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+    const response = await fetch(uri);
+    const arrayBuffer = await response.arrayBuffer();
 
-      // Reliable MIME + extension detection — strip query params from URI
-      const mimeType = asset.mimeType || 'image/jpeg';
-      const ext = mimeType.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
-      const path = `proof-of-address/${user.id}/poa_${Date.now()}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from('documents')
+      .upload(path, arrayBuffer, { contentType: mimeType, upsert: true });
 
-      // ArrayBuffer upload is reliable on Android (blob can silently fail)
-      const response = await fetch(asset.uri);
-      const arrayBuffer = await response.arrayBuffer();
+    if (uploadError) throw uploadError;
 
-      const { error: uploadError } = await supabase.storage
-        .from('documents')
-        .upload(path, arrayBuffer, { contentType: mimeType, upsert: true });
+    const { data: urlData } = supabase.storage.from('documents').getPublicUrl(path);
+    setProofOfAddressUrl(urlData.publicUrl);
 
-      if (uploadError) throw uploadError;
+    await supabase
+      .from('profiles')
+      .update({ proof_of_address_url: urlData.publicUrl })
+      .eq('id', user.id);
 
-      const { data: urlData } = supabase.storage.from('documents').getPublicUrl(path);
-      setProofOfAddressUrl(urlData.publicUrl);
+    Alert.alert('Uploaded', 'Proof of address uploaded successfully');
+  };
 
-      // Auto-save the URL
-      await supabase
-        .from('profiles')
-        .update({ proof_of_address_url: urlData.publicUrl })
-        .eq('id', user.id);
-
-      Alert.alert('Uploaded', 'Proof of address uploaded successfully');
-    } catch (err: any) {
-      Alert.alert('Error', err?.message || 'Failed to upload document');
-    }
+  const handleUploadProofOfAddress = () => {
+    Alert.alert('Upload Document', 'Choose source', [
+      {
+        text: 'Take Photo',
+        onPress: async () => {
+          try {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert('Permission Required', 'Camera access is needed to take a photo');
+              return;
+            }
+            const result = await ImagePicker.launchCameraAsync({
+              mediaTypes: ['images'],
+              quality: 0.7,
+            });
+            if (result.canceled || !result.assets?.length) return;
+            const asset = result.assets[0];
+            await uploadProofOfAddress(asset.uri, asset.mimeType || 'image/jpeg');
+          } catch (err: any) {
+            Alert.alert('Error', err?.message || 'Failed to upload document');
+          }
+        },
+      },
+      {
+        text: 'Photo Library',
+        onPress: async () => {
+          try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ['images'],
+              quality: 0.7,
+              allowsEditing: false,
+            });
+            if (result.canceled || !result.assets?.length) return;
+            const asset = result.assets[0];
+            await uploadProofOfAddress(asset.uri, asset.mimeType || 'image/jpeg');
+          } catch (err: any) {
+            Alert.alert('Error', err?.message || 'Failed to upload document');
+          }
+        },
+      },
+      {
+        text: 'Choose File (PDF or image)',
+        onPress: async () => {
+          try {
+            const result = await DocumentPicker.getDocumentAsync({
+              type: ['image/*', 'application/pdf'],
+              copyToCacheDirectory: true,
+            });
+            if (result.canceled || !result.assets?.[0]) return;
+            const asset = result.assets[0];
+            await uploadProofOfAddress(
+              asset.uri,
+              asset.mimeType || 'application/octet-stream'
+            );
+          } catch (err: any) {
+            Alert.alert('Error', err?.message || 'Failed to upload document');
+          }
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   // Profile completion check
@@ -470,7 +519,7 @@ export default function TenantProfileScreen() {
                 </TouchableOpacity>
               )}
               <Text style={styles.uploadHint}>
-                Recent utility bill, bank statement, or municipal account (not older than 3 months)
+                Recent utility bill, bank statement, or municipal account (photo or PDF, not older than 3 months)
               </Text>
             </View>
           </View>
