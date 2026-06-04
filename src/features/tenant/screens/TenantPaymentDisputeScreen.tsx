@@ -236,8 +236,11 @@ export default function TenantPaymentDisputeScreen() {
         {disputes.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="shield-checkmark-outline" size={48} color={colors.gray[300]} />
-            <Text style={styles.emptyText}>No disputes</Text>
-            <Text style={styles.emptySubtext}>Tap + to raise a new payment dispute</Text>
+            <Text style={styles.emptyText}>No payment disputes</Text>
+            <Text style={styles.emptySubtext}>
+              Tap + to dispute a pending or completed charge. Your landlord will review,
+              mark under review, accept, or reject. Track status here.
+            </Text>
           </View>
         ) : (
           disputes.map((dispute) => {
