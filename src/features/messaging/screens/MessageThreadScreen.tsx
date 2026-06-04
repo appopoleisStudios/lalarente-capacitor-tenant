@@ -7,12 +7,12 @@ import {
   TextInput,
   ActivityIndicator,
   StyleSheet,
-  KeyboardAvoidingView,
   Platform,
   Image,
   Keyboard,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { messagesApi } from '../api/messagesApi';
@@ -33,6 +33,7 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const roleColors = ROLE_COLORS[role];
+  const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList>(null);
 
   const [thread, setThread] = useState<ThreadWithRelations | null>(null);
@@ -242,9 +243,13 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
   const category = thread?.category as ThreadCategory;
   const categoryInfo = category ? CATEGORY_INFO[category] : null;
 
+  const scrollToBottom = () => {
+    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50);
+  };
+
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={roleColors.primary} />
         </View>
@@ -253,11 +258,11 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
       >
         {/* Header */}
         <View style={styles.header}>
@@ -302,10 +307,13 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
         {/* Messages */}
         <FlatList
           ref={flatListRef}
+          style={styles.messagesFlex}
           data={messages}
           keyExtractor={item => item.id}
           renderItem={renderMessage}
           contentContainerStyle={styles.messagesList}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
           onContentSizeChange={() => {
             flatListRef.current?.scrollToEnd({ animated: false });
           }}
@@ -320,7 +328,7 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
 
         {/* Input Bar */}
         {thread?.status === 'active' ? (
-          <View style={styles.inputBar}>
+          <View style={[styles.inputBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
             <TextInput
               style={styles.textInput}
               placeholder="Type a message..."
@@ -328,6 +336,7 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
               onChangeText={setMessageText}
               multiline
               maxLength={2000}
+              onFocus={scrollToBottom}
             />
             <TouchableOpacity
               style={[
@@ -346,7 +355,7 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
             </TouchableOpacity>
           </View>
         ) : (
-          <View style={styles.closedBar}>
+          <View style={[styles.closedBar, { paddingBottom: Math.max(insets.bottom, 16) }]}>
             <Ionicons name="lock-closed" size={16} color={colors.text.secondary} />
             <Text style={styles.closedText}>This conversation is closed</Text>
           </View>
@@ -442,6 +451,9 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     color: colors.text.secondary,
+  },
+  messagesFlex: {
+    flex: 1,
   },
   messagesList: {
     padding: 16,

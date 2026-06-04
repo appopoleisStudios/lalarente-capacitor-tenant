@@ -65,6 +65,13 @@ export default function TenantLayout() {
         }}
       />
       <Tabs.Screen
+        name="ai-chat"
+        options={{
+          title: 'Lala AI',
+          tabBarIcon: ({ color, size }) => <Ionicons name="sparkles" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="properties/[id]"
         options={{
           href: null, // Hidden from tabs - property detail screen

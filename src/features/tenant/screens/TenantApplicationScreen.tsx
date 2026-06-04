@@ -211,20 +211,39 @@ export default function TenantApplicationScreen() {
 
   const pickIdDoc = () => showPickerSheet((file) => setIdDocFile(file));
 
-  const pickIncomeDoc = () => {
+  const pickPdfOnly = async (onPick: (file: DocFile) => void) => {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: 'application/pdf',
+      copyToCacheDirectory: true,
+    });
+    if (result.canceled || !result.assets?.[0]) return;
+    const asset = result.assets[0];
+    const mime = asset.mimeType?.trim();
+    if (!mime || mime !== 'application/pdf') {
+      Alert.alert('PDF required', 'Please upload a PDF document for proof of income and references.');
+      return;
+    }
+    onPick({
+      uri: asset.uri,
+      name: asset.name,
+      type: 'application/pdf',
+    });
+  };
+
+  const pickIncomeDoc = async () => {
     if (incomeDocFiles.length >= 3) {
       Alert.alert('Limit Reached', 'Maximum 3 proof of income files allowed');
       return;
     }
-    showPickerSheet((file) => setIncomeDocFiles((prev) => [...prev, file]));
+    await pickPdfOnly((file) => setIncomeDocFiles((prev) => [...prev, file]));
   };
 
-  const pickReferenceDoc = () => {
+  const pickReferenceDoc = async () => {
     if (referenceDocFiles.length >= 3) {
       Alert.alert('Limit Reached', 'Maximum 3 reference files allowed');
       return;
     }
-    showPickerSheet((file) => setReferenceDocFiles((prev) => [...prev, file]));
+    await pickPdfOnly((file) => setReferenceDocFiles((prev) => [...prev, file]));
   };
 
   // ── Validation ──

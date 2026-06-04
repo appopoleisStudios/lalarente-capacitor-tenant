@@ -22,6 +22,11 @@ import * as FileSystem from 'expo-file-system/legacy';
 
 const RSA = { green: '#007A4D', gold: '#FFB81C' }; // Tenant colors
 
+function unpackRelation<T>(value: T | T[] | null | undefined): T | undefined {
+  if (value == null) return undefined;
+  return Array.isArray(value) ? value[0] : value;
+}
+
 interface Lease {
   id: string;
   property_id: string;
@@ -95,7 +100,12 @@ export default function TenantLeaseScreen() {
           throw leaseError;
         }
       } else {
-        setLease(data as Lease);
+        const row = data as Record<string, unknown>;
+        setLease({
+          ...(row as Lease),
+          property: unpackRelation(row.property as Lease['property']),
+          owner: unpackRelation(row.owner as Lease['owner']),
+        });
       }
     } catch (err) {
       console.error('Error loading lease:', err);
@@ -131,36 +141,20 @@ export default function TenantLeaseScreen() {
         return;
       }
 
-      // Download and share the file
-      const filename = `Lease_${lease.property?.title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+      const propertyTitle = (lease.property?.title || 'Lease').replace(/\s+/g, '_');
+      const filename = `Lease_${propertyTitle}_${new Date().toISOString().split('T')[0]}.pdf`;
+      const docDir = FileSystem.documentDirectory;
+      if (!docDir) {
+        throw new Error('Document directory unavailable');
+      }
+      const localUri = `${docDir}${filename}`;
 
-      // Fetch the PDF
-      const response = await fetch(lease.lease_document_url);
-      const blob = await response.blob();
-      const reader = new FileReader();
-
-      reader.onloadend = async () => {
-        const base64data = reader.result as string;
-        // Use Paths.document for newer expo-file-system or fallback
-        const docDir = (FileSystem as any).documentDirectory || new (FileSystem as any).Directory((FileSystem as any).Paths?.document).uri;
-        const localUri = `${docDir}${filename}`;
-
-        // Write to local file
-        await FileSystem.writeAsStringAsync(
-          localUri,
-          base64data.split(',')[1],
-          { encoding: 'base64' }
-        );
-
-        // Share the file
-        await Sharing.shareAsync(localUri, {
-          mimeType: 'application/pdf',
-          dialogTitle: 'Download Lease Agreement',
-          UTI: 'com.adobe.pdf',
-        });
-      };
-
-      reader.readAsDataURL(blob);
+      const download = await FileSystem.downloadAsync(lease.lease_document_url, localUri);
+      await Sharing.shareAsync(download.uri, {
+        mimeType: 'application/pdf',
+        dialogTitle: 'Download Lease Agreement',
+        UTI: 'com.adobe.pdf',
+      });
     } catch (error) {
       console.error('Error downloading lease document:', error);
       Alert.alert('Error', 'Failed to download lease document. Please try again.');

@@ -9,13 +9,60 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../../lib/supabase';
 import { paymentsApi } from '../../properties/api/paymentsApi';
 import { messagesApi } from '../../messaging/api/messagesApi';
 import { colors } from '@/src/shared/theme/colors';
+
+const TENANCY_SHORTCUTS: {
+  href: Href;
+  icon: keyof typeof Ionicons.glyphMap;
+  iconColor: string;
+  title: string;
+  subtitle: string;
+}[] = [
+  {
+    href: '/(tenant)/payments',
+    icon: 'card-outline',
+    iconColor: colors.rsa.blue,
+    title: 'Payments & arrears',
+    subtitle: 'Rent, disputes, and escalation status',
+  },
+  {
+    href: '/(tenant)/payment-disputes',
+    icon: 'alert-circle-outline',
+    iconColor: colors.warning[600],
+    title: 'Payment disputes',
+    subtitle: 'Raise or track a payment query',
+  },
+  {
+    href: '/(tenant)/holding-deposit',
+    icon: 'shield-checkmark-outline',
+    iconColor: colors.rsa.green,
+    title: 'Holding deposits',
+    subtitle: 'Application deposits and RHA rights',
+  },
+  {
+    href: '/(tenant)/reports',
+    icon: 'clipboard-outline',
+    iconColor: colors.info[500],
+    title: 'Reports & inspections',
+    subtitle: 'Inspection history and work verification',
+  },
+];
+
+function inspectionPropertyTitle(property: unknown): string {
+  if (Array.isArray(property)) {
+    return (property[0] as { title?: string } | undefined)?.title ?? 'your property';
+  }
+  if (property && typeof property === 'object' && 'title' in property) {
+    return String((property as { title?: string }).title ?? 'your property');
+  }
+  return 'your property';
+}
 
 const getMaintenanceStatusStyle = (status: string) => {
   switch (status) {
@@ -484,10 +531,13 @@ export default function TenantDashboardScreen() {
             <View style={styles.section}>
               <TouchableOpacity
                 style={styles.inspectionAlertCard}
-                onPress={() => router.push({
-                  pathname: '/(tenant)/inspections/[id]' as any,
-                  params: { id: pendingInspection.id },
-                })}
+                onPress={() => {
+                  if (!pendingInspection?.id) return;
+                  router.push({
+                    pathname: '/(tenant)/inspections/[id]',
+                    params: { id: String(pendingInspection.id) },
+                  } as Href);
+                }}
                 activeOpacity={0.8}
               >
                 <View style={styles.inspectionAlertHeader}>
@@ -497,7 +547,7 @@ export default function TenantDashboardScreen() {
                       Inspection Awaiting Your Signature
                     </Text>
                     <Text style={styles.inspectionAlertSub}>
-                      {pendingInspection.type === 'move_in' ? 'Move-In' : pendingInspection.type === 'move_out' ? 'Move-Out' : 'Periodic'} inspection at {pendingInspection.property?.title || 'your property'}
+                      {pendingInspection.type === 'move_in' ? 'Move-In' : pendingInspection.type === 'move_out' ? 'Move-Out' : 'Periodic'} inspection at {inspectionPropertyTitle(pendingInspection.property)}
                     </Text>
                   </View>
                   <Ionicons name="chevron-forward" size={18} color="#8B5CF6" />
@@ -616,6 +666,30 @@ export default function TenantDashboardScreen() {
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
               </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Tenancy shortcuts — visible when tenant has an active lease */}
+          {activeLease && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Your tenancy</Text>
+              {TENANCY_SHORTCUTS.map((item, index) => (
+                <TouchableOpacity
+                  key={String(item.href)}
+                  style={[styles.depositCard, index > 0 && { marginTop: 8 }]}
+                  onPress={() => router.push(item.href)}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.depositLeft}>
+                    <Ionicons name={item.icon} size={24} color={item.iconColor} />
+                    <View>
+                      <Text style={styles.depositTitle}>{item.title}</Text>
+                      <Text style={styles.depositSub}>{item.subtitle}</Text>
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
+                </TouchableOpacity>
+              ))}
             </View>
           )}
 
@@ -998,6 +1072,26 @@ export default function TenantDashboardScreen() {
                   <Ionicons name="chatbubbles" size={24} color={colors.rsa.green} />
                 </View>
                 <Text style={styles.actionText}>Messages</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => router.push('/(tenant)/reports' as Href)}
+              >
+                <View style={[styles.actionIcon, { backgroundColor: '#F3E8FF' }]}>
+                  <Ionicons name="clipboard-outline" size={24} color="#8B5CF6" />
+                </View>
+                <Text style={styles.actionText}>Reports</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => router.push('/(tenant)/ai-chat' as Href)}
+              >
+                <View style={[styles.actionIcon, { backgroundColor: '#E8F5E9' }]}>
+                  <Ionicons name="sparkles" size={24} color={colors.rsa.green} />
+                </View>
+                <Text style={styles.actionText}>Lala AI</Text>
               </TouchableOpacity>
             </View>
           </View>

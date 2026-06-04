@@ -16,6 +16,7 @@ import { inspectionsApi } from '../api/inspectionsApi';
 import { supabase } from '../../../lib/supabase';
 import { exportInspectionReportPdf } from '../../owner/utils/pdfReports';
 import type { InspectionWithRelations, InspectionRooms, RoomInspection } from '../types';
+import { normalizeRoomList } from '../utils/normalizeRooms';
 
 const RSA = { blue: '#002395', gold: '#FFB81C' };
 
@@ -82,7 +83,7 @@ export default function OwnerInspectionDetailScreen() {
       const data = await inspectionsApi.getInspection(inspectionId);
       setInspection(data);
       const roomsData = data.rooms as InspectionRooms;
-      setRooms(roomsData?.rooms ?? []);
+      setRooms(normalizeRoomList(roomsData?.rooms));
     } catch (err) {
       console.error('Inspection load error:', err);
       Alert.alert('Error', 'Failed to load inspection details.');
