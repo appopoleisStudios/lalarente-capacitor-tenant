@@ -402,7 +402,13 @@ export const messagesApi = {
       query = query.eq('property_id', propertyId);
     }
 
-    const { data: existingThreads } = await query.limit(1);
+    if (category) {
+      query = query.eq('category', category);
+    }
+
+    const { data: existingThreads } = await query
+      .order('last_message_at', { ascending: false })
+      .limit(1);
 
     if (existingThreads && existingThreads.length > 0) {
       return existingThreads[0];

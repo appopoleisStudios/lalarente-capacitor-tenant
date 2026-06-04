@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { getMaintenanceRequestById, getProgressUpdates } from '@/src/features/maintenance/api';
+import { messagesApi } from '@/src/features/messaging/api/messagesApi';
 import { getClosureReport } from '@/src/features/maintenance/api/work/workClosure.api';
 import { MediaGallery } from '@/src/features/maintenance/components/MediaGallery';
 import { colors } from '@/src/shared/theme/colors';
@@ -45,6 +46,7 @@ export default function TenantMaintenanceDetailScreen() {
   const [progressUpdates, setProgressUpdates] = useState<any[]>([]);
   const [closureReport, setClosureReport] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [openingMessages, setOpeningMessages] = useState(false);
 
   // Refetch data when screen comes into focus
   useFocusEffect(
@@ -77,6 +79,29 @@ export default function TenantMaintenanceDetailScreen() {
       Alert.alert('Error', 'Failed to load maintenance request');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleMessageLandlord = async () => {
+    if (!request?.owner_id || !request?.tenant_id) {
+      Alert.alert('Unavailable', 'Cannot open messages for this request.');
+      return;
+    }
+    try {
+      setOpeningMessages(true);
+      const thread = await messagesApi.getOrCreateThread(
+        request.owner_id,
+        request.tenant_id,
+        request.property_id ?? undefined,
+        `Maintenance: ${request.title}`,
+        'maintenance'
+      );
+      router.push(`/(tenant)/messages/${thread.id}`);
+    } catch (err) {
+      console.error('Open maintenance thread error:', err);
+      Alert.alert('Error', 'Could not open messages. Try the Messages tab.');
+    } finally {
+      setOpeningMessages(false);
     }
   };
 
@@ -275,15 +300,23 @@ export default function TenantMaintenanceDetailScreen() {
           </Animated.View>
         )}
 
-        {/* Help Section */}
-        <Animated.View entering={FadeInDown.delay(700).duration(500)} style={styles.helpCard}>
-          <Ionicons name="information-circle" size={24} color={RSA.green} />
-          <View style={styles.helpContent}>
-            <Text style={styles.helpTitle}>Need Help?</Text>
-            <Text style={styles.helpText}>
-              If you have questions about this request, you can contact your landlord through the Messages tab.
-            </Text>
-          </View>
+        {/* Message landlord */}
+        <Animated.View entering={FadeInDown.delay(700).duration(500)}>
+          <TouchableOpacity
+            style={styles.messageLandlordBtn}
+            onPress={handleMessageLandlord}
+            disabled={openingMessages}
+            activeOpacity={0.8}
+          >
+            {openingMessages ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <>
+                <Ionicons name="chatbubble-outline" size={20} color="#fff" />
+                <Text style={styles.messageLandlordBtnText}>Message landlord about this issue</Text>
+              </>
+            )}
+          </TouchableOpacity>
         </Animated.View>
       </ScrollView>
     </SafeAreaView>
@@ -369,5 +402,20 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     opacity: 0.9,
     marginTop: 2,
+  },
+  messageLandlordBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: RSA.green,
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginBottom: 16,
+  },
+  messageLandlordBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#ffffff',
   },
 });
