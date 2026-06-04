@@ -145,6 +145,9 @@ export const styles = StyleSheet.create({
   cardButton: {
     marginBottom: 12,
   },
+  cardPressable: {
+    width: '100%',
+  },
   card: {
     backgroundColor: '#ffffff',
     borderRadius: 12,

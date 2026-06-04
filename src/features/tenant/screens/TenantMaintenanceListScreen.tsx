@@ -201,12 +201,12 @@ export default function TenantMaintenanceListScreen() {
             ) : (
               <View>
                 {filteredRequests.map((request: any) => (
-                  <AnimatedButton
-                    key={request.id}
-                    onPress={() => handleCardPress(request.id)}
-                    style={styles.cardButton}
-                  >
-                    <View style={styles.card}>
+                  <View key={request.id} style={styles.cardButton}>
+                    <AnimatedButton
+                      onPress={() => handleCardPress(request.id)}
+                      style={styles.cardPressable}
+                    >
+                      <View style={styles.card}>
                       {/* Header */}
                       <View style={styles.cardHeader}>
                         <View style={styles.badges}>
@@ -259,19 +259,19 @@ export default function TenantMaintenanceListScreen() {
                           <Text style={styles.vendorName}>{request.assigned_vendor.company_name || request.assigned_vendor.full_name}</Text>
                         </View>
                       )}
-
-                      <View style={styles.cardActions}>
-                        <TouchableOpacity
-                          style={styles.messageBtn}
-                          onPress={() => handleMessageLandlord(request)}
-                          activeOpacity={0.7}
-                        >
-                          <Ionicons name="chatbubble-outline" size={16} color="#007A4D" />
-                          <Text style={styles.messageBtnText}>Message landlord</Text>
-                        </TouchableOpacity>
-                      </View>
                     </View>
-                  </AnimatedButton>
+                    </AnimatedButton>
+                    <View style={styles.cardActions}>
+                      <TouchableOpacity
+                        style={styles.messageBtn}
+                        onPress={() => handleMessageLandlord(request)}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="chatbubble-outline" size={16} color="#007A4D" />
+                        <Text style={styles.messageBtnText}>Message landlord</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
                 ))}
               </View>
             )}

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import * as ImagePicker from 'expo-image-picker';
