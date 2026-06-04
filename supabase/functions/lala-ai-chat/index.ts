@@ -123,17 +123,16 @@ serve(async (req) => {
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnon = Deno.env.get('SUPABASE_ANON_KEY')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const token = authHeader.slice('Bearer '.length);
 
-    const userClient = createClient(supabaseUrl, supabaseAnon, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    const admin = createClient(supabaseUrl, serviceKey);
     const {
       data: { user },
       error: userError,
-    } = await userClient.auth.getUser();
+    } = await admin.auth.getUser(token);
     if (userError || !user) {
+      console.error('Invalid session:', userError?.message ?? 'no user');
       return new Response(JSON.stringify({ error: 'Invalid session' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -156,7 +155,7 @@ serve(async (req) => {
       });
     }
 
-    const { data: profile, error: profileError } = await userClient
+    const { data: profile, error: profileError } = await admin
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -183,7 +182,6 @@ serve(async (req) => {
       });
     }
 
-    const admin = createClient(supabaseUrl, serviceKey);
     const context =
       role === 'owner'
         ? await buildOwnerContext(admin, user.id)
