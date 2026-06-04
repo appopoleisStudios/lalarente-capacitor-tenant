@@ -65,6 +65,13 @@ export default function OwnerLayout() {
         }}
       />
       <Tabs.Screen
+        name="ai-chat"
+        options={{
+          title: 'Lala AI',
+          tabBarIcon: ({ color, size }) => <Ionicons name="sparkles" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="add-property"
         options={{
           href: null, // Hidden from tabs - accessed as modal
