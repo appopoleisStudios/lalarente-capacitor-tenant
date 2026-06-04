@@ -21,6 +21,11 @@ import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAv
 
 const RSA = { green: '#007A4D', blue: '#002395' };
 
+function proofOfAddressUploadError(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  return 'Failed to upload document';
+}
+
 export default function TenantProfileScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -164,9 +169,17 @@ export default function TenantProfileScreen() {
     }
   };
 
+  const runProofOfAddressPicker = async (pick: () => Promise<void>) => {
+    try {
+      await pick();
+    } catch (err: unknown) {
+      Alert.alert('Error', proofOfAddressUploadError(err));
+    }
+  };
+
   const uploadProofOfAddress = async (uri: string, mimeType: string) => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) throw new Error('Not authenticated');
 
     const ext = mimeType === 'application/pdf'
       ? 'pdf'
@@ -183,13 +196,16 @@ export default function TenantProfileScreen() {
     if (uploadError) throw uploadError;
 
     const { data: urlData } = supabase.storage.from('documents').getPublicUrl(path);
-    setProofOfAddressUrl(urlData.publicUrl);
+    const publicUrl = urlData.publicUrl;
 
-    await supabase
+    const { error: profileError } = await supabase
       .from('profiles')
-      .update({ proof_of_address_url: urlData.publicUrl })
+      .update({ proof_of_address_url: publicUrl })
       .eq('id', user.id);
 
+    if (profileError) throw profileError;
+
+    setProofOfAddressUrl(publicUrl);
     Alert.alert('Uploaded', 'Proof of address uploaded successfully');
   };
 
@@ -197,8 +213,8 @@ export default function TenantProfileScreen() {
     Alert.alert('Upload Document', 'Choose source', [
       {
         text: 'Take Photo',
-        onPress: async () => {
-          try {
+        onPress: () =>
+          runProofOfAddressPicker(async () => {
             const { status } = await ImagePicker.requestCameraPermissionsAsync();
             if (status !== 'granted') {
               Alert.alert('Permission Required', 'Camera access is needed to take a photo');
@@ -211,15 +227,12 @@ export default function TenantProfileScreen() {
             if (result.canceled || !result.assets?.length) return;
             const asset = result.assets[0];
             await uploadProofOfAddress(asset.uri, asset.mimeType || 'image/jpeg');
-          } catch (err: any) {
-            Alert.alert('Error', err?.message || 'Failed to upload document');
-          }
-        },
+          }),
       },
       {
         text: 'Photo Library',
-        onPress: async () => {
-          try {
+        onPress: () =>
+          runProofOfAddressPicker(async () => {
             const result = await ImagePicker.launchImageLibraryAsync({
               mediaTypes: ['images'],
               quality: 0.7,
@@ -228,15 +241,12 @@ export default function TenantProfileScreen() {
             if (result.canceled || !result.assets?.length) return;
             const asset = result.assets[0];
             await uploadProofOfAddress(asset.uri, asset.mimeType || 'image/jpeg');
-          } catch (err: any) {
-            Alert.alert('Error', err?.message || 'Failed to upload document');
-          }
-        },
+          }),
       },
       {
         text: 'Choose File (PDF or image)',
-        onPress: async () => {
-          try {
+        onPress: () =>
+          runProofOfAddressPicker(async () => {
             const result = await DocumentPicker.getDocumentAsync({
               type: ['image/*', 'application/pdf'],
               copyToCacheDirectory: true,
@@ -247,10 +257,7 @@ export default function TenantProfileScreen() {
               asset.uri,
               asset.mimeType || 'application/octet-stream'
             );
-          } catch (err: any) {
-            Alert.alert('Error', err?.message || 'Failed to upload document');
-          }
-        },
+          }),
       },
       { text: 'Cancel', style: 'cancel' },
     ]);
