@@ -23,7 +23,7 @@ Maestro tests use **visible UI only** (labels, placeholders, buttons) — you wa
 | `15-pr7-owner-disputes-empty` | #7 | O5 disputes | Owner disputes empty state |
 | `16-pr6-owner-lala-ai` | #6 | Lala | Owner AI message |
 
-**Not in merged PRs (no automated flow yet):** S2-05/43/44 nav, S2-21 photo refresh, S2-26/28 profile PDF picker, vendor seed S2-13/14.
+**Not in merged PRs (no automated flow yet):** vendor seed S2-13/14.
 
 ## QA data prerequisites
 
