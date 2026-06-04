@@ -5,7 +5,7 @@ appId: com.lalarente.app
 - runFlow: ../subflows/login-owner.yaml
 
 - scrollUntilVisible:
-    text: "My Documents"
+    element: "My Documents"
     direction: DOWN
     timeout: 20000
 
