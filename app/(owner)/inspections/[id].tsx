@@ -1,3 +1,1 @@
-import OwnerInspectionDetailScreen from '@/src/features/inspections/screens/OwnerInspectionDetailScreen';
-
-export default OwnerInspectionDetailScreen;
+export { default } from '@/src/features/inspections/screens/OwnerInspectionRoute';
