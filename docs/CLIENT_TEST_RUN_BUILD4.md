@@ -79,5 +79,5 @@ Link from matrix: [CLIENT_FEEDBACK_MATRIX.md](./CLIENT_FEEDBACK_MATRIX.md) § Sh
 | 5 | Tenant lease PDF + property name | S2-24, S2-30 |
 | 6 | Profile/docs PDF picker | S2-26, S2-28 |
 | 7 | Property photo refresh | S2-21 |
-| 8 | Owner Applications nav + tenant viewings/apps | S2-05, S2-43, S2-44 |
-| 9 | Vendor seed | S2-13, S2-14 |
+| 8 | `fix/owner-applications-nav` — owner Applications entry + tenant viewings/apps | S2-05, S2-43, S2-44 (pair with [#8](https://github.com/appopoleisStudios/lalarente-capacitor-tenant/pull/8) for Compare **data**, not nav) |
+| 9 | `feat/qa-vendor-seed` | S2-13, S2-14 |

@@ -48,15 +48,22 @@ Next target: **1.0.0-build.5-rev.0**
 
 ## PR stack (build 5)
 
-| Order | Branch | Matrix |
-|-------|--------|--------|
-| 0 | `docs/release-control-sdlc` | Sheet 1 + **Sheet 2** tracker, [CLIENT_TEST_RUN_BUILD4.md](./CLIENT_TEST_RUN_BUILD4.md) |
-| 1 | `feat/p0-tenant-ux` | T7; partial **Nav-gap** T9–T13, T16–T17 (not a substitute for Sheet 2 bugs) |
-| 2 | `feat/ai-chat-edge` | N1 |
-| 3 | `feat/qa-seed-build5` | **Data only** — does not fix Nav-gap or S2 crashes |
-| 4 | `fix/inspection-crash-tenant` | S2-41, S2-42 (P0) |
-| 5 | `fix/owner-inspection-rooms` | S2-17, S2-18 (P0) |
-| 6 | `fix/messaging-keyboard` | S2-10, S2-15 |
-| 7+ | See Sheet 2 table | Maintenance, lease PDF, property photos, owner Applications nav, etc. |
-| — | `chore/security-rls-messaging` | N2 |
-| — | `chore/build-5-apk` | After P0 Sheet 2 crashes fixed |
+Authoritative order (mirrors [CLIENT_TEST_RUN_BUILD4.md](./CLIENT_TEST_RUN_BUILD4.md) § Recommended PR stack).
+
+| Order | Branch / PR | Matrix / S2 | Gate |
+|-------|-------------|-------------|------|
+| 0 | `docs/release-control-sdlc` ([#5](https://github.com/appopoleisStudios/lalarente-capacitor-tenant/pull/5)) | Tracker + Sheet 2 | Merge first |
+| 1 | `feat/p0-tenant-ux` ([#7](https://github.com/appopoleisStudios/lalarente-capacitor-tenant/pull/7)) | T7; partial Nav-gap T9–T13, T16 nav | Not S2 crashes |
+| 2 | `feat/ai-chat-edge` ([#6](https://github.com/appopoleisStudios/lalarente-capacitor-tenant/pull/6)) | N1 | Deploy Edge after merge |
+| 3 | `feat/qa-seed-build5` ([#8](https://github.com/appopoleisStudios/lalarente-capacitor-tenant/pull/8)) | O6/O7/O13 **data** — not O5 nav | Manual SQL |
+| 4 | `fix/inspection-crash-tenant` | **S2-41, S2-42** (P0) | T16/T17 crash — **before APK** |
+| 5 | `fix/owner-inspection-rooms` | **S2-17, S2-18** (P0) | Before APK |
+| 6 | `fix/messaging-keyboard` | S2-10, S2-15 | |
+| 7 | `fix/maintenance-messages-camera` | S2-36, S2-39 | |
+| 8 | `fix/tenant-lease-pdf` | S2-24, S2-30 | |
+| 9 | `fix/profile-docs-pdf-picker` | S2-26, S2-28 | |
+| 10 | `fix/property-photo-refresh` | S2-21 | |
+| 11 | `fix/owner-applications-nav` | **S2-05**, S2-43, S2-44; **O5 nav** (with #8 data for Compare) | |
+| 12 | `feat/qa-vendor-seed` | S2-13, S2-14 | Optional; may extend #8 |
+| — | `chore/security-rls-messaging` | N2 | Security |
+| — | `chore/build-5-apk` | Build 5 | **After P0 rows 4–5 merge** |
