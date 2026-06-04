@@ -218,8 +218,8 @@ export default function TenantApplicationScreen() {
     });
     if (result.canceled || !result.assets?.[0]) return;
     const asset = result.assets[0];
-    const mime = asset.mimeType || 'application/pdf';
-    if (mime !== 'application/pdf') {
+    const mime = asset.mimeType?.trim();
+    if (!mime || mime !== 'application/pdf') {
       Alert.alert('PDF required', 'Please upload a PDF document for proof of income and references.');
       return;
     }

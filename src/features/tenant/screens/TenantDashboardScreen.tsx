@@ -9,13 +9,50 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../../lib/supabase';
 import { paymentsApi } from '../../properties/api/paymentsApi';
 import { messagesApi } from '../../messaging/api/messagesApi';
 import { colors } from '@/src/shared/theme/colors';
+
+const TENANCY_SHORTCUTS: {
+  href: Href;
+  icon: keyof typeof Ionicons.glyphMap;
+  iconColor: string;
+  title: string;
+  subtitle: string;
+}[] = [
+  {
+    href: '/(tenant)/payments',
+    icon: 'card-outline',
+    iconColor: colors.rsa.blue,
+    title: 'Payments & arrears',
+    subtitle: 'Rent, disputes, and escalation status',
+  },
+  {
+    href: '/(tenant)/payment-disputes',
+    icon: 'alert-circle-outline',
+    iconColor: colors.warning[600],
+    title: 'Payment disputes',
+    subtitle: 'Raise or track a payment query',
+  },
+  {
+    href: '/(tenant)/holding-deposit',
+    icon: 'shield-checkmark-outline',
+    iconColor: colors.rsa.green,
+    title: 'Holding deposits',
+    subtitle: 'Application deposits and RHA rights',
+  },
+  {
+    href: '/(tenant)/reports',
+    icon: 'clipboard-outline',
+    iconColor: colors.info[500],
+    title: 'Reports & inspections',
+    subtitle: 'Inspection history and work verification',
+  },
+];
 
 const getMaintenanceStatusStyle = (status: string) => {
   switch (status) {
@@ -623,62 +660,23 @@ export default function TenantDashboardScreen() {
           {activeLease && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Your tenancy</Text>
-              <TouchableOpacity
-                style={styles.depositCard}
-                onPress={() => router.push('/(tenant)/payments' as any)}
-                activeOpacity={0.8}
-              >
-                <View style={styles.depositLeft}>
-                  <Ionicons name="card-outline" size={24} color={colors.rsa.blue} />
-                  <View>
-                    <Text style={styles.depositTitle}>Payments & arrears</Text>
-                    <Text style={styles.depositSub}>Rent, disputes, and escalation status</Text>
+              {TENANCY_SHORTCUTS.map((item, index) => (
+                <TouchableOpacity
+                  key={String(item.href)}
+                  style={[styles.depositCard, index > 0 && { marginTop: 8 }]}
+                  onPress={() => router.push(item.href)}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.depositLeft}>
+                    <Ionicons name={item.icon} size={24} color={item.iconColor} />
+                    <View>
+                      <Text style={styles.depositTitle}>{item.title}</Text>
+                      <Text style={styles.depositSub}>{item.subtitle}</Text>
+                    </View>
                   </View>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.depositCard, { marginTop: 8 }]}
-                onPress={() => router.push('/(tenant)/payment-disputes' as any)}
-                activeOpacity={0.8}
-              >
-                <View style={styles.depositLeft}>
-                  <Ionicons name="alert-circle-outline" size={24} color="#D97706" />
-                  <View>
-                    <Text style={styles.depositTitle}>Payment disputes</Text>
-                    <Text style={styles.depositSub}>Raise or track a payment query</Text>
-                  </View>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.depositCard, { marginTop: 8 }]}
-                onPress={() => router.push('/(tenant)/holding-deposit' as any)}
-                activeOpacity={0.8}
-              >
-                <View style={styles.depositLeft}>
-                  <Ionicons name="shield-checkmark-outline" size={24} color={colors.rsa.green} />
-                  <View>
-                    <Text style={styles.depositTitle}>Holding deposits</Text>
-                    <Text style={styles.depositSub}>Application deposits and RHA rights</Text>
-                  </View>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.depositCard, { marginTop: 8 }]}
-                onPress={() => router.push('/(tenant)/reports' as any)}
-                activeOpacity={0.8}
-              >
-                <View style={styles.depositLeft}>
-                  <Ionicons name="clipboard-outline" size={24} color="#8B5CF6" />
-                  <View>
-                    <Text style={styles.depositTitle}>Reports & inspections</Text>
-                    <Text style={styles.depositSub}>Inspection history and work verification</Text>
-                  </View>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
-              </TouchableOpacity>
+                  <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
+                </TouchableOpacity>
+              ))}
             </View>
           )}
 
