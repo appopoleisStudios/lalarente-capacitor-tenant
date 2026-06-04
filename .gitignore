@@ -45,6 +45,7 @@ yarn-error.*
 .env.local
 .env.production
 .env.production.local
+.maestro/.env
 
 # Supabase
 supabase/.branches

@@ -1,0 +1,23 @@
+# Watch on simulator: login → open Lala → type a message → see reply bubble
+appId: com.lalarente.app
+---
+- launchApp
+- runFlow: ../subflows/login-tenant.yaml
+
+- tapOn: "Lala AI"
+- assertVisible: "Lala Assistant"
+- assertVisible: "Ask me anything about your property"
+
+- tapOn:
+    text: "Type your message..."
+- inputText: "What is my monthly rent?"
+- pressKey: Enter
+
+- extendedWaitUntil:
+    visible: "Lala is typing..."
+    timeout: 10000
+    optional: true
+
+- extendedWaitUntil:
+    notVisible: "Network error"
+    timeout: 45000
