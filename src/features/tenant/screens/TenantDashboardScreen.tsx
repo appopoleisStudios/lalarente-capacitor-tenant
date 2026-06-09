@@ -718,10 +718,7 @@ export default function TenantDashboardScreen() {
                     <Text style={styles.depositTitle}>Security Deposit</Text>
                     <Text style={styles.depositSub}>
                       {activeLease.deposit_amount
-                        ? `R ${((activeLease.deposit_amount || 0) + (activeLease.deposit_total_interest || 0)).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        ${(activeLease.deposit_total_interest || 0) > 0
-                          ? ` (incl. R ${(activeLease.deposit_total_interest || 0).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} interest)`
-                          : ' held in trust'}`
+                        ? `R ${((activeLease.deposit_amount || 0) + (activeLease.deposit_total_interest || 0)).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${(activeLease.deposit_total_interest || 0) > 0 ? ` (incl. R ${(activeLease.deposit_total_interest || 0).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} interest)` : ' held in trust'}`
                         : 'No deposit recorded on this lease'
                       }
                     </Text>

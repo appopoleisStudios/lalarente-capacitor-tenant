@@ -101,9 +101,9 @@ export default function TenantLeaseScreen() {
           throw leaseError;
         }
       } else {
-        const row = data as Record<string, unknown>;
+        const row = data as unknown as Lease & { property: Lease['property'] | Lease['property'][]; owner: Lease['owner'] | Lease['owner'][] };
         setLease({
-          ...(row as Lease),
+          ...(row as unknown as Lease),
           property: unpackRelation(row.property as Lease['property']),
           owner: unpackRelation(row.owner as Lease['owner']),
         });
