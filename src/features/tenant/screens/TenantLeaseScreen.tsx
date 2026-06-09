@@ -17,6 +17,7 @@ import { supabase } from '../../../lib/supabase';
 import { notificationsApi } from '../../notifications/api/notificationsApi';
 import SignatureModal from '../../leases/components/SignatureModal';
 import { uploadSignature } from '../../leases/api/storageService';
+import { regenerateLeasePDF } from '../../leases/api/regenerateLeasePDF';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
 
@@ -100,9 +101,9 @@ export default function TenantLeaseScreen() {
           throw leaseError;
         }
       } else {
-        const row = data as Record<string, unknown>;
+        const row = data as unknown as Lease & { property: Lease['property'] | Lease['property'][]; owner: Lease['owner'] | Lease['owner'][] };
         setLease({
-          ...(row as Lease),
+          ...(row as unknown as Lease),
           property: unpackRelation(row.property as Lease['property']),
           owner: unpackRelation(row.owner as Lease['owner']),
         });
@@ -120,8 +121,26 @@ export default function TenantLeaseScreen() {
       Linking.openURL(lease.lease_document_url).catch(() => {
         Alert.alert('Error', 'Could not open lease document');
       });
+    } else if (lease?.status === 'active') {
+      handleGeneratePDF();
     } else {
-      Alert.alert('Notice', 'Lease document is not available yet');
+      Alert.alert('Notice', 'Lease document will be available after both parties have signed.');
+    }
+  };
+
+  const handleGeneratePDF = async () => {
+    if (!lease) return;
+    try {
+      setActionLoading(true);
+      await regenerateLeasePDF(lease.id);
+      Alert.alert('Success', 'Lease PDF generated!', [
+        { text: 'OK', onPress: () => loadActiveLease() },
+      ]);
+    } catch (err: any) {
+      console.error('Error generating lease PDF:', err);
+      Alert.alert('Error', err?.message || 'Failed to generate lease PDF. Please try again.');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -526,17 +545,37 @@ export default function TenantLeaseScreen() {
                 </TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity style={styles.documentCard} disabled>
-                <View style={styles.documentIcon}>
-                  <Ionicons name="document-text" size={32} color="#CCC" />
-                </View>
-                <View style={styles.documentInfo}>
-                  <Text style={[styles.documentTitle, { color: '#999' }]}>Lease Agreement</Text>
-                  <Text style={styles.documentSubtitle}>
-                    {lease.status === 'active' ? 'Generating document...' : 'Available after both parties sign'}
-                  </Text>
-                </View>
-              </TouchableOpacity>
+              <View>
+                <TouchableOpacity style={[styles.documentCard, actionLoading && styles.buttonDisabled]} disabled={actionLoading}>
+                  <View style={styles.documentIcon}>
+                    <Ionicons name="document-text" size={32} color="#CCC" />
+                  </View>
+                  <View style={styles.documentInfo}>
+                    <Text style={[styles.documentTitle, { color: '#999' }]}>Lease Agreement</Text>
+                    <Text style={styles.documentSubtitle}>
+                      {lease.status === 'active' ? 'PDF not yet generated' : 'Available after both parties sign'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Generate PDF button — shown when lease is active but document URL is null */}
+                {lease.status === 'active' && (
+                  <TouchableOpacity
+                    style={[styles.downloadButton, actionLoading && styles.buttonDisabled]}
+                    onPress={handleGeneratePDF}
+                    disabled={actionLoading}
+                  >
+                    {actionLoading ? (
+                      <ActivityIndicator color={RSA.green} size="small" />
+                    ) : (
+                      <>
+                        <Ionicons name="document-outline" size={20} color={RSA.green} />
+                        <Text style={styles.downloadButtonText}>Generate PDF</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                )}
+              </View>
             )}
           </View>
 

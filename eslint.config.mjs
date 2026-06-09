@@ -19,6 +19,7 @@ export default [
       'dist/**',
       'build/**',
       '*.config.js',
+      'supabase/functions/**',
     ],
   },
   ...compat.extends('expo'),
