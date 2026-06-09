@@ -47,40 +47,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Initialize auth state
   useEffect(() => {
-    // Get initial session — explicitly handle expired cached sessions.
-    // After 3+ days the access token in AsyncStorage is stale. If the
-    // refresh token is also expired, the Supabase client can enter a broken
-    // state that causes signInWithPassword to hang. We detect that here and
-    // clear the cache so the client starts clean.
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session) {
-        const nowSecs = Date.now() / 1000;
-        const isExpired = (session.expires_at ?? 0) < nowSecs;
-        if (isExpired) {
-          // Try to refresh — if the refresh token is still valid, great.
-          const { data: refreshed } = await supabase.auth.refreshSession();
-          if (!refreshed.session) {
-            // Refresh token also expired: clear the stale cache locally.
-            await supabase.auth.signOut({ scope: 'local' });
-            setLoading(false);
+    const initAuth = async () => {
+      try {
+        // Race getSession against a 5s timeout — stale AsyncStorage tokens can
+        // cause the Supabase client to hang indefinitely waiting for a server
+        // refresh response, leaving loading=true forever after a new APK install.
+        const timeout = new Promise<{ data: { session: null }; error: null }>(
+          resolve => setTimeout(() => resolve({ data: { session: null }, error: null }), 5000)
+        );
+        const { data: { session } } = await Promise.race([
+          supabase.auth.getSession(),
+          timeout,
+        ]);
+
+        if (session) {
+          const nowSecs = Date.now() / 1000;
+          const isExpired = (session.expires_at ?? 0) < nowSecs;
+          if (isExpired) {
+            // Try to refresh — if the refresh token is still valid, great.
+            const { data: refreshed } = await supabase.auth.refreshSession();
+            if (!refreshed.session) {
+              // Refresh token also expired: clear the stale cache locally.
+              await supabase.auth.signOut({ scope: 'local' });
+              return;
+            }
+            // Refreshed successfully — use the new session.
+            setSession(refreshed.session);
+            setUser(refreshed.session.user);
+            fetchProfile(refreshed.session.user.id).then(setProfile);
             return;
           }
-          // Refreshed successfully — use the new session.
-          setSession(refreshed.session);
-          setUser(refreshed.session.user);
-          fetchProfile(refreshed.session.user.id).then(setProfile);
-          setLoading(false);
-          return;
         }
-      }
 
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id).then(setProfile);
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          fetchProfile(session.user.id).then(setProfile);
+        }
+      } catch {
+        // Any unexpected error: fail safe to login screen.
+        await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    });
+    };
+
+    initAuth();
 
     // Listen for auth changes
     const {
