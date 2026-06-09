@@ -52,6 +52,20 @@ const TENANCY_SHORTCUTS: {
     title: 'Reports & inspections',
     subtitle: 'Inspection history and work verification',
   },
+  {
+    href: '/(tenant)/arrears',
+    icon: 'alert-circle-outline',
+    iconColor: colors.error[500],
+    title: 'Arrears',
+    subtitle: 'Outstanding rent, interest, and escalation status',
+  },
+  {
+    href: '/(tenant)/early-termination',
+    icon: 'exit-outline',
+    iconColor: colors.warning[600],
+    title: 'Early Termination',
+    subtitle: 'Request lease termination under CPA s14',
+  },
 ];
 
 /** Always visible — S2-43 / S2-44 (not only when list rows exist) */
@@ -690,8 +704,8 @@ export default function TenantDashboardScreen() {
             return null;
           })()}
 
-          {/* Deposit Status — shown when active lease has a deposit */}
-          {activeLease && (activeLease.deposit_amount || 0) > 0 && (
+          {/* Deposit Status — shown when active lease exists */}
+          {activeLease && (
             <View style={styles.section}>
               <TouchableOpacity
                 style={styles.depositCard}
@@ -703,10 +717,13 @@ export default function TenantDashboardScreen() {
                   <View>
                     <Text style={styles.depositTitle}>Security Deposit</Text>
                     <Text style={styles.depositSub}>
-                      R {((activeLease.deposit_amount || 0) + (activeLease.deposit_total_interest || 0)).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      {(activeLease.deposit_total_interest || 0) > 0
-                        ? ` (incl. R ${(activeLease.deposit_total_interest || 0).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} interest)`
-                        : ' held in trust'}
+                      {activeLease.deposit_amount
+                        ? `R ${((activeLease.deposit_amount || 0) + (activeLease.deposit_total_interest || 0)).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        ${(activeLease.deposit_total_interest || 0) > 0
+                          ? ` (incl. R ${(activeLease.deposit_total_interest || 0).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} interest)`
+                          : ' held in trust'}`
+                        : 'No deposit recorded on this lease'
+                      }
                     </Text>
                   </View>
                 </View>
@@ -955,7 +972,7 @@ export default function TenantDashboardScreen() {
                 <Text style={styles.documentText}>Reports</Text>
               </TouchableOpacity>
 
-              {activeLease && (activeLease.deposit_amount || 0) > 0 && (
+              {activeLease && (
                 <TouchableOpacity
                   style={styles.documentCard}
                   onPress={() => router.push('/(tenant)/deposit' as any)}
