@@ -22,6 +22,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { colors } from '@/src/shared/theme/colors';
 import { supabase } from '@/src/lib/supabase';
 import { documentsApi } from '@/src/features/documents/api/documentsApi';
@@ -163,18 +164,17 @@ export default function TenantDocumentsScreen() {
   // ── File picker ──
 
   const pickFile = async (): Promise<FileInfo | null> => {
-    // Request media library permission upfront
-    const mediaPerm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!mediaPerm.granted) {
-      Alert.alert('Permission Required', 'Please allow photo library access to upload documents.');
-      return null;
-    }
-
     return new Promise((resolve) => {
       Alert.alert('Upload Document', 'Choose source', [
         {
           text: 'Photo Library',
           onPress: async () => {
+            const mediaPerm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (!mediaPerm.granted) {
+              Alert.alert('Permission Required', 'Please allow photo library access to upload documents.');
+              resolve(null);
+              return;
+            }
             const result = await ImagePicker.launchImageLibraryAsync({
               mediaTypes: ['images'],
               quality: 0.8,
@@ -210,6 +210,27 @@ export default function TenantDocumentsScreen() {
               size: asset.fileSize || 0,
               mimeType: asset.mimeType || 'image/jpeg',
             });
+          },
+        },
+        {
+          text: 'Choose File (PDF or image)',
+          onPress: async () => {
+            try {
+              const result = await DocumentPicker.getDocumentAsync({
+                type: ['image/*', 'application/pdf'],
+                copyToCacheDirectory: true,
+              });
+              if (result.canceled || !result.assets?.[0]) { resolve(null); return; }
+              const asset = result.assets[0];
+              resolve({
+                uri: asset.uri,
+                name: asset.name || `file_${Date.now()}.pdf`,
+                size: asset.size || 0,
+                mimeType: asset.mimeType || 'application/octet-stream',
+              });
+            } catch {
+              resolve(null);
+            }
           },
         },
         { text: 'Cancel', style: 'cancel', onPress: () => resolve(null) },
