@@ -14,7 +14,7 @@ export const KeyboardAvoidingView: React.FC<KeyboardAvoidingViewProps> = ({
 }) => {
   return (
     <RNKeyboardAvoidingView
-      behavior={behavior || (Platform.OS === 'ios' ? 'padding' : 'height')}
+      behavior={behavior || (Platform.OS === 'ios' ? 'padding' : undefined)}
       style={[styles.flex, style]}
       {...props}
     >

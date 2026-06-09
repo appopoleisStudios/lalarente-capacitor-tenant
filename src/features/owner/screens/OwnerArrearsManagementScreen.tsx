@@ -218,16 +218,25 @@ export default function OwnerArrearsManagementScreen() {
           </Text>
         </View>
 
-        {/* Proposed Payment Plans */}
-        {arrangements.length > 0 && (
-          <>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="calendar-outline" size={18} color={colors.primary[600]} />
-              <Text style={styles.sectionTitle}>
-                Proposed Payment Plans ({arrangements.length})
+        {/* Proposed Payment Plans — always visible, shows empty state when none exist */}
+        <>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="calendar-outline" size={18} color={colors.primary[600]} />
+            <Text style={styles.sectionTitle}>
+              Proposed Payment Plans{arrangements.length > 0 ? ` (${arrangements.length})` : ''}
+            </Text>
+          </View>
+          {arrangements.length === 0 ? (
+            <View style={styles.emptyArrangements}>
+              <Ionicons name="calendar-outline" size={32} color={colors.gray[300]} />
+              <Text style={styles.emptyArrangementsTitle}>No proposed payment plans</Text>
+              <Text style={styles.emptyArrangementsText}>
+                When a tenant falls into arrears, they can propose a payment plan from the
+                arrears screen. Plans appear here for you to accept or decline.
               </Text>
             </View>
-            {arrangements.map((arr) => (
+          ) : (
+            arrangements.map((arr) => (
               <View key={arr.id} style={styles.arrangementCard}>
                 <View style={styles.arrangementHeader}>
                   <View>
@@ -264,9 +273,9 @@ export default function OwnerArrearsManagementScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
-            ))}
-          </>
-        )}
+            ))
+          )}
+        </>
 
         {/* Escalation List */}
         {(!summary?.escalations || summary.escalations.length === 0) ? (
@@ -559,5 +568,26 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: colors.text.secondary,
+  },
+  emptyArrangements: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    backgroundColor: colors.background.default,
+    borderRadius: 12,
+    marginBottom: 10,
+  },
+  emptyArrangementsTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text.secondary,
+    marginTop: 10,
+  },
+  emptyArrangementsText: {
+    fontSize: 13,
+    color: colors.text.tertiary,
+    textAlign: 'center',
+    marginTop: 4,
+    paddingHorizontal: 24,
+    lineHeight: 18,
   },
 });
