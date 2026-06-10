@@ -3,6 +3,7 @@
 /* Custom admin panel theme */
 :root {
   --sidebar-width: 260px;
+  --toggle-knob: #ffffff;
 }
 
 body {
@@ -88,10 +89,9 @@ html.dark * {
               color 0.2s ease;
 }
 
-/* Toggle switch knobs — keep white in dark mode */
-html.dark label .after\:bg-white::after,
-html.dark [class*="peer-checked"]::after {
-  background-color: #ffffff !important;
+/* Toggle switch knobs — stays white in dark mode (variable is same) */
+html.dark {
+  --toggle-knob: #ffffff;
 }
 
 /* Scrollbar styling */

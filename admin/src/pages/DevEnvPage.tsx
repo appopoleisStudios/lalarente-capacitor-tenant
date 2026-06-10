@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import SentryErrorSummary from '../components/SentryErrorSummary';
 
 interface EnvVar {
   key: string;
@@ -12,6 +13,10 @@ export default function DevEnvPage() {
   const envVars: EnvVar[] = [
     { key: 'VITE_SUPABASE_URL', value: import.meta.env.VITE_SUPABASE_URL ?? '(not set)', source: 'vite' },
     { key: 'VITE_SUPABASE_ANON_KEY', value: import.meta.env.VITE_SUPABASE_ANON_KEY ? '✓ set' : '(not set)', source: 'vite' },
+    { key: 'VITE_SENTRY_DSN', value: import.meta.env.VITE_SENTRY_DSN ? '✓ set' : '(not set)', source: 'vite' },
+    { key: 'VITE_SENTRY_TOKEN', value: import.meta.env.VITE_SENTRY_TOKEN ? '✓ set' : '(not set)', source: 'vite' },
+    { key: 'VITE_SENTRY_ORG', value: import.meta.env.VITE_SENTRY_ORG ?? '(not set)', source: 'vite' },
+    { key: 'VITE_SENTRY_PROJECT', value: import.meta.env.VITE_SENTRY_PROJECT ?? '(not set)', source: 'vite' },
     { key: 'VITE_PLANE_API_KEY', value: import.meta.env.VITE_PLANE_API_KEY ? '✓ set' : '(not set)', source: 'vite' },
     { key: 'VITE_PLANE_WORKSPACE_SLUG', value: import.meta.env.VITE_PLANE_WORKSPACE_SLUG ?? '(not set)', source: 'vite' },
     { key: 'VITE_PLANE_PROJECT_ID', value: import.meta.env.VITE_PLANE_PROJECT_ID ?? '(not set)', source: 'vite' },
@@ -38,12 +43,12 @@ export default function DevEnvPage() {
             checked={showValues}
             onChange={() => setShowValues(!showValues)}
           />
-          <div className="h-5 w-9 rounded-full bg-slate-300 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-amber-500 peer-checked:after:translate-x-full" />
+          <div className="h-5 w-9 rounded-full bg-slate-300 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-[var(--toggle-knob)] after:transition-all after:content-[''] peer-checked:bg-amber-500 peer-checked:after:translate-x-full" />
         </label>
         <span className="text-sm text-slate-600">Show values</span>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="mb-6 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-slate-200 bg-slate-50">
             <tr>
@@ -85,6 +90,9 @@ export default function DevEnvPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Sentry error summary widget */}
+      <SentryErrorSummary />
     </div>
   );
 }
