@@ -33,7 +33,10 @@ export default function SentryErrorSummary() {
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        if (!res.ok) throw new Error(`Sentry API error: ${res.status}`);
+        if (!res.ok) {
+          const body = await res.text().catch(() => '');
+          throw new Error(`Sentry API error ${res.status}: ${body.slice(0, 200)}`);
+        }
 
         const data = await res.json();
         const mapped: SentryEvent[] = (data ?? []).map((issue: any) => ({
