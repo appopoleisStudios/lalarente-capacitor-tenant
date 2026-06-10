@@ -61,7 +61,7 @@ export default function UsersPage() {
             checked={u.dev_admin}
             onChange={() => toggleDevAdmin(u.id)}
           />
-          <div className="h-5 w-9 rounded-full bg-slate-300 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-amber-500 peer-checked:after:translate-x-full" />
+          <div className="h-5 w-9 rounded-full bg-slate-300 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-[var(--toggle-knob)] after:transition-all after:content-[''] peer-checked:bg-amber-500 peer-checked:after:translate-x-full" />
         </label>
       ),
     },

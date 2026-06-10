@@ -17,7 +17,6 @@ const devItems = [
   { to: '/dev/env', label: 'Environment', icon: '⚙️' },
 ];
 
-// Plane Issues only available in local dev (self-hosted Plane can't be reached from Vercel)
 const planeItem = { to: '/dev/plane', label: 'Plane Issues', icon: '🎯' };
 
 export default function Sidebar() {
@@ -80,22 +79,20 @@ export default function Sidebar() {
             <p className="mb-2 mt-6 px-2 text-[11px] font-semibold uppercase tracking-widest text-amber-500">
               Dev Tools
             </p>
-            {import.meta.env.DEV && (
-              <NavLink
-                key={planeItem.to}
-                to={planeItem.to}
-                className={({ isActive }: { isActive: boolean }) =>
-                  `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-amber-50 text-amber-700'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                  }`
-                }
-              >
-                <span className="text-base">{planeItem.icon}</span>
-                {planeItem.label}
-              </NavLink>
-            )}
+            <NavLink
+              key={planeItem.to}
+              to={planeItem.to}
+              className={({ isActive }: { isActive: boolean }) =>
+                `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-amber-50 text-amber-700'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                }`
+              }
+            >
+              <span className="text-base">{planeItem.icon}</span>
+              {planeItem.label}
+            </NavLink>
             {devItems.map((item) => (
               <NavLink
                 key={item.to}

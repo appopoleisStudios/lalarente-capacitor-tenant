@@ -1,3 +1,5 @@
+import { supabase } from './supabaseClient';
+
 export interface PlaneIssue {
   id: string;
   name: string;
@@ -11,57 +13,52 @@ export interface PlaneIssue {
   labels: string[];
 }
 
-const PLANE_API_BASE = 'http://100.79.34.78:8082/api/v1';
-
-function getHeaders(): Record<string, string> {
-  const apiKey = import.meta.env.VITE_PLANE_API_KEY || '';
-  const workspaceSlug = import.meta.env.VITE_PLANE_WORKSPACE_SLUG || '';
-  return {
-    'Content-Type': 'application/json',
-    'X-Api-Key': apiKey,
-    'X-Workspace-Slug': workspaceSlug,
-  };
-}
-
 export async function getIssues(projectId: string): Promise<PlaneIssue[]> {
-  const res = await fetch(
-    `${PLANE_API_BASE}/workspaces/${import.meta.env.VITE_PLANE_WORKSPACE_SLUG}/projects/${projectId}/issues`,
-    { headers: getHeaders() }
-  );
-  if (!res.ok) throw new Error(`Plane API error: ${res.status}`);
-  const json = await res.json();
-  return json.results ?? [];
+  const workspaceSlug = import.meta.env.VITE_PLANE_WORKSPACE_SLUG || '';
+  const { data, error } = await supabase.functions.invoke('admin-proxy', {
+    body: {
+      target: 'plane',
+      path: `v1/workspaces/${workspaceSlug}/projects/${projectId}/issues`,
+    },
+  });
+  if (error) throw new Error(error.message || 'Failed to fetch Plane issues');
+  if (data?.error) throw new Error(data.error);
+  return data?.results ?? [];
 }
 
 export async function createIssue(
   projectId: string,
-  data: { name: string; description_html?: string; priority?: PlaneIssue['priority'] }
+  issueData: { name: string; description_html?: string; priority?: PlaneIssue['priority'] }
 ): Promise<PlaneIssue> {
-  const res = await fetch(
-    `${PLANE_API_BASE}/workspaces/${import.meta.env.VITE_PLANE_WORKSPACE_SLUG}/projects/${projectId}/issues`,
-    {
+  const workspaceSlug = import.meta.env.VITE_PLANE_WORKSPACE_SLUG || '';
+  const { data, error } = await supabase.functions.invoke('admin-proxy', {
+    body: {
+      target: 'plane',
+      path: `v1/workspaces/${workspaceSlug}/projects/${projectId}/issues`,
       method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify(data),
-    }
-  );
-  if (!res.ok) throw new Error(`Plane API error: ${res.status}`);
-  return res.json();
+      body: issueData,
+    },
+  });
+  if (error) throw new Error(error.message || 'Failed to create Plane issue');
+  if (data?.error) throw new Error(data.error);
+  return data;
 }
 
 export async function updateIssue(
   projectId: string,
   issueId: string,
-  data: Partial<PlaneIssue>
+  issueData: Partial<PlaneIssue>
 ): Promise<PlaneIssue> {
-  const res = await fetch(
-    `${PLANE_API_BASE}/workspaces/${import.meta.env.VITE_PLANE_WORKSPACE_SLUG}/projects/${projectId}/issues/${issueId}`,
-    {
+  const workspaceSlug = import.meta.env.VITE_PLANE_WORKSPACE_SLUG || '';
+  const { data, error } = await supabase.functions.invoke('admin-proxy', {
+    body: {
+      target: 'plane',
+      path: `v1/workspaces/${workspaceSlug}/projects/${projectId}/issues/${issueId}`,
       method: 'PATCH',
-      headers: getHeaders(),
-      body: JSON.stringify(data),
-    }
-  );
-  if (!res.ok) throw new Error(`Plane API error: ${res.status}`);
-  return res.json();
+      body: issueData,
+    },
+  });
+  if (error) throw new Error(error.message || 'Failed to update Plane issue');
+  if (data?.error) throw new Error(data.error);
+  return data;
 }

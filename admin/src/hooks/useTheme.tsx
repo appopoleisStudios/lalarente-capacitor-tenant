@@ -14,12 +14,28 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
+  // Track whether the user has manually toggled (vs OS default)
+  const [userSet, setUserSet] = useState(() => localStorage.getItem('admin-theme') !== null);
+
+  // Listen for OS theme changes — only sync when user hasn't manually toggled
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e: MediaQueryListEvent) => {
+      if (!userSet) {
+        setDark(e.matches);
+      }
+    };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, [userSet]);
+
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
     localStorage.setItem('admin-theme', dark ? 'dark' : 'light');
   }, [dark]);
 
   function toggle() {
+    setUserSet(true);
     setDark((prev) => !prev);
   }
 
