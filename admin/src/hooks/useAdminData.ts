@@ -20,6 +20,8 @@ export function useAdminData<T = unknown[]>(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const paramsKey = JSON.stringify(params ?? {});
+
   const fetch = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -33,7 +35,7 @@ export function useAdminData<T = unknown[]>(
     } finally {
       setLoading(false);
     }
-  }, [rpcName, JSON.stringify(params)]);
+  }, [rpcName, paramsKey]);
 
   useEffect(() => {
     fetch();
