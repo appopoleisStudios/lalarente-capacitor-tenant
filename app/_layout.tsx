@@ -7,10 +7,16 @@ import '../global.css';
 
 // Init Sentry early — before any component mounts.
 // Gated: only initializes if EXPO_PUBLIC_SENTRY_DSN is set.
+// Wrapped in try-catch to handle malformed DSN or network errors gracefully.
 if (env.sentry.dsn) {
-  Sentry.init({
-    dsn: env.sentry.dsn,
-  });
+  try {
+    Sentry.init({
+      dsn: env.sentry.dsn,
+      tracesSampleRate: 0.2,
+    });
+  } catch (e) {
+    console.error('Sentry init failed:', e);
+  }
 }
 
 function RootLayoutNav() {
