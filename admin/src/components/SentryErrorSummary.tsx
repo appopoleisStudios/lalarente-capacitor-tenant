@@ -6,6 +6,10 @@ export default function SentryErrorSummary() {
     ? `https://sentry.io/organizations/${org}/issues/?project=${project}&statsPeriod=24h`
     : 'https://sentry.io';
 
+  function triggerTestError() {
+    throw new Error('This is your first error!');
+  }
+
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between mb-4">
@@ -13,7 +17,7 @@ export default function SentryErrorSummary() {
         <span className={`inline-block h-2 w-2 rounded-full ${dsnSet ? 'bg-emerald-500' : 'bg-slate-300'}`} />
       </div>
 
-      <div className="space-y-2 text-sm">
+      <div className="space-y-3 text-sm">
         {/* Crash reporting status */}
         <div className="flex items-center gap-2">
           <span className={`text-xs font-medium ${dsnSet ? 'text-emerald-600' : 'text-slate-400'}`}>
@@ -33,10 +37,20 @@ export default function SentryErrorSummary() {
           <span className="text-blue-400">↗</span>
         </a>
 
+        {/* Verify button */}
+        {dsnSet && (
+          <button
+            onClick={triggerTestError}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-100"
+          >
+            <span>💥</span>
+            Break the world
+          </button>
+        )}
+
         {/* Explanation */}
         <p className="text-xs text-slate-400 leading-relaxed pt-1">
-          Sentry's API doesn't allow direct browser requests from external domains.
-          Click above to view errors in the Sentry dashboard.
+          Click "Break the world" to throw a test error. Then check Sentry dashboard to verify it was captured.
         </p>
       </div>
     </div>
