@@ -1,7 +1,17 @@
 import { Stack, useRouter } from 'expo-router';
 import { useEffect } from 'react';
+import * as Sentry from '@sentry/react-native';
 import { AuthProvider, useAuth } from '@/src/contexts/AuthContext';
+import { env } from '@/src/core/config/env';
 import '../global.css';
+
+// Init Sentry early — before any component mounts.
+// Gated: only initializes if EXPO_PUBLIC_SENTRY_DSN is set.
+if (env.sentry.dsn) {
+  Sentry.init({
+    dsn: env.sentry.dsn,
+  });
+}
 
 function RootLayoutNav() {
   const { session, loading } = useAuth();

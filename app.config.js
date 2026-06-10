@@ -14,6 +14,7 @@ module.exports = ({ config }) => {
       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
       supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
       googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
+      sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
       router: {},
       eas: {
         projectId: "616e56ad-07ff-4f94-b0ef-a8f778468a92"
