@@ -1,73 +1,71 @@
-# React + TypeScript + Vite
+# LaLarente Admin Panel
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Web-based admin dashboard for the LaLarente property management platform.
 
-Currently, two official plugins are available:
+Built with **React + Vite + TypeScript + Tailwind v4**.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Architecture
 
-## React Compiler
+- **Supabase RPC functions** (SECURITY DEFINER) bypass RLS for admin data access
+- **Auth gating** — only users with `role = 'admin'` can access
+- **Two role tiers:** Superadmin (business ops) and Dev Admin (+ dev tools)
+- **All data queries** go through `src/hooks/useAdminData.ts` → Supabase RPCs
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Pages
 
-## Expanding the ESLint configuration
+| Route | Access | Purpose |
+|-------|--------|---------|
+| `/` | Both | Dashboard with 8 KPI cards |
+| `/users` | Both | List users, toggle dev admin |
+| `/properties` | Both | Property inventory |
+| `/leases` | Both | Lease overview |
+| `/maintenance` | Both | Maintenance requests |
+| `/payments` | Both | Financial metrics |
+| `/dev/plane` | Dev only | Plane.so issue CRUD |
+| `/dev/logs` | Dev only | Edge function execution logs |
+| `/dev/audit` | Dev only | Unified audit trail |
+| `/dev/env` | Dev only | Environment variable viewer |
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Key Files
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+admin/
+├── src/
+│   ├── components/
+│   │   ├── DataTable.tsx       # Reusable typed table
+│   │   ├── Sidebar.tsx         # Role-aware nav sidebar
+│   │   ├── Layout.tsx          # Main layout wrapper
+│   │   └── AuthGate.tsx        # Route protection
+│   ├── hooks/
+│   │   ├── useAuth.ts          # Supabase auth + role gate
+│   │   └── useAdminData.ts     # Generic RPC data fetcher
+│   ├── pages/                  # Route page components
+│   ├── lib/
+│   │   ├── supabaseClient.ts   # Supabase client
+│   │   └── planeApi.ts         # Plane REST API client
+│   ├── types/admin.ts          # Shared TypeScript interfaces
+│   └── test/setup.ts           # Vitest setup
+├── database/migrations/
+│   ├── 038_add_admin_dev_flag.sql
+│   ├── 039_admin_panel_functions.sql
+│   ├── 040_dev_function_logs.sql
+│   └── 041_admin_audit_trail.sql
+├── DEPLOY.md                   # Vercel deployment guide
+└── vercel.json                 # Vercel configuration
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Setup
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+```bash
+cd admin
+cp .env.example .env   # Fill in Supabase + Plane credentials
+npm install
+npm run dev            # http://localhost:5173
+```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Tests
+
+```bash
+cd admin
+npm test               # 12 tests (DataTable + useAdminData)
 ```

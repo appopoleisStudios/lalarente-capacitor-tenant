@@ -29,8 +29,8 @@ export function useAdminData<T = unknown[]>(
       const { data: result, error: rpcError } = await supabase.rpc(rpcName, params ?? {});
       if (rpcError) throw new Error(String(rpcError));
       setData((result ?? []) as T);
-    } catch (err: any) {
-      setError(err.message ?? 'Failed to fetch data');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch data');
       setData(null);
     } finally {
       setLoading(false);
