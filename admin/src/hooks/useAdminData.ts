@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../lib/supabaseClient';
 
 interface UseAdminDataResult<T> {
   data: T | null;
@@ -11,8 +12,9 @@ interface UseAdminDataResult<T> {
  * Fetches admin data from a Supabase RPC function.
  * Handles loading, error, and refetch states uniformly.
  */
-export function useAdminData<T>(
-  fetcher: () => Promise<{ data: unknown; error: unknown }>
+export function useAdminData<T = unknown[]>(
+  rpcName: string,
+  params?: Record<string, unknown>
 ): UseAdminDataResult<T> {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
@@ -22,7 +24,7 @@ export function useAdminData<T>(
     setLoading(true);
     setError(null);
     try {
-      const { data: result, error: rpcError } = await fetcher();
+      const { data: result, error: rpcError } = await supabase.rpc(rpcName, params ?? {});
       if (rpcError) throw new Error(String(rpcError));
       setData((result ?? []) as T);
     } catch (err: any) {
@@ -31,7 +33,7 @@ export function useAdminData<T>(
     } finally {
       setLoading(false);
     }
-  }, [fetcher]);
+  }, [rpcName, JSON.stringify(params)]);
 
   useEffect(() => {
     fetch();
