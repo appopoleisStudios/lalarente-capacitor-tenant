@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useTheme } from '../hooks/useTheme';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: '📊', adminOnly: false },
@@ -11,14 +12,17 @@ const navItems = [
 ];
 
 const devItems = [
-  { to: '/dev/plane', label: 'Plane Issues', icon: '🎯' },
   { to: '/dev/logs', label: 'Function Logs', icon: '📜' },
   { to: '/dev/audit', label: 'Audit Trail', icon: '🔍' },
   { to: '/dev/env', label: 'Environment', icon: '⚙️' },
 ];
 
+// Plane Issues only available in local dev (self-hosted Plane can't be reached from Vercel)
+const planeItem = { to: '/dev/plane', label: 'Plane Issues', icon: '🎯' };
+
 export default function Sidebar() {
   const { profile, isDevAdmin, signOut } = useAuth();
+  const { dark, toggle } = useTheme();
 
   return (
     <aside className="flex h-screen w-[--sidebar-width] flex-col border-r border-slate-200 bg-white">
@@ -58,7 +62,7 @@ export default function Sidebar() {
             key={item.to}
             to={item.to}
             end={item.to === '/'}
-            className={({ isActive }) =>
+            className={({ isActive }: { isActive: boolean }) =>
               `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                 isActive
                   ? 'bg-blue-50 text-blue-700'
@@ -76,11 +80,27 @@ export default function Sidebar() {
             <p className="mb-2 mt-6 px-2 text-[11px] font-semibold uppercase tracking-widest text-amber-500">
               Dev Tools
             </p>
+            {import.meta.env.DEV && (
+              <NavLink
+                key={planeItem.to}
+                to={planeItem.to}
+                className={({ isActive }: { isActive: boolean }) =>
+                  `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-amber-50 text-amber-700'
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  }`
+                }
+              >
+                <span className="text-base">{planeItem.icon}</span>
+                {planeItem.label}
+              </NavLink>
+            )}
             {devItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
-                className={({ isActive }) =>
+                className={({ isActive }: { isActive: boolean }) =>
                   `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                     isActive
                       ? 'bg-amber-50 text-amber-700'
@@ -96,8 +116,16 @@ export default function Sidebar() {
         )}
       </nav>
 
-      {/* Sign out */}
-      <div className="border-t border-slate-200 p-3">
+      {/* Theme toggle + Sign out */}
+      <div className="border-t border-slate-200 p-3 space-y-1">
+        <button
+          onClick={toggle}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+          title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          <span className="text-base">{dark ? '☀️' : '🌙'}</span>
+          {dark ? 'Light Mode' : 'Dark Mode'}
+        </button>
         <button
           onClick={signOut}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600"

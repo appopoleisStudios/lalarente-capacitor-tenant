@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import type { User } from '@supabase/supabase-js';
+import type { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 
 export interface AdminProfile {
   id: string;
@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }: { data: { session: Session | null } }) => {
       if (session?.user) {
         const p = await loadProfile(session.user.id);
         setUser(session.user);
@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (_event: AuthChangeEvent, session: Session | null) => {
         setUser(session?.user ?? null);
         if (session?.user) {
           const p = await loadProfile(session.user.id);

@@ -11,7 +11,7 @@ export interface PlaneIssue {
   labels: string[];
 }
 
-const PLANE_API_BASE = 'https://api.plane.so/api/v1';
+const PLANE_API_BASE = 'http://100.79.34.78:8082/api/v1';
 
 function getHeaders(): Record<string, string> {
   const apiKey = import.meta.env.VITE_PLANE_API_KEY || '';

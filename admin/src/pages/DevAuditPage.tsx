@@ -33,8 +33,8 @@ export default function DevAuditPage() {
       });
       if (rpcError) throw rpcError;
       setEntries((data as AuditEntry[]) ?? []);
-    } catch (err: any) {
-      setError(err.message ?? 'Failed to fetch audit trail');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch audit trail');
     } finally {
       setLoading(false);
     }
@@ -79,7 +79,7 @@ export default function DevAuditPage() {
           </select>
         </div>
         <button
-          onClick={fetchAudit}
+          onClick={() => fetchAudit(sourceFilter || undefined)}
           className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-violet-700"
         >
           Apply Filter
