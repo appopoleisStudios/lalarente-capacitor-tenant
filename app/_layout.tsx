@@ -1,7 +1,23 @@
 import { Stack, useRouter } from 'expo-router';
 import { useEffect } from 'react';
+import * as Sentry from '@sentry/react-native';
 import { AuthProvider, useAuth } from '@/src/contexts/AuthContext';
+import { env } from '@/src/core/config/env';
 import '../global.css';
+
+// Init Sentry early — before any component mounts.
+// Gated: only initializes if EXPO_PUBLIC_SENTRY_DSN is set.
+// Wrapped in try-catch to handle malformed DSN or network errors gracefully.
+if (env.sentry.dsn) {
+  try {
+    Sentry.init({
+      dsn: env.sentry.dsn,
+      tracesSampleRate: 0.2,
+    });
+  } catch (e) {
+    console.error('Sentry init failed:', e);
+  }
+}
 
 function RootLayoutNav() {
   const { session, loading } = useAuth();
