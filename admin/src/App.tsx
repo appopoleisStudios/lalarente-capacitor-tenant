@@ -30,7 +30,9 @@ export default function App() {
               <Route path="leases" element={<LeasesPage />} />
               <Route path="maintenance" element={<MaintenancePage />} />
               <Route path="payments" element={<PaymentsPage />} />
-              <Route path="dev/plane" element={<DevPlanePage />} />
+              {import.meta.env.DEV && (
+                <Route path="dev/plane" element={<DevPlanePage />} />
+              )}
               <Route path="dev/logs" element={<DevLogsPage />} />
               <Route path="dev/audit" element={<DevAuditPage />} />
               <Route path="dev/env" element={<DevEnvPage />} />

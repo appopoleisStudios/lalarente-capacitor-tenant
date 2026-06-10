@@ -20,6 +20,7 @@ export default [
       'build/**',
       '*.config.js',
       'supabase/functions/**',
+      'admin/**',
     ],
   },
   ...compat.extends('expo'),
