@@ -57,7 +57,7 @@ serve(async (req) => {
         );
       }
 
-      const url = `${planeBase}/api/v1/${path}`;
+      const url = `${planeBase}/api/${path}`;
       const res = await fetch(url, {
         method: method || 'GET',
         headers: {

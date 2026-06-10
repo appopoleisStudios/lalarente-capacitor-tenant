@@ -18,7 +18,7 @@ export async function getIssues(projectId: string): Promise<PlaneIssue[]> {
   const { data, error } = await supabase.functions.invoke('admin-proxy', {
     body: {
       target: 'plane',
-      path: `workspaces/${workspaceSlug}/projects/${projectId}/issues`,
+      path: `v1/workspaces/${workspaceSlug}/projects/${projectId}/issues`,
     },
   });
   if (error) throw new Error(error.message || 'Failed to fetch Plane issues');
@@ -34,7 +34,7 @@ export async function createIssue(
   const { data, error } = await supabase.functions.invoke('admin-proxy', {
     body: {
       target: 'plane',
-      path: `workspaces/${workspaceSlug}/projects/${projectId}/issues`,
+      path: `v1/workspaces/${workspaceSlug}/projects/${projectId}/issues`,
       method: 'POST',
       body: issueData,
     },
@@ -53,7 +53,7 @@ export async function updateIssue(
   const { data, error } = await supabase.functions.invoke('admin-proxy', {
     body: {
       target: 'plane',
-      path: `workspaces/${workspaceSlug}/projects/${projectId}/issues/${issueId}`,
+      path: `v1/workspaces/${workspaceSlug}/projects/${projectId}/issues/${issueId}`,
       method: 'PATCH',
       body: issueData,
     },
