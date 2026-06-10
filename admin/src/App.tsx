@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
+import { ThemeProvider } from './hooks/useTheme';
 import AuthGate from './components/AuthGate';
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
@@ -17,6 +18,7 @@ import DevEnvPage from './pages/DevEnvPage';
 export default function App() {
   return (
     <BrowserRouter>
+      <ThemeProvider>
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
@@ -28,7 +30,9 @@ export default function App() {
               <Route path="leases" element={<LeasesPage />} />
               <Route path="maintenance" element={<MaintenancePage />} />
               <Route path="payments" element={<PaymentsPage />} />
-              <Route path="dev/plane" element={<DevPlanePage />} />
+              {import.meta.env.DEV && (
+                <Route path="dev/plane" element={<DevPlanePage />} />
+              )}
               <Route path="dev/logs" element={<DevLogsPage />} />
               <Route path="dev/audit" element={<DevAuditPage />} />
               <Route path="dev/env" element={<DevEnvPage />} />
@@ -37,6 +41,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

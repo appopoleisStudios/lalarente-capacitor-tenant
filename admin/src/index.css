@@ -12,12 +12,101 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ── Dark mode ────────────────────────────────── */
+/* Override Tailwind's internal color variables so all existing       */
+/* utility classes (bg-white, text-slate-900, border-slate-200, etc.) */
+/* automatically resolve to dark colors when .dark is on <html>.      */
+
+html.dark {
+  /* Surface — replaces bg-white with a dark card surface */
+  --color-white: #1e293b;
+
+  /* Slate scale — inverted: dark becomes light, light becomes dark */
+  --color-slate-50: #0f172a;
+  --color-slate-100: #1e293b;
+  --color-slate-200: #334155;
+  --color-slate-300: #475569;
+  --color-slate-400: #64748b;
+  --color-slate-500: #94a3b8;
+  --color-slate-600: #cbd5e1;
+  --color-slate-700: #e2e8f0;
+  --color-slate-800: #f1f5f9;
+  --color-slate-900: #f8fafc;
+
+  /* Blue — active nav links */
+  --color-blue-50: #1e3a5f;
+  --color-blue-100: #1e3a5f;
+  --color-blue-700: #93c5fd;
+
+  /* Amber — dev tools badges, toggles */
+  --color-amber-50: #422006;
+  --color-amber-100: #422006;
+  --color-amber-400: #fbbf24;
+  --color-amber-500: #f59e0b;
+  --color-amber-700: #fcd34d;
+
+  /* Red — sign-out hover, errors */
+  --color-red-50: #450a0a;
+  --color-red-100: #450a0a;
+  --color-red-600: #fca5a5;
+  --color-red-700: #fca5a5;
+
+  /* Emerald — success badges */
+  --color-emerald-50: #064e3b;
+  --color-emerald-100: #064e3b;
+  --color-emerald-500: #34d399;
+  --color-emerald-600: #6ee7b7;
+  --color-emerald-700: #a7f3d0;
+
+  /* Violet — buttons */
+  --color-violet-50: #2e1065;
+  --color-violet-100: #2e1065;
+  --color-violet-500: #a78bfa;
+  --color-violet-600: #a78bfa;
+  --color-violet-700: #c4b5fd;
+
+  /* Purple — admin badge */
+  --color-purple-100: #3b0764;
+  --color-purple-700: #d8b4fe;
+
+  /* Green */
+  --color-green-50: #052e16;
+  --color-green-700: #86efac;
+
+  /* Orange */
+  --color-orange-50: #431407;
+  --color-orange-700: #fdba74;
+
+  /* Spinner border */
+  --color-blue-600: #60a5fa;
+}
+
+/* Smooth transitions when toggling theme */
+html.dark * {
+  transition: background-color 0.2s ease,
+              border-color 0.15s ease,
+              color 0.2s ease;
+}
+
+/* Toggle switch knobs — keep white in dark mode */
+html.dark label .after\:bg-white::after,
+html.dark [class*="peer-checked"]::after {
+  background-color: #ffffff !important;
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 3px;
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }
 ::-webkit-scrollbar-thumb {
   background: #94a3b8;
