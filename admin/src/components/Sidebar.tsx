@@ -12,6 +12,8 @@ const navItems = [
 
 const devItems = [
   { to: '/dev/plane', label: 'Plane Issues', icon: '🎯' },
+  { to: '/dev/logs', label: 'Function Logs', icon: '📜' },
+  { to: '/dev/audit', label: 'Audit Trail', icon: '🔍' },
   { to: '/dev/env', label: 'Environment', icon: '⚙️' },
 ];
 
