@@ -9,10 +9,31 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Fire-and-forget: insert a row into dev_function_logs via Supabase REST
+async function devLog(source: string, level: string, message: string, metadata: Record<string, unknown>) {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const serviceKey  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseUrl || !serviceKey) return;
+  try {
+    await fetch(`${supabaseUrl}/rest/v1/dev_function_logs`, {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'apikey':        serviceKey,
+        'Authorization': `Bearer ${serviceKey}`,
+        'Prefer':        'return=minimal',
+      },
+      body: JSON.stringify({ source, level, message, metadata }),
+    });
+  } catch { /* never let logging break the proxy */ }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
+
+  const t0 = Date.now();
 
   try {
     const { target, path, method, body: requestBody, projectId: reqProjectId, resource: resourceParam, issueId: issueIdParam } = await req.json();
@@ -37,9 +58,23 @@ serve(async (req) => {
         body: requestBody ? JSON.stringify(requestBody) : undefined,
       });
 
-      const data = await res.text();
-      return new Response(data, {
-        status: res.status,
+      const text = await res.text();
+      const durationMs = Date.now() - t0;
+
+      // Always return 200 — wrap Sentry errors in body so supabase.functions.invoke never throws
+      if (!res.ok) {
+        let detail = text;
+        try { detail = JSON.parse(text)?.detail ?? text; } catch { /* */ }
+        devLog('admin-proxy:sentry', 'warn', `Sentry ${res.status}: ${path}`, { path, status: res.status, durationMs });
+        return new Response(
+          JSON.stringify({ error: `Sentry ${res.status}: ${detail}` }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      devLog('admin-proxy:sentry', 'info', `GET ${path}`, { path, status: res.status, durationMs });
+      return new Response(text, {
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -76,6 +111,10 @@ serve(async (req) => {
       });
 
       const data = await res.text();
+      const durationMs = Date.now() - t0;
+      const level = res.ok ? 'info' : 'warn';
+      devLog('admin-proxy:plane', level, `${method || 'GET'} ${resourcePath}`, { resourcePath, status: res.status, durationMs });
+
       return new Response(data, {
         status: res.status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -87,6 +126,8 @@ serve(async (req) => {
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (err) {
+    const durationMs = Date.now() - t0;
+    devLog('admin-proxy', 'error', err.message || 'Internal error', { durationMs });
     return new Response(
       JSON.stringify({ error: err.message || 'Internal error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
