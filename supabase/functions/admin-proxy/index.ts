@@ -15,7 +15,7 @@ serve(async (req) => {
   }
 
   try {
-    const { target, path, method, body: requestBody, projectId: reqProjectId } = await req.json();
+    const { target, path, method, body: requestBody, projectId: reqProjectId, resource: resourceParam, issueId: issueIdParam } = await req.json();
 
     // ── Sentry proxy ──────────────────────────────────────────
     if (target === 'sentry') {
@@ -59,10 +59,10 @@ serve(async (req) => {
         );
       }
 
-      // resource: 'issues' (default) | 'states'
-      const resource = requestBody?.resource || 'issues';
+      // resource sent as top-level key: 'issues' | 'states' | 'members'
+      const resource = resourceParam || requestBody?.resource || 'issues';
       const baseUrl = `${planeBase}/api/v1/workspaces/${workspaceSlug}/projects/${projectId}/${resource}`;
-      const issueId = requestBody?.issueId;
+      const issueId = issueIdParam || requestBody?.issueId;
       const url = issueId ? `${baseUrl}/${issueId}/` : `${baseUrl}/`;
 
       const res = await fetch(url, {
