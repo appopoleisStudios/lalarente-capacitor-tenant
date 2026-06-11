@@ -16,3 +16,7 @@ export const env = {
   },
   isDev: __DEV__,
 };
+
+export const RELEASE_VERSION =
+  Constants.expoConfig?.extra?.releaseVersion ?? 'dev';
+
