@@ -7,6 +7,41 @@
 
 import { supabase } from '../../../lib/supabase';
 
+// ─── Pure Calculation Helpers ────────────────────────────────────────────────
+
+/**
+ * Get the next round number for a renewal negotiation.
+ */
+export function getNextRound(existingRound: number | null): number {
+  return (existingRound || 0) + 1;
+}
+
+/**
+ * Calculate the response deadline (7 calendar days from now).
+ */
+export function calculateResponseDeadline(fromDate: Date): string {
+  const deadline = new Date(fromDate);
+  deadline.setDate(deadline.getDate() + 7);
+  return deadline.toISOString();
+}
+
+/**
+ * Calculate the renewal lease end date based on start date and duration.
+ */
+export function calculateRenewalEndDate(
+  startDate: Date,
+  durationMonths: number | null
+): string {
+  const end = new Date(startDate);
+  if (durationMonths) {
+    end.setMonth(end.getMonth() + durationMonths);
+  } else {
+    // Month-to-month: 1 month
+    end.setMonth(end.getMonth() + 1);
+  }
+  return end.toISOString().split('T')[0];
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface RenewalNegotiation {
@@ -67,11 +102,7 @@ export const leaseRenewalApi = {
       .limit(1)
       .maybeSingle();
 
-    const nextRound = (existing?.round || 0) + 1;
-
-    // Set response deadline (7 days from now)
-    const deadline = new Date();
-    deadline.setDate(deadline.getDate() + 7);
+    const nextRound = getNextRound(existing?.round ?? null);
 
     const { data, error } = await supabase
       .from('renewal_negotiations')
@@ -88,7 +119,7 @@ export const leaseRenewalApi = {
         proposed_escalation_rate: input.escalationRate || null,
         proposed_terms_notes: input.notes || null,
         status: 'pending',
-        response_deadline: deadline.toISOString(),
+        response_deadline: calculateResponseDeadline(new Date()),
       })
       .select()
       .single();
@@ -240,15 +271,7 @@ export const leaseRenewalApi = {
 
     // Calculate end date
     const startDate = new Date(negotiation.proposed_start_date);
-    let endDate: Date;
-    if (negotiation.proposed_duration_months) {
-      endDate = new Date(startDate);
-      endDate.setMonth(endDate.getMonth() + negotiation.proposed_duration_months);
-    } else {
-      // Month-to-month: set end date 1 month out (renews automatically)
-      endDate = new Date(startDate);
-      endDate.setMonth(endDate.getMonth() + 1);
-    }
+    const endDateStr = calculateRenewalEndDate(startDate, negotiation.proposed_duration_months);
 
     // Mark old lease as expired
     await supabase
@@ -264,7 +287,7 @@ export const leaseRenewalApi = {
         owner_id: originalLease.owner_id,
         tenant_id: originalLease.tenant_id,
         start_date: negotiation.proposed_start_date,
-        end_date: endDate.toISOString().split('T')[0],
+        end_date: endDateStr,
         lease_type: negotiation.proposed_lease_type,
         monthly_rent: negotiation.proposed_monthly_rent,
         deposit_amount: originalLease.deposit_amount,
