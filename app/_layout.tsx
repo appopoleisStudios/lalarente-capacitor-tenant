@@ -2,7 +2,8 @@ import { Stack, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import * as Sentry from '@sentry/react-native';
 import { AuthProvider, useAuth } from '@/src/contexts/AuthContext';
-import { env } from '@/src/core/config/env';
+import { env, RELEASE_VERSION } from '@/src/core/config/env';
+import { ErrorBoundary } from '@/src/components/ErrorBoundary';
 import '../global.css';
 
 // Init Sentry early — before any component mounts.
@@ -13,6 +14,7 @@ if (env.sentry.dsn) {
     Sentry.init({
       dsn: env.sentry.dsn,
       tracesSampleRate: 0.2,
+      release: RELEASE_VERSION,
     });
   } catch (e) {
     console.error('Sentry init failed:', e);
@@ -44,8 +46,10 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <RootLayoutNav />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <RootLayoutNav />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
