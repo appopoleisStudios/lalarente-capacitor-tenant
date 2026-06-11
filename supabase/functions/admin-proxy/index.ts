@@ -59,11 +59,12 @@ serve(async (req) => {
         );
       }
 
-      // resource sent as top-level key: 'issues' | 'states' | 'members'
+      // resource sent as top-level key — supports nested paths like 'issues/{id}/comments'
       const resource = resourceParam || requestBody?.resource || 'issues';
-      const baseUrl = `${planeBase}/api/v1/workspaces/${workspaceSlug}/projects/${projectId}/${resource}`;
       const issueId = issueIdParam || requestBody?.issueId;
-      const url = issueId ? `${baseUrl}/${issueId}/` : `${baseUrl}/`;
+      // If resource already contains slashes it's a full sub-path; otherwise append issueId
+      const resourcePath = resource.includes('/') ? resource : (issueId ? `${resource}/${issueId}` : resource);
+      const url = `${planeBase}/api/v1/workspaces/${workspaceSlug}/projects/${projectId}/${resourcePath}/`;
 
       const res = await fetch(url, {
         method: method || 'GET',

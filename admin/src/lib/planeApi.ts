@@ -70,3 +70,28 @@ export async function updateIssue(
 ): Promise<PlaneIssue> {
   return planeRequest('PATCH', 'issues', { issueId, ...issueData });
 }
+
+export interface PlaneComment {
+  id: string;
+  comment_html: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getComments(issueId: string): Promise<PlaneComment[]> {
+  const data = await planeRequest('GET', `issues/${issueId}/comments`);
+  return data?.results ?? [];
+}
+
+export async function createComment(issueId: string, commentHtml: string): Promise<PlaneComment> {
+  return planeRequest('POST', `issues/${issueId}/comments`, { comment_html: commentHtml });
+}
+
+export async function updateComment(issueId: string, commentId: string, commentHtml: string): Promise<PlaneComment> {
+  return planeRequest('PATCH', `issues/${issueId}/comments`, { issueId: commentId, comment_html: commentHtml });
+}
+
+export async function deleteComment(issueId: string, commentId: string): Promise<void> {
+  return planeRequest('DELETE', `issues/${issueId}/comments`, { issueId: commentId });
+}
