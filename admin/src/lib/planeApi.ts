@@ -49,12 +49,12 @@ export interface PlaneMember {
 
 export async function getMembers(): Promise<PlaneMember[]> {
   const data = await planeRequest('GET', 'members');
-  // Plane returns { results: [{ member: { id, display_name, avatar }, role, ... }] }
-  const results: any[] = data?.results ?? [];
+  // Plane project members endpoint returns a flat array: [{ id, display_name, avatar, ... }]
+  const results: any[] = Array.isArray(data) ? data : (data?.results ?? []);
   return results.map((r) => ({
     id: r.member?.id ?? r.id,
-    display_name: r.member?.display_name ?? r.display_name ?? 'Unknown',
-    avatar: r.member?.avatar ?? null,
+    display_name: r.member?.display_name ?? r.display_name ?? r.first_name ?? 'Unknown',
+    avatar: r.member?.avatar_url ?? r.member?.avatar ?? r.avatar_url ?? r.avatar ?? null,
   }));
 }
 
