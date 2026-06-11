@@ -8,6 +8,30 @@
 import { supabase } from '../../../lib/supabase';
 import { toDateString } from '../../../shared/utils/businessDayCalculator';
 
+// ─── Pure Calculation Helpers ────────────────────────────────────────────────
+
+/**
+ * Calculate monthly interest on a deposit balance.
+ * Per-month simple interest: P × r/12
+ */
+export function calculateMonthlyInterest(
+  currentBalance: number,
+  annualRate: number
+): number {
+  const monthlyRate = annualRate / 12;
+  return Math.round(currentBalance * monthlyRate * 100) / 100;
+}
+
+/**
+ * Calculate current balance = deposit + accumulated interest.
+ */
+export function calculateCurrentBalance(
+  depositAmount: number,
+  totalInterest: number
+): number {
+  return depositAmount + totalInterest;
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface DepositInterestSummary {
@@ -48,11 +72,9 @@ export const depositInterestApi = {
 
     // Use the lease-specific rate, or default prescribed rate
     const annualRate = lease.deposit_interest_rate || 0.0525; // 5.25% default
-    const monthlyRate = annualRate / 12;
-
     // Get the current balance (deposit + accumulated interest)
     const currentBalance = lease.deposit_amount + (lease.deposit_total_interest || 0);
-    const monthlyInterest = Math.round(currentBalance * monthlyRate * 100) / 100;
+    const monthlyInterest = calculateMonthlyInterest(currentBalance, annualRate);
 
     const today = new Date();
     const periodStart = new Date(today.getFullYear(), today.getMonth(), 1);
