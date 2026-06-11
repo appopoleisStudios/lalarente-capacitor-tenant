@@ -63,6 +63,12 @@ const ESCALATION_THRESHOLDS = {
   breach_notice: 21,
 } as const;
 
+/** Ordered list of escalation stages (lowest to highest). */
+const STAGE_ORDER: EscalationStage[] = [
+  'friendly_reminder', 'formal_demand', 'breach_notice',
+  'cure_period', 'legal_action', 'eviction_notice',
+];
+
 // ─── Pure Helpers ────────────────────────────────────────────────────────────
 
 /**
@@ -90,11 +96,7 @@ export function determineEscalationStage(daysOverdue: number): EscalationStage |
  * Stages are ordered: friendly_reminder < formal_demand < breach_notice < cure_period < legal_action < eviction_notice
  */
 export function isDowngrade(currentStage: EscalationStage, newStage: EscalationStage): boolean {
-  const stageOrder: EscalationStage[] = [
-    'friendly_reminder', 'formal_demand', 'breach_notice',
-    'cure_period', 'legal_action', 'eviction_notice',
-  ];
-  return stageOrder.indexOf(newStage) < stageOrder.indexOf(currentStage);
+  return STAGE_ORDER.indexOf(newStage) < STAGE_ORDER.indexOf(currentStage);
 }
 
 // ─── API ─────────────────────────────────────────────────────────────────────
@@ -231,13 +233,9 @@ export const arrearsEscalationApi = {
     const uniqueTenants = new Set(escalations.map((e) => e.tenant_id));
 
     // Determine highest stage
-    const stageOrder: EscalationStage[] = [
-      'friendly_reminder', 'formal_demand', 'breach_notice',
-      'cure_period', 'legal_action', 'eviction_notice',
-    ];
     let highestStage: EscalationStage | null = null;
     for (const e of escalations) {
-      if (!highestStage || stageOrder.indexOf(e.stage) > stageOrder.indexOf(highestStage)) {
+      if (!highestStage || STAGE_ORDER.indexOf(e.stage) > STAGE_ORDER.indexOf(highestStage)) {
         highestStage = e.stage;
       }
     }
