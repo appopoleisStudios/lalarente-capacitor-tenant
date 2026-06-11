@@ -15,7 +15,7 @@ serve(async (req) => {
   }
 
   try {
-    const { target, path, method, body: requestBody, headers: extraHeaders } = await req.json();
+    const { target, path, method, body: requestBody, projectId: reqProjectId } = await req.json();
 
     // ── Sentry proxy ──────────────────────────────────────────
     if (target === 'sentry') {
@@ -48,25 +48,30 @@ serve(async (req) => {
     if (target === 'plane') {
       const apiKey = Deno.env.get('PLANE_API_KEY');
       const workspaceSlug = Deno.env.get('PLANE_WORKSPACE_SLUG');
+      // projectId: prefer Supabase secret, fall back to value sent from frontend
+      const projectId = Deno.env.get('PLANE_PROJECT_ID') || reqProjectId;
       const planeBase = Deno.env.get('PLANE_URL') || Deno.env.get('PLANE_BASE_URL') || 'http://100.79.34.78:8082';
 
-      if (!apiKey || !workspaceSlug) {
+      if (!apiKey || !workspaceSlug || !projectId) {
         return new Response(
           JSON.stringify({ error: 'Plane credentials not configured. Set PLANE_API_KEY and PLANE_WORKSPACE_SLUG in Supabase edge function secrets.' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      const url = `${planeBase}/api/${path}`;
+      // resource: 'issues' (default) | 'states'
+      const resource = requestBody?.resource || 'issues';
+      const baseUrl = `${planeBase}/api/v1/workspaces/${workspaceSlug}/projects/${projectId}/${resource}`;
+      const issueId = requestBody?.issueId;
+      const url = issueId ? `${baseUrl}/${issueId}/` : `${baseUrl}/`;
+
       const res = await fetch(url, {
         method: method || 'GET',
         headers: {
           'X-Api-Key': apiKey,
-          'X-Workspace-Slug': workspaceSlug,
           'Content-Type': 'application/json',
-          ...(extraHeaders || {}),
         },
-        body: requestBody ? JSON.stringify(requestBody) : undefined,
+        body: requestBody && method !== 'GET' ? JSON.stringify(requestBody) : undefined,
       });
 
       const data = await res.text();

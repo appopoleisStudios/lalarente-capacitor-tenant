@@ -4,7 +4,7 @@ export interface PlaneIssue {
   id: string;
   name: string;
   description_html?: string;
-  state: string;
+  state: string; // state UUID
   priority: 'urgent' | 'high' | 'medium' | 'low' | 'none';
   created_at: string;
   updated_at: string;
@@ -13,52 +13,60 @@ export interface PlaneIssue {
   labels: string[];
 }
 
-export async function getIssues(projectId: string): Promise<PlaneIssue[]> {
-  const workspaceSlug = import.meta.env.VITE_PLANE_WORKSPACE_SLUG || '';
+export interface PlaneState {
+  id: string;
+  name: string;
+  color: string;
+  group: 'backlog' | 'unstarted' | 'started' | 'completed' | 'cancelled';
+}
+
+const PROJECT_ID = import.meta.env.VITE_PLANE_PROJECT_ID || '';
+
+async function planeRequest(method: string, resource: string, extra?: Record<string, unknown>) {
   const { data, error } = await supabase.functions.invoke('admin-proxy', {
-    body: {
-      target: 'plane',
-      path: `v1/workspaces/${workspaceSlug}/projects/${projectId}/issues`,
-    },
+    body: { target: 'plane', method, projectId: PROJECT_ID, resource, ...extra },
   });
-  if (error) throw new Error(error.message || 'Failed to fetch Plane issues');
+  if (error) throw new Error(error.message || 'Plane request failed');
   if (data?.error) throw new Error(data.error);
+  return data;
+}
+
+export async function getIssues(): Promise<PlaneIssue[]> {
+  const data = await planeRequest('GET', 'issues');
   return data?.results ?? [];
 }
 
+export async function getStates(): Promise<PlaneState[]> {
+  const data = await planeRequest('GET', 'states');
+  return data?.results ?? [];
+}
+
+export interface PlaneMember {
+  id: string; // member user UUID (not membership UUID)
+  display_name: string;
+  avatar: string | null;
+}
+
+export async function getMembers(): Promise<PlaneMember[]> {
+  const data = await planeRequest('GET', 'members');
+  // Plane returns { results: [{ member: { id, display_name, avatar }, role, ... }] }
+  const results: any[] = data?.results ?? [];
+  return results.map((r) => ({
+    id: r.member?.id ?? r.id,
+    display_name: r.member?.display_name ?? r.display_name ?? 'Unknown',
+    avatar: r.member?.avatar ?? null,
+  }));
+}
+
 export async function createIssue(
-  projectId: string,
   issueData: { name: string; description_html?: string; priority?: PlaneIssue['priority'] }
 ): Promise<PlaneIssue> {
-  const workspaceSlug = import.meta.env.VITE_PLANE_WORKSPACE_SLUG || '';
-  const { data, error } = await supabase.functions.invoke('admin-proxy', {
-    body: {
-      target: 'plane',
-      path: `v1/workspaces/${workspaceSlug}/projects/${projectId}/issues`,
-      method: 'POST',
-      body: issueData,
-    },
-  });
-  if (error) throw new Error(error.message || 'Failed to create Plane issue');
-  if (data?.error) throw new Error(data.error);
-  return data;
+  return planeRequest('POST', 'issues', issueData);
 }
 
 export async function updateIssue(
-  projectId: string,
   issueId: string,
   issueData: Partial<PlaneIssue>
 ): Promise<PlaneIssue> {
-  const workspaceSlug = import.meta.env.VITE_PLANE_WORKSPACE_SLUG || '';
-  const { data, error } = await supabase.functions.invoke('admin-proxy', {
-    body: {
-      target: 'plane',
-      path: `v1/workspaces/${workspaceSlug}/projects/${projectId}/issues/${issueId}`,
-      method: 'PATCH',
-      body: issueData,
-    },
-  });
-  if (error) throw new Error(error.message || 'Failed to update Plane issue');
-  if (data?.error) throw new Error(data.error);
-  return data;
+  return planeRequest('PATCH', 'issues', { issueId, ...issueData });
 }
