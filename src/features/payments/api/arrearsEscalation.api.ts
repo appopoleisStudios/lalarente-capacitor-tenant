@@ -63,6 +63,42 @@ const ESCALATION_THRESHOLDS = {
   breach_notice: 21,
 } as const;
 
+/** Ordered list of escalation stages (lowest to highest). */
+const STAGE_ORDER: EscalationStage[] = [
+  'friendly_reminder', 'formal_demand', 'breach_notice',
+  'cure_period', 'legal_action', 'eviction_notice',
+];
+
+// ─── Pure Helpers ────────────────────────────────────────────────────────────
+
+/**
+ * Calculate the number of calendar days a payment is overdue.
+ */
+export function calculateDaysOverdue(dueDate: string): number {
+  return Math.floor(
+    (Date.now() - new Date(dueDate).getTime()) / (1000 * 60 * 60 * 24)
+  );
+}
+
+/**
+ * Determine the escalation stage based on days overdue.
+ * Returns null if below the minimum threshold.
+ */
+export function determineEscalationStage(daysOverdue: number): EscalationStage | null {
+  if (daysOverdue < ESCALATION_THRESHOLDS.friendly_reminder) return null;
+  if (daysOverdue >= ESCALATION_THRESHOLDS.breach_notice) return 'breach_notice';
+  if (daysOverdue >= ESCALATION_THRESHOLDS.formal_demand) return 'formal_demand';
+  return 'friendly_reminder';
+}
+
+/**
+ * Check if transitioning to a new stage would be a downgrade.
+ * Stages are ordered: friendly_reminder < formal_demand < breach_notice < cure_period < legal_action < eviction_notice
+ */
+export function isDowngrade(currentStage: EscalationStage, newStage: EscalationStage): boolean {
+  return STAGE_ORDER.indexOf(newStage) < STAGE_ORDER.indexOf(currentStage);
+}
+
 // ─── API ─────────────────────────────────────────────────────────────────────
 
 export const arrearsEscalationApi = {
@@ -83,21 +119,10 @@ export const arrearsEscalationApi = {
 
     if (payment.status !== 'pending') return null;
 
-    const daysOverdue = Math.floor(
-      (Date.now() - new Date(payment.due_date).getTime()) / (1000 * 60 * 60 * 24)
-    );
+    const daysOverdue = calculateDaysOverdue(payment.due_date);
+    const stage = determineEscalationStage(daysOverdue);
 
-    if (daysOverdue < ESCALATION_THRESHOLDS.friendly_reminder) return null;
-
-    // Determine the appropriate stage
-    let stage: EscalationStage;
-    if (daysOverdue >= ESCALATION_THRESHOLDS.breach_notice) {
-      stage = 'breach_notice';
-    } else if (daysOverdue >= ESCALATION_THRESHOLDS.formal_demand) {
-      stage = 'formal_demand';
-    } else {
-      stage = 'friendly_reminder';
-    }
+    if (!stage) return null;
 
     // Calculate interest
     const rate = (payment.lease as any)?.interest_on_arrears_rate ?? 2.0;
@@ -113,12 +138,7 @@ export const arrearsEscalationApi = {
       .maybeSingle();
 
     // Don't downgrade an escalation
-    const stageOrder: EscalationStage[] = [
-      'friendly_reminder', 'formal_demand', 'breach_notice',
-      'cure_period', 'legal_action', 'eviction_notice',
-    ];
-
-    if (existing && stageOrder.indexOf(existing.stage as EscalationStage) >= stageOrder.indexOf(stage)) {
+    if (existing && !isDowngrade(existing.stage as EscalationStage, stage)) {
       // Update interest but don't change stage
       await supabase
         .from('arrears_escalations')
@@ -213,13 +233,9 @@ export const arrearsEscalationApi = {
     const uniqueTenants = new Set(escalations.map((e) => e.tenant_id));
 
     // Determine highest stage
-    const stageOrder: EscalationStage[] = [
-      'friendly_reminder', 'formal_demand', 'breach_notice',
-      'cure_period', 'legal_action', 'eviction_notice',
-    ];
     let highestStage: EscalationStage | null = null;
     for (const e of escalations) {
-      if (!highestStage || stageOrder.indexOf(e.stage) > stageOrder.indexOf(highestStage)) {
+      if (!highestStage || STAGE_ORDER.indexOf(e.stage) > STAGE_ORDER.indexOf(highestStage)) {
         highestStage = e.stage;
       }
     }

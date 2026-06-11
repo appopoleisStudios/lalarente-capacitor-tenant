@@ -12,6 +12,32 @@ import {
   isBusinessDay,
 } from '../../../shared/utils/businessDayCalculator';
 
+// ─── Pure Helpers ────────────────────────────────────────────────────────────
+
+/**
+ * Calculate days between a target date and today.
+ */
+export function calculateDaysUntilExpiry(endDate: string, today: Date): number {
+  const end = new Date(endDate);
+  return Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+/**
+ * Determine the lease expiry status based on days until expiry and notice status.
+ */
+export function determineLeaseStatus(
+  daysUntilExpiry: number,
+  today: Date,
+  notice80Due: Date,
+  notice80Sent: boolean
+): LeaseExpiryInfo['status'] {
+  if (daysUntilExpiry <= 0) return 'expired';
+  if (daysUntilExpiry <= 30) return 'expiring_soon';
+  if (!notice80Sent && today >= notice80Due) return 'overdue';
+  if (today >= notice80Due) return 'notice_due';
+  return 'ok';
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface LeaseExpiryInfo {
@@ -60,23 +86,14 @@ export const leaseExpiryApi = {
 
     const endDate = new Date(lease.end_date);
     const today = new Date();
-    const daysUntilExpiry = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const daysUntilExpiry = calculateDaysUntilExpiry(lease.end_date, today);
 
     const notice80Due = calculateExpiryNoticeDate(endDate, 80);
     const notice60Due = calculateExpiryNoticeDate(endDate, 60);
     const notice40Due = calculateExpiryNoticeDate(endDate, 40);
 
     // Determine status
-    let status: LeaseExpiryInfo['status'] = 'ok';
-    if (daysUntilExpiry <= 0) {
-      status = 'expired';
-    } else if (daysUntilExpiry <= 30) {
-      status = 'expiring_soon';
-    } else if (today >= notice80Due && !lease.notice_80_sent_at) {
-      status = 'overdue';
-    } else if (today >= notice80Due) {
-      status = 'notice_due';
-    }
+    const status = determineLeaseStatus(daysUntilExpiry, today, notice80Due, !!lease.notice_80_sent_at);
 
     return {
       leaseId: lease.id,
