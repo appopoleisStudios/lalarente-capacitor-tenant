@@ -183,7 +183,10 @@ export default function DevPlanePage() {
                             {issue.assignees.map((uid) => {
                               const m = memberMap.get(uid);
                               const name = m?.display_name ?? uid.slice(0, 6);
-                              const initials = name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
+                              const words = name.trim().split(/\s+/);
+                              const initials = words.length > 1
+                                ? (words[0][0] + words[1][0]).toUpperCase()
+                                : name.slice(0, 2).toUpperCase();
                               return (
                                 <span
                                   key={uid}
