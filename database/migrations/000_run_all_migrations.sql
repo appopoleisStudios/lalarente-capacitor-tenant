@@ -52,6 +52,10 @@ CREATE EXTENSION IF NOT EXISTS "earthdistance" CASCADE;
 \echo 'Running migration 010: Create documents table...'
 \i 010_create_documents_table.sql
 
+-- Migration 043: Fix messaging RLS — restrict thread read access
+\echo 'Running migration 043: Fix messaging RLS...'
+\i 043_fix_messaging_rls.sql
+
 \echo 'All migrations completed successfully!'
 \echo ''
 \echo 'Post-migration tasks:'
