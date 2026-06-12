@@ -36,7 +36,7 @@ serve(async (req) => {
   const t0 = Date.now();
 
   try {
-    const { target, path, method, body: requestBody, projectId: reqProjectId, resource: resourceParam, issueId: issueIdParam } = await req.json();
+    const { target, path, method, body: requestBody, projectId: reqProjectId, resource: resourceParam, issueId: issueIdParam, ...payload } = await req.json();
 
     // ── Sentry proxy ──────────────────────────────────────────
     if (target === 'sentry') {
@@ -93,10 +93,20 @@ serve(async (req) => {
         );
       }
 
+      // Resource path: if it already contains '/', use it as-is (e.g. 'issues/{id}/comments/{commentId}')
+      // Otherwise, append issueId if provided
       const resource = resourceParam || requestBody?.resource || 'issues';
       const issueId = issueIdParam || requestBody?.issueId;
       const resourcePath = resource.includes('/') ? resource : (issueId ? `${resource}/${issueId}` : resource);
       const url = `${planeBase}/api/v1/workspaces/${workspaceSlug}/projects/${projectId}/${resourcePath}/`;
+
+      // Collect all extra fields as the request body for POST/PATCH/PUT
+      let sendBody;
+      if (payload && Object.keys(payload).length > 0) {
+        sendBody = payload;
+      } else if (requestBody) {
+        sendBody = requestBody;
+      }
 
       const res = await fetch(url, {
         method: method || 'GET',
@@ -104,14 +114,19 @@ serve(async (req) => {
           'X-Api-Key': apiKey,
           'Content-Type': 'application/json',
         },
-        body: requestBody && method !== 'GET' ? JSON.stringify(requestBody) : undefined,
+        body: sendBody && method !== 'GET' ? JSON.stringify(sendBody) : undefined,
       });
 
-      const data = await res.text();
+      const text = await res.text();
       const durationMs = Date.now() - t0;
       devLog('admin-proxy:plane', res.ok ? 'info' : 'warn', `${method || 'GET'} ${resourcePath}`, { resourcePath, status: res.status, durationMs });
 
-      return new Response(data, {
+      // 204 No Content — return empty body to avoid supabase.functions.invoke error
+      if (res.status === 204) {
+        return new Response(null, { status: 200, headers: corsHeaders });
+      }
+
+      return new Response(text, {
         status: res.status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
