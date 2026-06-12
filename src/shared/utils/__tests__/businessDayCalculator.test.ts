@@ -68,7 +68,7 @@ describe('businessDayCalculator', () => {
       expect(countBusinessDaysBetween(start, end)).toBe(0);
     });
 
-    it('should include weekend and public holidays from the total counts', () => {
+    it('should exclude weekend and public holidays from the total count', () => {
       const start = new Date('2026-04-02');
       const end = new Date('2026-04-07');
 
