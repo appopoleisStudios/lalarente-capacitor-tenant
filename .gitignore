@@ -54,3 +54,4 @@ supabase/.temp
 
 # Cursor local MCP (per-developer; see docs/SUPABASE_MCP_SETUP.md)
 .cursor/mcp.json
+docs/PLANE_ACCESS_GUIDE.md

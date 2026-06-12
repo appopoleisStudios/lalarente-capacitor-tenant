@@ -1,9 +1,9 @@
 import {
-  addBusinessDays,
-  calculateCurePeriodDeadline,
-  countBusinessDaysBetween,
-  isBusinessDay,
-  toDateString,
+    addBusinessDays,
+    calculateCurePeriodDeadline,
+    countBusinessDaysBetween,
+    isBusinessDay,
+    toDateString,
 } from '../businessDayCalculator';
 
 describe('businessDayCalculator', () => {
@@ -68,7 +68,7 @@ describe('businessDayCalculator', () => {
       expect(countBusinessDaysBetween(start, end)).toBe(0);
     });
 
-    it('should exclude weekend and public holidays from the total count', () => {
+    it('should exclude weekend and public holidays from the total count ', () => { 
       const start = new Date('2026-04-02');
       const end = new Date('2026-04-07');
 

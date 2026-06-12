@@ -14,6 +14,8 @@ import DevPlanePage from './pages/DevPlanePage';
 import DevLogsPage from './pages/DevLogsPage';
 import DevAuditPage from './pages/DevAuditPage';
 import DevEnvPage from './pages/DevEnvPage';
+import DevGithubPage from './pages/DevGithubPage';
+import DevSupabasePage from './pages/DevSupabasePage';
 
 export default function App() {
   return (
@@ -34,6 +36,8 @@ export default function App() {
               <Route path="dev/logs" element={<DevLogsPage />} />
               <Route path="dev/audit" element={<DevAuditPage />} />
               <Route path="dev/env" element={<DevEnvPage />} />
+              <Route path="dev/github" element={<DevGithubPage />} />
+              <Route path="dev/supabase" element={<DevSupabasePage />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

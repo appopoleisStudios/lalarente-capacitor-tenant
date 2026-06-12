@@ -5,8 +5,40 @@
  * CPA s14: Early termination penalty capped at reasonable amount.
  */
 
+import { differenceInCalendarMonths } from 'date-fns';
 import { supabase } from '../../../lib/supabase';
 import { addBusinessDays, toDateString } from '../../../shared/utils/businessDayCalculator';
+
+// ─── Pure Calculation Helpers ────────────────────────────────────────────────
+
+/**
+ * Calculate remaining months using calendar-month math.
+ * Uses date-fns differenceInCalendarMonths for accurate month boundaries.
+ */
+export function calculateRemainingMonths(endDate: Date, today: Date): number {
+  return Math.max(0, differenceInCalendarMonths(endDate, today));
+}
+
+/**
+ * Calculate early termination penalty capped at 2 months rent.
+ * CPA s14: Penalty must be reasonable — 2 months is standard SA practice.
+ */
+export function calculatePenaltyAmount(
+  remainingMonths: number,
+  monthlyRent: number
+): number {
+  const penaltyMonths = Math.min(2, remainingMonths);
+  return penaltyMonths * monthlyRent;
+}
+
+/**
+ * Determine notice period days from lease config, defaulting to 30.
+ */
+export function calculateNoticeDays(
+  leaseNoticePeriod: number | null
+): number {
+  return leaseNoticePeriod || 30;
+}
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -51,17 +83,13 @@ export const leaseTerminationApi = {
 
     const today = new Date();
     const endDate = new Date(lease.end_date);
-    const remainingMonths = Math.max(
-      0,
-      Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24 * 30))
-    );
+    const remainingMonths = calculateRemainingMonths(endDate, today);
 
     // Penalty calculation: capped at 2 months rent (CPA reasonable penalty)
-    const penaltyMonths = Math.min(2, remainingMonths);
-    const penaltyAmount = penaltyMonths * lease.monthly_rent;
+    const penaltyAmount = calculatePenaltyAmount(remainingMonths, lease.monthly_rent);
 
     // Notice period: minimum 1 calendar month (default 30 days)
-    const noticeDays = lease.early_termination_notice_period_days || 30;
+    const noticeDays = calculateNoticeDays(lease.early_termination_notice_period_days);
     const effectiveDate = addBusinessDays(today, noticeDays);
 
     // Deposit refund estimate (full deposit minus any deductions)

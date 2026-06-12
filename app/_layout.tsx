@@ -44,7 +44,7 @@ function RootLayoutNav() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   return (
     <ErrorBoundary>
       <AuthProvider>
@@ -53,3 +53,5 @@ export default function RootLayout() {
     </ErrorBoundary>
   );
 }
+
+export default env.sentry.dsn ? Sentry.wrap(RootLayout) : RootLayout;

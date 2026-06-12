@@ -12,9 +12,11 @@ const navItems = [
 ];
 
 const devItems = [
-  { to: '/dev/logs', label: 'Function Logs', icon: '📜' },
-  { to: '/dev/audit', label: 'Audit Trail', icon: '🔍' },
-  { to: '/dev/env', label: 'Environment', icon: '⚙️' },
+  { to: '/dev/logs',     label: 'Function Logs', icon: '📜' },
+  { to: '/dev/audit',   label: 'Audit Trail',    icon: '🔍' },
+  { to: '/dev/env',     label: 'Environment',    icon: '⚙️' },
+  { to: '/dev/github',  label: 'GitHub PRs',     icon: '🐙' },
+  { to: '/dev/supabase', label: 'Supabase Logs', icon: '🟢' },
 ];
 
 const planeItem = { to: '/dev/plane', label: 'Plane Issues', icon: '🎯' };
