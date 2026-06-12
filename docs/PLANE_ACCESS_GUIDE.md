@@ -126,6 +126,35 @@ Then map `state` UUID to state name via the states endpoint.
 
 ---
 
+## ⚠️ CRITICAL RULE: Always Update Plane Issue on Every Change
+
+**Whenever you make any change related to a Plane task (rebase a PR, push fixes, leave a GitHub comment, merge a PR, etc.), you MUST also post a comment on the corresponding Plane issue in Plane.so summarizing what was done.**
+
+Do not skip this step. The Plane issue is the source of truth; GitHub PRs are secondary.
+
+### How to post a comment on a Plane issue
+
+```bash
+ISSUE_ID="<uuid-from-plane>"
+COMMENT_HTML="<p>Description of what changed and why</p>"
+
+curl -s -X POST "https://vvepwaolnkzfzhzgxlwr.supabase.co/functions/v1/admin-proxy" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+  -d "{\"target\":\"plane\",\"method\":\"POST\",\"resource\":\"issues/$ISSUE_ID/comments\",\"comment_html\":\"$COMMENT_HTML\"}"
+```
+
+### How to find the Plane issue ID for a PR
+
+Fetch all issues and match by name/keyword:
+
+```bash
+curl -s -X POST "https://vvepwaolnkzfzhzgxlwr.supabase.co/functions/v1/admin-proxy" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+  -d '{"target":"plane","method":"GET","resource":"issues"}' | python3 -c "import sys,json; data=json.load(sys.stdin); results=data.get('results',[]); [print(f'{r[\"id\"]} | {r[\"name\"]}') for r in results]"
+```
+
 ## SA (Security Audit) Reviews
 
 - SA reviewer on GitHub: `khadeejahdreamcode`
