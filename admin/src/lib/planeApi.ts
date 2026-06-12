@@ -89,9 +89,9 @@ export async function createComment(issueId: string, commentHtml: string): Promi
 }
 
 export async function updateComment(issueId: string, commentId: string, commentHtml: string): Promise<PlaneComment> {
-  return planeRequest('PATCH', `issues/${issueId}/comments`, { issueId: commentId, comment_html: commentHtml });
+  return planeRequest('PATCH', `issues/${issueId}/comments/${commentId}`, { comment_html: commentHtml });
 }
 
 export async function deleteComment(issueId: string, commentId: string): Promise<void> {
-  return planeRequest('DELETE', `issues/${issueId}/comments`, { issueId: commentId });
+  return planeRequest('DELETE', `issues/${issueId}/comments/${commentId}`);
 }
