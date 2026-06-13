@@ -221,6 +221,7 @@ const WORKSPACE = "{WORKSPACE_SLUG}";
 const PROJECT   = "{PROJECT_ID}";
 
 // ── Request helper ────────────────────────────────────────────────────
+/** Fetch JSON data (GET, POST, PATCH). Returns parsed response body. */
 async function planeReq<T = unknown>(
   path: string, method = "GET", body?: object
 ): Promise<T> {
@@ -233,7 +234,20 @@ async function planeReq<T = unknown>(
     }
   );
   if (!res.ok) throw new Error(`Plane ${res.status}: ${await res.text()}`);
-  return null as T; // only reached for DELETE (returns null)
+  const data = await res.json();
+  return data as T;
+}
+
+/** Delete an issue. Returns nothing on success. */
+async function planeDelete(path: string): Promise<void> {
+  const res = await fetch(
+    `${BASE}/api/v1/workspaces/${WORKSPACE}/projects/${PROJECT}/${path}`,
+    {
+      method: "DELETE",
+      headers: { "X-Api-Key": TOKEN, "Content-Type": "application/json" },
+    }
+  );
+  if (!res.ok) throw new Error(`Plane ${res.status}: ${await res.text()}`);
 }
 
 // ── Dynamic ID lookups (avoids hardcoding UUIDs) ──────────────────────
