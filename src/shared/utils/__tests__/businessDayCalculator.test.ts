@@ -1,9 +1,16 @@
 import {
   addBusinessDays,
   calculateCurePeriodDeadline,
+  calculateDSARDeadline,
+  calculateExpiryNoticeDate,
+  calculateLegalInterest,
   countBusinessDaysBetween,
+  getHolidayName,
+  getHolidaysForYear,
   isBusinessDay,
-  toDateString,
+  nextBusinessDay,
+  subtractBusinessDays,
+  toDateString
 } from '../businessDayCalculator';
 
 describe('businessDayCalculator', () => {
@@ -97,4 +104,139 @@ describe('businessDayCalculator', () => {
       expect(toDateString(deadline)).toBe('2026-06-30');
     });
   });
-});
+
+  describe('calculateExpiryNoticeDate', () => {
+    it('should accurately calculate a 40 business day period', () => {
+      const leaseEndDate = new Date('2026-06-30');
+      const noticeDate = calculateExpiryNoticeDate(leaseEndDate, 40);
+
+      expect(toDateString(noticeDate)).toBe('2026-05-04');
+    });
+
+    it('should correctly shift backward if the lease expiry lands on a weekend', () => {
+      const weekendExpiry = new Date('2026-06-14');
+      const noticeDate = calculateExpiryNoticeDate(weekendExpiry, 5);
+
+      expect(toDateString(noticeDate)).toBe('2026-06-08');
+    });
+
+    it('should accept a string representation of the lease end date', () => {
+      const noticeDate = calculateExpiryNoticeDate('2026-06-30', 80);
+      expect(noticeDate).toBeInstanceOf(Date);
+    });
+  });
+
+  describe('calculateDSARDeadline (POPIA s23)', () => {
+    it('should calculate the standard 30-business-day deadline for a DSAR', () => {
+      const requestDate = new Date ('2026-06-01');
+      const deadline = calculateDSARDeadline(requestDate);
+
+      expect(toDateString(deadline)).toBe('2026-07-14');
+    });
+
+    it('should accept a string date representation for DSAR requests', () => {
+      const deadline = calculateDSARDeadline('2026-06-01');
+      expect(toDateString(deadline)).toBe('2026-07-14');
+    });
+  });
+
+  describe('subtractBusinessDays', () => {
+    it('should subtract days within the a standard week', () => {
+      const start = new Date('2026-06-12');
+      const result = subtractBusinessDays(start, 3);
+
+      expect(toDateString(result)).toBe('2026-06-09');
+    });
+
+    it('should skip backward over weekends properly', () => {
+      const start = new Date('2026-06-08');
+      const result = subtractBusinessDays(start, 2);
+
+      expect(toDateString(result)).toBe('2026-06-04');
+    });
+
+    it('should skip backward over public holidays (e.g., Freedom Day)', () => {
+      const start = new Date('2026-04-28');
+      const result = subtractBusinessDays(start, 1);
+
+      expect(toDateString(result)).toBe('2026-04-24');
+    });
+
+    it('should add days instead if a negative number is passed', () => {
+      const start = new Date('2026-06-08');
+      const result = subtractBusinessDays(start, -3);
+
+      expect(toDateString(result)).toBe('2026-06-11');
+    });
+  });
+
+  describe('calculateLegalInterest', () => {
+    it('should correctly calculate standard simple interest', () => {
+      const interest = calculateLegalInterest(10000, 11.75, 30);
+
+      expect(interest).toBe(96.58);
+    });
+
+    it('should return 0 if there are 0 days in arrears', () => {
+      expect(calculateLegalInterest(5000, 10.5, 0)).toBe(0);
+    });
+
+    it('should return 0 if the principal is 0 or negative', () => {
+    expect(calculateLegalInterest(0, 10.5, 30)).toBe(0);
+      expect(calculateLegalInterest(-1000, 10.5, 30)).toBe(0);
+    });
+  });
+  
+  describe('nextBusinessDay', () => {
+    it('should return the SAME day if the input is already a business day', () => {
+      const thursday = new Date('2026-06-11');
+      expect(toDateString(nextBusinessDay(thursday))).toBe('2026-06-11');
+    });
+
+    it('should push a weekend date to the following Monday', () => {
+      const saturday = new Date('2026-06-13');
+      expect(toDateString(nextBusinessDay(saturday))).toBe('2026-06-15');
+    });
+
+    it('should push through a weekend AND a consecutive public holiday', () => {
+      const sunday = new Date('2026-04-26');
+
+      expect(toDateString(nextBusinessDay(sunday))).toBe('2026-04-28');
+    });
+  });
+
+  describe('getHolidayName', () => {
+    it('should return the correct statutory name for a known holiday', () => {
+      const youthDay = new Date('2026-06-16');
+      expect(getHolidayName(youthDay)).toBe('Youth Day');
+    });
+
+    it('should return null for a standard business day', () => {
+      const standardDay = new Date('2026-06-10');
+      expect(getHolidayName(standardDay)).toBeNull();
+    });
+
+    it('should work with a string input', () => {
+      expect(getHolidayName('2026-09-24')).toBe('Heritage Day');
+    });
+  });
+
+  describe('getHolidaysForYear', () => {
+    it('should return an array containing standard SA holidays for the given year', () => {
+      const holidays2026 = getHolidaysForYear(2026);
+
+      expect(Array.isArray(holidays2026)).toBe(true);
+      expect(holidays2026.length).toBe(12);
+      expect(holidays2026[0].date).toBe('2026-01-01');
+    });
+
+    it('should return an empty array for a year not in dictionary', () => {
+      const holidays1999 = getHolidaysForYear(1999);
+
+      expect(holidays1999.length).toBe(0);
+    });
+  }); 
+  });
+
+  
+
