@@ -187,15 +187,43 @@ _req(f"issues/{ISSUE_ID}/", method="DELETE")
 
 ## 5. CRUD Examples — TypeScript / JavaScript
 
-Use this in any Node.js script or edge function.
+Use this in any Node.js script or edge function. The types reflect the actual Plane API response shapes.
 
 ```typescript
+// ── Plane API response types ──────────────────────────────────────────
+interface PlaneState {
+  id: string;
+  name: string;
+  group: 'backlog' | 'unstarted' | 'started' | 'completed' | 'cancelled';
+  color: string;
+}
+
+interface PlaneMemberRef {
+  id: string;
+  display_name: string;
+  avatar?: string | null;
+}
+
+interface PlaneIssueSummary {
+  id: string;
+  sequence_id: number;
+  name: string;
+  state: string;
+  priority: 'urgent' | 'high' | 'medium' | 'low' | 'none';
+  assignees?: string[];
+  created_at: string;
+}
+
+// ── Config ────────────────────────────────────────────────────────────
 const BASE      = "{PLANE_BASE_URL}";
-const TOKEN     = "{API_KEY}";            // replace
+const TOKEN     = "{API_KEY}";            // paste your Plane API token here
 const WORKSPACE = "{WORKSPACE_SLUG}";
 const PROJECT   = "{PROJECT_ID}";
 
-async function planeReq(path: string, method = "GET", body?: object) {
+// ── Request helper ────────────────────────────────────────────────────
+async function planeReq<T = unknown>(
+  path: string, method = "GET", body?: object
+): Promise<T> {
   const res = await fetch(
     `${BASE}/api/v1/workspaces/${WORKSPACE}/projects/${PROJECT}/${path}`,
     {
@@ -205,45 +233,60 @@ async function planeReq(path: string, method = "GET", body?: object) {
     }
   );
   if (!res.ok) throw new Error(`Plane ${res.status}: ${await res.text()}`);
-  return method === "DELETE" ? null : res.json();
+  return null as T; // only reached for DELETE (returns null)
 }
 
-// Fetch state UUIDs dynamically first
-const statesRes = await planeReq("states/");
-const todoUuid = statesRes.results.find((s: any) => s.name === "Todo")?.id;
-const inProgressUuid = statesRes.results.find((s: any) => s.name === "In Progress")?.id;
-const doneUuid = statesRes.results.find((s: any) => s.name === "Done")?.id;
+// ── Dynamic ID lookups (avoids hardcoding UUIDs) ──────────────────────
 
-// Fetch member UUIDs dynamically
-const membersRes = await planeReq("members/");
+// 1. Fetch states to get UUIDs for Todo / In Progress / Done
+const statesRes = await planeReq<{ results: PlaneState[] }>("states/");
+const todoUuid = statesRes.results.find((s) => s.name === "Todo")?.id;
+const inProgressUuid = statesRes.results.find((s) => s.name === "In Progress")?.id;
+const doneUuid = statesRes.results.find((s) => s.name === "Done")?.id;
+
+// 2. Fetch members to get UUIDs for assignee lookups
+const membersRes = await planeReq<PlaneMemberRef[] | { results: PlaneMemberRef[] }>("members/");
 const members = Array.isArray(membersRes) ? membersRes : (membersRes.results ?? []);
-const aamirUuid = members.find((m: any) => m.display_name?.includes("Aamir"))?.id;
-const arsalanUuid = members.find((m: any) => m.display_name?.includes("arsalan"))?.id;
+const aamirUuid = members.find((m) => m.display_name?.includes("Aamir"))?.id;
+const arsalanUuid = members.find((m) => m.display_name?.includes("arsalan"))?.id;
 
-// List issues
-const { results } = await planeReq("issues/?per_page=50&order_by=-created_at");
-results.forEach((i: any) => console.log(`#${i.sequence_id} ${i.name}`));
+// ── CRUD operations ───────────────────────────────────────────────────
 
-// Create issue
-const issue = await planeReq("issues/", "POST", {
-  name: "[FIX] My task",
-  description_html: "<p>What needs doing and why.</p>",
-  state: todoUuid,     // Todo
+// List issues (last 50, newest first)
+const issuesRes = await planeReq<{ results: PlaneIssueSummary[] }>(
+  "issues/?per_page=50&order_by=-created_at"
+);
+for (const issue of issuesRes.results) {
+  console.log(`#${issue.sequence_id} [${issue.priority}] ${issue.name}`);
+}
+
+// Create a new issue in Todo state, assigned to Aamir
+const newIssue = await planeReq<PlaneIssueSummary>("issues/", "POST", {
+  name: "[FIX] Describe what needs fixing and why",
+  description_html: "<p>Include reproduction steps, screenshots, or error logs for context.</p>",
+  state: todoUuid,
   priority: "high",
-  assignees: [aamirUuid],
+  assignees: aamirUuid ? [aamirUuid] : [],
 });
-console.log(`Created #${issue.sequence_id}`);
+console.log(`Created issue #${newIssue.sequence_id} — ${newIssue.id}`);
 
-// Update state → In Progress
-await planeReq(`issues/${issue.id}/`, "PATCH", {
+// Move the issue to In Progress (when you start working on it)
+await planeReq(`issues/${newIssue.id}/`, "PATCH", {
   state: inProgressUuid,
 });
 
-// Add comment
-await planeReq(`issues/${issue.id}/comments/`, "POST", {
-  comment_html: "<p>PR raised: <a href='...'>link</a></p>",
+// Add a comment linking the PR
+await planeReq(`issues/${newIssue.id}/comments/`, "POST", {
+  comment_html: "<p>PR submitted: <a href='https://github.com/org/repo/pull/XX'>#XX</a></p>",
+});
+
+// Mark as Done once the PR is merged
+await planeReq(`issues/${newIssue.id}/`, "PATCH", {
+  state: doneUuid,
 });
 ```
+
+> **Why typed generics (`planeReq<T>`)?** The Plane API returns structured JSON — `{ results: [...] }` for lists, flat arrays for members. Declaring the expected type at each call site makes the code self-documenting and catches mismatches when the API shape changes.
 
 ---
 
