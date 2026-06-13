@@ -162,6 +162,12 @@ export default function TenantLayout() {
         }}
       />
       <Tabs.Screen
+        name="lease-journey"
+        options={{
+          href: null, // Hidden from tabs - accessed from dashboard lease card
+        }}
+      />
+      <Tabs.Screen
         name="payment-disputes"
         options={{
           href: null, // Hidden from tabs - accessed from payments

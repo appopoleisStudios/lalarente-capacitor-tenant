@@ -46,25 +46,25 @@ const TENANCY_SHORTCUTS: {
     subtitle: 'Application deposits and RHA rights',
   },
   {
-    href: '/(tenant)/reports',
-    icon: 'clipboard-outline',
-    iconColor: colors.info[500],
-    title: 'Reports & inspections',
-    subtitle: 'Inspection history and work verification',
-  },
-  {
     href: '/(tenant)/arrears',
     icon: 'alert-circle-outline',
     iconColor: colors.error[500],
-    title: 'Arrears',
-    subtitle: 'Outstanding rent, interest, and escalation status',
+    title: 'Arrears & escalation',
+    subtitle: 'Overdue payments and CPA escalation status',
   },
   {
     href: '/(tenant)/early-termination',
     icon: 'exit-outline',
     iconColor: colors.warning[600],
-    title: 'Early Termination',
-    subtitle: 'Request lease termination under CPA s14',
+    title: 'Early termination',
+    subtitle: 'CPA early termination request and status',
+  },
+  {
+    href: '/(tenant)/reports',
+    icon: 'clipboard-outline',
+    iconColor: colors.info[500],
+    title: 'Reports & inspections',
+    subtitle: 'Inspection history and work verification',
   },
 ];
 
@@ -643,13 +643,22 @@ export default function TenantDashboardScreen() {
                   </Text>
                 </View>
               </View>
-              <TouchableOpacity
-                style={styles.viewLeaseButton}
-                onPress={() => router.push('/(tenant)/lease' as any)}
-              >
-                <Text style={styles.viewLeaseButtonText}>View Lease Details</Text>
-                <Ionicons name="arrow-forward" size={16} color={colors.rsa.green} />
-              </TouchableOpacity>
+              <View style={styles.leaseActions}>
+                <TouchableOpacity
+                  style={[styles.viewLeaseButton, { flex: 1 }]}
+                  onPress={() => router.push('/(tenant)/lease' as any)}
+                >
+                  <Text style={styles.viewLeaseButtonText}>View Lease Details</Text>
+                  <Ionicons name="arrow-forward" size={16} color={colors.rsa.green} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.viewJourneyButton, { flex: 1 }]}
+                  onPress={() => router.push('/(tenant)/lease-journey' as any)}
+                >
+                  <Ionicons name="map-outline" size={16} color="#2563EB" />
+                  <Text style={styles.viewJourneyButtonText}>View Journey</Text>
+                </TouchableOpacity>
+              </View>
             </LinearGradient>
           ) : (
             <View style={styles.noLeaseCard}>
@@ -704,8 +713,8 @@ export default function TenantDashboardScreen() {
             return null;
           })()}
 
-          {/* Deposit Status — shown when active lease exists */}
-          {activeLease && (
+          {/* Deposit Status — shown when active lease has a deposit */}
+          {activeLease && (activeLease.deposit_amount || 0) > 0 && (
             <View style={styles.section}>
               <TouchableOpacity
                 style={styles.depositCard}
@@ -717,10 +726,10 @@ export default function TenantDashboardScreen() {
                   <View>
                     <Text style={styles.depositTitle}>Security Deposit</Text>
                     <Text style={styles.depositSub}>
-                      {activeLease.deposit_amount
-                        ? `R ${((activeLease.deposit_amount || 0) + (activeLease.deposit_total_interest || 0)).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${(activeLease.deposit_total_interest || 0) > 0 ? ` (incl. R ${(activeLease.deposit_total_interest || 0).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} interest)` : ' held in trust'}`
-                        : 'No deposit recorded on this lease'
-                      }
+                      R {((activeLease.deposit_amount || 0) + (activeLease.deposit_total_interest || 0)).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {(activeLease.deposit_total_interest || 0) > 0
+                        ? ` (incl. R ${(activeLease.deposit_total_interest || 0).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} interest)`
+                        : ' held in trust'}
                     </Text>
                   </View>
                 </View>
@@ -969,7 +978,7 @@ export default function TenantDashboardScreen() {
                 <Text style={styles.documentText}>Reports</Text>
               </TouchableOpacity>
 
-              {activeLease && (
+              {activeLease && (activeLease.deposit_amount || 0) > 0 && (
                 <TouchableOpacity
                   style={styles.documentCard}
                   onPress={() => router.push('/(tenant)/deposit' as any)}
@@ -1339,6 +1348,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: colors.rsa.green,
+  },
+  leaseActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  viewJourneyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingVertical: 12,
+    borderRadius: 10,
+    gap: 6,
+  },
+  viewJourneyButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#93C5FD',
   },
   noLeaseCard: {
     margin: 16,
