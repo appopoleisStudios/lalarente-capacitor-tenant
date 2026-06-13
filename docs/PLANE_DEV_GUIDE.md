@@ -287,7 +287,8 @@ When you pick up a task:
 1. **Move it to In Progress** — PATCH the state to the In Progress UUID as soon as you start
 2. **Branch name** — match the issue type: `fix/`, `feat/`, `test/`, `docs/`, `chore/`
 3. **When you raise a PR** — add a comment on the Plane issue with the PR link
-4. **When the PR is merged** — move the issue to Done
+4. **⏰ 5 minutes after pushing: check PR for reviews** — the SA auditor (`khadeejahdreamcode`) typically auto-reviews within 1-5 minutes. Check for change requests and address them immediately.
+5. **When the PR is merged** — move the issue to Done
 
 Never close a Plane issue without a merged PR or a written reason in the comments.
 
