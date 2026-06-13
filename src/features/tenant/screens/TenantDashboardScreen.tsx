@@ -46,6 +46,20 @@ const TENANCY_SHORTCUTS: {
     subtitle: 'Application deposits and RHA rights',
   },
   {
+    href: '/(tenant)/arrears',
+    icon: 'alert-circle-outline',
+    iconColor: colors.error[500],
+    title: 'Arrears & escalation',
+    subtitle: 'Overdue payments and CPA escalation status',
+  },
+  {
+    href: '/(tenant)/early-termination',
+    icon: 'exit-outline',
+    iconColor: colors.warning[600],
+    title: 'Early termination',
+    subtitle: 'CPA early termination request and status',
+  },
+  {
     href: '/(tenant)/reports',
     icon: 'clipboard-outline',
     iconColor: colors.info[500],

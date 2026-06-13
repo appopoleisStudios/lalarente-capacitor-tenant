@@ -13,8 +13,30 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { calculateExpiryNoticeDate } from '../../../shared/utils/businessDayCalculator';
+import type { Database } from '../../../types/database.types';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
+
+type LeaseRow = Database['public']['Tables']['leases']['Row'];
+type PaymentRow = Database['public']['Tables']['payments']['Row'];
+type InspectionRow = Database['public']['Tables']['inspections']['Row'];
+type MaintenanceRow = Database['public']['Tables']['maintenance_requests']['Row'];
+/** Lightweight version with only the fields we query from maintenance_requests */
+interface MaintenanceSummary {
+  id: string;
+  title: string;
+  status: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+type RenewalRow = Database['public']['Tables']['renewal_negotiations']['Row'];
+type DepositRow = Database['public']['Tables']['holding_deposits']['Row'];
+type ApplicationRow = Database['public']['Tables']['rental_applications']['Row'];
+
+interface LeaseWithJoins extends LeaseRow {
+  property: { id: string; title: string; address: string; city: string | null } | null;
+  owner: { full_name: string | null; email: string | null; phone: string | null } | null;
+}
 
 interface TimelineEvent {
   id: string;
@@ -49,49 +71,56 @@ interface TimelineEvent {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/** Safely create a Date, defaulting to now if value is null/undefined */
 function safeDate(value: string | Date | null | undefined): Date {
   if (value == null) return new Date();
   return new Date(value);
 }
 
-function unpackRelation<T>(value: T | T[] | null | undefined): T | undefined {
-  if (value == null) return undefined;
-  return Array.isArray(value) ? value[0] : value;
-}
+const EVENT_ICONS: Record<TimelineEvent['type'], keyof typeof Ionicons.glyphMap> = {
+  application_submitted: 'document-text-outline',
+  application_approved: 'checkmark-circle-outline',
+  holding_deposit_paid: 'shield-checkmark-outline',
+  lease_signed_owner: 'create-outline',
+  lease_signed_tenant: 'create-outline',
+  lease_executed: 'ribbon-outline',
+  lease_started: 'home-outline',
+  rent_paid: 'cash-outline',
+  rent_overdue: 'alert-circle-outline',
+  inspection_scheduled: 'calendar-outline',
+  inspection_completed: 'clipboard-outline',
+  maintenance_opened: 'construct-outline',
+  maintenance_resolved: 'checkmark-done-outline',
+  notice_80_day: 'notifications-outline',
+  notice_60_day: 'notifications-outline',
+  notice_40_day: 'warning-outline',
+  renewal_pending: 'refresh-outline',
+  renewal_accepted: 'checkmark-circle-outline',
+  lease_expiring: 'time-outline',
+  lease_expired: 'close-circle-outline',
+  lease_terminated: 'exit-outline',
+};
 
-function getEventIcon(type: TimelineEvent['type']): keyof typeof Ionicons.glyphMap {
-  switch (type) {
-    case 'application_submitted': return 'document-text-outline';
-    case 'application_approved': return 'checkmark-circle-outline';
-    case 'holding_deposit_paid': return 'shield-checkmark-outline';
-    case 'lease_signed_owner':
-    case 'lease_signed_tenant': return 'create-outline';
-    case 'lease_executed': return 'ribbon-outline';
-    case 'lease_started': return 'home-outline';
-    case 'rent_paid': return 'cash-outline';
-    case 'rent_overdue': return 'alert-circle-outline';
-    case 'inspection_scheduled': return 'calendar-outline';
-    case 'inspection_completed': return 'clipboard-outline';
-    case 'maintenance_opened': return 'construct-outline';
-    case 'maintenance_resolved': return 'checkmark-done-outline';
-    case 'notice_80_day': return 'notifications-outline';
-    case 'notice_60_day': return 'notifications-outline';
-    case 'notice_40_day': return 'warning-outline';
-    case 'renewal_pending': return 'refresh-outline';
-    case 'renewal_accepted': return 'checkmark-circle-outline';
-    case 'lease_expiring': return 'time-outline';
-    case 'lease_expired': return 'close-circle-outline';
-    case 'lease_terminated': return 'exit-outline';
-  }
-}
+const EVENT_COLORS: Record<string, string> = {
+  error: '#DC2626',
+  success: '#16A34A',
+  warning: '#D97706',
+  info: '#2563EB',
+};
 
-function getEventColor(type: TimelineEvent['type']): string {
+const EVENT_BG: Record<string, string> = {
+  error: '#FEF2F2',
+  success: '#F0FDF4',
+  warning: '#FFFBEB',
+  info: '#EFF6FF',
+};
+
+function eventStyle(type: TimelineEvent['type']) {
   switch (type) {
     case 'rent_overdue':
     case 'lease_expired':
     case 'notice_40_day':
-    case 'lease_terminated': return '#DC2626';
+    case 'lease_terminated':
+      return { color: EVENT_COLORS.error, bg: EVENT_BG.error };
     case 'rent_paid':
     case 'application_approved':
     case 'lease_executed':
@@ -99,31 +128,15 @@ function getEventColor(type: TimelineEvent['type']): string {
     case 'lease_signed_tenant':
     case 'lease_started':
     case 'maintenance_resolved':
-    case 'renewal_accepted': return '#16A34A';
-    case 'notice_80_day':
-    case 'notice_60_day':
-    case 'lease_expiring':
-    case 'renewal_pending': return '#D97706';
-    default: return '#2563EB';
-  }
-}
-
-function getEventBg(type: TimelineEvent['type']): string {
-  switch (type) {
-    case 'rent_overdue':
-    case 'lease_expired':
-    case 'lease_terminated': return '#FEF2F2';
-    case 'rent_paid':
-    case 'application_approved':
-    case 'lease_executed':
-    case 'maintenance_resolved':
     case 'renewal_accepted':
-    case 'lease_started': return '#F0FDF4';
+      return { color: EVENT_COLORS.success, bg: EVENT_BG.success };
     case 'notice_80_day':
     case 'notice_60_day':
     case 'lease_expiring':
-    case 'renewal_pending': return '#FFFBEB';
-    default: return '#EFF6FF';
+    case 'renewal_pending':
+      return { color: EVENT_COLORS.warning, bg: EVENT_BG.warning };
+    default:
+      return { color: EVENT_COLORS.info, bg: EVENT_BG.info };
   }
 }
 
@@ -149,6 +162,439 @@ function formatTimeAgo(date: Date): string {
   return `${Math.floor(diffDays / 365)} years ago`;
 }
 
+// ─── Data Fetchers ────────────────────────────────────────────────────────────
+
+async function fetchActiveLease(userId: string): Promise<LeaseWithJoins | null> {
+  const { data, error } = await supabase
+    .from('leases')
+    .select(`
+      *,
+      property:properties!property_id(id, title, address, city),
+      owner:profiles!owner_id(full_name, email, phone)
+    `)
+    .eq('tenant_id', userId)
+    .in('status', [
+      'active', 'month_to_month', 'pending_tenant_signature',
+      'pending_owner_signature', 'renewal_pending',
+    ])
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  const row = data as unknown as LeaseWithJoins;
+  return row;
+}
+
+async function fetchApplications(
+  userId: string, propertyId: string
+): Promise<ApplicationRow[]> {
+  const { data } = await supabase
+    .from('rental_applications')
+    .select('id, status, created_at, updated_at')
+    .eq('tenant_id', userId)
+    .eq('property_id', propertyId)
+    .order('created_at', { ascending: false })
+    .limit(1);
+  return (data ?? []) as ApplicationRow[];
+}
+
+async function fetchHoldingDeposits(
+  userId: string, propertyId: string
+): Promise<DepositRow[]> {
+  const { data } = await supabase
+    .from('holding_deposits')
+    .select('id, created_at, status, paid_at')
+    .eq('tenant_id', userId)
+    .eq('property_id', propertyId)
+    .order('created_at', { ascending: false })
+    .limit(1);
+  return (data ?? []) as DepositRow[];
+}
+
+async function fetchPayments(leaseId: string): Promise<PaymentRow[]> {
+  const { data } = await supabase
+    .from('payments')
+    .select('id, amount, due_date, paid_date, status, type')
+    .eq('lease_id', leaseId)
+    .order('due_date', { ascending: false })
+    .limit(12);
+  return (data ?? []) as PaymentRow[];
+}
+
+async function fetchInspections(leaseId: string): Promise<InspectionRow[]> {
+  const { data } = await supabase
+    .from('inspections')
+    .select('id, type, scheduled_date, status, completed_date, created_at')
+    .eq('lease_id', leaseId)
+    .order('scheduled_date', { ascending: false });
+  return (data ?? []) as InspectionRow[];
+}
+
+async function fetchMaintenance(
+  userId: string, propertyId: string
+): Promise<MaintenanceSummary[]> {
+  const { data } = await supabase
+    .from('maintenance_requests')
+    .select('id, title, status, created_at, updated_at')
+    .eq('tenant_id', userId)
+    .eq('property_id', propertyId)
+    .order('created_at', { ascending: false });
+  return (data ?? []) as unknown as MaintenanceSummary[];
+}
+
+async function fetchRenewals(leaseId: string): Promise<RenewalRow[]> {
+  const { data } = await supabase
+    .from('renewal_negotiations')
+    .select('id, status, created_at, response_at')
+    .eq('lease_id', leaseId)
+    .order('created_at', { ascending: false });
+  return (data ?? []) as RenewalRow[];
+}
+
+// ─── Timeline Builders ────────────────────────────────────────────────────────
+
+function buildApplicationEvents(
+  apps: ApplicationRow[]
+): TimelineEvent[] {
+  const events: TimelineEvent[] = [];
+  if (apps.length === 0) return events;
+
+  const app = apps[0];
+  events.push({
+    id: `app-submitted-${app.id}`,
+    type: 'application_submitted',
+    title: 'Application Submitted',
+    subtitle: 'Your rental application was submitted',
+    date: safeDate(app.created_at),
+    status: 'completed',
+  });
+
+  if (app.status === 'approved') {
+    events.push({
+      id: `app-approved-${app.id}`,
+      type: 'application_approved',
+      title: 'Application Approved',
+      subtitle: 'Landlord approved your application',
+      date: safeDate(app.updated_at),
+      status: 'completed',
+    });
+  }
+
+  return events;
+}
+
+function buildDepositEvents(
+  deposits: DepositRow[]
+): TimelineEvent[] {
+  const events: TimelineEvent[] = [];
+  if (deposits.length === 0) return events;
+
+  const dep = deposits[0];
+  const paidDate = dep.paid_at || dep.created_at;
+  events.push({
+    id: `holding-deposit-${dep.id}`,
+    type: 'holding_deposit_paid',
+    title: 'Holding Deposit Paid',
+    subtitle: dep.status === 'paid'
+      ? 'Holding deposit secured your spot'
+      : 'Holding deposit recorded',
+    date: safeDate(paidDate),
+    status: dep.status === 'paid' ? 'completed' : 'pending',
+  });
+
+  return events;
+}
+
+function buildLeaseSigningEvents(
+  lease: LeaseWithJoins
+): TimelineEvent[] {
+  const events: TimelineEvent[] = [];
+  const ownerSignedAt = lease.owner_signed_at;
+  const tenantSignedAt = lease.tenant_signed_at;
+  const executedAt = lease.executed_at;
+
+  if (ownerSignedAt) {
+    events.push({
+      id: `lease-signed-owner-${lease.id}`,
+      type: 'lease_signed_owner',
+      title: 'Owner Signed Lease',
+      subtitle: lease.owner?.full_name || 'Landlord signed the lease agreement',
+      date: safeDate(ownerSignedAt),
+      status: 'completed',
+    });
+  }
+
+  if (tenantSignedAt) {
+    events.push({
+      id: `lease-signed-tenant-${lease.id}`,
+      type: 'lease_signed_tenant',
+      title: 'You Signed Lease',
+      subtitle: 'You have signed the lease agreement',
+      date: safeDate(tenantSignedAt),
+      status: 'completed',
+    });
+  } else if (ownerSignedAt) {
+    events.push({
+      id: `lease-signed-awaiting-${lease.id}`,
+      type: 'lease_signed_tenant',
+      title: 'Awaiting Your Signature',
+      subtitle: 'You still need to sign the lease',
+      date: safeDate(lease.created_at),
+      status: 'pending',
+    });
+  }
+
+  if (executedAt) {
+    events.push({
+      id: `lease-executed-${lease.id}`,
+      type: 'lease_executed',
+      title: 'Lease Executed',
+      subtitle: 'The lease is now legally binding',
+      date: safeDate(executedAt),
+      status: 'completed',
+    });
+  }
+
+  return events;
+}
+
+function buildPaymentEvents(
+  payments: PaymentRow[]
+): TimelineEvent[] {
+  const events: TimelineEvent[] = [];
+  const now = new Date();
+
+  for (const payment of payments) {
+    const dueDate = safeDate(payment.due_date);
+    const isPaid = payment.status === 'completed' || !!payment.paid_date;
+    const isOverdue = payment.status === 'pending' && dueDate < now;
+
+    if (isPaid) {
+      events.push({
+        id: `payment-paid-${payment.id}`,
+        type: 'rent_paid',
+        title: `Rent Paid — R${(payment.amount || 0).toLocaleString()}`,
+        subtitle: `Paid ${payment.paid_date ? formatDate(safeDate(payment.paid_date)) : ''}`,
+        date: safeDate(payment.paid_date || payment.due_date),
+        status: 'completed',
+      });
+    } else if (isOverdue) {
+      events.push({
+        id: `payment-overdue-${payment.id}`,
+        type: 'rent_overdue',
+        title: `Rent Overdue — R${(payment.amount || 0).toLocaleString()}`,
+        subtitle: `Due ${formatDate(dueDate)} — payment overdue`,
+        date: dueDate,
+        status: 'overdue',
+      });
+    } else {
+      events.push({
+        id: `payment-pending-${payment.id}`,
+        type: 'rent_overdue',
+        title: `Rent Due — R${(payment.amount || 0).toLocaleString()}`,
+        subtitle: `Due ${formatDate(dueDate)}`,
+        date: dueDate,
+        status: 'warning',
+        metadata: { paymentId: payment.id },
+      });
+    }
+  }
+
+  return events;
+}
+
+function buildInspectionEvents(
+  inspections: InspectionRow[]
+): TimelineEvent[] {
+  const events: TimelineEvent[] = [];
+
+  for (const insp of inspections) {
+    const isCompleted = insp.status === 'completed' || !!insp.completed_date;
+    const typeLabel = insp.type === 'move_in' ? 'Move-In'
+      : insp.type === 'move_out' ? 'Move-Out' : 'Periodic';
+
+    events.push({
+      id: `inspection-${insp.id}`,
+      type: isCompleted ? 'inspection_completed' : 'inspection_scheduled',
+      title: `${isCompleted ? 'Completed' : 'Scheduled'} — ${typeLabel} Inspection`,
+      subtitle: isCompleted
+        ? `Completed ${formatDate(safeDate(insp.completed_date))}`
+        : `Scheduled for ${formatDate(safeDate(insp.scheduled_date))}`,
+      date: safeDate(isCompleted ? insp.completed_date : insp.scheduled_date),
+      status: isCompleted ? 'completed' : 'pending',
+    });
+  }
+
+  return events;
+}
+
+function buildMaintenanceEvents(
+  maintenance: MaintenanceSummary[]
+): TimelineEvent[] {
+  const events: TimelineEvent[] = [];
+
+  for (const req of maintenance) {
+    const isResolved = req.status === 'completed';
+    events.push({
+      id: `maintenance-${req.id}`,
+      type: isResolved ? 'maintenance_resolved' : 'maintenance_opened',
+      title: req.title || 'Maintenance Request',
+      subtitle: isResolved
+        ? `Resolved ${formatDate(safeDate(req.updated_at || req.created_at))}`
+        : `Opened ${formatDate(safeDate(req.created_at))}`,
+      date: safeDate(isResolved ? (req.updated_at || req.created_at) : req.created_at),
+      status: isResolved ? 'completed' : 'pending',
+    });
+  }
+
+  return events;
+}
+
+function buildCpaNoticeEvents(
+  lease: LeaseWithJoins
+): TimelineEvent[] {
+  const events: TimelineEvent[] = [];
+  const now = new Date();
+  const endDate = safeDate(lease.end_date);
+  const daysUntilExpiry = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (daysUntilExpiry <= 0 || lease.status !== 'active') return events;
+
+  const notice80Date = calculateExpiryNoticeDate(endDate, 80);
+  const notice60Date = calculateExpiryNoticeDate(endDate, 60);
+  const notice40Date = calculateExpiryNoticeDate(endDate, 40);
+
+  if (daysUntilExpiry <= 120) {
+    const sent = !!lease.notice_80_sent_at;
+    events.push({
+      id: `notice-80-${lease.id}`,
+      type: 'notice_80_day',
+      title: `80-Day Notice${sent ? ' Sent' : ' Due'}`,
+      subtitle: sent
+        ? `Sent ${formatDate(safeDate(lease.notice_80_sent_at!))}`
+        : `Due ${formatDate(notice80Date)} — CPA renewal notice`,
+      date: notice80Date,
+      status: sent ? 'completed' : (notice80Date <= now ? 'overdue' : 'warning'),
+    });
+  }
+
+  if (daysUntilExpiry <= 90) {
+    const sent = !!lease.notice_60_sent_at;
+    events.push({
+      id: `notice-60-${lease.id}`,
+      type: 'notice_60_day',
+      title: `60-Day Notice${sent ? ' Sent' : ' Due'}`,
+      subtitle: sent
+        ? `Sent ${formatDate(safeDate(lease.notice_60_sent_at!))}`
+        : `Due ${formatDate(notice60Date)} — CPA renewal notice`,
+      date: notice60Date,
+      status: sent ? 'completed' : (notice60Date <= now ? 'overdue' : 'warning'),
+    });
+  }
+
+  if (daysUntilExpiry <= 60) {
+    const sent = !!lease.notice_40_sent_at;
+    events.push({
+      id: `notice-40-${lease.id}`,
+      type: 'notice_40_day',
+      title: `40-Day Notice${sent ? ' Sent' : ' Due'}`,
+      subtitle: sent
+        ? `Sent ${formatDate(safeDate(lease.notice_40_sent_at!))}`
+        : `Due ${formatDate(notice40Date)} — CPA renewal deadline approaching`,
+      date: notice40Date,
+      status: sent ? 'completed' : (notice40Date <= now ? 'overdue' : 'warning'),
+    });
+  }
+
+  return events;
+}
+
+function buildRenewalEvents(
+  renewals: RenewalRow[]
+): TimelineEvent[] {
+  const events: TimelineEvent[] = [];
+
+  for (const renewal of renewals) {
+    events.push({
+      id: `renewal-${renewal.id}`,
+      type: renewal.status === 'accepted' ? 'renewal_accepted' : 'renewal_pending',
+      title: renewal.status === 'accepted' ? 'Renewal Accepted' : 'Renewal Proposed',
+      subtitle: renewal.status === 'accepted'
+        ? `Renewed ${formatDate(safeDate(renewal.response_at || renewal.created_at))}`
+        : `Proposed ${formatDate(safeDate(renewal.created_at))}`,
+      date: safeDate(renewal.response_at || renewal.created_at),
+      status: renewal.status === 'accepted' ? 'completed' : 'pending',
+    });
+  }
+
+  return events;
+}
+
+function buildLeaseEndEvents(
+  lease: LeaseWithJoins
+): TimelineEvent[] {
+  const events: TimelineEvent[] = [];
+  const now = new Date();
+  const endDate = safeDate(lease.end_date);
+  const daysUntilExpiry = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (lease.status === 'early_terminated') {
+    events.push({
+      id: `lease-terminated-${lease.id}`,
+      type: 'lease_terminated',
+      title: 'Lease Terminated Early',
+      subtitle: lease.terminated_at
+        ? `Terminated ${formatDate(safeDate(lease.terminated_at))}`
+        : 'Early termination processed',
+      date: safeDate(lease.terminated_at || lease.updated_at),
+      status: 'overdue',
+    });
+    return events;
+  }
+
+  if (lease.status === 'active' || lease.status === 'month_to_month') {
+    if (daysUntilExpiry <= 120 && daysUntilExpiry > 0) {
+      events.push({
+        id: `lease-expiring-${lease.id}`,
+        type: 'lease_expiring',
+        title: `Lease Expiring in ${daysUntilExpiry} days`,
+        subtitle: `Ends ${formatDate(endDate)}`,
+        date: endDate,
+        status: daysUntilExpiry <= 30 ? 'overdue' : 'warning',
+      });
+    } else if (daysUntilExpiry <= 0) {
+      events.push({
+        id: `lease-expired-${lease.id}`,
+        type: 'lease_expired',
+        title: 'Lease Expired',
+        subtitle: `Ended ${formatDate(endDate)}`,
+        date: endDate,
+        status: 'overdue',
+      });
+    }
+  }
+
+  return events;
+}
+
+function buildLeaseStartEvent(
+  lease: LeaseWithJoins
+): TimelineEvent {
+  const now = new Date();
+  const startDate = safeDate(lease.start_date);
+  return {
+    id: `lease-start-${lease.id}`,
+    type: 'lease_started',
+    title: 'Lease Started',
+    subtitle: `${formatDate(startDate)} — ${lease.property?.address || ''}`,
+    date: startDate,
+    status: startDate <= now ? 'completed' : 'pending',
+  };
+}
+
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function TenantLeaseJourneyScreen() {
@@ -166,21 +612,7 @@ export default function TenantLeaseJourneyScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // 1. Get active lease
-      const { data: lease, error: leaseError } = await supabase
-        .from('leases')
-        .select(`
-          *,
-          property:properties!property_id(id, title, address, city),
-          owner:profiles!owner_id(full_name, email, phone)
-        `)
-        .eq('tenant_id', user.id)
-        .in('status', ['active', 'month_to_month', 'pending_tenant_signature', 'pending_owner_signature', 'renewal_pending'])
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (leaseError) throw leaseError;
+      const lease = await fetchActiveLease(user.id);
       if (!lease) {
         setEvents([]);
         setLeaseStatus(null);
@@ -188,330 +620,42 @@ export default function TenantLeaseJourneyScreen() {
         return;
       }
 
-      const leaseRecord = lease as Record<string, unknown>;
-      const resolved = {
-        ...leaseRecord,
-        property: unpackRelation(leaseRecord.property as any),
-        owner: unpackRelation(leaseRecord.owner as any),
-      } as any;
+      setLeaseStatus(lease.status);
+      setPropertyName(lease.property?.title || 'Property');
+      const allEvents: TimelineEvent[] = [];
 
-      setLeaseStatus(resolved.status);
-      setPropertyName(resolved.property?.title || 'Property');
-      const timeline: TimelineEvent[] = [];
+      // Fetch all data in parallel
+      const [
+        apps,
+        deposits,
+        payments,
+        inspections,
+        maintenance,
+        renewals,
+      ] = await Promise.all([
+        fetchApplications(user.id, lease.property_id!),
+        fetchHoldingDeposits(user.id, lease.property_id!),
+        fetchPayments(lease.id),
+        fetchInspections(lease.id),
+        fetchMaintenance(user.id, lease.property_id!),
+        fetchRenewals(lease.id),
+      ]);
 
-      // 2. Application events
-      const { data: apps } = await supabase
-        .from('rental_applications')
-        .select('id, status, created_at, updated_at')
-        .eq('tenant_id', user.id)
-        .eq('property_id', resolved.property_id)
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (apps && apps.length > 0) {
-        const app = apps[0];
-        timeline.push({
-          id: `app-submitted-${app.id}`,
-          type: 'application_submitted',
-          title: 'Application Submitted',
-          subtitle: 'Your rental application was submitted',
-          date: safeDate(app.created_at),
-          status: 'completed',
-        });
-
-        if (app.status === 'approved') {
-          timeline.push({
-            id: `app-approved-${app.id}`,
-            type: 'application_approved',
-            title: 'Application Approved',
-            subtitle: 'Landlord approved your application',
-            date: safeDate(app.updated_at),
-            status: 'completed',
-          });
-        }
-      }
-
-      // 3. Holding deposit
-      const { data: deposits } = await supabase
-        .from('holding_deposits')
-        .select('id, created_at, status, paid_at')
-        .eq('tenant_id', user.id)
-        .eq('property_id', resolved.property_id)
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (deposits && deposits.length > 0) {
-        const dep = deposits[0];
-        const paidDate = dep.paid_at || dep.created_at;
-        timeline.push({
-          id: `holding-deposit-${dep.id}`,
-          type: 'holding_deposit_paid',
-          title: 'Holding Deposit Paid',
-          subtitle: dep.status === 'paid' ? 'Holding deposit secured your spot' : 'Holding deposit recorded',
-          date: safeDate(paidDate),
-          status: dep.status === 'paid' ? 'completed' : 'pending',
-        });
-      }
-
-      // 4. Lease signing events
-      if (resolved.owner_signed_at) {
-        timeline.push({
-          id: `lease-signed-owner-${resolved.id}`,
-          type: 'lease_signed_owner',
-          title: 'Owner Signed Lease',
-          subtitle: resolved.owner?.full_name || 'Landlord signed the lease agreement',
-          date: safeDate(resolved.owner_signed_at),
-          status: 'completed',
-        });
-      }
-
-      if (resolved.owner_signed_at || resolved.tenant_signed_at) {
-        // If only one has signed, the other is pending
-        const otherSigned = resolved.owner_signed_at ? 'tenant' : 'owner';
-        timeline.push({
-          id: `lease-signed-${resolved.id}`,
-          type: resolved.tenant_signed_at ? 'lease_signed_tenant' : 'lease_signed_owner',
-          title: resolved.tenant_signed_at ? 'You Signed Lease' : `Awaiting ${otherSigned === 'owner' ? 'Owner' : 'Your'} Signature`,
-          subtitle: resolved.tenant_signed_at
-            ? 'You have signed the lease agreement'
-            : `${otherSigned === 'owner' ? 'Owner' : 'You'} still need to sign the lease`,
-          date: safeDate(resolved.tenant_signed_at || resolved.created_at),
-          status: resolved.tenant_signed_at ? 'completed' : 'pending',
-        });
-      }
-
-      if (resolved.executed_at) {
-        timeline.push({
-          id: `lease-executed-${resolved.id}`,
-          type: 'lease_executed',
-          title: 'Lease Executed',
-          subtitle: 'The lease is now legally binding',
-          date: safeDate(resolved.executed_at),
-          status: 'completed',
-        });
-      }
-
-      // 5. Lease start
-      const startDate = safeDate(resolved.start_date);
-      const now = new Date();
-      timeline.push({
-        id: `lease-start-${resolved.id}`,
-        type: 'lease_started',
-        title: 'Lease Started',
-        subtitle: `${formatDate(startDate)} — ${resolved.property?.address || ''}`,
-        date: startDate,
-        status: startDate <= now ? 'completed' : 'pending',
-      });
-
-      // 6. Payments
-      const { data: payments } = await supabase
-        .from('payments')
-        .select('id, amount, due_date, paid_date, status, type')
-        .eq('lease_id', resolved.id)
-        .order('due_date', { ascending: false });
-
-      if (payments) {
-        // Recent payments (last 12)
-        const recentPayments = payments.slice(0, 12);
-        for (const payment of recentPayments) {
-          const dueDate = safeDate(payment.due_date);
-          const isOverdue = payment.status === 'pending' && dueDate < now;
-          const isPaid = payment.status === 'completed' || !!payment.paid_date;
-          const isPending = payment.status === 'pending' && dueDate >= now;
-
-          if (isPaid) {
-            timeline.push({
-              id: `payment-paid-${payment.id}`,
-              type: 'rent_paid',
-              title: `Rent Paid — R${(payment.amount || 0).toLocaleString()}`,
-              subtitle: `Paid ${payment.paid_date ? formatDate(safeDate(payment.paid_date)) : ''}`,
-              date: safeDate(payment.paid_date || payment.due_date),
-              status: 'completed',
-            });
-          } else if (isOverdue) {
-            timeline.push({
-              id: `payment-overdue-${payment.id}`,
-              type: 'rent_overdue',
-              title: `Rent Overdue — R${(payment.amount || 0).toLocaleString()}`,
-              subtitle: `Due ${formatDate(dueDate)} — payment overdue`,
-              date: dueDate,
-              status: 'overdue',
-            });
-          } else if (isPending) {
-            timeline.push({
-              id: `payment-pending-${payment.id}`,
-              type: 'rent_overdue', // Use same icon but mark as pending/warning
-              title: `Rent Due — R${(payment.amount || 0).toLocaleString()}`,
-              subtitle: `Due ${formatDate(dueDate)}`,
-              date: dueDate,
-              status: 'warning',
-              metadata: { paymentId: payment.id },
-            });
-          }
-        }
-      }
-
-      // 7. Inspections
-      const { data: inspections } = await supabase
-        .from('inspections')
-        .select('id, type, scheduled_date, status, completed_date, created_at')
-        .eq('lease_id', resolved.id)
-        .order('scheduled_date', { ascending: false });
-
-      const inspectionList = (inspections as any[]) ?? [];
-      for (const insp of inspectionList) {
-        const completedDate = insp.completed_date as string | null;
-        const isCompleted = insp.status === 'completed' || !!completedDate;
-        timeline.push({
-          id: `inspection-${insp.id}`,
-          type: isCompleted ? 'inspection_completed' : 'inspection_scheduled',
-          title: `${isCompleted ? 'Completed' : 'Scheduled'} — ${
-            insp.type === 'move_in' ? 'Move-In' :
-            insp.type === 'move_out' ? 'Move-Out' : 'Periodic'
-          } Inspection`,
-          subtitle: isCompleted
-            ? `Completed ${formatDate(safeDate(completedDate!))}`
-            : `Scheduled for ${formatDate(safeDate(insp.scheduled_date))}`,
-          date: safeDate(isCompleted ? completedDate! : insp.scheduled_date),
-          status: isCompleted ? 'completed' : 'pending',
-        });
-      }
-
-      // 8. Maintenance requests
-      const { data: maintenance } = await supabase
-        .from('maintenance_requests')
-        .select('id, title, status, created_at')
-        .eq('tenant_id', user.id)
-        .eq('property_id', resolved.property_id)
-        .order('created_at', { ascending: false });
-
-      const maintList = (maintenance as any[]) ?? [];
-      for (const req of maintList) {
-        const isResolved = req.status === 'completed';
-        timeline.push({
-          id: `maintenance-${req.id}`,
-          type: isResolved ? 'maintenance_resolved' : 'maintenance_opened',
-          title: req.title || 'Maintenance Request',
-          subtitle: isResolved              ? `Resolved ${formatDate(safeDate(req.updated_at || req.created_at))}`
-              : `Opened ${formatDate(safeDate(req.created_at))}`,
-          date: safeDate(isResolved ? (req.updated_at || req.created_at) : req.created_at),
-          status: isResolved ? 'completed' : 'pending',
-        });
-      }
-
-      // 9. CPA notice dates (80, 60, 40 business days before expiry)
-      const endDate = safeDate(resolved.end_date);
-      const daysUntilExpiry = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-
-      if (daysUntilExpiry > 0 && resolved.status === 'active') {
-        const notice80Due = calculateExpiryNoticeDate(endDate, 80);
-        const notice60Due = calculateExpiryNoticeDate(endDate, 60);
-        const notice40Due = calculateExpiryNoticeDate(endDate, 40);
-
-        if (daysUntilExpiry <= 120) {
-          const notice80Sent = !!resolved.notice_80_sent_at;
-          timeline.push({
-            id: `notice-80-${resolved.id}`,
-            type: 'notice_80_day',
-            title: `80-Day Notice${notice80Sent ? ' Sent' : ' Due'}`,
-            subtitle: notice80Sent
-              ? `Sent ${formatDate(safeDate(resolved.notice_80_sent_at || resolved.created_at))}`
-              : `Due ${formatDate(notice80Due)} — CPA renewal notice`,
-            date: notice80Due,
-            status: notice80Sent ? 'completed' : (notice80Due <= now ? 'overdue' : 'warning'),
-          });
-        }
-
-        if (daysUntilExpiry <= 90) {
-          const notice60Sent = !!resolved.notice_60_sent_at;
-          timeline.push({
-            id: `notice-60-${resolved.id}`,
-            type: 'notice_60_day',
-            title: `60-Day Notice${notice60Sent ? ' Sent' : ' Due'}`,
-            subtitle: notice60Sent
-              ? `Sent ${formatDate(safeDate(resolved.notice_60_sent_at || resolved.created_at))}`
-              : `Due ${formatDate(notice60Due)} — CPA renewal notice`,
-            date: notice60Due,
-            status: notice60Sent ? 'completed' : (notice60Due <= now ? 'overdue' : 'warning'),
-          });
-        }
-
-        if (daysUntilExpiry <= 60) {
-          const notice40Sent = !!resolved.notice_40_sent_at;
-          timeline.push({
-            id: `notice-40-${resolved.id}`,
-            type: 'notice_40_day',
-            title: `40-Day Notice${notice40Sent ? ' Sent' : ' Due'}`,
-            subtitle: notice40Sent
-              ? `Sent ${formatDate(safeDate(resolved.notice_40_sent_at || resolved.created_at))}`
-              : `Due ${formatDate(notice40Due)} — CPA renewal deadline approaching`,
-            date: notice40Due,
-            status: notice40Sent ? 'completed' : (notice40Due <= now ? 'overdue' : 'warning'),
-          });
-        }
-      }
-
-      // 10. Renewal negotiations
-      const { data: renewals } = await supabase
-        .from('renewal_negotiations')
-        .select('id, status, created_at, response_at')
-        .eq('lease_id', resolved.id)
-        .order('created_at', { ascending: false });
-
-      if (renewals && renewals.length > 0) {
-        for (const renewal of renewals) {
-          timeline.push({
-            id: `renewal-${renewal.id}`,
-            type: renewal.status === 'accepted' ? 'renewal_accepted' : 'renewal_pending',
-            title: renewal.status === 'accepted' ? 'Renewal Accepted' : 'Renewal Proposed',
-            subtitle: renewal.status === 'accepted'
-              ? `Renewed ${formatDate(safeDate(renewal.response_at || renewal.created_at))}`
-              : `Proposed ${formatDate(safeDate(renewal.created_at))}`,
-            date: safeDate(renewal.response_at || renewal.created_at),
-            status: renewal.status === 'accepted' ? 'completed' : 'pending',
-          });
-        }
-      }
-
-      // 11. Lease end / expiry
-      if (resolved.status === 'active' || resolved.status === 'month_to_month') {
-        if (daysUntilExpiry <= 120 && daysUntilExpiry > 0) {
-          timeline.push({
-            id: `lease-expiring-${resolved.id}`,
-            type: 'lease_expiring',
-            title: `Lease Expiring in ${daysUntilExpiry} days`,
-            subtitle: `Ends ${formatDate(endDate)}`,
-            date: endDate,
-            status: daysUntilExpiry <= 30 ? 'overdue' : 'warning',
-          });
-        } else if (daysUntilExpiry <= 0) {
-          timeline.push({
-            id: `lease-expired-${resolved.id}`,
-            type: 'lease_expired',
-            title: 'Lease Expired',
-            subtitle: `Ended ${formatDate(endDate)}`,
-            date: endDate,
-            status: 'overdue',
-          });
-        }
-      }
-
-      if (resolved.status === 'early_terminated') {
-        timeline.push({
-          id: `lease-terminated-${resolved.id}`,
-          type: 'lease_terminated',
-          title: 'Lease Terminated Early',
-          subtitle: resolved.terminated_at
-            ? `Terminated ${formatDate(safeDate(resolved.terminated_at))}`
-            : 'Early termination processed',
-          date: safeDate(resolved.terminated_at || resolved.updated_at),
-          status: 'overdue',
-        });
-      }
+      // Build timeline segments
+      allEvents.push(...buildApplicationEvents(apps));
+      allEvents.push(...buildDepositEvents(deposits));
+      allEvents.push(...buildLeaseSigningEvents(lease));
+      allEvents.push(buildLeaseStartEvent(lease));
+      allEvents.push(...buildPaymentEvents(payments));
+      allEvents.push(...buildInspectionEvents(inspections));
+      allEvents.push(...buildMaintenanceEvents(maintenance));
+      allEvents.push(...buildCpaNoticeEvents(lease));
+      allEvents.push(...buildRenewalEvents(renewals));
+      allEvents.push(...buildLeaseEndEvents(lease));
 
       // Sort by date (newest first)
-      timeline.sort((a, b) => b.date.getTime() - a.date.getTime());
-      setEvents(timeline);
+      allEvents.sort((a, b) => b.date.getTime() - a.date.getTime());
+      setEvents(allEvents);
     } catch (err) {
       console.error('Error loading lease journey:', err);
       setError(err instanceof Error ? err.message : 'Failed to load lease journey');
@@ -611,9 +755,8 @@ export default function TenantLeaseJourneyScreen() {
             ) : (
               events.map((event, index) => {
                 const isLast = index === events.length - 1;
-                const eventColor = getEventColor(event.type);
-                const eventBg = getEventBg(event.type);
-                const iconName = getEventIcon(event.type);
+                const { color: eventColor, bg: eventBg } = eventStyle(event.type);
+                const iconName = EVENT_ICONS[event.type];
 
                 return (
                   <View key={event.id} style={styles.eventRow}>
