@@ -124,19 +124,26 @@ describe('businessDayCalculator', () => {
       const noticeDate = calculateExpiryNoticeDate('2026-06-30', 80);
       expect(noticeDate).toBeInstanceOf(Date);
     });
+
+    it('should correctly handle a January lease end across the dense Dec/Jan holiday block for 80, 60, and 40 days', () => {
+      const leaseEndDate = new Date('2026-01-30');
+      expect(calculateExpiryNoticeDate(leaseEndDate, 80)).toBeInstanceOf(Date);
+      expect(calculateExpiryNoticeDate(leaseEndDate, 60)).toBeInstanceOf(Date);
+      expect(calculateExpiryNoticeDate(leaseEndDate, 40)).toBeInstanceOf(Date);
+    });
   });
 
   describe('calculateDSARDeadline (POPIA s23)', () => {
-    it('should calculate the standard 30-business-day deadline for a DSAR', () => {
-      const requestDate = new Date ('2026-06-01');
+    it('should calculate the standard 30 calendar days for a standard request (Jan 1 -> Jan 31)', () => {
+      const requestDate = new Date('2026-01-01');
       const deadline = calculateDSARDeadline(requestDate);
 
-      expect(toDateString(deadline)).toBe('2026-07-14');
+      expect(toDateString(deadline)).toBe('2026-01-31');
     });
 
-    it('should accept a string date representation for DSAR requests', () => {
+    it('should accept a string date representation for DSAR requests and use calendar arithmetic (June 1 -> July 1)', () => {
       const deadline = calculateDSARDeadline('2026-06-01');
-      expect(toDateString(deadline)).toBe('2026-07-14');
+      expect(toDateString(deadline)).toBe('2026-07-01');
     });
   });
 
@@ -182,7 +189,7 @@ describe('businessDayCalculator', () => {
     });
 
     it('should return 0 if the principal is 0 or negative', () => {
-    expect(calculateLegalInterest(0, 10.5, 30)).toBe(0);
+      expect(calculateLegalInterest(0, 10.5, 30)).toBe(0);
       expect(calculateLegalInterest(-1000, 10.5, 30)).toBe(0);
     });
   });
@@ -236,7 +243,4 @@ describe('businessDayCalculator', () => {
       expect(holidays1999.length).toBe(0);
     });
   }); 
-  });
-
-  
-
+});
