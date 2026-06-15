@@ -127,14 +127,19 @@ describe('businessDayCalculator', () => {
 
     it('should correctly handle a January lease end across the dense Dec/Jan holiday block for 80, 60, and 40 days', () => {
       const leaseEndDate = new Date('2026-01-30');
-      expect(calculateExpiryNoticeDate(leaseEndDate, 80)).toBeInstanceOf(Date);
-      expect(calculateExpiryNoticeDate(leaseEndDate, 60)).toBeInstanceOf(Date);
-      expect(calculateExpiryNoticeDate(leaseEndDate, 40)).toBeInstanceOf(Date);
+      
+      const notice80 = calculateExpiryNoticeDate(leaseEndDate, 80);
+      const notice60 = calculateExpiryNoticeDate(leaseEndDate, 60);
+      const notice40 = calculateExpiryNoticeDate(leaseEndDate, 40);
+
+      expect(toDateString(notice80)).toBe('2025-10-06');
+      expect(toDateString(notice60)).toBe('2025-11-03');
+      expect(toDateString(notice40)).toBe('2025-12-01');
     });
   });
 
   describe('calculateDSARDeadline (POPIA s23)', () => {
-    it('should calculate the standard 30 calendar days for a standard request (Jan 1 -> Jan 31)', () => {
+    it('should calculate the standard 30-business-day deadline for a DSAR', () => {
       const requestDate = new Date('2026-01-01');
       const deadline = calculateDSARDeadline(requestDate);
 
@@ -148,7 +153,7 @@ describe('businessDayCalculator', () => {
   });
 
   describe('subtractBusinessDays', () => {
-    it('should subtract days within the a standard week', () => {
+    it('should subtract days within a standard week', () => {
       const start = new Date('2026-06-12');
       const result = subtractBusinessDays(start, 3);
 
