@@ -1,21 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
   ActivityIndicator,
-  StyleSheet,
   Alert,
-  RefreshControl,
   Modal,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
   TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
-import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 
 const RSA = { green: '#007A4D', gold: '#FFB81C' }; // Tenant colors
 
@@ -331,6 +330,18 @@ export default function TenantPaymentScreen() {
             <View style={styles.disputeContent}>
               <Text style={styles.disputeTitle}>Dispute a Payment</Text>
               <Text style={styles.disputeSubtitle}>Raise a query about a charge or payment</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.terminationButton}
+            onPress={() => router.push('/(tenant)/early-termination')}
+          >
+            <Ionicons name="exit-outline" size={20} color="#4B5563" />
+            <View style={styles.disputeContent}>
+              <Text style={styles.terminationTitle}>Early Termination</Text>
+              <Text style={styles.terminationSubtitle}>Request to end your active lease agreement</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
           </TouchableOpacity>
@@ -772,6 +783,31 @@ const styles = StyleSheet.create({
     color: '#B45309',
     marginTop: 2,
   },
+
+  terminationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#87a4deff', 
+    borderRadius: 10,
+    padding: 14,
+    marginHorizontal: 16,
+    marginBottom: 24, 
+    borderWidth: 1,
+    borderColor: '#faebe6ff',
+
+    gap: 12,
+  },
+  terminationTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  terminationSubtitle: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+
   emptyHistory: {
     alignItems: 'center',
     padding: 32,
