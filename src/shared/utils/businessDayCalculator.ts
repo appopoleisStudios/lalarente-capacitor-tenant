@@ -241,13 +241,16 @@ export function calculateExpiryNoticeDate(
 /**
  * Calculate the POPIA DSAR response deadline.
  *
- * POPIA s23 requires response within 30 business days of receiving a request.
+ * POPIA s23 requires response within 30 calendar days of receiving a request.
+ * "Days" under the SA Interpretation Act defaults to calendar days when unqualified.
  *
  * @param requestDate - Date the data subject request was received
  * @returns The deadline date for responding to the DSAR
  */
 export function calculateDSARDeadline(requestDate: Date | string): Date {
-  return addBusinessDays(requestDate, 30);
+  const d = typeof requestDate === 'string' ? new Date(requestDate) : new Date(requestDate);
+  d.setDate(d.getDate() + 30);
+  return d;
 }
 
 /**

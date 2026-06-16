@@ -122,7 +122,7 @@ describe('businessDayCalculator', () => {
 
     it('should accept a string representation of the lease end date', () => {
       const noticeDate = calculateExpiryNoticeDate('2026-06-30', 80);
-      expect(noticeDate).toBeInstanceOf(Date);
+      expect(toDateString(noticeDate)).toBe('2026-03-03');
     });
 
     it('should correctly handle a January lease end across the dense Dec/Jan holiday block for 80, 60, and 40 days', () => {
@@ -139,21 +139,33 @@ describe('businessDayCalculator', () => {
   });
 
   describe('calculateDSARDeadline (POPIA s23)', () => {
-    it('should calculate the standard 30-business-day deadline for a DSAR', () => {
+    // POPIA s23 — 30 calendar days, NOT business days (SA Interpretation Act default)
+
+    it('should calculate the standard 30-calendar-day deadline for a DSAR', () => {
       const requestDate = new Date('2026-01-01');
       const deadline = calculateDSARDeadline(requestDate);
 
       expect(toDateString(deadline)).toBe('2026-01-31');
     });
 
-    it('should accept a string date representation for DSAR requests and use calendar arithmetic (June 1 -> July 1)', () => {
+    it('should accept a string date and use calendar arithmetic (June 1 -> July 1)', () => {
       const deadline = calculateDSARDeadline('2026-06-01');
       expect(toDateString(deadline)).toBe('2026-07-01');
+    });
+
+    it('should handle Jan 31 submission correctly (-> Feb 28 in non-leap year)', () => {
+      const deadline = calculateDSARDeadline(new Date('2026-01-31'));
+      expect(toDateString(deadline)).toBe('2026-03-02');
+    });
+
+    it('should handle Dec 2 submission crossing year boundary (-> Jan 1)', () => {
+      const deadline = calculateDSARDeadline(new Date('2026-12-02'));
+      expect(toDateString(deadline)).toBe('2027-01-01');
     });
   });
 
   describe('subtractBusinessDays', () => {
-    it('should subtract days within a standard week', () => {
+    it('should subtract days within a standard week without hitting weekends', () => {
       const start = new Date('2026-06-12');
       const result = subtractBusinessDays(start, 3);
 
