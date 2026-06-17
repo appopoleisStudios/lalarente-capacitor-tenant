@@ -265,10 +265,12 @@ export default function TenantMaintenanceListScreen() {
                       <TouchableOpacity
                         style={styles.messageBtn}
                         onPress={() => handleMessageLandlord(request)}
-                        activeOpacity={0.7}
+                        activeOpacity={0.8}
                       >
-                        <Ionicons name="chatbubble-outline" size={16} color="#007A4D" />
-                        <Text style={styles.messageBtnText}>Message landlord</Text>
+                        <Ionicons name="chatbubble-ellipses" size={18} color="#FFFFFF" />
+                        <Text style={styles.messageBtnText}>Chat with Owner</Text>
+                        <View style={{ flex: 1 }} />
+                        <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.7)" />
                       </TouchableOpacity>
                     </View>
                   </View>
