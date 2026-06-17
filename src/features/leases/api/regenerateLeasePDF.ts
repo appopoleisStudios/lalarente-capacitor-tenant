@@ -19,18 +19,21 @@ export async function regenerateLeasePDF(leaseId: string): Promise<void> {
           title,
           address,
           city,
-          province
+          province,
+          postal_code
         ),
         owner:profiles!owner_id(
           full_name,
           email,
-          phone
+          phone,
+          id_number
         ),
         tenant:profiles!tenant_id(
           full_name,
           email,
           phone,
-          id_number
+          id_number,
+          date_of_birth
         )
       `)
       .eq('id', leaseId)

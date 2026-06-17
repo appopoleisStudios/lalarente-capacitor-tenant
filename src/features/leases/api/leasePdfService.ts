@@ -121,7 +121,7 @@ function generateLeaseHTML(lease: LeaseData): string {
     margin-bottom: 4px;
   }
   .header p { color: #777; font-size: 9pt; }
-  .section { margin-bottom: 22px; }
+  .section { margin-bottom: 22px; page-break-inside: avoid; }
   .section-title {
     background: #f0f2f5;
     padding: 8px 14px;
@@ -222,7 +222,7 @@ function generateLeaseHTML(lease: LeaseData): string {
     font-size: 8pt;
     color: #999;
   }
-  .page-break { page-break-before: always; }
+  .section-break { page-break-before: auto; margin-top: 22px; }
 </style>
 </head>
 <body>
@@ -246,12 +246,15 @@ function generateLeaseHTML(lease: LeaseData): string {
     ${lease.owner.email ? `<tr><td class="label">Email</td><td class="value">${lease.owner.email}</td></tr>` : ''}
     ${lease.owner.phone ? `<tr><td class="label">Phone</td><td class="value">${lease.owner.phone}</td></tr>` : ''}
 
+    ${lease.agency_name || lease.agent_name ? `
     <tr><td class="section-header" colspan="2">2. MANAGING AGENT</td></tr>
-    <tr><td class="label">Agency</td><td class="value">${lease.agency_name || 'LaLarente / Unicity Integrated Realty'}</td></tr>
+    ${lease.agency_name ? `<tr><td class="label">Agency</td><td class="value">${lease.agency_name}</td></tr>` : ''}
+    ${lease.agency_reg_no ? `<tr><td class="label">Reg. No.</td><td class="value">${lease.agency_reg_no}</td></tr>` : ''}
+    ${lease.agency_ffc ? `<tr><td class="label">FFC</td><td class="value">${lease.agency_ffc}</td></tr>` : ''}
     ${lease.agent_name ? `<tr><td class="label">Agent</td><td class="value">${lease.agent_name}</td></tr>` : ''}
     ${lease.agent_phone ? `<tr><td class="label">Agent Phone</td><td class="value">${lease.agent_phone}</td></tr>` : ''}
     ${lease.agent_email ? `<tr><td class="label">Agent Email</td><td class="value">${lease.agent_email}</td></tr>` : ''}
-    ${lease.agency_ffc ? `<tr><td class="label">Agency FFC</td><td class="value">${lease.agency_ffc}</td></tr>` : ''}
+    ` : ''}
 
     <tr><td class="section-header" colspan="2">3. TENANT DETAILS</td></tr>
     <tr><td class="label">Full name</td><td class="value">${lease.tenant.full_name}</td></tr>
@@ -275,7 +278,7 @@ function generateLeaseHTML(lease: LeaseData): string {
   </table>
 </div>
 
-<div class="page-break"></div>
+<div class="section-break"></div>
 
 <div class="section">
   <div class="section-title">Financial Terms &amp; Conditions</div>
@@ -339,7 +342,9 @@ function generateLeaseHTML(lease: LeaseData): string {
   </p>
 </div>
 
-<div class="section" style="page-break-before: auto;">
+<div class="section-break"></div>
+
+<div class="section">
   <div class="section-title">General Terms &amp; Conditions</div>
 
   <div class="clause">
@@ -374,7 +379,7 @@ function generateLeaseHTML(lease: LeaseData): string {
     <div class="clause-number">TERMINATION</div>
     <div class="clause-text">
       ${lease.lease_type === 'month_to_month'
-        ? 'Either party may terminate this month-to-month lease by providing 30 calendar days' written notice in writing. The Tenant shall remain liable for rental during the notice period.'
+        ? 'Either party may terminate this month-to-month lease by providing 30 calendar days\' written notice in writing. The Tenant shall remain liable for rental during the notice period.'
         : 'This fixed-term lease shall terminate on the end date specified in the schedule without further notice. Early termination by the Tenant prior to the expiry date shall constitute a breach. The Landlord may elect to accept early termination subject to a penalty calculated in accordance with the Consumer Protection Act (CPA s14), limited to a reasonable amount not exceeding the rental for the notice period.'}
     </div>
   </div>
