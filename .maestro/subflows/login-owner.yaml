@@ -2,12 +2,14 @@ appId: com.lalarente.app
 ---
 - assertVisible: "Welcome Back"
 
-- tapOn: "Email"
+- tapOn:
+    id: "email-input"
 - inputText: ${OWNER_EMAIL}
 
 - hideKeyboard
 
-- tapOn: "Password"
+- tapOn:
+    id: "password-input"
 - inputText: ${OWNER_PASSWORD}
 
 - hideKeyboard

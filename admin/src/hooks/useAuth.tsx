@@ -12,7 +12,7 @@ export interface AdminProfile {
   id: string;
   full_name: string;
   email: string | null;
-  role: 'admin';
+  role: string;
   dev_admin: boolean;
   avatar_url: string | null;
 }
@@ -47,9 +47,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return null;
     }
 
-    // Only allow admin role
-    if (data?.role !== 'admin') {
-      return null;
+  // Allow admin role OR dev_admin flag
+  if (data?.role !== 'admin' && !data?.dev_admin) {
+    return null;
+  }
     }
 
     return data as AdminProfile;

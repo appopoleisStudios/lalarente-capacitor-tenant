@@ -153,6 +153,7 @@ export default function LoginScreen() {
                   placeholder="your@email.com"
                   placeholderTextColor={RSA_COLORS.textGray}
                   accessibilityLabel="Email"
+                  testID="email-input"
                   value={email}
                   onChangeText={setEmail}
                   autoCapitalize="none"
@@ -173,6 +174,7 @@ export default function LoginScreen() {
                   placeholder="Enter your password"
                   placeholderTextColor={RSA_COLORS.textGray}
                   accessibilityLabel="Password"
+                  testID="password-input"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
