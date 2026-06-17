@@ -76,7 +76,7 @@ function getDaySuffix(day: number): string {
   }
 }
 
-function generateLeaseHTML(lease: LeaseData): string {
+export function generateLeaseHTML(lease: LeaseData): string {
   const leaseTypeDisplay = lease.lease_type === 'fixed' ? 'Fixed Term' : 'Month-to-Month';
   const escalationType = lease.rent_escalation_type === 'percentage' ? '%' : ' (Fixed)';
   const escalationValue = lease.rent_escalation_value || 0;
@@ -473,7 +473,7 @@ export async function generateAndUploadLeasePDF(leaseData: LeaseData): Promise<s
     console.log('PDF generated at URI:', uri);
 
     const base64 = await FileSystem.readAsStringAsync(uri, {
-      encoding: 'base64' as any,
+      encoding: FileSystem.EncodingType.Base64,
     });
 
     console.log('PDF read as base64, length:', base64.length);
