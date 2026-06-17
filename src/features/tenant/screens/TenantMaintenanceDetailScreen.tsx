@@ -300,7 +300,7 @@ export default function TenantMaintenanceDetailScreen() {
           </Animated.View>
         )}
 
-        {/* Message landlord */}
+        {/* Chat with Owner */}
         <Animated.View entering={FadeInDown.delay(700).duration(500)}>
           <TouchableOpacity
             style={styles.messageLandlordBtn}
@@ -312,8 +312,14 @@ export default function TenantMaintenanceDetailScreen() {
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <>
-                <Ionicons name="chatbubble-outline" size={20} color="#fff" />
-                <Text style={styles.messageLandlordBtnText}>Message landlord about this issue</Text>
+                <View style={styles.chatIconContainer}>
+                  <Ionicons name="chatbubble-ellipses" size={22} color="#fff" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.messageLandlordBtnText}>Chat with Owner</Text>
+                  <Text style={styles.messageLandlordBtnSubtext}>Discuss this maintenance request</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.7)" />
               </>
             )}
           </TouchableOpacity>
@@ -406,16 +412,34 @@ const styles = StyleSheet.create({
   messageLandlordBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
+    gap: 12,
     backgroundColor: RSA.green,
     borderRadius: 12,
     paddingVertical: 14,
+    paddingHorizontal: 16,
     marginBottom: 16,
+    shadowColor: RSA.green,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   messageLandlordBtnText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     color: '#ffffff',
+  },
+  messageLandlordBtnSubtext: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 2,
+  },
+  chatIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
