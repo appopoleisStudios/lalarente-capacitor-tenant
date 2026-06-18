@@ -17,6 +17,9 @@ import { paymentsApi } from '../../properties/api/paymentsApi';
 import { messagesApi } from '../../messaging/api/messagesApi';
 import { colors } from '@/src/shared/theme/colors';
 
+const tenancyShortcutTestId = (title: string) =>
+  `tenancy-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`;
+
 const TENANCY_SHORTCUTS: {
   href: Href;
   icon: keyof typeof Ionicons.glyphMap;
@@ -67,6 +70,9 @@ const TENANCY_SHORTCUTS: {
     subtitle: 'Inspection history and work verification',
   },
 ];
+
+const viewingsShortcutTestId = (title: string) =>
+  `viewings-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`;
 
 /** Always visible — S2-43 / S2-44 (not only when list rows exist) */
 const VIEWINGS_APPLICATIONS_SHORTCUTS: {
@@ -603,6 +609,7 @@ export default function TenantDashboardScreen() {
                 style={[styles.depositCard, index > 0 && { marginTop: 8 }]}
                 accessibilityRole="button"
                 accessibilityLabel={item.title}
+                testID={viewingsShortcutTestId(item.title)}
                 onPress={() => router.push(item.href)}
                 activeOpacity={0.8}
               >
@@ -750,6 +757,7 @@ export default function TenantDashboardScreen() {
                   style={[styles.depositCard, index > 0 && { marginTop: 8 }]}
                   accessibilityRole="button"
                   accessibilityLabel={item.title}
+                  testID={tenancyShortcutTestId(item.title)}
                   onPress={() => router.push(item.href)}
                   activeOpacity={0.8}
                 >

@@ -7,22 +7,24 @@ appId: com.lalarente.app
 - assertVisible: "Viewings & applications"
 
 - scrollUntilVisible:
-    element: "Viewing history"
+    id: "viewings-viewing-history"
     direction: DOWN
     timeout: 15000
 
-- tapOn: "Viewing history"
+- tapOn:
+    id: "viewings-viewing-history"
 - extendedWaitUntil:
     visible: "Viewing"
     timeout: 15000
 - back
 
 - scrollUntilVisible:
-    element: "Application status"
+    id: "viewings-application-status"
     direction: DOWN
     timeout: 15000
 
-- tapOn: "Application status"
+- tapOn:
+    id: "viewings-application-status"
 - extendedWaitUntil:
     visible: "Application"
     timeout: 15000

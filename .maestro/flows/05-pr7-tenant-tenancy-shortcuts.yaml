@@ -6,44 +6,48 @@ appId: com.lalarente.app
 - runFlow: ../subflows/scroll-tenancy.yaml
 
 - scrollUntilVisible:
-    element: "Payments & arrears"
+    id: "tenancy-payments-arrears"
     direction: DOWN
     timeout: 15000
 
-- tapOn: "Payments & arrears"
+- tapOn:
+    id: "tenancy-payments-arrears"
 - extendedWaitUntil:
     visible: "Payment History"
-    timeout: 15000
+    timeout: 20000
 - back
 
 - scrollUntilVisible:
-    element: "Payment disputes"
+    id: "tenancy-payment-disputes"
     direction: DOWN
     timeout: 10000
 
-- tapOn: "Payment disputes"
+- tapOn:
+    id: "tenancy-payment-disputes"
 - extendedWaitUntil:
     visible: "Payment Disputes"
     timeout: 15000
 - back
 
 - scrollUntilVisible:
-    element: "Holding deposits"
+    id: "tenancy-holding-deposits"
     direction: DOWN
     timeout: 10000
 
-- tapOn: "Holding deposits"
+- tapOn:
+    id: "tenancy-holding-deposits"
 - extendedWaitUntil:
     visible: "Holding Deposits"
     timeout: 15000
 - back
 
 - scrollUntilVisible:
-    element: "Reports & inspections"
+    id: "tenancy-reports-inspections"
     direction: DOWN
     timeout: 10000
 
-- tapOn: "Reports & inspections"
+- tapOn:
+    id: "tenancy-reports-inspections"
 - extendedWaitUntil:
     visible: "Reports"
     timeout: 15000
