@@ -2,21 +2,24 @@ appId: com.lalarente.app
 ---
 - runFlow:
     when:
-      visible: "Welcome Back"
+      visible: "Portfolio Dashboard"
     commands:
-      - waitForAnimationToEnd:
-          timeout: 3000
+      - assertVisible: "Portfolio Dashboard"
+
+- runFlow:
+    when:
+      notVisible: "Portfolio Dashboard"
+    commands:
       - extendedWaitUntil:
           visible:
             id: "email-input"
-          timeout: 10000
+          timeout: 15000
       - tapOn:
           id: "email-input"
       - inputText: ${OWNER_EMAIL}
       - pressKey: Enter
       - inputText: ${OWNER_PASSWORD}
       - pressKey: Enter
-
-- extendedWaitUntil:
-    visible: "Portfolio Dashboard"
-    timeout: 20000
+      - extendedWaitUntil:
+          visible: "Portfolio Dashboard"
+          timeout: 20000

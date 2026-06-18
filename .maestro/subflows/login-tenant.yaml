@@ -3,22 +3,24 @@ appId: com.lalarente.app
 ---
 - runFlow:
     when:
-      visible: "Welcome Back"
+      visible: "Your tenancy"
     commands:
-      - assertVisible: "Sign in to your account"
-      - waitForAnimationToEnd:
-          timeout: 3000
+      - assertVisible: "Your tenancy"
+
+- runFlow:
+    when:
+      notVisible: "Your tenancy"
+    commands:
       - extendedWaitUntil:
           visible:
             id: "email-input"
-          timeout: 10000
+          timeout: 15000
       - tapOn:
           id: "email-input"
       - inputText: ${TENANT_EMAIL}
       - pressKey: Enter
       - inputText: ${TENANT_PASSWORD}
       - pressKey: Enter
-
-- extendedWaitUntil:
-    visible: "Your tenancy"
-    timeout: 20000
+      - extendedWaitUntil:
+          visible: "Your tenancy"
+          timeout: 20000
