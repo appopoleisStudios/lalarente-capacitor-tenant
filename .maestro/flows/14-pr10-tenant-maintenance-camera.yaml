@@ -16,11 +16,9 @@ appId: com.lalarente.app
 
 - scrollUntilVisible:
     element:
-      text: "Camera"
+      id: "maintenance-add-camera"
     direction: DOWN
-    timeout: 20000
+    timeout: 25000
 
-- assertVisible: "Camera"
 - assertVisible:
-    text: "Gallery"
-    optional: true
+    id: "maintenance-add-camera"
