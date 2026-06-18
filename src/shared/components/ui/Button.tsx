@@ -9,6 +9,8 @@ interface ButtonProps {
   onPress: () => void;
   children: React.ReactNode;
   className?: string;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -19,6 +21,8 @@ export const Button: React.FC<ButtonProps> = ({
   onPress,
   children,
   className = '',
+  accessibilityLabel,
+  accessibilityHint,
 }) => {
   const baseClasses = 'rounded-lg items-center justify-center flex-row';
   
@@ -57,6 +61,8 @@ export const Button: React.FC<ButtonProps> = ({
       className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${disabledClasses} ${className}`}
       accessible={true}
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: disabled || loading }}
     >
       {loading ? (

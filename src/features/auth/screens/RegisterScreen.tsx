@@ -181,7 +181,7 @@ export default function RegisterScreen() {
                   autoCapitalize="none"
                   editable={!loading}
                 />
-                <Pressable onPress={() => setShowPassword(v => !v)} style={styles.eyeBtn}>
+                <Pressable onPress={() => setShowPassword(v => !v)} style={styles.eyeBtn} accessibilityLabel={showPassword ? 'Hide password' : 'Show password'} accessibilityRole="button">
                   <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={RSA.textGray} />
                 </Pressable>
               </View>
@@ -202,7 +202,7 @@ export default function RegisterScreen() {
                   autoCapitalize="none"
                   editable={!loading}
                 />
-                <Pressable onPress={() => setShowConfirm(v => !v)} style={styles.eyeBtn}>
+                <Pressable onPress={() => setShowConfirm(v => !v)} style={styles.eyeBtn} accessibilityLabel={showConfirm ? 'Hide confirm password' : 'Show confirm password'} accessibilityRole="button">
                   <Ionicons name={showConfirm ? 'eye-off-outline' : 'eye-outline'} size={20} color={RSA.textGray} />
                 </Pressable>
               </View>
