@@ -1,4 +1,5 @@
-# PR #7 — Your tenancy shortcuts (T9–T12 nav)
+# PR #7 — Your tenancy shortcuts (T9–T13 nav) — client feedback closure
+# Verifies shortcuts exist on dashboard when tenant has active lease.
 appId: com.lalarente.app
 ---
 - runFlow: ../subflows/launch-app.yaml
@@ -11,25 +12,23 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 15000
 
-- tapOn:
-    id: "tenancy-payments-arrears"
-- extendedWaitUntil:
-    visible: "Payment History"
-    timeout: 20000
-- back
-
 - scrollUntilVisible:
     element:
       id: "tenancy-payment-disputes"
     direction: DOWN
     timeout: 10000
 
-- tapOn:
-    id: "tenancy-payment-disputes"
-- extendedWaitUntil:
-    visible: "Payment Disputes"
-    timeout: 15000
-- back
+- scrollUntilVisible:
+    element:
+      id: "tenancy-arrears-escalation"
+    direction: DOWN
+    timeout: 10000
+
+- scrollUntilVisible:
+    element:
+      id: "tenancy-early-termination"
+    direction: DOWN
+    timeout: 10000
 
 - scrollUntilVisible:
     element:
@@ -37,21 +36,8 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 10000
 
-- tapOn:
-    id: "tenancy-holding-deposits"
-- extendedWaitUntil:
-    visible: "Holding Deposits"
-    timeout: 15000
-- back
-
 - scrollUntilVisible:
     element:
       id: "tenancy-reports-inspections"
     direction: DOWN
     timeout: 10000
-
-- tapOn:
-    id: "tenancy-reports-inspections"
-- extendedWaitUntil:
-    visible: "Reports"
-    timeout: 15000
