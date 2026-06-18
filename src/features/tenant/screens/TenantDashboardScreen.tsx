@@ -400,6 +400,9 @@ export default function TenantDashboardScreen() {
           <TouchableOpacity
             style={styles.notificationButton}
             onPress={() => router.push('/(tenant)/notifications' as any)}
+            accessibilityLabel="Notifications"
+            accessibilityRole="button"
+            testID="notification-bell"
           >
             <Ionicons name="notifications-outline" size={24} color={colors.text.primary} />
             {notificationCount > 0 && (
