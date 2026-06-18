@@ -1,0 +1,13 @@
+# Open tenant profile tab from dashboard
+appId: com.lalarente.app
+---
+- extendedWaitUntil:
+    visible: "Welcome back,"
+    timeout: 15000
+
+- tapOn:
+    id: "tab-profile"
+
+- extendedWaitUntil:
+    visible: "My Profile"
+    timeout: 15000

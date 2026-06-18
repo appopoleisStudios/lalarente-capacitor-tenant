@@ -3,10 +3,10 @@ appId: com.lalarente.app
 ---
 - runFlow: ../../subflows/launch-app.yaml
 - runFlow: ../../subflows/login-tenant.yaml
+- runFlow: ../../subflows/tap-tenant-profile.yaml
 
-- tapOn: "Profile"
 - extendedWaitUntil:
-    visible: "Profile"
+    visible: "My Profile"
     timeout: 15000
 
 - scrollUntilVisible:
