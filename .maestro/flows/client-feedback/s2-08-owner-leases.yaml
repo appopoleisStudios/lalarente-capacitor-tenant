@@ -1,8 +1,8 @@
 # S2-08 — Owner active leases
 appId: com.lalarente.app
 ---
-- runFlow: ../subflows/launch-app.yaml
-- runFlow: ../subflows/login-owner.yaml
+- runFlow: ../../subflows/launch-app.yaml
+- runFlow: ../../subflows/login-owner.yaml
 
 - scrollUntilVisible:
     element: "Leases"

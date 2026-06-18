@@ -1,8 +1,8 @@
 # S2-03 / S2-04 — Owner viewings list (expired viewing behaviour is data-dependent)
 appId: com.lalarente.app
 ---
-- runFlow: ../subflows/launch-app.yaml
-- runFlow: ../subflows/login-owner.yaml
+- runFlow: ../../subflows/launch-app.yaml
+- runFlow: ../../subflows/login-owner.yaml
 
 - scrollUntilVisible:
     element: "Viewing"

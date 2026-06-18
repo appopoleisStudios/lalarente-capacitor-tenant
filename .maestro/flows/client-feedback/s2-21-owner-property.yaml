@@ -1,8 +1,8 @@
 # S2-21 — Property detail photos visible (refresh after edit is manual compare)
 appId: com.lalarente.app
 ---
-- runFlow: ../subflows/launch-app.yaml
-- runFlow: ../subflows/login-owner.yaml
+- runFlow: ../../subflows/launch-app.yaml
+- runFlow: ../../subflows/login-owner.yaml
 
 - tapOn: "Properties"
 - extendedWaitUntil:

@@ -1,8 +1,8 @@
 # S2-25 — Tenant bell / notifications
 appId: com.lalarente.app
 ---
-- runFlow: ../subflows/launch-app.yaml
-- runFlow: ../subflows/login-tenant.yaml
+- runFlow: ../../subflows/launch-app.yaml
+- runFlow: ../../subflows/login-tenant.yaml
 
 - tapOn:
     point: "92%,8%"

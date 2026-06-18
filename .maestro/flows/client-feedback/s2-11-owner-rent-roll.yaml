@@ -1,8 +1,8 @@
 # S2-11 / S2-12 — Rent roll + payment reminder affordance
 appId: com.lalarente.app
 ---
-- runFlow: ../subflows/launch-app.yaml
-- runFlow: ../subflows/login-owner.yaml
+- runFlow: ../../subflows/launch-app.yaml
+- runFlow: ../../subflows/login-owner.yaml
 
 - scrollUntilVisible:
     element: "Rent Roll"

@@ -1,8 +1,8 @@
 # S2-01 — Owner dashboard stats (properties, leases, rent roll)
 appId: com.lalarente.app
 ---
-- runFlow: ../subflows/launch-app.yaml
-- runFlow: ../subflows/login-owner.yaml
+- runFlow: ../../subflows/launch-app.yaml
+- runFlow: ../../subflows/login-owner.yaml
 
 - assertVisible: "Portfolio Dashboard"
 - scrollUntilVisible:
