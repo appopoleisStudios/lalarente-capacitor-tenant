@@ -1,4 +1,4 @@
-# Open tenant profile tab from dashboard
+# Open tenant profile tab from dashboard (4th tab — point tap for iOS 26)
 appId: com.lalarente.app
 ---
 - extendedWaitUntil:
@@ -6,8 +6,9 @@ appId: com.lalarente.app
     timeout: 15000
 
 - tapOn:
-    id: "tab-profile"
+    point: "70%,96%"
 
 - extendedWaitUntil:
-    visible: "My Profile"
-    timeout: 15000
+    visible:
+      id: "tenant-profile-title"
+    timeout: 20000
