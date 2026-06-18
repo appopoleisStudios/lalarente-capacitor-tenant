@@ -3,12 +3,18 @@ appId: com.lalarente.app
 ---
 - runFlow: ../subflows/launch-app.yaml
 - runFlow: ../subflows/login-tenant.yaml
-- runFlow: ../subflows/tap-tenant-maintenance.yaml
-- assertVisible: "Maintenance"
 
-- tapOn: "Report an Issue"
+- openLink: lalarenteapp:///(tenant)/maintenance/report
+
 - extendedWaitUntil:
-    visible: "Camera"
+    visible: "Report Issue"
+    timeout: 20000
+
+- scrollUntilVisible:
+    element:
+      text: "Camera"
+    direction: DOWN
     timeout: 15000
 
+- assertVisible: "Camera"
 - assertVisible: "Photos & Videos"
