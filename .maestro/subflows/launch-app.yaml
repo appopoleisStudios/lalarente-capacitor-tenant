@@ -4,6 +4,12 @@ appId: com.lalarente.app
 - launchApp:
     clearState: true
 
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+    optional: true
+
 # iOS simulator system dialogs that block the login screen
 - tapOn:
     text: "Not Now"
