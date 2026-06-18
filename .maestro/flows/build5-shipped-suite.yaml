@@ -17,3 +17,5 @@ appId: com.lalarente.app
 - runFlow: 10-pr9-owner-inspection-readonly.yaml
 - runFlow: 15-pr7-owner-disputes-empty.yaml
 - runFlow: 16-pr6-owner-lala-ai.yaml
+- runFlow: 17-pr11-tenant-viewings-applications.yaml
+- runFlow: 18-pr11-owner-applications.yaml

@@ -1,0 +1,28 @@
+# S2-43 / S2-44 — tenant viewing history + application status nav
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app.yaml
+- runFlow: ../subflows/login-tenant.yaml
+
+- assertVisible: "Viewings & applications"
+
+- scrollUntilVisible:
+    element: "Viewing history"
+    direction: DOWN
+    timeout: 15000
+
+- tapOn: "Viewing history"
+- extendedWaitUntil:
+    visible: "Viewing"
+    timeout: 15000
+- back
+
+- scrollUntilVisible:
+    element: "Application status"
+    direction: DOWN
+    timeout: 15000
+
+- tapOn: "Application status"
+- extendedWaitUntil:
+    visible: "Application"
+    timeout: 15000

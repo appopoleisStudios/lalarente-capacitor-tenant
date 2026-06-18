@@ -601,14 +601,16 @@ export default function TenantDashboardScreen() {
               <TouchableOpacity
                 key={String(item.href)}
                 style={[styles.depositCard, index > 0 && { marginTop: 8 }]}
+                accessibilityRole="button"
+                accessibilityLabel={item.title}
                 onPress={() => router.push(item.href)}
                 activeOpacity={0.8}
               >
                 <View style={styles.depositLeft}>
                   <Ionicons name={item.icon} size={24} color={item.iconColor} />
                   <View>
-                    <Text style={styles.depositTitle}>{item.title}</Text>
-                    <Text style={styles.depositSub}>{item.subtitle}</Text>
+                    <Text style={styles.depositTitle} accessible={false}>{item.title}</Text>
+                    <Text style={styles.depositSub} accessible={false}>{item.subtitle}</Text>
                   </View>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
@@ -746,14 +748,16 @@ export default function TenantDashboardScreen() {
                 <TouchableOpacity
                   key={String(item.href)}
                   style={[styles.depositCard, index > 0 && { marginTop: 8 }]}
+                  accessibilityRole="button"
+                  accessibilityLabel={item.title}
                   onPress={() => router.push(item.href)}
                   activeOpacity={0.8}
                 >
                   <View style={styles.depositLeft}>
                     <Ionicons name={item.icon} size={24} color={item.iconColor} />
                     <View>
-                      <Text style={styles.depositTitle}>{item.title}</Text>
-                      <Text style={styles.depositSub}>{item.subtitle}</Text>
+                      <Text style={styles.depositTitle} accessible={false}>{item.title}</Text>
+                      <Text style={styles.depositSub} accessible={false}>{item.subtitle}</Text>
                     </View>
                   </View>
                   <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />

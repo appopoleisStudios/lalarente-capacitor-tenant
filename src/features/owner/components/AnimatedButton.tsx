@@ -13,13 +13,17 @@ interface AnimatedButtonProps {
   onPress?: () => void;
   style?: any;
   hapticType?: 'light' | 'medium';
+  accessibilityLabel?: string;
+  accessibilityRole?: 'button' | 'link';
 }
 
 export const AnimatedButton = ({ 
   children, 
   onPress, 
   style, 
-  hapticType = 'light' 
+  hapticType = 'light',
+  accessibilityLabel,
+  accessibilityRole = 'button',
 }: AnimatedButtonProps) => {
   const scale = useSharedValue(1);
 
@@ -42,7 +46,13 @@ export const AnimatedButton = ({
 
   return (
     <Animated.View style={[animatedStyle, style]}>
-      <Pressable onPress={onPress} onPressIn={handlePressIn} onPressOut={handlePressOut}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        accessibilityRole={accessibilityRole}
+        accessibilityLabel={accessibilityLabel}
+      >
         {children}
       </Pressable>
     </Animated.View>

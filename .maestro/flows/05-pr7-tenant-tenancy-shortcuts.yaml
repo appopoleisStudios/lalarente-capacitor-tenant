@@ -5,17 +5,37 @@ appId: com.lalarente.app
 - runFlow: ../subflows/login-tenant.yaml
 - runFlow: ../subflows/scroll-tenancy.yaml
 
+- scrollUntilVisible:
+    element: "Payments & arrears"
+    direction: DOWN
+    timeout: 15000
+
 - tapOn: "Payments & arrears"
 - assertVisible: "Payments"
 - back
+
+- scrollUntilVisible:
+    element: "Payment disputes"
+    direction: DOWN
+    timeout: 10000
 
 - tapOn: "Payment disputes"
 - assertVisible: "Payment Disputes"
 - back
 
+- scrollUntilVisible:
+    element: "Holding deposits"
+    direction: DOWN
+    timeout: 10000
+
 - tapOn: "Holding deposits"
 - assertVisible: "Holding Deposits"
 - back
+
+- scrollUntilVisible:
+    element: "Reports & inspections"
+    direction: DOWN
+    timeout: 10000
 
 - tapOn: "Reports & inspections"
 - assertVisible: "Reports"

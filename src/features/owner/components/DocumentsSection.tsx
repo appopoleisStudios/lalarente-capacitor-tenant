@@ -86,14 +86,15 @@ export const DocumentsSection = ({ documents }: DocumentsSectionProps) => {
           <AnimatedButton
             key={doc.type}
             style={styles.card}
+            accessibilityLabel={doc.name}
             onPress={() => handleDocumentPress(doc.type)}
           >
             <View style={styles.cardInner}>
               <View style={styles.iconBox}>
                 <Ionicons name={doc.icon as any} size={20} color="#002395" />
               </View>
-              <Text style={styles.name} numberOfLines={2}>{doc.name}</Text>
-              <Text style={styles.info}>{doc.info}</Text>
+              <Text style={styles.name} numberOfLines={2} accessible={false}>{doc.name}</Text>
+              <Text style={styles.info} accessible={false}>{doc.info}</Text>
             </View>
           </AnimatedButton>
         ))}
