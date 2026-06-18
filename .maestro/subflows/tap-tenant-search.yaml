@@ -1,0 +1,13 @@
+# Scroll to Quick Actions → Search
+appId: com.lalarente.app
+---
+- extendedWaitUntil:
+    visible: "Welcome back,"
+    timeout: 15000
+
+- scrollUntilVisible:
+    element: "Search"
+    direction: DOWN
+    timeout: 20000
+
+- tapOn: "Search"
