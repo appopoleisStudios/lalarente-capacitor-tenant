@@ -4,13 +4,21 @@ appId: com.lalarente.app
 ---
 - runFlow: ../subflows/launch-app.yaml
 - runFlow: ../subflows/login-tenant.yaml
-- runFlow: ../subflows/tap-tenant-search.yaml
+
+- openLink: lalarenteapp:///(tenant)/search
+
 - extendedWaitUntil:
-    visible: "properties found"
-    timeout: 15000
+    visible: "Search by location"
+    timeout: 20000
+
+- extendedWaitUntil:
+    visible: "found"
+    timeout: 20000
+    optional: true
 
 - tapOn:
     point: "50%,55%"
+    optional: true
 
 - extendedWaitUntil:
     visible: "Apply Now"

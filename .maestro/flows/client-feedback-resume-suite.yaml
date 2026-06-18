@@ -1,7 +1,6 @@
-# Resume client-feedback suite — remaining tenant + owner (skip already-green flows)
+# Resume — remaining after flow 14 green (07, 02, owner)
 appId: com.lalarente.app
 ---
-- runFlow: 14-pr10-tenant-maintenance-camera.yaml
 - runFlow: 07-pr7-tenant-application-pdf.yaml
 - runFlow: 02-tenant-lala-ai.yaml
 - runFlow: client-feedback-owner-suite.yaml
