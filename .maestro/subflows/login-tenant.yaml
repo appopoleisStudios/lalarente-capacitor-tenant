@@ -3,13 +3,13 @@ appId: com.lalarente.app
 ---
 - runFlow:
     when:
-      visible: "Your tenancy"
+      visible: "Welcome back,"
     commands:
-      - assertVisible: "Your tenancy"
+      - assertVisible: "Welcome back,"
 
 - runFlow:
     when:
-      notVisible: "Your tenancy"
+      notVisible: "Welcome back,"
     commands:
       - extendedWaitUntil:
           visible:
@@ -24,5 +24,5 @@ appId: com.lalarente.app
       - tapOn:
           text: "Sign In"
       - extendedWaitUntil:
-          visible: "Your tenancy"
+          visible: "Welcome back,"
           timeout: 45000
