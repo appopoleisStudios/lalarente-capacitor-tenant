@@ -15,7 +15,7 @@ appId: com.lalarente.app
 - tapOn:
     id: "viewings-viewing-history"
 - extendedWaitUntil:
-    visible: "Viewing"
+    visible: "My Viewings"
     timeout: 15000
 - back
 
@@ -28,5 +28,5 @@ appId: com.lalarente.app
 - tapOn:
     id: "viewings-application-status"
 - extendedWaitUntil:
-    visible: "Application"
+    visible: "My Applications"
     timeout: 15000
