@@ -19,14 +19,16 @@ appId: com.lalarente.app
     timeout: 15000
 - back
 
-- scrollUntilVisible:
-    element:
-      id: "viewings-application-status"
-    direction: DOWN
+- extendedWaitUntil:
+    visible: "Viewings & applications"
     timeout: 15000
 
-- tapOn:
-    id: "viewings-application-status"
+- scrollUntilVisible:
+    element: "Application status"
+    direction: DOWN
+    timeout: 25000
+
+- tapOn: "Application status"
 - extendedWaitUntil:
     visible: "My Applications"
     timeout: 15000
