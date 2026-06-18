@@ -17,9 +17,9 @@ appId: com.lalarente.app
       - tapOn:
           id: "email-input"
       - inputText: ${OWNER_EMAIL}
-      - tapOn:
-          id: "password-input"
+      - pressKey: Enter
       - inputText: ${OWNER_PASSWORD}
+      - hideKeyboard
       - tapOn:
           text: "Sign In"
       - extendedWaitUntil:
