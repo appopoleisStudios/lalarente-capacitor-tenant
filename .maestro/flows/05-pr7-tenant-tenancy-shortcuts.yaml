@@ -11,7 +11,9 @@ appId: com.lalarente.app
     timeout: 15000
 
 - tapOn: "Payments & arrears"
-- assertVisible: "Payments"
+- extendedWaitUntil:
+    visible: "Payment History"
+    timeout: 15000
 - back
 
 - scrollUntilVisible:
@@ -20,7 +22,9 @@ appId: com.lalarente.app
     timeout: 10000
 
 - tapOn: "Payment disputes"
-- assertVisible: "Payment Disputes"
+- extendedWaitUntil:
+    visible: "Payment Disputes"
+    timeout: 15000
 - back
 
 - scrollUntilVisible:
@@ -29,7 +33,9 @@ appId: com.lalarente.app
     timeout: 10000
 
 - tapOn: "Holding deposits"
-- assertVisible: "Holding Deposits"
+- extendedWaitUntil:
+    visible: "Holding Deposits"
+    timeout: 15000
 - back
 
 - scrollUntilVisible:
@@ -38,4 +44,6 @@ appId: com.lalarente.app
     timeout: 10000
 
 - tapOn: "Reports & inspections"
-- assertVisible: "Reports"
+- extendedWaitUntil:
+    visible: "Reports"
+    timeout: 15000
