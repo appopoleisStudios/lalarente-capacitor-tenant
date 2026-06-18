@@ -3,12 +3,7 @@ appId: com.lalarente.app
 ---
 - runFlow: ../../subflows/launch-app.yaml
 - runFlow: ../../subflows/login-tenant.yaml
-
-- tapOn: "Messages"
-- extendedWaitUntil:
-    visible: "Messages"
-    timeout: 15000
-    optional: true
+- runFlow: ../../subflows/open-tenant-messages.yaml
 
 - tapOn:
     point: "50%,40%"

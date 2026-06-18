@@ -4,8 +4,7 @@ appId: com.lalarente.app
 ---
 - runFlow: ../subflows/launch-app.yaml
 - runFlow: ../subflows/login-tenant.yaml
-
-- tapOn: "Search"
+- runFlow: ../subflows/tap-tenant-search.yaml
 - extendedWaitUntil:
     visible: "properties found"
     timeout: 15000

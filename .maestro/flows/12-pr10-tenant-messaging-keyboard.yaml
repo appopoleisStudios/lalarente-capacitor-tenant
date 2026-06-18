@@ -3,23 +3,7 @@ appId: com.lalarente.app
 ---
 - runFlow: ../subflows/launch-app.yaml
 - runFlow: ../subflows/login-tenant.yaml
-
-- scrollUntilVisible:
-    element: "Messages"
-    direction: DOWN
-    timeout: 20000
-
-- tapOn:
-    text: "See All"
-    optional: true
-
-- tapOn:
-    text: "Messages"
-    optional: true
-
-- extendedWaitUntil:
-    visible: "Messages"
-    timeout: 15000
+- runFlow: ../subflows/open-tenant-messages.yaml
 
 - tapOn:
     point: "50%,45%"
