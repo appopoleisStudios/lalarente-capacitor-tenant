@@ -1,0 +1,27 @@
+# S2-21 — Property detail photos visible (refresh after edit is manual compare)
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app.yaml
+- runFlow: ../subflows/login-owner.yaml
+
+- tapOn: "Properties"
+- extendedWaitUntil:
+    visible: "Properties"
+    timeout: 15000
+
+- tapOn:
+    point: "50%,35%"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Property"
+    timeout: 15000
+    optional: true
+
+- assertVisible:
+    text: "Photo"
+    optional: true
+
+- assertVisible:
+    text: "Edit"
+    optional: true

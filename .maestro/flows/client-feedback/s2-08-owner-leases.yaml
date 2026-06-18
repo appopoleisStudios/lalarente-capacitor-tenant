@@ -1,0 +1,15 @@
+# S2-08 — Owner active leases
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app.yaml
+- runFlow: ../subflows/login-owner.yaml
+
+- scrollUntilVisible:
+    element: "Leases"
+    direction: DOWN
+    timeout: 20000
+
+- tapOn: "Leases"
+- extendedWaitUntil:
+    visible: "Lease"
+    timeout: 15000

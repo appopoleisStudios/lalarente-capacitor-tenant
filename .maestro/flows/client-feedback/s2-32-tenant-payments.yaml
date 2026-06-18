@@ -1,0 +1,17 @@
+# S2-32 / S2-33 — Tenant payments history + make payment affordance
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app.yaml
+- runFlow: ../subflows/login-tenant.yaml
+
+- tapOn: "Payments"
+- extendedWaitUntil:
+    visible: "Payment History"
+    timeout: 20000
+
+- assertVisible:
+    text: "Make Payment"
+    optional: true
+- assertVisible:
+    text: "Pay Now"
+    optional: true

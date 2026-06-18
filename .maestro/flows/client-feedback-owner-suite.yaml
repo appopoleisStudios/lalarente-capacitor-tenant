@@ -1,0 +1,31 @@
+# Client feedback Sheet 2 — owner script (indraj.navin@gmail.com persona)
+# Maps to S2-01 … S2-23 in docs/CLIENT_TEST_RUN_BUILD4.md
+appId: com.lalarente.app
+---
+# S2-01 — Dashboard stats
+- runFlow: client-feedback/s2-01-owner-dashboard.yaml
+# S2-02 — Bell notifications
+- runFlow: client-feedback/s2-02-owner-bell.yaml
+# S2-05 — Applications entry (not bell-only)
+- runFlow: 18-pr11-owner-applications.yaml
+# S2-03 / S2-04 — Viewings
+- runFlow: client-feedback/s2-03-owner-viewings.yaml
+# S2-08 — Active leases
+- runFlow: client-feedback/s2-08-owner-leases.yaml
+# S2-10 / S2-15 — Contact tenant → messages + keyboard
+- runFlow: client-feedback/s2-10-owner-lease-messages.yaml
+# S2-11 / S2-12 — Rent roll + reminder
+- runFlow: client-feedback/s2-11-owner-rent-roll.yaml
+# S2-13 / S2-14 — Maintenance + vendor routing UI
+- runFlow: client-feedback/s2-13-owner-maintenance.yaml
+# S2-16 / S2-17 / S2-18 — Inspections conduct + rooms
+- runFlow: 09-pr9-owner-inspection-conduct.yaml
+- runFlow: 10-pr9-owner-inspection-readonly.yaml
+# S2-19 / S2-20 — Messages + reply
+- runFlow: client-feedback/s2-19-owner-messages.yaml
+# S2-21 — Property photos on detail
+- runFlow: client-feedback/s2-21-owner-property.yaml
+# Owner payment disputes empty state
+- runFlow: 15-pr7-owner-disputes-empty.yaml
+# Lala AI owner
+- runFlow: 16-pr6-owner-lala-ai.yaml

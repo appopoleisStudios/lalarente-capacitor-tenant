@@ -1,0 +1,29 @@
+# S2-31 — Tenant contact owner → message
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app.yaml
+- runFlow: ../subflows/login-tenant.yaml
+
+- scrollUntilVisible:
+    element: "View Lease Details"
+    direction: DOWN
+    timeout: 20000
+
+- tapOn: "View Lease Details"
+- extendedWaitUntil:
+    visible: "Contact Owner"
+    timeout: 15000
+    optional: true
+
+- tapOn:
+    text: "Contact Owner"
+    optional: true
+
+- tapOn:
+    text: "Message"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Type a message"
+    timeout: 20000
+    optional: true

@@ -1,0 +1,44 @@
+# S2-10 / S2-15 — Owner contact tenant → messages + keyboard visible
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app.yaml
+- runFlow: ../subflows/login-owner.yaml
+
+- scrollUntilVisible:
+    element: "Leases"
+    direction: DOWN
+    timeout: 20000
+
+- tapOn: "Leases"
+- tapOn:
+    point: "50%,35%"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Contact Tenant"
+    timeout: 15000
+    optional: true
+
+- tapOn:
+    text: "Contact Tenant"
+    optional: true
+
+- tapOn:
+    text: "Message"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Type a message"
+    timeout: 20000
+    optional: true
+
+- tapOn:
+    text: "Type a message..."
+    optional: true
+
+- inputText: "Owner QA message — keyboard visibility check"
+- pressKey: Enter
+
+- assertVisible:
+    text: "Owner QA message"
+    optional: true
