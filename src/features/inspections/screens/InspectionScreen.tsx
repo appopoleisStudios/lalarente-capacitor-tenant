@@ -422,6 +422,18 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
               </Text>
               <Text style={styles.headerSubtitle}>{inspection.property?.title}</Text>
             </View>
+          {inspection?.status === 'completed' ? (
+            <TouchableOpacity onPress={handleExportReport} disabled={exporting} style={[styles.headerExportBtn, { backgroundColor: colors.primary }]}>
+              {exporting ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <>
+                  <Ionicons name="download-outline" size={18} color="#FFF" />
+                  <Text style={styles.headerExportText}>PDF</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          ) : (
             <TouchableOpacity onPress={saveProgress} disabled={saving}>
               {saving ? (
                 <ActivityIndicator size="small" color={colors.primary} />
@@ -429,6 +441,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                 <Ionicons name="save-outline" size={24} color={colors.primary} />
               )}
             </TouchableOpacity>
+          )}
           </View>
 
           {/* Progress Bar */}
@@ -867,6 +880,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
+  },
+  headerExportBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#002395',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+  },
+  headerExportText: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: '700',
   },
   backButton: {
     padding: 4,
