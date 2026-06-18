@@ -3,8 +3,7 @@ appId: com.lalarente.app
 ---
 - runFlow: ../subflows/launch-app.yaml
 - runFlow: ../subflows/login-tenant.yaml
-
-- tapOn: "Maintenance"
+- runFlow: ../subflows/tap-tenant-maintenance.yaml
 - assertVisible: "Maintenance"
 
 - scrollUntilVisible:
