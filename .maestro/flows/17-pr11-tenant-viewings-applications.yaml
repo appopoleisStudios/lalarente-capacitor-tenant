@@ -18,7 +18,8 @@ appId: com.lalarente.app
     visible: "My Viewings"
     timeout: 15000
 
-- tapOn: "Home"
+- tapOn:
+    id: "screen-back"
 - extendedWaitUntil:
     visible: "Welcome back,"
     timeout: 15000
