@@ -3,13 +3,13 @@ appId: com.lalarente.app
 ---
 - runFlow:
     when:
-      visible: "Welcome back,"
+      visible: "Welcome Back"
     commands:
-      - assertVisible: "Welcome back,"
+      - assertVisible: "Welcome Back"
 
 - runFlow:
     when:
-      notVisible: "Welcome back,"
+      notVisible: "Welcome Back"
     commands:
       - extendedWaitUntil:
           visible:
@@ -27,6 +27,6 @@ appId: com.lalarente.app
           timeout: 60000
           optional: true
       - extendedWaitUntil:
-          visible: "Welcome back,"
+          visible: "Welcome Back"
           timeout: 60000
-      - assertVisible: "Welcome back,"
+      - assertVisible: "Welcome Back"

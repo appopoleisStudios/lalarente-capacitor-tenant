@@ -21,7 +21,7 @@ appId: com.lalarente.app
 - tapOn:
     id: "screen-back"
 - extendedWaitUntil:
-    visible: "Welcome back,"
+    visible: "Welcome Back"
     timeout: 15000
 
 - scrollUntilVisible:

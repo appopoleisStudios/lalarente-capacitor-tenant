@@ -2,7 +2,7 @@
 appId: com.lalarente.app
 ---
 - extendedWaitUntil:
-    visible: "Welcome back,"
+    visible: "Welcome Back"
     timeout: 15000
 
 - scrollUntilVisible:

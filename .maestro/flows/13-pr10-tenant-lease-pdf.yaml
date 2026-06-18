@@ -5,7 +5,7 @@ appId: com.lalarente.app
 - runFlow: ../subflows/login-tenant.yaml
 
 - extendedWaitUntil:
-    visible: "Welcome back,"
+    visible: "Welcome Back"
     timeout: 15000
 
 - scrollUntilVisible:
