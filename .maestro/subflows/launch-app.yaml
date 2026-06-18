@@ -3,3 +3,12 @@ appId: com.lalarente.app
 ---
 - launchApp:
     clearState: true
+
+# iOS simulator system dialogs that block the login screen
+- tapOn:
+    text: "Not Now"
+    optional: true
+
+- tapOn:
+    text: "Cancel"
+    optional: true
