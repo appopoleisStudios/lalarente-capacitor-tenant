@@ -7,12 +7,12 @@ appId: com.lalarente.app
 - openLink: lalarenteapp:///(owner)/viewings
 
 - extendedWaitUntil:
-    visible: "Viewings"
+    visible: "Viewing Requests"
     timeout: 20000
 
 - assertVisible:
     text: "Viewing"
     optional: true
 - assertVisible:
-    text: "viewing"
+    text: "No Viewing Requests"
     optional: true
