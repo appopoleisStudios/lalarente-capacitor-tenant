@@ -3,8 +3,7 @@ appId: com.lalarente.app
 ---
 - runFlow: ../subflows/launch-app.yaml
 - runFlow: ../subflows/login-tenant.yaml
-
-- tapOn: "Lala AI"
+- runFlow: ../subflows/tap-tenant-lala-ai.yaml
 - assertVisible: "Lala Assistant"
 - assertVisible: "Ask me anything about your property"
 
