@@ -1,18 +1,11 @@
-# Open tenant profile tab from dashboard
+# Open tenant profile — deep link avoids iOS 26 tab bar tap issues
 appId: com.lalarente.app
 ---
 - extendedWaitUntil:
     visible: "Welcome back,"
     timeout: 15000
 
-# Dismiss RN LogBox warning strip if it covers the tab bar
-- tapOn:
-    point: "96%,89%"
-    optional: true
-
-- tapOn:
-    id: "tab-profile"
-    retryTapIfNoChange: true
+- openLink: lalarenteapp:///(tenant)/profile
 
 - extendedWaitUntil:
     visible:

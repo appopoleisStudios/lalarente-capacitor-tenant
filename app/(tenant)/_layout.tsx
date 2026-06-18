@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { TouchableOpacity } from 'react-native';
+import { Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/src/shared/theme/colors';
 
@@ -59,7 +59,7 @@ export default function TenantLayout() {
           title: 'Payments',
           tabBarButtonTestID: 'tab-payments',
           tabBarButton: (props) => (
-            <TouchableOpacity {...props} testID="tab-payments" accessibilityLabel="Payments tab" />
+            <Pressable {...props} testID="tab-payments" accessibilityLabel="Payments tab" />
           ),
           tabBarIcon: ({ color, size }) => <Ionicons name="card" size={size} color={color} />,
         }}
@@ -70,7 +70,7 @@ export default function TenantLayout() {
           title: 'Profile',
           tabBarButtonTestID: 'tab-profile',
           tabBarButton: (props) => (
-            <TouchableOpacity {...props} testID="tab-profile" accessibilityLabel="Profile tab" />
+            <Pressable {...props} testID="tab-profile" accessibilityLabel="Profile tab" />
           ),
           tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
         }}
