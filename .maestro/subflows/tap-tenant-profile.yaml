@@ -1,12 +1,18 @@
-# Open tenant profile tab from dashboard (4th tab — point tap for iOS 26)
+# Open tenant profile tab from dashboard
 appId: com.lalarente.app
 ---
 - extendedWaitUntil:
     visible: "Welcome back,"
     timeout: 15000
 
+# Dismiss RN LogBox warning strip if it covers the tab bar
 - tapOn:
-    point: "70%,96%"
+    point: "96%,89%"
+    optional: true
+
+- tapOn:
+    id: "tab-profile"
+    retryTapIfNoChange: true
 
 - extendedWaitUntil:
     visible:
