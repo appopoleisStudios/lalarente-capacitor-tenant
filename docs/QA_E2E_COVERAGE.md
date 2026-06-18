@@ -23,7 +23,26 @@ Maestro tests use **visible UI only** (labels, placeholders, buttons) — you wa
 | `15-pr7-owner-disputes-empty` | #7 | O5 disputes | Owner disputes empty state |
 | `16-pr6-owner-lala-ai` | #6 | Lala | Owner AI message |
 
-**Not in merged PRs (no automated flow yet):** vendor seed S2-13/14.
+**Not in merged PRs (no automated flow yet):** vendor seed S2-13/14 (UI flow exists; full assign path needs seed).
+
+## Client feedback Sheet 2 (full sign-off)
+
+See [CLIENT_FEEDBACK_MAESTRO.md](./CLIENT_FEEDBACK_MAESTRO.md) for the complete S2-01 … S2-44 mapping.
+
+```bash
+# All Sheet 2 steps — tenant then owner
+npm run test:e2e:client-feedback
+
+# Record MP4s for client approval (tenant/ + owner/ folders)
+npm run test:e2e:client-feedback:video
+```
+
+| Suite | Flows |
+|-------|-------|
+| `client-feedback-suite` | Tenant suite + owner suite |
+| `client-feedback-tenant-suite` | 17 flows — S2-24 … S2-44 |
+| `client-feedback-owner-suite` | 14 flows — S2-01 … S2-23 |
+| `client-feedback/s2-*` | Dedicated owner/tenant steps |
 
 ## QA data prerequisites
 
@@ -48,5 +67,7 @@ npm run test:e2e:shipped
 # Record one MP4 per flow + optional combined demo (for client)
 npm run test:e2e:video
 ```
+
+Videos are kept under `qa-videos/<timestamp>/` **only when all flows pass** (pre-flight test + temp dir; see `scripts/lib/e2e-video-retention.sh`).
 
 Output videos: `qa-videos/<timestamp>/` (gitignored).

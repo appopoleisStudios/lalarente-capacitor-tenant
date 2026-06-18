@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
-# Record MP4 videos of each Build 5 UI test (human-visible taps/types on simulator).
-# Output: qa-videos/<timestamp>/ — send folder or build5-client-demo.mp4 to client.
+# Record MP4 videos of Build 5 UI tests — only kept when ALL flows pass.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ENV_FILE="$ROOT/.maestro/.env"
-OUT_DIR="$ROOT/qa-videos/$(date +%Y%m%d-%H%M%S)"
+STAMP="$(date +%Y%m%d-%H%M%S)"
+FINAL_DIR="$ROOT/qa-videos/$STAMP"
 
 # shellcheck source=lib/resolve-maestro.sh
 source "$ROOT/scripts/lib/resolve-maestro.sh"
+# shellcheck source=lib/e2e-video-retention.sh
+source "$ROOT/scripts/lib/e2e-video-retention.sh"
 
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "Copy .maestro/.env.example → .maestro/.env and set QA credentials."
@@ -27,10 +29,13 @@ for var in TENANT_EMAIL TENANT_PASSWORD OWNER_EMAIL OWNER_PASSWORD; do
   fi
 done
 
-mkdir -p "$OUT_DIR"
 cd "$ROOT"
 
-# Ordered for client demo narrative (tenant fixes → owner fixes)
+e2e_video_maybe_test_first "bash \"$ROOT/scripts/run-e2e.sh\" \"$ROOT/.maestro/flows/build5-shipped-suite.yaml\""
+
+e2e_video_init_temp "$ROOT/qa-videos" "build5-video"
+OUT_DIR="$E2E_VIDEO_TEMP"
+
 FLOWS=(
   "01-tenant-dashboard.yaml"
   "05-pr7-tenant-tenancy-shortcuts.yaml"
@@ -62,12 +67,11 @@ for flow in "${FLOWS[@]}"; do
   name="${flow%.yaml}"
   out_mp4="$OUT_DIR/${name}.mp4"
   echo ""
-  echo "▶ Recording $flow → $out_mp4"
-  echo "  (Watch the simulator — Maestro taps and types visibly)"
+  echo "▶ Recording $flow"
   if "$MAESTRO_BIN" record --local "${ENV_ARGS[@]}" ".maestro/flows/$flow" "$out_mp4"; then
     echo "  ✓ $name"
   else
-    echo "  ✗ $name (see logs)"
+    echo "  ✗ $name"
     FAILED=$((FAILED + 1))
   fi
 done
@@ -84,20 +88,17 @@ if command -v ffmpeg >/dev/null 2>&1; then
   done
   if [[ -s "$CONCAT_LIST" ]]; then
     ffmpeg -y -f concat -safe 0 -i "$CONCAT_LIST" -c copy "$DEMO_MP4" 2>/dev/null || true
-    if [[ -f "$DEMO_MP4" ]]; then
-      echo ""
-      echo "Combined demo: $DEMO_MP4"
-    fi
   fi
-else
-  echo ""
-  echo "Tip: install ffmpeg to auto-stitch clips into build5-client-demo.mp4"
 fi
 
-echo ""
-echo "Videos saved under: $OUT_DIR"
-if [[ "$FAILED" -gt 0 ]]; then
-  echo "$FAILED flow(s) failed — re-run failed clips or fix QA data."
+if ! e2e_video_discard_or_keep "$FAILED"; then
   exit 1
 fi
-echo "All flows recorded successfully."
+
+e2e_video_promote "$FINAL_DIR"
+
+echo ""
+echo "All flows recorded — videos saved under: $FINAL_DIR"
+if [[ -f "$FINAL_DIR/build5-client-demo.mp4" ]]; then
+  echo "Combined demo: $FINAL_DIR/build5-client-demo.mp4"
+fi

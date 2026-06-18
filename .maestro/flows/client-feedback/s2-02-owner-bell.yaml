@@ -1,0 +1,11 @@
+# S2-02 — Owner bell / notifications
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app.yaml
+- runFlow: ../subflows/login-owner.yaml
+
+- tapOn:
+    point: "92%,8%"
+- extendedWaitUntil:
+    visible: "Notifications"
+    timeout: 15000

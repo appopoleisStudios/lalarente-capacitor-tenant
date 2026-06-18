@@ -1,0 +1,5 @@
+# Full client feedback Sheet 2 — tenant then owner (watch simulator or record video)
+appId: com.lalarente.app
+---
+- runFlow: client-feedback-tenant-suite.yaml
+- runFlow: client-feedback-owner-suite.yaml

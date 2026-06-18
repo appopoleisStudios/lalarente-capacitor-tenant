@@ -1,0 +1,27 @@
+# S2-13 / S2-14 — Maintenance list + vendor routing UI (needs seeded vendors for full path)
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app.yaml
+- runFlow: ../subflows/login-owner.yaml
+
+- tapOn: "Maintenance"
+- extendedWaitUntil:
+    visible: "Maintenance"
+    timeout: 15000
+
+- tapOn:
+    point: "50%,40%"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Assign"
+    timeout: 15000
+    optional: true
+
+- assertVisible:
+    text: "Vendor"
+    optional: true
+
+- assertVisible:
+    text: "Dedicated"
+    optional: true

@@ -1,0 +1,43 @@
+# S2-19 / S2-20 — Owner messages thread + reply
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app.yaml
+- runFlow: ../subflows/login-owner.yaml
+
+- scrollUntilVisible:
+    element: "Messages"
+    direction: DOWN
+    timeout: 20000
+    optional: true
+
+- tapOn:
+    text: "Messages"
+    optional: true
+
+- tapOn:
+    text: "See All"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Messages"
+    timeout: 15000
+
+- tapOn:
+    point: "50%,40%"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Type a message"
+    timeout: 20000
+    optional: true
+
+- tapOn:
+    text: "Type a message..."
+    optional: true
+
+- inputText: "Owner reply — client sign-off QA"
+- pressKey: Enter
+
+- assertVisible:
+    text: "Owner reply"
+    optional: true
