@@ -17,6 +17,13 @@ appId: com.lalarente.app
 - tapOn:
     id: "view-lease-details"
 - assertVisible: "My Lease"
+
+- scrollUntilVisible:
+    element:
+      text: "Lease Document"
+    direction: DOWN
+    timeout: 25000
+
 - assertVisible: "Lease Document"
 - assertVisible:
     text: "Download PDF"
