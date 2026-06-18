@@ -5,7 +5,14 @@ appId: com.lalarente.app
 - runFlow: ../subflows/login-tenant.yaml
 - runFlow: ../subflows/scroll-tenancy.yaml
 
-- tapOn: "Reports & inspections"
+- scrollUntilVisible:
+    element:
+      id: "tenancy-reports-inspections"
+    direction: DOWN
+    timeout: 20000
+
+- tapOn:
+    id: "tenancy-reports-inspections"
 - assertVisible: "Reports"
 
 - assertVisible:

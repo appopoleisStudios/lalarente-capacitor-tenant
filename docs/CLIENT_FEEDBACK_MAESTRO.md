@@ -132,12 +132,9 @@ Run `database/seeds/build5_demo_data.sql` in Supabase if screens are empty.
 3. Zip `qa-videos/client-feedback-<timestamp>/`.
 4. Email or Drive: attach `tenant/client-signoff-demo.mp4` and `owner/client-signoff-demo.mp4`, or individual S2-labelled clips.
 
-Failed flows still produce partial videos — fix QA data and re-run only failed YAML files with:
+Re-record a single failed flow only after fixing it (writes to the path you choose — avoid saving under `qa-videos/` unless the full suite is green):
 
 ```bash
-~/.maestro/bin/maestro record --local \
-  --env TENANT_EMAIL=... --env TENANT_PASSWORD=... \
-  --env OWNER_EMAIL=... --env OWNER_PASSWORD=... \
-  .maestro/flows/client-feedback/s2-25-tenant-bell.yaml \
-  qa-videos/retry/s2-25.mp4
+~/.maestro/bin/maestro test --local ... .maestro/flows/client-feedback/s2-25-tenant-bell.yaml
+# When green, re-run the full video script — partial MP4s are never kept on failure.
 ```
