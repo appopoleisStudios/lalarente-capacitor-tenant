@@ -1105,62 +1105,74 @@ export default function TenantDashboardScreen() {
             <View style={styles.actionsGrid}>
               <TouchableOpacity
                 style={styles.actionCard}
+                accessibilityRole="button"
+                accessibilityLabel="Search"
                 onPress={() => router.push('/(tenant)/search' as any)}
               >
                 <View style={[styles.actionIcon, { backgroundColor: colors.primary[50] }]}>
                   <Ionicons name="search" size={24} color={colors.rsa.green} />
                 </View>
-                <Text style={styles.actionText}>Search</Text>
+                <Text style={styles.actionText} accessible={false}>Search</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.actionCard}
+                accessibilityRole="button"
+                accessibilityLabel="Payments"
                 onPress={() => router.push('/(tenant)/payments' as any)}
               >
                 <View style={[styles.actionIcon, { backgroundColor: colors.info[50] }]}>
                   <Ionicons name="card" size={24} color={colors.rsa.blue} />
                 </View>
-                <Text style={styles.actionText}>Payments</Text>
+                <Text style={styles.actionText} accessible={false}>Payments</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.actionCard}
+                accessibilityRole="button"
+                accessibilityLabel="Maintenance"
                 onPress={() => router.push('/(tenant)/maintenance' as any)}
               >
                 <View style={[styles.actionIcon, { backgroundColor: colors.warning[50] }]}>
                   <Ionicons name="construct" size={24} color={colors.warning[500]} />
                 </View>
-                <Text style={styles.actionText}>Maintenance</Text>
+                <Text style={styles.actionText} accessible={false}>Maintenance</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.actionCard}
+                accessibilityRole="button"
+                accessibilityLabel="Messages"
                 onPress={() => router.push('/(tenant)/messages' as any)}
               >
                 <View style={[styles.actionIcon, { backgroundColor: colors.rsa.green + '15' }]}>
                   <Ionicons name="chatbubbles" size={24} color={colors.rsa.green} />
                 </View>
-                <Text style={styles.actionText}>Messages</Text>
+                <Text style={styles.actionText} accessible={false}>Messages</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.actionCard}
+                accessibilityRole="button"
+                accessibilityLabel="Reports"
                 onPress={() => router.push('/(tenant)/reports' as Href)}
               >
                 <View style={[styles.actionIcon, { backgroundColor: '#F3E8FF' }]}>
                   <Ionicons name="clipboard-outline" size={24} color="#8B5CF6" />
                 </View>
-                <Text style={styles.actionText}>Reports</Text>
+                <Text style={styles.actionText} accessible={false}>Reports</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.actionCard}
+                accessibilityRole="button"
+                accessibilityLabel="Lala AI"
                 onPress={() => router.push('/(tenant)/ai-chat' as Href)}
               >
                 <View style={[styles.actionIcon, { backgroundColor: '#E8F5E9' }]}>
                   <Ionicons name="sparkles" size={24} color={colors.rsa.green} />
                 </View>
-                <Text style={styles.actionText}>Lala AI</Text>
+                <Text style={styles.actionText} accessible={false}>Lala AI</Text>
               </TouchableOpacity>
             </View>
           </View>
