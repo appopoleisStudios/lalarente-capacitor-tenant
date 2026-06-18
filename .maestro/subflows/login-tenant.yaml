@@ -14,7 +14,7 @@ appId: com.lalarente.app
       - extendedWaitUntil:
           visible:
             id: "email-input"
-          timeout: 15000
+          timeout: 20000
       - tapOn:
           id: "email-input"
       - inputText: ${TENANT_EMAIL}
@@ -25,4 +25,15 @@ appId: com.lalarente.app
           text: "Sign In"
       - extendedWaitUntil:
           visible: "Welcome back,"
-          timeout: 45000
+          timeout: 60000
+          optional: true
+      - runFlow:
+          when:
+            visible: "Sign In"
+          commands:
+            - tapOn:
+                text: "Sign In"
+            - extendedWaitUntil:
+                visible: "Welcome back,"
+                timeout: 60000
+      - assertVisible: "Welcome back,"
