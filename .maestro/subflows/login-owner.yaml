@@ -13,20 +13,10 @@ appId: com.lalarente.app
 - tapOn:
     id: "email-input"
 - inputText: ${OWNER_EMAIL}
+- pressKey: Enter
 
-- hideKeyboard
-
-- extendedWaitUntil:
-    visible:
-      id: "password-input"
-    timeout: 10000
-
-- tapOn:
-    id: "password-input"
 - inputText: ${OWNER_PASSWORD}
-
-- hideKeyboard
-- tapOn: "Sign In"
+- pressKey: Enter
 
 - extendedWaitUntil:
     visible: "Portfolio Dashboard"

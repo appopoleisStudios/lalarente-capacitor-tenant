@@ -16,20 +16,10 @@ appId: com.lalarente.app
 - tapOn:
     id: "email-input"
 - inputText: ${TENANT_EMAIL}
+- pressKey: Enter
 
-- hideKeyboard
-
-- extendedWaitUntil:
-    visible:
-      id: "password-input"
-    timeout: 10000
-
-- tapOn:
-    id: "password-input"
 - inputText: ${TENANT_PASSWORD}
-
-- hideKeyboard
-- tapOn: "Sign In"
+- pressKey: Enter
 
 - extendedWaitUntil:
     visible: "Your tenancy"
