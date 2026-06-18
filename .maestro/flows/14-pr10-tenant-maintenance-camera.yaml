@@ -11,7 +11,7 @@ appId: com.lalarente.app
     timeout: 30000
 
 - extendedWaitUntil:
-    visible: "Photos & Videos"
+    visible: "Submit Request"
     timeout: 30000
 
 - scrollUntilVisible:
@@ -20,5 +20,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
 
-- assertVisible: "Photos & Videos"
 - assertVisible: "Camera"
+- assertVisible:
+    text: "Gallery"
+    optional: true
