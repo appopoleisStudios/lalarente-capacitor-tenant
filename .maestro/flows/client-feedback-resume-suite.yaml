@@ -1,8 +1,6 @@
-# Resume — owner from s2-10 (s2-03, s2-08 green)
+# Resume — owner from s2-13 (prior owner flows green)
 appId: com.lalarente.app
 ---
-- runFlow: client-feedback/s2-10-owner-lease-messages.yaml
-- runFlow: client-feedback/s2-11-owner-rent-roll.yaml
 - runFlow: client-feedback/s2-13-owner-maintenance.yaml
 - runFlow: 09-pr9-owner-inspection-conduct.yaml
 - runFlow: 10-pr9-owner-inspection-readonly.yaml

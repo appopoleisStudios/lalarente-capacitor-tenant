@@ -4,20 +4,15 @@ appId: com.lalarente.app
 - runFlow: ../../subflows/launch-app.yaml
 - runFlow: ../../subflows/login-owner.yaml
 
-- scrollUntilVisible:
-    element: "Rent Roll"
-    direction: DOWN
-    timeout: 20000
+- openLink: lalarenteapp:///(owner)/rent-roll
 
-- tapOn: "Rent Roll"
 - extendedWaitUntil:
     visible: "Rent Roll"
-    timeout: 15000
+    timeout: 20000
 
 - assertVisible:
     text: "Reminder"
     optional: true
-
 - assertVisible:
     text: "Send Reminder"
     optional: true

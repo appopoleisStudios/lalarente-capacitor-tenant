@@ -4,24 +4,24 @@ appId: com.lalarente.app
 - runFlow: ../../subflows/launch-app.yaml
 - runFlow: ../../subflows/login-owner.yaml
 
-- tapOn: "Properties"
+- openLink: lalarenteapp:///(owner)/properties
+
 - extendedWaitUntil:
-    visible: "Properties"
-    timeout: 15000
+    visible: "My Properties"
+    timeout: 20000
 
 - tapOn:
     point: "50%,35%"
     optional: true
 
 - extendedWaitUntil:
-    visible: "Property"
+    visible: "Property Details"
     timeout: 15000
     optional: true
 
 - assertVisible:
     text: "Photo"
     optional: true
-
 - assertVisible:
     text: "Edit"
     optional: true

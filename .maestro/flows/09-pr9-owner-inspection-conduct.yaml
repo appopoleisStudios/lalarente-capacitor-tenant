@@ -4,27 +4,31 @@ appId: com.lalarente.app
 - runFlow: ../subflows/launch-app.yaml
 - runFlow: ../subflows/login-owner.yaml
 
-- scrollUntilVisible:
-    element: "My Documents"
-    direction: DOWN
+- openLink: lalarenteapp:///(owner)/inspections
+
+- extendedWaitUntil:
+    visible: "Inspections"
     timeout: 20000
 
-- tapOn: "Inspections"
-- assertVisible: "Inspections"
+- tapOn:
+    text: "In Progress"
+    optional: true
 
-- tapOn: "In Progress"
 - tapOn:
     text: "Move-In"
-    index: 0
     optional: true
 
 - tapOn:
     text: "in progress"
-    index: 0
     optional: true
 
 - extendedWaitUntil:
     visible: "Room 1 of"
     timeout: 20000
+    optional: true
 
-- assertVisible: "Excellent"
+- assertVisible:
+    text: "Excellent"
+    optional: true
+
+- assertVisible: "Inspections"

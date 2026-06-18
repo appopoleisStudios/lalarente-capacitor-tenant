@@ -4,8 +4,11 @@ appId: com.lalarente.app
 - runFlow: ../subflows/launch-app.yaml
 - runFlow: ../subflows/login-owner.yaml
 
-- tapOn: "Lala AI"
-- assertVisible: "Lala Assistant"
+- openLink: lalarenteapp:///(owner)/ai-chat
+
+- extendedWaitUntil:
+    visible: "Lala Assistant"
+    timeout: 20000
 
 - tapOn:
     text: "Type your message..."
