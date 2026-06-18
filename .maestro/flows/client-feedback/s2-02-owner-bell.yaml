@@ -4,8 +4,7 @@ appId: com.lalarente.app
 - runFlow: ../../subflows/launch-app.yaml
 - runFlow: ../../subflows/login-owner.yaml
 
-- tapOn:
-    point: "92%,8%"
+- tapOn: "Notifications"
 - extendedWaitUntil:
     visible: "Notifications"
     timeout: 15000

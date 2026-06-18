@@ -5,7 +5,7 @@ appId: com.lalarente.app
 - runFlow: ../../subflows/login-tenant.yaml
 
 - tapOn:
-    point: "92%,8%"
+    id: "notification-bell"
 - extendedWaitUntil:
     visible: "Notifications"
     timeout: 15000

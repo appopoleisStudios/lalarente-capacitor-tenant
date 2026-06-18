@@ -279,7 +279,9 @@ export default function OwnerDashboardScreen() {
               </Text>
             </View>
           </View>
-          <AnimatedButton onPress={() => {
+          <AnimatedButton
+            accessibilityLabel="Notifications"
+            onPress={() => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             router.push('/(owner)/notifications' as any);
           }}>
