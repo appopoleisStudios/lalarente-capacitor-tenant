@@ -90,6 +90,8 @@ See [QA_E2E_COVERAGE.md](./QA_E2E_COVERAGE.md) for the full PR / Sheet 2 mapping
 | "Maestro is not installed" | Add `export PATH="$PATH:$HOME/.maestro/bin"` to `~/.zshrc`, or run `~/.maestro/bin/maestro --version` to confirm install |
 | "App not found" | Install dev build with `npx expo run:ios` first |
 | Login timeout | Check `.maestro/.env` credentials |
+| Login alert "enter both email and password" | **Stale build** — rebuild after `git pull` (`npx expo run:ios`). Maestro YAML uses `id: email-input` / `password-input`; older installs without `testID` cannot see the password field. Run `maestro hierarchy` on login screen to verify both ids appear. |
+| Maestro "blind" / can't find fields | Not Expo Go — use dev build `com.lalarente.app`. Rebuild native app after LoginScreen changes. Ensure `.maestro/.env` is filled. |
 | Lala AI fails | Confirm `GROQ_API_KEY` on Supabase Edge |
 | Wrong screen | Re-record with `npm run test:e2e:record` |
 

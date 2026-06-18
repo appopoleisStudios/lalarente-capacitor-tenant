@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -42,6 +42,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const passwordRef = useRef<TextInput>(null);
   const [loading, setLoading] = useState(false);
 
   // Redirect based on role when profile loads after login
@@ -143,8 +144,8 @@ export default function LoginScreen() {
             <Text style={styles.formTitle}>Welcome Back</Text>
             <Text style={styles.formSubtitle}>Sign in to your account</Text>
 
-            {/* Email Input */}
-            <Animated.View entering={FadeInDown.delay(300).duration(600)}>
+            {/* Email Input — plain View (no entering animation) so Maestro/iOS a11y sees fields immediately */}
+            <View>
               <Text style={styles.inputLabel} accessible={false}>Email</Text>
               <View style={styles.inputContainer}>
                 <Ionicons name="mail-outline" size={20} color={RSA_COLORS.textGray} style={styles.inputIcon} />
@@ -153,34 +154,43 @@ export default function LoginScreen() {
                   placeholder="your@email.com"
                   placeholderTextColor={RSA_COLORS.textGray}
                   accessibilityLabel="Email"
+                  accessibilityHint="Email address for sign in"
                   testID="email-input"
                   value={email}
                   onChangeText={setEmail}
+                  returnKeyType="next"
+                  onSubmitEditing={() => passwordRef.current?.focus()}
                   autoCapitalize="none"
                   keyboardType="email-address"
                   autoComplete="email"
                   editable={!loading}
+                  importantForAccessibility="yes"
                 />
               </View>
-            </Animated.View>
+            </View>
 
             {/* Password Input */}
-            <Animated.View entering={FadeInDown.delay(400).duration(600)}>
+            <View>
               <Text style={styles.inputLabel} accessible={false}>Password</Text>
               <View style={styles.inputContainer}>
                 <Ionicons name="lock-closed-outline" size={20} color={RSA_COLORS.textGray} style={styles.inputIcon} />
                 <TextInput
+                  ref={passwordRef}
                   style={styles.input}
                   placeholder="Enter your password"
                   placeholderTextColor={RSA_COLORS.textGray}
                   accessibilityLabel="Password"
+                  accessibilityHint="Password for sign in"
                   testID="password-input"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
+                  returnKeyType="done"
+                  onSubmitEditing={handleLogin}
                   autoCapitalize="none"
                   autoComplete="password"
                   editable={!loading}
+                  importantForAccessibility="yes"
                 />
                 <Pressable
                   style={styles.eyeButton}
@@ -189,7 +199,7 @@ export default function LoginScreen() {
                   <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={RSA_COLORS.textGray} />
                 </Pressable>
               </View>
-            </Animated.View>
+            </View>
 
             {/* Sign In Button */}
             <Animated.View entering={FadeInDown.delay(500).duration(600)}>

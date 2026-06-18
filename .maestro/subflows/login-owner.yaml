@@ -2,11 +2,24 @@ appId: com.lalarente.app
 ---
 - assertVisible: "Welcome Back"
 
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 10000
+
 - tapOn:
     id: "email-input"
 - inputText: ${OWNER_EMAIL}
 
 - hideKeyboard
+
+- extendedWaitUntil:
+    visible:
+      id: "password-input"
+    timeout: 10000
 
 - tapOn:
     id: "password-input"

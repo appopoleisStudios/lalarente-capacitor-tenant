@@ -1,14 +1,28 @@
-# Reusable tenant login — tap Email/Password labels, type in each field
+# Reusable tenant login — testID + placeholder fallbacks for iOS Simulator
 appId: com.lalarente.app
 ---
 - assertVisible: "Welcome Back"
 - assertVisible: "Sign in to your account"
+
+# Let Reanimated logo/form animations finish before tapping inputs
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 10000
 
 - tapOn:
     id: "email-input"
 - inputText: ${TENANT_EMAIL}
 
 - hideKeyboard
+
+- extendedWaitUntil:
+    visible:
+      id: "password-input"
+    timeout: 10000
 
 - tapOn:
     id: "password-input"
