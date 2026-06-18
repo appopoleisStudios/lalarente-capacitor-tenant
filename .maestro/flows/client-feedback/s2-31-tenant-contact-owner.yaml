@@ -4,12 +4,18 @@ appId: com.lalarente.app
 - runFlow: ../../subflows/launch-app.yaml
 - runFlow: ../../subflows/login-tenant.yaml
 
-- scrollUntilVisible:
-    element: "View Lease Details"
-    direction: DOWN
-    timeout: 20000
+- extendedWaitUntil:
+    visible: "Welcome back,"
+    timeout: 15000
 
-- tapOn: "View Lease Details"
+- scrollUntilVisible:
+    element:
+      id: "view-lease-details"
+    direction: DOWN
+    timeout: 25000
+
+- tapOn:
+    id: "view-lease-details"
 - extendedWaitUntil:
     visible: "Contact Owner"
     timeout: 15000
