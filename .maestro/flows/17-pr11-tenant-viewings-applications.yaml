@@ -17,10 +17,10 @@ appId: com.lalarente.app
 - extendedWaitUntil:
     visible: "My Viewings"
     timeout: 15000
-- back
 
+- tapOn: "Home"
 - extendedWaitUntil:
-    visible: "Viewings & applications"
+    visible: "Welcome back,"
     timeout: 15000
 
 - scrollUntilVisible:
