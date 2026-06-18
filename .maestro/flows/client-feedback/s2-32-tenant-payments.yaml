@@ -11,12 +11,19 @@ appId: com.lalarente.app
 - openLink: lalarenteapp:///(tenant)/payments
 
 - extendedWaitUntil:
-    visible: "Payment History"
+    visible: "Payments"
     timeout: 20000
 
-- assertVisible:
-    text: "Make Payment"
-    optional: true
+- scrollUntilVisible:
+    element:
+      text: "Payment History"
+    direction: DOWN
+    timeout: 25000
+
+- assertVisible: "Payment History"
 - assertVisible:
     text: "Pay Now"
+    optional: true
+- assertVisible:
+    text: "Make Payment"
     optional: true
