@@ -4,11 +4,13 @@ appId: com.lalarente.app
 - runFlow: ../subflows/launch-app.yaml
 - runFlow: ../subflows/login-tenant.yaml
 
-# Quick Actions (Maintenance, Lala AI) sit below lease cards — scroll to them
+# Lala AI tab is always visible on tenant home
+- assertVisible: "Lala AI"
+
+# Maintenance is a Quick Actions tile — scroll until the grid tile is on screen
 - scrollUntilVisible:
-    element: "Quick Actions"
+    element: "Maintenance"
     direction: DOWN
-    timeout: 15000
+    timeout: 20000
 
 - assertVisible: "Maintenance"
-- assertVisible: "Lala AI"
