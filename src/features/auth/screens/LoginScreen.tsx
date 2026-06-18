@@ -195,6 +195,8 @@ export default function LoginScreen() {
                 <Pressable
                   style={styles.eyeButton}
                   onPress={() => setShowPassword(!showPassword)}
+                  accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                  accessibilityRole="button"
                 >
                   <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={RSA_COLORS.textGray} />
                 </Pressable>
@@ -220,7 +222,7 @@ export default function LoginScreen() {
             {/* Register Link */}
             <Animated.View entering={FadeInDown.delay(600).duration(600)} style={styles.registerRow}>
               <Text style={styles.registerText}>Don't have an account? </Text>
-              <Pressable onPress={() => router.push('/auth/register' as any)}>
+              <Pressable onPress={() => router.push('/auth/register' as any)} accessibilityRole="link" accessibilityLabel="Create Account">
                 <Text style={styles.registerLink}>Create Account</Text>
               </Pressable>
             </Animated.View>
