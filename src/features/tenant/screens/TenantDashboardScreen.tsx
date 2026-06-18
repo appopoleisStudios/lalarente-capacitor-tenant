@@ -659,6 +659,9 @@ export default function TenantDashboardScreen() {
                 <TouchableOpacity
                   style={[styles.viewLeaseButton, { flex: 1 }]}
                   onPress={() => router.push('/(tenant)/lease' as any)}
+                  accessibilityLabel="View Lease Details"
+                  accessibilityRole="button"
+                  testID="view-lease-details"
                 >
                   <Text style={styles.viewLeaseButtonText}>View Lease Details</Text>
                   <Ionicons name="arrow-forward" size={16} color={colors.rsa.green} />
