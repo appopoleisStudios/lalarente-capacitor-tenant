@@ -1,4 +1,14 @@
-# Resume — owner suite only (tenant 07+02+14 already green)
+# Resume — owner from s2-03 onward (s2-01, s2-02, 18 already green)
 appId: com.lalarente.app
 ---
-- runFlow: client-feedback-owner-suite.yaml
+- runFlow: client-feedback/s2-03-owner-viewings.yaml
+- runFlow: client-feedback/s2-08-owner-leases.yaml
+- runFlow: client-feedback/s2-10-owner-lease-messages.yaml
+- runFlow: client-feedback/s2-11-owner-rent-roll.yaml
+- runFlow: client-feedback/s2-13-owner-maintenance.yaml
+- runFlow: 09-pr9-owner-inspection-conduct.yaml
+- runFlow: 10-pr9-owner-inspection-readonly.yaml
+- runFlow: client-feedback/s2-19-owner-messages.yaml
+- runFlow: client-feedback/s2-21-owner-property.yaml
+- runFlow: 15-pr7-owner-disputes-empty.yaml
+- runFlow: 16-pr6-owner-lala-ai.yaml
