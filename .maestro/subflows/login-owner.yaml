@@ -19,13 +19,8 @@ appId: com.lalarente.app
       - inputText: ${OWNER_EMAIL}
       - pressKey: Enter
       - inputText: ${OWNER_PASSWORD}
-      - tapOn:
-          id: "sign-in-button"
-      - extendedWaitUntil:
-          notVisible: "Signing in..."
-          timeout: 60000
-          optional: true
+      - pressKey: Enter
       - extendedWaitUntil:
           visible: "Portfolio Dashboard"
-          timeout: 60000
+          timeout: 45000
       - assertVisible: "Portfolio Dashboard"

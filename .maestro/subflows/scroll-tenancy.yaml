@@ -1,7 +1,6 @@
 appId: com.lalarente.app
 ---
 - scrollUntilVisible:
-    element:
-      id: "tenancy-payments-arrears"
+    element: "Your tenancy"
     direction: DOWN
     timeout: 20000
