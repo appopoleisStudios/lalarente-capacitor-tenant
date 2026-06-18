@@ -6,7 +6,8 @@ appId: com.lalarente.app
 - runFlow: ../../subflows/tap-tenant-profile.yaml
 
 - extendedWaitUntil:
-    visible: "My Profile"
+    visible:
+      id: "tenant-profile-title"
     timeout: 15000
 
 - scrollUntilVisible:

@@ -304,7 +304,7 @@ export default function TenantProfileScreen() {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>My Profile</Text>
+          <Text testID="tenant-profile-title" style={styles.headerTitle}>My Profile</Text>
           <TouchableOpacity
             onPress={() => (editing ? handleSave() : setEditing(true))}
             disabled={saving}

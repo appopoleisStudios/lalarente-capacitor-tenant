@@ -9,7 +9,8 @@ appId: com.lalarente.app
     timeout: 15000
 
 - tapOn:
-    id: "tab-payments"
+    point: "50%,96%"
+
 - extendedWaitUntil:
     visible: "Payment History"
     timeout: 20000
