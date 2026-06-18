@@ -1,7 +1,7 @@
 # Watch on simulator: login → open Lala → type a message → see reply bubble
 appId: com.lalarente.app
 ---
-- launchApp
+- runFlow: ../subflows/launch-app.yaml
 - runFlow: ../subflows/login-tenant.yaml
 
 - tapOn: "Lala AI"

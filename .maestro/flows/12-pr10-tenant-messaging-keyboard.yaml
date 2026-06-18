@@ -1,7 +1,7 @@
 # PR #10 — Messaging thread keyboard / input visible (S2-10, S2-15)
 appId: com.lalarente.app
 ---
-- launchApp
+- runFlow: ../subflows/launch-app.yaml
 - runFlow: ../subflows/login-tenant.yaml
 
 - scrollUntilVisible:

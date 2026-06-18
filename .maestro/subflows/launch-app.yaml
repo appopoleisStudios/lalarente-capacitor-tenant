@@ -1,0 +1,5 @@
+# Fresh app start — clears persisted session so login subflows always see the sign-in screen
+appId: com.lalarente.app
+---
+- launchApp:
+    clearState: true

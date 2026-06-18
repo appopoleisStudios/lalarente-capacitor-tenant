@@ -1,25 +1,23 @@
-# Reusable tenant login — testID + placeholder fallbacks for iOS Simulator
+# Reusable tenant login — skips if already on tenant dashboard
 appId: com.lalarente.app
 ---
-- assertVisible: "Welcome Back"
-- assertVisible: "Sign in to your account"
-
-# Let Reanimated logo/form animations finish before tapping inputs
-- waitForAnimationToEnd:
-    timeout: 3000
-
-- extendedWaitUntil:
-    visible:
-      id: "email-input"
-    timeout: 10000
-
-- tapOn:
-    id: "email-input"
-- inputText: ${TENANT_EMAIL}
-- pressKey: Enter
-
-- inputText: ${TENANT_PASSWORD}
-- pressKey: Enter
+- runFlow:
+    when:
+      visible: "Welcome Back"
+    commands:
+      - assertVisible: "Sign in to your account"
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - extendedWaitUntil:
+          visible:
+            id: "email-input"
+          timeout: 10000
+      - tapOn:
+          id: "email-input"
+      - inputText: ${TENANT_EMAIL}
+      - pressKey: Enter
+      - inputText: ${TENANT_PASSWORD}
+      - pressKey: Enter
 
 - extendedWaitUntil:
     visible: "Your tenancy"

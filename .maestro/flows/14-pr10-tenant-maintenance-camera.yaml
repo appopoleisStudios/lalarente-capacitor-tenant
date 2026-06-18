@@ -1,7 +1,7 @@
 # PR #10 — Maintenance report shows Camera action (S2-36 upload path entry)
 appId: com.lalarente.app
 ---
-- launchApp
+- runFlow: ../subflows/launch-app.yaml
 - runFlow: ../subflows/login-tenant.yaml
 
 - tapOn: "Maintenance"

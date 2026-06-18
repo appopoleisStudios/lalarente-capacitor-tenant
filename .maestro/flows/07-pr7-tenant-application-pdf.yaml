@@ -2,7 +2,7 @@
 # Needs a tenant who can still apply (no blocking application on chosen property).
 appId: com.lalarente.app
 ---
-- launchApp
+- runFlow: ../subflows/launch-app.yaml
 - runFlow: ../subflows/login-tenant.yaml
 
 - tapOn: "Search"

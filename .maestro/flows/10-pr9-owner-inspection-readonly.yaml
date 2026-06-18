@@ -1,7 +1,7 @@
 # PR #9 — Completed inspection opens read-only detail (not conduct checklist)
 appId: com.lalarente.app
 ---
-- launchApp
+- runFlow: ../subflows/launch-app.yaml
 - runFlow: ../subflows/login-owner.yaml
 
 - scrollUntilVisible:

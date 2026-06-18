@@ -1,7 +1,7 @@
 # PR #10 — Lease screen + PDF download affordance (S2-24)
 appId: com.lalarente.app
 ---
-- launchApp
+- runFlow: ../subflows/launch-app.yaml
 - runFlow: ../subflows/login-tenant.yaml
 
 - scrollUntilVisible:
