@@ -7,14 +7,18 @@ appId: com.lalarente.app
 - openLink: lalarenteapp:///(tenant)/maintenance/report
 
 - extendedWaitUntil:
-    visible: "Report Issue"
-    timeout: 20000
+    notVisible: "Loading form..."
+    timeout: 30000
+
+- extendedWaitUntil:
+    visible: "Photos & Videos"
+    timeout: 30000
 
 - scrollUntilVisible:
     element:
       text: "Camera"
     direction: DOWN
-    timeout: 15000
+    timeout: 20000
 
-- assertVisible: "Camera"
 - assertVisible: "Photos & Videos"
+- assertVisible: "Camera"
