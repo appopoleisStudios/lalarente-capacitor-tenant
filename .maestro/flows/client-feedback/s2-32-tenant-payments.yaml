@@ -4,7 +4,12 @@ appId: com.lalarente.app
 - runFlow: ../../subflows/launch-app.yaml
 - runFlow: ../../subflows/login-tenant.yaml
 
-- tapOn: "Payments"
+- extendedWaitUntil:
+    visible: "Welcome back,"
+    timeout: 15000
+
+- tapOn:
+    id: "tab-payments"
 - extendedWaitUntil:
     visible: "Payment History"
     timeout: 20000

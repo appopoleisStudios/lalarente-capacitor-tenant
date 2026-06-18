@@ -33,6 +33,7 @@ export default function TenantLayout() {
         name="dashboard"
         options={{
           title: 'Home',
+          tabBarButtonTestID: 'tab-home',
           tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
         }}
       />
@@ -40,6 +41,7 @@ export default function TenantLayout() {
         name="search"
         options={{
           title: 'Search',
+          tabBarButtonTestID: 'tab-search',
           tabBarIcon: ({ color, size }) => <Ionicons name="search" size={size} color={color} />,
         }}
       />
@@ -54,6 +56,7 @@ export default function TenantLayout() {
         name="payments"
         options={{
           title: 'Payments',
+          tabBarButtonTestID: 'tab-payments',
           tabBarIcon: ({ color, size }) => <Ionicons name="card" size={size} color={color} />,
         }}
       />
@@ -61,6 +64,7 @@ export default function TenantLayout() {
         name="profile"
         options={{
           title: 'Profile',
+          tabBarButtonTestID: 'tab-profile',
           tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
         }}
       />
@@ -68,6 +72,7 @@ export default function TenantLayout() {
         name="ai-chat"
         options={{
           title: 'Lala AI',
+          tabBarButtonTestID: 'tab-lala-ai',
           tabBarIcon: ({ color, size }) => <Ionicons name="sparkles" size={size} color={color} />,
         }}
       />
