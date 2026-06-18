@@ -7,7 +7,8 @@ appId: com.lalarente.app
 - assertVisible: "Viewings & applications"
 
 - scrollUntilVisible:
-    id: "viewings-viewing-history"
+    element:
+      id: "viewings-viewing-history"
     direction: DOWN
     timeout: 15000
 
@@ -19,7 +20,8 @@ appId: com.lalarente.app
 - back
 
 - scrollUntilVisible:
-    id: "viewings-application-status"
+    element:
+      id: "viewings-application-status"
     direction: DOWN
     timeout: 15000
 
