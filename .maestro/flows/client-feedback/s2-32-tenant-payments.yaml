@@ -8,13 +8,7 @@ appId: com.lalarente.app
     visible: "Welcome back,"
     timeout: 15000
 
-- tapOn:
-    point: "96%,89%"
-    optional: true
-
-- tapOn:
-    id: "tab-payments"
-    retryTapIfNoChange: true
+- openLink: lalarenteapp:///(tenant)/payments
 
 - extendedWaitUntil:
     visible: "Payment History"
