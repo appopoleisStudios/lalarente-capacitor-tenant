@@ -2,7 +2,8 @@
 appId: com.lalarente.app
 ---
 - extendedWaitUntil:
-    visible: "Welcome Back"
+    visible:
+        id: "tenant-dashboard-header"
     timeout: 15000
 
 - openLink: lalarenteapp:///(tenant)/profile

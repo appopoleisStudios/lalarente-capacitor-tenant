@@ -3,13 +3,16 @@ appId: com.lalarente.app
 ---
 - runFlow:
     when:
-      visible: "Welcome Back"
+      visible:
+        id: "tenant-dashboard-header"
     commands:
-      - assertVisible: "Welcome Back"
+      - assertVisible:
+          id: "tenant-dashboard-header"
 
 - runFlow:
     when:
-      notVisible: "Welcome Back"
+      notVisible:
+        id: "tenant-dashboard-header"
     commands:
       - extendedWaitUntil:
           visible:
@@ -27,6 +30,8 @@ appId: com.lalarente.app
           timeout: 60000
           optional: true
       - extendedWaitUntil:
-          visible: "Welcome Back"
+          visible:
+            id: "tenant-dashboard-header"
           timeout: 60000
-      - assertVisible: "Welcome Back"
+      - assertVisible:
+          id: "tenant-dashboard-header"
