@@ -1,0 +1,13 @@
+# Scroll to Quick Actions → Lala AI (below fold on tenant dashboard)
+appId: com.lalarente.app
+---
+- extendedWaitUntil:
+    visible: "Welcome back,"
+    timeout: 15000
+
+- scrollUntilVisible:
+    element: "Lala AI"
+    direction: DOWN
+    timeout: 20000
+
+- tapOn: "Lala AI"

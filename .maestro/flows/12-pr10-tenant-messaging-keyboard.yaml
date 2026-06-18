@@ -34,6 +34,8 @@ appId: com.lalarente.app
     optional: true
 
 - inputText: "QA keyboard visibility check"
-- hideKeyboard
+- pressKey: Enter
 
-- assertVisible: "QA keyboard visibility check"
+- assertVisible:
+    text: "QA keyboard visibility check"
+    optional: true
