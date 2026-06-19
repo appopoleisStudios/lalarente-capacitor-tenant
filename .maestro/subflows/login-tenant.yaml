@@ -4,15 +4,15 @@ appId: com.lalarente.app
 - runFlow:
     when:
       visible:
-        id: "tenant-dashboard-header"
+        id: "notification-bell"
     commands:
       - assertVisible:
-          id: "tenant-dashboard-header"
+          id: "notification-bell"
 
 - runFlow:
     when:
       notVisible:
-        id: "tenant-dashboard-header"
+        id: "notification-bell"
     commands:
       - extendedWaitUntil:
           visible:
@@ -26,7 +26,7 @@ appId: com.lalarente.app
       - pressKey: Enter
       - extendedWaitUntil:
           visible:
-            id: "tenant-dashboard-header"
+            id: "notification-bell"
           timeout: 45000
       - assertVisible:
-          id: "tenant-dashboard-header"
+          id: "notification-bell"

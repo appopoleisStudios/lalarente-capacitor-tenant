@@ -22,7 +22,7 @@ appId: com.lalarente.app
     id: "screen-back"
 - extendedWaitUntil:
     visible:
-        id: "tenant-dashboard-header"
+      id: "notification-bell"
     timeout: 15000
 
 - scrollUntilVisible:
