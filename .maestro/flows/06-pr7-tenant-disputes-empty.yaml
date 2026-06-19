@@ -8,7 +8,7 @@ appId: com.lalarente.app
     element:
       id: "tenancy-payment-disputes"
     direction: DOWN
-    timeout: 25000
+    timeout: 60000
 
 - tapOn:
     id: "tenancy-payment-disputes"

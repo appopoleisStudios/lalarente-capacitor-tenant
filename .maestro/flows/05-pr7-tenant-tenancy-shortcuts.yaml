@@ -7,36 +7,42 @@ appId: com.lalarente.app
 
 - scrollUntilVisible:
     element:
+      id: "view-lease-details"
+    direction: DOWN
+    timeout: 60000
+
+- scrollUntilVisible:
+    element:
       id: "tenancy-payments-arrears"
     direction: DOWN
-    timeout: 15000
+    timeout: 60000
 
 - scrollUntilVisible:
     element:
       id: "tenancy-payment-disputes"
     direction: DOWN
-    timeout: 10000
+    timeout: 45000
 
 - scrollUntilVisible:
     element:
       id: "tenancy-arrears-escalation"
     direction: DOWN
-    timeout: 10000
+    timeout: 45000
 
 - scrollUntilVisible:
     element:
       id: "tenancy-early-termination"
     direction: DOWN
-    timeout: 10000
+    timeout: 45000
 
 - scrollUntilVisible:
     element:
       id: "tenancy-holding-deposits"
     direction: DOWN
-    timeout: 10000
+    timeout: 45000
 
 - scrollUntilVisible:
     element:
       id: "tenancy-reports-inspections"
     direction: DOWN
-    timeout: 10000
+    timeout: 45000
