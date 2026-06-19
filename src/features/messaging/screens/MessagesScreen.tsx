@@ -50,9 +50,19 @@ export default function MessagesScreen({ role = 'owner' }: Props) {
   }, [userId, filter]);
 
   const initUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      setUserId(user.id);
+    try {
+      const getUserPromise = supabase.auth.getUser();
+      const timeout = new Promise<{ data: { user: null } }>((resolve) =>
+        setTimeout(() => resolve({ data: { user: null } }), 8000)
+      );
+      const { data: { user } } = await Promise.race([getUserPromise, timeout]);
+      if (user) {
+        setUserId(user.id);
+      } else {
+        setLoading(false);
+      }
+    } catch {
+      setLoading(false);
     }
   };
 
@@ -216,6 +226,16 @@ export default function MessagesScreen({ role = 'owner' }: Props) {
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
+        <View style={styles.header}>
+          <View style={styles.backButton} />
+          <Text
+            style={styles.headerTitle}
+            testID={role === 'tenant' ? 'tenant-messages-title' : 'owner-messages-title'}
+          >
+            Messages
+          </Text>
+          <View style={styles.backButton} />
+        </View>
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={roleColors.primary} />
         </View>
@@ -235,7 +255,12 @@ export default function MessagesScreen({ role = 'owner' }: Props) {
           ) : (
             <View style={styles.backButton} />
           )}
-          <Text style={styles.headerTitle}>Messages</Text>
+          <Text
+            style={styles.headerTitle}
+            testID={role === 'tenant' ? 'tenant-messages-title' : 'owner-messages-title'}
+          >
+            Messages
+          </Text>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() =>

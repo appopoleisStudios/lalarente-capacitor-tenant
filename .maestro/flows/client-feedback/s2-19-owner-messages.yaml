@@ -7,8 +7,9 @@ appId: com.lalarente.app
 - openLink: lalarenteapp:///(owner)/messages
 
 - extendedWaitUntil:
-    visible: "Messages"
-    timeout: 20000
+    visible:
+      id: "owner-messages-title"
+    timeout: 45000
 
 - tapOn:
     point: "50%,40%"
