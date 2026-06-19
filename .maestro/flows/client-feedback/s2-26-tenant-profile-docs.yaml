@@ -14,6 +14,11 @@ appId: com.lalarente.app
     element: "Proof of Address"
     direction: DOWN
     timeout: 15000
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Proof of Address"
+    timeout: 10000
 
 - assertVisible: "Proof of Address"
 - assertVisible:
