@@ -4,7 +4,6 @@ appId: com.lalarente.app
 ---
 - runFlow: ../subflows/launch-app-warm.yaml
 - runFlow: ../subflows/login-tenant.yaml
-- runFlow: ../subflows/scroll-tenancy.yaml
 
 - scrollUntilVisible:
     element:
