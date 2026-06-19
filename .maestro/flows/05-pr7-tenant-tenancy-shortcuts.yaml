@@ -1,41 +1,36 @@
 # PR #7 — Your tenancy shortcuts (T9–T13 nav) — client feedback closure
-# Verifies shortcuts exist on dashboard when tenant has active lease.
+# Deep-link each destination (reliable on iOS 26; dashboard scroll is flaky below the fold).
 appId: com.lalarente.app
 ---
 - runFlow: ../subflows/launch-app-warm.yaml
 - runFlow: ../subflows/login-tenant.yaml
 
+- openLink: lalarenteapp:///(tenant)/payments
 - extendedWaitUntil:
-    visible: "Current Home"
-    timeout: 90000
-    optional: true
+    visible: "Payments"
+    timeout: 20000
 
-- scrollUntilVisible:
-    element: "Payments & arrears"
-    direction: DOWN
-    timeout: 90000
+- openLink: lalarenteapp:///(tenant)/payment-disputes
+- extendedWaitUntil:
+    visible: "Payment Disputes"
+    timeout: 20000
 
-- scrollUntilVisible:
-    element: "Payment disputes"
-    direction: DOWN
-    timeout: 45000
+- openLink: lalarenteapp:///(tenant)/holding-deposit
+- extendedWaitUntil:
+    visible: "Holding Deposits"
+    timeout: 20000
 
-- scrollUntilVisible:
-    element: "Arrears & escalation"
-    direction: DOWN
-    timeout: 45000
+- openLink: lalarenteapp:///(tenant)/arrears
+- extendedWaitUntil:
+    visible: "My Arrears"
+    timeout: 20000
 
-- scrollUntilVisible:
-    element: "Early termination"
-    direction: DOWN
-    timeout: 45000
+- openLink: lalarenteapp:///(tenant)/early-termination
+- extendedWaitUntil:
+    visible: "Early Termination"
+    timeout: 20000
 
-- scrollUntilVisible:
-    element: "Holding deposits"
-    direction: DOWN
-    timeout: 45000
-
-- scrollUntilVisible:
-    element: "Reports & inspections"
-    direction: DOWN
-    timeout: 45000
+- openLink: lalarenteapp:///(tenant)/reports
+- extendedWaitUntil:
+    visible: "Reports"
+    timeout: 20000

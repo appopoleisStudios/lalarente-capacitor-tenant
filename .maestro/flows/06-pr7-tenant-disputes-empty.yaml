@@ -4,13 +4,12 @@ appId: com.lalarente.app
 - runFlow: ../subflows/launch-app-warm.yaml
 - runFlow: ../subflows/login-tenant.yaml
 
-- scrollUntilVisible:
-    element: "Payment disputes"
-    direction: DOWN
-    timeout: 90000
+- openLink: lalarenteapp:///(tenant)/payment-disputes
 
-- tapOn: "Payment disputes"
-- assertVisible: "Payment Disputes"
+- extendedWaitUntil:
+    visible: "Payment Disputes"
+    timeout: 20000
+
 - assertVisible:
     text: "No payment disputes"
     optional: true

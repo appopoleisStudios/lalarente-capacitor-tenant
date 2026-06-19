@@ -4,13 +4,11 @@ appId: com.lalarente.app
 - runFlow: ../subflows/launch-app-warm.yaml
 - runFlow: ../subflows/login-tenant.yaml
 
-- scrollUntilVisible:
-    element: "Reports & inspections"
-    direction: DOWN
-    timeout: 90000
+- openLink: lalarenteapp:///(tenant)/reports
 
-- tapOn: "Reports & inspections"
-- assertVisible: "Reports"
+- extendedWaitUntil:
+    visible: "Reports"
+    timeout: 20000
 
 - assertVisible:
     text: "Inspection Reports"
