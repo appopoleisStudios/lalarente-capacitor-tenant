@@ -60,10 +60,20 @@ export default function TenantPaymentDisputeScreen() {
   );
 
   const initUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      setUserId(user.id);
-      fetchDisputes(user.id);
+    try {
+      const getUserPromise = supabase.auth.getUser();
+      const timeout = new Promise<{ data: { user: null } }>((resolve) =>
+        setTimeout(() => resolve({ data: { user: null } }), 8000)
+      );
+      const { data: { user } } = await Promise.race([getUserPromise, timeout]);
+      if (user) {
+        setUserId(user.id);
+        fetchDisputes(user.id);
+      } else {
+        setLoading(false);
+      }
+    } catch {
+      setLoading(false);
     }
   };
 
@@ -144,6 +154,15 @@ export default function TenantPaymentDisputeScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.navigate('/(tenant)/payments')} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle} testID="payment-disputes-title">
+            Payment Disputes
+          </Text>
+          <View style={{ width: 28 }} />
+        </View>
         <ActivityIndicator size="large" color={colors.primary[500]} style={{ marginTop: 40 }} />
       </SafeAreaView>
     );
@@ -156,7 +175,9 @@ export default function TenantPaymentDisputeScreen() {
         <TouchableOpacity onPress={() => router.navigate('/(tenant)/payments')} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Payment Disputes</Text>
+        <Text style={styles.headerTitle} testID="payment-disputes-title">
+          Payment Disputes
+        </Text>
         <TouchableOpacity onPress={() => setShowForm(!showForm)}>
           <Ionicons name={showForm ? 'close' : 'add-circle-outline'} size={28} color={colors.primary[500]} />
         </TouchableOpacity>

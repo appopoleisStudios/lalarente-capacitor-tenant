@@ -21,7 +21,8 @@ appId: com.lalarente.app
 
 - openLink: lalarenteapp:///(tenant)/payment-disputes
 - extendedWaitUntil:
-    visible: "Payment Disputes"
+    visible:
+      id: "payment-disputes-title"
     timeout: 45000
 
 - assertVisible:
