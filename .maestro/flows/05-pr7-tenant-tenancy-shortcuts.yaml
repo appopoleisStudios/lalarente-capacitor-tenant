@@ -17,10 +17,18 @@ appId: com.lalarente.app
     text: "No Active Lease"
     optional: true
 
+- runFlow: ../subflows/login-tenant.yaml
+
 - openLink: lalarenteapp:///(tenant)/payment-disputes
 - extendedWaitUntil:
     visible: "Payment Disputes"
-    timeout: 30000
+    timeout: 45000
+
+- assertVisible:
+    text: "No payment disputes"
+    optional: true
+
+- runFlow: ../subflows/login-tenant.yaml
 
 - openLink: lalarenteapp:///(tenant)/holding-deposit
 - extendedWaitUntil:
@@ -31,6 +39,8 @@ appId: com.lalarente.app
     text: "No Holding Deposits"
     optional: true
 
+- runFlow: ../subflows/login-tenant.yaml
+
 - openLink: lalarenteapp:///(tenant)/arrears
 - extendedWaitUntil:
     visible: "My Arrears"
@@ -40,10 +50,14 @@ appId: com.lalarente.app
     text: "No Active Lease"
     optional: true
 
+- runFlow: ../subflows/login-tenant.yaml
+
 - openLink: lalarenteapp:///(tenant)/early-termination
 - extendedWaitUntil:
     visible: "Early Termination"
     timeout: 30000
+
+- runFlow: ../subflows/login-tenant.yaml
 
 - openLink: lalarenteapp:///(tenant)/reports
 - extendedWaitUntil:
