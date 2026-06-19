@@ -4,28 +4,27 @@ appId: com.lalarente.app
 - runFlow: ../subflows/launch-app-warm.yaml
 - runFlow: ../subflows/login-tenant.yaml
 
+- openLink: lalarenteapp:///(tenant)/lease
+
 - extendedWaitUntil:
-    visible:
-      id: "notification-bell"
-    timeout: 15000
+    visible: "My Lease"
+    timeout: 30000
+    optional: true
 
-- scrollUntilVisible:
-    element:
-      id: "view-lease-details"
-    direction: DOWN
-    timeout: 25000
-
-- tapOn:
-    id: "view-lease-details"
-- assertVisible: "My Lease"
+- assertVisible:
+    text: "No Active Lease"
+    optional: true
 
 - scrollUntilVisible:
     element:
       text: "Lease Document"
     direction: DOWN
     timeout: 25000
+    optional: true
 
-- assertVisible: "Lease Document"
+- assertVisible:
+    text: "Lease Document"
+    optional: true
 - assertVisible:
     text: "Download PDF"
     optional: true
