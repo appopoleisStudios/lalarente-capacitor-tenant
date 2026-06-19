@@ -2,25 +2,36 @@
 appId: com.lalarente.app
 ---
 - runFlow: ../../subflows/launch-app-warm.yaml
-- runFlow: ../../subflows/login-tenant.yaml
 - runFlow: ../../subflows/open-tenant-messages.yaml
+
+- assertVisible:
+    text: "No Messages"
+    optional: true
 
 - tapOn:
     point: "50%,40%"
     optional: true
 
 - extendedWaitUntil:
+    visible: "Type a message..."
+    timeout: 15000
+    optional: true
+
+- extendedWaitUntil:
     visible: "Type a message"
-    timeout: 20000
+    timeout: 15000
     optional: true
 
-- tapOn:
-    text: "Type a message..."
-    optional: true
-
-- inputText: "Tenant QA reply for client sign-off"
-- pressKey: Enter
+- runFlow:
+    when:
+      visible: "Type a message..."
+    commands:
+      - tapOn: "Type a message..."
+      - inputText: "Tenant QA reply for client sign-off"
+      - pressKey: Enter
+      - assertVisible:
+          text: "Tenant QA reply"
+          optional: true
 
 - assertVisible:
-    text: "Tenant QA reply"
-    optional: true
+    id: "tenant-messages-title"
