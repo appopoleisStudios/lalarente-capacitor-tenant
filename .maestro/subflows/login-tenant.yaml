@@ -1,4 +1,4 @@
-# Reusable tenant login — skips if already on tenant dashboard
+# Ensure Navin tenant QA account (TENANT_EMAIL) — never reuse a stale/wrong session.
 appId: com.lalarente.app
 ---
 - openLink: lalarenteapp:///(tenant)/dashboard
@@ -6,26 +6,46 @@ appId: com.lalarente.app
 - extendedWaitUntil:
     visible:
       id: "notification-bell"
-    timeout: 30000
+    timeout: 15000
     optional: true
 
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 5000
+    optional: true
+
+# Signed in as someone else → sign out before login
 - runFlow:
     when:
       visible:
         id: "notification-bell"
     commands:
-      - assertVisible:
-          id: "notification-bell"
+      - openLink: lalarenteapp:///(tenant)/profile
+      - extendedWaitUntil:
+          visible:
+            id: "tenant-profile-title"
+          timeout: 20000
+      - runFlow:
+          when:
+            notVisible: ${TENANT_EMAIL}
+          commands:
+            - scrollUntilVisible:
+                element: "Sign Out"
+                direction: DOWN
+                timeout: 15000
+            - tapOn: "Sign Out"
+            - tapOn: "Sign Out"
+            - extendedWaitUntil:
+                visible:
+                  id: "email-input"
+                timeout: 30000
 
 - runFlow:
     when:
-      notVisible:
-        id: "notification-bell"
+      visible:
+        id: "email-input"
     commands:
-      - extendedWaitUntil:
-          visible:
-            id: "email-input"
-          timeout: 30000
       - tapOn:
           id: "email-input"
       - inputText: ${TENANT_EMAIL}
@@ -48,22 +68,16 @@ appId: com.lalarente.app
                 visible:
                   id: "notification-bell"
                 timeout: 60000
-                optional: true
-      - runFlow:
-          when:
-            notVisible:
-              id: "notification-bell"
-          commands:
-            - tapOn:
-                id: "email-input"
-            - inputText: ${TENANT_EMAIL}
-            - pressKey: Enter
-            - inputText: ${TENANT_PASSWORD}
-            - tapOn:
-                id: "sign-in-button"
-            - extendedWaitUntil:
-                visible:
-                  id: "notification-bell"
-                timeout: 60000
       - assertVisible:
           id: "notification-bell"
+
+- openLink: lalarenteapp:///(tenant)/profile
+- extendedWaitUntil:
+    visible:
+      id: "tenant-profile-title"
+    timeout: 20000
+- assertVisible: ${TENANT_EMAIL}
+
+- openLink: lalarenteapp:///(tenant)/dashboard
+- assertVisible:
+    id: "notification-bell"

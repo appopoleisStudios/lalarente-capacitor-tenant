@@ -359,6 +359,7 @@ export default function TenantProfileScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email</Text>
               <TextInput
+                testID="tenant-profile-email"
                 style={[styles.input, !editing && styles.inputDisabled]}
                 value={email}
                 onChangeText={setEmail}
