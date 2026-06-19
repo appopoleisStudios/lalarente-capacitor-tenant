@@ -21,4 +21,4 @@ pkill -f "node.*metro" 2>/dev/null || true
 sleep 3
 
 echo "Starting Metro with .env loaded ($(date))"
-exec npx expo start "$@"
+exec npx expo start --offline "$@"

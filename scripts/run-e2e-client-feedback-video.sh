@@ -35,10 +35,18 @@ cd "$ROOT"
 mkdir -p "$ROOT/qa-videos"
 
 # Metro must have .env loaded or Supabase auth fails during recordings.
-if ! curl -sf http://localhost:8081/status >/dev/null 2>&1; then
+wait_for_metro() {
+  local i
+  for i in $(seq 1 30); do
+    if curl -sf http://localhost:8081/status >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 2
+  done
   echo "Metro not running — start with: bash scripts/start-metro-e2e.sh"
   exit 1
-fi
+}
+wait_for_metro
 
 e2e_video_maybe_test_first "bash \"$ROOT/scripts/run-e2e-client-feedback.sh\""
 
