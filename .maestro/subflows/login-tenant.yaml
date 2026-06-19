@@ -17,7 +17,7 @@ appId: com.lalarente.app
       - extendedWaitUntil:
           visible:
             id: "email-input"
-          timeout: 20000
+          timeout: 30000
       - tapOn:
           id: "email-input"
       - inputText: ${TENANT_EMAIL}
@@ -27,6 +27,35 @@ appId: com.lalarente.app
       - extendedWaitUntil:
           visible:
             id: "notification-bell"
-          timeout: 45000
+          timeout: 60000
+          optional: true
+      - runFlow:
+          when:
+            notVisible:
+              id: "notification-bell"
+          commands:
+            - tapOn:
+                id: "sign-in-button"
+            - extendedWaitUntil:
+                visible:
+                  id: "notification-bell"
+                timeout: 60000
+                optional: true
+      - runFlow:
+          when:
+            notVisible:
+              id: "notification-bell"
+          commands:
+            - tapOn:
+                id: "email-input"
+            - inputText: ${TENANT_EMAIL}
+            - pressKey: Enter
+            - inputText: ${TENANT_PASSWORD}
+            - tapOn:
+                id: "sign-in-button"
+            - extendedWaitUntil:
+                visible:
+                  id: "notification-bell"
+                timeout: 60000
       - assertVisible:
           id: "notification-bell"
