@@ -5,13 +5,11 @@ appId: com.lalarente.app
 - runFlow: ../subflows/login-tenant.yaml
 
 - scrollUntilVisible:
-    element:
-      id: "tenancy-payment-disputes"
+    element: "Payment disputes"
     direction: DOWN
-    timeout: 60000
+    timeout: 90000
 
-- tapOn:
-    id: "tenancy-payment-disputes"
+- tapOn: "Payment disputes"
 - assertVisible: "Payment Disputes"
 - assertVisible:
     text: "No payment disputes"

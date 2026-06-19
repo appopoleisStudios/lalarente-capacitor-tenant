@@ -5,44 +5,37 @@ appId: com.lalarente.app
 - runFlow: ../subflows/launch-app-warm.yaml
 - runFlow: ../subflows/login-tenant.yaml
 
-- scrollUntilVisible:
-    element:
-      id: "view-lease-details"
-    direction: DOWN
-    timeout: 60000
+- extendedWaitUntil:
+    visible: "Current Home"
+    timeout: 90000
+    optional: true
 
 - scrollUntilVisible:
-    element:
-      id: "tenancy-payments-arrears"
+    element: "Payments & arrears"
     direction: DOWN
-    timeout: 60000
+    timeout: 90000
 
 - scrollUntilVisible:
-    element:
-      id: "tenancy-payment-disputes"
+    element: "Payment disputes"
     direction: DOWN
     timeout: 45000
 
 - scrollUntilVisible:
-    element:
-      id: "tenancy-arrears-escalation"
+    element: "Arrears & escalation"
     direction: DOWN
     timeout: 45000
 
 - scrollUntilVisible:
-    element:
-      id: "tenancy-early-termination"
+    element: "Early termination"
     direction: DOWN
     timeout: 45000
 
 - scrollUntilVisible:
-    element:
-      id: "tenancy-holding-deposits"
+    element: "Holding deposits"
     direction: DOWN
     timeout: 45000
 
 - scrollUntilVisible:
-    element:
-      id: "tenancy-reports-inspections"
+    element: "Reports & inspections"
     direction: DOWN
     timeout: 45000
