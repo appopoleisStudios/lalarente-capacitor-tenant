@@ -7,12 +7,13 @@ appId: com.lalarente.app
 - openLink: lalarenteapp:///(tenant)/lease
 
 - extendedWaitUntil:
-    visible: "My Lease"
+    visible: "No Active Lease"
     timeout: 30000
     optional: true
 
-- assertVisible:
-    text: "No Active Lease"
+- extendedWaitUntil:
+    visible: "My Lease"
+    timeout: 10000
     optional: true
 
 - scrollUntilVisible:

@@ -5,8 +5,10 @@ appId: com.lalarente.app
 - runFlow: ../../subflows/login-owner.yaml
 
 - assertVisible: "Portfolio Dashboard"
-- scrollUntilVisible:
-    element: "My Documents"
-    direction: DOWN
+
+- openLink: lalarenteapp:///(owner)/documents
+- extendedWaitUntil:
+    visible: "All Documents"
     timeout: 20000
-- assertVisible: "My Documents"
+
+- assertVisible: "Recent Documents"

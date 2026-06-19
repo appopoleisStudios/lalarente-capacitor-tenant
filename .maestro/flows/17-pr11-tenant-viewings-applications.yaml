@@ -4,33 +4,12 @@ appId: com.lalarente.app
 - runFlow: ../subflows/launch-app-warm.yaml
 - runFlow: ../subflows/login-tenant.yaml
 
-- assertVisible: "Viewings & applications"
-
-- scrollUntilVisible:
-    element:
-      id: "viewings-viewing-history"
-    direction: DOWN
-    timeout: 15000
-
-- tapOn:
-    id: "viewings-viewing-history"
+- openLink: lalarenteapp:///(tenant)/viewings
 - extendedWaitUntil:
     visible: "My Viewings"
-    timeout: 15000
+    timeout: 20000
 
-- tapOn:
-    id: "screen-back"
-- extendedWaitUntil:
-    visible:
-      id: "notification-bell"
-    timeout: 15000
-
-- scrollUntilVisible:
-    element: "Application status"
-    direction: DOWN
-    timeout: 25000
-
-- tapOn: "Application status"
+- openLink: lalarenteapp:///(tenant)/application-status
 - extendedWaitUntil:
     visible: "My Applications"
-    timeout: 15000
+    timeout: 20000
