@@ -2,7 +2,7 @@
 # Verifies shortcuts exist on dashboard when tenant has active lease.
 appId: com.lalarente.app
 ---
-- runFlow: ../subflows/launch-app.yaml
+- runFlow: ../subflows/launch-app-warm.yaml
 - runFlow: ../subflows/login-tenant.yaml
 - runFlow: ../subflows/scroll-tenancy.yaml
 

@@ -1,7 +1,7 @@
 # S2-19 / S2-20 — Owner messages thread + reply
 appId: com.lalarente.app
 ---
-- runFlow: ../../subflows/launch-app.yaml
+- runFlow: ../../subflows/launch-app-warm.yaml
 - runFlow: ../../subflows/login-owner.yaml
 
 - openLink: lalarenteapp:///(owner)/messages

@@ -2,7 +2,7 @@
 # Optional when tenant already has active lease (cannot apply again).
 appId: com.lalarente.app
 ---
-- runFlow: ../subflows/launch-app.yaml
+- runFlow: ../subflows/launch-app-warm.yaml
 - runFlow: ../subflows/login-tenant.yaml
 
 - openLink: lalarenteapp:///(tenant)/search

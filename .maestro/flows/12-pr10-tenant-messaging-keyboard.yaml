@@ -1,7 +1,7 @@
 # PR #10 — Messaging thread keyboard / input visible (S2-10, S2-15)
 appId: com.lalarente.app
 ---
-- runFlow: ../subflows/launch-app.yaml
+- runFlow: ../subflows/launch-app-warm.yaml
 - runFlow: ../subflows/login-tenant.yaml
 - runFlow: ../subflows/open-tenant-messages.yaml
 

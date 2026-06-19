@@ -1,7 +1,7 @@
 # PR #9 — Tenant inspection reports / alert (S2-41, S2-42)
 appId: com.lalarente.app
 ---
-- runFlow: ../subflows/launch-app.yaml
+- runFlow: ../subflows/launch-app-warm.yaml
 - runFlow: ../subflows/login-tenant.yaml
 - runFlow: ../subflows/scroll-tenancy.yaml
 

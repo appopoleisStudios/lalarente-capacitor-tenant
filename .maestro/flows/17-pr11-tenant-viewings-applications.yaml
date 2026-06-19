@@ -1,7 +1,7 @@
 # S2-43 / S2-44 — tenant viewing history + application status nav
 appId: com.lalarente.app
 ---
-- runFlow: ../subflows/launch-app.yaml
+- runFlow: ../subflows/launch-app-warm.yaml
 - runFlow: ../subflows/login-tenant.yaml
 
 - assertVisible: "Viewings & applications"

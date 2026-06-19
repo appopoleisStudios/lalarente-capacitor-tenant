@@ -1,7 +1,7 @@
 # S2-05 — owner Applications entry (not bell-only)
 appId: com.lalarente.app
 ---
-- runFlow: ../subflows/launch-app.yaml
+- runFlow: ../subflows/launch-app-warm.yaml
 - runFlow: ../subflows/login-owner.yaml
 
 - openLink: lalarenteapp:///(owner)/applications

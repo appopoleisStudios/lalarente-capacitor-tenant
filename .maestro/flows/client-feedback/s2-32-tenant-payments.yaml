@@ -1,7 +1,7 @@
 # S2-32 / S2-33 — Tenant payments history + make payment affordance
 appId: com.lalarente.app
 ---
-- runFlow: ../../subflows/launch-app.yaml
+- runFlow: ../../subflows/launch-app-warm.yaml
 - runFlow: ../../subflows/login-tenant.yaml
 
 - extendedWaitUntil:

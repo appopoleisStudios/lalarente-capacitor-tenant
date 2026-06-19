@@ -1,7 +1,7 @@
 # S2-10 / S2-15 — Owner contact tenant → messages + keyboard visible
 appId: com.lalarente.app
 ---
-- runFlow: ../../subflows/launch-app.yaml
+- runFlow: ../../subflows/launch-app-warm.yaml
 - runFlow: ../../subflows/login-owner.yaml
 
 - openLink: lalarenteapp:///(owner)/tenants
