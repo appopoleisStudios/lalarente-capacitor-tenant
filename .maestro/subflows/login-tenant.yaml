@@ -1,6 +1,14 @@
 # Reusable tenant login — skips if already on tenant dashboard
 appId: com.lalarente.app
 ---
+- openLink: lalarenteapp:///(tenant)/dashboard
+
+- extendedWaitUntil:
+    visible:
+      id: "notification-bell"
+    timeout: 30000
+    optional: true
+
 - runFlow:
     when:
       visible:

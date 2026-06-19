@@ -1,5 +1,12 @@
 appId: com.lalarente.app
 ---
+- openLink: lalarenteapp:///(owner)/dashboard
+
+- extendedWaitUntil:
+    visible: "Portfolio Dashboard"
+    timeout: 30000
+    optional: true
+
 - runFlow:
     when:
       visible: "Portfolio Dashboard"
