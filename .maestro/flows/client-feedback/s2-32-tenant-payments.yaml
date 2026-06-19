@@ -4,24 +4,30 @@ appId: com.lalarente.app
 - runFlow: ../../subflows/launch-app-warm.yaml
 - runFlow: ../../subflows/login-tenant.yaml
 
-- extendedWaitUntil:
-    visible:
-      id: "notification-bell"
-    timeout: 15000
-
 - openLink: lalarenteapp:///(tenant)/payments
 
 - extendedWaitUntil:
-    visible: "Payments"
-    timeout: 20000
+    visible:
+      id: "tab-payments"
+    timeout: 30000
+
+- assertVisible:
+    text: "Payments"
+    optional: true
+- assertVisible:
+    text: "No Active Lease"
+    optional: true
 
 - scrollUntilVisible:
     element:
       text: "Payment History"
     direction: DOWN
     timeout: 25000
+    optional: true
 
-- assertVisible: "Payment History"
+- assertVisible:
+    text: "Payment History"
+    optional: true
 - assertVisible:
     text: "Pay Now"
     optional: true

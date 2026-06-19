@@ -1,14 +1,8 @@
-# Scroll to Quick Actions → Lala AI (below fold on tenant dashboard)
+# Open tenant Lala AI via deep link
 appId: com.lalarente.app
 ---
+- openLink: lalarenteapp:///(tenant)/ai-chat
+
 - extendedWaitUntil:
-    visible:
-      id: "notification-bell"
-    timeout: 15000
-
-- scrollUntilVisible:
-    element: "Lala AI"
-    direction: DOWN
+    visible: "Lala Assistant"
     timeout: 20000
-
-- tapOn: "Lala AI"

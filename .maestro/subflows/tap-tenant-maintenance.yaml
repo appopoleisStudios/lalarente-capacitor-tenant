@@ -1,14 +1,8 @@
-# Scroll to Quick Actions → Maintenance (below fold on tenant dashboard)
+# Open tenant maintenance list via deep link (tab bar / scroll is flaky on iOS 26)
 appId: com.lalarente.app
 ---
+- openLink: lalarenteapp:///(tenant)/maintenance
+
 - extendedWaitUntil:
-    visible:
-      id: "notification-bell"
-    timeout: 15000
-
-- scrollUntilVisible:
-    element: "Maintenance"
-    direction: DOWN
+    visible: "Maintenance"
     timeout: 20000
-
-- tapOn: "Maintenance"
