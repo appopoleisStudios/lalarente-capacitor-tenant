@@ -16,5 +16,6 @@ set -a
 source "$ROOT/.env"
 set +a
 pkill -f "expo start" 2>/dev/null || true
-sleep 2
+pkill -f "node.*metro" 2>/dev/null || true
+sleep 3
 exec npx expo start "$@"
