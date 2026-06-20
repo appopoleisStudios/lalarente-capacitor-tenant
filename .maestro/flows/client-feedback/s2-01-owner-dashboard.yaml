@@ -4,7 +4,12 @@ appId: com.lalarente.app
 - runFlow: ../../subflows/launch-app.yaml
 - runFlow: ../../subflows/login-owner.yaml
 
-- assertVisible: "Portfolio Dashboard"
+- assertVisible:
+    text: "Portfolio Dashboard"
+    optional: true
+- assertVisible:
+    text: "Welcome to LaLarente"
+    optional: true
 
 - openLink: lalarenteapp:///(owner)/documents
 - extendedWaitUntil:
