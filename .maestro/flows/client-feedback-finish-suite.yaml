@@ -1,0 +1,7 @@
+# Finish client-feedback from flow 14 (tenant 01–13 already green)
+appId: com.lalarente.app
+---
+- runFlow: 14-pr10-tenant-maintenance-camera.yaml
+- runFlow: 07-pr7-tenant-application-pdf.yaml
+- runFlow: 02-tenant-lala-ai.yaml
+- runFlow: client-feedback-owner-suite.yaml
