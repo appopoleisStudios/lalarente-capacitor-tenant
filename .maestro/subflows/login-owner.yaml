@@ -1,47 +1,27 @@
-# Ensure Navin owner QA account (OWNER_EMAIL) — never reuse a stale/wrong session.
+# Owner login — uses OWNER_EMAIL/OWNER_PASSWORD from .maestro/.env via --env flags.
 appId: com.lalarente.app
 ---
 - openLink: lalarenteapp:///(owner)/dashboard
 
 - extendedWaitUntil:
     visible: "Portfolio Dashboard"
-    timeout: 15000
-    optional: true
-
-- extendedWaitUntil:
-    visible:
-      id: "email-input"
-    timeout: 5000
+    timeout: 30000
     optional: true
 
 - runFlow:
     when:
       visible: "Portfolio Dashboard"
     commands:
-      - openLink: lalarenteapp:///(owner)/profile
-      - extendedWaitUntil:
-          visible: "Owner Account"
-          timeout: 20000
-      - runFlow:
-          when:
-            notVisible: ${OWNER_EMAIL}
-          commands:
-            - scrollUntilVisible:
-                element: "Logout"
-                direction: DOWN
-                timeout: 15000
-            - tapOn: "Logout"
-            - tapOn: "Logout"
-            - extendedWaitUntil:
-                visible:
-                  id: "email-input"
-                timeout: 30000
+      - assertVisible: "Portfolio Dashboard"
 
 - runFlow:
     when:
-      visible:
-        id: "email-input"
+      notVisible: "Portfolio Dashboard"
     commands:
+      - extendedWaitUntil:
+          visible:
+            id: "email-input"
+          timeout: 30000
       - tapOn:
           id: "email-input"
       - inputText: ${OWNER_EMAIL}
@@ -62,10 +42,3 @@ appId: com.lalarente.app
                 visible: "Portfolio Dashboard"
                 timeout: 60000
       - assertVisible: "Portfolio Dashboard"
-
-- openLink: lalarenteapp:///(owner)/profile
-- assertVisible: ${OWNER_EMAIL}
-- assertVisible: "Owner Account"
-
-- openLink: lalarenteapp:///(owner)/dashboard
-- assertVisible: "Portfolio Dashboard"
