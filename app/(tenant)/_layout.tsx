@@ -1,5 +1,7 @@
 import { Tabs } from 'expo-router';
+import { Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import type { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
 import { colors } from '@/src/shared/theme/colors';
 
 export default function TenantLayout() {
@@ -57,6 +59,17 @@ export default function TenantLayout() {
         options={{
           title: 'Payments',
           tabBarButtonTestID: 'tab-payments',
+          tabBarButton: ({ onPress, onLongPress, children, style }: BottomTabBarButtonProps) => (
+            <Pressable
+              onPress={onPress}
+              onLongPress={onLongPress}
+              style={style}
+              testID="tab-payments"
+              accessibilityLabel="Payments tab"
+            >
+              {children}
+            </Pressable>
+          ),
           tabBarIcon: ({ color, size }) => <Ionicons name="card" size={size} color={color} />,
         }}
       />
@@ -65,6 +78,17 @@ export default function TenantLayout() {
         options={{
           title: 'Profile',
           tabBarButtonTestID: 'tab-profile',
+          tabBarButton: ({ onPress, onLongPress, children, style }: BottomTabBarButtonProps) => (
+            <Pressable
+              onPress={onPress}
+              onLongPress={onLongPress}
+              style={style}
+              testID="tab-profile"
+              accessibilityLabel="Profile tab"
+            >
+              {children}
+            </Pressable>
+          ),
           tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
         }}
       />
