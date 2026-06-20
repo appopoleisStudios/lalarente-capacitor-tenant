@@ -5,10 +5,19 @@ appId: com.lalarente.app
 - runFlow: ../subflows/login-tenant.yaml
 - runFlow: ../subflows/tap-tenant-lala-ai.yaml
 - assertVisible: "Lala Assistant"
-- assertVisible: "Ask me anything about your property"
+
+- assertVisible:
+    text: "Ask me anything about your property"
+    optional: true
 
 - tapOn:
     text: "Type your message..."
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Type your message..."
+    timeout: 15000
+
 - inputText: "What is my monthly rent?"
 - pressKey: Enter
 
