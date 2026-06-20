@@ -8,30 +8,7 @@ appId: com.lalarente.app
     text: "No Messages"
     optional: true
 
-- tapOn:
-    point: "50%,45%"
-    optional: true
-
-- extendedWaitUntil:
-    visible: "Type a message..."
-    timeout: 15000
-    optional: true
-
-- extendedWaitUntil:
-    visible: "Type a message"
-    timeout: 15000
-    optional: true
-
 - runFlow:
-    when:
-      visible: "Type a message..."
-    commands:
-      - tapOn: "Type a message..."
-      - inputText: "QA keyboard visibility check"
-      - pressKey: Enter
-      - assertVisible:
-          text: "QA keyboard visibility check"
-          optional: true
-
-- assertVisible:
-    id: "tenant-messages-title"
+    file: ../subflows/tenant-send-message.yaml
+    env:
+      MESSAGE_TEXT: "QA keyboard visibility check"

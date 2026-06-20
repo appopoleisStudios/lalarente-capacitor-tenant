@@ -1,0 +1,31 @@
+# Send a typed message in the tenant messaging thread
+# Expects env var MESSAGE_TEXT to be set by the calling flow
+appId: com.lalarente.app
+---
+- tapOn:
+    point: "50%,45%"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Type a message..."
+    timeout: 15000
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Type a message"
+    timeout: 15000
+    optional: true
+
+- runFlow:
+    when:
+      visible: "Type a message..."
+    commands:
+      - tapOn: "Type a message..."
+      - inputText: ${MESSAGE_TEXT}
+      - pressKey: Enter
+      - assertVisible:
+          text: ${MESSAGE_TEXT}
+          optional: true
+
+- assertVisible:
+    id: "tenant-messages-title"
