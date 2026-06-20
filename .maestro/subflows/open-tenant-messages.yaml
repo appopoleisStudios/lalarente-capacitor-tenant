@@ -1,21 +1,11 @@
-# Open tenant messages list from dashboard Quick Actions
+# Open tenant messages list via deep link (tab bar scroll is flaky on iOS 26)
 appId: com.lalarente.app
 ---
-- extendedWaitUntil:
-    visible: "Welcome back,"
-    timeout: 15000
+- runFlow: login-tenant.yaml
 
-- scrollUntilVisible:
-    element: "Messages"
-    direction: DOWN
-    timeout: 20000
-
-- tapOn:
-    text: "See All"
-    optional: true
-
-- tapOn: "Messages"
+- openLink: lalarenteapp:///(tenant)/messages
 
 - extendedWaitUntil:
-    visible: "Messages"
-    timeout: 15000
+    visible:
+      id: "tenant-messages-title"
+    timeout: 45000

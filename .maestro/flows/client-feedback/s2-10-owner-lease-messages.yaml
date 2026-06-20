@@ -1,17 +1,17 @@
 # S2-10 / S2-15 — Owner contact tenant → messages + keyboard visible
 appId: com.lalarente.app
 ---
-- runFlow: ../../subflows/launch-app.yaml
+- runFlow: ../../subflows/launch-app-warm.yaml
 - runFlow: ../../subflows/login-owner.yaml
 
-- scrollUntilVisible:
-    element: "Leases"
-    direction: DOWN
+- openLink: lalarenteapp:///(owner)/tenants
+
+- extendedWaitUntil:
+    visible: "Tenants & Leases"
     timeout: 20000
 
-- tapOn: "Leases"
 - tapOn:
-    point: "50%,35%"
+    point: "50%,40%"
     optional: true
 
 - extendedWaitUntil:

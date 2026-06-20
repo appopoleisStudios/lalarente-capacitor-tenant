@@ -1,0 +1,24 @@
+# Warm app start — keeps session between flows in a suite run
+appId: com.lalarente.app
+---
+- launchApp
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 15000
+    optional: true
+
+- extendedWaitUntil:
+    visible:
+      id: "notification-bell"
+    timeout: 15000
+    optional: true
+
+- tapOn:
+    text: "Not Now"
+    optional: true
+
+- tapOn:
+    text: "Cancel"
+    optional: true

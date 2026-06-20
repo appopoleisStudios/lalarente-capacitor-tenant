@@ -1,26 +1,15 @@
 # S2-19 / S2-20 — Owner messages thread + reply
 appId: com.lalarente.app
 ---
-- runFlow: ../../subflows/launch-app.yaml
+- runFlow: ../../subflows/launch-app-warm.yaml
 - runFlow: ../../subflows/login-owner.yaml
 
-- scrollUntilVisible:
-    element: "Messages"
-    direction: DOWN
-    timeout: 20000
-    optional: true
-
-- tapOn:
-    text: "Messages"
-    optional: true
-
-- tapOn:
-    text: "See All"
-    optional: true
+- openLink: lalarenteapp:///(owner)/messages
 
 - extendedWaitUntil:
-    visible: "Messages"
-    timeout: 15000
+    visible:
+      id: "owner-messages-title"
+    timeout: 45000
 
 - tapOn:
     point: "50%,40%"

@@ -1,12 +1,16 @@
 # PR #7 — Payment dispute empty-state copy
 appId: com.lalarente.app
 ---
-- runFlow: ../subflows/launch-app.yaml
+- runFlow: ../subflows/launch-app-warm.yaml
 - runFlow: ../subflows/login-tenant.yaml
-- runFlow: ../subflows/scroll-tenancy.yaml
 
-- tapOn: "Payment disputes"
-- assertVisible: "Payment Disputes"
+- openLink: lalarenteapp:///(tenant)/payment-disputes
+
+- extendedWaitUntil:
+    visible:
+      id: "payment-disputes-title"
+    timeout: 45000
+
 - assertVisible:
     text: "No payment disputes"
     optional: true

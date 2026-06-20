@@ -206,8 +206,20 @@ export default function TenantReportsScreen() {
                 const typeLabel = INSPECTION_TYPE_LABEL[inspection.type] ?? inspection.type;
                 const needsSignature = inspection.status === 'pending_signatures' && !inspection.tenant_signed_at;
 
+                const navigateToInspection = () => {
+                  router.push({
+                    pathname: '/(tenant)/inspections/[id]',
+                    params: { id: inspection.id },
+                  } as any);
+                };
+
                 return (
-                  <View key={inspection.id} style={styles.inspectionCard}>
+                  <TouchableOpacity
+                    key={inspection.id}
+                    style={styles.inspectionCard}
+                    onPress={navigateToInspection}
+                    activeOpacity={0.7}
+                  >
                     <View style={styles.inspectionTop}>
                       <View style={[styles.iconCircle, { backgroundColor: colors.info[50] }]}>
                         <Ionicons name="clipboard" size={20} color={colors.info[500]} />
@@ -242,12 +254,17 @@ export default function TenantReportsScreen() {
                     )}
 
                     {needsSignature && (
-                      <View style={styles.signatureAlert}>
+                      <TouchableOpacity
+                        style={styles.signatureAlert}
+                        onPress={navigateToInspection}
+                        activeOpacity={0.7}
+                      >
                         <Ionicons name="create-outline" size={16} color={colors.rsa.gold} />
                         <Text style={styles.signatureAlertText}>
                           Your signature is required on this inspection report
                         </Text>
-                      </View>
+                        <Ionicons name="chevron-forward" size={16} color={colors.rsa.gold} />
+                      </TouchableOpacity>
                     )}
 
                     {inspection.tenant_signed_at && (
@@ -258,7 +275,7 @@ export default function TenantReportsScreen() {
                         </Text>
                       </View>
                     )}
-                  </View>
+                  </TouchableOpacity>
                 );
               })}
             </View>

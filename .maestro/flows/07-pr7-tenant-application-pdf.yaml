@@ -1,16 +1,20 @@
 # PR #7 — Application upload screen shows PDF-only proof-of-income section
-# Needs a tenant who can still apply (no blocking application on chosen property).
+# Optional when tenant already has active lease (cannot apply again).
 appId: com.lalarente.app
 ---
-- runFlow: ../subflows/launch-app.yaml
+- runFlow: ../subflows/launch-app-warm.yaml
 - runFlow: ../subflows/login-tenant.yaml
-- runFlow: ../subflows/tap-tenant-search.yaml
+
+- openLink: lalarenteapp:///(tenant)/search
+
 - extendedWaitUntil:
-    visible: "properties found"
-    timeout: 15000
+    visible:
+      id: "tenant-search-results"
+    timeout: 25000
 
 - tapOn:
     point: "50%,55%"
+    optional: true
 
 - extendedWaitUntil:
     visible: "Apply Now"

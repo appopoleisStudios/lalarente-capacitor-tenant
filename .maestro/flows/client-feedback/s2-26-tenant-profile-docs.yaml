@@ -1,7 +1,7 @@
 # S2-26 / S2-28 / S2-29 — Profile + proof of address upload affordance (PDF picker)
 appId: com.lalarente.app
 ---
-- runFlow: ../../subflows/launch-app.yaml
+- runFlow: ../../subflows/launch-app-warm.yaml
 - runFlow: ../../subflows/login-tenant.yaml
 - runFlow: ../../subflows/tap-tenant-profile.yaml
 
@@ -14,6 +14,11 @@ appId: com.lalarente.app
     element: "Proof of Address"
     direction: DOWN
     timeout: 15000
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Proof of Address"
+    timeout: 10000
 
 - assertVisible: "Proof of Address"
 - assertVisible:

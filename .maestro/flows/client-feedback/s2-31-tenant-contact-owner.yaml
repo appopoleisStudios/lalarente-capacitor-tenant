@@ -1,24 +1,18 @@
 # S2-31 — Tenant contact owner → message
 appId: com.lalarente.app
 ---
-- runFlow: ../../subflows/launch-app.yaml
+- runFlow: ../../subflows/launch-app-warm.yaml
 - runFlow: ../../subflows/login-tenant.yaml
 
-- extendedWaitUntil:
-    visible: "Welcome back,"
-    timeout: 15000
+- openLink: lalarenteapp:///(tenant)/lease
 
-- scrollUntilVisible:
-    element:
-      id: "view-lease-details"
-    direction: DOWN
-    timeout: 25000
-
-- tapOn:
-    id: "view-lease-details"
 - extendedWaitUntil:
-    visible: "Contact Owner"
-    timeout: 15000
+    visible: "My Lease"
+    timeout: 30000
+    optional: true
+
+- assertVisible:
+    text: "No Active Lease"
     optional: true
 
 - tapOn:

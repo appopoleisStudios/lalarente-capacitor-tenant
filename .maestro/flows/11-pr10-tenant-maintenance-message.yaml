@@ -1,7 +1,7 @@
 # PR #10 — Maintenance list + message landlord (S2-39, S2-30)
 appId: com.lalarente.app
 ---
-- runFlow: ../subflows/launch-app.yaml
+- runFlow: ../subflows/launch-app-warm.yaml
 - runFlow: ../subflows/login-tenant.yaml
 - runFlow: ../subflows/tap-tenant-maintenance.yaml
 - assertVisible: "Maintenance"

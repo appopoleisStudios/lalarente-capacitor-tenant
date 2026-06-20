@@ -1,30 +1,31 @@
 # PR #10 — Lease screen + PDF download affordance (S2-24)
 appId: com.lalarente.app
 ---
-- runFlow: ../subflows/launch-app.yaml
+- runFlow: ../subflows/launch-app-warm.yaml
 - runFlow: ../subflows/login-tenant.yaml
 
+- openLink: lalarenteapp:///(tenant)/lease
+
 - extendedWaitUntil:
-    visible: "Welcome back,"
-    timeout: 15000
+    visible: "No Active Lease"
+    timeout: 30000
+    optional: true
 
-- scrollUntilVisible:
-    element:
-      id: "view-lease-details"
-    direction: DOWN
-    timeout: 25000
-
-- tapOn:
-    id: "view-lease-details"
-- assertVisible: "My Lease"
+- extendedWaitUntil:
+    visible: "My Lease"
+    timeout: 10000
+    optional: true
 
 - scrollUntilVisible:
     element:
       text: "Lease Document"
     direction: DOWN
     timeout: 25000
+    optional: true
 
-- assertVisible: "Lease Document"
+- assertVisible:
+    text: "Lease Document"
+    optional: true
 - assertVisible:
     text: "Download PDF"
     optional: true

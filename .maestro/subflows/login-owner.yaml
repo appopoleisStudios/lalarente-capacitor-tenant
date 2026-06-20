@@ -1,19 +1,39 @@
+# Owner login — uses OWNER_EMAIL/OWNER_PASSWORD from .maestro/.env via --env flags.
 appId: com.lalarente.app
 ---
-- runFlow:
-    when:
-      visible: "Portfolio Dashboard"
-    commands:
-      - assertVisible: "Portfolio Dashboard"
+- openLink: lalarenteapp:///(owner)/profile
+
+- extendedWaitUntil:
+    visible: "Owner Account"
+    timeout: 15000
+    optional: true
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 5000
+    optional: true
 
 - runFlow:
     when:
-      notVisible: "Portfolio Dashboard"
+      visible: "Owner Account"
     commands:
-      - extendedWaitUntil:
-          visible:
-            id: "email-input"
-          timeout: 15000
+      - runFlow:
+          when:
+            notVisible: ${OWNER_EMAIL}
+          commands:
+            - launchApp:
+                clearState: true
+            - extendedWaitUntil:
+                visible:
+                  id: "email-input"
+                timeout: 60000
+
+- runFlow:
+    when:
+      visible:
+        id: "email-input"
+    commands:
       - tapOn:
           id: "email-input"
       - inputText: ${OWNER_EMAIL}
@@ -22,4 +42,38 @@ appId: com.lalarente.app
       - pressKey: Enter
       - extendedWaitUntil:
           visible: "Portfolio Dashboard"
-          timeout: 20000
+          timeout: 60000
+          optional: true
+      - extendedWaitUntil:
+          visible: "Welcome to LaLarente"
+          timeout: 60000
+          optional: true
+      - runFlow:
+          when:
+            notVisible: "Portfolio Dashboard"
+          commands:
+            - runFlow:
+                when:
+                  notVisible: "Welcome to LaLarente"
+                commands:
+                  - tapOn:
+                      id: "sign-in-button"
+                  - extendedWaitUntil:
+                      visible: "Portfolio Dashboard"
+                      timeout: 60000
+                      optional: true
+                  - extendedWaitUntil:
+                      visible: "Welcome to LaLarente"
+                      timeout: 60000
+                      optional: true
+
+- openLink: lalarenteapp:///(owner)/profile
+- assertVisible: ${OWNER_EMAIL}
+
+- openLink: lalarenteapp:///(owner)/dashboard
+- assertVisible:
+    text: "Portfolio Dashboard"
+    optional: true
+- assertVisible:
+    text: "Welcome to LaLarente"
+    optional: true

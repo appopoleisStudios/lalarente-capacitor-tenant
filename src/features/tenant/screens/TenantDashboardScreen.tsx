@@ -392,7 +392,7 @@ export default function TenantDashboardScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={styles.header} testID="tenant-dashboard-header">
           <View>
             <Text style={styles.greeting}>Welcome back,</Text>
             <Text style={styles.userName}>{userName}</Text>

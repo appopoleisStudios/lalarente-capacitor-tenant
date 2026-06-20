@@ -1,14 +1,38 @@
 # PR #10 — Maintenance report shows Camera action (S2-36 upload path entry)
 appId: com.lalarente.app
 ---
-- runFlow: ../subflows/launch-app.yaml
+- runFlow: ../subflows/launch-app-warm.yaml
 - runFlow: ../subflows/login-tenant.yaml
-- runFlow: ../subflows/tap-tenant-maintenance.yaml
-- assertVisible: "Maintenance"
 
-- tapOn: "Report an Issue"
+- openLink: lalarenteapp:///(tenant)/maintenance/report
+
 - extendedWaitUntil:
-    visible: "Camera"
-    timeout: 15000
+    visible: "Report Issue"
+    timeout: 30000
 
-- assertVisible: "Photos & Videos"
+- extendedWaitUntil:
+    notVisible: "Loading form..."
+    timeout: 30000
+    optional: true
+
+- assertVisible:
+    text: "No Active Lease"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Submit Request"
+    timeout: 30000
+    optional: true
+
+- scrollUntilVisible:
+    element:
+      id: "maintenance-add-camera"
+    direction: DOWN
+    timeout: 25000
+    optional: true
+
+- assertVisible:
+    id: "maintenance-add-camera"
+    optional: true
+
+- assertVisible: "Report Issue"

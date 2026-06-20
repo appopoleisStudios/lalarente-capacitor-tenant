@@ -1,10 +1,5 @@
 # Maestro E2E — visible UI automation (simulator / device)
-# Credentials: copy .maestro/.env.example → .maestro/.env (gitignored)
+# Credentials: .maestro/.env (gitignored) — passed via scripts/run-e2e*.sh --env flags.
+# Do NOT set empty env defaults here; they override CLI credentials in subflows.
 
 appId: com.lalarente.app
-
-env:
-  TENANT_EMAIL: ""
-  TENANT_PASSWORD: ""
-  OWNER_EMAIL: ""
-  OWNER_PASSWORD: ""

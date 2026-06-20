@@ -32,6 +32,21 @@ for var in TENANT_EMAIL TENANT_PASSWORD OWNER_EMAIL OWNER_PASSWORD; do
 done
 
 cd "$ROOT"
+mkdir -p "$ROOT/qa-videos"
+
+# Metro must have .env loaded or Supabase auth fails during recordings.
+wait_for_metro() {
+  local i
+  for i in $(seq 1 30); do
+    if curl -sf http://localhost:8081/status >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 2
+  done
+  echo "Metro not running — start with: bash scripts/start-metro-e2e.sh"
+  exit 1
+}
+wait_for_metro
 
 e2e_video_maybe_test_first "bash \"$ROOT/scripts/run-e2e-client-feedback.sh\""
 
@@ -91,6 +106,7 @@ record_group() {
   local failed=0
   local concat="$dir/concat.txt"
   : > "$concat"
+  local idx=0
 
   for entry in "${flows[@]}"; do
     local flow="${entry%%|*}"
@@ -98,15 +114,29 @@ record_group() {
     local base
     base="$(basename "$flow" .yaml)"
     local out_mp4="$dir/${base}.mp4"
+    local src="$ROOT/.maestro/flows/$flow"
+    local record_flow="$src"
+    local tmp_flow=""
+
+    # After the first clip, keep the signed-in session (clearState per flow breaks record mode login).
+    if [[ "$idx" -gt 0 ]]; then
+      tmp_flow="$(mktemp "$E2E_VIDEO_TEMP/.flow-XXXXXX.yaml")"
+      sed 's|subflows/launch-app\.yaml|subflows/launch-app-warm.yaml|g' "$src" > "$tmp_flow"
+      record_flow="$tmp_flow"
+    fi
+
     echo ""
     echo "▶ [$label] Recording $flow"
-    if "$MAESTRO_BIN" record --local "${ENV_ARGS[@]}" ".maestro/flows/$flow" "$out_mp4"; then
+    if "$MAESTRO_BIN" record --local "${ENV_ARGS[@]}" "$record_flow" "$out_mp4"; then
       echo "  ✓ $label"
       printf "file '%s'\n" "$out_mp4" >> "$concat"
     else
       echo "  ✗ $label"
       failed=$((failed + 1))
     fi
+
+    [[ -n "$tmp_flow" ]] && rm -f "$tmp_flow"
+    idx=$((idx + 1))
   done
 
   local demo="$dir/client-signoff-demo.mp4"

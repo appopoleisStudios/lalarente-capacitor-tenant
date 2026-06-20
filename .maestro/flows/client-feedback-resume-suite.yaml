@@ -1,0 +1,10 @@
+# Resume — owner from s2-13 (prior owner flows green)
+appId: com.lalarente.app
+---
+- runFlow: client-feedback/s2-13-owner-maintenance.yaml
+- runFlow: 09-pr9-owner-inspection-conduct.yaml
+- runFlow: 10-pr9-owner-inspection-readonly.yaml
+- runFlow: client-feedback/s2-19-owner-messages.yaml
+- runFlow: client-feedback/s2-21-owner-property.yaml
+- runFlow: 15-pr7-owner-disputes-empty.yaml
+- runFlow: 16-pr6-owner-lala-ai.yaml

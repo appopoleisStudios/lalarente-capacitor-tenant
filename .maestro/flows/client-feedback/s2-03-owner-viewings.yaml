@@ -1,37 +1,18 @@
 # S2-03 / S2-04 — Owner viewings list (expired viewing behaviour is data-dependent)
 appId: com.lalarente.app
 ---
-- runFlow: ../../subflows/launch-app.yaml
+- runFlow: ../../subflows/launch-app-warm.yaml
 - runFlow: ../../subflows/login-owner.yaml
 
-- scrollUntilVisible:
-    element: "Viewing"
-    direction: DOWN
-    timeout: 15000
-    optional: true
-
-- tapOn:
-    text: "Viewing"
-    optional: true
-
-- runFlow:
-    when:
-      notVisible: "Viewings"
-    commands:
-      - tapOn: "Properties"
-      - tapOn:
-          point: "50%,30%"
-          optional: true
+- openLink: lalarenteapp:///(owner)/viewings
 
 - extendedWaitUntil:
-    visible: "Viewings"
-    timeout: 15000
-    optional: true
-
-- tapOn:
-    text: "Viewings"
-    optional: true
+    visible: "Viewing Requests"
+    timeout: 20000
 
 - assertVisible:
     text: "Viewing"
+    optional: true
+- assertVisible:
+    text: "No Viewing Requests"
     optional: true

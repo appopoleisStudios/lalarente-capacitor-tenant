@@ -128,7 +128,7 @@ export default function ProfileScreen() {
           ) : (
             <Text style={styles.name}>{fullName || 'No name set'}</Text>
           )}
-          <Text style={styles.email}>{email}</Text>
+          <Text testID="owner-profile-email" style={styles.email}>{email}</Text>
           <View style={styles.badge}>
             <Text style={styles.badgeText}>Owner Account</Text>
           </View>

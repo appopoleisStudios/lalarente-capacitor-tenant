@@ -212,6 +212,8 @@ export default function LoginScreen() {
                 ]}
                 onPress={handleLogin}
                 disabled={loading}
+                testID="sign-in-button"
+                accessibilityLabel="Sign In"
               >
                 <Text style={styles.signInButtonText}>
                   {loading ? 'Signing in...' : 'Sign In'}

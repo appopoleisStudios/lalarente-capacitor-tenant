@@ -1,7 +1,7 @@
 # S2-25 — Tenant bell / notifications
 appId: com.lalarente.app
 ---
-- runFlow: ../../subflows/launch-app.yaml
+- runFlow: ../../subflows/launch-app-warm.yaml
 - runFlow: ../../subflows/login-tenant.yaml
 
 - tapOn:

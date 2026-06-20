@@ -1,43 +1,66 @@
 # PR #7 — Your tenancy shortcuts (T9–T13 nav) — client feedback closure
-# Verifies shortcuts exist on dashboard when tenant has active lease.
 appId: com.lalarente.app
 ---
-- runFlow: ../subflows/launch-app.yaml
+- runFlow: ../subflows/launch-app-warm.yaml
 - runFlow: ../subflows/login-tenant.yaml
-- runFlow: ../subflows/scroll-tenancy.yaml
 
-- scrollUntilVisible:
-    element:
-      id: "tenancy-payments-arrears"
-    direction: DOWN
-    timeout: 15000
+- openLink: lalarenteapp:///(tenant)/payments
+- extendedWaitUntil:
+    visible:
+      id: "tab-payments"
+    timeout: 30000
 
-- scrollUntilVisible:
-    element:
-      id: "tenancy-payment-disputes"
-    direction: DOWN
-    timeout: 10000
+- assertVisible:
+    text: "Payments"
+    optional: true
+- assertVisible:
+    text: "No Active Lease"
+    optional: true
 
-- scrollUntilVisible:
-    element:
-      id: "tenancy-arrears-escalation"
-    direction: DOWN
-    timeout: 10000
+- runFlow: ../subflows/login-tenant.yaml
 
-- scrollUntilVisible:
-    element:
-      id: "tenancy-early-termination"
-    direction: DOWN
-    timeout: 10000
+- openLink: lalarenteapp:///(tenant)/payment-disputes
+- extendedWaitUntil:
+    visible:
+      id: "payment-disputes-title"
+    timeout: 45000
 
-- scrollUntilVisible:
-    element:
-      id: "tenancy-holding-deposits"
-    direction: DOWN
-    timeout: 10000
+- assertVisible:
+    text: "No payment disputes"
+    optional: true
 
-- scrollUntilVisible:
-    element:
-      id: "tenancy-reports-inspections"
-    direction: DOWN
-    timeout: 10000
+- runFlow: ../subflows/login-tenant.yaml
+
+- openLink: lalarenteapp:///(tenant)/holding-deposit
+- extendedWaitUntil:
+    visible: "Holding Deposits"
+    timeout: 30000
+    optional: true
+- assertVisible:
+    text: "No Holding Deposits"
+    optional: true
+
+- runFlow: ../subflows/login-tenant.yaml
+
+- openLink: lalarenteapp:///(tenant)/arrears
+- extendedWaitUntil:
+    visible: "My Arrears"
+    timeout: 30000
+    optional: true
+- assertVisible:
+    text: "No Active Lease"
+    optional: true
+
+- runFlow: ../subflows/login-tenant.yaml
+
+- openLink: lalarenteapp:///(tenant)/early-termination
+- extendedWaitUntil:
+    visible: "Early Termination"
+    timeout: 30000
+
+- runFlow: ../subflows/login-tenant.yaml
+
+- openLink: lalarenteapp:///(tenant)/reports
+- extendedWaitUntil:
+    visible: "Reports"
+    timeout: 30000

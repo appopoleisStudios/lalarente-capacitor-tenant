@@ -421,7 +421,7 @@ export default function TenantMaintenanceReportScreen() {
             ))}
             {canAddMore && (
               <>
-                <TouchableOpacity style={styles.addMediaButton} onPress={takePhoto}>
+                <TouchableOpacity style={styles.addMediaButton} onPress={takePhoto} testID="maintenance-add-camera">
                   <Ionicons name="camera" size={32} color={RSA.green} />
                   <Text style={styles.addMediaText}>Camera</Text>
                 </TouchableOpacity>

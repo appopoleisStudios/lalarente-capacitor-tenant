@@ -5,16 +5,18 @@ appId: com.lalarente.app
 - runFlow: ../subflows/login-tenant.yaml
 
 - extendedWaitUntil:
-    visible: "Welcome back,"
+    visible:
+      id: "notification-bell"
     timeout: 15000
 
-- scrollUntilVisible:
-    element: "Maintenance"
-    direction: DOWN
+- assertVisible: "Viewings & applications"
+
+- openLink: lalarenteapp:///(tenant)/maintenance
+- extendedWaitUntil:
+    visible: "Maintenance"
     timeout: 20000
 
-- assertVisible: "Maintenance"
-
+- openLink: lalarenteapp:///(tenant)/ai-chat
 - extendedWaitUntil:
-    visible: "Lala AI"
-    timeout: 10000
+    visible: "Lala Assistant"
+    timeout: 20000

@@ -1,15 +1,20 @@
 # S2-05 — owner Applications entry (not bell-only)
 appId: com.lalarente.app
 ---
-- runFlow: ../subflows/launch-app.yaml
+- runFlow: ../subflows/launch-app-warm.yaml
 - runFlow: ../subflows/login-owner.yaml
 
-- scrollUntilVisible:
-    element: "Applications"
-    direction: DOWN
+- openLink: lalarenteapp:///(owner)/applications
+
+- extendedWaitUntil:
+    visible: "Applications"
     timeout: 20000
 
-- tapOn: "Applications"
-- extendedWaitUntil:
-    visible: "Application"
-    timeout: 15000
+- assertVisible:
+    text: "Applications"
+- assertVisible:
+    text: "pending"
+    optional: true
+- assertVisible:
+    text: "tenants apply"
+    optional: true

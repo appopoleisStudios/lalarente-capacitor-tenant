@@ -2,7 +2,8 @@
 appId: com.lalarente.app
 ---
 - extendedWaitUntil:
-    visible: "Welcome back,"
+    visible:
+      id: "notification-bell"
     timeout: 15000
 
 - scrollUntilVisible:

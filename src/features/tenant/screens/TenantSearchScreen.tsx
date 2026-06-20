@@ -300,7 +300,7 @@ export default function TenantSearchScreen() {
 
         {/* Results Count */}
         <View style={styles.resultsHeader}>
-          <Text style={styles.resultsText}>
+          <Text testID="tenant-search-results" style={styles.resultsText}>
             {filteredProperties.length} {filteredProperties.length === 1 ? 'property' : 'properties'} found
           </Text>
         </View>
