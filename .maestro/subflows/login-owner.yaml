@@ -1,16 +1,11 @@
 # Owner login — uses OWNER_EMAIL/OWNER_PASSWORD from .maestro/.env via --env flags.
 appId: com.lalarente.app
 ---
-- openLink: lalarenteapp:///(owner)/dashboard
+- openLink: lalarenteapp:///(owner)/profile
 
 - extendedWaitUntil:
-    visible: "Portfolio Dashboard"
-    timeout: 20000
-    optional: true
-
-- extendedWaitUntil:
-    visible: "Welcome to LaLarente"
-    timeout: 20000
+    visible: "Owner Account"
+    timeout: 15000
     optional: true
 
 - extendedWaitUntil:
@@ -19,54 +14,20 @@ appId: com.lalarente.app
     timeout: 5000
     optional: true
 
-# Already signed in — verify Navin owner email on profile
 - runFlow:
     when:
-      visible: "Portfolio Dashboard"
+      visible: "Owner Account"
     commands:
-      - openLink: lalarenteapp:///(owner)/profile
-      - extendedWaitUntil:
-          visible: "Owner Account"
-          timeout: 20000
       - runFlow:
           when:
             notVisible: ${OWNER_EMAIL}
           commands:
-            - scrollUntilVisible:
-                element: "Logout"
-                direction: DOWN
-                timeout: 15000
-            - tapOn: "Logout"
-            - tapOn: "Logout"
+            - launchApp:
+                clearState: true
             - extendedWaitUntil:
                 visible:
                   id: "email-input"
-                timeout: 30000
-      - openLink: lalarenteapp:///(owner)/dashboard
-
-- runFlow:
-    when:
-      visible: "Welcome to LaLarente"
-    commands:
-      - openLink: lalarenteapp:///(owner)/profile
-      - extendedWaitUntil:
-          visible: "Owner Account"
-          timeout: 20000
-      - runFlow:
-          when:
-            notVisible: ${OWNER_EMAIL}
-          commands:
-            - scrollUntilVisible:
-                element: "Logout"
-                direction: DOWN
-                timeout: 15000
-            - tapOn: "Logout"
-            - tapOn: "Logout"
-            - extendedWaitUntil:
-                visible:
-                  id: "email-input"
-                timeout: 30000
-      - openLink: lalarenteapp:///(owner)/dashboard
+                timeout: 60000
 
 - runFlow:
     when:
