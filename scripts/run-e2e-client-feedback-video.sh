@@ -120,8 +120,9 @@ record_group() {
 
     # After the first clip, keep the signed-in session (clearState per flow breaks record mode login).
     if [[ "$idx" -gt 0 ]]; then
-      tmp_flow="$(mktemp "$E2E_VIDEO_TEMP/.flow-XXXXXX.yaml")"
-      sed 's|subflows/launch-app\.yaml|subflows/launch-app-warm.yaml|g' "$src" > "$tmp_flow"
+      tmp_flow="$(mktemp "$E2E_VIDEO_TEMP/.flow-XXXXXX")"
+      tmp_flow="${tmp_flow}.yaml"
+      sed 's|launch-app\.yaml|launch-app-warm.yaml|g' "$src" > "$tmp_flow"
       record_flow="$tmp_flow"
     fi
 
