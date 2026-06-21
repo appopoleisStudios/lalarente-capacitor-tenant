@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const RSA = { blue: '#002395' };
@@ -34,6 +34,10 @@ export default function VendorPODetailScreen() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [showRevisions, setShowRevisions] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [updateReason, setUpdateReason] = useState('');
 
   useEffect(() => {
     if (poId) {
@@ -58,39 +62,32 @@ export default function VendorPODetailScreen() {
   };
 
   const handleRequestUpdate = () => {
-    Alert.prompt(
-      'Request PO Update',
-      'Please explain what changes you need from the owner:',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Send Request',
-          onPress: async (reason?: string) => {
-            if (!reason || reason.trim() === '') {
-              Alert.alert('Error', 'Please provide a reason for the update request');
-              return;
-            }
+    setUpdateReason('');
+    setShowUpdateModal(true);
+  };
 
-            try {
-              setActionLoading(true);
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  const submitUpdateRequest = async () => {
+    if (!updateReason.trim()) {
+      Alert.alert('Error', 'Please provide a reason for the update request');
+      return;
+    }
 
-              // TODO: Implement API to notify owner about update request
-              // This would typically create a notification or message to the owner
+    try {
+      setActionLoading(true);
+      setShowUpdateModal(false);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              Alert.alert('Success', 'Update request sent to property owner');
-            } catch (error: any) {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-              Alert.alert('Error', error.message || 'Failed to send request');
-            } finally {
-              setActionLoading(false);
-            }
-          },
-        },
-      ],
-      'plain-text'
-    );
+      // TODO: Implement API to notify owner about update request
+      // This would typically create a notification or message to the owner
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Success', 'Update request sent to property owner');
+    } catch (error: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', error.message || 'Failed to send request');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleAcceptPO = async () => {
@@ -131,43 +128,35 @@ export default function VendorPODetailScreen() {
   };
 
   const handleRejectPO = () => {
-    Alert.prompt(
-      'Reject Purchase Order',
-      'Please provide a reason for rejecting this PO:',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reject',
-          style: 'destructive',
-          onPress: async (reason?: string) => {
-            if (!reason || reason.trim() === '') {
-              Alert.alert('Error', 'Please provide a reason for rejection');
-              return;
-            }
+    setRejectReason('');
+    setShowRejectModal(true);
+  };
 
-            try {
-              setActionLoading(true);
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  const confirmRejectPO = async () => {
+    if (!rejectReason.trim()) {
+      Alert.alert('Error', 'Please provide a reason for rejection');
+      return;
+    }
 
-              await rejectPO(poId, user?.id || '', reason.trim());
+    try {
+      setActionLoading(true);
+      setShowRejectModal(false);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              Alert.alert(
-                'PO Rejected',
-                'The purchase order has been rejected. The owner will be notified.',
-                [{ text: 'OK', onPress: () => router.back() }]
-              );
-            } catch (error: any) {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-              Alert.alert('Error', error.message || 'Failed to reject PO');
-            } finally {
-              setActionLoading(false);
-            }
-          },
-        },
-      ],
-      'plain-text'
-    );
+      await rejectPO(poId, user?.id || '', rejectReason.trim());
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert(
+        'PO Rejected',
+        'The purchase order has been rejected. The owner will be notified.',
+        [{ text: 'OK', onPress: () => router.back() }]
+      );
+    } catch (error: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', error.message || 'Failed to reject PO');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   if (loading) {
@@ -356,9 +345,99 @@ export default function VendorPODetailScreen() {
         <View style={{ height: 120 }} />
       </ScrollView>
 
+      {/* Reject Reason Modal */}
+      <Modal
+        visible={showRejectModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowRejectModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Reject Purchase Order</Text>
+            <Text style={styles.modalDescription}>
+              Please provide a reason for rejecting this PO:
+            </Text>
+            <TextInput
+              style={styles.modalInput}
+              value={rejectReason}
+              onChangeText={setRejectReason}
+              placeholder="Explain why you're rejecting..."
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+              autoFocus
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => setShowRejectModal(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalConfirmButton, { backgroundColor: colors.error[500] }]}
+                onPress={confirmRejectPO}
+              >
+                <Text style={styles.modalConfirmText}>Reject PO</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Update Request Modal */}
+      <Modal
+        visible={showUpdateModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowUpdateModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Request PO Update</Text>
+            <Text style={styles.modalDescription}>
+              Please explain what changes you need from the owner:
+            </Text>
+            <TextInput
+              style={styles.modalInput}
+              value={updateReason}
+              onChangeText={setUpdateReason}
+              placeholder="Describe the changes needed..."
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+              autoFocus
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => setShowUpdateModal(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalConfirmButton, { backgroundColor: colors.warning[500] }]}
+                onPress={submitUpdateRequest}
+              >
+                <Text style={styles.modalConfirmText}>Send Request</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {canAccept && (
         <View style={styles.footer}>
           <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.requestButton]}
+              onPress={handleRequestUpdate}
+              disabled={actionLoading}
+            >
+              <Ionicons name="create-outline" size={20} color={colors.warning[600]} />
+              <Text style={styles.requestButtonText}>Request Update</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionButton, styles.rejectButton]}
               onPress={handleRejectPO}
@@ -537,6 +616,78 @@ const styles = StyleSheet.create({
     borderColor: colors.warning[500],
   },
   requestButtonText: { fontSize: 15, fontWeight: '700', color: colors.warning[600] },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  modalDescription: {
+    fontSize: 15,
+    color: '#6b7280',
+    marginBottom: 16,
+    lineHeight: 22,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 15,
+    minHeight: 100,
+    textAlignVertical: 'top',
+    marginBottom: 20,
+    backgroundColor: '#f9fafb',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalCancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCancelText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#6b7280',
+  },
+  modalConfirmButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalConfirmText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
   rejectButton: {
     backgroundColor: '#FFFFFF',
     borderColor: colors.error[500],

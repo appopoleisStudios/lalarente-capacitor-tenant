@@ -3,7 +3,7 @@
  * PO status updates and actions
  */
 
-import { supabase } from '@/src/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import type { POStatus, PurchaseOrder } from '../types/po.types';
 
 /**
@@ -128,6 +128,34 @@ export async function sendPOToVendor(
 }
 
 /**
+ * Verify a vendor is assigned to this PO via the contract relationship
+ */
+async function verifyVendorAssignment(poId: string, vendorId: string): Promise<void> {
+  const { data: po, error } = await supabase
+    .from('purchase_orders')
+    .select('contract_id')
+    .eq('id', poId)
+    .maybeSingle<{ contract_id: string }>();
+
+  if (error) throw error;
+  if (!po) throw new Error('Purchase Order not found');
+
+  const { contract_id: contractId } = po;
+  if (!contractId) throw new Error('PO has no contract reference');
+
+  const { data: contract, error: contractError } = await supabase
+    .from('service_contracts')
+    .select('vendor_id')
+    .eq('id', contractId)
+    .single<{ vendor_id: string }>();
+
+  if (contractError) throw new Error('Could not verify vendor assignment');
+  if (!contract || contract.vendor_id !== vendorId) {
+    throw new Error('You are not authorized to act on this purchase order');
+  }
+}
+
+/**
  * Accept PO (Vendor action)
  * 
  * @param poId - The purchase order ID
@@ -135,7 +163,7 @@ export async function sendPOToVendor(
  * @returns Updated purchase order
  */
 export async function acceptPO(poId: string, vendorId: string): Promise<PurchaseOrder> {
-  // TODO: Verify vendor is assigned to this PO
+  await verifyVendorAssignment(poId, vendorId);
   return updatePOStatus(poId, 'accepted');
 }
 
@@ -152,7 +180,21 @@ export async function rejectPO(
   vendorId: string,
   reason: string
 ): Promise<PurchaseOrder> {
-  // TODO: Verify vendor is assigned to this PO
-  // TODO: Store rejection reason
+  await verifyVendorAssignment(poId, vendorId);
+  
+  // Persist rejection reason first — throw on failure so status is NOT updated
+  const { error: reasonError } = await (supabase
+    .from('purchase_orders') as any)
+    .update({
+      rejection_reason: reason,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', poId);
+
+  if (reasonError) {
+    console.error('Failed to store rejection reason:', reasonError);
+    throw new Error('Failed to record rejection reason — PO status unchanged');
+  }
+
   return updatePOStatus(poId, 'rejected');
 }

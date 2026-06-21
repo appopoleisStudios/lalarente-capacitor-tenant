@@ -144,11 +144,14 @@ export default function OwnerPODetailScreen() {
 
   const handleSendToVendor = async () => {
     // Validate that date is in the future
-    // const now = new Date();
-    // if (scheduledDate < now) {
-    //   Alert.alert('Invalid Date', 'Please select a future date for the scheduled work');
-    //   return;
-    // }
+    const now = new Date();
+    // Strip time for date-only comparison
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const selected = new Date(scheduledDate.getFullYear(), scheduledDate.getMonth(), scheduledDate.getDate());
+    if (selected < today) {
+      Alert.alert('Invalid Date', 'Please select a future date for the scheduled work');
+      return;
+    }
 
     Alert.alert(
       'Send PO to Vendor',
@@ -208,18 +211,12 @@ export default function OwnerPODetailScreen() {
   };
 
   const onTimeChange = (event: any, selectedTime?: Date) => {
-    const currentTime = selectedTime || scheduledTime;
-    
-    // Always close on Android (dialog dismissed)
-    // On iOS, only close if user cancelled
     if (Platform.OS === 'android' || event.type === 'dismissed') {
       setShowTimePicker(false);
     }
-    
-    // Update time if user selected one
     if (event.type === 'set' && selectedTime) {
       setScheduledTime(selectedTime);
-      setShowTimePicker(false); // Close after selection
+      setShowTimePicker(false);
     }
   };
 
@@ -648,8 +645,8 @@ export default function OwnerPODetailScreen() {
           mode="date"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
           onChange={onDateChange}
-          // minimumDate={new Date()}
-        />
+        minimumDate={new Date()}
+      />
       )}
 
       {/* Time Picker Modal */}
@@ -658,7 +655,7 @@ export default function OwnerPODetailScreen() {
           value={scheduledTime}
           mode="time"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          // onChange={onTimeChange}
+          onChange={onTimeChange}
         />
       )}
     </SafeAreaView>
