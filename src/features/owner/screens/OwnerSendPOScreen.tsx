@@ -30,12 +30,19 @@ export default function OwnerSendPOScreen() {
   }, []);
   const params = useLocalSearchParams();
 
-  // Parse params
-  const poId = params.poId as string;
-  const vendorName = params.vendorName as string;
-  const totalAmount = params.totalAmount as string;
-  const propertyAddress = params.propertyAddress as string;
-  const requestId = params.requestId as string;
+  // Parse params with null checks
+  const poId = params.poId as string | undefined;
+  const vendorName = (params.vendorName as string) || 'Vendor';
+  const totalAmount = (params.totalAmount as string) || '0.00';
+  const propertyAddress = (params.propertyAddress as string) || '';
+  const requestId = params.requestId as string | undefined;
+
+  // Guard: poId is required
+  if (!poId) {
+    Alert.alert('Error', 'Missing purchase order reference');
+    router.back();
+    return null;
+  }
 
   // Form state
   const [startDate, setStartDate] = useState(new Date());
