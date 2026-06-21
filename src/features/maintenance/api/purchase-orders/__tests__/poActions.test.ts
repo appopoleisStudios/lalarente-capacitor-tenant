@@ -3,7 +3,7 @@
  * Covers acceptPO, rejectPO, updatePOStatus, and the verifyVendorAssignment security check
  */
 
-import { supabase } from '@/src/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { acceptPO, rejectPO, updatePOStatus } from '../poActions.api';
 import type { PurchaseOrder } from '../../types/po.types';
 

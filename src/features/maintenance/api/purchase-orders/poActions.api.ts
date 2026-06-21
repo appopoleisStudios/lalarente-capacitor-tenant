@@ -3,7 +3,7 @@
  * PO status updates and actions
  */
 
-import { supabase } from '@/src/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import type { POStatus, PurchaseOrder } from '../types/po.types';
 
 /**
@@ -131,26 +131,26 @@ export async function sendPOToVendor(
  * Verify a vendor is assigned to this PO via the contract relationship
  */
 async function verifyVendorAssignment(poId: string, vendorId: string): Promise<void> {
-  const { data: po, error } = await (supabase
-    .from('purchase_orders') as any)
+  const { data: po, error } = await supabase
+    .from('purchase_orders')
     .select('contract_id')
     .eq('id', poId)
-    .maybeSingle();
+    .maybeSingle<{ contract_id: string }>();
 
   if (error) throw error;
   if (!po) throw new Error('Purchase Order not found');
 
-  const contractId = (po as any).contract_id;
+  const { contract_id: contractId } = po;
   if (!contractId) throw new Error('PO has no contract reference');
 
   const { data: contract, error: contractError } = await supabase
     .from('service_contracts')
     .select('vendor_id')
     .eq('id', contractId)
-    .single();
+    .single<{ vendor_id: string }>();
 
   if (contractError) throw new Error('Could not verify vendor assignment');
-  if ((contract as any).vendor_id !== vendorId) {
+  if (!contract || contract.vendor_id !== vendorId) {
     throw new Error('You are not authorized to act on this purchase order');
   }
 }
