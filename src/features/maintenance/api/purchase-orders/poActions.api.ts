@@ -182,8 +182,8 @@ export async function rejectPO(
 ): Promise<PurchaseOrder> {
   await verifyVendorAssignment(poId, vendorId);
   
-  // Persist rejection reason
-  const { error: updateError } = await (supabase
+  // Persist rejection reason first — throw on failure so status is NOT updated
+  const { error: reasonError } = await (supabase
     .from('purchase_orders') as any)
     .update({
       rejection_reason: reason,
@@ -191,8 +191,9 @@ export async function rejectPO(
     })
     .eq('id', poId);
 
-  if (updateError) {
-    console.error('Failed to store rejection reason:', updateError);
+  if (reasonError) {
+    console.error('Failed to store rejection reason:', reasonError);
+    throw new Error('Failed to record rejection reason — PO status unchanged');
   }
 
   return updatePOStatus(poId, 'rejected');
