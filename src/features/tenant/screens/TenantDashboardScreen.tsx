@@ -697,7 +697,7 @@ export default function TenantDashboardScreen() {
                 style={styles.actionCard}
                 accessibilityRole="button"
                 accessibilityLabel="Search"
-                onPress={() => router.push('/(tenant)/search' as any)}
+                onPress={() => router.push('/(tenant)/search' as Href)}
               >
                 <View style={[styles.actionIcon, { backgroundColor: colors.primary[50] }]}>
                   <Ionicons name="search" size={24} color={colors.rsa.green} />
@@ -709,7 +709,7 @@ export default function TenantDashboardScreen() {
                 style={styles.actionCard}
                 accessibilityRole="button"
                 accessibilityLabel="Payments"
-                onPress={() => router.push('/(tenant)/payments' as any)}
+                onPress={() => router.push('/(tenant)/payments' as Href)}
               >
                 <View style={[styles.actionIcon, { backgroundColor: colors.info[50] }]}>
                   <Ionicons name="card" size={24} color={colors.rsa.blue} />
@@ -721,7 +721,7 @@ export default function TenantDashboardScreen() {
                 style={styles.actionCard}
                 accessibilityRole="button"
                 accessibilityLabel="Maintenance"
-                onPress={() => router.push('/(tenant)/maintenance' as any)}
+                onPress={() => router.push('/(tenant)/maintenance' as Href)}
               >
                 <View style={[styles.actionIcon, { backgroundColor: colors.warning[50] }]}>
                   <Ionicons name="construct" size={24} color={colors.warning[500]} />
@@ -733,7 +733,7 @@ export default function TenantDashboardScreen() {
                 style={styles.actionCard}
                 accessibilityRole="button"
                 accessibilityLabel="Messages"
-                onPress={() => router.push('/(tenant)/messages' as any)}
+                onPress={() => router.push('/(tenant)/messages' as Href)}
               >
                 <View style={[styles.actionIcon, { backgroundColor: colors.rsa.green + '15' }]}>
                   <Ionicons name="chatbubbles" size={24} color={colors.rsa.green} />
