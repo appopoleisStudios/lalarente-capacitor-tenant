@@ -7,12 +7,13 @@ import { Database } from '@/src/types/database.types';
 const SUPABASE_URL = Constants.expoConfig?.extra?.supabaseUrl || '';
 const SUPABASE_ANON_KEY = Constants.expoConfig?.extra?.supabaseAnonKey || '';
 
-// Validate environment variables — log but don't throw (graceful offline/config-missing)
+// Validate environment variables — fail fast so missing config is never silent
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.error('❌ Missing Supabase environment variables!');
   console.error('SUPABASE_URL:', SUPABASE_URL ? '✓' : '✗');
   console.error('SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? '✓' : '✗');
-  console.error('Make sure .env file exists and Metro bundler is restarted');
+  throw new Error(
+    'Missing Supabase environment variables. Ensure .env file exists and Metro bundler is restarted.'
+  );
 }
 
 // Create typed Supabase client
