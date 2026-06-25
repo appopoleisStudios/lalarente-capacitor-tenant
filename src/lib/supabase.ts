@@ -3,23 +3,16 @@ import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Database } from '@/src/types/database.types';
 
-// Debug: Log what Constants.expoConfig contains
-console.log('🔍 DEBUG Constants.expoConfig:', JSON.stringify(Constants.expoConfig?.extra, null, 2));
-
 // Environment variables (accessed via Constants.expoConfig.extra for React Native)
 const SUPABASE_URL = Constants.expoConfig?.extra?.supabaseUrl || '';
 const SUPABASE_ANON_KEY = Constants.expoConfig?.extra?.supabaseAnonKey || '';
 
-// Validate environment variables
-console.log('🔍 DEBUG SUPABASE_URL:', SUPABASE_URL ? `${SUPABASE_URL.substring(0, 30)}...` : '❌ MISSING');
-console.log('🔍 DEBUG SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? `${SUPABASE_ANON_KEY.substring(0, 30)}...` : '❌ MISSING');
-
+// Validate environment variables — log but don't throw (graceful offline/config-missing)
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   console.error('❌ Missing Supabase environment variables!');
   console.error('SUPABASE_URL:', SUPABASE_URL ? '✓' : '✗');
   console.error('SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? '✓' : '✗');
   console.error('Make sure .env file exists and Metro bundler is restarted');
-  throw new Error('Missing Supabase environment variables — check .env and restart Metro');
 }
 
 // Create typed Supabase client
@@ -32,29 +25,18 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, 
   },
 });
 
-// Storage bucket names - UPDATED with all new buckets
+// Storage bucket names
 export const STORAGE_BUCKETS = {
-  // Property Management
   PROPERTY_IMAGES: 'property-images',
-
-  // Maintenance
   MAINTENANCE_MEDIA: 'maintenance-media',
-
-  // Documents
   DOCUMENTS: 'documents',
   CONTRACTS: 'contracts',
-
-  // Rental Management (NEW)
-  INSPECTION_PHOTOS: 'inspection-photos',        // From Task 1.8
-  MESSAGE_ATTACHMENTS: 'message-attachments',    // From Task 1.9
-
-  // User Profiles
+  INSPECTION_PHOTOS: 'inspection-photos',
+  MESSAGE_ATTACHMENTS: 'message-attachments',
   PROFILES: 'profiles',
-  ID_DOCUMENTS: 'id-documents',                  // For rental applications
-  PROOF_OF_INCOME: 'proof-of-income',           // For rental applications
-
-  // Signatures
-  SIGNATURES: 'signatures',                      // For lease & inspection signatures
+  ID_DOCUMENTS: 'id-documents',
+  PROOF_OF_INCOME: 'proof-of-income',
+  SIGNATURES: 'signatures',
 } as const;
 
 // Helper type exports for cleaner code
