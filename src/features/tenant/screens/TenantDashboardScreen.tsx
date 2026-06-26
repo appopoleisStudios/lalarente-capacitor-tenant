@@ -689,7 +689,7 @@ export default function TenantDashboardScreen() {
             </View>
           )}
 
-          {/* Quick Actions */}
+          {/* Quick Actions — moved above the fold (Plane #29) */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Quick Actions</Text>
             <View style={styles.actionsGrid}>
