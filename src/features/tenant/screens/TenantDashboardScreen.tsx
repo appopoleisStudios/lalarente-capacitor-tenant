@@ -807,7 +807,7 @@ export default function TenantDashboardScreen() {
           })()}
 
           {/* Deposit Status — shown when active lease has a deposit */}
-          {activeLease && (
+          {activeLease && (activeLease.deposit_amount || 0) > 0 && (
             <View style={styles.section}>
               <TouchableOpacity
                 style={styles.depositCard}
@@ -1074,7 +1074,7 @@ export default function TenantDashboardScreen() {
                 <Text style={styles.documentText}>Reports</Text>
               </TouchableOpacity>
 
-              {activeLease && (
+              {activeLease && (activeLease.deposit_amount || 0) > 0 && (
                 <TouchableOpacity
                   style={styles.documentCard}
                   onPress={() => router.push('/(tenant)/deposit' as any)}
