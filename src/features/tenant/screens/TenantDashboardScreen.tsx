@@ -1180,18 +1180,6 @@ export default function TenantDashboardScreen() {
                 </View>
                 <Text style={styles.actionText} accessible={false}>Reports</Text>
               </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.actionCard}
-                accessibilityRole="button"
-                accessibilityLabel="Lala AI"
-                onPress={() => router.push('/(tenant)/ai-chat' as Href)}
-              >
-                <View style={[styles.actionIcon, { backgroundColor: '#E8F5E9' }]}>
-                  <Ionicons name="sparkles" size={24} color={colors.rsa.green} />
-                </View>
-                <Text style={styles.actionText} accessible={false}>Lala AI</Text>
-              </TouchableOpacity>
             </View>
           </View>
 
