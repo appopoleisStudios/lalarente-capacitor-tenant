@@ -179,6 +179,8 @@ export default function LoginScreen() {
                   autoCapitalize="none"
                   keyboardType="email-address"
                   autoComplete="email"
+                  autoCorrect={false}
+                  spellCheck={false}
                   editable={!loading}
                   importantForAccessibility="yes"
                 />
