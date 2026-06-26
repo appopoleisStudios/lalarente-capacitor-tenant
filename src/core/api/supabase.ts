@@ -1,22 +1,42 @@
-import { createClient } from '@supabase/supabase-js';
-import Constants from 'expo-constants';
+/**
+ * Consolidated Supabase client.
+ *
+ * This file now re-exports from the single source of truth at `src/lib/supabase`.
+ * Previously it created a second Supabase client, which caused duplicate instances
+ * and inconsistency. All consumers should import from `@/src/lib/supabase` directly.
+ */
+export {
+  supabase,
+  STORAGE_BUCKETS,
+  isAuthenticated,
+  getCurrentUser,
+  getCurrentUserProfile,
+  uploadFile,
+  getPublicUrl,
+  deleteFile,
+} from '../../lib/supabase';
 
-const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl || process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('❌ Missing Supabase environment variables!');
-  console.error('EXPO_PUBLIC_SUPABASE_URL:', supabaseUrl ? '✓' : '✗');
-  console.error('EXPO_PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✓' : '✗');
-  console.error('Constants.expoConfig?.extra:', Constants.expoConfig?.extra);
-  // Don't throw - let the app start so we can see the error logs
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storage: undefined, // Will use AsyncStorage via expo-secure-store later
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
-  },
-});
+export type {
+  Tables,
+  InsertTables,
+  UpdateTables,
+  Enums,
+  Property,
+  PropertyInsert,
+  PropertyUpdate,
+  Lease,
+  LeaseInsert,
+  LeaseUpdate,
+  Payment,
+  PaymentInsert,
+  RentalApplication,
+  RentalApplicationInsert,
+  Inspection,
+  InspectionInsert,
+  Message,
+  MessageThread,
+  Document,
+  DocumentInsert,
+  PropertyStatus,
+  UserRole,
+} from '../../lib/supabase';

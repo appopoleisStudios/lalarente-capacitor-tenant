@@ -42,6 +42,9 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [formError, setFormError] = useState('');
   const passwordRef = useRef<TextInput>(null);
   const [loading, setLoading] = useState(false);
 
@@ -87,10 +90,23 @@ export default function LoginScreen() {
   }));
 
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      alert('Please enter both email and password');
-      return;
+    // Inline validation — no alert()
+    let hasError = false;
+    if (!email.trim()) {
+      setEmailError('Email is required');
+      hasError = true;
+    } else {
+      setEmailError('');
     }
+    if (!password.trim()) {
+      setPasswordError('Password is required');
+      hasError = true;
+    } else {
+      setPasswordError('');
+    }
+    if (hasError) return;
+
+    setFormError('');
 
     // Safety timeout: if navigation doesn't fire within 15 s, reset the button
     // so the user can try again rather than being permanently stuck.
@@ -102,7 +118,7 @@ export default function LoginScreen() {
       // Navigation is handled by the useEffect watching profile + authLoading.
     } catch (error: any) {
       console.error('Login error:', error);
-      alert(error.message || 'Login failed. Please check your credentials.');
+      setFormError(error.message || 'Login failed. Please check your credentials.');
       setLoading(false);
     } finally {
       clearTimeout(timeout);
@@ -141,13 +157,13 @@ export default function LoginScreen() {
             entering={FadeInDown.delay(200).duration(600)}
             style={styles.formContainer}
           >
-            <Text style={styles.formTitle}>Welcome Back</Text>
+            <Text style={styles.formTitle}>Welcome back</Text>
             <Text style={styles.formSubtitle}>Sign in to your account</Text>
 
             {/* Email Input — plain View (no entering animation) so Maestro/iOS a11y sees fields immediately */}
             <View>
               <Text style={styles.inputLabel} accessible={false}>Email</Text>
-              <View style={styles.inputContainer}>
+              <View style={[styles.inputContainer, emailError ? styles.inputContainerError : null]}>
                 <Ionicons name="mail-outline" size={20} color={RSA_COLORS.textGray} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
@@ -157,22 +173,25 @@ export default function LoginScreen() {
                   accessibilityHint="Email address for sign in"
                   testID="email-input"
                   value={email}
-                  onChangeText={setEmail}
+                  onChangeText={(t) => { setEmail(t); setEmailError(''); setFormError(''); }}
                   returnKeyType="next"
                   onSubmitEditing={() => passwordRef.current?.focus()}
                   autoCapitalize="none"
                   keyboardType="email-address"
                   autoComplete="email"
+                  autoCorrect={false}
+                  spellCheck={false}
                   editable={!loading}
                   importantForAccessibility="yes"
                 />
               </View>
+              {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
             </View>
 
             {/* Password Input */}
             <View>
               <Text style={styles.inputLabel} accessible={false}>Password</Text>
-              <View style={styles.inputContainer}>
+              <View style={[styles.inputContainer, passwordError ? styles.inputContainerError : null]}>
                 <Ionicons name="lock-closed-outline" size={20} color={RSA_COLORS.textGray} style={styles.inputIcon} />
                 <TextInput
                   ref={passwordRef}
@@ -183,7 +202,7 @@ export default function LoginScreen() {
                   accessibilityHint="Password for sign in"
                   testID="password-input"
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={(t) => { setPassword(t); setPasswordError(''); setFormError(''); }}
                   secureTextEntry={!showPassword}
                   returnKeyType="done"
                   onSubmitEditing={handleLogin}
@@ -201,17 +220,26 @@ export default function LoginScreen() {
                   <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={RSA_COLORS.textGray} />
                 </Pressable>
               </View>
+              {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
             </View>
+
+            {/* Form error message */}
+            {formError ? (
+              <Animated.View entering={FadeInDown.duration(300)} style={styles.formErrorContainer}>
+                <Ionicons name="alert-circle" size={16} color={RSA_COLORS.red} />
+                <Text style={styles.formErrorText}>{formError}</Text>
+              </Animated.View>
+            ) : null}
 
             {/* Sign In Button */}
             <Animated.View entering={FadeInDown.delay(500).duration(600)}>
               <Pressable
                 style={[
                   styles.signInButton,
-                  loading && styles.signInButtonDisabled,
+                  (loading || !email.trim() || !password.trim()) && styles.signInButtonDisabled,
                 ]}
                 onPress={handleLogin}
-                disabled={loading}
+                disabled={loading || !email.trim() || !password.trim()}
                 testID="sign-in-button"
                 accessibilityLabel="Sign In"
               >
@@ -320,6 +348,29 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 54,
+  },
+  inputContainerError: {
+    borderColor: RSA_COLORS.red,
+  },
+  errorText: {
+    fontSize: 13,
+    color: RSA_COLORS.red,
+    marginTop: 6,
+    marginLeft: 4,
+  },
+  formErrorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FEF2F2',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 16,
+  },
+  formErrorText: {
+    fontSize: 14,
+    color: RSA_COLORS.red,
+    flex: 1,
   },
   inputIcon: {
     fontSize: 20,
