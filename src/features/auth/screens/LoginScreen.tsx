@@ -157,7 +157,7 @@ export default function LoginScreen() {
             entering={FadeInDown.delay(200).duration(600)}
             style={styles.formContainer}
           >
-            <Text style={styles.formTitle}>Welcome Back</Text>
+            <Text style={styles.formTitle}>Welcome back</Text>
             <Text style={styles.formSubtitle}>Sign in to your account</Text>
 
             {/* Email Input — plain View (no entering animation) so Maestro/iOS a11y sees fields immediately */}
