@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/src/core/query/queryKeys';
+import { extractErrorMessage } from '@/src/core/query/queryErrors';
 import { getQuotesByRequest, subscribeToQuotes, unsubscribeFromQuotes } from '../api';
 import type { Quote } from '../types/quote.types';
 
@@ -30,7 +31,7 @@ export function useQuotes(requestId: string) {
   return {
     quotes: query.data ?? [],
     loading: query.isLoading,
-    error: query.isError ? (query.error instanceof Error ? query.error.message : String(query.error ?? 'Failed to fetch quotes')) : null,
+    error: query.isError ? extractErrorMessage(query.error, 'Failed to fetch quotes') : null,
     refetch: query.refetch,
   };
 }

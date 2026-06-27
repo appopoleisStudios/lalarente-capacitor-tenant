@@ -2,6 +2,7 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { useCallback, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/src/core/query/queryKeys';
+import { extractErrorMessage } from '@/src/core/query/queryErrors';
 import {
     filterByPriority as filterRequestsByPriority,
     filterByStatus as filterRequestsByStatus,
@@ -59,7 +60,7 @@ export function useMaintenanceRequests() {
       try {
         const data = await filterRequestsByStatus(userId, statuses);
         queryClient.setQueryData(queryKey, data);
-      } catch (err: any) {
+      } catch (err) {
         console.error('Error filtering by status:', err);
       }
     },
@@ -72,7 +73,7 @@ export function useMaintenanceRequests() {
       try {
         const data = await filterRequestsByPriority(userId, priorities);
         queryClient.setQueryData(queryKey, data);
-      } catch (err: any) {
+      } catch (err) {
         console.error('Error filtering by priority:', err);
       }
     },
@@ -82,7 +83,7 @@ export function useMaintenanceRequests() {
   return {
     requests,
     loading: isLoading,
-    error: isError ? (error instanceof Error ? error.message : String(error ?? 'Failed to fetch maintenance requests')) : null,
+    error: isError ? extractErrorMessage(error, 'Failed to fetch maintenance requests') : null,
     refreshing: isRefetching,
     onRefresh,
     refetch,

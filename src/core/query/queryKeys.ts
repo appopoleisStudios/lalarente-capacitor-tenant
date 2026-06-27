@@ -1,11 +1,4 @@
-/**
- * Query key constants for TanStack Query.
- * Centralizes all query keys to avoid key collisions and make invalidation predictable.
- *
- * Usage:
- *   queryClient.invalidateQueries({ queryKey: queryKeys.maintenance.requests(userId, role) })
- *   useQuery({ queryKey: queryKeys.maintenance.requests(userId, role), queryFn: ... })
- */
+/** Centralised query keys — avoid collisions, enable predictable invalidation */
 export const queryKeys = {
   maintenance: {
     all: ['maintenance'] as const,
