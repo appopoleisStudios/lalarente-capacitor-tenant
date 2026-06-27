@@ -1,5 +1,7 @@
 import { useAuth } from '@/src/contexts/AuthContext';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/src/core/query/queryKeys';
 import {
     filterByPriority as filterRequestsByPriority,
     filterByStatus as filterRequestsByStatus,
@@ -10,110 +12,83 @@ import {
 
 export function useMaintenanceRequests() {
   const { user, profile } = useAuth();
-  const [requests, setRequests] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
+  const queryClient = useQueryClient();
 
-  // Fetch maintenance requests with role-based filtering
-  const fetchRequests = useCallback(async () => {
-    if (!user?.id || !profile?.role) {
-      // No user logged in - set loading to false and show empty state
-      setLoading(false);
-      setRefreshing(false);
-      setRequests([]);
-      return;
-    }
+  const userId = user?.id;
+  const role = profile?.role === 'admin' ? 'owner' : profile?.role;
+  const queryKey = queryKeys.maintenance.requests(userId, role);
 
-    try {
-      setError(null);
-      // Filter out admin role (not supported in maintenance)
-      const role = profile.role === 'admin' ? 'owner' : profile.role;
-      const data = await getMaintenanceRequests(user.id, role);
-      setRequests(data);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch maintenance requests');
-      console.error('Error fetching requests:', err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [user?.id, profile?.role]);
+  // TanStack Query manages loading/error/data states automatically
+  const { data: requests = [], isLoading, isError, error, isRefetching, refetch } = useQuery({
+    queryKey,
+    queryFn: async () => {
+      if (!userId || !role) return [];
+      return await getMaintenanceRequests(userId, role);
+    },
+    enabled: !!userId && !!role,
+    // Only show stale data while refetching (no flash of loading on pull-to-refresh)
+    placeholderData: (previousData) => previousData,
+  });
 
   // Pull-to-refresh handler
   const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    fetchRequests();
-  }, [fetchRequests]);
+    refetch();
+  }, [refetch]);
 
-  // Initial load + Real-time subscription
+  // Real-time subscription — invalidates query on changes
   useEffect(() => {
-    if (!user?.id || !profile?.role) {
-      // No user - stop loading and show empty state
-      setLoading(false);
-      setRequests([]);
-      return;
-    }
+    if (!userId || !role) return;
 
-    fetchRequests();
-
-    // Subscribe to real-time changes
     const subscription = subscribeToMaintenanceRequests(
-      user.id,
-      (payload: any) => {
-        console.log('Real-time update:', payload);
-        fetchRequests(); // Re-fetch on any change
+      userId,
+      () => {
+        queryClient.invalidateQueries({ queryKey });
       }
     );
 
     return () => {
       unsubscribeFromMaintenanceRequests(subscription);
     };
-  }, [user?.id, profile?.role, fetchRequests]);
+  }, [userId, role, queryClient, queryKey]);
 
   // Filter by status
   const filterByStatus = useCallback(
     async (statuses: Array<'open' | 'assigned' | 'in_progress' | 'completed' | 'closed'>) => {
-      if (!user?.id) return;
+      if (!userId) return;
 
       try {
-        setLoading(true);
-        const data = await filterRequestsByStatus(user.id, statuses);
-        setRequests(data);
+        const data = await filterRequestsByStatus(userId, statuses);
+        // Update the cache manually with filtered results
+        queryClient.setQueryData(queryKey, data);
       } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+        console.error('Error filtering by status:', err);
       }
     },
-    [user?.id]
+    [userId, queryClient, queryKey]
   );
 
   // Filter by priority
   const filterByPriority = useCallback(
     async (priorities: Array<'low' | 'medium' | 'high'>) => {
-      if (!user?.id) return;
+      if (!userId) return;
 
       try {
-        setLoading(true);
-        const data = await filterRequestsByPriority(user.id, priorities);
-        setRequests(data);
+        const data = await filterRequestsByPriority(userId, priorities);
+        queryClient.setQueryData(queryKey, data);
       } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+        console.error('Error filtering by priority:', err);
       }
     },
-    [user?.id]
+    [userId, queryClient, queryKey]
   );
 
   return {
     requests,
-    loading,
-    error,
-    refreshing,
+    loading: isLoading,
+    error: isError ? (error as any)?.message || 'Failed to fetch maintenance requests' : null,
+    refreshing: isRefetching,
     onRefresh,
-    refetch: fetchRequests,
+    refetch,
     filterByStatus,
     filterByPriority,
   };
