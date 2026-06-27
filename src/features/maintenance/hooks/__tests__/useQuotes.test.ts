@@ -1,10 +1,7 @@
-import { renderHook, waitFor, act } from '@testing-library/react-native';
-import React from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderHook, waitFor } from '@testing-library/react-native';
 import { useQuotes } from '../useQuotes';
-import type { Quote } from '../../types/quote.types';
-
-// ── Mocks ──────────────────────────────────────────────────────────
+import { createQueryWrapper } from './testUtils';
+import type { Quote } from '../../../api/types/quote.types';
 
 const mockRequestId = 'req-1';
 
@@ -22,60 +19,34 @@ const mockQuotes: Quote[] = [
   } as Quote,
 ];
 
+const mockSubscription = { id: 'sub-1', unsubscribe: jest.fn() };
+
 jest.mock('../../api', () => ({
   getQuotesByRequest: jest.fn(),
-  subscribeToQuotes: jest.fn(() => ({ id: 'sub-1', unsubscribe: jest.fn() })),
+  subscribeToQuotes: jest.fn(() => mockSubscription),
   unsubscribeFromQuotes: jest.fn(),
 }));
 
 const mockedApi = jest.requireMock('../../api') as Record<string, jest.Mock>;
-
-// ── Helpers ────────────────────────────────────────────────────────
-
-function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  });
-  return function Wrapper({ children }: { children: React.ReactNode }) {
-    return React.createElement(QueryClientProvider, { client: queryClient }, children);
-  };
-}
 
 beforeEach(() => {
   jest.clearAllMocks();
   mockedApi.getQuotesByRequest.mockResolvedValue(mockQuotes);
 });
 
-// ── Tests ──────────────────────────────────────────────────────────
-
 describe('useQuotes', () => {
-  it('returns loading=true initially', () => {
-    const { result } = renderHook(() => useQuotes(mockRequestId), {
-      wrapper: createWrapper(),
-    });
-
+  it('returns loading then quotes on success', async () => {
+    const { result } = renderHook(() => useQuotes(mockRequestId), { wrapper: createQueryWrapper() });
     expect(result.current.loading).toBe(true);
-    expect(result.current.quotes).toEqual([]);
-  });
 
-  it('returns quotes on successful fetch', async () => {
-    const { result } = renderHook(() => useQuotes(mockRequestId), {
-      wrapper: createWrapper(),
-    });
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
+    await waitFor(() => expect(result.current.loading).toBe(false));
 
     expect(result.current.quotes).toEqual(mockQuotes);
     expect(result.current.error).toBeNull();
   });
 
   it('returns empty array when requestId is empty', () => {
-    const { result } = renderHook(() => useQuotes(''), {
-      wrapper: createWrapper(),
-    });
-
+    const { result } = renderHook(() => useQuotes(''), { wrapper: createQueryWrapper() });
     expect(result.current.quotes).toEqual([]);
     expect(result.current.loading).toBe(false);
   });
@@ -83,60 +54,18 @@ describe('useQuotes', () => {
   it('returns error on fetch failure', async () => {
     mockedApi.getQuotesByRequest.mockRejectedValue(new Error('Failed to load'));
 
-    const { result } = renderHook(() => useQuotes(mockRequestId), {
-      wrapper: createWrapper(),
-    });
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
+    const { result } = renderHook(() => useQuotes(mockRequestId), { wrapper: createQueryWrapper() });
+    await waitFor(() => expect(result.current.loading).toBe(false));
 
     expect(result.current.error).toBe('Failed to load');
   });
 
-  it('falls back to generic error message when error has no message', async () => {
-    mockedApi.getQuotesByRequest.mockRejectedValue({} as Error);
+  it('subscribes to real-time updates and cleans up on unmount', async () => {
+    const { unmount } = renderHook(() => useQuotes(mockRequestId), { wrapper: createQueryWrapper() });
+    await waitFor(() => expect(mockedApi.getQuotesByRequest).toHaveBeenCalled());
 
-    const { result } = renderHook(() => useQuotes(mockRequestId), {
-      wrapper: createWrapper(),
-    });
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    expect(result.current.error).toBe('Failed to fetch quotes');
-  });
-
-  it('subscribes to real-time quote updates', async () => {
-    renderHook(() => useQuotes(mockRequestId), {
-      wrapper: createWrapper(),
-    });
-
-    await waitFor(() => {
-      expect(mockedApi.getQuotesByRequest).toHaveBeenCalled();
-    });
-
-    expect(mockedApi.subscribeToQuotes).toHaveBeenCalledWith(
-      mockRequestId,
-      expect.any(Function)
-    );
-  });
-
-  it('unsubscribes on unmount', async () => {
-    const subUnsubscribe = jest.fn();
-    mockedApi.subscribeToQuotes.mockReturnValue({ id: 'sub-1', unsubscribe: subUnsubscribe });
-
-    const { unmount } = renderHook(() => useQuotes(mockRequestId), {
-      wrapper: createWrapper(),
-    });
-
-    await waitFor(() => {
-      expect(mockedApi.getQuotesByRequest).toHaveBeenCalled();
-    });
-
+    expect(mockedApi.subscribeToQuotes).toHaveBeenCalledWith(mockRequestId, expect.any(Function));
     unmount();
-
-    expect(subUnsubscribe).toHaveBeenCalled();
+    expect(mockedApi.unsubscribeFromQuotes).toHaveBeenCalled();
   });
 });

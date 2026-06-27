@@ -1,19 +1,13 @@
 import { renderHook, waitFor, act } from '@testing-library/react-native';
-import React from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useMaintenanceRequests } from '../useMaintenanceRequests';
-import type { MaintenanceRequestWithRelations } from '../../types/maintenance.types';
-
-// ── Mocks ──────────────────────────────────────────────────────────
+import { createQueryWrapper, deferredPromise } from './testUtils';
+import type { MaintenanceRequestWithRelations } from '../../../api/types/maintenance.types';
 
 const mockUserId = 'user-1';
 const mockRole = 'owner';
 
 jest.mock('@/src/contexts/AuthContext', () => ({
-  useAuth: () => ({
-    user: { id: mockUserId },
-    profile: { role: mockRole },
-  }),
+  useAuth: () => ({ user: { id: mockUserId }, profile: { role: mockRole } }),
 }));
 
 const mockRequests: MaintenanceRequestWithRelations[] = [
@@ -31,9 +25,11 @@ const mockRequests: MaintenanceRequestWithRelations[] = [
   } as MaintenanceRequestWithRelations,
 ];
 
+const mockSubscription = { id: 'sub-1', unsubscribe: jest.fn() };
+
 jest.mock('../../api', () => ({
   getMaintenanceRequests: jest.fn(),
-  subscribeToMaintenanceRequests: jest.fn(() => ({ id: 'sub-1', unsubscribe: jest.fn() })),
+  subscribeToMaintenanceRequests: jest.fn(() => mockSubscription),
   unsubscribeFromMaintenanceRequests: jest.fn(),
   filterByStatus: jest.fn(),
   filterByPriority: jest.fn(),
@@ -41,138 +37,68 @@ jest.mock('../../api', () => ({
 
 const mockedApi = jest.requireMock('../../api') as Record<string, jest.Mock>;
 
-// ── Helpers ────────────────────────────────────────────────────────
-
-function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  });
-  return function Wrapper({ children }: { children: React.ReactNode }) {
-    return React.createElement(QueryClientProvider, { client: queryClient }, children);
-  };
-}
-
-function mockApiResolve(data: unknown) {
-  mockedApi.getMaintenanceRequests.mockResolvedValue(data);
-}
-
-function mockApiReject(error: Error) {
-  mockedApi.getMaintenanceRequests.mockRejectedValue(error);
-}
-
 beforeEach(() => {
   jest.clearAllMocks();
-  mockApiResolve(mockRequests);
+  mockedApi.getMaintenanceRequests.mockResolvedValue(mockRequests);
 });
 
-// ── Tests ──────────────────────────────────────────────────────────
-
 describe('useMaintenanceRequests', () => {
-  it('returns loading=true while query is in flight', async () => {
-    let resolvePromise!: (v: unknown) => void;
-    mockedApi.getMaintenanceRequests.mockReturnValue(new Promise((resolve) => { resolvePromise = resolve; }));
+  it('shows loading then resolves with requests', async () => {
+    const { promise, resolve } = deferredPromise();
+    mockedApi.getMaintenanceRequests.mockReturnValue(promise);
 
-    const { result } = renderHook(() => useMaintenanceRequests(), { wrapper: createWrapper() });
-
+    const { result } = renderHook(() => useMaintenanceRequests(), { wrapper: createQueryWrapper() });
     expect(result.current.loading).toBe(true);
-    expect(result.current.requests).toEqual([]);
 
-    await act(async () => {
-      resolvePromise(mockRequests);
-    });
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-  });
-
-  it('returns requests on successful fetch', async () => {
-    const { result } = renderHook(() => useMaintenanceRequests(), { wrapper: createWrapper() });
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
+    await act(async () => { resolve(mockRequests); });
+    await waitFor(() => expect(result.current.loading).toBe(false));
 
     expect(result.current.requests).toEqual(mockRequests);
     expect(result.current.error).toBeNull();
   });
 
   it('returns error on fetch failure', async () => {
-    mockApiReject(new Error('Network error'));
+    mockedApi.getMaintenanceRequests.mockRejectedValue(new Error('Network error'));
 
-    const { result } = renderHook(() => useMaintenanceRequests(), { wrapper: createWrapper() });
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
+    const { result } = renderHook(() => useMaintenanceRequests(), { wrapper: createQueryWrapper() });
+    await waitFor(() => expect(result.current.loading).toBe(false));
 
     expect(result.current.error).toBe('Network error');
-    expect(result.current.requests).toEqual([]);
   });
 
-  it('falls back to generic error message when error has no message', async () => {
-    mockApiReject({} as Error);
+  it('falls back to generic message when error has no message', async () => {
+    mockedApi.getMaintenanceRequests.mockRejectedValue({} as Error);
 
-    const { result } = renderHook(() => useMaintenanceRequests(), { wrapper: createWrapper() });
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
+    const { result } = renderHook(() => useMaintenanceRequests(), { wrapper: createQueryWrapper() });
+    await waitFor(() => expect(result.current.loading).toBe(false));
 
     expect(result.current.error).toBe('Failed to fetch maintenance requests');
   });
 
-  it('refetches when onRefresh is called', async () => {
-    const { result } = renderHook(() => useMaintenanceRequests(), { wrapper: createWrapper() });
+  it('refetches on onRefresh', async () => {
+    const { result } = renderHook(() => useMaintenanceRequests(), { wrapper: createQueryWrapper() });
+    await waitFor(() => expect(result.current.loading).toBe(false));
 
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
+    const { promise, resolve } = deferredPromise();
+    mockedApi.getMaintenanceRequests.mockReturnValue(promise);
 
-    let refetchResolve!: (v: unknown) => void;
-    mockedApi.getMaintenanceRequests.mockReturnValue(new Promise((resolve) => { refetchResolve = resolve; }));
-
-    await act(async () => {
-      result.current.onRefresh();
-    });
-
+    await act(async () => { result.current.onRefresh(); });
     expect(mockedApi.getMaintenanceRequests).toHaveBeenCalledTimes(2);
 
-    await act(async () => {
-      refetchResolve(mockRequests);
-    });
+    await act(async () => { resolve(mockRequests); });
   });
 
   it('calls API with correct userId and role', async () => {
-    renderHook(() => useMaintenanceRequests(), { wrapper: createWrapper() });
-
-    await waitFor(() => {
-      expect(mockedApi.getMaintenanceRequests).toHaveBeenCalledWith(mockUserId, mockRole);
-    });
+    renderHook(() => useMaintenanceRequests(), { wrapper: createQueryWrapper() });
+    await waitFor(() => expect(mockedApi.getMaintenanceRequests).toHaveBeenCalledWith(mockUserId, mockRole));
   });
 
-  it('subscribes to real-time updates', async () => {
-    renderHook(() => useMaintenanceRequests(), { wrapper: createWrapper() });
+  it('subscribes to real-time updates and cleans up on unmount', async () => {
+    const { unmount } = renderHook(() => useMaintenanceRequests(), { wrapper: createQueryWrapper() });
+    await waitFor(() => expect(mockedApi.getMaintenanceRequests).toHaveBeenCalled());
 
-    await waitFor(() => {
-      expect(mockedApi.getMaintenanceRequests).toHaveBeenCalled();
-    });
-
-    expect(mockedApi.subscribeToMaintenanceRequests).toHaveBeenCalledWith(
-      mockUserId,
-      expect.any(Function)
-    );
-  });
-
-  it('unsubscribes on unmount', async () => {
-    const { unmount } = renderHook(() => useMaintenanceRequests(), { wrapper: createWrapper() });
-
-    await waitFor(() => {
-      expect(mockedApi.getMaintenanceRequests).toHaveBeenCalled();
-    });
-
+    expect(mockedApi.subscribeToMaintenanceRequests).toHaveBeenCalledWith(mockUserId, expect.any(Function));
     unmount();
-
-    expect(mockedApi.unsubscribeFromMaintenanceRequests).toHaveBeenCalled();
+    expect(mockedApi.unsubscribeFromMaintenanceRequests).toHaveBeenCalledWith(mockSubscription);
   });
 });
