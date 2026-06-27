@@ -30,7 +30,7 @@ export function useQuotes(requestId: string) {
   return {
     quotes: query.data ?? [],
     loading: query.isLoading,
-    error: query.isError ? (query.error as Error)?.message || 'Failed to fetch quotes' : null,
+    error: query.isError ? (query.error instanceof Error ? query.error.message : String(query.error ?? 'Failed to fetch quotes')) : null,
     refetch: query.refetch,
   };
 }

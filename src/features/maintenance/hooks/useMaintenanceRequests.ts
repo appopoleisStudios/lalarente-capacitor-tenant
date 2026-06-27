@@ -82,7 +82,7 @@ export function useMaintenanceRequests() {
   return {
     requests,
     loading: isLoading,
-    error: isError ? (error as Error)?.message || 'Failed to fetch maintenance requests' : null,
+    error: isError ? (error instanceof Error ? error.message : String(error ?? 'Failed to fetch maintenance requests')) : null,
     refreshing: isRefetching,
     onRefresh,
     refetch,

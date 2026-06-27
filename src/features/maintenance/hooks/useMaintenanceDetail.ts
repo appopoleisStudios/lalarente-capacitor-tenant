@@ -13,7 +13,7 @@ export function useMaintenanceDetail(requestId: string) {
   return {
     request: query.data ?? null,
     loading: query.isLoading,
-    error: query.isError ? (query.error as Error)?.message || 'Failed to fetch request details' : null,
+    error: query.isError ? (query.error instanceof Error ? query.error.message : String(query.error ?? 'Failed to fetch request details')) : null,
     refetch: query.refetch,
   };
 }
