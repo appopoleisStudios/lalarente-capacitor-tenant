@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Platform } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
+import Constants from 'expo-constants';
 
 interface LocationPickerProps {
   initialAddress?: string;
@@ -93,7 +94,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
 
   const reverseGeocode = async (latitude: number, longitude: number) => {
     try {
-      const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '';
+      const apiKey = Constants.expoConfig?.extra?.googleMapsApiKey || '';
       const response = await fetch(
         `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
       );
@@ -144,7 +145,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
         placeholder="Search for address..."
         onPress={handlePlaceSelect}
         query={{
-          key: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+          key: Constants.expoConfig?.extra?.googleMapsApiKey || '',
           language: 'en',
           components: 'country:za', // Restrict to South Africa
         }}

@@ -33,7 +33,7 @@ module.exports = ({ config }) => {
         NSLocationWhenInUseUsageDescription: "This app needs access to your location to help you find properties nearby."
       },
       config: {
-        googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyDbwTaFT7cQJIEPKQpvr160QoBXkqVyM9U"
+        googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
       }
     },
     android: {
@@ -51,7 +51,7 @@ module.exports = ({ config }) => {
       ],
       config: {
         googleMaps: {
-          apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyDbwTaFT7cQJIEPKQpvr160QoBXkqVyM9U"
+          apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
         }
       }
     },
@@ -63,7 +63,8 @@ module.exports = ({ config }) => {
     plugins: [
       "expo-router",
       "@react-native-community/datetimepicker",
-      "@sentry/react-native"
+      "@sentry/react-native",
+      "expo-secure-store"
     ],
     experiments: {
       typedRoutes: true
