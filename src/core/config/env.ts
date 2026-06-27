@@ -9,14 +9,10 @@ export const env = {
     dsn: Constants.expoConfig?.extra?.sentryDsn || process.env.EXPO_PUBLIC_SENTRY_DSN || '',
   },
   payfast: {
-    merchantId: process.env.EXPO_PUBLIC_PAYFAST_MERCHANT_ID || '',
-    merchantKey: process.env.EXPO_PUBLIC_PAYFAST_MERCHANT_KEY || '',
-    passphrase: process.env.EXPO_PUBLIC_PAYFAST_PASSPHRASE || '',
     sandbox: process.env.EXPO_PUBLIC_PAYFAST_SANDBOX === 'true',
   },
   yoco: {
     publicKey: process.env.EXPO_PUBLIC_YOCO_PUBLIC_KEY || '',
-    secretKey: process.env.EXPO_PUBLIC_YOCO_SECRET_KEY || '',
     sandbox: process.env.EXPO_PUBLIC_YOCO_SANDBOX === 'true',
   },
   googleMaps: {

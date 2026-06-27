@@ -1,29 +1,30 @@
 /**
  * Payment Gateway Integration
  *
- * This file provides the structure for integrating with South African payment gateways:
+ * This file provides client-side payment gateway integration for South
+ * African payment gateways:
  * - PayFast (https://www.payfast.co.za)
  * - Yoco (https://www.yoco.com)
  *
+ * ⚠️ SECURITY: All secret keys (PayFast passphrase, Yoco secretKey) are
+ * handled server-side by the `payment-gateway` Supabase Edge Function.
+ * The client only holds public identifiers (sandbox flag, Yoco publicKey).
+ *
  * Setup Requirements:
  * 1. Create merchant accounts with PayFast and/or Yoco
- * 2. Add API keys to environment variables
- * 3. Set up webhook endpoints for payment notifications
- * 4. Configure return URLs for payment completion
+ * 2. Set secrets as Supabase Edge Function env vars:
+ *    - PAYFAST_MERCHANT_ID, PAYFAST_MERCHANT_KEY, PAYFAST_PASSPHRASE
+ *    - YOCO_SECRET_KEY
+ * 3. Deploy: npx supabase functions deploy payment-gateway
+ * 4. Add public keys to .env (EXPO_PUBLIC_YOCO_PUBLIC_KEY, EXPO_PUBLIC_PAYFAST_SANDBOX)
  */
 
 import { supabase } from '../../../lib/supabase';
 import { env } from '../../../core/config/env';
-import CryptoJS from 'crypto-js';
 
 export interface PaymentGatewayConfig {
   gateway: 'payfast' | 'yoco';
   sandbox: boolean;
-  merchantId?: string;
-  merchantKey?: string;
-  passphrase?: string;
-  publicKey?: string;
-  secretKey?: string;
 }
 
 export interface PaymentRequest {
@@ -58,171 +59,106 @@ export interface WebhookPayload {
 }
 
 /**
- * PayFast Configuration
+ * PayFast Configuration (public fields only — passphrase is server-side)
  * Documentation: https://developers.payfast.co.za/docs
- * Uses centralized env config (EXPO_PUBLIC_* vars available at runtime).
  */
 export const payfastConfig: PaymentGatewayConfig = {
   gateway: 'payfast',
   sandbox: env.payfast.sandbox,
-  merchantId: env.payfast.merchantId,
-  merchantKey: env.payfast.merchantKey,
-  passphrase: env.payfast.passphrase,
 };
 
 /**
- * Yoco Configuration
+ * Yoco Configuration (public fields only — secretKey is server-side)
  * Documentation: https://developer.yoco.com/online/
  */
 export const yocoConfig: PaymentGatewayConfig = {
   gateway: 'yoco',
   sandbox: env.yoco.sandbox,
-  publicKey: env.yoco.publicKey,
-  secretKey: env.yoco.secretKey,
 };
 
 /**
- * Generate PayFast payment URL
- * This creates a redirect URL for PayFast hosted payment page
+ * Generate PayFast payment URL via server-side Edge Function.
+ * The passphrase and merchant_key are managed server-side to avoid
+ * exposing them in the client APK bundle.
  */
-export function generatePayFastPaymentUrl(
-  config: PaymentGatewayConfig,
-  request: PaymentRequest
-): string {
-  const baseUrl = config.sandbox
-    ? 'https://sandbox.payfast.co.za/eng/process'
-    : 'https://www.payfast.co.za/eng/process';
-
-  const params = new URLSearchParams({
-    merchant_id: config.merchantId || '',
-    merchant_key: config.merchantKey || '',
-    return_url: request.returnUrl,
-    cancel_url: request.cancelUrl,
-    notify_url: request.notifyUrl,
-    m_payment_id: request.paymentId,
-    amount: request.amount.toFixed(2),
-    item_name: request.itemName,
-    item_description: request.itemDescription || '',
-    email_address: request.buyerEmail,
-    name_first: request.buyerFirstName || '',
-    name_last: request.buyerLastName || '',
-  });
-
-  // Generate MD5 signature (required for PayFast security)
-  const signature = generatePayFastSignature(params, config.passphrase);
-  if (signature) {
-    params.append('signature', signature);
-  }
-
-  return `${baseUrl}?${params.toString()}`;
-}
-
-/**
- * Generate PayFast MD5 signature
- * Required for payment verification.
- * Sorts all params alphabetically, joins as key=value pairs,
- * appends passphrase, and computes MD5 hash.
- */
-export function generatePayFastSignature(
-  params: URLSearchParams,
-  passphrase: string = ''
-): string {
-  // Sort parameters alphabetically and create string
-  const sortedParams = Array.from(params.entries())
-    .filter(([key]) => key !== 'signature')
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
-    .join('&');
-
-  // Add passphrase if set
-  const stringToHash = passphrase
-    ? `${sortedParams}&passphrase=${encodeURIComponent(passphrase)}`
-    : sortedParams;
-
-  const hash = CryptoJS.MD5(stringToHash).toString();
-  return hash;
-}
-
-/**
- * Verify PayFast webhook signature
- * Reconstructs the expected signature from the payload and compares it
- * with the provided signature, preventing forged webhook notifications.
- */
-export function verifyPayFastSignature(
-  payload: Record<string, string>,
-  signature: string,
-  passphrase: string = ''
-): boolean {
-  if (!signature) return false;
-
-  // Reconstruct the param string from webhook payload (exclude 'signature' key)
-  const sortedParams = Object.entries(payload)
-    .filter(([key]) => key !== 'signature')
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
-    .join('&');
-
-  const stringToHash = passphrase
-    ? `${sortedParams}&passphrase=${encodeURIComponent(passphrase)}`
-    : sortedParams;
-
-  const expectedSig = CryptoJS.MD5(stringToHash).toString();
-  return expectedSig === signature;
-}
-
-/**
- * Create Yoco checkout session
- * Documentation: https://developer.yoco.com/online/checkout
- */
-export async function createYocoCheckout(
-  config: PaymentGatewayConfig,
+async function generatePayFastPaymentUrlViaEdge(
   request: PaymentRequest
 ): Promise<PaymentResponse> {
   try {
-    const response = await fetch('https://payments.yoco.com/api/checkouts', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.secretKey}`,
-      },
-      body: JSON.stringify({
-        amount: Math.round(request.amount * 100), // Yoco uses cents
-        currency: 'ZAR',
-        metadata: {
-          payment_id: request.paymentId,
-        },
-        successUrl: request.returnUrl,
+    const { data, error } = await supabase.functions.invoke('payment-gateway', {
+      body: {
+        action: 'generate-payfast-url',
+        paymentId: request.paymentId,
+        amount: request.amount,
+        itemName: request.itemName,
+        itemDescription: request.itemDescription,
+        buyerEmail: request.buyerEmail,
+        buyerFirstName: request.buyerFirstName,
+        buyerLastName: request.buyerLastName,
+        returnUrl: request.returnUrl,
         cancelUrl: request.cancelUrl,
-        failureUrl: request.cancelUrl,
-      }),
+        notifyUrl: request.notifyUrl,
+      },
     });
 
-    const data = await response.json();
+    if (error) {
+      console.error('payment-gateway edge function error:', error);
+      return { success: false, error: 'Payment gateway unavailable' };
+    }
 
-    if (response.ok && data.redirectUrl) {
-      return {
-        success: true,
-        redirectUrl: data.redirectUrl,
-        transactionId: data.id,
-      };
+    if (!data?.success) {
+      return { success: false, error: data?.error || 'Failed to generate payment URL' };
+    }
+
+    return { success: true, redirectUrl: data.redirectUrl };
+  } catch (err) {
+    console.error('Error calling payment-gateway edge function:', err);
+    return { success: false, error: 'Payment gateway unavailable' };
+  }
+}
+
+/**
+ * Create Yoco checkout session via server-side Edge Function.
+ * The secretKey is managed server-side to avoid exposing it in the client APK.
+ */
+async function createYocoCheckoutViaEdge(
+  request: PaymentRequest
+): Promise<PaymentResponse> {
+  try {
+    const { data, error } = await supabase.functions.invoke('payment-gateway', {
+      body: {
+        action: 'create-yoco-checkout',
+        amount: request.amount,
+        paymentId: request.paymentId,
+        returnUrl: request.returnUrl,
+        cancelUrl: request.cancelUrl,
+      },
+    });
+
+    if (error) {
+      console.error('payment-gateway edge function error:', error);
+      return { success: false, error: 'Payment gateway unavailable' };
+    }
+
+    if (!data?.success) {
+      return { success: false, error: data?.error || 'Failed to create checkout' };
     }
 
     return {
-      success: false,
-      error: data.message || 'Failed to create checkout session',
+      success: true,
+      redirectUrl: data.redirectUrl,
+      transactionId: data.transactionId,
     };
-  } catch (error: any) {
-    console.error('Error creating Yoco checkout:', error);
-    return {
-      success: false,
-      error: error.message || 'Network error',
-    };
+  } catch (err) {
+    console.error('Error calling payment-gateway edge function:', err);
+    return { success: false, error: 'Payment gateway unavailable' };
   }
 }
 
 /**
  * Process payment webhook
- * Called by webhook endpoint when payment status changes
+ * Called by the backend webhook endpoint when payment status changes.
+ * Webhook signature verification is performed server-side.
  */
 export async function processPaymentWebhook(
   payload: WebhookPayload
@@ -230,7 +166,6 @@ export async function processPaymentWebhook(
   try {
     const { paymentId, transactionId, status, gateway } = payload;
 
-    // Update payment record
     const updateData: any = {
       payment_gateway: gateway,
       transaction_id: transactionId,
@@ -244,7 +179,7 @@ export async function processPaymentWebhook(
       updateData.status = 'failed';
       updateData.failure_reason = 'Payment declined by gateway';
     } else if (status === 'cancelled') {
-      updateData.status = 'pending'; // Reset to pending for retry
+      updateData.status = 'pending';
       updateData.failure_reason = 'Payment cancelled by user';
     }
 
@@ -258,11 +193,6 @@ export async function processPaymentWebhook(
       throw error;
     }
 
-    // TODO: Send notifications
-    // - Email confirmation to tenant
-    // - Push notification
-    // - Email to owner for completed payment
-
     console.log(`Payment ${paymentId} updated: ${status}`);
   } catch (error) {
     console.error('Error processing payment webhook:', error);
@@ -272,7 +202,8 @@ export async function processPaymentWebhook(
 
 /**
  * Initiate a payment
- * Main entry point for starting a payment flow
+ * Main entry point for starting a payment flow.
+ * Calls the Edge Function for signed URLs or checkout sessions.
  */
 export async function initiatePayment(
   paymentId: string,
@@ -291,13 +222,9 @@ export async function initiatePayment(
       .single();
 
     if (fetchError || !payment) {
-      return {
-        success: false,
-        error: 'Payment not found',
-      };
+      return { success: false, error: 'Payment not found' };
     }
 
-    // Construct payment request
     const tenant = payment.tenant as any;
     const property = payment.property as any;
     const names = (tenant?.full_name || '').split(' ');
@@ -318,33 +245,20 @@ export async function initiatePayment(
     // Update payment status to processing
     await supabase
       .from('payments')
-      .update({
-        status: 'processing',
-        payment_gateway: gateway,
-      })
+      .update({ status: 'processing', payment_gateway: gateway })
       .eq('id', paymentId);
 
-    // Generate payment URL based on gateway
+    // Generate payment URL/session via Edge Function
     if (gateway === 'payfast') {
-      const redirectUrl = generatePayFastPaymentUrl(payfastConfig, request);
-      return {
-        success: true,
-        redirectUrl,
-      };
+      return await generatePayFastPaymentUrlViaEdge(request);
     } else if (gateway === 'yoco') {
-      return await createYocoCheckout(yocoConfig, request);
+      return await createYocoCheckoutViaEdge(request);
     }
 
-    return {
-      success: false,
-      error: 'Invalid payment gateway',
-    };
+    return { success: false, error: 'Invalid payment gateway' };
   } catch (error: any) {
     console.error('Error initiating payment:', error);
-    return {
-      success: false,
-      error: error.message || 'Failed to initiate payment',
-    };
+    return { success: false, error: error.message || 'Failed to initiate payment' };
   }
 }
 
@@ -373,7 +287,6 @@ export async function schedulePaymentRetry(paymentId: string): Promise<boolean> 
     const maxRetries = payment.max_retry_count || RETRY_SCHEDULE.maxRetries;
 
     if (currentRetry >= maxRetries) {
-      // Max retries reached, mark as overdue
       await supabase
         .from('payments')
         .update({
@@ -382,11 +295,9 @@ export async function schedulePaymentRetry(paymentId: string): Promise<boolean> 
         })
         .eq('id', paymentId);
 
-      // TODO: Send notification about failed payment
       return false;
     }
 
-    // Calculate next retry time
     const delayHours = RETRY_SCHEDULE.delays[currentRetry] || 72;
     const nextRetryAt = new Date();
     nextRetryAt.setHours(nextRetryAt.getHours() + delayHours);
@@ -399,9 +310,6 @@ export async function schedulePaymentRetry(paymentId: string): Promise<boolean> 
         last_retry_at: new Date().toISOString(),
       })
       .eq('id', paymentId);
-
-    // TODO: Schedule background job for retry
-    // This would typically be done with a job queue or cron job
 
     return true;
   } catch (error) {
