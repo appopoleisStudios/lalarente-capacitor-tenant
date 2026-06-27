@@ -1,18 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/src/core/query/queryKeys';
 import { getMaintenanceRequestById } from '../api';
+import type { MaintenanceRequestWithRelations } from '../types/maintenance.types';
 
 export function useMaintenanceDetail(requestId: string) {
-  const { data: request, isLoading, isError, error, refetch } = useQuery({
+  const query = useQuery<MaintenanceRequestWithRelations>({
     queryKey: queryKeys.maintenance.detail(requestId),
     queryFn: () => getMaintenanceRequestById(requestId),
     enabled: !!requestId,
   });
 
   return {
-    request: request ?? null,
-    loading: isLoading,
-    error: isError ? (error as any)?.message || 'Failed to fetch request details' : null,
-    refetch,
+    request: query.data ?? null,
+    loading: query.isLoading,
+    error: query.isError ? (query.error as Error)?.message || 'Failed to fetch request details' : null,
+    refetch: query.refetch,
   };
 }
