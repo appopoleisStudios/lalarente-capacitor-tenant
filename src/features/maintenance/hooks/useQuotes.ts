@@ -1,47 +1,37 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/src/core/query/queryKeys';
+import { extractErrorMessage } from '@/src/core/query/queryErrors';
 import { getQuotesByRequest, subscribeToQuotes, unsubscribeFromQuotes } from '../api';
+import type { Quote } from '../types/quote.types';
 
 export function useQuotes(requestId: string) {
-  const [quotes, setQuotes] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const queryKey = queryKeys.maintenance.quotes(requestId);
 
-  const fetchQuotes = useCallback(async () => {
-    if (!requestId) return;
+  const query = useQuery<Quote[]>({
+    queryKey,
+    queryFn: () => getQuotesByRequest(requestId),
+    enabled: !!requestId,
+  });
 
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await getQuotesByRequest(requestId);
-      setQuotes(data);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch quotes');
-      console.error('Error fetching quotes:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [requestId]);
-
+  // Re-fetch when a new quote is submitted or status changes
   useEffect(() => {
     if (!requestId) return;
 
-    fetchQuotes();
-
-    // Subscribe to real-time quote updates
-    const subscription = subscribeToQuotes(requestId, (payload: any) => {
-      console.log('Quote updated:', payload);
-      fetchQuotes();
+    const subscription = subscribeToQuotes(requestId, () => {
+      queryClient.invalidateQueries({ queryKey });
     });
 
     return () => {
       unsubscribeFromQuotes(subscription);
     };
-  }, [requestId, fetchQuotes]);
+  }, [requestId, queryClient, queryKey]);
 
   return {
-    quotes,
-    loading,
-    error,
-    refetch: fetchQuotes,
+    quotes: query.data ?? [],
+    loading: query.isLoading,
+    error: query.isError ? extractErrorMessage(query.error, 'Failed to fetch quotes') : null,
+    refetch: query.refetch,
   };
 }
