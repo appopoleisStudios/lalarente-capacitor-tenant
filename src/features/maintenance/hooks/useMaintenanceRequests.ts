@@ -62,6 +62,9 @@ export function useMaintenanceRequests() {
         queryClient.setQueryData(queryKey, data);
       } catch (err) {
         console.error('Error filtering by status:', err);
+        // Re-throw so callers can surface feedback (toast, snackbar, etc.)
+        // rather than silently showing stale cached data.
+        throw err;
       }
     },
     [userId, queryClient, queryKey]
@@ -75,6 +78,9 @@ export function useMaintenanceRequests() {
         queryClient.setQueryData(queryKey, data);
       } catch (err) {
         console.error('Error filtering by priority:', err);
+        // Re-throw so callers can surface feedback (toast, snackbar, etc.)
+        // rather than silently showing stale cached data.
+        throw err;
       }
     },
     [userId, queryClient, queryKey]

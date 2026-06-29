@@ -1,4 +1,17 @@
-/** Centralised query keys — avoid collisions, enable predictable invalidation */
+/**
+ * Centralised query keys for TanStack Query.
+ *
+ * Design rationale:
+ * - Hierarchical key structure enables precise invalidation:
+ *   e.g. `queryClient.invalidateQueries({ queryKey: queryKeys.maintenance.requests(userId, role) })`
+ *       invalidates only that user's requests, while
+ *       `queryClient.invalidateQueries({ queryKey: queryKeys.maintenance.all })`
+ *       invalidates ALL maintenance queries across users.
+ * - Dynamic segments (userId, role, requestId) are placed after static segments
+ *   so pattern matching works correctly with prefix queries.
+ * - `as const` ensures each key tuple is a literal type (not string[]),
+ *   giving us type-safe cache access throughout the app.
+ */
 export const queryKeys = {
   maintenance: {
     all: ['maintenance'] as const,
