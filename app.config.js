@@ -1,3 +1,11 @@
+const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+if (!GOOGLE_MAPS_API_KEY) {
+  throw new Error(
+    'EXPO_PUBLIC_GOOGLE_MAPS_API_KEY is not set. ' +
+    'Add it to .env or EAS Secrets to prevent runtime map failures.'
+  );
+}
+
 module.exports = ({ config }) => {
   return {
     ...config,
@@ -13,7 +21,7 @@ module.exports = ({ config }) => {
     extra: {
       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
       supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
-      googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
+      googleMapsApiKey: GOOGLE_MAPS_API_KEY,
       sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
       releaseVersion: process.env.APP_VERSION || 'dev',
       router: {},
@@ -33,7 +41,7 @@ module.exports = ({ config }) => {
         NSLocationWhenInUseUsageDescription: "This app needs access to your location to help you find properties nearby."
       },
       config: {
-        googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
+        googleMapsApiKey: GOOGLE_MAPS_API_KEY,
       }
     },
     android: {
@@ -51,7 +59,7 @@ module.exports = ({ config }) => {
       ],
       config: {
         googleMaps: {
-          apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
+          apiKey: GOOGLE_MAPS_API_KEY,
         }
       }
     },
