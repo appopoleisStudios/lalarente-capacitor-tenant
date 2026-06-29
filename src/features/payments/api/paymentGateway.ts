@@ -20,12 +20,6 @@
  */
 
 import { supabase } from '../../../lib/supabase';
-import { env } from '../../../core/config/env';
-
-export interface PaymentGatewayConfig {
-  gateway: 'payfast' | 'yoco';
-  sandbox: boolean;
-}
 
 export interface PaymentRequest {
   paymentId: string;
@@ -57,24 +51,6 @@ export interface WebhookPayload {
   signature?: string;
   rawPayload: any;
 }
-
-/**
- * PayFast Configuration (public fields only — passphrase is server-side)
- * Documentation: https://developers.payfast.co.za/docs
- */
-export const payfastConfig: PaymentGatewayConfig = {
-  gateway: 'payfast',
-  sandbox: env.payfast.sandbox,
-};
-
-/**
- * Yoco Configuration (public fields only — secretKey is server-side)
- * Documentation: https://developer.yoco.com/online/
- */
-export const yocoConfig: PaymentGatewayConfig = {
-  gateway: 'yoco',
-  sandbox: env.yoco.sandbox,
-};
 
 /**
  * Generate PayFast payment URL via server-side Edge Function.
@@ -256,9 +232,10 @@ export async function initiatePayment(
     }
 
     return { success: false, error: 'Invalid payment gateway' };
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to initiate payment';
     console.error('Error initiating payment:', error);
-    return { success: false, error: error.message || 'Failed to initiate payment' };
+    return { success: false, error: message };
   }
 }
 
