@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/src/core/query/queryKeys';
 import { extractErrorMessage } from '@/src/core/query/queryErrors';
 import { getMaintenanceRequestById } from '../api';
-import type { MaintenanceRequestWithRelations } from '../types/maintenance.types';
+import type { MaintenanceRequestWithRelations } from '../api/types';
 
 export function useMaintenanceDetail(requestId: string) {
   const query = useQuery<MaintenanceRequestWithRelations>({
