@@ -10,8 +10,7 @@ import {
     subscribeToMaintenanceRequests,
     unsubscribeFromMaintenanceRequests,
 } from '../api';
-import type { MaintenanceRequestWithRelations } from '../api/types/maintenance.types';
-import type { MaintenanceStatusFilter, MaintenancePriorityFilter } from '../api/types';
+import type { MaintenanceRequestWithRelations, MaintenanceStatus, Priority } from '../api/types/maintenance.types';
 
 export function useMaintenanceRequests() {
   const { user, profile } = useAuth();
@@ -55,7 +54,7 @@ export function useMaintenanceRequests() {
   }, [userId, role, queryClient, queryKey]);
 
   const filterByStatus = useCallback(
-    async (statuses: MaintenanceStatusFilter[]) => {
+    async (statuses: MaintenanceStatus[]) => {
       if (!userId) return;
       try {
         const data = await filterRequestsByStatus(userId, statuses);
@@ -71,7 +70,7 @@ export function useMaintenanceRequests() {
   );
 
   const filterByPriority = useCallback(
-    async (priorities: MaintenancePriorityFilter[]) => {
+    async (priorities: Priority[]) => {
       if (!userId) return;
       try {
         const data = await filterRequestsByPriority(userId, priorities);

@@ -41,3 +41,23 @@ it('remaps admin role to owner for query key generation', async () => {
   renderHook(() => useMaintenanceRequests(), { wrapper: createQueryWrapper() });
   await waitFor(() => expect(api.getMaintenanceRequests).toHaveBeenCalledWith('admin-1', 'owner'));
 });
+
+it('sets up real-time subscription on mount and unsubscribes on unmount', () => {
+  const { unmount } = renderHook(() => useMaintenanceRequests(), { wrapper: createQueryWrapper() });
+
+  expect(api.subscribeToMaintenanceRequests).toHaveBeenCalledTimes(1);
+  expect(api.subscribeToMaintenanceRequests).toHaveBeenCalledWith('user-1', expect.any(Function));
+
+  unmount();
+
+  expect(api.unsubscribeFromMaintenanceRequests).toHaveBeenCalledTimes(1);
+});
+
+it('exposes filterByStatus and filterByPriority callbacks', () => {
+  const { result } = renderHook(() => useMaintenanceRequests(), { wrapper: createQueryWrapper() });
+
+  expect(typeof result.current.filterByStatus).toBe('function');
+  expect(typeof result.current.filterByPriority).toBe('function');
+  expect(typeof result.current.refetch).toBe('function');
+  expect(typeof result.current.onRefresh).toBe('function');
+});
