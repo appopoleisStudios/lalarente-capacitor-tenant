@@ -13,15 +13,8 @@
  */
 
 import { supabase } from '../../../lib/supabase';
-
-// Environment variables (to be added to app.config.js)
-// PAYFAST_MERCHANT_ID
-// PAYFAST_MERCHANT_KEY
-// PAYFAST_PASSPHRASE
-// PAYFAST_SANDBOX (true/false)
-// YOCO_PUBLIC_KEY
-// YOCO_SECRET_KEY
-// YOCO_SANDBOX (true/false)
+import { env } from '../../../core/config/env';
+import CryptoJS from 'crypto-js';
 
 export interface PaymentGatewayConfig {
   gateway: 'payfast' | 'yoco';
@@ -67,14 +60,14 @@ export interface WebhookPayload {
 /**
  * PayFast Configuration
  * Documentation: https://developers.payfast.co.za/docs
+ * Uses centralized env config (EXPO_PUBLIC_* vars available at runtime).
  */
 export const payfastConfig: PaymentGatewayConfig = {
   gateway: 'payfast',
-  sandbox: true, // Set to false in production
-  // These values should come from environment variables
-  merchantId: process.env.PAYFAST_MERCHANT_ID || '',
-  merchantKey: process.env.PAYFAST_MERCHANT_KEY || '',
-  passphrase: process.env.PAYFAST_PASSPHRASE || '',
+  sandbox: env.payfast.sandbox,
+  merchantId: env.payfast.merchantId,
+  merchantKey: env.payfast.merchantKey,
+  passphrase: env.payfast.passphrase,
 };
 
 /**
@@ -83,10 +76,9 @@ export const payfastConfig: PaymentGatewayConfig = {
  */
 export const yocoConfig: PaymentGatewayConfig = {
   gateway: 'yoco',
-  sandbox: true, // Set to false in production
-  // These values should come from environment variables
-  publicKey: process.env.YOCO_PUBLIC_KEY || '',
-  secretKey: process.env.YOCO_SECRET_KEY || '',
+  sandbox: env.yoco.sandbox,
+  publicKey: env.yoco.publicKey,
+  secretKey: env.yoco.secretKey,
 };
 
 /**
@@ -116,17 +108,20 @@ export function generatePayFastPaymentUrl(
     name_last: request.buyerLastName || '',
   });
 
-  // Generate signature (required for security)
-  // In production, calculate MD5 hash of sorted params + passphrase
-  // const signature = generatePayFastSignature(params, config.passphrase);
-  // params.append('signature', signature);
+  // Generate MD5 signature (required for PayFast security)
+  const signature = generatePayFastSignature(params, config.passphrase);
+  if (signature) {
+    params.append('signature', signature);
+  }
 
   return `${baseUrl}?${params.toString()}`;
 }
 
 /**
  * Generate PayFast MD5 signature
- * Required for payment verification
+ * Required for payment verification.
+ * Sorts all params alphabetically, joins as key=value pairs,
+ * appends passphrase, and computes MD5 hash.
  */
 export function generatePayFastSignature(
   params: URLSearchParams,
@@ -144,23 +139,35 @@ export function generatePayFastSignature(
     ? `${sortedParams}&passphrase=${encodeURIComponent(passphrase)}`
     : sortedParams;
 
-  // TODO: Calculate MD5 hash
-  // In React Native, use a library like 'js-md5' or 'crypto-js'
-  // return md5(stringToHash);
-  return '';
+  const hash = CryptoJS.MD5(stringToHash).toString();
+  return hash;
 }
 
 /**
  * Verify PayFast webhook signature
+ * Reconstructs the expected signature from the payload and compares it
+ * with the provided signature, preventing forged webhook notifications.
  */
 export function verifyPayFastSignature(
-  payload: any,
+  payload: Record<string, string>,
   signature: string,
   passphrase: string = ''
 ): boolean {
-  // Reconstruct signature from payload and compare
-  // TODO: Implement signature verification
-  return true;
+  if (!signature) return false;
+
+  // Reconstruct the param string from webhook payload (exclude 'signature' key)
+  const sortedParams = Object.entries(payload)
+    .filter(([key]) => key !== 'signature')
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+    .join('&');
+
+  const stringToHash = passphrase
+    ? `${sortedParams}&passphrase=${encodeURIComponent(passphrase)}`
+    : sortedParams;
+
+  const expectedSig = CryptoJS.MD5(stringToHash).toString();
+  return expectedSig === signature;
 }
 
 /**
