@@ -13,13 +13,3 @@ export function createQueryWrapper() {
     return React.createElement(QueryClientProvider, { client: queryClient }, children);
   };
 }
-
-/**
- * Resolves a deferred promise. Call this before using the promise to
- * simulate the query being in flight, then resolve it inside act().
- */
-export function deferredPromise<T>(): { promise: Promise<T>; resolve: (v: T) => void } {
-  let resolve!: (v: T) => void;
-  const promise = new Promise<T>((r) => { resolve = r; });
-  return { promise, resolve };
-}
