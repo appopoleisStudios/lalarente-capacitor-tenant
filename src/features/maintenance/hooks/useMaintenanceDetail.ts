@@ -1,30 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '@/src/core/query/queryKeys';
+import { extractErrorMessage } from '@/src/core/query/queryErrors';
 import { getMaintenanceRequestById } from '../api';
+import type { MaintenanceRequestWithRelations } from '../types/maintenance.types';
 
 export function useMaintenanceDetail(requestId: string) {
-  const [request, setRequest] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const query = useQuery<MaintenanceRequestWithRelations>({
+    queryKey: queryKeys.maintenance.detail(requestId),
+    queryFn: () => getMaintenanceRequestById(requestId),
+    enabled: !!requestId,
+  });
 
-  useEffect(() => {
-    if (!requestId) return;
-
-    const fetchDetail = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await getMaintenanceRequestById(requestId);
-        setRequest(data);
-      } catch (err: any) {
-        setError(err.message || 'Failed to fetch request details');
-        console.error('Error fetching detail:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDetail();
-  }, [requestId]);
-
-  return { request, loading, error };
+  return {
+    request: query.data ?? null,
+    loading: query.isLoading,
+    error: query.isError ? extractErrorMessage(query.error, 'Failed to fetch request details') : null,
+    refetch: query.refetch,
+  };
 }
