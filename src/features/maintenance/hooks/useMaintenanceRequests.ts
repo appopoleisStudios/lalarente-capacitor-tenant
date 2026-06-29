@@ -10,8 +10,8 @@ import {
     subscribeToMaintenanceRequests,
     unsubscribeFromMaintenanceRequests,
 } from '../api';
-import type { MaintenanceRequestWithRelations } from '../types/maintenance.types';
-import type { MaintenanceStatusFilter, MaintenancePriorityFilter } from '../types';
+import type { MaintenanceRequestWithRelations } from '../api/types/maintenance.types';
+import type { MaintenanceStatusFilter, MaintenancePriorityFilter } from '../api/types';
 
 export function useMaintenanceRequests() {
   const { user, profile } = useAuth();
