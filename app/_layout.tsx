@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/react-native';
 import { AuthProvider, useAuth } from '@/src/contexts/AuthContext';
 import { env, RELEASE_VERSION } from '@/src/core/config/env';
 import { ErrorBoundary } from '@/src/components/ErrorBoundary';
+import { QueryProvider } from '@/src/core/query/QueryProvider';
 import '../global.css';
 
 // Init Sentry early — before any component mounts.
@@ -47,9 +48,11 @@ function RootLayoutNav() {
 function RootLayout() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <RootLayoutNav />
-      </AuthProvider>
+      <QueryProvider>
+        <AuthProvider>
+          <RootLayoutNav />
+        </AuthProvider>
+      </QueryProvider>
     </ErrorBoundary>
   );
 }

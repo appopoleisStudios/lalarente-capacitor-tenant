@@ -14,6 +14,14 @@ export const env = {
     passphrase: process.env.EXPO_PUBLIC_PAYFAST_PASSPHRASE || '',
     sandbox: process.env.EXPO_PUBLIC_PAYFAST_SANDBOX === 'true',
   },
+  yoco: {
+    publicKey: process.env.EXPO_PUBLIC_YOCO_PUBLIC_KEY || '',
+    secretKey: process.env.EXPO_PUBLIC_YOCO_SECRET_KEY || '',
+    sandbox: process.env.EXPO_PUBLIC_YOCO_SANDBOX === 'true',
+  },
+  googleMaps: {
+    apiKey: Constants.expoConfig?.extra?.googleMapsApiKey || process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+  },
   isDev: __DEV__,
 };
 
