@@ -67,7 +67,7 @@ export const Button: React.FC<ButtonProps> = ({
     >
       {loading ? (
         <ActivityIndicator 
-          color={variant === 'primary' ? 'white' : '#0ea5e9'} 
+          color={variant === 'primary' ? 'white' : '#007A4D'} 
           size="small"
         />
       ) : (
