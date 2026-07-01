@@ -36,8 +36,8 @@ export const ScrollView: React.FC<CustomScrollViewProps> = ({
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor="#0ea5e9"
-            colors={['#0ea5e9']}
+            tintColor="#007A4D"
+            colors={['#007A4D']}
           />
         ) : undefined
       }
