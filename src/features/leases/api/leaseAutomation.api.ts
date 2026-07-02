@@ -195,10 +195,16 @@ export const leaseAutomationApi = {
     return (data || []).map((l) => l.id);
   },
 
-  /** Helper: Calculate next escalation date. */
+  /** Helper: Calculate next escalation date, snapping to end of month on overflow. */
   calculateNextEscalationDate(from: Date, frequencyMonths: number): string {
     const next = new Date(from);
+    const origDate = next.getDate();
     next.setMonth(next.getMonth() + frequencyMonths);
+    // If the day changed after setMonth, the target month doesn't have enough
+    // days (e.g. Jan 31 -> Feb). Snap to the last day of the target month.
+    if (next.getDate() !== origDate) {
+      next.setDate(0);
+    }
     return toDateString(next);
   },
 };
