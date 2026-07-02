@@ -1,4 +1,5 @@
 export { theme, colors, typography, spacing } from './theme';
+export type { Theme } from './theme/types';
 
 export {
   // UI components
@@ -12,6 +13,22 @@ export {
   Toast,
   LoadingSpinner,
   AccessibleTouchableOpacity,
+  // New core components
+  EmptyState,
+  ErrorState,
+  Badge,
+  Divider,
+  Chip,
+  SearchBar,
+  IconButton,
+  SectionHeader,
+  ListItem,
+  Avatar,
+  ModalSheet,
+  // Form components
+  FormField,
+  Select,
+  TextArea,
   // Migrated feature components
   StatusBadge,
   PriorityIndicator,
