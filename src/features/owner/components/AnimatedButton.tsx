@@ -1,60 +1,7 @@
-import React from 'react';
-import { Pressable, StyleSheet } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
-
-interface AnimatedButtonProps {
-  children: React.ReactNode;
-  onPress?: () => void;
-  style?: any;
-  hapticType?: 'light' | 'medium';
-  accessibilityLabel?: string;
-  accessibilityRole?: 'button' | 'link';
-}
-
-export const AnimatedButton = ({ 
-  children, 
-  onPress, 
-  style, 
-  hapticType = 'light',
-  accessibilityLabel,
-  accessibilityRole = 'button',
-}: AnimatedButtonProps) => {
-  const scale = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  const handlePressIn = () => {
-    scale.value = withSpring(0.95, { damping: 15, stiffness: 300 });
-    if (hapticType === 'light') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } else {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    }
-  };
-
-  const handlePressOut = () => {
-    scale.value = withSpring(1, { damping: 15, stiffness: 300 });
-  };
-
-  return (
-    <Animated.View style={[animatedStyle, style]}>
-      <Pressable
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        accessibilityRole={accessibilityRole}
-        accessibilityLabel={accessibilityLabel}
-      >
-        {children}
-      </Pressable>
-    </Animated.View>
-  );
-};
+/**
+ * @deprecated Import from `@/src/shared/components/ui/AnimatedButton` instead.
+ */
+export {
+  AnimatedButton,
+  type AnimatedButtonProps,
+} from '@/src/shared/components/ui/AnimatedButton';
