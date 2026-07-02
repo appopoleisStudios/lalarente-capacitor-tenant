@@ -25,9 +25,10 @@ const AVATAR_COLORS = ['#007A4D', '#002395', '#FFB81C', '#DE3831', '#10B981', '#
 type AvatarColor = (typeof AVATAR_COLORS)[number];
 
 function getColorFromName(name: string): AvatarColor {
+  const normalized = name.trim();
   let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  for (let i = 0; i < normalized.length; i++) {
+    hash = normalized.charCodeAt(i) + ((hash << 5) - hash);
   }
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }

@@ -38,6 +38,7 @@ export function Select({ options, value, onSelect, placeholder = 'Select...', st
           style={styles.overlay}
           activeOpacity={1}
           onPress={() => setOpen(false)}
+          accessibilityLabel="Close"
         >
           <View style={styles.sheet}>
             <View style={styles.handle} />

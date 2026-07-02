@@ -27,7 +27,7 @@ describe('TextArea', () => {
 
   it('does not show character count when maxLength is not set', () => {
     const { queryByText } = render(<TextArea value="Hello" />);
-    expect(queryByText(/\\d+\\//)).toBeNull();
+    expect(queryByText(/\d+\//)).toBeNull();
   });
 
   it('renders error state', () => {
