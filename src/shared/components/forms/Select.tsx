@@ -9,7 +9,7 @@ export interface SelectOption {
 
 export interface SelectProps {
   options: SelectOption[];
-  value?: string;
+  value?: string | null;
   onSelect: (option: SelectOption) => void;
   placeholder?: string;
   style?: ViewStyle;
