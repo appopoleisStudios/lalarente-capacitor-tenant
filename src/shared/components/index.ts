@@ -24,3 +24,8 @@ export { ModalSheet } from './ui/ModalSheet';
 export { FormField } from './forms/FormField';
 export { Select } from './forms/Select';
 export { TextArea } from './forms/TextArea';
+
+// Migrated feature components
+export { StatusBadge } from './ui/StatusBadge';
+export { PriorityIndicator } from './ui/PriorityIndicator';
+export { AnimatedButton } from './ui/AnimatedButton';

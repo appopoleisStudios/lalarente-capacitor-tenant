@@ -29,6 +29,10 @@ export {
   FormField,
   Select,
   TextArea,
+  // Migrated feature components
+  StatusBadge,
+  PriorityIndicator,
+  AnimatedButton,
 } from './components';
 
 export {
