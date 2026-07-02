@@ -48,3 +48,7 @@ jobs:
           # or https://code.claude.com/docs/en/cli-reference for available options
           # claude_args: '--allowed-tools Bash(gh pr *)'
 
+          # Pinned so the @claude escalation tier (SA's uncertain-finding fallback)
+          # doesn't silently drift if the OAuth account's default model changes.
+          claude_args: '--model claude-sonnet-5'
+
