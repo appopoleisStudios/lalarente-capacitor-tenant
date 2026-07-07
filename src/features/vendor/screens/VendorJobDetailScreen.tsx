@@ -2,9 +2,7 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import {
     getPOByRequestId,
     getProgressUpdates,
-    requestClosure,
     startWork,
-    submitProgressUpdate,
     type PurchaseOrder,
 } from '@/src/features/maintenance/api';
 import { colors } from '@/src/shared/theme/colors';
@@ -55,8 +53,6 @@ export default function VendorJobDetailScreen() {
   const [timeUntilEnd, setTimeUntilEnd] = useState<string>('');
   const [progressUpdates, setProgressUpdates] = useState<any[]>([]);
   const [closureReport, setClosureReport] = useState<any | null>(null);
-  const [showProgressForm, setShowProgressForm] = useState(false);
-  const [showClosureForm, setShowClosureForm] = useState(false);
 
   const fetchJobDetails = useCallback(async () => {
     try {
@@ -214,72 +210,12 @@ export default function VendorJobDetailScreen() {
     );
   };
 
-  const handleDailyUpdate = async () => {
-    console.log('🔵 handleDailyUpdate clicked');
-    
-    // Quick test - submit with hardcoded notes
-    const testNotes = `Progress update - ${new Date().toLocaleTimeString()}`;
-    
-    try {
-      if (!user?.id) {
-        throw new Error('User not authenticated');
-      }
-
-      console.log('🔵 Calling submitProgressUpdate...');
-      console.log('🔵 Parameters:', { id, userId: user.id, notes: testNotes });
-      
-      await submitProgressUpdate(id, user.id, testNotes, []);
-      
-      console.log('🔵 Progress update submitted successfully');
-      
-      await fetchJobDetails();
-      
-      Alert.alert('✅ Success!', `Progress update submitted: ${testNotes}`);
-    } catch (error: any) {
-      console.error('❌ Error submitting update:', error);
-      console.error('❌ Error details:', JSON.stringify(error));
-      Alert.alert('Error', error.message || 'Failed to submit update');
-    }
+  const handleDailyUpdate = () => {
+    router.push(`/(vendor)/jobs/${id}/progress-update`);
   };
 
-  const handleRequestClosure = async () => {
-    console.log('🟢 handleRequestClosure clicked');
-    
-    Alert.alert(
-      '🏁 Request Job Closure',
-      'This will request closure with test data (2 placeholder photos). Continue?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Request Closure',
-          onPress: async () => {
-            try {
-              if (!user?.id) {
-                throw new Error('User not authenticated');
-              }
-
-              const testNotes = `Job completed - ${new Date().toLocaleTimeString()}`;
-              const testPhotos = ['photo1.jpg', 'photo2.jpg']; // Placeholder
-              
-              console.log('🟢 Calling requestClosure...');
-              console.log('🟢 Parameters:', { id, userId: user.id, notes: testNotes, photos: testPhotos });
-              
-              await requestClosure(id, user.id, testNotes, testPhotos);
-              
-              console.log('🟢 Closure requested successfully');
-              
-              await fetchJobDetails();
-              
-              Alert.alert('✅ Success!', 'Closure requested. Waiting for owner approval.');
-            } catch (error: any) {
-              console.error('❌ Error requesting closure:', error);
-              console.error('❌ Error details:', JSON.stringify(error));
-              Alert.alert('Error', error.message || 'Failed to request closure');
-            }
-          },
-        },
-      ]
-    );
+  const handleRequestClosure = () => {
+    router.push(`/(vendor)/jobs/${id}/request-closure`);
   };
 
   if (loading) {

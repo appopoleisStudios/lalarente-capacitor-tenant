@@ -112,6 +112,18 @@ export default function VendorLayout() {
           href: null, // Hidden from tabs - job detail screen
         }}
       />
+      <Tabs.Screen
+        name="jobs/[id]/progress-update"
+        options={{
+          href: null, // Hidden from tabs - progress update form
+        }}
+      />
+      <Tabs.Screen
+        name="jobs/[id]/request-closure"
+        options={{
+          href: null, // Hidden from tabs - closure request form
+        }}
+      />
     </Tabs>
   );
 }
