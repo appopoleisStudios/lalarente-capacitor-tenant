@@ -3,16 +3,18 @@ import {
   getDedicatedVendors,
   getMaintenanceRequestById,
   getVendorsByCategory,
+  inviteVendorByEmail,
   pushToOpenMarket,
   pushToSelectedVendors,
   searchVendorByEmail,
 } from '@/src/features/maintenance/api';
+import type { MaintenanceRequestWithRelations } from '@/src/features/maintenance/api/types/maintenance.types';
 import type { VendorProfile } from '@/src/features/maintenance/api/types/vendor.types';
 import { colors } from '@/src/shared/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -36,7 +38,7 @@ export default function VendorSelectionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { profile } = useAuth();
 
-  const [request, setRequest] = useState<any>(null);
+  const abortRef = useRef<AbortController | null>(null);
   const [dedicatedVendors, setDedicatedVendors] = useState<VendorProfile[]>([]);
   const [categoryVendors, setCategoryVendors] = useState<VendorProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,8 +52,12 @@ export default function VendorSelectionScreen() {
 
   useEffect(() => {
     if (id) {
+      abortRef.current = new AbortController();
       loadData();
     }
+    return () => {
+      abortRef.current?.abort();
+    };
   }, [id]);
 
   const loadData = async () => {
@@ -60,25 +66,26 @@ export default function VendorSelectionScreen() {
 
       // 1. Fetch the request to get property_id and category_id
       const req = await getMaintenanceRequestById(id);
-      setRequest(req);
+
+      if (abortRef.current?.signal.aborted) return;
 
       if (!req) {
         throw new Error('Request not found');
       }
 
-      const typedReq = req as any;
-      const propertyId = typedReq.property_id;
-      const categoryId = typedReq.category_id;
+      const propertyId = req.property_id;
+      const categoryId = req.category_id;
 
       // 2. Fetch dedicated vendors for the property
       if (propertyId) {
         try {
           const dedicated = await getDedicatedVendors(propertyId, categoryId || undefined);
+          if (abortRef.current?.signal.aborted) return;
           setDedicatedVendors(dedicated);
           // Pre-select dedicated vendors
           setSelectedIds(new Set(dedicated.map((v: VendorProfile) => v.id)));
         } catch (e) {
-          console.log('Failed to fetch dedicated vendors:', e);
+          console.error('Failed to fetch dedicated vendors:', e);
           setDedicatedVendors([]);
         }
       }
@@ -87,9 +94,10 @@ export default function VendorSelectionScreen() {
       if (categoryId) {
         try {
           const vendors = await getVendorsByCategory(categoryId);
+          if (abortRef.current?.signal.aborted) return;
           setCategoryVendors(vendors);
         } catch (e) {
-          console.log('Failed to fetch category vendors:', e);
+          console.error('Failed to fetch category vendors:', e);
           setCategoryVendors([]);
         }
       }
@@ -114,10 +122,17 @@ export default function VendorSelectionScreen() {
     });
   }, []);
 
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   const handleSearchVendorByEmail = async () => {
     const email = inviteEmail.trim().toLowerCase();
     if (!email) {
       Alert.alert('Enter Email', 'Please enter a vendor email address to search.');
+      return;
+    }
+
+    if (!EMAIL_REGEX.test(email)) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address (e.g. vendor@example.com).');
       return;
     }
 
@@ -144,12 +159,12 @@ export default function VendorSelectionScreen() {
               text: 'Send Invitation',
               onPress: async () => {
                 try {
-                  const { inviteVendorByEmail } = await import('@/src/features/maintenance/api');
                   await inviteVendorByEmail(email, id, profile?.full_name || 'Owner');
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                   Alert.alert('Invitation Sent', `An invitation has been sent to ${email}.`);
                   setInviteEmail('');
                 } catch (err: any) {
+                  console.error('Error sending invitation:', err);
                   Alert.alert('Error', err.message || 'Failed to send invitation');
                 }
               },
@@ -238,6 +253,8 @@ export default function VendorSelectionScreen() {
       const isSelected = selectedIds.has(item.id);
       return (
         <TouchableOpacity
+          accessibilityLabel={`${item.business_name || item.full_name || 'Vendor'}${isSelected ? ', selected' : ', not selected'}`}
+          accessibilityRole="radio"
           style={[styles.vendorCard, isSelected && styles.vendorCardSelected]}
           onPress={() => toggleVendor(item.id)}
           activeOpacity={0.7}
@@ -327,7 +344,12 @@ export default function VendorSelectionScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
+        <TouchableOpacity
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+          onPress={() => router.back()}
+          style={styles.headerButton}
+        >
           <Ionicons name="arrow-back" size={24} color="#111827" />
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
@@ -341,6 +363,8 @@ export default function VendorSelectionScreen() {
       {/* Tab selector */}
       <View style={styles.tabRow}>
         <TouchableOpacity
+          accessibilityLabel="Browse vendors tab"
+          accessibilityRole="tab"
           style={[styles.tab, activeTab === 'browse' && styles.tabActive]}
           onPress={() => setActiveTab('browse')}
         >
@@ -354,6 +378,8 @@ export default function VendorSelectionScreen() {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
+          accessibilityLabel="Invite by email tab"
+          accessibilityRole="tab"
           style={[styles.tab, activeTab === 'invite' && styles.tabActive]}
           onPress={() => setActiveTab('invite')}
         >
@@ -444,6 +470,8 @@ export default function VendorSelectionScreen() {
                 autoCorrect={false}
               />
               <TouchableOpacity
+                accessibilityLabel="Search vendor by email"
+                accessibilityRole="button"
                 style={[styles.emailSearchButton, inviting && { opacity: 0.6 }]}
                 onPress={handleSearchVendorByEmail}
                 disabled={inviting}
@@ -478,6 +506,8 @@ export default function VendorSelectionScreen() {
             <Text style={styles.quickActionsTitle}>Quick Actions</Text>
 
             <TouchableOpacity
+              accessibilityLabel="Push request to open market"
+              accessibilityRole="button"
               style={styles.quickActionCard}
               onPress={handlePushToOpenMarket}
               disabled={submitting}
@@ -500,6 +530,8 @@ export default function VendorSelectionScreen() {
       {/* Footer */}
       <View style={styles.footer}>
         <TouchableOpacity
+          accessibilityLabel="Send invitations to selected vendors"
+          accessibilityRole="button"
           style={[styles.footerButton, selectedIds.size === 0 && styles.footerButtonDisabled]}
           onPress={handleSubmit}
           disabled={submitting || selectedIds.size === 0}
