@@ -128,8 +128,10 @@ export default function OwnerClosureApprovalScreen() {
     try {
       setActionLoading(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      setShowRejectModal(false);              if (!user?.id) throw new Error('User not authenticated');
-              await rejectClosureReport(id, user.id, reason);
+      setShowRejectModal(false);
+
+      if (!user?.id) throw new Error('User not authenticated');
+      await rejectClosureReport(id, user.id, reason);
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Changes Requested', 'The vendor has been notified and can resubmit.', [
