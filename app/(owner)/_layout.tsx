@@ -264,6 +264,12 @@ export default function OwnerLayout() {
         }}
       />
       <Tabs.Screen
+        name="maintenance/select-vendors"
+        options={{
+          href: null, // Hidden from tabs - vendor selection screen
+        }}
+      />
+      <Tabs.Screen
         name="maintenance/send-po"
         options={{
           href: null, // Hidden from tabs - send PO to vendor

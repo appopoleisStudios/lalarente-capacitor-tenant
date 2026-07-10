@@ -165,6 +165,10 @@ export default function OwnerMaintenanceDetailScreen() {
       [
         { text: 'Cancel', style: 'cancel' },
         {
+          text: 'Select Specific Vendors',
+          onPress: () => router.push(`/(owner)/maintenance/select-vendors?id=${id}`),
+        },
+        {
           text: 'Open Market',
           onPress: () => handlePushToOpenMarket(),
         },
