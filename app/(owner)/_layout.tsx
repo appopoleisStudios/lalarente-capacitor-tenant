@@ -114,6 +114,12 @@ export default function OwnerLayout() {
         }}
       />
       <Tabs.Screen
+        name="maintenance/[id]/progress-timeline"
+        options={{
+          href: null, // Hidden from tabs - progress timeline screen
+        }}
+      />
+      <Tabs.Screen
         name="applications"
         options={{
           href: null, // Hidden from tabs - accessed from dashboard
