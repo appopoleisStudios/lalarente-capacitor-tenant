@@ -6,6 +6,7 @@ import {
   getClosureReport,
   getMaintenanceRequestById,
   getPOByRequestId,
+  getProgressUpdates,
   getQuotesByRequest,
   pushToDedicatedVendors,
   pushToOpenMarket,
@@ -13,6 +14,7 @@ import {
   rejectQuote,
   requestQuoteRevision,
   type ClosureReport,
+  type ProgressUpdate,
   type PurchaseOrder
 } from '@/src/features/maintenance/api';
 import { MediaGallery } from '@/src/features/maintenance/components/MediaGallery';
@@ -55,6 +57,7 @@ export default function OwnerMaintenanceDetailScreen() {
   const [expandedQuotes, setExpandedQuotes] = useState<Record<string, boolean>>({});
   const [purchaseOrder, setPurchaseOrder] = useState<PurchaseOrder | null>(null);
   const [closureReport, setClosureReport] = useState<ClosureReport | null>(null);
+  const [progressUpdates, setProgressUpdates] = useState<ProgressUpdate[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -123,7 +126,20 @@ export default function OwnerMaintenanceDetailScreen() {
         setPurchaseOrder(null);
       }
 
-      // 4. Fetch closure report if job is in progress or completed
+      // 4. Fetch progress updates (vendor daily updates)
+      if ((data as any)?.status === 'in_progress' || (data as any)?.work_started_at) {
+        try {
+          const updates = await getProgressUpdates(id);
+          setProgressUpdates(updates || []);
+        } catch (error) {
+          console.log('Failed to fetch progress updates:', error);
+          setProgressUpdates([]);
+        }
+      } else {
+        setProgressUpdates([]);
+      }
+
+      // 5. Fetch closure report if job is in progress or completed
       try {
         const closure = await getClosureReport(id);
         setClosureReport(closure);
@@ -740,6 +756,50 @@ export default function OwnerMaintenanceDetailScreen() {
           </View>
         )}
 
+        {/* Progress Updates — Vendor Daily Log */}
+        {progressUpdates.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Vendor Progress Updates</Text>
+              <Text style={styles.sectionBadge}>
+                {progressUpdates.length} update{progressUpdates.length !== 1 ? 's' : ''}
+              </Text>
+            </View>
+            {progressUpdates.map((update, index) => (
+              <View key={update.id} style={styles.progressUpdateCard}>
+                <View style={styles.progressUpdateHeader}>
+                  <View style={styles.progressUpdateDay}>
+                    <Text style={styles.progressUpdateDayNumber}>
+                      {progressUpdates.length - index}
+                    </Text>
+                    <Text style={styles.progressUpdateDayLabel}>Day</Text>
+                  </View>
+                  <View style={styles.progressUpdateMeta}>
+                    <Text style={styles.progressUpdateDate}>
+                      {new Date(update.created_at).toLocaleDateString('en-ZA', {
+                        day: 'numeric', month: 'short', year: 'numeric',
+                      })}
+                    </Text>
+                    {update.update_date && (
+                      <Text style={styles.progressUpdateWorkDate}>
+                        Work date: {new Date(update.update_date).toLocaleDateString('en-ZA', {
+                          day: 'numeric', month: 'short',
+                        })}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+                <Text style={styles.progressUpdateNotes}>{update.notes}</Text>
+                {update.photos && update.photos.length > 0 && (
+                  <View style={styles.progressUpdatePhotos}>
+                    <MediaGallery images={update.photos} />
+                  </View>
+                )}
+              </View>
+            ))}
+          </View>
+        )}
+
         {/* Invoice */}
         {(request.status === 'completed' || request.status === 'in_progress') && (
           <View style={styles.section}>
@@ -944,6 +1004,67 @@ const styles = StyleSheet.create({
   invoiceTitle: { fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 2 },
   invoiceSubtitle: { fontSize: 13, color: '#6b7280' },
   invoiceAmount: { fontSize: 20, fontWeight: '700', color: colors.warning[600] },
+
+  // Progress update cards
+  progressUpdateCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    padding: 16,
+    marginBottom: 12,
+  },
+  progressUpdateHeader: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  progressUpdateDay: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.info[50],
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.info[500],
+  },
+  progressUpdateDayNumber: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.info[700],
+    marginTop: -2,
+  },
+  progressUpdateDayLabel: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: colors.info[600],
+    textTransform: 'uppercase',
+    marginTop: -2,
+  },
+  progressUpdateMeta: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  progressUpdateDate: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  progressUpdateWorkDate: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 2,
+  },
+  progressUpdateNotes: {
+    fontSize: 14,
+    color: '#374151',
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  progressUpdatePhotos: {
+    marginTop: 4,
+  },
 
   // Closure section
   closureBanner: {
