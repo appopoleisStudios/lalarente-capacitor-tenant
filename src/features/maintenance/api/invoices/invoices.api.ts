@@ -51,11 +51,14 @@ export class InvoiceError extends Error {
 
 /**
  * Log an invoice audit event to both the database audit table and console
+ * Requires ownerId and vendorId for the denormalized RLS columns
  */
 async function logAuditEvent(
   event: string,
   invoiceId: string,
   actorId: string,
+  ownerId: string,
+  vendorId: string,
   metadata?: Record<string, unknown>
 ): Promise<void> {
   const timestamp = new Date().toISOString();
@@ -71,6 +74,8 @@ async function logAuditEvent(
         .insert({
           invoice_id: invoiceId,
           actor_id: actorId,
+          owner_id: ownerId,
+          vendor_id: vendorId,
           event,
           metadata: metadata || null,
         });
@@ -94,6 +99,8 @@ async function logAuditEvent(
       event,
       invoice_id: invoiceId,
       actor_id: actorId,
+      owner_id: ownerId,
+      vendor_id: vendorId,
       ...(metadata ? { metadata } : {}),
     })
   );
@@ -236,10 +243,10 @@ export async function submitInvoice(
     );
   }
 
-  // 3. Verify vendor is assigned to this maintenance request
+  // 3. Verify vendor is assigned to this maintenance request and request is completed
   const { data: requestData, error: requestError } = await supabase
     .from('maintenance_requests' as any)
-    .select('id, selected_vendor_id')
+    .select('id, selected_vendor_id, status')
     .eq('id', maintenanceRequestId)
     .single();
 
@@ -258,7 +265,16 @@ export async function submitInvoice(
     );
   }
 
+  // Only allow invoicing for completed requests
+  if (request.status !== 'completed') {
+    throw new InvoiceError(
+      InvoiceErrorCode.INVALID_STATUS_TRANSITION,
+      'Invoices can only be submitted for completed maintenance requests'
+    );
+  }
+
   // 4. Idempotency check — prevent duplicate submissions
+  // We query for active (non-cancelled) invoices directly
   const { data: existingInvoices } = await supabase
     .from('maintenance_invoices' as any)
     .select('id, status, invoice_number')
@@ -268,13 +284,10 @@ export async function submitInvoice(
 
   const existing = (existingInvoices || []) as any[];
   if (existing.length > 0) {
-    const active = existing.find((inv: any) => inv.status !== 'cancelled');
-    if (active) {
-      throw new InvoiceError(
-        InvoiceErrorCode.DUPLICATE_SUBMISSION,
-        'An invoice has already been submitted for this job. Please check your invoices list.'
-      );
-    }
+    throw new InvoiceError(
+      InvoiceErrorCode.DUPLICATE_SUBMISSION,
+      'An invoice has already been submitted for this job. Please check your invoices list.'
+    );
   }
 
   // 5. Calculate totals and generate invoice number
@@ -370,7 +383,7 @@ export async function approveInvoice(
   }
 
   // 5. Audit trail
-  await logAuditEvent('invoice_approved', invoiceId, ownerId, {
+  await logAuditEvent('invoice_approved', invoiceId, ownerId, invoice.owner_id, invoice.vendor_id, {
     invoice_number: invoice.invoice_number,
     amount: invoice.total_amount,
   });
@@ -432,7 +445,7 @@ export async function rejectInvoice(
   }
 
   // 5. Audit trail
-  await logAuditEvent('invoice_rejected', invoiceId, ownerId, {
+  await logAuditEvent('invoice_rejected', invoiceId, ownerId, invoice.owner_id, invoice.vendor_id, {
     invoice_number: invoice.invoice_number,
     reason: reason.trim(),
   });
