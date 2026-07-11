@@ -124,6 +124,12 @@ export default function VendorLayout() {
           href: null, // Hidden from tabs - closure request form
         }}
       />
+      <Tabs.Screen
+        name="jobs/[id]/submit-invoice"
+        options={{
+          href: null, // Hidden from tabs - invoice submission form
+        }}
+      />
     </Tabs>
   );
 }

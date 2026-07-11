@@ -62,6 +62,11 @@ export * from './purchase-orders/poRevisions.api';
 export * from './purchase-orders/purchaseOrders.api';
 
 // ============================================
+// INVOICES
+// ============================================
+export * from './invoices/invoices.api';
+
+// ============================================
 // MESSAGES
 // ============================================
 export * from './messages/messages.api';

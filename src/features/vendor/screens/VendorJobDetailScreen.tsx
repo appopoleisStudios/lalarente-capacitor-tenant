@@ -569,22 +569,34 @@ export default function VendorJobDetailScreen() {
         </View>
       )}
 
-      {closureReport && (
+      {closureReport && closureReport.status !== 'approved' && (
         <View style={styles.bottomBar}>
           <View style={styles.closureStatusCard}>
             <Ionicons 
-              name={closureReport.status === 'approved' ? 'checkmark-circle' : 'time'} 
+              name={closureReport.status === 'rejected' ? 'close-circle' : 'time'} 
               size={24} 
-              color={closureReport.status === 'approved' ? RSA.green : RSA.gold} 
+              color={closureReport.status === 'rejected' ? RSA.red : RSA.gold} 
             />
             <Text style={styles.closureStatusText}>
-              {closureReport.status === 'approved' 
-                ? '✅ Job Completed!' 
-                : closureReport.status === 'rejected'
+              {closureReport.status === 'rejected'
                 ? '❌ Changes Requested'
                 : '⏳ Awaiting Owner Approval'}
             </Text>
           </View>
+        </View>
+      )}
+
+      {closureReport && closureReport.status === 'approved' && (
+        <View style={styles.bottomBar}>
+          <TouchableOpacity 
+            accessibilityLabel="Submit invoice for this job"
+            accessibilityRole="button"
+            style={styles.invoiceButton}
+            onPress={() => router.push(`/(vendor)/jobs/${id}/submit-invoice`)}
+          >
+            <Ionicons name="receipt" size={20} color="#FFFFFF" />
+            <Text style={styles.invoiceButtonText}>Submit Invoice</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -874,4 +886,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   closureStatusText: { fontSize: 15, fontWeight: '700', color: '#111827' },
+
+  invoiceButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: RSA.blue,
+    paddingVertical: 16,
+    borderRadius: 12,
+  },
+  invoiceButtonText: { fontSize: 17, fontWeight: '700', color: '#FFFFFF' },
 });

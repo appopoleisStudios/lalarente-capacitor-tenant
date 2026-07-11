@@ -276,6 +276,12 @@ export default function OwnerLayout() {
         }}
       />
       <Tabs.Screen
+        name="maintenance/[id]/invoice"
+        options={{
+          href: null, // Hidden from tabs - invoice approval screen
+        }}
+      />
+      <Tabs.Screen
         name="documents"
         options={{
           href: null, // Hidden from tabs - accessed from dashboard "See All"
