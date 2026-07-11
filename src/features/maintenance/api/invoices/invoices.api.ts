@@ -19,6 +19,60 @@ import { supabase } from '@/src/lib/supabase';
 export const VAT_RATE = 0.15;
 
 // ============================================
+// Error codes
+// ============================================
+
+export const InvoiceErrorCode = {
+  INVOICE_NOT_FOUND: 'INVOICE_NOT_FOUND',
+  VENDOR_NOT_ASSIGNED: 'VENDOR_NOT_ASSIGNED',
+  NOT_AUTHORISED: 'NOT_AUTHORISED',
+  DUPLICATE_SUBMISSION: 'DUPLICATE_SUBMISSION',
+  INVALID_STATUS_TRANSITION: 'INVALID_STATUS_TRANSITION',
+  RACE_CONDITION: 'RACE_CONDITION',
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
+  REJECTION_REASON_REQUIRED: 'REJECTION_REASON_REQUIRED',
+  MAINTENANCE_REQUEST_NOT_FOUND: 'MAINTENANCE_REQUEST_NOT_FOUND',
+} as const;
+
+export type InvoiceErrorCode = typeof InvoiceErrorCode[keyof typeof InvoiceErrorCode];
+
+/**
+ * Custom error class that includes a machine-readable error code
+ */
+export class InvoiceError extends Error {
+  code: InvoiceErrorCode;
+
+  constructor(code: InvoiceErrorCode, message: string) {
+    super(message);
+    this.name = 'InvoiceError';
+    this.code = code;
+  }
+}
+
+/**
+ * Log an invoice audit event to the console
+ * In production this would write to an audit_logs table
+ */
+function logAuditEvent(
+  event: string,
+  invoiceId: string,
+  actorId: string,
+  metadata?: Record<string, unknown>
+): void {
+  const timestamp = new Date().toISOString();
+  console.log(
+    JSON.stringify({
+      type: 'invoice_audit',
+      timestamp,
+      event,
+      invoice_id: invoiceId,
+      actor_id: actorId,
+      ...(metadata ? { metadata } : {}),
+    })
+  );
+}
+
+// ============================================
 // Types
 // ============================================
 
@@ -87,18 +141,18 @@ function calculateTotals(lineItems: InvoiceLineItem[]) {
  */
 function validateLineItems(lineItems: InvoiceLineItem[]): void {
   if (!lineItems || lineItems.length === 0) {
-    throw new Error('At least one line item is required');
+    throw new InvoiceError(InvoiceErrorCode.VALIDATION_ERROR, 'At least one line item is required');
   }
 
   for (const [i, item] of lineItems.entries()) {
     if (!item.description || item.description.trim().length === 0) {
-      throw new Error(`Line item ${i + 1}: description is required`);
+      throw new InvoiceError(InvoiceErrorCode.VALIDATION_ERROR, `Line item ${i + 1}: description is required`);
     }
     if (!Number.isFinite(item.quantity) || item.quantity <= 0) {
-      throw new Error(`Line item ${i + 1}: quantity must be a positive number`);
+      throw new InvoiceError(InvoiceErrorCode.VALIDATION_ERROR, `Line item ${i + 1}: quantity must be a positive number`);
     }
     if (!Number.isFinite(item.unit_price) || item.unit_price < 0) {
-      throw new Error(`Line item ${i + 1}: unit price must be a non-negative number`);
+      throw new InvoiceError(InvoiceErrorCode.VALIDATION_ERROR, `Line item ${i + 1}: unit price must be a non-negative number`);
     }
   }
 }
@@ -148,14 +202,20 @@ export async function submitInvoice(
     .single();
 
   if (requestError || !requestData) {
-    throw new Error('Maintenance request not found');
+    throw new InvoiceError(
+      InvoiceErrorCode.MAINTENANCE_REQUEST_NOT_FOUND,
+      'Maintenance request not found'
+    );
   }
 
   const request = requestData as any;
   const assignedVendorId = request.vendor_id || request.assigned_vendor_id;
 
   if (!assignedVendorId || assignedVendorId !== vendorId) {
-    throw new Error('You are not authorised to submit an invoice for this request');
+    throw new InvoiceError(
+      InvoiceErrorCode.VENDOR_NOT_ASSIGNED,
+      'You are not authorised to submit an invoice for this request'
+    );
   }
 
   // 3. Idempotency check — prevent duplicate submissions
@@ -170,7 +230,8 @@ export async function submitInvoice(
   if (existing.length > 0) {
     const active = existing.find((inv: any) => inv.status !== 'cancelled');
     if (active) {
-      throw new Error(
+      throw new InvoiceError(
+        InvoiceErrorCode.DUPLICATE_SUBMISSION,
         `An invoice (${active.invoice_number}) already exists for this job with status "${active.status}".`
       );
     }
@@ -233,17 +294,18 @@ export async function approveInvoice(
   // 1. Fetch current invoice state
   const invoice = await getInvoiceById(invoiceId);
   if (!invoice) {
-    throw new Error('Invoice not found');
+    throw new InvoiceError(InvoiceErrorCode.INVOICE_NOT_FOUND, 'Invoice not found');
   }
 
   // 2. Authorization: only the invoice's owner can approve
   if (invoice.owner_id !== ownerId) {
-    throw new Error('You are not authorised to approve this invoice');
+    throw new InvoiceError(InvoiceErrorCode.NOT_AUTHORISED, 'You are not authorised to approve this invoice');
   }
 
   // 3. Concurrent status check: only submitted invoices can be approved
   if (!ACTIONABLE_STATUSES.includes(invoice.status as any)) {
-    throw new Error(
+    throw new InvoiceError(
+      InvoiceErrorCode.INVALID_STATUS_TRANSITION,
       `Invoice cannot be approved in its current status ("${invoice.status}"). Only "${ACTIONABLE_STATUSES.join('", "')}" invoices can be approved.`
     );
   }
@@ -264,8 +326,14 @@ export async function approveInvoice(
   if (error) throw error;
   if (!data) {
     // Race condition: another request already changed the status
-    throw new Error('Invoice was already modified by another request. Please refresh and try again.');
+    throw new InvoiceError(InvoiceErrorCode.RACE_CONDITION, 'Invoice was already modified by another request. Please refresh and try again.');
   }
+
+  // 5. Audit trail
+  logAuditEvent('invoice_approved', invoiceId, ownerId, {
+    invoice_number: invoice.invoice_number,
+    amount: invoice.total_amount,
+  });
 
   return data as unknown as MaintenanceInvoice;
 }
@@ -283,23 +351,24 @@ export async function rejectInvoice(
   reason: string
 ): Promise<MaintenanceInvoice> {
   if (!reason.trim()) {
-    throw new Error('Please provide a reason for rejection');
+    throw new InvoiceError(InvoiceErrorCode.REJECTION_REASON_REQUIRED, 'Please provide a reason for rejection');
   }
 
   // 1. Fetch current invoice state
   const invoice = await getInvoiceById(invoiceId);
   if (!invoice) {
-    throw new Error('Invoice not found');
+    throw new InvoiceError(InvoiceErrorCode.INVOICE_NOT_FOUND, 'Invoice not found');
   }
 
   // 2. Authorization: only the invoice's owner can reject
   if (invoice.owner_id !== ownerId) {
-    throw new Error('You are not authorised to reject this invoice');
+    throw new InvoiceError(InvoiceErrorCode.NOT_AUTHORISED, 'You are not authorised to reject this invoice');
   }
 
   // 3. Concurrent status check
   if (!ACTIONABLE_STATUSES.includes(invoice.status as any)) {
-    throw new Error(
+    throw new InvoiceError(
+      InvoiceErrorCode.INVALID_STATUS_TRANSITION,
       `Invoice cannot be rejected in its current status ("${invoice.status}"). Only "${ACTIONABLE_STATUSES.join('", "')}" invoices can be rejected.`
     );
   }
@@ -319,8 +388,14 @@ export async function rejectInvoice(
 
   if (error) throw error;
   if (!data) {
-    throw new Error('Invoice was already modified by another request. Please refresh and try again.');
+    throw new InvoiceError(InvoiceErrorCode.RACE_CONDITION, 'Invoice was already modified by another request. Please refresh and try again.');
   }
+
+  // 5. Audit trail
+  logAuditEvent('invoice_rejected', invoiceId, ownerId, {
+    invoice_number: invoice.invoice_number,
+    reason: reason.trim(),
+  });
 
   return data as unknown as MaintenanceInvoice;
 }

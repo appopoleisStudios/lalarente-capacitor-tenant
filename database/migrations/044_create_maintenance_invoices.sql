@@ -82,6 +82,10 @@ CREATE POLICY vendor_invoice_select ON maintenance_invoices
 CREATE POLICY vendor_invoice_insert ON maintenance_invoices
   FOR INSERT WITH CHECK (vendor_id = auth.uid());
 
+-- RLS: Vendors can delete/cancel their own invoices (while still submitted)
+CREATE POLICY vendor_invoice_delete ON maintenance_invoices
+  FOR DELETE USING (vendor_id = auth.uid() AND status = 'submitted');
+
 -- RLS: Owners can view and update invoices for their properties
 CREATE POLICY owner_invoice_select ON maintenance_invoices
   FOR SELECT USING (owner_id = auth.uid());
