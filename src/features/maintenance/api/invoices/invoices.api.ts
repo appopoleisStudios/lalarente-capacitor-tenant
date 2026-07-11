@@ -50,16 +50,32 @@ export class InvoiceError extends Error {
 }
 
 /**
- * Log an invoice audit event to the console
- * In production this would write to an audit_logs table
+ * Log an invoice audit event to both the database audit table and console
  */
-function logAuditEvent(
+async function logAuditEvent(
   event: string,
   invoiceId: string,
   actorId: string,
   metadata?: Record<string, unknown>
-): void {
+): Promise<void> {
   const timestamp = new Date().toISOString();
+
+  // Write to DB audit log
+  try {
+    await supabase
+      .from('maintenance_invoice_audit_logs' as any)
+      .insert({
+        invoice_id: invoiceId,
+        actor_id: actorId,
+        event,
+        metadata: metadata || null,
+      });
+  } catch (err) {
+    // Don't throw — audit failures should not block the primary operation
+    console.error('Failed to write invoice audit log:', err);
+  }
+
+  // Console log as secondary backup
   console.log(
     JSON.stringify({
       type: 'invoice_audit',
@@ -194,10 +210,25 @@ export async function submitInvoice(
   // 1. API-level validation
   validateLineItems(lineItems);
 
-  // 2. Verify vendor is assigned to this maintenance request
+  // 2. Calculate totals early so we can validate them before DB lookups
+  const preTotals = calculateTotals(lineItems);
+  if (preTotals.subtotal <= 0) {
+    throw new InvoiceError(
+      InvoiceErrorCode.VALIDATION_ERROR,
+      'Invoice subtotal must be greater than zero'
+    );
+  }
+  if (preTotals.total_amount <= 0) {
+    throw new InvoiceError(
+      InvoiceErrorCode.VALIDATION_ERROR,
+      'Invoice total amount must be greater than zero'
+    );
+  }
+
+  // 3. Verify vendor is assigned to this maintenance request
   const { data: requestData, error: requestError } = await supabase
     .from('maintenance_requests' as any)
-    .select('id, assigned_vendor_id, vendor_routed_at')
+    .select('id, selected_vendor_id')
     .eq('id', maintenanceRequestId)
     .single();
 
@@ -209,16 +240,14 @@ export async function submitInvoice(
   }
 
   const request = requestData as any;
-  const assignedVendorId = request.vendor_id || request.assigned_vendor_id;
-
-  if (!assignedVendorId || assignedVendorId !== vendorId) {
+  if (!request.selected_vendor_id || request.selected_vendor_id !== vendorId) {
     throw new InvoiceError(
       InvoiceErrorCode.VENDOR_NOT_ASSIGNED,
       'You are not authorised to submit an invoice for this request'
     );
   }
 
-  // 3. Idempotency check — prevent duplicate submissions
+  // 4. Idempotency check — prevent duplicate submissions
   const { data: existingInvoices } = await supabase
     .from('maintenance_invoices' as any)
     .select('id, status, invoice_number')
@@ -232,16 +261,16 @@ export async function submitInvoice(
     if (active) {
       throw new InvoiceError(
         InvoiceErrorCode.DUPLICATE_SUBMISSION,
-        `An invoice (${active.invoice_number}) already exists for this job with status "${active.status}".`
+        'An invoice has already been submitted for this job. Please check your invoices list.'
       );
     }
   }
 
-  // 4. Calculate totals and generate invoice number
-  const totals = calculateTotals(lineItems);
+  // 5. Calculate totals and generate invoice number
+  const totals = preTotals;
   const invoiceNumber = generateInvoiceNumber();
 
-  // 5. Insert
+  // 6. Insert
   const { data, error } = await supabase
     .from('maintenance_invoices' as any)
     .insert({
@@ -306,7 +335,7 @@ export async function approveInvoice(
   if (!ACTIONABLE_STATUSES.includes(invoice.status as any)) {
     throw new InvoiceError(
       InvoiceErrorCode.INVALID_STATUS_TRANSITION,
-      `Invoice cannot be approved in its current status ("${invoice.status}"). Only "${ACTIONABLE_STATUSES.join('", "')}" invoices can be approved.`
+      'Only submitted invoices can be approved'
     );
   }
 
@@ -330,7 +359,7 @@ export async function approveInvoice(
   }
 
   // 5. Audit trail
-  logAuditEvent('invoice_approved', invoiceId, ownerId, {
+  await logAuditEvent('invoice_approved', invoiceId, ownerId, {
     invoice_number: invoice.invoice_number,
     amount: invoice.total_amount,
   });
@@ -369,7 +398,7 @@ export async function rejectInvoice(
   if (!ACTIONABLE_STATUSES.includes(invoice.status as any)) {
     throw new InvoiceError(
       InvoiceErrorCode.INVALID_STATUS_TRANSITION,
-      `Invoice cannot be rejected in its current status ("${invoice.status}"). Only "${ACTIONABLE_STATUSES.join('", "')}" invoices can be rejected.`
+      'Only submitted invoices can be rejected'
     );
   }
 
@@ -392,7 +421,7 @@ export async function rejectInvoice(
   }
 
   // 5. Audit trail
-  logAuditEvent('invoice_rejected', invoiceId, ownerId, {
+  await logAuditEvent('invoice_rejected', invoiceId, ownerId, {
     invoice_number: invoice.invoice_number,
     reason: reason.trim(),
   });
