@@ -741,26 +741,28 @@ export default function OwnerMaintenanceDetailScreen() {
         )}
 
         {/* Invoice */}
-        {request.status === 'completed' && (
+        {(request.status === 'completed' || request.status === 'in_progress') && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Invoice</Text>
-              <Text style={[styles.sectionBadge, { backgroundColor: colors.warning[50], color: colors.warning[700] }]}>
-                Pending Payment
+              <Text style={[styles.sectionBadge, { backgroundColor: colors.info[50], color: colors.info[700] }]}>
+                View Details
               </Text>
             </View>
             <TouchableOpacity
+              accessibilityLabel="View invoice details"
+              accessibilityRole="button"
               style={styles.invoiceCard}
               onPress={() => {
-                router.push('/(owner)/invoices' as any);
+                router.push(`/(owner)/maintenance/${id}/invoice` as any);
               }}
             >
               <View style={styles.invoiceHeader}>
-                <Ionicons name="receipt" size={32} color={colors.warning[500]} />
+                <Ionicons name="receipt" size={32} color={colors.info[500]} />
                 <View style={styles.invoiceInfo}>
-                  <Text style={styles.invoiceTitle}>Final Invoice</Text>
-                  <Text style={styles.invoiceAmount}>
-                    R {request.actual_cost?.toLocaleString() || '0'}
+                  <Text style={styles.invoiceTitle}>Invoice</Text>
+                  <Text style={styles.invoiceSubtitle}>
+                    View and manage invoices for this job
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color={colors.gray[400]} />
@@ -940,6 +942,7 @@ const styles = StyleSheet.create({
   invoiceHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 },
   invoiceInfo: { flex: 1 },
   invoiceTitle: { fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 2 },
+  invoiceSubtitle: { fontSize: 13, color: '#6b7280' },
   invoiceAmount: { fontSize: 20, fontWeight: '700', color: colors.warning[600] },
 
   // Closure section
