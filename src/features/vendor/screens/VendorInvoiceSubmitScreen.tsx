@@ -32,6 +32,12 @@ interface LineItemEntry {
   unitPrice: string;
 }
 
+const keyCounter = { current: 0 };
+function nextKey(): string {
+  keyCounter.current += 1;
+  return `item_${keyCounter.current}`;
+}
+
 export default function VendorInvoiceSubmitScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
@@ -70,7 +76,7 @@ export default function VendorInvoiceSubmitScreen() {
   const addLineItem = () => {
     setLineItems(prev => [
       ...prev,
-      { key: String(Date.now()), description: '', quantity: '1', unitPrice: '' },
+      { key: nextKey(), description: '', quantity: '1', unitPrice: '' },
     ]);
   };
 

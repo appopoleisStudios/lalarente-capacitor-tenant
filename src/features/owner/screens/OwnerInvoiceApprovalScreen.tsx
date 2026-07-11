@@ -27,7 +27,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const RSA = { blue: '#002395' };
 
 export default function OwnerInvoiceApprovalScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const rawParams = useLocalSearchParams<{ id: string }>();
+  const id = rawParams?.id;
   const { user } = useAuth();
   const abortRef = useRef<AbortController | null>(null);
 
@@ -41,14 +42,17 @@ export default function OwnerInvoiceApprovalScreen() {
   const [selectedInvoice, setSelectedInvoice] = useState<MaintenanceInvoice | null>(null);
 
   useEffect(() => {
-    if (id) {
-      abortRef.current = new AbortController();
-      loadInvoices();
+    if (!id || Array.isArray(id)) {
+      Alert.alert('Error', 'Invalid request. Please go back and try again.');
+      return;
     }
+    abortRef.current = new AbortController();
+    loadInvoices();
     return () => abortRef.current?.abort();
   }, [id]);
 
   const loadInvoices = async () => {
+    if (!id) return;
     try {
       setLoading(true);
       const data = await getInvoicesByRequest(id);
@@ -88,6 +92,7 @@ export default function OwnerInvoiceApprovalScreen() {
               if (!user?.id) throw new Error('Not authenticated');
               await approveInvoice(invoice.id, user.id);
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              setSelectedInvoice(null);
               loadInvoices();
             } catch (error: any) {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -126,6 +131,8 @@ export default function OwnerInvoiceApprovalScreen() {
       setSelectedInvoice(null);
       loadInvoices();
     } catch (error: any) {
+      // Restore modal on error so user can retry
+      setSelectedInvoice(null);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', error.message || 'Failed to reject invoice');
     } finally {

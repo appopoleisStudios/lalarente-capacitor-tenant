@@ -61,18 +61,29 @@ async function logAuditEvent(
   const timestamp = new Date().toISOString();
 
   // Write to DB audit log
-  try {
-    await supabase
-      .from('maintenance_invoice_audit_logs' as any)
-      .insert({
-        invoice_id: invoiceId,
-        actor_id: actorId,
-        event,
-        metadata: metadata || null,
-      });
-  } catch (err) {
-    // Don't throw — audit failures should not block the primary operation
-    console.error('Failed to write invoice audit log:', err);
+  // If the audit log insert fails, we retry once after a short delay
+  // before falling back to console-only logging
+  const maxRetries = 1;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      await supabase
+        .from('maintenance_invoice_audit_logs' as any)
+        .insert({
+          invoice_id: invoiceId,
+          actor_id: actorId,
+          event,
+          metadata: metadata || null,
+        });
+      break; // success — exit retry loop
+    } catch (err) {
+      if (attempt < maxRetries) {
+        // Brief backoff before retry
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } else {
+        // Final attempt failed — log to console as fallback
+        console.error('Failed to write invoice audit log after retry:', err);
+      }
+    }
   }
 
   // Console log as secondary backup

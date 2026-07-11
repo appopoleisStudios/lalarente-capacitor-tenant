@@ -21,9 +21,32 @@ CREATE INDEX idx_invoice_audit_event  ON maintenance_invoice_audit_logs(event);
 CREATE INDEX idx_invoice_audit_created ON maintenance_invoice_audit_logs(created_at);
 
 -- ============================================
--- RLS: Only admins can read; inserts allowed via API
+-- RLS: Service role only for inserts; owners/vendors can read their own audit logs
 -- ============================================
 ALTER TABLE maintenance_invoice_audit_logs ENABLE ROW LEVEL SECURITY;
+
+-- Owners can view audit logs for their invoices
+CREATE POLICY owner_invoice_audit_select ON maintenance_invoice_audit_logs
+  FOR SELECT USING (
+    invoice_id IN (
+      SELECT id FROM maintenance_invoices WHERE owner_id = auth.uid()
+    )
+  );
+
+-- Vendors can view audit logs for their invoices
+CREATE POLICY vendor_invoice_audit_select ON maintenance_invoice_audit_logs
+  FOR SELECT USING (
+    invoice_id IN (
+      SELECT id FROM maintenance_invoices WHERE vendor_id = auth.uid()
+    )
+  );
+
+-- Only service role (server-side API) can insert audit logs
+-- Prevents direct client-side tampering with the audit trail
+-- auth.role() returns 'service_role' only when using the service_role key (RLS bypassed)
+-- For anon key requests, auth.role() returns 'authenticated' so the check fails
+CREATE POLICY service_role_invoice_audit_insert ON maintenance_invoice_audit_logs
+  FOR INSERT WITH CHECK (auth.role() = 'service_role');
 
 -- Admins can view all audit logs
 CREATE POLICY admin_invoice_audit_select ON maintenance_invoice_audit_logs
@@ -32,7 +55,3 @@ CREATE POLICY admin_invoice_audit_select ON maintenance_invoice_audit_logs
       SELECT id FROM profiles WHERE role = 'admin'
     )
   );
-
--- Service role inserts (via API) are allowed
-CREATE POLICY service_role_invoice_audit_insert ON maintenance_invoice_audit_logs
-  FOR INSERT WITH CHECK (true);
