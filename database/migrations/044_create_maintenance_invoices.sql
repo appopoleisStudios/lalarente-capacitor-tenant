@@ -1,6 +1,25 @@
 -- Migration: Create maintenance_invoices table
 -- Vendor invoices for completed maintenance work
 
+-- ============================================
+-- VAT rate constant (15% for South Africa)
+-- ============================================
+-- Centralised here for reference. The API layer also uses this value.
+
+-- ============================================
+-- Updated_at trigger function (if not exists)
+-- ============================================
+CREATE OR REPLACE FUNCTION update_maintenance_invoices_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================
+-- Main table
+-- ============================================
 CREATE TABLE IF NOT EXISTS maintenance_invoices (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   maintenance_request_id UUID NOT NULL REFERENCES maintenance_requests(id) ON DELETE CASCADE,
@@ -24,14 +43,19 @@ CREATE TABLE IF NOT EXISTS maintenance_invoices (
   -- Approval
   approved_at TIMESTAMPTZ,
   approved_by UUID REFERENCES profiles(id),
+
+  -- Rejection
+  rejected_at TIMESTAMPTZ,
   rejection_reason TEXT,
 
   -- Payment
   paid_at TIMESTAMPTZ,
   payment_reference TEXT,
 
-  -- Timestamps
+  -- Notes
   notes TEXT,
+
+  -- Timestamps
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -41,6 +65,12 @@ CREATE INDEX idx_maintenance_invoices_request ON maintenance_invoices(maintenanc
 CREATE INDEX idx_maintenance_invoices_vendor ON maintenance_invoices(vendor_id);
 CREATE INDEX idx_maintenance_invoices_owner ON maintenance_invoices(owner_id);
 CREATE INDEX idx_maintenance_invoices_status ON maintenance_invoices(status);
+
+-- Updated_at trigger
+CREATE TRIGGER trg_maintenance_invoices_updated_at
+  BEFORE UPDATE ON maintenance_invoices
+  FOR EACH ROW
+  EXECUTE FUNCTION update_maintenance_invoices_updated_at();
 
 -- Enable RLS
 ALTER TABLE maintenance_invoices ENABLE ROW LEVEL SECURITY;
