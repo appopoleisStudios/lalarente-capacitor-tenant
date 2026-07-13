@@ -2,9 +2,12 @@ import { renderHook, waitFor } from '@testing-library/react-native';
 import { useMaintenanceRequests } from '../useMaintenanceRequests';
 import { createQueryWrapper } from './testUtils';
 
-const mockUseAuth = jest.fn(() => ({ user: { id: 'user-1' }, profile: { role: 'owner' } }));
+jest.mock('@/contexts/AuthContext', () => ({
+  useAuth: jest.fn(() => ({ user: { id: 'user-1' }, profile: { role: 'owner' } })),
+}));
 
-jest.mock('@/src/contexts/AuthContext', () => ({ useAuth: mockUseAuth }));
+// Capture mock for test that needs to override return value
+const mockUseAuth = jest.requireMock('@/contexts/AuthContext').useAuth;
 
 jest.mock('../../api', () => ({
   getMaintenanceRequests: jest.fn(),
