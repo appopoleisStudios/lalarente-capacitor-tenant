@@ -351,8 +351,28 @@ export default function OwnerDashboardScreen() {
             </Animated.View>
           )}
 
-          {dashboardData.processingPayments > 0 && (
+          {/* Pending Closure Approvals */}
+          {dashboardData.pendingClosures > 0 && (
             <Animated.View entering={FadeInDown.delay(160).duration(400)}>
+              <TouchableOpacity
+                style={styles.closureAlertCard}
+                onPress={() => router.push('/(owner)/maintenance' as any)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="checkmark-done-circle" size={24} color="#007A4D" />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.closureAlertTitle}>
+                    {dashboardData.pendingClosures} Job Closure{dashboardData.pendingClosures > 1 ? 's' : ''} Pending Review
+                  </Text>
+                  <Text style={styles.closureAlertSub}>Vendors have completed work and requested closure approval</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#007A4D" />
+              </TouchableOpacity>
+            </Animated.View>
+          )}
+
+          {dashboardData.processingPayments > 0 && (
+            <Animated.View entering={FadeInDown.delay(165).duration(400)}>
               <TouchableOpacity
                 style={styles.processingAlertCard}
                 onPress={() => router.push('/(owner)/rent-roll' as any)}
