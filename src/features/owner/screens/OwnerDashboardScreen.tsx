@@ -246,7 +246,8 @@ export default function OwnerDashboardScreen() {
 
   const notificationCount = unreadNotifCount + pendingViewingsCount
     + dashboardData.pendingTerminations
-    + dashboardData.openDisputes;
+    + dashboardData.openDisputes
+    + dashboardData.pendingClosures;
 
   // Dynamic documents from real data
   const documents = [
@@ -391,7 +392,7 @@ export default function OwnerDashboardScreen() {
 
           {/* Pending Viewing Requests */}
           {pendingViewingsCount > 0 && (
-            <Animated.View entering={FadeInDown.delay(165).duration(400)}>
+            <Animated.View entering={FadeInDown.delay(170).duration(400)}>
               <TouchableOpacity
                 style={styles.viewingAlertCard}
                 onPress={() => router.push('/(owner)/viewings' as any)}
