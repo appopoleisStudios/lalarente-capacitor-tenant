@@ -21,7 +21,7 @@ describe('Chip', () => {
   });
 
   it('renders all variants without error', () => {
-    const variants = ['default', 'primary', 'outlined'] as const;
+    const variants = ['default', 'primary', 'outline'] as const;
     for (const variant of variants) {
       const { getByText, unmount } = render(<Chip label={variant} variant={variant} />);
       expect(getByText(variant)).toBeTruthy();

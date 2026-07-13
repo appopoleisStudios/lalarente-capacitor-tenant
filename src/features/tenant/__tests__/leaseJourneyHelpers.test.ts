@@ -33,7 +33,7 @@ describe('buildApplicationEvents', () => {
     property_id: 'p1',
     owner_id: 'o1',
     ...overrides,
-  });
+  } as ApplicationRow);
 
   it('returns empty array when no applications', () => {
     expect(buildApplicationEvents([])).toEqual([]);
@@ -186,7 +186,7 @@ describe('buildLeaseSigningEvents', () => {
     status: 'active',
     start_date: '2026-06-01T00:00:00Z',
     end_date: '2027-06-01T00:00:00Z',
-    rental_amount: 8500,
+    monthly_rent: 8500,
     tenant_id: 't1',
     owner_id: 'o1',
     property_id: 'p1',

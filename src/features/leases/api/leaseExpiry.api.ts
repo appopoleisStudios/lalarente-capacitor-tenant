@@ -152,7 +152,7 @@ export const leaseExpiryApi = {
 
     const { error } = await supabase
       .from('leases')
-      .update({ [field]: new Date().toISOString() })
+      .update({ [field]: new Date().toISOString() } as any)
       .eq('id', leaseId);
 
     if (error) {
@@ -179,7 +179,7 @@ export const leaseExpiryApi = {
 
     const { error } = await supabase
       .from('leases')
-      .update(updateData)
+      .update(updateData as any)
       .eq('id', leaseId);
 
     if (error) {

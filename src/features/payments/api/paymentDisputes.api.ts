@@ -164,7 +164,7 @@ export const paymentDisputesApi = {
 
     const { data, error } = await supabase
       .from('payment_disputes')
-      .update(updateData)
+      .update(updateData as any)
       .eq('id', disputeId)
       .select()
       .single();

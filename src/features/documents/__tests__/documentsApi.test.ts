@@ -13,42 +13,83 @@ jest.mock('base64-arraybuffer', () => ({
   decode: jest.fn().mockReturnValue(new ArrayBuffer(8)),
 }));
 
-const mockSingle = jest.fn();
-const mockSelect = jest.fn(() => ({ single: mockSingle }));
-const mockInsert = jest.fn(() => ({ select: mockSelect }));
-const mockEq = jest.fn();
-const mockIn = jest.fn();
-const mockOrder = jest.fn();
-const mockRemove = jest.fn();
-const mockGetPublicUrl = jest.fn();
-const mockUpload = jest.fn();
-const mockCreateSignedUrl = jest.fn();
+// ─── Shared mock chain objects ──────────────────────────────────────────────
+// jest.mock factory is self-contained (no outer variable refs) to avoid
+// TDZ issues with hoisted jest.mock calls.
 
-const storageChain = {
-  upload: mockUpload,
-  getPublicUrl: mockGetPublicUrl,
-  remove: mockRemove,
-  createSignedUrl: mockCreateSignedUrl,
-};
+var __mockCache: Record<string, any>;
 
-const fromStorage = jest.fn(() => storageChain);
+jest.mock('../../../lib/supabase', () => {
+  const c: Record<string, any> = {};
 
-const dbChain = {
-  insert: mockInsert,
-  select: jest.fn(() => ({ eq: mockEq, order: mockOrder, single: mockSingle, in: mockIn })),
-  delete: jest.fn(() => ({ eq: jest.fn() })),
-  update: jest.fn(() => ({ eq: jest.fn() })),
-  eq: mockEq,
-};
+  const mockSingle = jest.fn();
+  const mockSelect = jest.fn(() => ({ single: mockSingle }));
+  const mockInsert = jest.fn(() => ({ select: mockSelect }));
+  const mockEq = jest.fn();
+  const mockIn = jest.fn();
+  const mockOrder = jest.fn();
+  const mockUpload = jest.fn();
+  const mockGetPublicUrl = jest.fn();
+  const mockRemove = jest.fn();
+  const mockCreateSignedUrl = jest.fn();
 
-const fromDb = jest.fn(() => dbChain);
+  c.mockSingle = mockSingle;
+  c.mockSelect = mockSelect;
+  c.mockInsert = mockInsert;
+  c.mockEq = mockEq;
+  c.mockIn = mockIn;
+  c.mockOrder = mockOrder;
+  c.mockUpload = mockUpload;
+  c.mockGetPublicUrl = mockGetPublicUrl;
+  c.mockRemove = mockRemove;
+  c.mockCreateSignedUrl = mockCreateSignedUrl;
 
-jest.mock('../../../lib/supabase', () => ({
-  supabase: {
-    storage: { from: fromStorage },
-    from: fromDb,
-  },
-}));
+  const mockStorageChain = { upload: mockUpload, getPublicUrl: mockGetPublicUrl, remove: mockRemove, createSignedUrl: mockCreateSignedUrl };
+  const mockDbChain = {
+    insert: mockInsert,
+    select: jest.fn(() => ({ eq: mockEq, order: mockOrder, single: mockSingle, in: mockIn })),
+    delete: jest.fn(() => ({ eq: jest.fn() })),
+    update: jest.fn(() => ({ eq: jest.fn() })),
+    eq: mockEq,
+  };
+  c.mockStorageChain = mockStorageChain;
+  c.mockDbChain = mockDbChain;
+
+  const mockFromStorage = jest.fn(() => mockStorageChain);
+  const mockFromDb = jest.fn(() => mockDbChain);
+  c.mockFromStorage = mockFromStorage;
+  c.mockFromDb = mockFromDb;
+
+  __mockCache = c;
+
+  return {
+    supabase: {
+      storage: { from: mockFromStorage },
+      from: mockFromDb,
+    },
+  };
+});
+
+function m() {
+  return __mockCache;
+}
+
+// This reference is set once at module init, AFTER jest.mock factory has run.
+// getSupabaseMocks() returns updated references usable in beforeEach/test blocks.
+const dbChain = m().mockDbChain;
+const storageChain = m().mockStorageChain;
+const mockSingle = m().mockSingle;
+const mockSelect = m().mockSelect;
+const mockInsert = m().mockInsert;
+const mockEq = m().mockEq;
+const mockIn = m().mockIn;
+const mockOrder = m().mockOrder;
+const mockUpload = m().mockUpload;
+const mockGetPublicUrl = m().mockGetPublicUrl;
+const mockRemove = m().mockRemove;
+const mockCreateSignedUrl = m().mockCreateSignedUrl;
+const fromStorage = m().mockFromStorage;
+const fromDb = m().mockFromDb;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
