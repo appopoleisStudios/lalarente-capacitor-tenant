@@ -186,4 +186,20 @@ export const styles = StyleSheet.create({
     color: '#6b7280',
     fontWeight: '600',
   },
+  // ─── Closure pending badge ──────────────────────────────────────────────────
+  closureBadge: {
+    backgroundColor: '#F0FDF4',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  closureBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#166534',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
 });

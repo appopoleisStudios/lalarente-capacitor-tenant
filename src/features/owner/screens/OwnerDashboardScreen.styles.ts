@@ -204,4 +204,27 @@ export const styles = StyleSheet.create({
     color: '#92400E',
     marginTop: 2,
   },
+  // ─── Closure approval alert card ────────────────────────────────────────────
+  closureAlertCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    borderRadius: 12,
+    padding: 14,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    gap: 12,
+  },
+  closureAlertTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#166534',
+  },
+  closureAlertSub: {
+    fontSize: 12,
+    color: '#15803D',
+    marginTop: 2,
+  },
 });

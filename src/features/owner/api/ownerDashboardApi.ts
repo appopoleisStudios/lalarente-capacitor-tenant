@@ -79,6 +79,7 @@ export interface OwnerDashboardData {
   pendingTerminations: number;
   processingPayments: number;
   openDisputes: number;
+  pendingClosures: number;
 }
 
 // ============================================================================
@@ -120,12 +121,13 @@ export async function getOwnerDashboardData(ownerId: string): Promise<OwnerDashb
 
     // Fetch holding deposits count for owner's properties (pending + paid = "active")
     const propertyIds = properties.map((p: any) => p.id);
-    const [holdingDepositsActive, pendingTerminations, processingPayments, openDisputes, recentViewings] = await Promise.all([
+    const [holdingDepositsActive, pendingTerminations, processingPayments, openDisputes, recentViewings, pendingClosures] = await Promise.all([
       fetchHoldingDepositsCount(propertyIds),
       fetchPendingTerminationsCount(ownerId),
       fetchProcessingPaymentsCount(propertyIds),
       fetchOpenDisputesCount(ownerId),
       fetchRecentViewings(ownerId),
+      fetchPendingClosureCount(ownerId),
     ]);
 
     // Batch-fetch accepted quotes for active maintenance requests (single extra query)
@@ -164,6 +166,7 @@ export async function getOwnerDashboardData(ownerId: string): Promise<OwnerDashb
       pendingTerminations,
       processingPayments,
       openDisputes,
+      pendingClosures,
     };
   } catch (error) {
     console.error('[ownerDashboardApi] Error fetching dashboard data:', error);
@@ -186,6 +189,18 @@ async function fetchHoldingDepositsCount(propertyIds: string[]): Promise<number>
     .select('*', { count: 'exact', head: true })
     .in('property_id', propertyIds)
     .in('status', ['pending', 'paid']);
+  return count || 0;
+}
+
+/**
+ * Count maintenance requests with pending closure approval from vendor.
+ */
+async function fetchPendingClosureCount(ownerId: string): Promise<number> {
+  const { count } = await supabase
+    .from('maintenance_requests')
+    .select('*', { count: 'exact', head: true })
+    .eq('owner_id', ownerId)
+    .not('closure_requested_at', 'is', null);
   return count || 0;
 }
 
