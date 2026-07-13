@@ -9,7 +9,7 @@ describe('Text (shared)', () => {
   });
 
   it('renders all variants without error', () => {
-    const variants = ['default', 'title', 'body', 'caption', 'error', 'success'] as const;
+    const variants = ['heading', 'subheading', 'body', 'caption'] as const;
     for (const variant of variants) {
       const { getByText, unmount } = render(<Text variant={variant}>{variant}</Text>);
       expect(getByText(variant)).toBeTruthy();

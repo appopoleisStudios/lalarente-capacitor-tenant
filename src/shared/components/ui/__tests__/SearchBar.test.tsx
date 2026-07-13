@@ -4,28 +4,25 @@ import { SearchBar } from '../SearchBar';
 
 describe('SearchBar', () => {
   it('renders with default placeholder', () => {
-    const { getByPlaceholderText } = render(<SearchBar />);
+    const { getByPlaceholderText } = render(<SearchBar value="" onChangeText={jest.fn()} />);
     expect(getByPlaceholderText('Search...')).toBeTruthy();
   });
 
   it('renders with custom placeholder', () => {
-    const { getByPlaceholderText } = render(<SearchBar placeholder="Find..." />);
+    const { getByPlaceholderText } = render(<SearchBar value="" onChangeText={jest.fn()} placeholder="Find..." />);
     expect(getByPlaceholderText('Find...')).toBeTruthy();
   });
 
   it('fires onChangeText when text changes', () => {
     const handler = jest.fn();
-    const { getByPlaceholderText } = render(<SearchBar onChangeText={handler} />);
+    const { getByPlaceholderText } = render(<SearchBar value="" onChangeText={handler} />);
     fireEvent.changeText(getByPlaceholderText('Search...'), 'hello');
     expect(handler).toHaveBeenCalledWith('hello');
   });
 
-  it('fires onChangeText when value changes', () => {
-    const handler = jest.fn();
-    const { getByPlaceholderText } = render(<SearchBar value="test" />);
+  it('renders with value prop', () => {
+    const { getByPlaceholderText } = render(<SearchBar value="test" onChangeText={jest.fn()} />);
     fireEvent.changeText(getByPlaceholderText('Search...'), 'new');
-    // onChangeText fires but there's no explicit handler to assert
-    // The component manages value internally or via props
     expect(getByPlaceholderText('Search...')).toBeTruthy();
   });
 });

@@ -40,7 +40,7 @@ export const messagesApi = {
   async getMessages(requestId: string, propertyId: string) {
     const topic = `maintenance_${requestId}`;
     
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('messages')
       .select(`
         *,
@@ -85,7 +85,7 @@ export const messagesApi = {
   async markAsRead(requestId: string, propertyId: string, userId: string) {
     const topic = `maintenance_${requestId}`;
     
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('messages')
       .update({ read_at: new Date().toISOString() })
       .eq('property_id', propertyId)
@@ -98,7 +98,7 @@ export const messagesApi = {
 
   // Get unread count
   async getUnreadCount(userId: string) {
-    const { count, error } = await supabase
+    const { count, error } = await (supabase as any)
       .from('messages')
       .select('*', { count: 'exact', head: true })
       .eq('recipient_id', userId)
@@ -128,7 +128,7 @@ export const messagesApi = {
         },
         async (payload) => {
           // Fetch the complete message with relations
-          const { data } = await supabase
+          const { data } = await (supabase as any)
             .from('messages')
             .select(`
               *,

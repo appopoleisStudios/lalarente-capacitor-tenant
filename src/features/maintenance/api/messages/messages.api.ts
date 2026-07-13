@@ -24,7 +24,7 @@ export async function getMessages(
 ): Promise<Message[]> {
   const topic = `maintenance_${requestId}`;
   
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('messages')
     .select(`
       *,
@@ -101,7 +101,7 @@ export async function markAsRead(
 ): Promise<void> {
   const topic = `maintenance_${requestId}`;
   
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('messages')
     .update({ read_at: new Date().toISOString() })
     .eq('property_id', propertyId)
@@ -124,7 +124,7 @@ export async function markAsRead(
  * ```
  */
 export async function getUnreadCount(userId: string): Promise<number> {
-  const { count, error } = await supabase
+  const { count, error } = await (supabase as any)
     .from('messages')
     .select('*', { count: 'exact', head: true })
     .eq('recipient_id', userId)

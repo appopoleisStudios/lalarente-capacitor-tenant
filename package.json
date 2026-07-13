@@ -78,6 +78,7 @@
     "@eslint/js": "^9.37.0",
     "@testing-library/jest-native": "^5.4.3",
     "@testing-library/react-native": "^13.3.3",
+    "@types/crypto-js": "^4.2.2",
     "@types/jest": "^30.0.0",
     "@types/react": "~19.1.0",
     "@typescript-eslint/eslint-plugin": "^8.46.1",

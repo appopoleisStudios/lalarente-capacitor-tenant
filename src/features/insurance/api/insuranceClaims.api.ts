@@ -199,7 +199,7 @@ export const insuranceClaimsApi = {
 
     const { data, error } = await supabase
       .from('insurance_claims')
-      .update(updateData)
+      .update(updateData as any)
       .eq('id', claimId)
       .select()
       .single();

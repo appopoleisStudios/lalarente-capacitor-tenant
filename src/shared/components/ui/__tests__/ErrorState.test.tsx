@@ -27,9 +27,9 @@ describe('ErrorState', () => {
     expect(queryByText('Retry')).toBeNull();
   });
 
-  it('renders with icon when provided', () => {
+  it('renders with title when provided', () => {
     const { getByText } = render(
-      <ErrorState message="Error" icon="cloud-offline-outline" />
+      <ErrorState title="Error" message="Network issue" />
     );
     expect(getByText('Error')).toBeTruthy();
   });

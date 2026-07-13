@@ -105,7 +105,7 @@ export const paymentsApi = {
         payment_gateway: input.payment_gateway || null,
         transaction_id: input.transaction_id || null,
         payment_reference: input.payment_reference || null,
-      })
+      } as any)
       .eq('id', input.payment_id)
       .select()
       .single();
@@ -158,7 +158,7 @@ export const paymentsApi = {
         failure_reason: failureReason,
         retry_count: retryCount,
         last_retry_at: new Date().toISOString(),
-      })
+      } as any)
       .eq('id', paymentId)
       .select()
       .single();

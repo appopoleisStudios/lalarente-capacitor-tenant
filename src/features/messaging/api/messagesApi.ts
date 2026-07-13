@@ -208,7 +208,7 @@ export const messagesApi = {
 
     await supabase
       .from('message_threads')
-      .update(updateData)
+      .update(updateData as any)
       .eq('id', input.thread_id);
 
     return message;
@@ -234,7 +234,7 @@ export const messagesApi = {
     const updateField = role === 'owner' ? 'unread_count_owner' : 'unread_count_tenant';
     const { error: threadError } = await supabase
       .from('message_threads')
-      .update({ [updateField]: 0 })
+      .update({ [updateField]: 0 } as any)
       .eq('id', threadId);
 
     if (threadError) {

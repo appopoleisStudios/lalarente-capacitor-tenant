@@ -84,7 +84,7 @@ export const leasesApi = {
    * Create a new lease (draft)
    */
   async createLease(input: CreateLeaseInput): Promise<Lease> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('leases')
       .insert({
         property_id: input.property_id,
@@ -134,7 +134,7 @@ export const leasesApi = {
   async updateLease(id: string, input: UpdateLeaseInput): Promise<Lease> {
     const { data, error } = await supabase
       .from('leases')
-      .update(input)
+      .update(input as any)
       .eq('id', id)
       .select()
       .single();
@@ -269,7 +269,7 @@ export const leasesApi = {
    * Sign a lease (owner or tenant)
    */
   async signLease(id: string, signatureData: SignatureData): Promise<Lease> {
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     
     if (signatureData.role === 'owner') {
       updateData.owner_signed_at = new Date().toISOString();
@@ -294,7 +294,7 @@ export const leasesApi = {
 
     const { data, error } = await supabase
       .from('leases')
-      .update(updateData)
+      .update(updateData as any)
       .eq('id', id)
       .select()
       .single();

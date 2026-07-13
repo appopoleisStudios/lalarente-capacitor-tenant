@@ -147,7 +147,7 @@ export default function OwnerLeaseCreateScreen() {
               const { data: { user } } = await supabase.auth.getUser();
               if (!user) throw new Error('Not authenticated');
 
-              const { data: lease, error: leaseError } = await supabase
+              const { data: lease, error: leaseError } = await (supabase as any)
                 .from('leases')
                 .insert({
                   application_id: application.id,
