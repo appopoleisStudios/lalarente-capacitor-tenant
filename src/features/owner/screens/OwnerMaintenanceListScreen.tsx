@@ -168,6 +168,11 @@ export default function OwnerMaintenanceListScreen() {
                         <View style={styles.badges}>
                           <StatusBadge status={request.status} size="small" />
                           <PriorityIndicator priority={request.priority} size="small" />
+                          {request.closure_requested_at && (
+                            <View style={styles.closureBadge}>
+                              <Text style={styles.closureBadgeText}>Closure</Text>
+                            </View>
+                          )}
                         </View>
                         <Text style={styles.date}>{formatDate(request.created_at)}</Text>
                       </View>
