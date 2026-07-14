@@ -1,39 +1,19 @@
-# Fresh app start — forces login screen without clearState
+# Fresh app start — force login state without clearState
 # NOTE: Never use clearState: true — it wipes the Expo dev client's stored Metro server URL,
 # causing the app to show a blank "waiting for connection" screen.
-# Instead, stopApp (kills the process) + deep link navigates to auth/login.
+# Instead: stopApp (clean process) + launchApp (preserves Metro URL).
+# The app's root index.tsx already redirects to /auth/login when no session is active.
 appId: com.lalarente.app
 ---
 - stopApp
 - launchApp
 
-# Open auth deep link to force navigation to login screen
-- openLink: lalarenteapp:///auth/login
-
-# Dismiss iOS system dialogs (permission prompts, keyboard toolbar, etc.)
-- tapOn:
-    text: "Not Now"
-    optional: true
-
-- tapOn:
-    text: "Cancel"
-    optional: true
-
-- tapOn:
-    text: "Allow"
-    optional: true
-
-- tapOn:
-    text: "Don't Allow"
-    optional: true
-
-# If already authenticated (session from previous flow), the auth deep link will redirect
-# to the dashboard. Detect this quickly to avoid waiting 120s for a login screen that
-# won't appear. The login subflow that follows handles both logged-in and not-logged-in.
+# Wait for app to initialize and connect to Metro before any interactions
+# The app's root index.tsx auto-redirects to /auth/login on fresh start
 - extendedWaitUntil:
     visible:
       id: "notification-bell"
-    timeout: 10000
+    timeout: 30000
     optional: true
 
 - runFlow:
@@ -41,10 +21,10 @@ appId: com.lalarente.app
       notVisible:
         id: "notification-bell"
     commands:
+      # Not logged in — wait for login screen to render
       - extendedWaitUntil:
           visible: "Sign in to your account"
           timeout: 120000
-
       - extendedWaitUntil:
           visible:
             id: "email-input"
