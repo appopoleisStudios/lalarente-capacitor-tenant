@@ -19,7 +19,7 @@ appId: com.lalarente.app
     optional: true
 
 - tapOn:
-    text: "Don\'t Allow"
+    text: "Don't Allow"
     optional: true
 
 - extendedWaitUntil:
