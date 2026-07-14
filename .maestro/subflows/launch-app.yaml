@@ -1,11 +1,16 @@
-# Fresh app start — clears persisted session so login subflows always see the sign-in screen
+# Fresh app start — forces login screen without clearState
+# NOTE: Never use clearState: true — it wipes the Expo dev client's stored Metro server URL,
+# causing the app to show a blank "waiting for connection" screen.
+# Instead, stopApp (kills the process) + deep link navigates to auth/login.
 appId: com.lalarente.app
 ---
-- launchApp:
-    clearState: true
+- stopApp
+- launchApp
 
-# Dismiss iOS system dialogs immediately (permission prompts, keyboard toolbar, etc.)
-# before waiting for login screen — prevents dialogs from blocking element detection
+# Open auth deep link to force navigation to login screen
+- openLink: lalarenteapp:///auth/login
+
+# Dismiss iOS system dialogs (permission prompts, keyboard toolbar, etc.)
 - tapOn:
     text: "Not Now"
     optional: true
