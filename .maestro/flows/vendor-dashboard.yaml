@@ -1,7 +1,9 @@
 # Vendor dashboard — login → verify dashboard loads
+# NOTE: Does NOT use launch-app.yaml (clearState) because that wipes the Expo dev client's
+# stored Metro connection URL, causing the app to show a blank "waiting for connection" screen.
+# login-vendor.yaml handles both logged-in and not-logged-in cases, like login-tenant.yaml.
 appId: com.lalarente.app
 ---
-- runFlow: ../subflows/launch-app.yaml
 - runFlow: ../subflows/login-vendor.yaml
 
 - extendedWaitUntil:
