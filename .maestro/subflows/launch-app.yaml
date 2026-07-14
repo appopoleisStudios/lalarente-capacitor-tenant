@@ -27,11 +27,25 @@ appId: com.lalarente.app
     text: "Don't Allow"
     optional: true
 
-- extendedWaitUntil:
-    visible: "Sign in to your account"
-    timeout: 120000
-
+# If already authenticated (session from previous flow), the auth deep link will redirect
+# to the dashboard. Detect this quickly to avoid waiting 120s for a login screen that
+# won't appear. The login subflow that follows handles both logged-in and not-logged-in.
 - extendedWaitUntil:
     visible:
-      id: "email-input"
-    timeout: 60000
+      id: "notification-bell"
+    timeout: 10000
+    optional: true
+
+- runFlow:
+    when:
+      notVisible:
+        id: "notification-bell"
+    commands:
+      - extendedWaitUntil:
+          visible: "Sign in to your account"
+          timeout: 120000
+
+      - extendedWaitUntil:
+          visible:
+            id: "email-input"
+          timeout: 60000
