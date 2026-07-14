@@ -20,10 +20,11 @@ import { colors } from '@/src/shared/theme/colors';
 const ROLE_COLORS = {
   owner: { primary: colors.rsa.blue, secondary: colors.rsa.gold },
   tenant: { primary: colors.rsa.green, secondary: colors.rsa.gold },
+  vendor: { primary: '#FF9800', secondary: '#795548' },
 };
 
 interface Props {
-  role: 'owner' | 'tenant';
+  role: 'owner' | 'tenant' | 'vendor';
 }
 
 export default function MessagesScreen({ role = 'owner' }: Props) {
@@ -263,18 +264,19 @@ export default function MessagesScreen({ role = 'owner' }: Props) {
           </Text>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() =>
-              router.push(
-                role === 'tenant'
-                  ? '/(tenant)/messages/new'
-                  : ('/(owner)/messages/new' as any)
-              )
-            }
+            onPress={() => {
+              const path = role === 'tenant'
+                ? '/(tenant)/messages/new'
+                : role === 'vendor'
+                  ? '/(vendor)/messages/new'
+                  : ('/(owner)/messages/new' as any);
+              router.push(path);
+            }}
           >
             <Ionicons
               name="create-outline"
               size={24}
-              color={role === 'tenant' ? colors.rsa.green : colors.rsa.blue}
+              color={role === 'vendor' ? '#FF9800' : role === 'tenant' ? colors.rsa.green : colors.rsa.blue}
             />
           </TouchableOpacity>
         </View>

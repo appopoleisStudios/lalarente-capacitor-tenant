@@ -12,12 +12,13 @@ export interface AvatarProps {
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 0) return '?';
-  return parts
+  const initials = parts
     .map(word => word.charAt(0))
     .filter(c => /[A-Za-z]/.test(c))
     .slice(0, 2)
     .join('')
     .toUpperCase();
+  return initials || '?';
 }
 
 const AVATAR_COLORS = ['#007A4D', '#002395', '#FFB81C', '#DE3831', '#10B981', '#8B5CF6', '#EC4899', '#F59E0B'] as const;

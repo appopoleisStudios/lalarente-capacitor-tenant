@@ -1,4 +1,5 @@
 import React from 'react';
+import { Text } from 'react-native';
 import { render, fireEvent } from '@testing-library/react-native';
 import { ModalSheet } from '../ModalSheet';
 
@@ -15,7 +16,7 @@ describe('ModalSheet', () => {
   it('renders title and content when visible', () => {
     const { getByText } = render(
       <ModalSheet visible={true} onClose={jest.fn()} title="Modal Title">
-        <>{'Modal Content'}</>
+        <Text>Modal Content</Text>
       </ModalSheet>
     );
     expect(getByText('Modal Title')).toBeTruthy();
@@ -35,7 +36,7 @@ describe('ModalSheet', () => {
   it('renders without title when not provided', () => {
     const { getByText } = render(
       <ModalSheet visible={true} onClose={jest.fn()}>
-        <>{'Content'}</>
+        <Text>Content</Text>
       </ModalSheet>
     );
     expect(getByText('Content')).toBeTruthy();

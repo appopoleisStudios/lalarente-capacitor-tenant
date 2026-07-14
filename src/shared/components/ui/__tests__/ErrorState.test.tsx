@@ -15,8 +15,8 @@ describe('ErrorState', () => {
     const { getByText } = render(
       <ErrorState message="Network error." onRetry={handler} />
     );
-    expect(getByText('Retry')).toBeTruthy();
-    fireEvent.press(getByText('Retry'));
+    expect(getByText('Try Again')).toBeTruthy();
+    fireEvent.press(getByText('Try Again'));
     expect(handler).toHaveBeenCalledTimes(1);
   });
 
@@ -24,7 +24,7 @@ describe('ErrorState', () => {
     const { queryByText } = render(
       <ErrorState message="Error occurred." />
     );
-    expect(queryByText('Retry')).toBeNull();
+    expect(queryByText('Try Again')).toBeNull();
   });
 
   it('renders with title when provided', () => {

@@ -1,0 +1,22 @@
+# Vendor Lala AI — open AI chat, send a message
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app-warm.yaml
+- runFlow: ../subflows/login-vendor.yaml
+
+- openLink: lalarenteapp:///(vendor)/ai-chat
+
+- extendedWaitUntil:
+    visible: "Lala Assistant"
+    timeout: 20000
+
+- tapOn:
+    text: "Type your message..."
+    optional: true
+
+- inputText: "What available jobs do I have?"
+- pressKey: Enter
+
+- extendedWaitUntil:
+    notVisible: "Network error"
+    timeout: 45000

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Text } from 'react-native';
 import { render, fireEvent } from '@testing-library/react-native';
 import { AnimatedButton } from '../AnimatedButton';
 
@@ -23,7 +24,7 @@ describe('AnimatedButton', () => {
   it('renders children', () => {
     const { getByText } = render(
       <AnimatedButton onPress={jest.fn()}>
-        <>{'Press Me'}</>
+        <Text>Press Me</Text>
       </AnimatedButton>
     );
     expect(getByText('Press Me')).toBeTruthy();

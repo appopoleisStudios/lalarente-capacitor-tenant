@@ -1,0 +1,18 @@
+# Vendor notifications — open notification bell → notifications screen
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app-warm.yaml
+- runFlow: ../subflows/login-vendor.yaml
+
+- tapOn:
+    id: "notification-bell"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Notifications"
+    timeout: 15000
+    optional: true
+
+- assertVisible:
+    text: "All caught up"
+    optional: true

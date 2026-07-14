@@ -29,7 +29,7 @@ export default function LalaChatScreen() {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [chatRole, setChatRole] = useState<'tenant' | 'owner'>('tenant');
+  const [chatRole, setChatRole] = useState<'tenant' | 'owner' | 'vendor'>('tenant');
   const [propertyId, setPropertyId] = useState<string | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
   const flatListRef = useRef<FlatList<Message>>(null);
@@ -59,7 +59,7 @@ export default function LalaChatScreen() {
         return;
       }
 
-      const role = profile?.role === 'owner' ? 'owner' : 'tenant';
+      const role = profile?.role === 'owner' ? 'owner' : profile?.role === 'vendor' ? 'vendor' : 'tenant';
       setChatRole(role);
 
       if (role === 'tenant') {

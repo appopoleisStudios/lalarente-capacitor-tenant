@@ -1,6 +1,9 @@
-# Runs all Build 5 shipped client-fix flows (no video). Watch simulator while it runs.
+# Runs all Build 5 shipped client-fix + vendor parity flows (no video). Watch simulator while it runs.
+# Order: Tenant → Owner → Vendor (proven order from Build 4)
+# vendor-dashboard.yaml uses launch-app.yaml (clearState: true) — cleanly resets any prior session
 appId: com.lalarente.app
 ---
+# ==================== TENANT FLOWS ====================
 - runFlow: 01-tenant-dashboard.yaml
 - runFlow: 05-pr7-tenant-tenancy-shortcuts.yaml
 - runFlow: 06-pr7-tenant-disputes-empty.yaml
@@ -12,6 +15,8 @@ appId: com.lalarente.app
 - runFlow: 13-pr10-tenant-lease-pdf.yaml
 - runFlow: 14-pr10-tenant-maintenance-camera.yaml
 - runFlow: 02-tenant-lala-ai.yaml
+
+# ==================== OWNER FLOWS ====================
 - runFlow: 04-owner-dashboard.yaml
 - runFlow: 09-pr9-owner-inspection-conduct.yaml
 - runFlow: 10-pr9-owner-inspection-readonly.yaml
@@ -19,3 +24,11 @@ appId: com.lalarente.app
 - runFlow: 16-pr6-owner-lala-ai.yaml
 - runFlow: 17-pr11-tenant-viewings-applications.yaml
 - runFlow: 18-pr11-owner-applications.yaml
+
+# ==================== VENDOR PARITY FLOWS ====================
+# vendor-dashboard starts fresh (launch-app.yaml with clearState: true) — safely resets owner session
+- runFlow: vendor-dashboard.yaml
+- runFlow: vendor-notifications.yaml
+- runFlow: vendor-messaging.yaml
+- runFlow: vendor-maintenance.yaml
+- runFlow: vendor-ai-chat.yaml

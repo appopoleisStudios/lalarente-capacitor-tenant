@@ -270,10 +270,19 @@ export default function VendorDashboardScreen() {
             >
                 {/* Header */}
                 <View style={styles.header}>
-                    <Text style={styles.greeting}>{getGreeting()},</Text>
-                    <Text style={styles.businessName}>
-                        {profile?.full_name || 'Vendor'}
-                    </Text>
+                    <View style={styles.headerLeft}>
+                        <Text style={styles.greeting}>{getGreeting()},</Text>
+                        <Text style={styles.businessName}>
+                            {profile?.full_name || 'Vendor'}
+                        </Text>
+                    </View>
+                    <Pressable
+                        testID="notification-bell"
+                        style={styles.notificationBell}
+                        onPress={() => router.push('/(vendor)/notifications')}
+                    >
+                        <Ionicons name="notifications-outline" size={24} color={colors.text.primary} />
+                    </Pressable>
                 </View>
 
                 {/* Stats Cards */}
@@ -500,7 +509,24 @@ const styles = StyleSheet.create({
         paddingBottom: 32,
     },
     header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
         marginBottom: 24,
+    },
+    headerLeft: {
+        flex: 1,
+    },
+    notificationBell: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: colors.background.default,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginLeft: 12,
+        borderWidth: 1,
+        borderColor: colors.border.default,
     },
     greeting: {
         fontSize: 16,

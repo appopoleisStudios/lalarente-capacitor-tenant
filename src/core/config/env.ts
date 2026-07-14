@@ -22,6 +22,9 @@ export const env = {
   googleMaps: {
     apiKey: Constants.expoConfig?.extra?.googleMapsApiKey || process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '',
   },
+  payments: {
+    webhookBaseUrl: process.env.EXPO_PUBLIC_WEBHOOK_BASE_URL || 'https://vvepwaolnkzfzhzgxlwr.supabase.co/functions/v1',
+  },
   isDev: __DEV__,
 };
 

@@ -81,13 +81,50 @@ export const messagesApi = {
   },
 
   /**
-   * Get threads for a user (owner or tenant)
+   * Get threads for a user (owner, tenant, or vendor)
    */
   async getUserThreads(
     userId: string,
-    role: 'owner' | 'tenant',
+    role: 'owner' | 'tenant' | 'vendor',
     filter?: ThreadFilter
   ): Promise<ThreadWithRelations[]> {
+    // For vendor role, find threads where vendor has sent messages
+    if (role === 'vendor') {
+      const { data: vendorMessages } = await supabase
+        .from('messages')
+        .select('thread_id')
+        .eq('sender_id', userId)
+        .eq('sender_role', 'vendor')
+        .order('created_at', { ascending: false });
+
+      const threadIds = [...new Set(vendorMessages?.map(m => m.thread_id) || [])];
+
+      if (threadIds.length === 0) return [];
+
+      let query = supabase
+        .from('message_threads')
+        .select(`
+          *,
+          property:properties!property_id(id, title, address),
+          owner:profiles!owner_id(id, full_name, avatar_url),
+          tenant:profiles!tenant_id(id, full_name, avatar_url)
+        `)
+        .in('id', threadIds);
+
+      if (filter?.status && filter.status !== 'all') {
+        query = query.eq('status', filter.status);
+      }
+
+      const { data, error } = await query.order('last_message_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching vendor threads:', error);
+        throw new Error(`Failed to fetch threads: ${error.message}`);
+      }
+
+      return data as ThreadWithRelations[];
+    }
+
     let query = supabase
       .from('message_threads')
       .select(`
@@ -217,7 +254,7 @@ export const messagesApi = {
   /**
    * Mark messages as read
    */
-  async markAsRead(threadId: string, userId: string, role: 'owner' | 'tenant'): Promise<void> {
+  async markAsRead(threadId: string, userId: string, role: 'owner' | 'tenant' | 'vendor'): Promise<void> {
     // Mark all messages in thread as read
     const { error: messagesError } = await supabase
       .from('messages')
@@ -231,21 +268,51 @@ export const messagesApi = {
     }
 
     // Reset unread count for this user
-    const updateField = role === 'owner' ? 'unread_count_owner' : 'unread_count_tenant';
-    const { error: threadError } = await supabase
-      .from('message_threads')
-      .update({ [updateField]: 0 } as any)
-      .eq('id', threadId);
+    // For vendor role, there are no unread count columns on message_threads,
+    // so skip the thread-level unread count update for vendors
+    if (role !== 'vendor') {
+      const updateField = role === 'owner' ? 'unread_count_owner' : 'unread_count_tenant';
+      const { error: threadError } = await supabase
+        .from('message_threads')
+        .update({ [updateField]: 0 } as any)
+        .eq('id', threadId);
 
-    if (threadError) {
-      console.error('Error resetting unread count:', threadError);
+      if (threadError) {
+        console.error('Error resetting unread count:', threadError);
+      }
     }
   },
 
   /**
    * Get unread count for user
    */
-  async getUnreadCount(userId: string, role: 'owner' | 'tenant'): Promise<number> {
+  async getUnreadCount(userId: string, role: 'owner' | 'tenant' | 'vendor'): Promise<number> {
+    if (role === 'vendor') {
+      // For vendor, count unread messages across threads where vendor participated
+      const { data: vendorMessages } = await supabase
+        .from('messages')
+        .select('thread_id')
+        .eq('sender_id', userId)
+        .eq('sender_role', 'vendor');
+
+      const threadIds = [...new Set(vendorMessages?.map(m => m.thread_id) || [])];
+      if (threadIds.length === 0) return 0;
+
+      const { data, error } = await supabase
+        .from('messages')
+        .select('id', { count: 'exact', head: true })
+        .in('thread_id', threadIds)
+        .is('read_at', null)
+        .neq('sender_id', userId);
+
+      if (error) {
+        console.error('Error fetching vendor unread count:', error);
+        return 0;
+      }
+
+      return data?.length || 0;
+    }
+
     const unreadField = role === 'owner' ? 'unread_count_owner' : 'unread_count_tenant';
 
     const { data, error } = await supabase
@@ -352,9 +419,43 @@ export const messagesApi = {
    */
   subscribeToUserThreads(
     userId: string,
-    role: 'owner' | 'tenant',
+    role: 'owner' | 'tenant' | 'vendor',
     onUpdate: (thread: MessageThread) => void
   ): () => void {
+    if (role === 'vendor') {
+      // For vendor, subscribe to messages table for new messages involving this vendor
+      const subscription = supabase
+        .channel(`vendor-threads:${userId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `sender_id=eq.${userId}`,
+          },
+          async (payload) => {
+            // Reload threads when vendor sends or receives messages
+            const msg = payload.new as any;
+            if (msg.thread_id) {
+              const { data } = await supabase
+                .from('message_threads')
+                .select('*')
+                .eq('id', msg.thread_id)
+                .single();
+              if (data) {
+                onUpdate(data as MessageThread);
+              }
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    }
+
     const filterField = role === 'owner' ? 'owner_id' : 'tenant_id';
 
     const subscription = supabase

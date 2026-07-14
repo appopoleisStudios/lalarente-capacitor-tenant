@@ -58,6 +58,13 @@ export default function VendorLayout() {
         }}
       />
       <Tabs.Screen
+        name="ai-chat"
+        options={{
+          title: 'Lala AI',
+          tabBarIcon: ({ color, size }) => <Ionicons name="sparkles" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="profile/index"
         options={{
           title: 'Profile',
@@ -128,6 +135,42 @@ export default function VendorLayout() {
         name="jobs/[id]/submit-invoice"
         options={{
           href: null, // Hidden from tabs - invoice submission form
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          href: null, // Hidden from tabs - accessible from bell icon on dashboard
+        }}
+      />
+      <Tabs.Screen
+        name="messages"
+        options={{
+          href: null, // Hidden from tabs - accessible from dashboard
+        }}
+      />
+      <Tabs.Screen
+        name="messages/[id]"
+        options={{
+          href: null, // Hidden from tabs - message thread screen
+        }}
+      />
+      <Tabs.Screen
+        name="messages/new"
+        options={{
+          href: null, // Hidden from tabs - compose new message
+        }}
+      />
+      <Tabs.Screen
+        name="privacy"
+        options={{
+          href: null, // Hidden from tabs - accessible from profile/settings
+        }}
+      />
+      <Tabs.Screen
+        name="privacy/data-rights"
+        options={{
+          href: null, // Hidden from tabs - DSAR screen
         }}
       />
     </Tabs>

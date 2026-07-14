@@ -1,0 +1,18 @@
+# Vendor messaging — open messages screen
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app-warm.yaml
+- runFlow: ../subflows/login-vendor.yaml
+
+- openLink: lalarenteapp:///(vendor)/messages
+
+- extendedWaitUntil:
+    visible: "Messages"
+    timeout: 15000
+
+- assertVisible:
+    text: "No Messages"
+    optional: true
+- assertVisible:
+    text: "Messages"
+    optional: true

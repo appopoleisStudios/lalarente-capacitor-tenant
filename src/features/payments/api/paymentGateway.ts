@@ -310,9 +310,9 @@ export async function initiatePayment(
       buyerEmail: tenant?.email || '',
       buyerFirstName: names[0] || '',
       buyerLastName: names.slice(1).join(' ') || '',
-      returnUrl: 'https://yourapp.com/payments/success',
-      cancelUrl: 'https://yourapp.com/payments/cancel',
-      notifyUrl: 'https://yourapp.com/api/webhooks/payments',
+      returnUrl: `${env.payments.webhookBaseUrl}/payments/success`,
+      cancelUrl: `${env.payments.webhookBaseUrl}/payments/cancel`,
+      notifyUrl: `${env.payments.webhookBaseUrl}/api/webhooks/payments`,
     };
 
     // Update payment status to processing

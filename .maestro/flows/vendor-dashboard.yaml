@@ -1,0 +1,23 @@
+# Vendor dashboard — login → verify dashboard loads
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app.yaml
+- runFlow: ../subflows/login-vendor.yaml
+
+- extendedWaitUntil:
+    visible:
+      id: "notification-bell"
+    timeout: 15000
+
+- assertVisible:
+    text: "Available"
+    optional: true
+- assertVisible:
+    text: "Quotes"
+    optional: true
+- assertVisible:
+    text: "Active"
+    optional: true
+- assertVisible:
+    text: "Completed"
+    optional: true

@@ -8,7 +8,7 @@ export type ChatHistoryTurn = {
 
 export type LalaChatRequest = {
   text: string;
-  role: 'tenant' | 'owner';
+  role: 'tenant' | 'owner' | 'vendor';
   property_id?: string | null;
   history?: ChatHistoryTurn[];
 };

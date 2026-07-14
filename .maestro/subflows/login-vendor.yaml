@@ -1,0 +1,52 @@
+# Vendor login — uses VENDOR_EMAIL/VENDOR_PASSWORD from .maestro/.env via --env flags.
+appId: com.lalarente.app
+---
+- openLink: lalarenteapp:///(vendor)/dashboard
+
+- extendedWaitUntil:
+    visible:
+      id: "notification-bell"
+    timeout: 30000
+    optional: true
+
+- runFlow:
+    when:
+      visible:
+        id: "notification-bell"
+    commands:
+      - assertVisible:
+          id: "notification-bell"
+
+- runFlow:
+    when:
+      notVisible:
+        id: "notification-bell"
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: "email-input"
+          timeout: 30000
+      - tapOn:
+          id: "email-input"
+      - inputText: ${VENDOR_EMAIL}
+      - pressKey: Enter
+      - inputText: ${VENDOR_PASSWORD}
+      - pressKey: Enter
+      - extendedWaitUntil:
+          visible:
+            id: "notification-bell"
+          timeout: 60000
+          optional: true
+      - runFlow:
+          when:
+            notVisible:
+              id: "notification-bell"
+          commands:
+            - tapOn:
+                id: "sign-in-button"
+            - extendedWaitUntil:
+                visible:
+                  id: "notification-bell"
+                timeout: 60000
+      - assertVisible:
+          id: "notification-bell"

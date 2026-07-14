@@ -20,8 +20,8 @@ describe('TextArea', () => {
     expect(handler).toHaveBeenCalledWith('Hello world');
   });
 
-  it('shows character count when maxLength is set', () => {
-    const { getByText } = render(<TextArea value="Hi" maxLength={100} />);
+  it('shows character count when maxLength is set and showCount is true', () => {
+    const { getByText } = render(<TextArea value="Hi" maxLength={100} showCount />);
     expect(getByText('2/100')).toBeTruthy();
   });
 

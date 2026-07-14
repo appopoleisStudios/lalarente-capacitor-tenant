@@ -37,6 +37,18 @@ jest.mock('expo-document-picker', () => ({
   getDocumentAsync: jest.fn(),
 }), { virtual: true });
 
+// Mock @expo/vector-icons (used by many UI components) to avoid expo-font/expo-asset dependency chain
+jest.mock('@expo/vector-icons', () => ({
+  Ionicons: () => null,
+  AntDesign: () => null,
+  MaterialIcons: () => null,
+  MaterialCommunityIcons: () => null,
+  Feather: () => null,
+  FontAwesome: () => null,
+  FontAwesome5: () => null,
+  Octicons: () => null,
+}));
+
 // Mock Supabase client
 jest.mock('./src/lib/supabase', () => ({
   supabase: {
