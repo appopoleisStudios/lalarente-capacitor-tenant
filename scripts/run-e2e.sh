@@ -20,7 +20,7 @@ set -a
 source "$ENV_FILE"
 set +a
 
-for var in TENANT_EMAIL TENANT_PASSWORD OWNER_EMAIL OWNER_PASSWORD; do
+for var in TENANT_EMAIL TENANT_PASSWORD OWNER_EMAIL OWNER_PASSWORD VENDOR_EMAIL VENDOR_PASSWORD; do
   if [[ -z "${!var:-}" ]]; then
     echo "Set $var in .maestro/.env"
     exit 1
@@ -47,4 +47,6 @@ echo ""
   --env TENANT_EMAIL="$TENANT_EMAIL" \
   --env TENANT_PASSWORD="$TENANT_PASSWORD" \
   --env OWNER_EMAIL="$OWNER_EMAIL" \
-  --env OWNER_PASSWORD="$OWNER_PASSWORD"
+  --env OWNER_PASSWORD="$OWNER_PASSWORD" \
+  --env VENDOR_EMAIL="$VENDOR_EMAIL" \
+  --env VENDOR_PASSWORD="$VENDOR_PASSWORD"
