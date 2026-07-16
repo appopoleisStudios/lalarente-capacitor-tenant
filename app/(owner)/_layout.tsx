@@ -108,6 +108,12 @@ export default function OwnerLayout() {
         }}
       />
       <Tabs.Screen
+        name="maintenance/[id]/review-closure"
+        options={{
+          href: null, // Hidden from tabs - closure review screen
+        }}
+      />
+      <Tabs.Screen
         name="maintenance/[id]/po/[poId]"
         options={{
           href: null, // Hidden from tabs - PO detail screen
