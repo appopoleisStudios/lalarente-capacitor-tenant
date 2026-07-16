@@ -267,35 +267,54 @@ export default function OwnerClosureApprovalScreen() {
         <View style={{ height: 120 }} />
       </ScrollView>
 
-      {/* Footer Actions */}
+      {/* Footer Actions — only show for pending closures */}
       <View style={styles.footer}>
-        <TouchableOpacity
-          accessibilityLabel="Request changes from vendor"
-          accessibilityRole="button"
-          style={[styles.footerButton, styles.rejectButton]}
-          onPress={handleReject}
-          disabled={actionLoading}
-        >
-          <Ionicons name="close-circle" size={20} color={colors.error[600]} />
-          <Text style={styles.rejectButtonText}>Request Changes</Text>
-        </TouchableOpacity>
+        {closureReport?.status === 'pending' ? (
+          <>
+            <TouchableOpacity
+              accessibilityLabel="Request changes from vendor"
+              accessibilityRole="button"
+              style={[styles.footerButton, styles.rejectButton]}
+              onPress={handleReject}
+              disabled={actionLoading}
+            >
+              <Ionicons name="close-circle" size={20} color={colors.error[600]} />
+              <Text style={styles.rejectButtonText}>Request Changes</Text>
+            </TouchableOpacity>
 
-        <TouchableOpacity
-          accessibilityLabel="Approve and complete job"
-          accessibilityRole="button"
-          style={[styles.footerButton, styles.approveButton]}
-          onPress={handleApprove}
-          disabled={actionLoading}
-        >
-          {actionLoading ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <>
-              <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
-              <Text style={styles.approveButtonText}>Approve & Complete</Text>
-            </>
-          )}
-        </TouchableOpacity>
+            <TouchableOpacity
+              accessibilityLabel="Approve and complete job"
+              accessibilityRole="button"
+              style={[styles.footerButton, styles.approveButton]}
+              onPress={handleApprove}
+              disabled={actionLoading}
+            >
+              {actionLoading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                  <Text style={styles.approveButtonText}>Approve & Complete</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </>
+        ) : (
+          <View style={styles.processedBanner}>
+            <Ionicons
+              name={closureReport?.status === 'approved' ? 'checkmark-circle' : 'close-circle'}
+              size={24}
+              color={closureReport?.status === 'approved' ? colors.success[500] : colors.error[500]}
+            />
+            <Text style={styles.processedText}>
+              {closureReport?.status === 'approved'
+                ? 'Closure already approved. This job has been marked as completed.'
+                : closureReport?.status === 'rejected'
+                ? 'Changes were requested. The vendor has been notified.'
+                : 'No closure report available.'}
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Rejection Reason Modal */}
@@ -595,5 +614,25 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+
+  // Processed state banner
+  processedBanner: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: colors.gray[50],
+    borderRadius: 12,
+  },
+  processedText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6b7280',
+    lineHeight: 20,
   },
 });

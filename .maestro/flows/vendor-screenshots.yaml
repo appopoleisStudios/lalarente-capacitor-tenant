@@ -1,0 +1,116 @@
+# Vendor Screenshot Tour — captures every vendor screen for client approval
+# Uses deep links with robust waits for reliable screen capture
+appId: com.lalarente.app
+---
+# Clean start — fresh app launch
+- stopApp
+- runFlow: ../subflows/launch-app.yaml
+- runFlow: ../subflows/login-vendor.yaml
+
+# ============================================================
+# 1. VENDOR DASHBOARD
+# ============================================================
+- openLink: lalarenteapp:///(vendor)/dashboard
+- extendedWaitUntil:
+    visible:
+      id: "notification-bell"
+    timeout: 20000
+- extendedWaitUntil:
+    visible: "Available"
+    timeout: 10000
+    optional: true
+- takeScreenshot: "vendor-dashboard"
+
+# ============================================================
+# 2. VENDOR REQUESTS (Maintenance)
+# ============================================================
+- openLink: lalarenteapp:///(vendor)/maintenance
+- extendedWaitUntil:
+    visible: "Maintenance Requests"
+    timeout: 20000
+    optional: true
+- takeScreenshot: "vendor-maintenance-requests"
+
+# ============================================================
+# 3. VENDOR MY JOBS
+# ============================================================
+- openLink: lalarenteapp:///(vendor)/jobs
+- extendedWaitUntil:
+    visible: "My Jobs"
+    timeout: 20000
+    optional: true
+- takeScreenshot: "vendor-my-jobs"
+
+# ============================================================
+# 4. VENDOR CONTRACTS
+# ============================================================
+- openLink: lalarenteapp:///(vendor)/contracts
+- extendedWaitUntil:
+    visible: "My Contracts"
+    timeout: 20000
+    optional: true
+- takeScreenshot: "vendor-contracts"
+
+# ============================================================
+# 5. VENDOR LALA AI CHAT
+# ============================================================
+- openLink: lalarenteapp:///(vendor)/ai-chat
+- extendedWaitUntil:
+    visible: "Lala Assistant"
+    timeout: 20000
+    optional: true
+- takeScreenshot: "vendor-ai-chat"
+
+# Light interaction — type a message
+- tapOn:
+    text: "Type your message..."
+    optional: true
+- inputText: "What available jobs do I have?"
+- pressKey: Enter
+- extendedWaitUntil:
+    notVisible: "Network error"
+    timeout: 10000
+    optional: true
+- takeScreenshot: "vendor-ai-chat-message"
+
+# ============================================================
+# 6. VENDOR PROFILE
+# ============================================================
+- openLink: lalarenteapp:///(vendor)/profile
+- extendedWaitUntil:
+    visible: "Profile"
+    timeout: 20000
+    optional: true
+- takeScreenshot: "vendor-profile"
+
+# ============================================================
+# 7. VENDOR NOTIFICATIONS
+# ============================================================
+- openLink: lalarenteapp:///(vendor)/dashboard
+- extendedWaitUntil:
+    visible:
+      id: "notification-bell"
+    timeout: 15000
+- tapOn:
+    id: "notification-bell"
+    optional: true
+- extendedWaitUntil:
+    visible: "Notifications"
+    timeout: 15000
+    optional: true
+- takeScreenshot: "vendor-notifications"
+
+# ============================================================
+# 8. VENDOR MESSAGES
+# ============================================================
+- openLink: lalarenteapp:///(vendor)/messages
+- extendedWaitUntil:
+    visible: "Messages"
+    timeout: 15000
+    optional: true
+- takeScreenshot: "vendor-messages"
+
+# ============================================================
+# Done
+# ============================================================
+- takeScreenshot: "vendor-final"
