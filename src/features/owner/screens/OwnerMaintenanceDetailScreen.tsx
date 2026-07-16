@@ -693,6 +693,31 @@ export default function OwnerMaintenanceDetailScreen() {
           </View>
         )}
 
+        {/* Progress Updates */}
+        {request.status === 'in_progress' && (
+          <View style={styles.section}>
+            <TouchableOpacity
+              accessibilityLabel="View vendor progress updates"
+              accessibilityRole="button"
+              style={styles.progressCard}
+              onPress={() => router.push(`/(owner)/maintenance/${id}/progress-timeline`)}
+            >
+              <View style={styles.progressCardContent}>
+                <View style={styles.progressIcon}>
+                  <Ionicons name="time" size={24} color={RSA.blue} />
+                </View>
+                <View style={styles.progressInfo}>
+                  <Text style={styles.progressTitle}>Progress Updates</Text>
+                  <Text style={styles.progressSubtitle}>
+                    View daily updates, photos and notes from the vendor
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.gray[400]} />
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Purchase Order */}
         <RequestPOSection
           purchaseOrder={purchaseOrder}
@@ -986,6 +1011,32 @@ const styles = StyleSheet.create({
   quoteStatusText: { fontSize: 13, fontWeight: '600', color: colors.success[700] },
   quoteTapHint: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f3f4f6' },
   quoteTapHintText: { fontSize: 13, color: colors.gray[500] },
+
+  // Progress card
+  progressCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    overflow: 'hidden',
+  },
+  progressCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+  },
+  progressIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#eef2ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  progressInfo: { flex: 1 },
+  progressTitle: { fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 2 },
+  progressSubtitle: { fontSize: 13, color: '#6b7280', lineHeight: 18 },
 
   // PO card
   poCard: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb', overflow: 'hidden' },
