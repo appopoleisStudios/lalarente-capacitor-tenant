@@ -223,7 +223,8 @@ export async function submitInvoice(
   ownerId: string,
   propertyId: string,
   lineItems: InvoiceLineItem[],
-  notes?: string
+  notes?: string,
+  payerRole?: 'tenant' | 'owner'
 ): Promise<MaintenanceInvoice> {
   // 1. API-level validation
   validateLineItems(lineItems);
@@ -308,6 +309,7 @@ export async function submitInvoice(
       subtotal: totals.subtotal,
       vat_amount: totals.vat_amount,
       total_amount: totals.total_amount,
+      payer_role: payerRole || 'owner',
       notes: notes || null,
     })
     .select()

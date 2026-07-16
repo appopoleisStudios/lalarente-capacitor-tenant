@@ -238,6 +238,24 @@ export default function TenantLayout() {
           href: null, // Hidden from tabs - notification list from bell icon
         }}
       />
+      <Tabs.Screen
+        name="vendor-payments"
+        options={{
+          href: null, // Hidden from tabs - accessed from maintenance or notifications
+        }}
+      />
+      <Tabs.Screen
+        name="vendor-payments/[invoiceId]"
+        options={{
+          href: null, // Hidden from tabs - pay invoice screen
+        }}
+      />
+      <Tabs.Screen
+        name="vendor-payments/result"
+        options={{
+          href: null, // Hidden from tabs - payment result after PayFast
+        }}
+      />
     </Tabs>
   );
 }
