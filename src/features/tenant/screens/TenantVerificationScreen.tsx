@@ -51,9 +51,10 @@ export default function TenantVerificationScreen() {
   const [notes, setNotes] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
   const [rejectionPhotos, setRejectionPhotos] = useState<string[]>([]);
+  const [approvePhotos, setApprovePhotos] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handlePickImage = async () => {
+  const handlePickImage = async (target: 'approve' | 'reject') => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (!permissionResult.granted) {
@@ -70,12 +71,20 @@ export default function TenantVerificationScreen() {
 
     if (!result.canceled && result.assets[0]) {
       const photoUri = result.assets[0].uri;
-      setRejectionPhotos([...rejectionPhotos, photoUri]);
+      if (target === 'approve') {
+        setApprovePhotos([...approvePhotos, photoUri]);
+      } else {
+        setRejectionPhotos([...rejectionPhotos, photoUri]);
+      }
     }
   };
 
-  const handleRemovePhoto = (index: number) => {
-    setRejectionPhotos(rejectionPhotos.filter((_, i) => i !== index));
+  const handleRemovePhoto = (target: 'approve' | 'reject', index: number) => {
+    if (target === 'approve') {
+      setApprovePhotos(approvePhotos.filter((_, i) => i !== index));
+    } else {
+      setRejectionPhotos(rejectionPhotos.filter((_, i) => i !== index));
+    }
   };
 
   const handleApprove = async () => {
@@ -87,7 +96,30 @@ export default function TenantVerificationScreen() {
     try {
       setIsSubmitting(true);
 
+      // Upload tenant's after-photos if any (as evidence of completed work)
+      let uploadedPhotoUrls: string[] = [];
+      if (approvePhotos.length > 0) {
+        for (const uri of approvePhotos) {
+          const result = await uploadFile('MAINTENANCE_MEDIA', {
+            uri,
+            name: `tenant_after_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.jpg`,
+            type: 'image/jpeg',
+          }, `tenant-evidence/${requestId}`);
+          if (!result.error) {
+            uploadedPhotoUrls.push(result.url);
+          }
+        }
+      }
+
       await tenantApproveCompletion(requestId, userId, notes.trim() || undefined);
+
+      // Also save tenant's after-photos as evidence
+      if (uploadedPhotoUrls.length > 0) {
+        await (supabase
+          .from('closure_reports') as any)
+          .update({ tenant_after_photos: uploadedPhotoUrls })
+          .eq('maintenance_request_id', requestId);
+      }
 
       Alert.alert(
         'Work Approved',
@@ -255,6 +287,40 @@ export default function TenantVerificationScreen() {
           />
         </View>
 
+        {/* Optional After-Photos (evidence) */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>After Photos (Optional)</Text>
+          <Text style={styles.helperText}>
+            Upload photos showing the completed work as evidence. This helps document the final result.
+          </Text>
+
+          {approvePhotos.length > 0 && (
+            <View style={styles.photoGridApprove}>
+              {approvePhotos.map((photo, index) => (
+                <View key={index} style={styles.photoContainer}>
+                  <Image source={{ uri: photo }} style={styles.approvePhoto} />
+                  <TouchableOpacity
+                    style={styles.removePhotoButton}
+                    onPress={() => handleRemovePhoto('approve', index)}
+                  >
+                    <Ionicons name="close-circle" size={24} color="#DC2626" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+
+          <TouchableOpacity
+            style={styles.uploadButton}
+            onPress={() => handlePickImage('approve')}
+          >
+            <Ionicons name="camera" size={24} color="#10B981" />
+            <Text style={[styles.uploadButtonText, { color: '#10B981' }]}>
+              {approvePhotos.length > 0 ? 'Add More Photos' : 'Upload After Photos'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Confirm Button */}
         <TouchableOpacity
           style={[styles.submitButton, styles.approveButtonSolid, isSubmitting && styles.submitButtonDisabled]}
@@ -328,18 +394,18 @@ export default function TenantVerificationScreen() {
             {rejectionPhotos.map((photo, index) => (
               <View key={index} style={styles.photoContainer}>
                 <Image source={{ uri: photo }} style={styles.rejectionPhoto} />
-                <TouchableOpacity
-                  style={styles.removePhotoButton}
-                  onPress={() => handleRemovePhoto(index)}
-                >
-                  <Ionicons name="close-circle" size={24} color="#DC2626" />
+                  <TouchableOpacity
+                    style={styles.removePhotoButton}
+                    onPress={() => handleRemovePhoto('reject', index)}
+                  >
+                    <Ionicons name="close-circle" size={24} color="#DC2626" />
                 </TouchableOpacity>
               </View>
             ))}
           </View>
         )}
 
-        <TouchableOpacity style={styles.uploadButton} onPress={handlePickImage}>
+        <TouchableOpacity style={styles.uploadButton} onPress={() => handlePickImage('reject')}>
           <Ionicons name="camera" size={24} color="#3B82F6" />
           <Text style={styles.uploadButtonText}>
             {rejectionPhotos.length > 0 ? 'Add More Photos' : 'Take / Upload Photo'}
@@ -429,6 +495,17 @@ const styles = StyleSheet.create({
   photoGrid: {
     flexDirection: 'row',
     gap: 12,
+  },
+  photoGridApprove: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 4,
+  },
+  approvePhoto: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
   },
   completionPhoto: {
     width: 120,
