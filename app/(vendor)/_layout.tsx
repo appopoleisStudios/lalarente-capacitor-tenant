@@ -51,6 +51,13 @@ export default function VendorLayout() {
         }}
       />
       <Tabs.Screen
+        name="earnings/index"
+        options={{
+          title: 'Earnings',
+          tabBarIcon: ({ color, size }) => <Ionicons name="wallet-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="contracts/index"
         options={{
           title: 'Contracts',
@@ -159,6 +166,12 @@ export default function VendorLayout() {
         name="messages/new"
         options={{
           href: null, // Hidden from tabs - compose new message
+        }}
+      />
+      <Tabs.Screen
+        name="earnings/banking"
+        options={{
+          href: null, // Hidden from tabs - accessible from earnings screen
         }}
       />
       <Tabs.Screen
