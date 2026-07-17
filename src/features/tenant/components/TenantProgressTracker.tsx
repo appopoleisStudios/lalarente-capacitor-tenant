@@ -141,9 +141,9 @@ export default function TenantProgressTracker({
   const hasCompletionPhotos = closureReport?.completion_photos &&
     Array.isArray(closureReport.completion_photos) &&
     closureReport.completion_photos.length > 0;
-  const hasTenantPhotos = (closureReport as any)?.tenant_after_photos &&
-    Array.isArray((closureReport as any).tenant_after_photos) &&
-    (closureReport as any).tenant_after_photos.length > 0;
+  const hasTenantPhotos = (closureReport as any)?.tenant_confirmation_photos &&
+    Array.isArray((closureReport as any).tenant_confirmation_photos) &&
+    (closureReport as any).tenant_confirmation_photos.length > 0;
   const hasTenantRejectionPhotos = (closureReport as any)?.tenant_rejection_photos &&
     Array.isArray((closureReport as any).tenant_rejection_photos) &&
     (closureReport as any).tenant_rejection_photos.length > 0;
@@ -262,7 +262,7 @@ export default function TenantProgressTracker({
             {hasTenantPhotos && (
               <View style={styles.evidenceStat}>
                 <Text style={[styles.evidenceStatValue, { color: '#10B981' }]}>
-                  {(closureReport as any).tenant_after_photos!.length}
+                  {(closureReport as any).tenant_confirmation_photos!.length}
                 </Text>
                 <Text style={styles.evidenceStatLabel}>Your Photos</Text>
               </View>

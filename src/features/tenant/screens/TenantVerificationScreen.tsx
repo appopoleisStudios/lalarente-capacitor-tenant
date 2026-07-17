@@ -117,7 +117,7 @@ export default function TenantVerificationScreen() {
       if (uploadedPhotoUrls.length > 0) {
         await (supabase
           .from('closure_reports') as any)
-          .update({ tenant_after_photos: uploadedPhotoUrls })
+          .update({ tenant_confirmation_photos: uploadedPhotoUrls })
           .eq('maintenance_request_id', requestId);
       }
 

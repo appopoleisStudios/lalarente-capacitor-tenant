@@ -96,6 +96,11 @@ export async function submitProgressUpdate(
 ): Promise<ProgressUpdate> {
   console.log('📸 Submitting progress update:', { requestId, vendorId });
 
+  // Validate minimum 1 photo
+  if (!photos || photos.length < 1) {
+    throw new Error('Please upload at least 1 photo with your progress update');
+  }
+
   // Verify vendor is assigned and work is in progress
   const { data: request, error: fetchError } = await supabase
     .from('maintenance_requests')

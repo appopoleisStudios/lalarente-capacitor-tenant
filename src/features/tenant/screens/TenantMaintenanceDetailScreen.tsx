@@ -219,7 +219,7 @@ export default function TenantMaintenanceDetailScreen() {
 
         {/* Simplified Progress Tracker */}
         <Animated.View entering={FadeInDown.delay(400).duration(500)}>
-          <TenantProgressTracker request={request} closureReport={closureReport} />
+          <TenantProgressTracker request={request} closureReport={closureReport} progressUpdates={progressUpdates} />
         </Animated.View>
 
         {/* Verify Work Button - Show when tenant verification pending */}
