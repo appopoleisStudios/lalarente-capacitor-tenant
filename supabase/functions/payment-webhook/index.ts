@@ -532,34 +532,29 @@ async function handleVendorPayFastItn(
     } catch (err) {
       console.error(`⚠️ Failed to send failure notification:`, err);
     }
-  }
-
-  // ── On completion: write ledger entries + update invoice + notify ─────
+  }    // ── On completion: write ledger entries + update invoice + notify ─────
   if (newPaymentStatus === 'completed') {
     const gatewayFee = isNaN(fee) ? 0 : fee;
 
-    // ── Re-check invoice status before marking paid ────────────────────
-    // Prevents race conditions where the invoice was already paid by
-    // another ITN or admin action between checkout and completion.
-    const { data: currentInvoice } = await supabase
+    // ── Atomically update invoice to paid (status-guarded) ────────────
+    // Using .eq('status', 'approved') ensures we don't overwrite a
+    // concurrent change. This prevents double-paid and race conditions
+    // where the invoice was already paid by another ITN or admin action.
+    const { error: invoiceUpdateError } = await supabase
       .from('maintenance_invoices')
-      .select('id, status')
+      .update({
+        status: 'paid',
+        paid_at: new Date().toISOString(),
+        payment_reference: transactionId || null,
+      } as any)
       .eq('id', vendorPayment.invoice_id)
-      .single();
+      .eq('status', 'approved');  // Atomic guard: only update if approved
 
-    if ((currentInvoice as any)?.status === 'paid') {
-      console.log(`ℹ️ Invoice ${vendorPayment.invoice_id} already paid — skipping invoice update`);
-      // Payment is still valid — just don't update the invoice again
+    if (invoiceUpdateError) {
+      console.error(`⚠️ Failed to update invoice ${vendorPayment.invoice_id} to paid:`, invoiceUpdateError);
+      // Non-fatal — payment is still completed, invoice can be reconciled manually
     } else {
-      // Update invoice status to paid
-      await supabase
-        .from('maintenance_invoices')
-        .update({
-          status: 'paid',
-          paid_at: new Date().toISOString(),
-          payment_reference: transactionId || null,
-        } as any)
-        .eq('id', vendorPayment.invoice_id);
+      console.log(`✅ Invoice ${vendorPayment.invoice_id} marked as paid`);
     }
 
     // Ledger: payment received
@@ -584,16 +579,6 @@ async function handleVendorPayFastItn(
       -gatewayFee, runningAfterGateway,
       'PayFast transaction fee'
     );
-
-    // Update invoice status to paid
-    await supabase
-      .from('maintenance_invoices')
-      .update({
-        status: 'paid',
-        paid_at: new Date().toISOString(),
-        payment_reference: transactionId || null,
-      } as any)
-      .eq('id', vendorPayment.invoice_id);
 
     // Send notifications
     await sendVendorPaymentNotification(supabase, vendorPayment);

@@ -45,7 +45,7 @@ export default function VendorPaymentsList() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error: fetchError } = await supabase
+      const maintenanceResult: any = await (supabase as any)
         .from('maintenance_invoices')
         .select(`
           id, invoice_number, total_amount, subtotal, vat_amount, status, created_at,
@@ -62,8 +62,8 @@ export default function VendorPaymentsList() {
         ).data?.map(r => r.id) || [])
         .order('created_at', { ascending: false });
 
-      if (fetchError) throw fetchError;
-      setInvoices((data || []) as VendorInvoice[]);
+      if (maintenanceResult.error) throw maintenanceResult.error;
+      setInvoices((maintenanceResult.data || []) as VendorInvoice[]);
       setError(null);
     } catch (err: any) {
       console.error('Error loading vendor invoices:', err);

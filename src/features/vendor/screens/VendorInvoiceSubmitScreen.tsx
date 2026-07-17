@@ -46,6 +46,7 @@ export default function VendorInvoiceSubmitScreen() {
   const [loading, setLoading] = useState(true);
   const [request, setRequest] = useState<any>(null);
   const [notes, setNotes] = useState('');
+  const [payerRole, setPayerRole] = useState<'owner' | 'tenant'>('owner');
   const [lineItems, setLineItems] = useState<LineItemEntry[]>([
     { key: '1', description: '', quantity: '1', unitPrice: '' },
   ]);
@@ -152,7 +153,8 @@ export default function VendorInvoiceSubmitScreen() {
                 typedRequest.owner_id,
                 typedRequest.property_id,
                 invoiceLineItems,
-                notes.trim() || undefined
+                notes.trim() || undefined,
+                payerRole
               );
 
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -294,6 +296,64 @@ export default function VendorInvoiceSubmitScreen() {
               <Text style={styles.totalLabelFinal}>Total</Text>
               <Text style={styles.totalValueFinal}>{formatCurrency(totals.total)}</Text>
             </View>
+          </View>
+
+          {/* Payer Selection */}
+          <Text style={styles.sectionTitle}>Who Pays?</Text>
+          <Text style={styles.sectionSubtitle}>
+            Select who will be responsible for paying this invoice.
+          </Text>
+
+          <View style={styles.payerRow}>
+            <TouchableOpacity
+              style={[
+                styles.payerOption,
+                payerRole === 'owner' && styles.payerOptionActive,
+              ]}
+              onPress={() => setPayerRole('owner')}
+            >
+              <Ionicons
+                name={payerRole === 'owner' ? 'radio-button-on' : 'radio-button-off'}
+                size={20}
+                color={payerRole === 'owner' ? RSA.blue : colors.gray[400]}
+              />
+              <View style={styles.payerTextWrap}>
+                <Text style={[
+                  styles.payerLabel,
+                  payerRole === 'owner' && styles.payerLabelActive,
+                ]}>
+                  Owner Pays
+                </Text>
+                <Text style={styles.payerDesc}>
+                  Landlord pays from rental income or directly
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.payerOption,
+                payerRole === 'tenant' && styles.payerOptionActive,
+              ]}
+              onPress={() => setPayerRole('tenant')}
+            >
+              <Ionicons
+                name={payerRole === 'tenant' ? 'radio-button-on' : 'radio-button-off'}
+                size={20}
+                color={payerRole === 'tenant' ? RSA.blue : colors.gray[400]}
+              />
+              <View style={styles.payerTextWrap}>
+                <Text style={[
+                  styles.payerLabel,
+                  payerRole === 'tenant' && styles.payerLabelActive,
+                ]}>
+                  Tenant Pays
+                </Text>
+                <Text style={styles.payerDesc}>
+                  Tenant pays directly via PayFast checkout
+                </Text>
+              </View>
+            </TouchableOpacity>
           </View>
 
           {/* Notes */}
@@ -450,6 +510,43 @@ const styles = StyleSheet.create({
   totalValue: { fontSize: 14, fontWeight: '600', color: '#111827' },
   totalLabelFinal: { fontSize: 16, fontWeight: '700', color: '#111827' },
   totalValueFinal: { fontSize: 18, fontWeight: '800', color: RSA.blue },
+
+  // ─── Payer selector ─────────────────────────────────────────────
+  payerRow: {
+    flexDirection: 'column',
+    gap: 10,
+    marginBottom: 20,
+  },
+  payerOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+  },
+  payerOptionActive: {
+    borderColor: RSA.blue,
+    backgroundColor: '#f0f5ff',
+  },
+  payerTextWrap: {
+    flex: 1,
+  },
+  payerLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  payerLabelActive: {
+    color: RSA.blue,
+  },
+  payerDesc: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 2,
+  },
 
   notesInput: {
     backgroundColor: '#FFFFFF',

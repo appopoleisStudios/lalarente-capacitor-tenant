@@ -316,8 +316,14 @@ serve(async (req) => {
       name_last: user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
     };
 
-    // Generate signature
-    const signature = generatePayFastSignature(payfastFields, passphrase);
+    // Generate signature — omit blank optional fields before hashing
+    // PayFast convention: empty optional fields (email_address, name_*) should
+    // be excluded from the signed parameter set to match PHP's urlencode behavior.
+    const signatureParams: Record<string, string> = {};
+    Object.entries(payfastFields).forEach(([k, v]) => {
+      if (v.trim()) signatureParams[k] = v;
+    });
+    const signature = generatePayFastSignature(signatureParams, passphrase);
     if (signature) {
       payfastFields.signature = signature;
     }

@@ -57,7 +57,7 @@ export default function VendorPayScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || !invoiceId) return;
 
-      const { data, error: fetchError } = await supabase
+      const result: any = await (supabase as any)
         .from('maintenance_invoices')
         .select(`
           id, invoice_number, total_amount, subtotal, vat_amount,
@@ -68,8 +68,8 @@ export default function VendorPayScreen() {
         .eq('id', invoiceId)
         .single();
 
-      if (fetchError) throw fetchError;
-      setInvoice(data as InvoiceDetail);
+      if (result.error) throw result.error;
+      setInvoice(result.data as InvoiceDetail);
     } catch (err) {
       console.error('Error loading invoice:', err);
       Alert.alert('Error', 'Failed to load invoice details');
