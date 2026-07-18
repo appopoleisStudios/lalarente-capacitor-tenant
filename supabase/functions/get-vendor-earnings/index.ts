@@ -122,7 +122,7 @@ serve(async (req) => {
 
     const vendorId = user.id;
 
-    // ── Verifiy vendor role ─────────────────────────────────────────────
+    // ── Verify vendor role ─────────────────────────────────────────────
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')

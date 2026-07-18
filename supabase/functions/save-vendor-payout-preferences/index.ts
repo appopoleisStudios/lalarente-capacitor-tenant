@@ -35,7 +35,7 @@ interface SavePreferencesRequest {
 
 /**
  * Derive an AES-256-GCM CryptoKey from the PAYOUT_ENCRYPTION_KEY secret.
- * Falls back to a server-generated key if the secret is not set (dev only).
+ * Throws if the key is not configured (fail-closed).
  */
 async function getEncryptionKey(): Promise<CryptoKey> {
   const rawHex = Deno.env.get('PAYOUT_ENCRYPTION_KEY');
