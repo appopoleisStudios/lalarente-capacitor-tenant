@@ -13,6 +13,42 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 
+// ─── Shared encryption helpers (mirrors save-vendor-payout-preferences) ────
+
+async function getEncryptionKey(): Promise<CryptoKey> {
+  const rawHex = Deno.env.get('PAYOUT_ENCRYPTION_KEY');
+  const rawKey = rawHex
+    ? new Uint8Array(rawHex.match(/.{1,2}/g)!.map(b => parseInt(b, 16)))
+    : new TextEncoder().encode(
+        'lalarente-default-dev-key-32chr!'
+      ).slice(0, 32);
+  const keyBytes = new Uint8Array(32);
+  keyBytes.set(rawKey.slice(0, 32));
+  return await crypto.subtle.importKey(
+    'raw', keyBytes, { name: 'AES-GCM' }, false, ['decrypt']
+  );
+}
+
+async function decryptAccountNumber(encrypted: string): Promise<string | null> {
+  try {
+    const key = await getEncryptionKey();
+    const parts = encrypted.split(':');
+    if (parts.length < 2) return null;
+    const iv = Uint8Array.from(atob(parts[0]), c => c.charCodeAt(0));
+    const ciphertext = Uint8Array.from(atob(parts[1]), c => c.charCodeAt(0));
+    const plaintext = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv }, key, ciphertext
+    );
+    return new TextDecoder().decode(plaintext);
+  } catch { return null; }
+}
+
+function maskAccountNumber(accountNumber: string): string {
+  const cleaned = accountNumber.replace(/\s/g, '');
+  if (cleaned.length <= 4) return `****${cleaned}`;
+  return `****${cleaned.slice(-4)}`;
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -49,6 +85,7 @@ interface VendorEarningsResponse {
     bank_name: string | null;
     branch_code: string | null;
     account_type: string | null;
+    account_number_masked: string | null;
   } | null;
 }
 
@@ -83,8 +120,23 @@ serve(async (req) => {
 
     const vendorId = user.id;
 
-    // ── Fetch completed payments (earned) ───────────────────────────────
-    const { data: completedPayments } = await supabase
+    // ── Verifiy vendor role ─────────────────────────────────────────────
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', vendorId)
+      .single();
+
+    if (!profile || (profile as any).role !== 'vendor') {
+      return new Response(JSON.stringify({ error: 'Forbidden: vendor access required' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // ── Fetch ALL payments for accurate summary (no row limit) ──────────
+    // recent_transactions will slice the first 50 from this set.
+    const { data: allPayments } = await supabase
       .from('vendor_payments')
       .select(`
         id, total_amount, platform_fee, gateway_fee, payout_fee, vendor_payout,
@@ -93,39 +145,43 @@ serve(async (req) => {
         maintenance_request:maintenance_request_id(title)
       `)
       .eq('vendor_id', vendorId)
-      .order('created_at', { ascending: false })
-      .limit(50);
+      .order('created_at', { ascending: false });
 
-    const payments = (completedPayments || []) as any[];
+    const allRows = (allPayments || []) as any[];
 
-    // ── Calculate summary ───────────────────────────────────────────────
-    const totalEarnedAllTime = payments
-      .filter(p => p.payment_status === 'completed')
-      .reduce((sum, p) => sum + parseFloat(p.vendor_payout || 0), 0);
-
-    const totalPlatformFees = payments
-      .filter(p => p.payment_status === 'completed')
-      .reduce((sum, p) => sum + parseFloat(p.platform_fee || 0), 0);
-
-    const totalPayoutFees = payments
-      .filter(p => p.payment_status === 'completed')
-      .reduce((sum, p) => sum + parseFloat(p.payout_fee || 0), 0);
+    // Summary from all rows (no limit)
+    const completedRows = allRows.filter(p => p.payment_status === 'completed');
+    const totalEarnedAllTime = completedRows.reduce((s, p) => s + parseFloat(p.vendor_payout || 0), 0);
+    const totalPlatformFees = completedRows.reduce((s, p) => s + parseFloat(p.platform_fee || 0), 0);
+    const totalPayoutFees = completedRows.reduce((s, p) => s + parseFloat(p.payout_fee || 0), 0);
 
     // Pending payouts (completed payment but payout not yet sent)
-    const pendingPayouts = payments.filter(
+    const pendingPayouts = allRows.filter(
       p => p.payment_status === 'completed' && p.payout_status === 'pending'
     );
+    const pendingPayoutTotal = pendingPayouts.reduce((s, p) => s + parseFloat(p.vendor_payout || 0), 0);
 
-    const pendingPayoutTotal = pendingPayouts.reduce(
-      (sum, p) => sum + parseFloat(p.vendor_payout || 0), 0
-    );
+    // ── Recent 50 transactions (for display) ────────────────────────────
+    const recentPayments = allRows.slice(0, 50);
 
     // ── Fetch payout preferences ────────────────────────────────────────
     const { data: prefs } = await supabase
       .from('vendor_payout_preferences')
-      .select('*')
+      .select('schedule, bank_account_name, bank_name, branch_code, account_type, account_number_encrypted')
       .eq('vendor_id', vendorId)
       .maybeSingle();
+
+    // ── Decrypt & mask account number for display ──────────────────────
+    let accountNumberMasked: string | null = null;
+    if (prefs) {
+      const enc = (prefs as any).account_number_encrypted;
+      if (enc) {
+        const decrypted = await decryptAccountNumber(enc);
+        if (decrypted) {
+          accountNumberMasked = maskAccountNumber(decrypted);
+        }
+      }
+    }
 
     const preferences = prefs ? {
       schedule: (prefs as any).schedule || 'weekly',
@@ -133,6 +189,7 @@ serve(async (req) => {
       bank_name: (prefs as any).bank_name || null,
       branch_code: (prefs as any).branch_code || null,
       account_type: (prefs as any).account_type || null,
+      account_number_masked: accountNumberMasked,
     } : null;
 
     // ── Calculate next payout date ──────────────────────────────────────
@@ -185,13 +242,15 @@ serve(async (req) => {
         total_earned_all_time: Math.round(totalEarnedAllTime * 100) / 100,
         total_platform_fees: Math.round(totalPlatformFees * 100) / 100,
         total_payout_fees: Math.round(totalPayoutFees * 100) / 100,
-        net_earnings: Math.round((totalEarnedAllTime - totalPayoutFees) * 100) / 100,
+        // vendor_payout already nets out platform_fee and payout_fee,
+        // so totalEarnedAllTime (= sum of vendor_payout) is the true net
+        net_earnings: Math.round(totalEarnedAllTime * 100) / 100,
         pending_payout_count: pendingPayouts.length,
         pending_payout_total: Math.round(pendingPayoutTotal * 100) / 100,
         next_scheduled_payout_date: nextPayoutDate,
         payout_schedule: schedule,
       },
-      recent_transactions: payments.map(p => ({
+      recent_transactions: recentPayments.map(p => ({
         id: p.id,
         invoice_number: p.invoice?.invoice_number || null,
         maintenance_title: p.maintenance_request?.title || null,
