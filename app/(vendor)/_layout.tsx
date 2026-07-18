@@ -65,6 +65,12 @@ export default function VendorLayout() {
         }}
       />
       <Tabs.Screen
+        name="contracts/[id]"
+        options={{
+          href: null, // Hidden from tabs - contract detail screen
+        }}
+      />
+      <Tabs.Screen
         name="ai-chat"
         options={{
           title: 'Lala AI',
