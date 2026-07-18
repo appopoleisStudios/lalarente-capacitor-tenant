@@ -119,6 +119,19 @@ function renderStars(rating: number | null): string {
   return '★'.repeat(Math.round(rating)) + '☆'.repeat(5 - Math.round(rating));
 }
 
+async function safeOpenURL(url: string): Promise<void> {
+  try {
+    const supported = await Linking.canOpenURL(url);
+    if (supported) {
+      await Linking.openURL(url);
+    } else {
+      Alert.alert('Unable to Open', `Cannot open this link on this device.`);
+    }
+  } catch {
+    Alert.alert('Error', 'An unexpected error occurred while trying to open this link.');
+  }
+}
+
 export default function VendorContractDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -191,10 +204,10 @@ export default function VendorContractDetailScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.headerBack}>
-            <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Contract Not Found</Text>
+        <TouchableOpacity onPress={() => router.back()} style={styles.headerBack} accessibilityLabel="Go back" accessibilityRole="button">
+          <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Contract Not Found</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.loadingContainer}>
@@ -209,7 +222,7 @@ export default function VendorContractDetailScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerBack}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.headerBack} accessibilityLabel="Go back" accessibilityRole="button">
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>Contract Details</Text>
@@ -278,6 +291,8 @@ export default function VendorContractDetailScreen() {
           <TouchableOpacity
             style={styles.infoCard}
             onPress={() => router.push(`/(vendor)/maintenance/${contract.maintenance_request!.id}`)}
+          accessibilityLabel={`View maintenance job: ${contract.maintenance_request.title}`}
+          accessibilityRole="button"
           >
             <View style={styles.infoCardHeader}>
               <Ionicons name="construct-outline" size={18} color={BRAND_BLUE} />
@@ -362,7 +377,9 @@ export default function VendorContractDetailScreen() {
         {contract.pdf_url && (
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => Linking.openURL(contract.pdf_url!)}
+            onPress={() => safeOpenURL(contract.pdf_url!)}
+            accessibilityLabel="View contract document"
+            accessibilityRole="button"
           >
             <Ionicons name="document-outline" size={20} color={BRAND_BLUE} />
             <Text style={styles.actionButtonText}>View Contract Document</Text>
@@ -381,7 +398,9 @@ export default function VendorContractDetailScreen() {
             {contract.owner.phone && (
               <TouchableOpacity
                 style={styles.contactRow}
-                onPress={() => Linking.openURL(`tel:${contract.owner!.phone}`)}
+                onPress={() => safeOpenURL(`tel:${contract.owner!.phone}`)}
+                accessibilityLabel={`Call ${contract.owner!.full_name || 'owner'}`}
+                accessibilityRole="button"
               >
                 <Ionicons name="call-outline" size={16} color={BRAND_BLUE} />
                 <Text style={styles.contactText}>{contract.owner.phone}</Text>
@@ -390,7 +409,9 @@ export default function VendorContractDetailScreen() {
             {contract.owner.email && (
               <TouchableOpacity
                 style={styles.contactRow}
-                onPress={() => Linking.openURL(`mailto:${contract.owner!.email}`)}
+                onPress={() => safeOpenURL(`mailto:${contract.owner!.email}`)}
+                accessibilityLabel={`Email ${contract.owner!.full_name || 'owner'}`}
+                accessibilityRole="button"
               >
                 <Ionicons name="mail-outline" size={16} color={BRAND_BLUE} />
                 <Text style={styles.contactText}>{contract.owner.email}</Text>
@@ -424,6 +445,12 @@ export default function VendorContractDetailScreen() {
                 <Text style={styles.ratingLabel}>Your Rating:</Text>
                 <Text style={styles.ratingStars}>{renderStars(contract.vendor_rating)}</Text>
                 <Text style={styles.ratingValue}>{contract.vendor_rating}/5</Text>
+              </View>
+            )}
+            {contract.vendor_feedback && (
+              <View style={styles.feedbackBox}>
+                <Text style={styles.feedbackLabel}>Your feedback:</Text>
+                <Text style={styles.feedbackText}>"{contract.vendor_feedback}"</Text>
               </View>
             )}
           </View>

@@ -27,7 +27,7 @@ import { colors } from '@/src/shared/theme/colors';
 const BRAND_BLUE = colors.info[500];
 const BRAND_GREEN = colors.success[500];
 
-type ContractTab = 'active' | 'pending' | 'expired';
+type ContractTab = 'active' | 'pending' | 'expired' | 'other';
 
 interface ServiceContract {
   id: string;
@@ -54,10 +54,17 @@ const ACTIVE_STATUSES = ['active', 'in_progress', 'acknowledged'];
 const PENDING_STATUSES = ['draft', 'pending_owner', 'pending_vendor', 'pending_tenant', 'quoting'];
 const EXPIRED_STATUSES = ['completed', 'expired', 'terminated', 'cancelled'];
 
+const ALL_KNOWN_STATUSES = [...ACTIVE_STATUSES, ...PENDING_STATUSES, ...EXPIRED_STATUSES];
+
+function isOtherStatus(status: string): boolean {
+  return !ALL_KNOWN_STATUSES.includes(status);
+}
+
 const TAB_OPTIONS: { key: ContractTab; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: 'active', label: 'Active', icon: 'checkmark-circle' },
   { key: 'pending', label: 'Pending', icon: 'time-outline' },
   { key: 'expired', label: 'Expired', icon: 'archive-outline' },
+  { key: 'other', label: 'Other', icon: 'ellipsis-horizontal' },
 ];
 
 function formatCurrency(amount: number | null) {
@@ -186,6 +193,7 @@ export default function VendorContractsListScreen() {
       case 'active': return ACTIVE_STATUSES.includes(c.status);
       case 'pending': return PENDING_STATUSES.includes(c.status);
       case 'expired': return EXPIRED_STATUSES.includes(c.status);
+      case 'other': return isOtherStatus(c.status);
       default: return false;
     }
   });
@@ -217,6 +225,7 @@ export default function VendorContractsListScreen() {
               case 'active': return ACTIVE_STATUSES.includes(c.status);
               case 'pending': return PENDING_STATUSES.includes(c.status);
               case 'expired': return EXPIRED_STATUSES.includes(c.status);
+              case 'other': return isOtherStatus(c.status);
               default: return false;
             }
           }).length;
@@ -233,6 +242,7 @@ export default function VendorContractsListScreen() {
                 name={tab.icon}
                 size={14}
                 color={activeTab === tab.key ? BRAND_BLUE : colors.gray[400]}
+                accessibilityElementsHidden
               />
               <Text style={[
                 styles.tabLabel,
@@ -264,9 +274,8 @@ export default function VendorContractsListScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[BRAND_BLUE]} />
         }
-      >
-        {filteredContracts.length === 0 ? (
-          <View style={styles.emptyState}>
+      >                {filteredContracts.length === 0 ? (
+          <View style={styles.emptyState} accessibilityLabel={`No ${activeTab} contracts`}>
             <Ionicons
               name={activeTab === 'active' ? 'checkmark-done-outline' : activeTab === 'pending' ? 'time-outline' : 'archive-outline'}
               size={48}
@@ -289,6 +298,8 @@ export default function VendorContractsListScreen() {
                 style={styles.contractCard}
                 onPress={() => router.push(`/(vendor)/contracts/${contract.id}`)}
                 activeOpacity={0.7}
+                accessibilityLabel={`Contract: ${contract.title}, ${statusLabel(contract.status)}`}
+                accessibilityRole="button"
               >
                 {/* Top Row: Title + Status */}
                 <View style={styles.cardTop}>
