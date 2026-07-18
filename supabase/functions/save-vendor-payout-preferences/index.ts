@@ -39,15 +39,15 @@ interface SavePreferencesRequest {
  */
 async function getEncryptionKey(): Promise<CryptoKey> {
   const rawHex = Deno.env.get('PAYOUT_ENCRYPTION_KEY');
-  const rawKey = rawHex
-    ? new Uint8Array(rawHex.match(/.{1,2}/g)!.map(b => parseInt(b, 16)))
-    : new TextEncoder().encode(
-        'lalarente-default-dev-key-32chr!' // dev-only fallback — never in production
-      ).slice(0, 32);
-
-  // Pad / truncate to exactly 32 bytes
+  if (!rawHex) {
+    throw new Error('PAYOUT_ENCRYPTION_KEY is not configured');
+  }
+  const hexBytes = rawHex.match(/.{1,2}/g)!.map(b => parseInt(b, 16));
+  if (hexBytes.length !== 32) {
+    throw new Error('PAYOUT_ENCRYPTION_KEY must be exactly 32 bytes (64 hex chars)');
+  }
   const keyBytes = new Uint8Array(32);
-  keyBytes.set(rawKey.slice(0, 32));
+  keyBytes.set(hexBytes.slice(0, 32));
 
   return await crypto.subtle.importKey(
     'raw',
