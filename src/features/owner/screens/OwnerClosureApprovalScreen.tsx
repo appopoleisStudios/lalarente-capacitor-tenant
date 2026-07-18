@@ -6,6 +6,7 @@ import {
   getProgressUpdates,
   rejectClosureReport,
 } from '@/src/features/maintenance/api';
+import { forwardClosureToTenant } from '@/src/features/maintenance/api/work/tenantVerification.api';
 import { MediaGallery } from '@/src/features/maintenance/components/MediaGallery';
 import { colors } from '@/src/shared/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
@@ -38,6 +39,8 @@ export default function OwnerClosureApprovalScreen() {
   const [closureReport, setClosureReport] = useState<any>(null);
   const [progressUpdates, setProgressUpdates] = useState<any[]>([]);
   const [actionLoading, setActionLoading] = useState(false);
+  const [forwardingToTenant, setForwardingToTenant] = useState(false);
+  const [forwardedToTenant, setForwardedToTenant] = useState(false);
 
   // Rejection modal state
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -84,11 +87,11 @@ export default function OwnerClosureApprovalScreen() {
   const handleApprove = () => {
     Alert.alert(
       'Approve Job Completion',
-      'By approving, you confirm the work has been completed satisfactorily. The job will be marked as completed.',
+      'By approving, you confirm the work has been completed satisfactorily.\n\nIf the property has a tenant, you can forward the closure to them for final verification after approval.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Approve & Complete',
+          text: 'Approve',
           onPress: async () => {
             try {
               setActionLoading(true);
@@ -98,9 +101,10 @@ export default function OwnerClosureApprovalScreen() {
               await approveClosureReport(id, user.id);
 
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              Alert.alert('Success', 'Job marked as completed successfully.', [
-                { text: 'OK', onPress: () => router.back() },
+              Alert.alert('Approved', 'Closure approved successfully.', [
+                { text: 'OK' },
               ]);
+              await loadData();
             } catch (error: any) {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
               Alert.alert('Error', error.message || 'Failed to approve closure');
@@ -116,6 +120,38 @@ export default function OwnerClosureApprovalScreen() {
   const handleReject = () => {
     setRejectReason('');
     setShowRejectModal(true);
+  };
+
+  const handleForwardToTenant = async () => {
+    if (!user?.id) return;
+
+    Alert.alert(
+      'Forward to Tenant',
+      'The tenant will be asked to verify the completed work. They have 72 hours to respond, after which it will be auto-approved.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Forward for Verification',
+          onPress: async () => {
+            try {
+              setForwardingToTenant(true);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+              await forwardClosureToTenant(id, user.id);
+
+              setForwardedToTenant(true);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              Alert.alert('Forwarded', 'The tenant has been notified to verify the completed work.');
+            } catch (error: any) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              Alert.alert('Error', error.message || 'Failed to forward to tenant');
+            } finally {
+              setForwardingToTenant(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const submitRejection = async () => {
@@ -158,6 +194,9 @@ export default function OwnerClosureApprovalScreen() {
 
   const vendor = (request as any)?.selected_vendor;
   const progressCount = progressUpdates.length;
+  const hasTenant = !!(request as any)?.tenant_id;
+  const isClosureApproved = closureReport?.status === 'approved';
+  const isTenantVerificationPending = closureReport?.tenant_verification_status === 'pending_tenant';
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -231,6 +270,50 @@ export default function OwnerClosureApprovalScreen() {
               Completion Photos ({closureReport.completion_photos.length})
             </Text>
             <MediaGallery images={closureReport.completion_photos} />
+          </View>
+        )}
+
+        {/* Forward to Tenant — show after approval if property has tenant */}
+        {isClosureApproved && hasTenant && !isTenantVerificationPending && !forwardedToTenant && (
+          <View style={styles.section}>
+            <View style={styles.forwardBanner}>
+              <Ionicons name="share-outline" size={24} color="#7C3AED" />
+              <View style={styles.forwardBannerText}>
+                <Text style={styles.forwardBannerTitle}>Tenant Verification Available</Text>
+                <Text style={styles.forwardBannerSubtitle}>
+                  Forward this closure to the tenant for final verification. The tenant can confirm the work is satisfactory or report issues within 72 hours.
+                </Text>
+                <TouchableOpacity
+                  style={styles.forwardButton}
+                  onPress={handleForwardToTenant}
+                  disabled={forwardingToTenant}
+                >
+                  {forwardingToTenant ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <Ionicons name="send" size={16} color="#FFFFFF" />
+                      <Text style={styles.forwardButtonText}>Forward to Tenant</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Tenant verification status */}
+        {(isTenantVerificationPending || forwardedToTenant) && (
+          <View style={styles.section}>
+            <View style={styles.tenantVerificationBanner}>
+              <Ionicons name="time-outline" size={24} color="#D97706" />
+              <View style={styles.forwardBannerText}>
+                <Text style={styles.tenantVerifTitle}>Awaiting Tenant Verification</Text>
+                <Text style={styles.tenantVerifSubtitle}>
+                  The tenant has been asked to verify the completed work. They have 72 hours to respond.
+                </Text>
+              </View>
+            </View>
           </View>
         )}
 
@@ -501,6 +584,69 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.gray[500],
     marginTop: 4,
+  },
+  // Forward to tenant
+  forwardBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 14,
+    backgroundColor: '#F5F3FF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#C4B5FD',
+  },
+  forwardBannerText: { flex: 1 },
+  forwardBannerTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#5B21B6',
+    marginBottom: 4,
+  },
+  forwardBannerSubtitle: {
+    fontSize: 13,
+    color: '#6D28D9',
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  forwardButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#7C3AED',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  forwardButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
+  // Tenant verification banner
+  tenantVerificationBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 14,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  tenantVerifTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#92400E',
+    marginBottom: 4,
+  },
+  tenantVerifSubtitle: {
+    fontSize: 13,
+    color: '#B45309',
+    lineHeight: 18,
   },
 
   // Footer

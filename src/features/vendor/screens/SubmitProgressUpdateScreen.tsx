@@ -29,9 +29,16 @@ export default function SubmitProgressUpdateScreen() {
   const [submitting, setSubmitting] = useState(false);
   const { files, takePhoto, pickMedia, removeFile, uploadFiles, canAddMore } = useMediaUpload(10);
 
+  const minPhotosRequired = 1;
+  const hasMinPhotos = files.length >= minPhotosRequired;
+
   const handleSubmit = async () => {
     if (!notes.trim()) {
       Alert.alert('Notes Required', 'Please describe the progress you\'ve made today.');
+      return;
+    }
+    if (!hasMinPhotos) {
+      Alert.alert('Photo Required', `Please upload at least ${minPhotosRequired} photo showing today's work.`);
       return;
     }
     if (!user?.id) {
@@ -105,8 +112,16 @@ export default function SubmitProgressUpdateScreen() {
 
           {/* Photo Upload */}
           <View style={styles.section}>
-            <Text style={styles.label}>Photos ({files.length}/10)</Text>
-            <Text style={styles.hint}>Take photos of the work completed today</Text>
+            <Text style={styles.label}>
+              Work Photos * ({files.length}/{minPhotosRequired} minimum)
+            </Text>
+            <Text style={[styles.hint, !hasMinPhotos && files.length > 0 && styles.hintWarning]}>
+              {hasMinPhotos
+                ? '✅ Photo evidence captured'
+                : files.length > 0
+                  ? `⚠️ Need ${minPhotosRequired - files.length} more photo${minPhotosRequired - files.length > 1 ? 's' : ''}`
+                  : 'Upload at least 1 photo showing today\'s progress'}
+            </Text>
 
             {files.length > 0 && (
               <View style={styles.photoGrid}>
@@ -145,9 +160,9 @@ export default function SubmitProgressUpdateScreen() {
       {/* Submit Button */}
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.submitButton, (!notes.trim() || submitting) && styles.submitButtonDisabled]}
+          style={[styles.submitButton, (!notes.trim() || !hasMinPhotos || submitting) && styles.submitButtonDisabled]}
           onPress={handleSubmit}
-          disabled={!notes.trim() || submitting}
+          disabled={!notes.trim() || !hasMinPhotos || submitting}
         >
           {submitting ? (
             <ActivityIndicator color="#FFFFFF" />
@@ -194,6 +209,7 @@ const styles = StyleSheet.create({
   section: { marginHorizontal: 16, marginTop: 24 },
   label: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 8 },
   hint: { fontSize: 13, color: '#6b7280', marginBottom: 12 },
+  hintWarning: { color: '#D97706' },
   notesInput: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
