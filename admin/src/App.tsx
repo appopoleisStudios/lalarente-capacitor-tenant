@@ -10,6 +10,7 @@ import PropertiesPage from './pages/PropertiesPage';
 import LeasesPage from './pages/LeasesPage';
 import MaintenancePage from './pages/MaintenancePage';
 import PaymentsPage from './pages/PaymentsPage';
+import VendorPayoutsPage from './pages/VendorPayoutsPage';
 import DevPlanePage from './pages/DevPlanePage';
 import DevLogsPage from './pages/DevLogsPage';
 import DevAuditPage from './pages/DevAuditPage';
@@ -32,6 +33,7 @@ export default function App() {
               <Route path="leases" element={<LeasesPage />} />
               <Route path="maintenance" element={<MaintenancePage />} />
               <Route path="payments" element={<PaymentsPage />} />
+              <Route path="vendor-payouts" element={<VendorPayoutsPage />} />
               <Route path="dev/plane" element={<DevPlanePage />} />
               <Route path="dev/logs" element={<DevLogsPage />} />
               <Route path="dev/audit" element={<DevAuditPage />} />
