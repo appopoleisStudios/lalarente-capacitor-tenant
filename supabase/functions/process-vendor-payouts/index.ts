@@ -3,12 +3,14 @@
 // ============================================================================
 // Admin-triggered / cron-ready function that processes pending vendor payouts.
 //
-// GET  → Returns list of pending payouts grouped by vendor with totals
-// POST → Processes all pending payouts (manual_eft: marks as sent with ref)
+// GET  → Returns list of pending payouts grouped by vendor with status-split totals
+// POST → Initiates batch processing (marks pending payouts as processing for manual EFT)
 //
 // For v1, the payout adapter uses manual_eft — admins review pending payouts,
 // process the bank EFTs manually, then mark as sent via admin-mark-payout-sent.
-// This function can be extended for automated PayFast payouts in a later phase.
+//
+// No ledger writes happen here — the only money-path ledger entries (payout_sent,
+// payout_fee) are written in admin-mark-payout-sent when the actual transfer occurs.
 //
 // Environment variables:
 //   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (auto-injected by Supabase)
@@ -17,12 +19,53 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import { verifyAdmin } from '../_shared/admin.ts';
-import { writeLedgerEntry } from '../_shared/ledger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// ─── Mapped payout shape ──────────────────────────────────────────────────
+
+interface MappedPayout {
+  id: string;
+  invoice_number: string | null;
+  maintenance_title: string | null;
+  vendor_name: string;
+  vendor_id: string;
+  total_amount: number;
+  platform_fee: number;
+  payout_fee: number;
+  vendor_payout: number;
+  payout_status: string;
+  payout_method: string;
+  payout_reference: string | null;
+  payout_initiated_at: string | null;
+  payout_completed_at: string | null;
+  paid_at: string | null;
+  created_at: string;
+}
+
+function mapPayoutRow(r: any): MappedPayout {
+  return {
+    id: r.id,
+    invoice_number: r.invoice?.invoice_number || null,
+    maintenance_title: r.maintenance_request?.title || null,
+    vendor_name: r.vendor?.business_name || r.vendor?.full_name || 'Unknown',
+    vendor_id: r.vendor_id,
+    total_amount: parseFloat(r.total_amount),
+    platform_fee: parseFloat(r.platform_fee),
+    payout_fee: parseFloat(r.payout_fee),
+    vendor_payout: parseFloat(r.vendor_payout),
+    payout_status: r.payout_status,
+    payout_method: r.payout_method,
+    payout_reference: r.payout_reference,
+    payout_initiated_at: r.payout_initiated_at,
+    payout_completed_at: r.payout_completed_at,
+    paid_at: r.paid_at,
+    created_at: r.created_at,
+  };
+}
 
 // ─── GET: List pending payouts ────────────────────────────────────────────
 
@@ -30,11 +73,11 @@ async function handleGetPayouts(
   supabase: ReturnType<typeof createClient>,
   userId: string
 ): Promise<Response> {
-  // Fetch all completed payments with pending payouts
+  // Fetch completed payments with any non-sent payout status
   const { data: pendingPayouts, error } = await supabase
     .from('vendor_payments')
     .select(`
-      id, total_amount, platform_fee, gateway_fee, payout_fee, vendor_payout,
+      id, vendor_id, total_amount, platform_fee, gateway_fee, payout_fee, vendor_payout,
       payment_status, payout_status, payout_method, payout_reference,
       payout_initiated_at, payout_completed_at, created_at, paid_at,
       invoice:invoice_id(invoice_number),
@@ -56,65 +99,70 @@ async function handleGetPayouts(
 
   const rows = (pendingPayouts || []) as any[];
 
-  // Group by vendor for summary
+  // Map every row to the flat PayoutRow shape first
+  const mapped: MappedPayout[] = rows.map(mapPayoutRow);
+
+  // Status-split counts
+  const pendingCount = mapped.filter(p => p.payout_status === 'pending').length;
+  const processingCount = mapped.filter(p => p.payout_status === 'processing').length;
+  const failedCount = mapped.filter(p => p.payout_status === 'failed').length;
+
+  // True-pending sum for "Amount Owed" (only pending, not processing/failed)
+  const amountOwed = mapped
+    .filter(p => p.payout_status === 'pending')
+    .reduce((s, p) => s + p.vendor_payout, 0);
+
+  // Total across all statuses (for complete picture)
+  const totalAmount = mapped.reduce((s, p) => s + p.vendor_payout, 0);
+
+  // Group the mapped rows by vendor_id
   const byVendor = new Map<string, {
     vendor_id: string;
     business_name: string | null;
     full_name: string;
     email: string | null;
-    payouts: typeof rows;
+    payouts: MappedPayout[];
     total_pending: number;
     count: number;
   }>();
 
-  for (const row of rows) {
-    const vid = row.vendor_id;
+  for (const payout of mapped) {
+    const vid = payout.vendor_id;
     if (!byVendor.has(vid)) {
+      // Find the first row with this vendor for name/email
+      const rawRow = rows.find((r: any) => r.vendor_id === vid);
       byVendor.set(vid, {
         vendor_id: vid,
-        business_name: row.vendor?.business_name || null,
-        full_name: row.vendor?.full_name || 'Unknown',
-        email: row.vendor?.email || null,
+        business_name: rawRow?.vendor?.business_name || null,
+        full_name: rawRow?.vendor?.full_name || 'Unknown',
+        email: rawRow?.vendor?.email || null,
         payouts: [],
         total_pending: 0,
         count: 0,
       });
     }
     const group = byVendor.get(vid)!;
-    group.payouts.push(row);
-    group.total_pending += parseFloat(row.vendor_payout || 0);
+    group.payouts.push(payout);
+    group.total_pending += payout.vendor_payout;
     group.count += 1;
   }
 
-  const totalPendingAmount = rows.reduce(
-    (sum, r) => sum + parseFloat(r.vendor_payout || 0), 0
-  );
-
   return new Response(
     JSON.stringify({
-      total_pending_count: rows.length,
-      total_pending_amount: Math.round(totalPendingAmount * 100) / 100,
+      // Status-split counts
+      pending_count: pendingCount,
+      processing_count: processingCount,
+      failed_count: failedCount,
+      total_count: rows.length,
+      // Amount owed = only true pending
+      amount_owed: Math.round(amountOwed * 100) / 100,
+      // Total across all statuses (for complete picture)
+      total_amount: Math.round(totalAmount * 100) / 100,
       by_vendor: Array.from(byVendor.values()).map(g => ({
         ...g,
         total_pending: Math.round(g.total_pending * 100) / 100,
       })),
-      payouts: rows.map(r => ({
-        id: r.id,
-        invoice_number: r.invoice?.invoice_number || null,
-        maintenance_title: r.maintenance_request?.title || null,
-        vendor_name: r.vendor?.business_name || r.vendor?.full_name || 'Unknown',
-        total_amount: parseFloat(r.total_amount),
-        platform_fee: parseFloat(r.platform_fee),
-        payout_fee: parseFloat(r.payout_fee),
-        vendor_payout: parseFloat(r.vendor_payout),
-        payout_status: r.payout_status,
-        payout_method: r.payout_method,
-        payout_reference: r.payout_reference,
-        payout_initiated_at: r.payout_initiated_at,
-        payout_completed_at: r.payout_completed_at,
-        paid_at: r.paid_at,
-        created_at: r.created_at,
-      })),
+      payouts: mapped,
     }),
     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
@@ -130,7 +178,7 @@ async function handleProcessPayouts(
   const { payout_ids, method } = body;
   const payoutMethod = method || 'manual_eft';
 
-  // Build query builder for pending payouts
+  // Build query for pending payouts only
   let query = supabase
     .from('vendor_payments')
     .select('id, total_amount, platform_fee, payout_fee, vendor_payout, payout_method, payout_status, vendor_id')
@@ -152,8 +200,7 @@ async function handleProcessPayouts(
 
   const rows = (toProcess || []) as any[];
 
-  // Track which requested IDs were not found (skipped because they don't
-  // exist or have moved past 'pending' status since the list was loaded)
+  // Track which requested payout_ids were not found (already non-pending or don't exist)
   const foundIds = new Set(rows.map((r: any) => r.id));
   const skippedIds = payout_ids && payout_ids.length > 0
     ? payout_ids.filter(id => !foundIds.has(id))
@@ -178,8 +225,9 @@ async function handleProcessPayouts(
   for (const payout of rows) {
     try {
       if (payoutMethod === 'manual_eft') {
-        // Manual EFT: mark as processing — admin will later mark as sent
-        // after performing the actual bank transfer
+        // Mark as processing — no ledger write here. The only money-path
+        // ledger entries (payout_sent, payout_fee) are written in
+        // admin-mark-payout-sent when the actual bank transfer occurs.
         const { error: updateError } = await supabase
           .from('vendor_payments')
           .update({
@@ -195,19 +243,6 @@ async function handleProcessPayouts(
           errors.push(`Failed to update ${payout.id}: ${updateError.message}`);
         } else {
           processed.push(payout.id);
-
-          // Write ledger entry for payout_sent (amount negative = outflow from LaLarente)
-          // For manual_eft, we write the ledger when admin marks as sent,
-          // but we log the initiation here
-          await writeLedgerEntry(
-            supabase,
-            payout.id,
-            'payout_fee',
-            -Math.abs(parseFloat(payout.payout_fee || 0)),
-            -Math.abs(parseFloat(payout.payout_fee || 0)),
-            `Payout initiation fee (${payoutMethod})`,
-            userId
-          );
         }
       } else {
         errors.push(`Unsupported payout method: ${payoutMethod}`);
@@ -247,7 +282,6 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const authHeader = req.headers.get('Authorization') || '';
 
-    // Verify admin
     const { user, error: authError } = await verifyAdmin(supabase, authHeader);
     if (authError) return authError;
 

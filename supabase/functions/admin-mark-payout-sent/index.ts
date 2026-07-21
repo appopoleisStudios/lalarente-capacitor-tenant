@@ -3,11 +3,14 @@
 // ============================================================================
 // Admin-only function to mark a vendor payout as sent after completing a
 // manual EFT or other off-platform payout. Records the bank reference number
-// and writes the payout_sent ledger entry.
+// and writes the payout_sent + payout_fee ledger entries.
 //
 // POST /admin-mark-payout-sent
 //   Body: { payment_id: string, reference: string }
 //   Auth: Requires admin role or dev_admin flag
+//
+// Ledger writes are fail-loud for payout_sent (critical money movement).
+// Race conditions on concurrent requests return 409 (not 500).
 //
 // Environment variables:
 //   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (auto-injected by Supabase)
@@ -77,11 +80,10 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const authHeader = req.headers.get('Authorization') || '';
 
-    // Verify admin
     const { user, error: authError } = await verifyAdmin(supabase, authHeader);
     if (authError) return authError;
 
-    // Parse body
+    // ── Parse body ──────────────────────────────────────────────────────
     const body = await req.json();
     const { payment_id, reference } = body;
 
@@ -105,14 +107,22 @@ serve(async (req) => {
       });
     }
 
-    // Fetch the vendor payment to verify it exists and is in a processable state
+    // ── Fetch vendor payment ────────────────────────────────────────────
     const { data: vp, error: fetchError } = await supabase
       .from('vendor_payments')
       .select('*')
       .eq('id', payment_id)
-      .single();
+      .maybeSingle();
 
-    if (fetchError || !vp) {
+    if (fetchError) {
+      console.error('❌ Failed to fetch vendor payment:', fetchError);
+      return new Response(JSON.stringify({ error: 'Database error fetching payment' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!vp) {
       return new Response(JSON.stringify({ error: 'Vendor payment not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -121,7 +131,7 @@ serve(async (req) => {
 
     const vendorPayment = vp as any;
 
-    // Validate current payout_status allows marking as sent
+    // ── Validate current state allows marking as sent ────────────────────
     const allowedStatuses = ['processing', 'pending'];
     if (!allowedStatuses.includes(vendorPayment.payout_status)) {
       return new Response(
@@ -132,7 +142,6 @@ serve(async (req) => {
       );
     }
 
-    // Ensure payment is completed (money received)
     if (vendorPayment.payment_status !== 'completed') {
       return new Response(
         JSON.stringify({ error: `Payment status is '${vendorPayment.payment_status}'. Only completed payments can have payouts marked as sent.` }),
@@ -140,9 +149,9 @@ serve(async (req) => {
       );
     }
 
+    // ── Atomically update payout to sent ────────────────────────────────
     const now = new Date().toISOString();
 
-    // Atomically update payout to sent (using status guard to prevent races)
     const { data: updated, error: updateError } = await supabase
       .from('vendor_payments')
       .update({
@@ -154,7 +163,7 @@ serve(async (req) => {
       .eq('id', payment_id)
       .in('payout_status', allowedStatuses)  // Guard: only if still processable
       .select()
-      .single();
+      .maybeSingle();  // Use maybeSingle to distinguish empty result from error
 
     if (updateError) {
       console.error('❌ Failed to mark payout as sent:', updateError);
@@ -164,32 +173,59 @@ serve(async (req) => {
       });
     }
 
-    // ── Write ledger entries ─────────────────────────────────────────
+    // Race condition: another request already transitioned this payout
+    if (!updated) {
+      console.warn(`⚠️ Payout ${payment_id} was already transitioned (race)`);
+      return new Response(
+        JSON.stringify({ error: 'Payout status was already changed by another request. Refresh and try again.' }),
+        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // ── Write ledger entries ─────────────────────────────────────────────
     const payoutAmount = -Math.abs(parseFloat(vendorPayment.vendor_payout || 0));
     const payoutFee = -Math.abs(parseFloat(vendorPayment.payout_fee || 0));
 
-    // Payout sent (negative = outflow from LaLarente to vendor)
-    await writeLedgerEntry(
+    // Payout sent — FAIL-LOUD: critical money-movement entry
+    const { error: ledgerError } = await writeLedgerEntry(
       supabase, payment_id, 'payout_sent',
       payoutAmount,
-      payoutAmount,  // Simple running: first entry
+      payoutAmount,
       `Manual EFT payout to vendor`,
       user.id,
       reference.trim()
     );
 
-    // Payout fee if applicable
-    if (vendorPayment.payout_fee && parseFloat(vendorPayment.payout_fee) > 0) {
-      await writeLedgerEntry(
-        supabase, payment_id, 'payout_fee',
-        payoutFee,
-        payoutAmount + payoutFee,  // Running balance after fee
-        `Payout fee charged`,
-        user.id
+    if (ledgerError) {
+      // The payout update succeeded but the ledger write failed.
+      // Log heavily so ops can reconcile, but return error to admin.
+      console.error(`❌ CRITICAL: payout_sent ledger write failed for ${payment_id} after status was updated:`, ledgerError);
+      return new Response(
+        JSON.stringify({
+          error: 'Payment marked as sent but ledger entry failed. Contact support to reconcile.',
+          payment_id,
+          payout_status: 'sent',
+          critical: true,
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Send notification to vendor
+    // Payout fee — non-critical, log if fails but don't fail the whole request
+    if (vendorPayment.payout_fee && parseFloat(vendorPayment.payout_fee) > 0) {
+      const { error: feeError } = await writeLedgerEntry(
+        supabase, payment_id, 'payout_fee',
+        payoutFee,
+        payoutAmount + payoutFee,
+        `Payout fee charged`,
+        user.id
+      );
+      if (feeError) {
+        console.error(`⚠️ payout_fee ledger write failed for ${payment_id} (non-critical):`, feeError);
+      }
+    }
+
+    // ── Send notification (best-effort, non-critical) ────────────────────
     await sendPayoutNotification(supabase, vendorPayment, reference.trim());
 
     console.log(`✅ Payout ${payment_id} marked as sent with reference: ${reference.trim()}`);

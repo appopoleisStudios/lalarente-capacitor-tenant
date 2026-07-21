@@ -30,8 +30,12 @@ interface VendorGroup {
 }
 
 interface PayoutsResponse {
-  total_pending_count: number;
-  total_pending_amount: number;
+  pending_count: number;
+  processing_count: number;
+  failed_count: number;
+  total_count: number;
+  amount_owed: number;
+  total_amount: number;
   by_vendor: VendorGroup[];
   payouts: PayoutRow[];
 }
@@ -132,11 +136,11 @@ export default function VendorPayoutsPage() {
     }
   };
 
-  // Summary stats
-  const totalPendingCount = data?.total_pending_count ?? 0;
-  const totalPendingAmount = data?.total_pending_amount ?? 0;
-  const pendingProcessing = data?.payouts.filter(p => p.payout_status === 'pending').length ?? 0;
-  const inProgress = data?.payouts.filter(p => p.payout_status === 'processing').length ?? 0;
+  // Summary stats from server-side status-split response
+  const pendingCount = data?.pending_count ?? 0;
+  const processingCount = data?.processing_count ?? 0;
+  const failedCount = data?.failed_count ?? 0;
+  const amountOwed = data?.amount_owed ?? 0;
 
   return (
     <div>
@@ -170,10 +174,10 @@ export default function VendorPayoutsPage() {
       {/* Summary cards */}
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: 'Pending', value: totalPendingCount, color: 'text-yellow-600', bg: 'bg-yellow-50' },
-          { label: 'In Progress', value: inProgress, color: 'text-blue-600', bg: 'bg-blue-50' },
-          { label: 'Amount Owed', value: `R ${totalPendingAmount.toLocaleString()}`, color: 'text-slate-900', bg: 'bg-slate-50' },
-          { label: 'Awaiting Initiation', value: pendingProcessing, color: 'text-purple-600', bg: 'bg-purple-50' },
+          { label: 'Awaiting Initiation', value: pendingCount, color: 'text-yellow-600', bg: 'bg-yellow-50' },
+          { label: 'In Progress', value: processingCount, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { label: 'Amount Owed', value: `R ${amountOwed.toLocaleString()}`, color: 'text-slate-900', bg: 'bg-slate-50' },
+          { label: 'Failed', value: failedCount, color: 'text-red-600', bg: 'bg-red-50' },
         ].map((s) => (
           <div key={s.label} className={`rounded-xl border border-slate-200 p-5 shadow-sm ${s.bg}`}>
             <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
@@ -183,12 +187,12 @@ export default function VendorPayoutsPage() {
       </div>
 
       {/* Batch process button */}
-      {totalPendingCount > 0 && (
+      {pendingCount > 0 && (
         <div className="mb-6 flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 p-4">
           <div>
             <p className="text-sm font-semibold text-amber-800">Pending Payouts</p>
             <p className="text-xs text-amber-600">
-              {totalPendingCount} payout{totalPendingCount !== 1 ? 's' : ''} awaiting initiation.
+              {pendingCount} payout{pendingCount !== 1 ? 's' : ''} awaiting initiation.
               Mark them as processing to begin manual EFT.
             </p>
           </div>
@@ -210,7 +214,7 @@ export default function VendorPayoutsPage() {
       )}
 
       {/* Empty */}
-      {!loading && !error && totalPendingCount === 0 && (
+      {!loading && !error && data && data.total_count === 0 && (
         <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
           <p className="text-2xl mb-2">✅</p>
           <p className="text-sm font-medium text-slate-900">All caught up!</p>
