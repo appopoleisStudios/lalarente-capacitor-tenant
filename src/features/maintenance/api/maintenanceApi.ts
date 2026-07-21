@@ -1,5 +1,4 @@
 import { supabase } from '@/src/lib/supabase';
-import { getMockMaintenanceRequests, MOCK_USERS } from '@/src/lib/mockData';
 import type {
   MaintenanceRequest,
   MaintenanceRequestInsert,

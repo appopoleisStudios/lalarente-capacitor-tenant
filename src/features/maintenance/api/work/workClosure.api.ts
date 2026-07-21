@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '@/src/lib/supabase';
+import { notificationsApi } from '@/src/features/notifications/api/notificationsApi';
 import type { ClosureReport, MaintenanceRequest } from '../types/maintenance.types';
 
 /**
@@ -87,6 +88,21 @@ export async function requestClosure(
     throw updateError;
   }
 
+  // Notify owner that closure was requested
+  const { data: reqWithOwner } = await supabase
+    .from('maintenance_requests')
+    .select('owner_id')
+    .eq('id', requestId)
+    .single();
+
+  if (reqWithOwner && (reqWithOwner as any).owner_id) {
+    notificationsApi.sendNotification({
+      user_id: (reqWithOwner as any).owner_id,
+      type: 'maintenance_updated',
+      data: { customTitle: 'Job Closure Requested', customBody: 'The vendor has requested job closure. Review and approve.', newStatus: 'closure_pending' },
+    }).catch(e => console.error('Failed to send closure requested notification:', e));
+  }
+
   console.log('✅ Closure requested successfully');
   return closureReport as ClosureReport;
 }
@@ -159,6 +175,30 @@ export async function approveClosureReport(
     .single();
 
   if (error) throw error;
+
+  // Notify vendor that closure was approved
+  const { data: approvedReq } = await supabase
+    .from('maintenance_requests')
+    .select('selected_vendor_id, tenant_id')
+    .eq('id', requestId)
+    .single();
+
+  const reqData = approvedReq as any;
+  if (reqData?.selected_vendor_id) {
+    notificationsApi.sendNotification({
+      user_id: reqData.selected_vendor_id,
+      type: 'maintenance_completed',
+      data: { customTitle: 'Closure Approved', customBody: 'The owner has approved the job closure.', newStatus: 'completed' },
+    }).catch(e => console.error('Failed to send closure approved to vendor:', e));
+  }
+  if (reqData?.tenant_id) {
+    notificationsApi.sendNotification({
+      user_id: reqData.tenant_id,
+      type: 'maintenance_completed',
+      data: { customTitle: 'Maintenance Completed', customBody: 'A maintenance job has been completed at your property.', newStatus: 'completed' },
+    }).catch(e => console.error('Failed to send closure approved to tenant:', e));
+  }
+
   return data as MaintenanceRequest;
 }
 
@@ -210,6 +250,21 @@ export async function rejectClosureReport(
     .from('maintenance_requests') as any)
     .update({ closure_requested_at: null })
     .eq('id', requestId);
+
+  // Notify vendor that closure was rejected
+  const { data: rejectedReq } = await supabase
+    .from('maintenance_requests')
+    .select('selected_vendor_id')
+    .eq('id', requestId)
+    .single();
+
+  if (rejectedReq && (rejectedReq as any).selected_vendor_id) {
+    notificationsApi.sendNotification({
+      user_id: (rejectedReq as any).selected_vendor_id,
+      type: 'maintenance_updated',
+      data: { customTitle: 'Closure Changes Requested', customBody: 'The owner has requested changes to the closure report.', newStatus: 'rejected', rejectionReason: reason },
+    }).catch(e => console.error('Failed to send closure rejected notification:', e));
+  }
 
   return data as ClosureReport;
 }

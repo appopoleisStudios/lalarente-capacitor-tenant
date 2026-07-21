@@ -106,6 +106,10 @@ export const notificationsApi = {
    * Get notification content based on type
    */
   getNotificationContent(type: NotificationType, data?: Record<string, any>): { title: string; body: string } {
+    // Allow callers to override title/body via data.customTitle / data.customBody
+    if (data?.customTitle) {
+      return { title: data.customTitle, body: data.customBody || data.customTitle };
+    }
     const templates: Record<NotificationType, { title: string; body: string }> = {
       lease_created: {
         title: 'New Lease Created',

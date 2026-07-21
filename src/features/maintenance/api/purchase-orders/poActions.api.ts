@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
+import { notificationsApi } from '@/src/features/notifications/api/notificationsApi';
 import type { POStatus, PurchaseOrder } from '../types/po.types';
 
 /**
@@ -121,10 +122,38 @@ export async function sendPOToVendor(
     .single();
 
   if (error) throw error;
-  
-  // TODO: Send notification to vendor
+
+  // Fire-and-forget notification to vendor — vendor_id is looked up via service_contracts
+  findVendorByPO(poId).then(vendorId => {
+    if (vendorId) {
+      notificationsApi.sendNotification({
+        user_id: vendorId,
+        type: 'maintenance_updated',
+        data: { customTitle: 'New Purchase Order', customBody: 'A new purchase order has been sent to you.', newStatus: 'PO sent' },
+      }).catch(e => console.error('Failed to send PO notification:', e));
+    }
+  }).catch(e => console.error('Failed to find vendor for PO notification:', e));
   
   return data as PurchaseOrder;
+}
+
+/** Look up the vendor_id assigned to a PO via the maintenance request */
+async function findVendorByPO(poId: string): Promise<string | null> {
+  try {
+    const { data: po } = await (supabase.from('purchase_orders') as any)
+      .select('contract_id')
+      .eq('id', poId)
+      .single();
+    if (!po?.contract_id) return null;
+    const { data: contract } = await supabase
+      .from('service_contracts')
+      .select('vendor_id')
+      .eq('id', po.contract_id)
+      .single();
+    return (contract as any)?.vendor_id || null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -164,7 +193,24 @@ async function verifyVendorAssignment(poId: string, vendorId: string): Promise<v
  */
 export async function acceptPO(poId: string, vendorId: string): Promise<PurchaseOrder> {
   await verifyVendorAssignment(poId, vendorId);
-  return updatePOStatus(poId, 'accepted');
+  const po = await updatePOStatus(poId, 'accepted');
+
+  // Notify the owner that PO was accepted
+  const { data: request } = await supabase
+    .from('maintenance_requests')
+    .select('owner_id')
+    .eq('po_id', poId)
+    .maybeSingle();
+
+  if (request && (request as any).owner_id) {
+    notificationsApi.sendNotification({
+      user_id: (request as any).owner_id,
+      type: 'maintenance_updated',
+      data: { customTitle: 'PO Accepted by Vendor', customBody: 'The vendor has accepted the purchase order.', newStatus: 'accepted' },
+    }).catch(e => console.error('Failed to send PO accepted notification:', e));
+  }
+
+  return po;
 }
 
 /**
@@ -196,5 +242,23 @@ export async function rejectPO(
     throw new Error('Failed to record rejection reason — PO status unchanged');
   }
 
-  return updatePOStatus(poId, 'rejected');
+  const po = await updatePOStatus(poId, 'rejected');
+
+  // Notify the owner that PO was rejected
+  const { data: request } = await supabase
+    .from('maintenance_requests')
+    .select('owner_id')
+    .eq('po_id', poId)
+    .maybeSingle();
+
+  if (request && (request as any).owner_id) {
+    notificationsApi.sendNotification({
+      user_id: (request as any).owner_id,
+      type: 'maintenance_updated',
+      data: { customTitle: 'PO Rejected by Vendor', customBody: 'The vendor has rejected the purchase order.', newStatus: 'rejected', rejectionReason: reason },
+    }).catch(e => console.error('Failed to send PO rejected notification:', e));
+  }
+
+  return po;
 }
+
