@@ -10,6 +10,7 @@
  */
 
 import { supabase } from '@/src/lib/supabase';
+import { notificationsApi } from '@/src/features/notifications/api/notificationsApi';
 
 // ============================================
 // Constants
@@ -316,6 +317,14 @@ export async function submitInvoice(
     .single();
 
   if (error) throw error;
+
+  // Notify owner that an invoice was submitted
+  notificationsApi.sendNotification({
+    user_id: ownerId,
+    type: 'maintenance_updated',
+    data: { title: 'New Invoice Submitted', newStatus: 'invoice_submitted' },
+  }).catch(() => {});
+
   return data as unknown as MaintenanceInvoice;
 }
 
@@ -390,6 +399,13 @@ export async function approveInvoice(
     amount: invoice.total_amount,
   });
 
+  // Notify vendor that invoice was approved
+  notificationsApi.sendNotification({
+    user_id: invoice.vendor_id,
+    type: 'maintenance_updated',
+    data: { title: 'Invoice Approved', newStatus: 'approved' },
+  }).catch(() => {});
+
   return data as unknown as MaintenanceInvoice;
 }
 
@@ -451,6 +467,13 @@ export async function rejectInvoice(
     invoice_number: invoice.invoice_number,
     reason: reason.trim(),
   });
+
+  // Notify vendor that invoice was rejected
+  notificationsApi.sendNotification({
+    user_id: invoice.vendor_id,
+    type: 'maintenance_updated',
+    data: { title: 'Invoice Rejected', newStatus: 'rejected', rejectionReason: reason.trim() },
+  }).catch(() => {});
 
   return data as unknown as MaintenanceInvoice;
 }
