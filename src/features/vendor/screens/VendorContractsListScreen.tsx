@@ -274,7 +274,8 @@ export default function VendorContractsListScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[BRAND_BLUE]} />
         }
-      >                {filteredContracts.length === 0 ? (
+      >
+        {filteredContracts.length === 0 ? (
           <View style={styles.emptyState} accessibilityLabel={`No ${activeTab} contracts`}>
             <Ionicons
               name={activeTab === 'active' ? 'checkmark-done-outline' : activeTab === 'pending' ? 'time-outline' : 'archive-outline'}
