@@ -122,7 +122,7 @@ async function handleGetPayouts(
     full_name: string;
     email: string | null;
     payouts: MappedPayout[];
-    total_pending: number;
+    total_owed: number;
     count: number;
   }>();
 
@@ -137,13 +137,13 @@ async function handleGetPayouts(
         full_name: rawRow?.vendor?.full_name || 'Unknown',
         email: rawRow?.vendor?.email || null,
         payouts: [],
-        total_pending: 0,
+        total_owed: 0,
         count: 0,
       });
     }
     const group = byVendor.get(vid)!;
     group.payouts.push(payout);
-    group.total_pending += payout.vendor_payout;
+    group.total_owed += payout.vendor_payout;
     group.count += 1;
   }
 
@@ -160,7 +160,7 @@ async function handleGetPayouts(
       total_amount: Math.round(totalAmount * 100) / 100,
       by_vendor: Array.from(byVendor.values()).map(g => ({
         ...g,
-        total_pending: Math.round(g.total_pending * 100) / 100,
+        total_owed: Math.round(g.total_owed * 100) / 100,
       })),
       payouts: mapped,
     }),

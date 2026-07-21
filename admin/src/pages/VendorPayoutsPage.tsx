@@ -25,7 +25,7 @@ interface VendorGroup {
   full_name: string;
   email: string | null;
   payouts: PayoutRow[];
-  total_pending: number;
+  total_owed: number;
   count: number;
 }
 
@@ -98,6 +98,7 @@ export default function VendorPayoutsPage() {
 
   const handleBatchProcess = async () => {
     if (!data || data.payouts.length === 0) return;
+    if (!window.confirm(`Initiate batch processing for ${data.payouts.filter(p => p.payout_status === 'pending').length} pending payout(s)? This will mark them as processing for manual EFT.`)) return;
     setProcessing(true);
     setSuccessMsg(null);
     try {
@@ -239,7 +240,7 @@ export default function VendorPayoutsPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-bold text-slate-900">
-                    R {group.total_pending.toLocaleString()}
+                    R {group.total_owed.toLocaleString()}
                   </p>
                   <p className="text-xs text-slate-400">{group.count} payout{group.count !== 1 ? 's' : ''}</p>
                 </div>
