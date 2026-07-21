@@ -152,9 +152,21 @@ async function handleProcessPayouts(
 
   const rows = (toProcess || []) as any[];
 
+  // Track which requested IDs were not found (skipped because they don't
+  // exist or have moved past 'pending' status since the list was loaded)
+  const foundIds = new Set(rows.map((r: any) => r.id));
+  const skippedIds = payout_ids && payout_ids.length > 0
+    ? payout_ids.filter(id => !foundIds.has(id))
+    : [];
+
   if (rows.length === 0) {
+    const response: Record<string, any> = { message: 'No pending payouts to process', processed: 0 };
+    if (skippedIds.length > 0) {
+      response.skipped_count = skippedIds.length;
+      response.skipped_ids = skippedIds;
+    }
     return new Response(
-      JSON.stringify({ message: 'No pending payouts to process', processed: 0 }),
+      JSON.stringify(response),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
@@ -205,13 +217,19 @@ async function handleProcessPayouts(
     }
   }
 
+  const response: Record<string, any> = {
+    processed_count: processed.length,
+    error_count: errors.length,
+    processed_ids: processed,
+    errors: errors.length > 0 ? errors : undefined,
+  };
+  if (skippedIds.length > 0) {
+    response.skipped_count = skippedIds.length;
+    response.skipped_ids = skippedIds;
+  }
+
   return new Response(
-    JSON.stringify({
-      processed_count: processed.length,
-      error_count: errors.length,
-      processed_ids: processed,
-      errors: errors.length > 0 ? errors : undefined,
-    }),
+    JSON.stringify(response),
     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
 }

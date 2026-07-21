@@ -92,8 +92,14 @@ serve(async (req) => {
       });
     }
 
-    if (!reference || typeof reference !== 'string' || reference.trim().length === 0) {
+    if (!reference) {
       return new Response(JSON.stringify({ error: 'Missing required field: reference (bank EFT reference)' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (typeof reference !== 'string' || reference.trim().length === 0) {
+      return new Response(JSON.stringify({ error: 'reference must be a non-empty string' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
