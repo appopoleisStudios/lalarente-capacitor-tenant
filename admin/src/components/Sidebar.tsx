@@ -9,6 +9,7 @@ const navItems = [
   { to: '/leases', label: 'Leases', icon: '📄', adminOnly: false },
   { to: '/maintenance', label: 'Maintenance', icon: '🔧', adminOnly: false },
   { to: '/payments', label: 'Payments', icon: '💰', adminOnly: false },
+  { to: '/vendor-payouts', label: 'Vendor Payouts', icon: '💸', adminOnly: false },
 ];
 
 const devItems = [
