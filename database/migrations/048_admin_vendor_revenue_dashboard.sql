@@ -13,6 +13,7 @@ CREATE OR REPLACE FUNCTION public.admin_get_vendor_revenue_summary()
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 STABLE
 AS $$
 DECLARE
@@ -77,6 +78,7 @@ CREATE OR REPLACE FUNCTION public.admin_get_vendor_transactions(
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 STABLE
 AS $$
 BEGIN
@@ -89,7 +91,7 @@ BEGIN
       'id',                vp.id,
       'invoice_number',    mi.invoice_number,
       'maintenance_title', mr.title,
-      'vendor_name',       vp_vendor.full_name,
+      'vendor_name',       COALESCE(vp_vendor.business_name, vp_vendor.full_name),
       'tenant_name',       vp_tenant.full_name,
       'total_amount',      vp.total_amount,
       'platform_fee',      vp.platform_fee,
@@ -123,6 +125,7 @@ CREATE OR REPLACE FUNCTION public.admin_get_vendor_disputes()
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 STABLE
 AS $$
 BEGIN
@@ -135,7 +138,7 @@ BEGIN
       'id',                vp.id,
       'invoice_number',    mi.invoice_number,
       'maintenance_title', mr.title,
-      'vendor_name',       vp_vendor.full_name,
+      'vendor_name',       COALESCE(vp_vendor.business_name, vp_vendor.full_name),
       'tenant_name',       vp_tenant.full_name,
       'total_amount',      vp.total_amount,
       'vendor_payout',     vp.vendor_payout,
@@ -161,16 +164,19 @@ COMMENT ON FUNCTION public.admin_get_vendor_disputes IS
 -- Resolve or escalate a vendor payment dispute
 CREATE OR REPLACE FUNCTION public.admin_resolve_vendor_dispute(
   p_payment_id uuid,
-  p_action text  -- 'resolve' or 'escalate'
+  p_action text,  -- 'resolve' or 'escalate'
+  p_note text DEFAULT NULL  -- Optional resolution note for audit trail
 )
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 VOLATILE
 AS $$
 DECLARE
   vp_record vendor_payments%ROWTYPE;
   new_status text;
+  v_updated int;
 BEGIN
   IF NOT public.is_admin() THEN
     RAISE EXCEPTION 'Access denied: admin role required';
@@ -198,13 +204,23 @@ BEGIN
     new_status := 'escalated';
   END IF;
 
-  -- Update the payment record
-  UPDATE vendor_payments
-  SET
-    dispute_status = new_status,
-    dispute_resolved_at = CASE WHEN p_action = 'resolve' THEN now() ELSE NULL END,
-    updated_at = now()
-  WHERE id = p_payment_id;
+  -- Atomically update with status guard (prevents concurrent double-resolve)
+  WITH updated AS (
+    UPDATE vendor_payments
+    SET
+      dispute_status = new_status,
+      dispute_resolved_at = CASE WHEN p_action = 'resolve' THEN now() ELSE NULL END,
+      updated_at = now()
+    WHERE id = p_payment_id
+      AND dispute_status IN ('opened', 'escalated')
+    RETURNING id
+  )
+  SELECT count(*) INTO v_updated FROM updated;
+
+  IF v_updated = 0 THEN
+    RAISE EXCEPTION 'Concurrent update detected or dispute already resolved. Status is now ''%''.',
+      (SELECT dispute_status FROM vendor_payments WHERE id = p_payment_id);
+  END IF;
 
   -- If resolved and payout was on_hold, reset to pending
   IF p_action = 'resolve' AND vp_record.payout_status = 'on_hold' THEN
@@ -212,6 +228,21 @@ BEGIN
     SET payout_status = 'pending'
     WHERE id = p_payment_id AND payout_status = 'on_hold';
   END IF;
+
+  -- ── Audit trail ────────────────────────────────────────────────────────
+  INSERT INTO dev_function_logs (source, level, message, metadata)
+  VALUES (
+    'admin-payments',
+    'info',
+    format('Admin %s dispute on payment %s → %s', p_action, p_payment_id, new_status),
+    jsonb_build_object(
+      'payment_id', p_payment_id,
+      'action', p_action,
+      'previous_status', vp_record.dispute_status,
+      'new_status', new_status,
+      'note', p_note
+    )
+  );
 
   RETURN jsonb_build_object(
     'success', true,

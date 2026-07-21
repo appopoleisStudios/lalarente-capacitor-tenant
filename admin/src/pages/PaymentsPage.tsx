@@ -230,13 +230,15 @@ function DisputesTab() {
                 >
                   {actionLoading === d.id ? '...' : '✓ Resolve'}
                 </button>
-                <button
-                  onClick={() => handleAction(d.id, 'escalate')}
-                  disabled={actionLoading === d.id}
-                  className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-purple-700 disabled:opacity-40"
-                >
-                  {actionLoading === d.id ? '...' : '⬆ Escalate'}
-                </button>
+                {d.dispute_status !== 'escalated' && (
+                  <button
+                    onClick={() => handleAction(d.id, 'escalate')}
+                    disabled={actionLoading === d.id}
+                    className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-purple-700 disabled:opacity-40"
+                  >
+                    {actionLoading === d.id ? '...' : '⬆ Escalate'}
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -260,10 +262,11 @@ export default function PaymentsPage() {
 
       {/* Tab navigation */}
       <div className="mb-6 border-b border-slate-200">
-        <nav className="-mb-px flex gap-6" aria-label="Payment tabs">
+        <nav className="-mb-px flex gap-6" aria-label="Payment tabs" role="tablist">
           {TABS.map((tab) => (
             <button
               key={tab.key}
+              id={`tab-${tab.key}`}
               onClick={() => setActiveTab(tab.key)}
               className={`flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-medium transition-colors ${
                 activeTab === tab.key
@@ -272,8 +275,10 @@ export default function PaymentsPage() {
               }`}
               role="tab"
               aria-selected={activeTab === tab.key}
+              aria-controls={`panel-${tab.key}`}
+              tabIndex={activeTab === tab.key ? 0 : -1}
             >
-              <span>{tab.icon}</span>
+              <span aria-hidden="true">{tab.icon}</span>
               {tab.label}
             </button>
           ))}
@@ -281,9 +286,30 @@ export default function PaymentsPage() {
       </div>
 
       {/* Tab content */}
-      {activeTab === 'rent' && <RentPaymentsTab />}
-      {activeTab === 'vendor-revenue' && <VendorRevenueTab />}
-      {activeTab === 'disputes' && <DisputesTab />}
+      <div
+        id="panel-rent"
+        role="tabpanel"
+        aria-labelledby="tab-rent"
+        hidden={activeTab !== 'rent'}
+      >
+        {activeTab === 'rent' && <RentPaymentsTab />}
+      </div>
+      <div
+        id="panel-vendor-revenue"
+        role="tabpanel"
+        aria-labelledby="tab-vendor-revenue"
+        hidden={activeTab !== 'vendor-revenue'}
+      >
+        {activeTab === 'vendor-revenue' && <VendorRevenueTab />}
+      </div>
+      <div
+        id="panel-disputes"
+        role="tabpanel"
+        aria-labelledby="tab-disputes"
+        hidden={activeTab !== 'disputes'}
+      >
+        {activeTab === 'disputes' && <DisputesTab />}
+      </div>
     </div>
   );
 }
