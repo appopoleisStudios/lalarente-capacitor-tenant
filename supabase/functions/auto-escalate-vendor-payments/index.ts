@@ -3,7 +3,12 @@
 // SUPABASE EDGE FUNCTION: Auto-Escalate Vendor Payments
 // ============================================================================
 // Cron-triggered function that calls auto_escalate_vendor_payments() SQL.
-// Runs every hour via pg_cron.
+// Only processes requests that pass the CRON_SECRET header check.
+//
+// Auth:
+//   Requests must include header `x-cron-secret` matching CRON_SECRET env var.
+//   The SQL function itself has EXECUTE revoked from anon/authenticated so
+//   only the service_role (used by this function internally) can call it.
 //
 // Tasks (all handled server-side in the SQL function):
 //   1. Auto-approve closure_reports where tenant hasn't responded in 72h
@@ -13,6 +18,7 @@
 // Cron Schedule: 0 * * * * (every hour at minute 0)
 //
 // Deployed via: npx supabase functions deploy auto-escalate-vendor-payments
+// Env vars required: CRON_SECRET (set in Supabase Edge Function settings)
 // ============================================================================
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
@@ -20,12 +26,34 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret',
 };
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
+  }
+
+  // ── Auth: verify cron secret ────────────────────────────────────────────
+  // Prevents unauthorized callers from triggering escalations via the
+  // public edge function URL. The cron job (or Supabase scheduled function)
+  // must pass the correct x-cron-secret header.
+  const cronSecret = Deno.env.get('CRON_SECRET');
+  if (!cronSecret) {
+    console.error('❌ CRON_SECRET not configured — rejecting all requests');
+    return new Response(
+      JSON.stringify({ error: 'Server misconfigured: CRON_SECRET not set' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+    );
+  }
+
+  const authHeader = req.headers.get('x-cron-secret');
+  if (!authHeader || authHeader !== cronSecret) {
+    console.warn('⚠️ Unauthorized escalation attempt');
+    return new Response(
+      JSON.stringify({ error: 'Unauthorized' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+    );
   }
 
   try {

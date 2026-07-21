@@ -138,6 +138,13 @@ COMMENT ON FUNCTION auto_escalate_vendor_payments IS
    (3) counts closures approaching deadline for retry nudges.
    Logs all actions to dev_function_logs for audit trail.';
 
+-- ── Revoke public API access ────────────────────────────────────────────────
+-- Only callable via service_role (pg_cron runs as DB owner) or the edge
+-- function (which uses SUPABASE_SERVICE_ROLE_KEY). Prevents clients from
+-- cancelling payments or auto-approving closures via the REST API.
+
+REVOKE EXECUTE ON FUNCTION auto_escalate_vendor_payments() FROM anon, authenticated;
+
 -- ── Schedule via pg_cron: every hour ──────────────────────────────────────
 
 SELECT cron.schedule(

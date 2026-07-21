@@ -457,7 +457,7 @@ async function handleVendorPayFastItn(
         updated_at: new Date().toISOString(),
       } as any)
       .eq('id', paymentId)
-      .in('payment_status', ['pending', 'processing']);
+      .in('payment_status', ['pending', 'processing', 'cancelled']);
     return new Response('AMOUNT_MISMATCH', { status: 200 });
   }
 
@@ -479,10 +479,38 @@ async function handleVendorPayFastItn(
   }
 
   // ── Only transition from pending|processing ──────────────────────────
-  const allowedPrevStates = ['pending', 'processing'];
+  // Special case: if the ITN says completed and the payment was auto-cancelled
+  // (30+ min stuck in processing), reinstate it. Prevents orphaned captures
+  // where PayFast confirms success after the auto-escalation cron fired.
+  const allowedPrevStates = ['pending', 'processing', 'cancelled'];
   if (!allowedPrevStates.includes(vendorPayment.payment_status)) {
     console.log(`ℹ️ Vendor payment ${paymentId} status is ${vendorPayment.payment_status} — not transitioning`);
     return new Response('OK', { status: 200 });
+  }
+
+  // ── Late ITN check ─────────────────────────────────────────────────────
+  // If payment was auto-cancelled and ITN says completed, reinstate it.
+  // The .in() guard below prevents transitioning a truly cancelled payment
+  // unless explicitly allowed by checking gateway_response for auto_cancel.
+  if (vendorPayment.payment_status === 'cancelled' && newPaymentStatus !== 'completed') {
+    // Auto-cancelled + ITN says failed/cancelled → keep cancelled, no action
+    console.log(`ℹ️ Vendor payment ${paymentId} was auto-cancelled, late ITN says ${paymentStatus} — no action`);
+    return new Response('OK', { status: 200 });
+  }
+  if (vendorPayment.payment_status === 'cancelled' && newPaymentStatus === 'completed') {
+    // Check if the cancellation was from auto-escalation (gateway has auto_cancelled_at)
+    const gwResponse = vendorPayment.gateway_response || {};
+    const wasAutoCancelled = gwResponse.auto_cancelled_at != null;
+
+    if (wasAutoCancelled) {
+      console.log(`🔄 Late ITN for auto-cancelled payment ${paymentId} — reinstating as completed`);
+      // Allow the update by overriding the status guard — proceed without restriction
+      // since we've explicitly verified this is a legitimate late ITN
+    } else {
+      // Manual cancellation — don't override
+      console.log(`ℹ️ Vendor payment ${paymentId} was manually cancelled, late ITN ignored`);
+      return new Response('OK', { status: 200 });
+    }
   }
 
   // ── Update with status guard (mitigates concurrent ITN race) ──────────
@@ -505,7 +533,7 @@ async function handleVendorPayFastItn(
     .from('vendor_payments')
     .update(updateData)
     .eq('id', paymentId)
-    .in('payment_status', ['pending', 'processing'])
+    .in('payment_status', ['pending', 'processing', 'cancelled'])
     .select('id');
 
   if (updateError) {
