@@ -64,3 +64,53 @@ export interface PaymentStats {
   active_disputes: number;
   total_arrears: number;
 }
+
+/** Shape returned by admin_get_vendor_revenue_summary RPC */
+export interface VendorRevenueStats {
+  gross_collected: number;
+  platform_fees: number;
+  gateway_fees: number;
+  net_revenue: number;
+  pending_payouts_total: number;
+  active_disputes: number;
+  pending_disputes: number;
+  completed_count: number;
+  pending_count: number;
+  failed_count: number;
+  total_count: number;
+  revenue_30d: number;
+  revenue_7d: number;
+}
+
+/** Row shape returned by admin_get_vendor_transactions RPC */
+export interface VendorTransactionRow {
+  id: string;
+  invoice_number: string | null;
+  maintenance_title: string | null;
+  vendor_name: string | null;
+  tenant_name: string | null;
+  total_amount: number;
+  platform_fee: number;
+  gateway_fee: number;
+  vendor_payout: number;
+  net_revenue: number | null;
+  payment_status: string;
+  payout_status: string;
+  dispute_status: string;
+  paid_at: string | null;
+  created_at: string;
+}
+
+/** Row shape returned by admin_get_vendor_disputes RPC */
+export interface VendorDisputeRow {
+  id: string;
+  invoice_number: string | null;
+  maintenance_title: string | null;
+  vendor_name: string | null;
+  tenant_name: string | null;
+  total_amount: number;
+  vendor_payout: number;
+  dispute_status: string;
+  payout_status: string;
+  created_at: string;
+}
