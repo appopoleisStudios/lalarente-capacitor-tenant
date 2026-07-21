@@ -232,6 +232,9 @@ export default function VendorContractsListScreen() {
           return (
             <TouchableOpacity
               key={tab.key}
+              accessibilityLabel={`${tab.label} contracts tab`}
+              accessibilityRole="button"
+              accessibilityState={{ selected: activeTab === tab.key }}
               style={[
                 styles.tabButton,
                 activeTab === tab.key && styles.tabButtonActive,
@@ -278,7 +281,7 @@ export default function VendorContractsListScreen() {
         {filteredContracts.length === 0 ? (
           <View style={styles.emptyState} accessibilityLabel={`No ${activeTab} contracts`}>
             <Ionicons
-              name={activeTab === 'active' ? 'checkmark-done-outline' : activeTab === 'pending' ? 'time-outline' : 'archive-outline'}
+              name={activeTab === 'other' ? 'ellipsis-horizontal-circle-outline' : activeTab === 'active' ? 'checkmark-done-outline' : activeTab === 'pending' ? 'time-outline' : 'archive-outline'}
               size={48}
               color={colors.gray[200]}
             />
@@ -289,6 +292,7 @@ export default function VendorContractsListScreen() {
               {activeTab === 'active' && 'Active job contracts will appear here when you accept work.'}
               {activeTab === 'pending' && 'Pending contracts are waiting for owner or vendor action.'}
               {activeTab === 'expired' && 'Completed, expired, or cancelled contracts will show here.'}
+              {activeTab === 'other' && 'Contracts with unknown or unexpected statuses will appear here.'}
             </Text>
           </View>
         ) : (

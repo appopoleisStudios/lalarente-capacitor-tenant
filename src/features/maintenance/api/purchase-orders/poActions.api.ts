@@ -123,16 +123,16 @@ export async function sendPOToVendor(
 
   if (error) throw error;
 
-  // Fire-and-forget notification to vendor — vendor_id comes from maintenance request
+  // Fire-and-forget notification to vendor — vendor_id is looked up via service_contracts
   findVendorByPO(poId).then(vendorId => {
     if (vendorId) {
       notificationsApi.sendNotification({
         user_id: vendorId,
         type: 'maintenance_updated',
-        data: { title: 'New Purchase Order', newStatus: 'PO sent' },
-      }).catch(() => {});
+        data: { customTitle: 'New Purchase Order', customBody: 'A new purchase order has been sent to you.', newStatus: 'PO sent' },
+      }).catch(e => console.error('Failed to send PO notification:', e));
     }
-  }).catch(() => {});
+  }).catch(e => console.error('Failed to find vendor for PO notification:', e));
   
   return data as PurchaseOrder;
 }
@@ -206,8 +206,8 @@ export async function acceptPO(poId: string, vendorId: string): Promise<Purchase
     notificationsApi.sendNotification({
       user_id: (request as any).owner_id,
       type: 'maintenance_updated',
-      data: { title: 'PO Accepted by Vendor', newStatus: 'accepted' },
-    }).catch(() => {});
+      data: { customTitle: 'PO Accepted by Vendor', customBody: 'The vendor has accepted the purchase order.', newStatus: 'accepted' },
+    }).catch(e => console.error('Failed to send PO accepted notification:', e));
   }
 
   return po;
@@ -255,8 +255,8 @@ export async function rejectPO(
     notificationsApi.sendNotification({
       user_id: (request as any).owner_id,
       type: 'maintenance_updated',
-      data: { title: 'PO Rejected by Vendor', newStatus: 'rejected', rejectionReason: reason },
-    }).catch(() => {});
+      data: { customTitle: 'PO Rejected by Vendor', customBody: 'The vendor has rejected the purchase order.', newStatus: 'rejected', rejectionReason: reason },
+    }).catch(e => console.error('Failed to send PO rejected notification:', e));
   }
 
   return po;

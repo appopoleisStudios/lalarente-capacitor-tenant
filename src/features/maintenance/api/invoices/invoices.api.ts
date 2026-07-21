@@ -322,8 +322,8 @@ export async function submitInvoice(
   notificationsApi.sendNotification({
     user_id: ownerId,
     type: 'maintenance_updated',
-    data: { title: 'New Invoice Submitted', newStatus: 'invoice_submitted' },
-  }).catch(() => {});
+    data: { customTitle: 'Invoice Submitted', customBody: `Invoice ${invoiceNumber} for R${totals.total_amount} has been submitted.`, newStatus: 'invoice_submitted' },
+  }).catch(e => console.error('Failed to send invoice submitted notification:', e));
 
   return data as unknown as MaintenanceInvoice;
 }
@@ -403,8 +403,8 @@ export async function approveInvoice(
   notificationsApi.sendNotification({
     user_id: invoice.vendor_id,
     type: 'maintenance_updated',
-    data: { title: 'Invoice Approved', newStatus: 'approved' },
-  }).catch(() => {});
+    data: { customTitle: 'Invoice Approved', customBody: `Invoice ${invoice.invoice_number} has been approved.`, newStatus: 'approved' },
+  }).catch(e => console.error('Failed to send invoice approved notification:', e));
 
   return data as unknown as MaintenanceInvoice;
 }
@@ -472,8 +472,8 @@ export async function rejectInvoice(
   notificationsApi.sendNotification({
     user_id: invoice.vendor_id,
     type: 'maintenance_updated',
-    data: { title: 'Invoice Rejected', newStatus: 'rejected', rejectionReason: reason.trim() },
-  }).catch(() => {});
+    data: { customTitle: 'Invoice Rejected', customBody: `Invoice ${invoice.invoice_number} has been rejected.`, rejectionReason: reason.trim() },
+  }).catch(e => console.error('Failed to send invoice rejected notification:', e));
 
   return data as unknown as MaintenanceInvoice;
 }

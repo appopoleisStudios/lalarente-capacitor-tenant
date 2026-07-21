@@ -99,8 +99,8 @@ export async function requestClosure(
     notificationsApi.sendNotification({
       user_id: (reqWithOwner as any).owner_id,
       type: 'maintenance_updated',
-      data: { title: 'Closure Requested', newStatus: 'closure_pending' },
-    }).catch(() => {});
+      data: { customTitle: 'Job Closure Requested', customBody: 'The vendor has requested job closure. Review and approve.', newStatus: 'closure_pending' },
+    }).catch(e => console.error('Failed to send closure requested notification:', e));
   }
 
   console.log('✅ Closure requested successfully');
@@ -188,15 +188,15 @@ export async function approveClosureReport(
     notificationsApi.sendNotification({
       user_id: reqData.selected_vendor_id,
       type: 'maintenance_completed',
-      data: { title: 'Closure Approved', newStatus: 'completed' },
-    }).catch(() => {});
+      data: { customTitle: 'Closure Approved', customBody: 'The owner has approved the job closure.', newStatus: 'completed' },
+    }).catch(e => console.error('Failed to send closure approved to vendor:', e));
   }
   if (reqData?.tenant_id) {
     notificationsApi.sendNotification({
       user_id: reqData.tenant_id,
       type: 'maintenance_completed',
-      data: { title: 'Maintenance Completed', newStatus: 'completed' },
-    }).catch(() => {});
+      data: { customTitle: 'Maintenance Completed', customBody: 'A maintenance job has been completed at your property.', newStatus: 'completed' },
+    }).catch(e => console.error('Failed to send closure approved to tenant:', e));
   }
 
   return data as MaintenanceRequest;
@@ -262,8 +262,8 @@ export async function rejectClosureReport(
     notificationsApi.sendNotification({
       user_id: (rejectedReq as any).selected_vendor_id,
       type: 'maintenance_updated',
-      data: { title: 'Closure Changes Requested', newStatus: 'rejected', rejectionReason: reason },
-    }).catch(() => {});
+      data: { customTitle: 'Closure Changes Requested', customBody: 'The owner has requested changes to the closure report.', newStatus: 'rejected', rejectionReason: reason },
+    }).catch(e => console.error('Failed to send closure rejected notification:', e));
   }
 
   return data as ClosureReport;
