@@ -1,4 +1,7 @@
 # Tenant login — uses TENANT_EMAIL/TENANT_PASSWORD from .maestro/.env via --env flags.
+# NOTE: Uses text-based selectors instead of testIDs because the simulator app build
+# is stale and doesn't have the latest testIDs. After a fresh native rebuild, consider
+# switching back to id: selectors for reliability.
 appId: com.lalarente.app
 ---
 - openLink: lalarenteapp:///(tenant)/dashboard
@@ -22,16 +25,22 @@ appId: com.lalarente.app
       notVisible:
         id: "notification-bell"
     commands:
+      # Wait for the login screen to appear (text-based)
       - extendedWaitUntil:
-          visible:
-            id: "email-input"
+          visible: "Welcome back"
           timeout: 30000
-      - tapOn:
-          id: "email-input"
+      - extendedWaitUntil:
+          visible: "Sign in to your account"
+          timeout: 15000
+      # Tap the email field by its placeholder text
+      - tapOn: "your@email.com"
       - inputText: ${TENANT_EMAIL}
       - pressKey: Enter
+      # Tap the password field by its placeholder text
+      - tapOn: "Enter your password"
       - inputText: ${TENANT_PASSWORD}
       - pressKey: Enter
+      # Wait for dashboard to appear
       - extendedWaitUntil:
           visible:
             id: "notification-bell"
@@ -42,8 +51,13 @@ appId: com.lalarente.app
             notVisible:
               id: "notification-bell"
           commands:
+            # Tap the Sign In button by text
             - tapOn:
-                id: "sign-in-button"
+                text: "Sign In"
+                optional: true
+            - tapOn:
+                text: "Signing in..."
+                optional: true
             - extendedWaitUntil:
                 visible:
                   id: "notification-bell"
