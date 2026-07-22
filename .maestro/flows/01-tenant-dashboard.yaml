@@ -22,7 +22,6 @@ appId: com.lalarente.app
 # Clear and fill email input
 - tapOn:
     id: "email-input"
-- evalScript: ${''}  # small delay to let keyboard appear
 - eraseText
 - inputText: ${TENANT_EMAIL}
 
