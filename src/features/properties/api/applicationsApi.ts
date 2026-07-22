@@ -186,7 +186,23 @@ export const applicationsApi = {
       throw new Error(`Failed to submit application: ${error.message}`);
     }
 
-    // TODO: Send notification to owner
+    // Send notification to owner about new application
+    try {
+      const { notificationsApi } = await import('@/src/features/notifications/api/notificationsApi');
+      const app = data as any;
+      notificationsApi.sendNotification({
+        user_id: app.owner_id,
+        type: 'application_received',
+        data: {
+          applicantName: app.full_name || 'A tenant',
+          propertyTitle: '',
+          customTitle: 'New Rental Application',
+          customBody: 'A new rental application has been submitted for your property.',
+        },
+      });
+    } catch (e) {
+      console.error('Failed to send notification:', e);
+    }
 
     return data;
   },
@@ -300,7 +316,23 @@ export const applicationsApi = {
       throw new Error(`Failed to approve application: ${error.message}`);
     }
 
-    // TODO: Send notification to tenant
+    // Send notification to tenant that application was approved
+    try {
+      const { notificationsApi } = await import('@/src/features/notifications/api/notificationsApi');
+      const app = data as any;
+      notificationsApi.sendNotification({
+        user_id: app.tenant_id,
+        type: 'application_approved',
+        data: {
+          propertyTitle: '',
+          customTitle: 'Application Approved!',
+          customBody: 'Your rental application has been approved! The owner will be in touch to finalize the lease.',
+        },
+      });
+    } catch (e) {
+      console.error('Failed to send notification:', e);
+    }
+
     // TODO: Reject other pending applications for the same property
 
     return data;
@@ -340,7 +372,25 @@ export const applicationsApi = {
       throw new Error(`Failed to reject application: ${error.message}`);
     }
 
-    // TODO: Send notification to tenant with reason
+    // Send notification to tenant about rejection
+    try {
+      const { notificationsApi } = await import('@/src/features/notifications/api/notificationsApi');
+      const app = data as any;
+      notificationsApi.sendNotification({
+        user_id: app.tenant_id,
+        type: 'application_rejected',
+        data: {
+          propertyTitle: '',
+          reason: reason || 'No reason provided',
+          customTitle: 'Application Update',
+          customBody: reason
+            ? `Your application was not successful. Reason: ${reason}`
+            : 'Your application was not successful at this time.',
+        },
+      });
+    } catch (e) {
+      console.error('Failed to send notification:', e);
+    }
 
     return data;
   },
@@ -352,14 +402,28 @@ export const applicationsApi = {
     id: string,
     documents: string[]
   ): Promise<void> {
-    // TODO: Implement notification system to request documents
-    // For now, just update status to under_review
     await supabase
       .from('rental_applications')
       .update({ status: 'under_review' })
       .eq('id', id);
 
-    // TODO: Send notification to tenant listing required documents
+    // Notify tenant about required documents
+    try {
+      const { notificationsApi } = await import('@/src/features/notifications/api/notificationsApi');
+      const app = await this.getApplication(id);
+      notificationsApi.sendNotification({
+        user_id: app.tenant_id,
+        type: 'document_uploaded',
+        data: {
+          documentTitle: 'Additional Documents Required',
+          customTitle: 'Documents Required',
+          customBody: `Please upload the following documents: ${documents.join(', ')}`,
+        },
+      });
+    } catch (e) {
+      console.error('Failed to send notification:', e);
+    }
+
     console.log(`Requesting additional documents for application ${id}:`, documents);
   },
 

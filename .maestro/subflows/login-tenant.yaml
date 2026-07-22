@@ -2,10 +2,11 @@
 # NOTE: Fully text-based selectors because the simulator app build is stale
 # and doesn't have the latest testIDs. After a fresh native rebuild, consider
 # switching back to id: selectors for reliability.
+#
+# Designed to be run AFTER launch-app.yaml which sets up the app on the login screen.
+# If running standalone, you need to launch the app first or use openLink.
 appId: com.lalarente.app
 ---
-- openLink: lalarenteapp:///(tenant)/dashboard
-
 # Check if already logged in by looking for dashboard tab labels (text-based)
 - extendedWaitUntil:
     visible: "Available"
@@ -30,12 +31,12 @@ appId: com.lalarente.app
       - extendedWaitUntil:
           visible: "Sign in to your account"
           timeout: 15000
-      # Type email into the email field (tap by placeholder)
-      - tapOn: "your@email.com"
+      # Type email into the email field (tap by placeholder/label)
+      - tapOn: "Email"
       - inputText: ${TENANT_EMAIL}
       - pressKey: Enter
-      # Type password into the password field (tap by placeholder)
-      - tapOn: "Enter your password"
+      # Type password into the password field (tap by placeholder/label)
+      - tapOn: "Password"
       - inputText: ${TENANT_PASSWORD}
       - pressKey: Enter
       # Wait for dashboard to appear (text-based)

@@ -564,44 +564,38 @@ export const notificationsApi = {
 
   /**
    * Register push token
-   * TODO: Uncomment when push_tokens table is created
    */
   async registerPushToken(
     userId: string,
     token: string,
     platform: 'ios' | 'android' | 'web'
   ): Promise<void> {
-    console.log('Push token registration not implemented - push_tokens table needs to be created');
-    // const { error } = await supabase
-    //   .from('push_tokens')
-    //   .upsert({
-    //     user_id: userId,
-    //     token,
-    //     platform,
-    //     updated_at: new Date().toISOString(),
-    //   });
+    const { error } = await (supabase as any)
+      .from('push_tokens')
+      .upsert({
+        user_id: userId,
+        token,
+        platform,
+        updated_at: new Date().toISOString(),
+      });
 
-    // if (error) {
-    //   console.error('Error registering push token:', error);
-    //   throw new Error(`Failed to register push token: ${error.message}`);
-    // }
+    if (error) {
+      console.warn('Failed to register push token:', error.message);
+    }
   },
 
   /**
    * Remove push token
-   * TODO: Uncomment when push_tokens table is created
    */
   async removePushToken(token: string): Promise<void> {
-    console.log('Push token removal not implemented - push_tokens table needs to be created');
-    // const { error } = await supabase
-    //   .from('push_tokens')
-    //   .delete()
-    //   .eq('token', token);
+    const { error } = await (supabase as any)
+      .from('push_tokens')
+      .delete()
+      .eq('token', token);
 
-    // if (error) {
-    //   console.error('Error removing push token:', error);
-    //   throw new Error(`Failed to remove push token: ${error.message}`);
-    // }
+    if (error) {
+      console.warn('Failed to remove push token:', error.message);
+    }
   },
 
   /**

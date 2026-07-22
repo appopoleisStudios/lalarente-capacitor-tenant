@@ -138,7 +138,32 @@ export const paymentsApi = {
       throw new Error(`Failed to complete payment: ${error.message}`);
     }
 
-    // TODO: Send payment confirmation to tenant and owner
+    // Send payment confirmation to tenant and owner
+    try {
+      const { notificationsApi } = await import('@/src/features/notifications/api/notificationsApi');
+      const payment = data as any;
+      notificationsApi.sendNotification({
+        user_id: payment.tenant_id,
+        type: 'payment_received',
+        data: {
+          amount: payment.amount?.toString() || '0',
+          customTitle: 'Payment Received',
+          customBody: `Your payment of R${(payment.amount || 0).toLocaleString()} has been received. Thank you!`,
+        },
+      });
+      notificationsApi.sendNotification({
+        user_id: payment.owner_id,
+        type: 'payment_received',
+        data: {
+          amount: payment.amount?.toString() || '0',
+          customTitle: 'Payment Received',
+          customBody: `Payment of R${(payment.amount || 0).toLocaleString()} received from tenant.`,
+        },
+      });
+    } catch (e) {
+      console.error('Failed to send notification:', e);
+    }
+
     // TODO: Generate receipt
 
     return data;
@@ -168,7 +193,23 @@ export const paymentsApi = {
       throw new Error(`Failed to update payment: ${error.message}`);
     }
 
-    // TODO: Send failure notification to tenant
+    // Send failure notification to tenant
+    try {
+      const { notificationsApi } = await import('@/src/features/notifications/api/notificationsApi');
+      const payment = data as any;
+      notificationsApi.sendNotification({
+        user_id: payment.tenant_id,
+        type: 'payment_failed',
+        data: {
+          amount: payment.amount?.toString() || '0',
+          customTitle: 'Payment Failed',
+          customBody: `Your payment of R${(payment.amount || 0).toLocaleString()} could not be processed. Reason: ${failureReason}. Please try again.`,
+        },
+      });
+    } catch (e) {
+      console.error('Failed to send notification:', e);
+    }
+
     // TODO: Schedule retry if retry_count < 3
 
     return data;

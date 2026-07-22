@@ -311,7 +311,34 @@ export const leasesApi = {
         .update({ status: 'rented' })
         .eq('id', lease.property_id);
       
-      // TODO: Send notification to both parties
+      // Send notifications to both parties that lease is now active
+      try {
+        const { notificationsApi } = await import('@/src/features/notifications/api/notificationsApi');
+        if (lease.tenant_id) {
+          notificationsApi.sendNotification({
+            user_id: lease.tenant_id,
+            type: 'lease_signed',
+            data: {
+              propertyTitle: '',
+              customTitle: 'Lease Signed & Active!',
+              customBody: 'Your lease is now active. Welcome home! Download your lease document from the Lease tab.',
+            },
+          });
+        }
+        if (lease.owner_id) {
+          notificationsApi.sendNotification({
+            user_id: lease.owner_id,
+            type: 'lease_signed',
+            data: {
+              propertyTitle: '',
+              customTitle: 'Lease Activated',
+              customBody: `Lease with tenant is now active. Lease document is available for download.`,
+            },
+          });
+        }
+      } catch (e) {
+        console.error('Failed to send notification:', e);
+      }
     }
 
     return data;
@@ -351,7 +378,35 @@ export const leasesApi = {
         .eq('id', lease.property_id);
     }
 
-    // TODO: Send confirmation to both parties
+    // Send confirmation to both parties
+    try {
+      const { notificationsApi } = await import('@/src/features/notifications/api/notificationsApi');
+      if (lease.tenant_id) {
+        notificationsApi.sendNotification({
+          user_id: lease.tenant_id,
+          type: 'lease_signed',
+          data: {
+            propertyTitle: lease.property?.title || '',
+            customTitle: 'Lease Executed',
+            customBody: 'Your lease has been executed. Your first payment is due soon.',
+          },
+        });
+      }
+      if (lease.owner_id) {
+        notificationsApi.sendNotification({
+          user_id: lease.owner_id,
+          type: 'lease_signed',
+          data: {
+            propertyTitle: lease.property?.title || '',
+            customTitle: 'Lease Executed',
+            customBody: 'The lease has been executed. The property is now rented.',
+          },
+        });
+      }
+    } catch (e) {
+      console.error('Failed to send notification:', e);
+    }
+
     // TODO: Create initial payment schedule
 
     return data;
@@ -386,7 +441,35 @@ export const leasesApi = {
         .eq('id', lease.property_id);
     }
 
-    // TODO: Send notification to both parties
+    // Send notification to both parties about termination
+    try {
+      const { notificationsApi } = await import('@/src/features/notifications/api/notificationsApi');
+      if (lease.tenant_id) {
+        notificationsApi.sendNotification({
+          user_id: lease.tenant_id,
+          type: 'lease_expired',
+          data: {
+            propertyTitle: lease.property?.title || '',
+            customTitle: 'Lease Terminated',
+            customBody: `Your lease has been terminated. Reason: ${reason}`,
+          },
+        });
+      }
+      if (lease.owner_id) {
+        notificationsApi.sendNotification({
+          user_id: lease.owner_id,
+          type: 'lease_expired',
+          data: {
+            propertyTitle: lease.property?.title || '',
+            customTitle: 'Lease Terminated',
+            customBody: `The lease has been terminated. Reason: ${reason}. The property is now available.`,
+          },
+        });
+      }
+    } catch (e) {
+      console.error('Failed to send notification:', e);
+    }
+
     // TODO: Initiate move-out process
 
     return data;

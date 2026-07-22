@@ -56,6 +56,10 @@ CREATE EXTENSION IF NOT EXISTS "earthdistance" CASCADE;
 \echo 'Running migration 043: Fix messaging RLS...'
 \i 043_fix_messaging_rls.sql
 
+-- Migration 049: Create push_tokens table for push notifications
+\echo 'Running migration 049: Create push_tokens table...'
+\i 049_create_push_tokens.sql
+
 \echo 'All migrations completed successfully!'
 \echo ''
 \echo 'Post-migration tasks:'

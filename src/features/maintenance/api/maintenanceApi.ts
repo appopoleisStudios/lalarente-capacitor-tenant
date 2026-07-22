@@ -568,10 +568,23 @@ export const maintenanceApi = {
 
     if (error) throw error;
 
-    // TODO: Send notifications to vendors
-    // - Push notifications
-    // - SMS notifications
-    // - Email notifications
+    // Send notifications to vendors
+    try {
+      const { notificationsApi } = await import('@/src/features/notifications/api/notificationsApi');
+      for (const vendor of vendors) {
+        notificationsApi.sendNotification({
+          user_id: vendor.id,
+          type: 'maintenance_created',
+          data: {
+            title: (request as any)?.title || 'Maintenance Request',
+            customTitle: 'New Maintenance Request',
+            customBody: `A new maintenance request "${(request as any)?.title || ''}" is available for quoting.`,
+          },
+        });
+      }
+    } catch (e) {
+      console.error('Failed to send vendor notifications:', e);
+    }
 
     return {
       request: data as MaintenanceRequest,
@@ -613,7 +626,23 @@ export const maintenanceApi = {
 
     if (error) throw error;
 
-    // TODO: Send notifications to selected vendors
+    // Send notifications to selected vendors
+    try {
+      const { notificationsApi } = await import('@/src/features/notifications/api/notificationsApi');
+      for (const vendorId of vendorIds) {
+        notificationsApi.sendNotification({
+          user_id: vendorId,
+          type: 'maintenance_created',
+          data: {
+            title: (data as any)?.title || 'Maintenance Request',
+            customTitle: 'New Maintenance Request',
+            customBody: `You have been invited to quote on a maintenance request.`,
+          },
+        });
+      }
+    } catch (e) {
+      console.error('Failed to send vendor notifications:', e);
+    }
 
     return {
       request: data as MaintenanceRequest,
