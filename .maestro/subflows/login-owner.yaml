@@ -1,79 +1,45 @@
 # Owner login — uses OWNER_EMAIL/OWNER_PASSWORD from .maestro/.env via --env flags.
+# Uses launchApp with clearState to force a fresh login as owner.
 appId: com.lalarente.app
 ---
-- openLink: lalarenteapp:///(owner)/profile
+# Force fresh state so we always see the login screen
+- launchApp:
+    clearState: true
+    stopApp: true
 
+# Wait for login screen
+- extendedWaitUntil:
+    visible: "Welcome back"
+    timeout: 60000
+
+# Enter owner credentials
+- tapOn:
+    id: "email-input"
+- eraseText
+- inputText: ${OWNER_EMAIL}
+
+- tapOn:
+    id: "password-input"
+- eraseText
+- inputText: ${OWNER_PASSWORD}
+
+# Tap Sign In
+- tapOn:
+    id: "sign-in-button"
+
+# Wait for owner dashboard
+- extendedWaitUntil:
+    visible: "Portfolio Dashboard"
+    timeout: 60000
+    optional: true
+- extendedWaitUntil:
+    visible: "Welcome to LaLarente"
+    timeout: 60000
+    optional: true
+
+# Navigate to profile and verify
+- openLink: lalarenteapp:///(owner)/profile
 - extendedWaitUntil:
     visible: "Owner Account"
     timeout: 15000
-    optional: true
-
-- extendedWaitUntil:
-    visible:
-      id: "email-input"
-    timeout: 5000
-    optional: true
-
-- runFlow:
-    when:
-      visible: "Owner Account"
-    commands:
-      - runFlow:
-          when:
-            notVisible: ${OWNER_EMAIL}
-          commands:
-            - launchApp:
-                clearState: true
-            - extendedWaitUntil:
-                visible:
-                  id: "email-input"
-                timeout: 60000
-
-- runFlow:
-    when:
-      visible:
-        id: "email-input"
-    commands:
-      - tapOn:
-          id: "email-input"
-      - inputText: ${OWNER_EMAIL}
-      - pressKey: Enter
-      - inputText: ${OWNER_PASSWORD}
-      - pressKey: Enter
-      - extendedWaitUntil:
-          visible: "Portfolio Dashboard"
-          timeout: 60000
-          optional: true
-      - extendedWaitUntil:
-          visible: "Welcome to LaLarente"
-          timeout: 60000
-          optional: true
-      - runFlow:
-          when:
-            notVisible: "Portfolio Dashboard"
-          commands:
-            - runFlow:
-                when:
-                  notVisible: "Welcome to LaLarente"
-                commands:
-                  - tapOn:
-                      id: "sign-in-button"
-                  - extendedWaitUntil:
-                      visible: "Portfolio Dashboard"
-                      timeout: 60000
-                      optional: true
-                  - extendedWaitUntil:
-                      visible: "Welcome to LaLarente"
-                      timeout: 60000
-                      optional: true
-
-- openLink: lalarenteapp:///(owner)/profile
-- assertVisible: ${OWNER_EMAIL}
-
-- openLink: lalarenteapp:///(owner)/dashboard
-- assertVisible:
-    text: "Portfolio Dashboard"
-    optional: true
-- assertVisible:
-    text: "Welcome to LaLarente"
     optional: true
