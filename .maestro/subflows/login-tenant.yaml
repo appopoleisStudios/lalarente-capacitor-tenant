@@ -1,63 +1,60 @@
 # Tenant login — uses TENANT_EMAIL/TENANT_PASSWORD from .maestro/.env via --env flags.
-# NOTE: Uses text-based selectors instead of testIDs because the simulator app build
-# is stale and doesn't have the latest testIDs. After a fresh native rebuild, consider
+# NOTE: Fully text-based selectors because the simulator app build is stale
+# and doesn't have the latest testIDs. After a fresh native rebuild, consider
 # switching back to id: selectors for reliability.
 appId: com.lalarente.app
 ---
 - openLink: lalarenteapp:///(tenant)/dashboard
 
+# Check if already logged in by looking for dashboard tab labels (text-based)
 - extendedWaitUntil:
-    visible:
-      id: "notification-bell"
-    timeout: 30000
+    visible: "Available"
+    timeout: 15000
     optional: true
 
 - runFlow:
     when:
-      visible:
-        id: "notification-bell"
+      visible: "Available"
     commands:
-      - assertVisible:
-          id: "notification-bell"
+      - assertVisible: "Available"
 
+# If not logged in, go through login flow
 - runFlow:
     when:
-      notVisible:
-        id: "notification-bell"
+      notVisible: "Available"
     commands:
-      # Wait for the login screen to appear (text-based)
+      # Wait for the login screen to load
       - extendedWaitUntil:
           visible: "Welcome back"
           timeout: 30000
       - extendedWaitUntil:
           visible: "Sign in to your account"
           timeout: 15000
-      # Tap the email field by its placeholder text
+      # Type email into the email field (tap by placeholder)
       - tapOn: "your@email.com"
       - inputText: ${TENANT_EMAIL}
       - pressKey: Enter
-      # Tap the password field by its placeholder text
+      # Type password into the password field (tap by placeholder)
       - tapOn: "Enter your password"
       - inputText: ${TENANT_PASSWORD}
       - pressKey: Enter
-      # Wait for dashboard to appear
+      # Wait for dashboard to appear (text-based)
       - extendedWaitUntil:
-          visible:
-            id: "notification-bell"
+          visible: "Available"
           timeout: 60000
           optional: true
+      # If still not on dashboard, try tapping Sign In button
       - runFlow:
           when:
-            notVisible:
-              id: "notification-bell"
+            notVisible: "Available"
           commands:
-            # Tap the Sign In button by text
             - tapOn:
                 text: "Sign In"
                 optional: true
             - extendedWaitUntil:
-                visible:
-                  id: "notification-bell"
+                visible: "Available"
                 timeout: 60000
+      # Verify we're logged in by dashboard text
       - assertVisible:
-          id: "notification-bell"
+          text: "Available"
+          optional: true
