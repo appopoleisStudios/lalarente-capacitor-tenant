@@ -55,9 +55,6 @@ appId: com.lalarente.app
             - tapOn:
                 text: "Sign In"
                 optional: true
-            - tapOn:
-                text: "Signing in..."
-                optional: true
             - extendedWaitUntil:
                 visible:
                   id: "notification-bell"
