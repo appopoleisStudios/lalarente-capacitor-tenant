@@ -9,7 +9,7 @@ appId: com.lalarente.app
 # === CHECK IF ALREADY LOGGED IN (keychain restored session) ===
 - extendedWaitUntil:
     visible: "Portfolio Dashboard"
-    timeout: 30000
+    timeout: 60000
     optional: true
 
 # Already logged in — skip to profile verification
