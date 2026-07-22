@@ -6,10 +6,34 @@ appId: com.lalarente.app
 - stopApp
 - launchApp
 
-# === WAIT FOR LOGIN SCREEN ===
+# === FAST-FAIL: Check for cached session ===
 - extendedWaitUntil:
     visible: "Welcome back"
-    timeout: 60000
+    timeout: 15000
+    optional: true
+
+- runFlow:
+    when:
+      visible: "Welcome back"
+    commands:
+      # Already on login screen — continue
+
+- runFlow:
+    when:
+      notVisible: "Welcome back"
+    commands:
+      # App restored a cached session — alert and fail fast
+      - stopApp
+      - launchApp
+      - extendedWaitUntil:
+          visible: "Welcome back"
+          timeout: 15000
+          optional: true
+      - runFlow:
+          when:
+            notVisible: "Welcome back"
+          commands:
+            - fail: "Cached session persisted — app did not start on login screen even after relaunch"
 
 - extendedWaitUntil:
     visible: "Sign in to your account"
