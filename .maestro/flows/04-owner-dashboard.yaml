@@ -44,39 +44,31 @@ appId: com.lalarente.app
                 visible:
                   id: "tenant-profile-title"
                 timeout: 25000
-            # Scroll to Sign Out by swiping from within scroll area
+            # Scroll to Sign Out with multiple gentle swipes
             - swipe:
-                from:
-                  x: 196
-                  y: 400
-                to:
-                  x: 196
-                  y: 100
-                duration: 500
+                direction: UP
+                duration: 300
             - swipe:
-                from:
-                  x: 196
-                  y: 400
-                to:
-                  x: 196
-                  y: 100
-                duration: 500
+                direction: UP
+                duration: 300
             - swipe:
-                from:
-                  x: 196
-                  y: 400
-                to:
-                  x: 196
-                  y: 100
-                duration: 500
+                direction: UP
+                duration: 300
             - swipe:
-                from:
-                  x: 196
-                  y: 400
-                to:
-                  x: 196
-                  y: 100
-                duration: 500
+                direction: UP
+                duration: 300
+            - swipe:
+                direction: UP
+                duration: 300
+            - swipe:
+                direction: UP
+                duration: 300
+            - swipe:
+                direction: UP
+                duration: 300
+            - swipe:
+                direction: UP
+                duration: 300
             - extendedWaitUntil:
                 visible: "Sign Out"
                 timeout: 15000
