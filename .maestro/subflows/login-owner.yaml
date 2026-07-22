@@ -1,31 +1,35 @@
 # Owner login — uses OWNER_EMAIL/OWNER_PASSWORD from .maestro/.env via --env flags.
-# Uses launchApp with clearState to force a fresh login as owner.
+# Uses stopApp + launchApp to get to the login screen (cached session may exist).
+# After logging in as owner, the tenant session is replaced.
 appId: com.lalarente.app
 ---
-# Force fresh state so we always see the login screen
-- launchApp:
-    clearState: true
-    stopApp: true
+- stopApp
+- launchApp
 
-# Wait for login screen
+# Wait for login screen (or dashboard if already logged in)
 - extendedWaitUntil:
     visible: "Welcome back"
-    timeout: 60000
+    timeout: 30000
+    optional: true
 
-# Enter owner credentials
-- tapOn:
-    id: "email-input"
-- eraseText
-- inputText: ${OWNER_EMAIL}
+- runFlow:
+    when:
+      visible: "Welcome back"
+    commands:
+      # Enter owner credentials
+      - tapOn:
+          id: "email-input"
+      - eraseText
+      - inputText: ${OWNER_EMAIL}
 
-- tapOn:
-    id: "password-input"
-- eraseText
-- inputText: ${OWNER_PASSWORD}
+      - tapOn:
+          id: "password-input"
+      - eraseText
+      - inputText: ${OWNER_PASSWORD}
 
-# Tap Sign In
-- tapOn:
-    id: "sign-in-button"
+      # Tap Sign In
+      - tapOn:
+          id: "sign-in-button"
 
 # Wait for owner dashboard
 - extendedWaitUntil:
@@ -36,6 +40,25 @@ appId: com.lalarente.app
     visible: "Welcome to LaLarente"
     timeout: 60000
     optional: true
+
+# If not on dashboard, try navigating via deep link
+- runFlow:
+    when:
+      notVisible: "Portfolio Dashboard"
+    commands:
+      - runFlow:
+          when:
+            notVisible: "Welcome to LaLarente"
+          commands:
+            - openLink: lalarenteapp:///(owner)/dashboard
+            - extendedWaitUntil:
+                visible: "Portfolio Dashboard"
+                timeout: 15000
+                optional: true
+            - extendedWaitUntil:
+                visible: "Welcome to LaLarente"
+                timeout: 15000
+                optional: true
 
 # Navigate to profile and verify
 - openLink: lalarenteapp:///(owner)/profile
