@@ -49,7 +49,13 @@ async function invokeEdge<T>(fn: string, method: 'GET' | 'POST', body?: unknown)
     body: body || undefined,
   });
 
-  if (error) throw new Error(error.message || `Failed to invoke ${fn}`);
+  if (error) {
+    // error.context contains the response body from the Edge function
+    const ctx = (error as any).context;
+    const detail = ctx?.message || ctx?.error || '';
+    const status = (error as any).status || '';
+    throw new Error(detail ? `${fn}: ${detail}` : `Failed to invoke ${fn} (${status})`);
+  }
   return data as T;
 }
 
