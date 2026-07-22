@@ -206,11 +206,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const data = await res.json();
 
-      // Set the session in supabase-js so the rest of the app works
-      await supabase.auth.setSession({
+      // Set the session in supabase-js (fire-and-forget — the SDK itself
+      // can hang on SecureStore writes, so we must NOT await it).
+      supabase.auth.setSession({
         access_token: data.access_token,
         refresh_token: data.refresh_token,
-      });
+      }).catch((err: any) => console.error('setSession error:', err));
+
+      // Manually set session state immediately so navigation is not blocked.
+      // The onAuthStateChange handler also fires, but we don't wait for it.
+      setSession(data as any);
+      setUser(data.user);
+      fetchProfile(data.user.id, data.access_token).then(setProfile).catch(() => {});
+
+      // Loading stays true until the navigation effect fires (watching profile)
+      // or the safety timeout in handleLogin (15s) kicks in.
     } catch (error: any) {
       if (error.name === 'AbortError') {
         console.error('Sign in timed out (12s)');

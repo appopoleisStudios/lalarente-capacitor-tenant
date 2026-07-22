@@ -19,14 +19,17 @@ appId: com.lalarente.app
     timeout: 30000
 
 # === FILL IN CREDENTIALS ===
-# Tap email input by its testID (available in stale build)
+# Clear and fill email input
 - tapOn:
     id: "email-input"
+- evalScript: ${''}  # small delay to let keyboard appear
+- eraseText
 - inputText: ${TENANT_EMAIL}
 
-# Tap password input by its testID
+# Clear and fill password input
 - tapOn:
     id: "password-input"
+- eraseText
 - inputText: ${TENANT_PASSWORD}
 
 # === TAP SIGN IN ===

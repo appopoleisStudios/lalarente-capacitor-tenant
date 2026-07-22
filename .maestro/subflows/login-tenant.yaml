@@ -31,14 +31,14 @@ appId: com.lalarente.app
       - extendedWaitUntil:
           visible: "Sign in to your account"
           timeout: 15000
-      # Type email into the email field (tap by placeholder/label)
+      # Type email into the email field
       - tapOn: "Email"
+      - eraseText
       - inputText: ${TENANT_EMAIL}
-      - pressKey: Enter
-      # Type password into the password field (tap by placeholder/label)
+      # Type password into the password field
       - tapOn: "Password"
+      - eraseText
       - inputText: ${TENANT_PASSWORD}
-      - pressKey: Enter
       # Wait for dashboard to appear (text-based)
       - extendedWaitUntil:
           visible: "Available"
