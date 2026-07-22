@@ -1,12 +1,12 @@
 # Owner login — uses OWNER_EMAIL/OWNER_PASSWORD from .maestro/.env via --env flags.
-# Uses stopApp + launchApp to get to the login screen (cached session may exist).
-# After logging in as owner, the tenant session is replaced.
+# Signs out any existing session, then logs in as owner.
 appId: com.lalarente.app
 ---
+# Stop app to ensure fresh launch
 - stopApp
 - launchApp
 
-# Wait for login screen (or dashboard if already logged in)
+# Check if we need to sign out (already logged in as someone else)
 - extendedWaitUntil:
     visible: "Welcome back"
     timeout: 30000
@@ -14,22 +14,36 @@ appId: com.lalarente.app
 
 - runFlow:
     when:
-      visible: "Welcome back"
+      notVisible: "Welcome back"
     commands:
-      # Enter owner credentials
+      # Already logged in — navigate to profile to sign out
+      - openLink: lalarenteapp:///(tenant)/profile
+      - extendedWaitUntil:
+          visible: "Sign Out"
+          timeout: 15000
+          optional: true
       - tapOn:
-          id: "email-input"
-      - eraseText
-      - inputText: ${OWNER_EMAIL}
+          text: "Sign Out"
+          optional: true
+      # Wait for login screen after sign-out
+      - extendedWaitUntil:
+          visible: "Welcome back"
+          timeout: 30000
 
-      - tapOn:
-          id: "password-input"
-      - eraseText
-      - inputText: ${OWNER_PASSWORD}
+# Now on login screen — enter owner credentials
+- tapOn:
+    id: "email-input"
+- eraseText
+- inputText: ${OWNER_EMAIL}
 
-      # Tap Sign In
-      - tapOn:
-          id: "sign-in-button"
+- tapOn:
+    id: "password-input"
+- eraseText
+- inputText: ${OWNER_PASSWORD}
+
+# Tap Sign In
+- tapOn:
+    id: "sign-in-button"
 
 # Wait for owner dashboard
 - extendedWaitUntil:
@@ -40,25 +54,6 @@ appId: com.lalarente.app
     visible: "Welcome to LaLarente"
     timeout: 60000
     optional: true
-
-# If not on dashboard, try navigating via deep link
-- runFlow:
-    when:
-      notVisible: "Portfolio Dashboard"
-    commands:
-      - runFlow:
-          when:
-            notVisible: "Welcome to LaLarente"
-          commands:
-            - openLink: lalarenteapp:///(owner)/dashboard
-            - extendedWaitUntil:
-                visible: "Portfolio Dashboard"
-                timeout: 15000
-                optional: true
-            - extendedWaitUntil:
-                visible: "Welcome to LaLarente"
-                timeout: 15000
-                optional: true
 
 # Navigate to profile and verify
 - openLink: lalarenteapp:///(owner)/profile
