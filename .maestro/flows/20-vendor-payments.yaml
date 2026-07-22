@@ -4,54 +4,53 @@ appId: com.lalarente.app
 # Verifies tenant can see approved vendor invoices and navigate to payment screen
 # Uses text selectors throughout for compatibility with stale simulator build
 
-# Launch app (may go to login screen or dashboard depending on cached session)
-- stopApp
+# App was just warmed up (terminated then launched) by warm-e2e-simulator.sh
+# Maestro just launches it fresh — stopApp is not needed and may interfere
 - launchApp
 
-# Check if already logged in by looking for dashboard tab
+# Wait for the app to finish loading — look for any known element
+- extendedWaitUntil:
+    visible: "Lalarente"
+    timeout: 60000
+
+# Confirm we're on the login screen
+- extendedWaitUntil:
+    visible: "Welcome back"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: "Sign in to your account"
+    timeout: 15000
+
+# Login as tenant
+# Tap email field by placeholder
+- tapOn: "your@email.com"
+- inputText: ${TENANT_EMAIL}
+- pressKey: Enter
+
+# Tap password field by placeholder (may be gone if field auto-focused, but try anyway)
+- tapOn:
+    text: "Enter your password"
+    optional: true
+- inputText: ${TENANT_PASSWORD}
+- pressKey: Enter
+
+# Wait for dashboard to appear
 - extendedWaitUntil:
     visible: "Payments"
-    timeout: 30000
+    timeout: 60000
     optional: true
 
-# If not logged in, go through login flow
+# Fallback: try tapping Sign In explicitly
 - runFlow:
     when:
       notVisible: "Payments"
     commands:
-      # Wait for login screen
-      - extendedWaitUntil:
-          visible: "Lalarente"
-          timeout: 30000
-      - extendedWaitUntil:
-          visible: "Welcome back"
-          timeout: 15000
-      - extendedWaitUntil:
-          visible: "Sign in to your account"
-          timeout: 15000
-      # Type email - tap by placeholder
-      - tapOn: "your@email.com"
-      - inputText: ${TENANT_EMAIL}
-      - pressKey: Enter
-      # Type password - password field gets auto-focused after Enter on email
-      - inputText: ${TENANT_PASSWORD}
-      - pressKey: Enter
-      # Wait for dashboard to appear
+      - tapOn:
+          text: "Sign In"
+          optional: true
       - extendedWaitUntil:
           visible: "Payments"
           timeout: 60000
-          optional: true
-      # Fallback: tap Sign In button if still not on dashboard
-      - runFlow:
-          when:
-            notVisible: "Payments"
-          commands:
-            - tapOn:
-                text: "Sign In"
-                optional: true
-            - extendedWaitUntil:
-                visible: "Payments"
-                timeout: 60000
 
 # Navigate to vendor payments via deep link
 - openLink: lalarenteapp:///(tenant)/vendor-payments
