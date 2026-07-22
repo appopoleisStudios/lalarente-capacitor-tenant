@@ -21,15 +21,16 @@ appId: com.lalarente.app
       - tapOn:
           text: "Sign Out"
           optional: true
-      # Hard launch to ensure clean login screen
-      - stopApp
-      - launchApp
+      # Wait for sign-out to complete (redirects to login screen)
+      - extendedWaitUntil:
+          visible: "Welcome back"
+          timeout: 30000
 
 # Wait for login screen email field to be visible (mandatory)
 - extendedWaitUntil:
     visible:
       id: "email-input"
-    timeout: 45000
+    timeout: 30000
 
 # Enter owner credentials
 - tapOn:
