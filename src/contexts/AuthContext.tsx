@@ -142,18 +142,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Helper: race any promise against a timeout so the UI never hangs
+  async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+    let timer: ReturnType<typeof setTimeout>;
+    const result = await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+      }),
+    ]);
+    clearTimeout(timer!);
+    return result;
+  }
+
   // Sign in function
   async function signIn(email: string, password: string) {
     try {
       setLoading(true);
       // Purge any stale cached session before signing in.
       // scope:'local' = clears AsyncStorage only, no server call.
-      // Prevents an expired cached session from causing signInWithPassword to hang.
-      await supabase.auth.signOut({ scope: 'local' });
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      await withTimeout(
+        supabase.auth.signOut({ scope: 'local' }),
+        8000,
+        'signOut(local)'
+      );
+      const { error } = await withTimeout(
+        supabase.auth.signInWithPassword({ email, password }),
+        15000,
+        'signInWithPassword'
+      );
 
       if (error) {
         throw error;

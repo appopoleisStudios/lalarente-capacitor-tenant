@@ -3,10 +3,32 @@ import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
 import { Database } from '@/src/types/database.types';
 
+// SecureStore adapter with defensive error handling — prevents hangs when
+// the simulator/device has transient SecureStore issues (e.g. missing passcode,
+// keychain contention). Falls back to in-memory null on any read error.
 const secureStoreAdapter = {
-  getItem: (key: string) => SecureStore.getItemAsync(key),
-  setItem: (key: string, value: string) => SecureStore.setItemAsync(key, value),
-  removeItem: (key: string) => SecureStore.deleteItemAsync(key),
+  getItem: async (key: string) => {
+    try {
+      return await SecureStore.getItemAsync(key);
+    } catch (e) {
+      console.warn('SecureStore.getItemAsync failed:', e);
+      return null;
+    }
+  },
+  setItem: async (key: string, value: string) => {
+    try {
+      await SecureStore.setItemAsync(key, value);
+    } catch (e) {
+      console.warn('SecureStore.setItemAsync failed:', e);
+    }
+  },
+  removeItem: async (key: string) => {
+    try {
+      await SecureStore.deleteItemAsync(key);
+    } catch (e) {
+      console.warn('SecureStore.deleteItemAsync failed:', e);
+    }
+  },
 };
 
 // Environment variables (accessed via Constants.expoConfig.extra for React Native)
