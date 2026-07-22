@@ -38,13 +38,12 @@ appId: com.lalarente.app
             - extendedWaitUntil:
                 visible: "Welcome back,"
                 timeout: 30000
-            # Navigate to profile via tab bar
-            - tapOn:
-                id: "tab-profile"
+            # Navigate to profile via deep link (more reliable than tab bar tap)
+            - openLink: lalarenteapp:///(tenant)/profile
             - extendedWaitUntil:
                 visible:
                   id: "tenant-profile-title"
-                timeout: 30000
+                timeout: 20000
             # Scroll to bottom for Sign Out
             - swipe:
                 direction: UP
