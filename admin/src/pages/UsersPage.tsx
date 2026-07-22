@@ -22,7 +22,7 @@ function RoleBadge({ role }: { role: string }) {
 }
 
 export default function UsersPage() {
-  const { data: users, loading, refetch } = useAdminData<UserRow[]>('admin_get_users');
+  const { data: users, loading, error, refetch } = useAdminData<UserRow[]>('admin_get_users');
   const [actionMsg, setActionMsg] = useState<string | null>(null);
 
   async function toggleDevAdmin(userId: string) {
@@ -89,6 +89,7 @@ export default function UsersPage() {
         data={users ?? []}
         keyExtractor={(u) => u.id}
         loading={loading}
+        error={error}
         emptyMessage="No users found"
       />
     </div>

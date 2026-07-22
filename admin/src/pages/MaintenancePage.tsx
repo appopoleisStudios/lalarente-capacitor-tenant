@@ -41,7 +41,7 @@ const columns: Column<MaintenanceRow>[] = [
 ];
 
 export default function MaintenancePage() {
-  const { data: requests, loading } = useAdminData<MaintenanceRow[]>('admin_get_maintenance');
+  const { data: requests, loading, error } = useAdminData<MaintenanceRow[]>('admin_get_maintenance');
 
   const open = (requests ?? []).filter((r) => !['completed', 'cancelled'].includes(r.status ?? '')).length;
   const completed = (requests ?? []).filter((r) => r.status === 'completed').length;
@@ -71,6 +71,7 @@ export default function MaintenancePage() {
         data={requests ?? []}
         keyExtractor={(r) => r.id}
         loading={loading}
+        error={error}
         emptyMessage="No maintenance requests found"
       />
     </div>

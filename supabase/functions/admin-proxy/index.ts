@@ -126,8 +126,19 @@ serve(async (req) => {
         return new Response(null, { status: 200, headers: corsHeaders });
       }
 
+      // Always return 200 — wrap non-200 Plane responses in body so
+      // supabase.functions.invoke never throws "non-2xx status code"
+      if (!res.ok) {
+        let detail = text;
+        try { detail = JSON.parse(text)?.detail ?? JSON.parse(text)?.error ?? text; } catch { /* */ }
+        return new Response(
+          JSON.stringify({ error: `Plane ${res.status}: ${detail}` }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       return new Response(text, {
-        status: res.status,
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

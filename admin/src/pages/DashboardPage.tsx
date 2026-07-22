@@ -15,6 +15,7 @@ interface DashboardStats {
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchStats() {
@@ -24,6 +25,7 @@ export default function DashboardPage() {
         setStats(data as DashboardStats);
       } catch (err) {
         console.error('Failed to fetch dashboard stats:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch dashboard stats');
       } finally {
         setLoading(false);
       }
@@ -35,6 +37,15 @@ export default function DashboardPage() {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 p-8 text-center">
+        <p className="text-sm font-medium text-red-700">Failed to load dashboard</p>
+        <p className="mt-1 text-xs text-red-500">{error}</p>
       </div>
     );
   }

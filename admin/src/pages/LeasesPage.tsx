@@ -44,7 +44,7 @@ const columns: Column<LeaseRow>[] = [
 ];
 
 export default function LeasesPage() {
-  const { data: leases, loading } = useAdminData<LeaseRow[]>('admin_get_leases');
+  const { data: leases, loading, error } = useAdminData<LeaseRow[]>('admin_get_leases');
 
   return (
     <div>
@@ -59,6 +59,7 @@ export default function LeasesPage() {
         data={leases ?? []}
         keyExtractor={(l) => l.id}
         loading={loading}
+        error={error}
         emptyMessage="No leases found"
       />
     </div>

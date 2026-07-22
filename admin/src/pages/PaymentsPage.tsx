@@ -72,9 +72,10 @@ function LoadingSpinner() {
 // ─── Rent Payments Tab ──────────────────────────────────────────────────
 
 function RentPaymentsTab() {
-  const { data: stats, loading } = useAdminData<PaymentStats>('admin_get_payment_stats');
+  const { data: stats, loading, error } = useAdminData<PaymentStats>('admin_get_payment_stats');
 
   if (loading) return <LoadingSpinner />;
+  if (error) return <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>;
 
   const cards = [
     {

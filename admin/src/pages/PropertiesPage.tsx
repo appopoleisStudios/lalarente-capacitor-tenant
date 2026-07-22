@@ -36,7 +36,7 @@ const columns: Column<PropertyRow>[] = [
 ];
 
 export default function PropertiesPage() {
-  const { data: properties, loading } = useAdminData<PropertyRow[]>('admin_get_properties');
+  const { data: properties, loading, error } = useAdminData<PropertyRow[]>('admin_get_properties');
 
   return (
     <div>
@@ -51,6 +51,7 @@ export default function PropertiesPage() {
         data={properties ?? []}
         keyExtractor={(p) => p.id}
         loading={loading}
+        error={error}
         emptyMessage="No properties found"
       />
     </div>

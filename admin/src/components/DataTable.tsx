@@ -16,6 +16,7 @@ interface DataTableProps<T> {
   data: T[];
   keyExtractor: (item: T) => string;
   loading?: boolean;
+  error?: string | null;
   emptyMessage?: string;
   /** Optional summary row below the table (e.g. counts) — rendered if provided */
   summary?: { label: string; value: string | number }[];
@@ -26,9 +27,19 @@ export default function DataTable<T>({
   data,
   keyExtractor,
   loading = false,
+  error = null,
   emptyMessage = 'No data',
   summary,
 }: DataTableProps<T>) {
+  if (error) {
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 p-8 text-center">
+        <p className="text-sm font-medium text-red-700">Failed to load data</p>
+        <p className="mt-1 text-xs text-red-500">{error}</p>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
