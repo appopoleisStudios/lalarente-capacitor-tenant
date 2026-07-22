@@ -40,7 +40,7 @@ interface PayoutsResponse {
   payouts: PayoutRow[];
 }
 
-async function invokeEdge<T>(fn: string, method: string, body?: unknown): Promise<T> {
+async function invokeEdge<T>(fn: string, method: 'GET' | 'POST', body?: unknown): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error('Not authenticated');
 

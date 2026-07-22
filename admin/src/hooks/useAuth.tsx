@@ -47,10 +47,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return null;
     }
 
-  // Allow admin role OR dev_admin flag
-  if (data?.role !== 'admin' && !data?.dev_admin) {
-    return null;
-  }
+    // Allow admin role OR dev_admin flag
+    if (data?.role !== 'admin' && !data?.dev_admin) {
+      return null;
     }
 
     return data as AdminProfile;

@@ -806,8 +806,8 @@ export default function TenantDashboardScreen() {
             return null;
           })()}
 
-          {/* Deposit Status — shown when active lease has a deposit */}
-          {activeLease && (activeLease.deposit_amount || 0) > 0 && (
+          {/* Deposit Status — always visible when active lease exists */}
+          {activeLease && (
             <View style={styles.section}>
               <TouchableOpacity
                 style={styles.depositCard}
@@ -818,12 +818,16 @@ export default function TenantDashboardScreen() {
                   <Ionicons name="wallet" size={24} color={colors.rsa.green} />
                   <View>
                     <Text style={styles.depositTitle}>Security Deposit</Text>
-                    <Text style={styles.depositSub}>
-                      R {((activeLease.deposit_amount || 0) + (activeLease.deposit_total_interest || 0)).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      {(activeLease.deposit_total_interest || 0) > 0
-                        ? ` (incl. R ${(activeLease.deposit_total_interest || 0).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} interest)`
-                        : ' held in trust'}
-                    </Text>
+                    {(activeLease.deposit_amount || 0) > 0 ? (
+                      <Text style={styles.depositSub}>
+                        R {((activeLease.deposit_amount || 0) + (activeLease.deposit_total_interest || 0)).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {(activeLease.deposit_total_interest || 0) > 0
+                          ? ` (incl. R ${(activeLease.deposit_total_interest || 0).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} interest)`
+                          : ' held in trust'}
+                      </Text>
+                    ) : (
+                      <Text style={styles.depositSub}>No deposit recorded</Text>
+                    )}
                   </View>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
@@ -1074,7 +1078,7 @@ export default function TenantDashboardScreen() {
                 <Text style={styles.documentText}>Reports</Text>
               </TouchableOpacity>
 
-              {activeLease && (activeLease.deposit_amount || 0) > 0 && (
+              {activeLease && (
                 <TouchableOpacity
                   style={styles.documentCard}
                   onPress={() => router.push('/(tenant)/deposit' as any)}
