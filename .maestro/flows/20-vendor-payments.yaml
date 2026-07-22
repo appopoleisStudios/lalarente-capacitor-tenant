@@ -2,57 +2,60 @@ appId: com.lalarente.app
 ---
 # Vendor Payment Flow - E2E Test (Self-contained, text-based selectors)
 # Verifies tenant can see approved vendor invoices and navigate to payment screen
-# Uses text selectors throughout for compatibility with stale simulator build
+# Handles both logged-in (dashboard shown) and logged-out (login screen shown) states
 
-# App was just warmed up (terminated then launched) by warm-e2e-simulator.sh
-# Maestro just launches it fresh — stopApp is not needed and may interfere
+# Launch app (warm-e2e-simulator.sh has already terminated/re-launched it)
 - launchApp
 
-# Wait for the app to finish loading — look for any known element
+# Check if already logged in — dashboard shows "Welcome back," or "Search" or "Payments"
 - extendedWaitUntil:
-    visible: "Lalarente"
-    timeout: 60000
-
-# Confirm we're on the login screen
-- extendedWaitUntil:
-    visible: "Welcome back"
-    timeout: 15000
-- extendedWaitUntil:
-    visible: "Sign in to your account"
-    timeout: 15000
-
-# Login as tenant
-# Tap email field by placeholder
-- tapOn: "your@email.com"
-- inputText: ${TENANT_EMAIL}
-- pressKey: Enter
-
-# Tap password field by placeholder (may be gone if field auto-focused, but try anyway)
-- tapOn:
-    text: "Enter your password"
-    optional: true
-- inputText: ${TENANT_PASSWORD}
-- pressKey: Enter
-
-# Wait for dashboard to appear
-- extendedWaitUntil:
-    visible: "Payments"
-    timeout: 60000
+    visible: "Search"
+    timeout: 30000
     optional: true
 
-# Fallback: try tapping Sign In explicitly
+# If not on dashboard, go through login flow
 - runFlow:
     when:
-      notVisible: "Payments"
+      notVisible: "Search"
     commands:
-      - tapOn:
-          text: "Sign In"
-          optional: true
+      # Wait for login screen to load
       - extendedWaitUntil:
-          visible: "Payments"
+          visible: "Lalarente"
+          timeout: 30000
+      - extendedWaitUntil:
+          visible: "Welcome back"
+          timeout: 15000
+      - extendedWaitUntil:
+          visible: "Sign in to your account"
+          timeout: 15000
+      # Type email
+      - tapOn: "your@email.com"
+      - inputText: ${TENANT_EMAIL}
+      - pressKey: Enter
+      # Type password (field auto-focused from Enter above)
+      - tapOn:
+          text: "Enter your password"
+          optional: true
+      - inputText: ${TENANT_PASSWORD}
+      - pressKey: Enter
+      # Wait for dashboard to appear
+      - extendedWaitUntil:
+          visible: "Search"
           timeout: 60000
+          optional: true
+      # Fallback: tap Sign In button
+      - runFlow:
+          when:
+            notVisible: "Search"
+          commands:
+            - tapOn:
+                text: "Sign In"
+                optional: true
+            - extendedWaitUntil:
+                visible: "Search"
+                timeout: 60000
 
-# Navigate to vendor payments via deep link
+# Now on dashboard — navigate to vendor payments via deep link
 - openLink: lalarenteapp:///(tenant)/vendor-payments
 
 # Wait for the vendor payments screen header
@@ -60,18 +63,16 @@ appId: com.lalarente.app
     visible: "Vendor Payments"
     timeout: 30000
 
-# Wait for invoice data to load - look for the approved invoice
+# Wait for invoice data to load
 - extendedWaitUntil:
     visible: "INV-2026-001"
     timeout: 20000
     optional: true
 
-# Verify Pay Now button exists
+# Verify Pay Now button exists and tap it
 - assertVisible:
     text: "Pay Now"
     optional: true
-
-# Tap Pay Now to go to the invoice detail screen
 - tapOn:
     text: "Pay Now"
     optional: true
@@ -81,21 +82,15 @@ appId: com.lalarente.app
     visible: "Pay Vendor"
     timeout: 15000
 
-# Verify invoice number is shown
+# Verify invoice detail elements
 - assertVisible:
     text: "INV-2026-001"
     optional: true
-
-# Verify Pay via PayFast button exists
 - assertVisible:
     text: "Pay via PayFast"
-
-# Verify invoice breakdown is visible
 - assertVisible:
     text: "Invoice Breakdown"
     optional: true
-
-# Verify secure payment info is shown
 - assertVisible:
     text: "Secure Payment via PayFast"
     optional: true
