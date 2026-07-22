@@ -9,7 +9,7 @@ appId: com.lalarente.app
 # Check 1: Already logged in as owner — done
 - extendedWaitUntil:
     visible: "Portfolio Dashboard"
-    timeout: 45000
+    timeout: 20000
     optional: true
 
 - runFlow:
@@ -18,53 +18,53 @@ appId: com.lalarente.app
     commands:
       - assertVisible: "Portfolio Dashboard"
 
-# Check 2: On login screen — fill credentials
+# Check 2: Not logged in as owner — check if on login screen or tenant dashboard
 - runFlow:
     when:
       notVisible: "Portfolio Dashboard"
     commands:
-      # Check if already on login screen
+      # Check if we're already on the login screen (text only on login form)
       - extendedWaitUntil:
-          visible: "Welcome back"
+          visible: "Sign in to your account"
           timeout: 30000
           optional: true
 
       # Not on login screen — logged in as tenant, sign out first
       - runFlow:
           when:
-            notVisible: "Welcome back"
+            notVisible: "Sign in to your account"
           commands:
-            # Tap the Profile tab to navigate to tenant profile
+            # Confirm we're on tenant dashboard
             - extendedWaitUntil:
                 visible: "Welcome back,"
                 timeout: 30000
+            # Navigate to profile via tab bar
             - tapOn:
                 id: "tab-profile"
-            # Wait for profile screen
             - extendedWaitUntil:
                 visible:
                   id: "tenant-profile-title"
                 timeout: 20000
-            # Scroll down to find Sign Out button
+            # Scroll to bottom for Sign Out
             - swipe:
                 direction: UP
                 duration: 2000
             - extendedWaitUntil:
-                text: "Sign Out"
+                visible: "Sign Out"
                 timeout: 10000
-            # Tap Sign Out button
+            # Tap Sign Out
             - tapOn:
                 text: "Sign Out"
             # Wait for confirmation dialog
             - extendedWaitUntil:
-                text: "Are you sure"
+                visible: "Are you sure"
                 timeout: 10000
-            # Confirm sign out
+            # Short pause before confirming
             - tapOn:
                 text: "Sign Out"
             # Wait for login screen
             - extendedWaitUntil:
-                visible: "Welcome back"
+                visible: "Sign in to your account"
                 timeout: 30000
 
       # === Login as owner ===
@@ -85,21 +85,24 @@ appId: com.lalarente.app
       - tapOn:
           id: "sign-in-button"
 
+      # Wait for login screen to disappear
       - extendedWaitUntil:
-          notVisible: "Welcome back"
+          notVisible: "Sign in to your account"
           timeout: 30000
           optional: true
 
+      # Retry Sign In if still on login screen
       - runFlow:
           when:
-            visible: "Welcome back"
+            visible: "Sign in to your account"
           commands:
             - tapOn:
                 id: "sign-in-button"
             - extendedWaitUntil:
-                notVisible: "Welcome back"
+                notVisible: "Sign in to your account"
                 timeout: 30000
 
+      # Verify owner dashboard
       - extendedWaitUntil:
           visible: "Portfolio Dashboard"
           timeout: 60000
