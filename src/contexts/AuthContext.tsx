@@ -27,10 +27,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Fetch user profile from database — uses REST API directly (not supabase-js)
   // to avoid SDK hangs from SecureStore/keychain contention on simulator/device.
-  const fetchProfile = async (userId: string): Promise<Profile | null> => {
+  // IMPORTANT: pass the session access_token to authenticate the REST call;
+  // otherwise RLS policies (auth.uid() = id) will reject the query.
+  const fetchProfile = async (userId: string, accessToken?: string): Promise<Profile | null> => {
     try {
       const SUPABASE_URL = Constants.expoConfig?.extra?.supabaseUrl || '';
       const SUPABASE_ANON_KEY = Constants.expoConfig?.extra?.supabaseAnonKey || '';
+      const bearer = accessToken || SUPABASE_ANON_KEY;
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -40,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         {
           headers: {
             apikey: SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            Authorization: `Bearer ${bearer}`,
             'Content-Type': 'application/json',
           },
           signal: controller.signal,
@@ -95,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Refreshed successfully — use the new session.
             setSession(refreshed.session);
             setUser(refreshed.session.user);
-            fetchProfile(refreshed.session.user.id).then(setProfile);
+            fetchProfile(refreshed.session.user.id, refreshed.session.access_token).then(setProfile);
             return;
           }
         }
@@ -103,7 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          fetchProfile(session.user.id).then(setProfile);
+          fetchProfile(session.user.id, session.access_token).then(setProfile);
         }
       } catch {
         // Any unexpected error: fail safe to login screen.
@@ -126,7 +129,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Fire-and-forget profile fetch — supabase-js SDK can hang on ANY
         // database call when SecureStore is contending (not just signIn),
         // so we must NOT block the auth state handler with an await.
-        fetchProfile(session.user.id).then(setProfile).catch(() => {});
+        // Pass the session access_token so the REST call is authenticated.
+        fetchProfile(session.user.id, session.access_token).then(setProfile).catch(() => {});
       } else {
         setProfile(null);
       }
