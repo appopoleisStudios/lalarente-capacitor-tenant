@@ -1,5 +1,5 @@
 # Self-contained owner dashboard E2E test
-# Handles all states: logged in as owner, logged in as tenant (keychain), or login screen
+# Handles all states: owner logged in, tenant logged in (keychain), or login screen
 appId: com.lalarente.app
 ---
 # === FRESH LAUNCH ===
@@ -9,7 +9,7 @@ appId: com.lalarente.app
 # Check 1: Already logged in as owner — done
 - extendedWaitUntil:
     visible: "Portfolio Dashboard"
-    timeout: 60000
+    timeout: 45000
     optional: true
 
 - runFlow:
@@ -23,35 +23,41 @@ appId: com.lalarente.app
     when:
       notVisible: "Portfolio Dashboard"
     commands:
-      # Check if we're on the login screen
+      # Check if already on login screen
       - extendedWaitUntil:
           visible: "Welcome back"
-          timeout: 15000
+          timeout: 30000
           optional: true
 
-      # Not on login screen (logged in as tenant) — sign out first
+      # Not on login screen — logged in as tenant, sign out first
       - runFlow:
           when:
             notVisible: "Welcome back"
           commands:
-            # Navigate to tenant profile to sign out
-            - openLink: lalarenteapp:///(tenant)/profile
+            # Tap the Profile tab to navigate to tenant profile
             - extendedWaitUntil:
-                visible: "My Profile"
-                timeout: 15000
-            # Scroll down to Sign Out button
+                visible: "Welcome back,"
+                timeout: 30000
+            - tapOn:
+                id: "tab-profile"
+            # Wait for profile screen
+            - extendedWaitUntil:
+                visible:
+                  id: "tenant-profile-title"
+                timeout: 20000
+            # Scroll down to find Sign Out button
             - swipe:
                 direction: UP
-                duration: 1500
+                duration: 2000
             - extendedWaitUntil:
-                visible: "Sign Out"
+                text: "Sign Out"
                 timeout: 10000
-            # Tap Sign Out
+            # Tap Sign Out button
             - tapOn:
                 text: "Sign Out"
             # Wait for confirmation dialog
             - extendedWaitUntil:
-                visible: "Are you sure"
+                text: "Are you sure"
                 timeout: 10000
             # Confirm sign out
             - tapOn:
@@ -61,31 +67,24 @@ appId: com.lalarente.app
                 visible: "Welcome back"
                 timeout: 30000
 
-      # === Now on login screen — fill credentials ===
-      - extendedWaitUntil:
-          visible: "Welcome back"
-          timeout: 15000
+      # === Login as owner ===
       - extendedWaitUntil:
           visible: "Sign in to your account"
           timeout: 15000
 
-      # Enter email
       - tapOn:
           id: "email-input"
       - eraseText
       - inputText: ${OWNER_EMAIL}
 
-      # Enter password
       - tapOn:
           id: "password-input"
       - eraseText
       - inputText: ${OWNER_PASSWORD}
 
-      # Tap Sign In
       - tapOn:
           id: "sign-in-button"
 
-      # Wait for navigation to owner dashboard
       - extendedWaitUntil:
           notVisible: "Welcome back"
           timeout: 30000
@@ -101,7 +100,6 @@ appId: com.lalarente.app
                 notVisible: "Welcome back"
                 timeout: 30000
 
-      # Verify owner dashboard
       - extendedWaitUntil:
           visible: "Portfolio Dashboard"
           timeout: 60000
