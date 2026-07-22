@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 14, fontWeight: '600', color: '#000' },
   headerSub: { fontSize: 12, color: '#737373' },
-  listContent: { padding: 16, flexGrow: 1 },
+  listContent: { padding: 16, paddingBottom: 100, flexGrow: 1 },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 80 },
   emptyTitle: { fontSize: 14, fontWeight: '600', color: '#000', marginTop: 12 },
   emptySub: {
