@@ -140,11 +140,11 @@ export default function DevSupabasePage() {
       {/* Error */}
       {error && (
         <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
-          {error.includes('SUPABASE_MGMT_TOKEN') ? (
+          {error.includes('ADMIN_MGMT_TOKEN') ? (
             <>
               <strong>Supabase management token not configured.</strong> Run:
               <code className="ml-2 rounded bg-red-100 px-1.5 py-0.5 font-mono text-xs">
-                supabase secrets set SUPABASE_MGMT_TOKEN=&lt;your_token&gt; --project-ref vvepwaolnkzfzhzgxlwr
+                supabase secrets set ADMIN_MGMT_TOKEN=&lt;your_token&gt; --project-ref vvepwaolnkzfzhzgxlwr
               </code>
               <p className="mt-1 text-xs text-red-400">Get your token at supabase.com → Account → Access Tokens</p>
             </>

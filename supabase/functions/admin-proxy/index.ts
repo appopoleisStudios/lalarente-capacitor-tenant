@@ -177,10 +177,10 @@ serve(async (req) => {
 
     // ── Supabase Management API proxy ──────────────────────────────────────────
     if (target === 'supabase-mgmt') {
-      const token = Deno.env.get('SUPABASE_MGMT_TOKEN');
+      const token = Deno.env.get('ADMIN_MGMT_TOKEN');
       if (!token) {
         return new Response(
-          JSON.stringify({ error: 'Supabase management token not configured. Set SUPABASE_MGMT_TOKEN in Supabase edge function secrets.' }),
+          JSON.stringify({ error: 'Supabase management token not configured. Set ADMIN_MGMT_TOKEN in Supabase edge function secrets.' }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
