@@ -103,7 +103,7 @@ BEGIN
       'dispute_status',    vp.dispute_status,
       'paid_at',           vp.paid_at,
       'created_at',        vp.created_at
-    )
+    ) ORDER BY vp.created_at DESC
   )
   FROM vendor_payments vp
   LEFT JOIN maintenance_invoices mi ON mi.id = vp.invoice_id
@@ -111,7 +111,6 @@ BEGIN
   LEFT JOIN profiles vp_vendor ON vp_vendor.id = vp.vendor_id
   LEFT JOIN profiles vp_tenant ON vp_tenant.id = vp.tenant_id
   WHERE (p_payment_status IS NULL OR vp.payment_status = p_payment_status)
-  ORDER BY vp.created_at DESC
   LIMIT p_limit
   );
 END;
@@ -146,7 +145,7 @@ BEGIN
       'dispute_status',    vp.dispute_status,
       'payout_status',     vp.payout_status,
       'created_at',        vp.created_at
-    )
+    ) ORDER BY vp.created_at DESC
   )
   FROM vendor_payments vp
   LEFT JOIN maintenance_invoices mi ON mi.id = vp.invoice_id
@@ -154,7 +153,6 @@ BEGIN
   LEFT JOIN profiles vp_vendor ON vp_vendor.id = vp.vendor_id
   LEFT JOIN profiles vp_tenant ON vp_tenant.id = vp.tenant_id
   WHERE vp.dispute_status IN ('opened', 'escalated')
-  ORDER BY vp.created_at DESC
   );
 END;
 $$;

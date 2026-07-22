@@ -82,7 +82,7 @@ async function handleGetPayouts(
       payout_initiated_at, payout_completed_at, created_at, paid_at,
       invoice:invoice_id(invoice_number),
       maintenance_request:maintenance_request_id(title),
-      vendor:vendor_id(full_name, business_name, email),
+      vendor:vendor_id(full_name, email),
       tenant:tenant_id(full_name, email)
     `)
     .eq('payment_status', 'completed')
