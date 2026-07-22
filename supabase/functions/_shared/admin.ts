@@ -36,8 +36,9 @@ export async function verifyAdmin(
     .eq('id', user.id)
     .single();
 
-  if (!profile || ((profile as any).role !== 'admin' && !(profile as any).dev_admin)) {
-    return { user: null, error: new Response(JSON.stringify({ error: 'Forbidden: admin access required' }), {
+  // Require role='admin'. dev_admin is a sub-flag for dev tools access only.
+  if (!profile || (profile as any).role !== 'admin') {
+    return { user: null, error: new Response(JSON.stringify({ error: 'Forbidden: admin role required' }), {
       status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })};
   }

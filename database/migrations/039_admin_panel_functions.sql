@@ -37,7 +37,7 @@ BEGIN
     'total_properties',   (SELECT count(*) FROM properties),
     'total_leases',       (SELECT count(*) FROM leases),
     'active_leases',      (SELECT count(*) FROM leases WHERE status = 'active'),
-    'maintenance_open',   (SELECT count(*) FROM maintenance_requests WHERE status NOT IN ('completed', 'cancelled')),
+    'maintenance_open',   (SELECT count(*) FROM maintenance_requests WHERE status NOT IN ('completed', 'closed')),
     'monthly_revenue',    (SELECT COALESCE(sum(amount), 0) FROM payments WHERE status = 'paid' AND created_at >= now() - interval '30 days'),
     'total_disputes',     (SELECT count(*) FROM payment_disputes),
     'total_arrears',      (SELECT COALESCE(sum(total_owed), 0) FROM arrears_escalations WHERE resolved_at IS NULL)
@@ -93,9 +93,10 @@ BEGIN
     RAISE EXCEPTION 'Access denied: admin role required';
   END IF;
 
+  -- Only allow toggling dev_admin on users who already have role='admin'
   UPDATE profiles
   SET dev_admin = NOT dev_admin
-  WHERE id = target_user_id
+  WHERE id = target_user_id AND role = 'admin'
   RETURNING dev_admin INTO new_value;
 
   RETURN new_value;

@@ -21,7 +21,7 @@ interface PayoutRow {
 
 interface VendorGroup {
   vendor_id: string;
-  business_name: string | null;
+  business_name?: never; // removed — profiles has no business_name column
   full_name: string;
   email: string | null;
   payouts: PayoutRow[];
@@ -248,7 +248,7 @@ export default function VendorPayoutsPage() {
               <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3">
                 <div>
                   <p className="text-sm font-semibold text-slate-900">
-                    {group.business_name || group.full_name}
+                    {group.full_name}
                   </p>
                   {group.email && (
                     <p className="text-xs text-slate-400">{group.email}</p>

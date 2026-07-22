@@ -102,9 +102,10 @@ BEGIN
     RAISE EXCEPTION 'Access denied: admin role required';
   END IF;
 
+  -- Only allow toggling dev_admin on users who already have role='admin'
   UPDATE profiles
   SET dev_admin = NOT dev_admin
-  WHERE id = target_user_id
+  WHERE id = target_user_id AND role = 'admin'
   RETURNING dev_admin INTO new_value;
 
   RETURN new_value;

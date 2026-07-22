@@ -281,6 +281,12 @@ function DisputesTab() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const handleAction = async (paymentId: string, action: 'resolve' | 'escalate') => {
+    // Confirm before resolving
+    if (action === 'resolve') {
+      if (!window.confirm('Are you sure you want to resolve this dispute? The vendor payout will proceed normally.')) {
+        return;
+      }
+    }
     setActionLoading(paymentId);
     try {
       const { error: rpcError } = await supabase.rpc('admin_resolve_vendor_dispute', {

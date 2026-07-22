@@ -289,34 +289,16 @@ CREATE POLICY "vp_service_all" ON vendor_payments
   USING (auth.role() = 'service_role')
   WITH CHECK (auth.role() = 'service_role');
 
--- Admins (dev_admin flag) can view all payments
+-- Admins (role = 'admin') can view all payments
 CREATE POLICY "vp_admin_select" ON vendor_payments
   FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid()
-      AND dev_admin = true
-    )
-  );
+  USING (public.is_admin());
 
 -- Admins can update payment/payout/dispute status (e.g., manual payout, dispute resolution)
 CREATE POLICY "vp_admin_update" ON vendor_payments
   FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid()
-      AND dev_admin = true
-    )
-  )
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid()
-      AND dev_admin = true
-    )
-  );
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
 
 -- 3b. vendor_payment_ledger RLS
 ALTER TABLE vendor_payment_ledger ENABLE ROW LEVEL SECURITY;
@@ -330,13 +312,7 @@ CREATE POLICY "vpl_service_all" ON vendor_payment_ledger
 -- Admins can read ledger
 CREATE POLICY "vpl_admin_select" ON vendor_payment_ledger
   FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid()
-      AND dev_admin = true
-    )
-  );
+  USING (public.is_admin());
 
 -- 3c. vendor_payout_preferences RLS
 ALTER TABLE vendor_payout_preferences ENABLE ROW LEVEL SECURITY;

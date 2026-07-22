@@ -51,7 +51,7 @@ function mapPayoutRow(r: any): MappedPayout {
     id: r.id,
     invoice_number: r.invoice?.invoice_number || null,
     maintenance_title: r.maintenance_request?.title || null,
-    vendor_name: r.vendor?.business_name || r.vendor?.full_name || 'Unknown',
+    vendor_name: r.vendor?.full_name || 'Unknown',
     vendor_id: r.vendor_id,
     total_amount: parseFloat(r.total_amount),
     platform_fee: parseFloat(r.platform_fee),
@@ -118,7 +118,6 @@ async function handleGetPayouts(
   // Group the mapped rows by vendor_id
   const byVendor = new Map<string, {
     vendor_id: string;
-    business_name: string | null;
     full_name: string;
     email: string | null;
     payouts: MappedPayout[];
@@ -133,7 +132,6 @@ async function handleGetPayouts(
       const rawRow = rows.find((r: any) => r.vendor_id === vid);
       byVendor.set(vid, {
         vendor_id: vid,
-        business_name: rawRow?.vendor?.business_name || null,
         full_name: rawRow?.vendor?.full_name || 'Unknown',
         email: rawRow?.vendor?.email || null,
         payouts: [],

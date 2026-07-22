@@ -17,6 +17,7 @@ import DevAuditPage from './pages/DevAuditPage';
 import DevEnvPage from './pages/DevEnvPage';
 import DevGithubPage from './pages/DevGithubPage';
 import DevSupabasePage from './pages/DevSupabasePage';
+import DevRoute from './components/DevRoute';
 
 export default function App() {
   return (
@@ -34,12 +35,12 @@ export default function App() {
               <Route path="maintenance" element={<MaintenancePage />} />
               <Route path="payments" element={<PaymentsPage />} />
               <Route path="vendor-payouts" element={<VendorPayoutsPage />} />
-              <Route path="dev/plane" element={<DevPlanePage />} />
-              <Route path="dev/logs" element={<DevLogsPage />} />
-              <Route path="dev/audit" element={<DevAuditPage />} />
-              <Route path="dev/env" element={<DevEnvPage />} />
-              <Route path="dev/github" element={<DevGithubPage />} />
-              <Route path="dev/supabase" element={<DevSupabasePage />} />
+              <Route path="dev/plane" element={<DevRoute><DevPlanePage /></DevRoute>} />
+              <Route path="dev/logs" element={<DevRoute><DevLogsPage /></DevRoute>} />
+              <Route path="dev/audit" element={<DevRoute><DevAuditPage /></DevRoute>} />
+              <Route path="dev/env" element={<DevRoute><DevEnvPage /></DevRoute>} />
+              <Route path="dev/github" element={<DevRoute><DevGithubPage /></DevRoute>} />
+              <Route path="dev/supabase" element={<DevRoute><DevSupabasePage /></DevRoute>} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

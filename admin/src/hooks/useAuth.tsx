@@ -47,8 +47,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return null;
     }
 
-    // Allow admin role OR dev_admin flag
-    if (data?.role !== 'admin' && !data?.dev_admin) {
+    // Only users with role='admin' can access the admin panel.
+    // dev_admin is a sub-flag for dev tools only — it doesn't grant panel access.
+    if (data?.role !== 'admin') {
       return null;
     }
 

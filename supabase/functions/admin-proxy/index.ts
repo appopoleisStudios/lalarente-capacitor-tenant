@@ -1,13 +1,72 @@
-// Supabase Edge Function: Admin API Proxy
-// Proxies Sentry, Plane, GitHub, and Supabase Management API calls from the admin panel,
-// bypassing CORS restrictions and keeping credentials server-side.
+// ============================================================================
+// SUPABASE EDGE FUNCTION: Admin API Proxy
+// ============================================================================
+// Proxies Sentry, Plane, GitHub, and Supabase Management API calls from the
+// admin panel, bypassing CORS restrictions and keeping credentials server-side.
+//
+// SECURITY: Requires a valid admin JWT with role='admin' AND dev_admin=true.
+// Anyone calling this function without admin credentials is rejected at the
+// auth gate (before any proxy target code runs).
+// ============================================================================
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// ─── Auth guard ──────────────────────────────────────────────────────────
+// Requires the caller to have role='admin' AND dev_admin=true.
+// Both checks are enforced here (not just one) because this function proxies
+// sensitive tokens (GitHub, Sentry, Plane, Supabase Management).
+
+async function verifyAdminProxy(
+  authHeader: string
+): Promise<{ user: any; error: Response | null }> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const serviceKey  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseUrl || !serviceKey) {
+    return { user: null, error: new Response(
+      JSON.stringify({ error: 'Server configuration error' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )};
+  }
+
+  const supabase = createClient(supabaseUrl, serviceKey);
+  const token = authHeader.replace('Bearer ', '');
+  if (!token) {
+    return { user: null, error: new Response(
+      JSON.stringify({ error: 'Authorization header required' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )};
+  }
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+  if (authError || !user) {
+    return { user: null, error: new Response(
+      JSON.stringify({ error: 'Unauthorized' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )};
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, dev_admin')
+    .eq('id', user.id)
+    .single();
+
+  // Require BOTH role='admin' AND dev_admin=true for proxy access
+  if (!profile || (profile as any).role !== 'admin' || !(profile as any).dev_admin) {
+    return { user: null, error: new Response(
+      JSON.stringify({ error: 'Forbidden: dev admin access required' }),
+      { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )};
+  }
+
+  return { user, error: null };
+}
 
 // Fire-and-forget: insert a row into dev_function_logs via Supabase REST
 async function devLog(source: string, level: string, message: string, metadata: Record<string, unknown>) {
@@ -32,6 +91,11 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
+
+  // ── AUTH GATE ────────────────────────────────────────────────────────
+  const authHeader = req.headers.get('Authorization') || '';
+  const { error: authError } = await verifyAdminProxy(authHeader);
+  if (authError) return authError;
 
   const t0 = Date.now();
 
@@ -61,7 +125,6 @@ serve(async (req) => {
       const text = await res.text();
       const durationMs = Date.now() - t0;
 
-      // Always return 200 — wrap Sentry errors in body so supabase.functions.invoke never throws
       if (!res.ok) {
         let detail = text;
         try { detail = JSON.parse(text)?.detail ?? text; } catch { /* */ }
@@ -93,14 +156,11 @@ serve(async (req) => {
         );
       }
 
-      // Resource path: if it already contains '/', use it as-is (e.g. 'issues/{id}/comments/{commentId}')
-      // Otherwise, append issueId if provided
       const resource = resourceParam || requestBody?.resource || 'issues';
       const issueId = issueIdParam || requestBody?.issueId;
       const resourcePath = resource.includes('/') ? resource : (issueId ? `${resource}/${issueId}` : resource);
       const url = `${planeBase}/api/v1/workspaces/${workspaceSlug}/projects/${projectId}/${resourcePath}/`;
 
-      // Collect all extra fields as the request body for POST/PATCH/PUT
       let sendBody;
       if (payload && Object.keys(payload).length > 0) {
         sendBody = payload;
@@ -121,13 +181,10 @@ serve(async (req) => {
       const durationMs = Date.now() - t0;
       devLog('admin-proxy:plane', res.ok ? 'info' : 'warn', `${method || 'GET'} ${resourcePath}`, { resourcePath, status: res.status, durationMs });
 
-      // 204 No Content — return empty body to avoid supabase.functions.invoke error
       if (res.status === 204) {
         return new Response(null, { status: 200, headers: corsHeaders });
       }
 
-      // Always return 200 — wrap non-200 Plane responses in body so
-      // supabase.functions.invoke never throws "non-2xx status code"
       if (!res.ok) {
         let detail = text;
         try { detail = JSON.parse(text)?.detail ?? JSON.parse(text)?.error ?? text; } catch { /* */ }
@@ -153,7 +210,6 @@ serve(async (req) => {
         );
       }
 
-      // path = e.g. 'repos/appopoleisStudios/lalarente-capacitor-tenant/pulls?state=all&per_page=30'
       const url = `https://api.github.com/${path}`;
       const res = await fetch(url, {
         method: method || 'GET',
@@ -196,7 +252,6 @@ serve(async (req) => {
         );
       }
 
-      // path = e.g. 'v1/projects/vvepwaolnkzfzhzgxlwr/logs?product=edge-functions&limit=100'
       const url = `https://api.supabase.com/${path}`;
       const res = await fetch(url, {
         method: method || 'GET',
