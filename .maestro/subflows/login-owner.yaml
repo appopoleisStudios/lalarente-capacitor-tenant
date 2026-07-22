@@ -49,6 +49,7 @@ appId: com.lalarente.app
     id: "email-input"
 - eraseText
 - inputText: ${OWNER_EMAIL}
+- pressKey: Enter
 
 - tapOn:
     id: "password-input"
