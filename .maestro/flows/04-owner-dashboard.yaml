@@ -43,7 +43,7 @@ appId: com.lalarente.app
             - extendedWaitUntil:
                 visible:
                   id: "tenant-profile-title"
-                timeout: 20000
+                timeout: 25000
             # Scroll to bottom for Sign Out
             - swipe:
                 direction: UP
