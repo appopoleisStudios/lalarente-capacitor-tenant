@@ -6,28 +6,30 @@ appId: com.lalarente.app
 # Wait generously for the app to settle (bundle load, session restore, UI render).
 # 45s covers: Metro bundle load + SecureStore read + session restore + profile
 # fetch (REST API with 10s timeout) + dashboard navigation + UI render.
+# The dashboard shows "Welcome back," (with comma) — distinct from login screen
+# which shows "Welcome back" (no comma).
 - extendedWaitUntil:
-    visible: "Available"
+    visible: "Welcome back,"
     timeout: 45000
     optional: true
 
 # Already logged in — done.
 - runFlow:
     when:
-      visible: "Available"
+      visible: "Welcome back,"
     commands:
       - assertVisible:
-          text: "Available"
+          text: "Welcome back,"
           optional: true
 
 # Not logged in — go through login flow
 - runFlow:
     when:
-      notVisible: "Available"
+      notVisible: "Welcome back,"
     commands:
       - extendedWaitUntil:
           visible: "Welcome back"
-          timeout: 30000
+          timeout: 15000
       # Enter email
       - tapOn:
           id: "email-input"
@@ -43,5 +45,5 @@ appId: com.lalarente.app
           id: "sign-in-button"
       # Wait for navigation to dashboard
       - extendedWaitUntil:
-          visible: "Available"
+          visible: "Welcome back,"
           timeout: 60000
