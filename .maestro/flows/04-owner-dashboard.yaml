@@ -1,131 +1,55 @@
 # Self-contained owner dashboard E2E test
-# Handles all states: owner logged in, tenant logged in (keychain), or login screen
+# Run on fresh app install (no cached session)
 appId: com.lalarente.app
 ---
 # === FRESH LAUNCH ===
 - stopApp
 - launchApp
 
-# Check 1: Already logged in as owner — done
+# === WAIT FOR LOGIN SCREEN ===
 - extendedWaitUntil:
-    visible: "Portfolio Dashboard"
-    timeout: 20000
+    visible: "Welcome back"
+    timeout: 60000
+
+- extendedWaitUntil:
+    visible: "Sign in to your account"
+    timeout: 30000
+
+# === FILL CREDENTIALS ===
+- tapOn:
+    id: "email-input"
+- eraseText
+- inputText: ${OWNER_EMAIL}
+
+- tapOn:
+    id: "password-input"
+- eraseText
+- inputText: ${OWNER_PASSWORD}
+
+# === TAP SIGN IN ===
+- tapOn:
+    id: "sign-in-button"
+
+# === WAIT FOR NAVIGATION ===
+- extendedWaitUntil:
+    notVisible: "Welcome back"
+    timeout: 30000
     optional: true
 
 - runFlow:
     when:
-      visible: "Portfolio Dashboard"
+      visible: "Welcome back"
     commands:
-      - assertVisible: "Portfolio Dashboard"
-
-# Check 2: Not logged in as owner — check if on login screen or tenant dashboard
-- runFlow:
-    when:
-      notVisible: "Portfolio Dashboard"
-    commands:
-      # Check if we're already on the login screen (text only on login form)
-      - extendedWaitUntil:
-          visible: "Sign in to your account"
-          timeout: 30000
-          optional: true
-
-      # Not on login screen — logged in as tenant, sign out first
-      - runFlow:
-          when:
-            notVisible: "Sign in to your account"
-          commands:
-            # Confirm we're on tenant dashboard
-            - extendedWaitUntil:
-                visible: "Welcome back,"
-                timeout: 30000
-            # Navigate to profile via deep link (more reliable than tab bar tap)
-            - openLink: lalarenteapp:///(tenant)/profile
-            - extendedWaitUntil:
-                visible:
-                  id: "tenant-profile-title"
-                timeout: 25000
-            # Scroll to Sign Out with multiple gentle swipes
-            - swipe:
-                direction: UP
-                duration: 300
-            - swipe:
-                direction: UP
-                duration: 300
-            - swipe:
-                direction: UP
-                duration: 300
-            - swipe:
-                direction: UP
-                duration: 300
-            - swipe:
-                direction: UP
-                duration: 300
-            - swipe:
-                direction: UP
-                duration: 300
-            - swipe:
-                direction: UP
-                duration: 300
-            - swipe:
-                direction: UP
-                duration: 300
-            - extendedWaitUntil:
-                visible: "Sign Out"
-                timeout: 15000
-            # Tap Sign Out
-            - tapOn:
-                text: "Sign Out"
-            # Wait for confirmation dialog
-            - extendedWaitUntil:
-                visible: "Are you sure"
-                timeout: 10000
-            # Short pause before confirming
-            - tapOn:
-                text: "Sign Out"
-            # Wait for login screen
-            - extendedWaitUntil:
-                visible: "Sign in to your account"
-                timeout: 30000
-
-      # === Login as owner ===
-      - extendedWaitUntil:
-          visible: "Sign in to your account"
-          timeout: 15000
-
-      - tapOn:
-          id: "email-input"
-      - eraseText
-      - inputText: ${OWNER_EMAIL}
-
-      - tapOn:
-          id: "password-input"
-      - eraseText
-      - inputText: ${OWNER_PASSWORD}
-
       - tapOn:
           id: "sign-in-button"
-
-      # Wait for login screen to disappear
       - extendedWaitUntil:
-          notVisible: "Sign in to your account"
+          notVisible: "Welcome back"
           timeout: 30000
-          optional: true
 
-      # Retry Sign In if still on login screen
-      - runFlow:
-          when:
-            visible: "Sign in to your account"
-          commands:
-            - tapOn:
-                id: "sign-in-button"
-            - extendedWaitUntil:
-                notVisible: "Sign in to your account"
-                timeout: 30000
-
-      # Verify owner dashboard
-      - extendedWaitUntil:
-          visible: "Portfolio Dashboard"
-          timeout: 60000
+# === VERIFY OWNER DASHBOARD ===
+- extendedWaitUntil:
+    visible: "Portfolio Dashboard"
+    timeout: 60000
 
 # === VERIFY OWNER PROFILE ===
 - openLink: lalarenteapp:///(owner)/profile
