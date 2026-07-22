@@ -44,20 +44,28 @@ async function invokeEdge<T>(fn: string, method: 'GET' | 'POST', body?: unknown)
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase.functions.invoke(fn, {
+  // Use direct fetch instead of supabase.functions.invoke to have full
+  // control over error handling and avoid client-side routing issues
+  const rawUrl = import.meta.env.VITE_SUPABASE_URL || '';
+  if (!rawUrl) throw new Error('VITE_SUPABASE_URL not configured');
+  const baseUrl = rawUrl.replace(/\/+$/, '');
+  const url = `${baseUrl}/functions/v1/${fn}`;
+  const res = await fetch(url, {
     method,
-    body: body || undefined,
+    headers: {
+      'Authorization': `Bearer ${session.access_token}`,
+      'Content-Type': 'application/json',
+    },
+    body: method !== 'GET' && body ? JSON.stringify(body) : undefined,
   });
 
-  if (error) {
-    // error.context contains the response body from the Edge function
-    const ctx = (error as any).context;
-    const detail = ctx?.message || ctx?.error || '';
-    const status = (error as any).status;
-    const prefix = error.message || 'Unknown error';
-    if (detail) throw new Error(`${fn}: ${detail}`);
-    throw new Error(`${fn}: ${prefix}${status != null ? ` (HTTP ${status})` : ''}`);
+  if (!res.ok) {
+    let detail = '';
+    try { const err = await res.json(); detail = err?.message || err?.error || ''; } catch { /* */ }
+    throw new Error(detail ? `${fn}: ${detail}` : `${fn}: HTTP ${res.status}`);
   }
+
+  const data = await res.json();
   return data as T;
 }
 
