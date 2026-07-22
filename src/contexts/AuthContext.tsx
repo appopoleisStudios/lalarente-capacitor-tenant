@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
+import Constants from 'expo-constants';
 import { Database } from '@/src/types/database.types';
 import { supabase } from '@/src/lib/supabase';
 
@@ -142,40 +143,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  // Helper: race any promise against a timeout so the UI never hangs
-  async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
-    let timer: ReturnType<typeof setTimeout>;
-    const result = await Promise.race([
-      promise,
-      new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
-      }),
-    ]);
-    clearTimeout(timer!);
-    return result;
-  }
-
-  // Sign in function
+  // Sign in function — uses REST API directly instead of supabase-js SDK
+  // because supabase.auth.signInWithPassword() can hang indefinitely in
+  // React Native when there are keychain/SecureStore contention issues.
   async function signIn(email: string, password: string) {
     try {
       setLoading(true);
-      // Purge any stale cached session before signing in.
-      // scope:'local' = clears AsyncStorage only, no server call.
-      await withTimeout(
-        supabase.auth.signOut({ scope: 'local' }),
-        8000,
-        'signOut(local)'
-      );
-      const { error } = await withTimeout(
-        supabase.auth.signInWithPassword({ email, password }),
-        15000,
-        'signInWithPassword'
-      );
 
-      if (error) {
-        throw error;
+      // Purge stale session from SecureStore — fire-and-forget (no await) to
+      // avoid a supabase-js hang blocking the REST login that follows.
+      supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+
+      // Call Supabase Auth REST API directly (avoids SDK hang)
+      const SUPABASE_URL = Constants.expoConfig?.extra?.supabaseUrl || '';
+      const SUPABASE_ANON_KEY = Constants.expoConfig?.extra?.supabaseAnonKey || '';
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error_description || body.error || `Auth failed (${res.status})`);
       }
+
+      const data = await res.json();
+
+      // Set the session in supabase-js so the rest of the app works
+      await supabase.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+      });
     } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.error('Sign in timed out (12s)');
+        throw new Error('Sign in timed out. Check your network connection.');
+      }
       console.error('Sign in error:', error);
       throw new Error(error.message || 'Failed to sign in');
     } finally {
