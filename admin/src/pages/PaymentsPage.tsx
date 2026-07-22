@@ -11,7 +11,41 @@ const TABS: { key: Tab; label: string; icon: string }[] = [
   { key: 'disputes', label: 'Disputes', icon: '⚖️' },
 ];
 
-function Card({ label, value, icon, color }: { label: string; value: string; icon: string; color: string }) {
+function InfoTooltip({ text }: { text: string }) {
+  return (
+    <span className="group relative inline-flex cursor-help items-center">
+      <svg
+        className="h-3.5 w-3.5 text-slate-400 hover:text-slate-500 transition-colors"
+        viewBox="0 0 16 16"
+        fill="currentColor"
+      >
+        <path
+          fillRule="evenodd"
+          d="M8 1.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM7.25 7a.75.75 0 011.5 0v3.5a.75.75 0 01-1.5 0V7zm.75-2.5a1 1 0 100 2 1 1 0 000-2z"
+          clipRule="evenodd"
+        />
+      </svg>
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 px-3 py-2 rounded-lg bg-slate-800 text-xs text-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-normal text-left leading-relaxed">
+        {text}
+        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-800" />
+      </div>
+    </span>
+  );
+}
+
+function Card({
+  label,
+  value,
+  icon,
+  color,
+  tooltip,
+}: {
+  label: string;
+  value: string;
+  icon: string;
+  color: string;
+  tooltip?: string;
+}) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between">
@@ -19,7 +53,10 @@ function Card({ label, value, icon, color }: { label: string; value: string; ico
         <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${color}`}>Live</span>
       </div>
       <p className="mt-4 text-2xl font-bold text-slate-900">{value}</p>
-      <p className="mt-1 text-sm text-slate-500">{label}</p>
+      <div className="mt-1 flex items-center gap-1.5">
+        <p className="text-sm text-slate-500">{label}</p>
+        {tooltip && <InfoTooltip text={tooltip} />}
+      </div>
     </div>
   );
 }
@@ -40,11 +77,41 @@ function RentPaymentsTab() {
   if (loading) return <LoadingSpinner />;
 
   const cards = [
-    { label: 'Total Transactions', value: stats?.total_payments.toLocaleString() ?? '0', icon: '💳', color: 'bg-blue-50 text-blue-700' },
-    { label: 'Successful Payments', value: stats?.paid_payments.toLocaleString() ?? '0', icon: '✅', color: 'bg-emerald-50 text-emerald-700' },
-    { label: 'Overdue Payments', value: stats?.overdue_payments.toLocaleString() ?? '0', icon: '⚠️', color: 'bg-red-50 text-red-700' },
-    { label: 'Active Disputes', value: stats?.active_disputes.toLocaleString() ?? '0', icon: '⚖️', color: 'bg-amber-50 text-amber-700' },
-    { label: 'Total Arrears Owed', value: `R ${(stats?.total_arrears ?? 0).toLocaleString()}`, icon: '📉', color: 'bg-orange-50 text-orange-700' },
+    {
+      label: 'Total Transactions',
+      value: stats?.total_payments.toLocaleString() ?? '0',
+      icon: '💳',
+      color: 'bg-blue-50 text-blue-700',
+      tooltip: 'All tenant rent payments ever created on the platform, regardless of status — paid, pending, overdue, or failed. Each row in the payments table counts as one transaction.',
+    },
+    {
+      label: 'Successful Payments',
+      value: stats?.paid_payments.toLocaleString() ?? '0',
+      icon: '✅',
+      color: 'bg-emerald-50 text-emerald-700',
+      tooltip: 'Tenant rent payments that were successfully completed and marked as paid.',
+    },
+    {
+      label: 'Overdue Payments',
+      value: stats?.overdue_payments.toLocaleString() ?? '0',
+      icon: '⚠️',
+      color: 'bg-red-50 text-red-700',
+      tooltip: 'Rent payments past their due date that have not been paid yet. These represent active collection risk.',
+    },
+    {
+      label: 'Active Disputes',
+      value: stats?.active_disputes.toLocaleString() ?? '0',
+      icon: '⚖️',
+      color: 'bg-amber-50 text-amber-700',
+      tooltip: 'Payment disputes raised by tenants that are still open or under review. Resolved/rejected disputes are excluded.',
+    },
+    {
+      label: 'Total Arrears Owed',
+      value: `R ${(stats?.total_arrears ?? 0).toLocaleString()}`,
+      icon: '📉',
+      color: 'bg-orange-50 text-orange-700',
+      tooltip: 'Sum of all outstanding arrears across every tenant where the escalation has not yet been resolved. This is the total amount in the arrears escalation pipeline.',
+    },
     {
       label: 'Payment Success Rate',
       value: (stats?.total_payments ?? 0) > 0
@@ -52,6 +119,7 @@ function RentPaymentsTab() {
         : '—',
       icon: '📊',
       color: 'bg-violet-50 text-violet-700',
+      tooltip: 'Percentage of all rent payments that were successfully paid. Calculated as (successful payments ÷ total transactions) × 100.',
     },
   ];
 
@@ -72,14 +140,62 @@ function VendorRevenueTab() {
   if (error) return <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>;
 
   const cards = [
-    { label: 'Gross Collected', value: `R ${(stats?.gross_collected ?? 0).toLocaleString()}`, icon: '💰', color: 'bg-emerald-50 text-emerald-700' },
-    { label: 'Platform Fees', value: `R ${(stats?.platform_fees ?? 0).toLocaleString()}`, icon: '📈', color: 'bg-blue-50 text-blue-700' },
-    { label: 'Net Revenue', value: `R ${(stats?.net_revenue ?? 0).toLocaleString()}`, icon: '📊', color: 'bg-violet-50 text-violet-700' },
-    { label: 'Pending Payouts', value: `R ${(stats?.pending_payouts_total ?? 0).toLocaleString()}`, icon: '⏳', color: 'bg-amber-50 text-amber-700' },
-    { label: '30d Revenue', value: `R ${(stats?.revenue_30d ?? 0).toLocaleString()}`, icon: '📅', color: 'bg-indigo-50 text-indigo-700' },
-    { label: '7d Revenue', value: `R ${(stats?.revenue_7d ?? 0).toLocaleString()}`, icon: '🔥', color: 'bg-orange-50 text-orange-700' },
-    { label: 'Completed', value: (stats?.completed_count ?? 0).toLocaleString(), icon: '✅', color: 'bg-emerald-50 text-emerald-700' },
-    { label: 'Active Disputes', value: (stats?.active_disputes ?? 0).toLocaleString(), icon: '⚖️', color: 'bg-red-50 text-red-700' },
+    {
+      label: 'Gross Collected',
+      value: `R ${(stats?.gross_collected ?? 0).toLocaleString()}`,
+      icon: '💰',
+      color: 'bg-emerald-50 text-emerald-700',
+      tooltip: 'Total amount collected from all completed vendor payments before any deductions. This is what was charged to tenants/owners for vendor services.',
+    },
+    {
+      label: 'Platform Fees',
+      value: `R ${(stats?.platform_fees ?? 0).toLocaleString()}`,
+      icon: '📈',
+      color: 'bg-blue-50 text-blue-700',
+      tooltip: 'Total platform commission earned from completed vendor payments. This is the platform\'s revenue before gateway processing fees.',
+    },
+    {
+      label: 'Net Revenue',
+      value: `R ${(stats?.net_revenue ?? 0).toLocaleString()}`,
+      icon: '📊',
+      color: 'bg-violet-50 text-violet-700',
+      tooltip: 'Platform revenue after deducting payment gateway processing fees. Calculated as platform_fees minus gateway_fees.',
+    },
+    {
+      label: 'Pending Payouts',
+      value: `R ${(stats?.pending_payouts_total ?? 0).toLocaleString()}`,
+      icon: '⏳',
+      color: 'bg-amber-50 text-amber-700',
+      tooltip: 'Total amount that has been collected from customers but not yet paid out to vendors. Payments are completed but payout status is pending or processing.',
+    },
+    {
+      label: '30d Revenue',
+      value: `R ${(stats?.revenue_30d ?? 0).toLocaleString()}`,
+      icon: '📅',
+      color: 'bg-indigo-50 text-indigo-700',
+      tooltip: 'Net platform revenue generated from vendor payments in the last 30 days. Useful for month-over-month comparison.',
+    },
+    {
+      label: '7d Revenue',
+      value: `R ${(stats?.revenue_7d ?? 0).toLocaleString()}`,
+      icon: '🔥',
+      color: 'bg-orange-50 text-orange-700',
+      tooltip: 'Net platform revenue generated from vendor payments in the last 7 days. A quick pulse check on recent business activity.',
+    },
+    {
+      label: 'Completed',
+      value: (stats?.completed_count ?? 0).toLocaleString(),
+      icon: '✅',
+      color: 'bg-emerald-50 text-emerald-700',
+      tooltip: 'Number of vendor payments that have been fully completed — payment collected and processed successfully.',
+    },
+    {
+      label: 'Active Disputes',
+      value: (stats?.active_disputes ?? 0).toLocaleString(),
+      icon: '⚖️',
+      color: 'bg-red-50 text-red-700',
+      tooltip: 'Vendor payment disputes that are currently opened or escalated. These require admin review and resolution.',
+    },
   ];
 
   return (
