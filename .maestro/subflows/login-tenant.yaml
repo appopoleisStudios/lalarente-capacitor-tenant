@@ -1,61 +1,47 @@
 # Tenant login — uses TENANT_EMAIL/TENANT_PASSWORD from .maestro/.env via --env flags.
-# NOTE: Fully text-based selectors because the simulator app build is stale
-# and doesn't have the latest testIDs. After a fresh native rebuild, consider
-# switching back to id: selectors for reliability.
-#
-# Designed to be run AFTER launch-app.yaml which sets up the app on the login screen.
-# If running standalone, you need to launch the app first or use openLink.
+# Detects whether the app is already logged in (session persisted in SecureStore)
+# and only fills the login form if needed.
 appId: com.lalarente.app
 ---
-# Check if already logged in by looking for dashboard tab labels (text-based)
+# Wait generously for the app to settle (bundle load, session restore, UI render).
+# 45s covers: Metro bundle load + SecureStore read + session restore + profile
+# fetch (REST API with 10s timeout) + dashboard navigation + UI render.
 - extendedWaitUntil:
     visible: "Available"
-    timeout: 15000
+    timeout: 45000
     optional: true
 
+# Already logged in — done.
 - runFlow:
     when:
       visible: "Available"
     commands:
-      - assertVisible: "Available"
+      - assertVisible:
+          text: "Available"
+          optional: true
 
-# If not logged in, go through login flow
+# Not logged in — go through login flow
 - runFlow:
     when:
       notVisible: "Available"
     commands:
-      # Wait for the login screen to load
       - extendedWaitUntil:
           visible: "Welcome back"
           timeout: 30000
-      - extendedWaitUntil:
-          visible: "Sign in to your account"
-          timeout: 15000
-      # Type email into the email field
-      - tapOn: "Email"
+      # Enter email
+      - tapOn:
+          id: "email-input"
       - eraseText
       - inputText: ${TENANT_EMAIL}
-      # Type password into the password field
-      - tapOn: "Password"
+      # Enter password
+      - tapOn:
+          id: "password-input"
       - eraseText
       - inputText: ${TENANT_PASSWORD}
-      # Wait for dashboard to appear (text-based)
+      # Tap Sign In
+      - tapOn:
+          id: "sign-in-button"
+      # Wait for navigation to dashboard
       - extendedWaitUntil:
           visible: "Available"
           timeout: 60000
-          optional: true
-      # If still not on dashboard, try tapping Sign In button
-      - runFlow:
-          when:
-            notVisible: "Available"
-          commands:
-            - tapOn:
-                text: "Sign In"
-                optional: true
-            - extendedWaitUntil:
-                visible: "Available"
-                timeout: 60000
-      # Verify we're logged in by dashboard text
-      - assertVisible:
-          text: "Available"
-          optional: true
