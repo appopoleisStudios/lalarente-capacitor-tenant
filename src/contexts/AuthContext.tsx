@@ -25,23 +25,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch user profile from database
+  // Fetch user profile from database — uses REST API directly (not supabase-js)
+  // to avoid SDK hangs from SecureStore/keychain contention on simulator/device.
   const fetchProfile = async (userId: string): Promise<Profile | null> => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      const SUPABASE_URL = Constants.expoConfig?.extra?.supabaseUrl || '';
+      const SUPABASE_ANON_KEY = Constants.expoConfig?.extra?.supabaseAnonKey || '';
 
-      if (error) {
-        console.error('Error fetching profile:', error);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=*`,
+        {
+          headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          signal: controller.signal,
+        }
+      );
+
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        console.error('Profile fetch HTTP error:', res.status);
         return null;
       }
 
-      return data as Profile;
-    } catch (error) {
-      console.error('Error fetching profile:', error);
+      const rows = await res.json();
+      return (rows?.[0] as Profile) || null;
+    } catch (error: any) {
+      if (error?.name === 'AbortError') {
+        console.warn('Profile fetch timed out after 10s');
+      } else {
+        console.error('Error fetching profile:', error);
+      }
       return null;
     }
   };
@@ -98,13 +118,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
 
       if (session?.user) {
-        const profile = await fetchProfile(session.user.id);
-        setProfile(profile);
+        // Fire-and-forget profile fetch — supabase-js SDK can hang on ANY
+        // database call when SecureStore is contending (not just signIn),
+        // so we must NOT block the auth state handler with an await.
+        fetchProfile(session.user.id).then(setProfile).catch(() => {});
       } else {
         setProfile(null);
       }
