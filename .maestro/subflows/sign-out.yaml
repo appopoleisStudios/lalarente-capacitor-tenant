@@ -31,7 +31,9 @@ appId: com.lalarente.app
     when:
       visible: "Sign in to your account"
     commands:
-      # Already signed out — nothing more to do
+      - assertVisible:
+          text: "Sign in to your account"
+          optional: true
 
 # ── Step 3: We're on dashboard — need to sign out ──
 - runFlow:
