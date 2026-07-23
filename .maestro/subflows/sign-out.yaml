@@ -24,6 +24,16 @@ appId: com.lalarente.app
     text: "Cancel"
     optional: true
 
+# Wait for auto-redirect to complete before checking screen state.
+# When a cached session is restored, the app briefly shows the login
+# screen before redirecting to dashboard. This wait ensures the redirect
+# has finished. If "Welcome back," (dashboard with comma) appears during
+# this wait, we know we're on the dashboard and need to sign out.
+- extendedWaitUntil:
+    visible: "Welcome back,"
+    timeout: 10000
+    optional: true
+
 # ── Step 2: Check if we're on the login screen ──
 # If "Sign in to your account" is visible after the settle period,
 # we're genuinely on the login screen (no cached session). Done.
