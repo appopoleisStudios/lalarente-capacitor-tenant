@@ -1,29 +1,39 @@
 # Sign out of any profile — clears cached session so next flow starts on login screen
 # Works for tenant ("Sign Out"), owner ("Logout"), and vendor ("Logout")
-# Strategy: stopApp+launchApp → wait for dashboard → deep link to profile → tap signout button → confirm alert
+# Strategy: stopApp+launchApp → settle → detect screen → sign out if needed
 appId: com.lalarente.app
 ---
-# ── Step 1: Restart to known state ──
+# ── Step 1: Restart to known state and settle ──
 - stopApp
 - launchApp
 
-# Wait for either dashboard or login screen (whichever comes first)
-# Dashboard shows "Welcome back," (with comma), login shows "Welcome back" (no comma)
+# Wait for Metro bundle to load and the app to settle into its final screen.
+# If there's a cached session, the app may briefly flash the login screen
+# before auto-redirecting to dashboard. We wait long enough for any
+# auto-redirect to complete before checking the final state.
 - extendedWaitUntil:
     visible: "Welcome back"
     timeout: 120000
     optional: true
 
-# ── Step 2: If we landed on login screen, we're already signed out ──
+# Small pause for any auto-redirect to finish (cached session redirect)
+- tapOn:
+    text: "Not Now"
+    optional: true
+- tapOn:
+    text: "Cancel"
+    optional: true
+
+# ── Step 2: Check if we're on the login screen ──
+# If "Sign in to your account" is visible after the settle period,
+# we're genuinely on the login screen (no cached session). Done.
 - runFlow:
     when:
       visible: "Sign in to your account"
     commands:
-      - assertVisible:
-          text: "Sign in to your account"
       # Already signed out — nothing more to do
 
-# ── Step 3: We're on dashboard — navigate to profile ──
+# ── Step 3: We're on dashboard — need to sign out ──
 - runFlow:
     when:
       notVisible: "Sign in to your account"
@@ -48,14 +58,14 @@ appId: com.lalarente.app
 
       # If not owner either, try vendor profile
       - runFlow:
-          when:
-            notVisible: "Profile"
-          commands:
-            - openLink: lalarenteapp:///(vendor)/profile/index
-            - extendedWaitUntil:
-                visible: "Profile"
-                timeout: 20000
-                optional: true
+            when:
+              notVisible: "Profile"
+            commands:
+              - openLink: lalarenteapp:///(vendor)/profile/index
+              - extendedWaitUntil:
+                  visible: "Profile"
+                  timeout: 20000
+                  optional: true
 
       # ── Step 4: Scroll to sign-out/logout button ──
       # Try "Sign Out" (tenant) first
