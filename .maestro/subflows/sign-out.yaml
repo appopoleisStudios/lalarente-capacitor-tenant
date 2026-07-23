@@ -11,7 +11,7 @@ appId: com.lalarente.app
 # Dashboard shows "Welcome back," (with comma), login shows "Welcome back" (no comma)
 - extendedWaitUntil:
     visible: "Welcome back"
-    timeout: 60000
+    timeout: 120000
     optional: true
 
 # ── Step 2: If we landed on login screen, we're already signed out ──

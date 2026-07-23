@@ -128,9 +128,16 @@ sign_out_and_stop() {
   "$MAESTRO_BIN" test ".maestro/subflows/sign-out.yaml" 2>&1
   local EC=$?
   set -e
+  
   if [ "$EC" -ne 0 ]; then
-    echo "  ⚠ Sign-out flow exited $EC — continuing anyway"
+    echo "  ⚠ Sign-out subflow failed ($EC) — trying force uninstall fallback"
+    echo "  Removing app to clear cached session..."
+    xcrun simctl uninstall booted com.lalarente.app 2>/dev/null || true
+    echo "  ❌ App uninstalled. Must rebuild for next phase."
+    echo "  Run: cd project && npx expo run:ios"
+    exit 1
   fi
+  
   xcrun simctl terminate booted com.lalarente.app 2>/dev/null || true
   echo "  App terminated. Next flow will start on login screen."
 }
