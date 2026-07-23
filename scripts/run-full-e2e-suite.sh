@@ -147,6 +147,12 @@ print_header() {
 }
 
 # ════════════════════════════════════════════════════
+#  PRE-FLIGHT: Sign out any cached session from previous testing
+# ════════════════════════════════════════════════════
+print_header "PRE-FLIGHT: CLEARING CACHED SESSION"
+sign_out_and_stop
+
+# ════════════════════════════════════════════════════
 #  PHASE 1: TENANT
 # ════════════════════════════════════════════════════
 print_header "PHASE 1: TENANT (${#TENANT_FLOWS[@]} flows)"
