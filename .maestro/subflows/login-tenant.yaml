@@ -3,11 +3,15 @@
 # and only fills the login form if needed.
 appId: com.lalarente.app
 ---
-# Wait generously for the app to settle (bundle load, session restore, UI render).
+# Navigate to dashboard FIRST so we're on a known screen for session detection.
+# Previous flows may have navigated to AI chat, maintenance, etc.
+# Dashboard shows "Welcome back," (with comma) if logged in, or redirects to
+# login screen ("Welcome back" without comma) if not logged in.
+- openLink: lalarenteapp:///(tenant)/dashboard
+
+# Wait for the app to settle on dashboard or redirect to login.
 # 45s covers: Metro bundle load + SecureStore read + session restore + profile
 # fetch (REST API with 10s timeout) + dashboard navigation + UI render.
-# The dashboard shows "Welcome back," (with comma) — distinct from login screen
-# which shows "Welcome back" (no comma).
 - extendedWaitUntil:
     visible: "Welcome back,"
     timeout: 45000

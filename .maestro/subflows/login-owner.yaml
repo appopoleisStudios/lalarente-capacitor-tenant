@@ -3,7 +3,12 @@
 # and only fills the login form if needed.
 appId: com.lalarente.app
 ---
-# Check if already on owner dashboard (persisted session from prior owner flow)
+# Navigate to owner dashboard FIRST so we're on a known screen for session detection.
+# Previous flows may have navigated elsewhere. Dashboard shows "Portfolio Dashboard"
+# if logged in as owner, or redirects to login screen if not.
+- openLink: lalarenteapp:///(owner)/dashboard
+
+# Check if app is on owner dashboard (persisted session)
 - extendedWaitUntil:
     visible: "Portfolio Dashboard"
     timeout: 45000

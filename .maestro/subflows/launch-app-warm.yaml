@@ -1,7 +1,12 @@
-# Warm app start — keeps session between flows in a suite run
+# Warm app start — keeps session between flows in a suite run.
+# Navigates to dashboard after launch so login subflows can reliably detect session state.
 appId: com.lalarente.app
 ---
 - launchApp
+
+# Navigate to dashboard — ensures the app is on a known screen
+# This allows login-tenant/login-owner to detect cached sessions reliably.
+- openLink: lalarenteapp:///(tenant)/dashboard
 
 - extendedWaitUntil:
     visible:
