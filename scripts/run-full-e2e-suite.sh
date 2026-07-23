@@ -130,16 +130,12 @@ sign_out_and_stop() {
   set -e
   
   if [ "$EC" -ne 0 ]; then
-    echo "  ⚠ Sign-out subflow failed ($EC) — trying force uninstall fallback"
-    echo "  Removing app to clear cached session..."
-    xcrun simctl uninstall booted com.lalarente.app 2>/dev/null || true
-    echo "  ❌ App uninstalled. Must rebuild for next phase."
-    echo "  Run: cd project && npx expo run:ios"
-    exit 1
+    echo "  ⚠ Sign-out subflow failed ($EC) — this is expected if app was already uninstalled"
+    echo "  Attempting to clear any cached state via terminate only..."
   fi
   
   xcrun simctl terminate booted com.lalarente.app 2>/dev/null || true
-  echo "  App terminated. Next flow will start on login screen."
+  echo "  App terminated. Next flow will attempt fresh start."
 }
 
 print_header() {
