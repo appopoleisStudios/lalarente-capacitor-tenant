@@ -33,42 +33,51 @@ appId: com.lalarente.app
           timeout: 20000
           optional: true
 
-# Scroll down to find Sign Out button
+# Scroll down to find Sign Out (tenant) OR Logout (owner/vendor) button
 - scrollUntilVisible:
     element:
       text: "Sign Out"
     direction: DOWN
-    timeout: 25000
+    timeout: 15000
     optional: true
 
-# Tap Sign Out button
+# If not found, try Logout (owner/vendor profiles)
+- runFlow:
+    when:
+      notVisible: "Sign Out"
+    commands:
+      - scrollUntilVisible:
+          element:
+            text: "Logout"
+          direction: DOWN
+          timeout: 15000
+          optional: true
+
+# Tap whichever button was found
 - tapOn:
     text: "Sign Out"
     optional: true
 
-# Confirm alert - tap the destructive "Sign Out" option
+- tapOn:
+    text: "Logout"
+    optional: true
+
+# Confirm alert - tap the destructive button ("Sign Out" for tenant, "Logout" for owner/vendor)
 - extendedWaitUntil:
     visible: "Are you sure"
     timeout: 10000
     optional: true
 
-- runFlow:
-    when:
-      visible: "Are you sure"
-    commands:
-      - tapOn:
-          text: "Sign Out"
-          optional: true
+# Tap the confirm button - try both texts
+- tapOn:
+    text: "Sign Out"
+    optional: true
 
-- runFlow:
-    when:
-      notVisible: "Are you sure"
-    commands:
-      - tapOn:
-          text: "Sign Out"
-          optional: true
+- tapOn:
+    text: "Logout"
+    optional: true
 
 # Wait for navigation to login screen
 - extendedWaitUntil:
     visible: "Welcome back"
-    timeout: 20000
+    timeout: 30000
