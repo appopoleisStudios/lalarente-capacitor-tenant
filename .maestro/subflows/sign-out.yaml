@@ -58,14 +58,14 @@ appId: com.lalarente.app
 
       # If not owner either, try vendor profile
       - runFlow:
-            when:
-              notVisible: "Profile"
-            commands:
-              - openLink: lalarenteapp:///(vendor)/profile/index
-              - extendedWaitUntil:
-                  visible: "Profile"
-                  timeout: 20000
-                  optional: true
+          when:
+            notVisible: "Profile"
+          commands:
+            - openLink: lalarenteapp:///(vendor)/profile/index
+            - extendedWaitUntil:
+                visible: "Profile"
+                timeout: 20000
+                optional: true
 
       # ── Step 4: Scroll to sign-out/logout button ──
       # Try "Sign Out" (tenant) first
