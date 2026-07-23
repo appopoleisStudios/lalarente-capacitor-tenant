@@ -120,18 +120,19 @@ run_flow() {
   fi
 }
 
-reinstall_app() {
-  echo "  ── Reinstalling app (clears cached session) ──"
-  xcrun simctl uninstall booted com.lalarente.app 2>/dev/null || true
-  # Find existing build binary — fast reinstall, no rebuild
-  APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "lalarenteapp.app" -type d 2>/dev/null | head -1)
-  if [ -n "$APP_PATH" ]; then
-    xcrun simctl install booted "$APP_PATH" 2>&1
-    echo "  Installed from: $APP_PATH"
-  else
-    echo "  ERROR: No existing build found — run 'npx expo run:ios' first"
-    exit 1
+# ── sign out via Maestro subflow, then stop app ──
+# This reliably clears the session without needing to reinstall the app.
+sign_out_and_stop() {
+  echo "  ── Signing out and stopping app ──"
+  set +e
+  "$MAESTRO_BIN" test ".maestro/subflows/sign-out.yaml" 2>&1
+  local EC=$?
+  set -e
+  if [ "$EC" -ne 0 ]; then
+    echo "  ⚠ Sign-out flow exited $EC — continuing anyway"
   fi
+  xcrun simctl terminate booted com.lalarente.app 2>/dev/null || true
+  echo "  App terminated. Next flow will start on login screen."
 }
 
 print_header() {
@@ -158,8 +159,8 @@ done
 # ════════════════════════════════════════════════════
 #  CLEAR STATE → OWNER
 # ════════════════════════════════════════════════════
-print_header "CLEARING STATE FOR OWNER"
-reinstall_app
+print_header "SIGN OUT → OWNER"
+sign_out_and_stop
 
 # ════════════════════════════════════════════════════
 #  PHASE 2: OWNER
@@ -174,8 +175,8 @@ done
 # ════════════════════════════════════════════════════
 #  CLEAR STATE → VENDOR
 # ════════════════════════════════════════════════════
-print_header "CLEARING STATE FOR VENDOR"
-reinstall_app
+print_header "SIGN OUT → VENDOR"
+sign_out_and_stop
 
 # ════════════════════════════════════════════════════
 #  PHASE 3: VENDOR

@@ -1,0 +1,74 @@
+# Sign out of any profile — navigates to profile, taps Sign Out, confirms alert
+# Works for tenant, owner, and vendor profiles
+# After sign-out, the app redirects to /auth/login
+appId: com.lalarente.app
+---
+# Open profile via deep link (reliable across all roles)
+- openLink: lalarenteapp:///(tenant)/profile
+
+# Wait for profile screen to render
+- extendedWaitUntil:
+    visible: "My Profile"
+    timeout: 20000
+    optional: true
+
+# If not tenant profile, try owner or vendor
+- runFlow:
+    when:
+      notVisible: "My Profile"
+    commands:
+      - openLink: lalarenteapp:///(owner)/profile
+      - extendedWaitUntil:
+          visible: "Profile"
+          timeout: 20000
+          optional: true
+
+- runFlow:
+    when:
+      notVisible: "Profile"
+    commands:
+      - openLink: lalarenteapp:///(vendor)/profile/index
+      - extendedWaitUntil:
+          visible: "Profile"
+          timeout: 20000
+          optional: true
+
+# Scroll down to find Sign Out button
+- scrollUntilVisible:
+    element:
+      text: "Sign Out"
+    direction: DOWN
+    timeout: 25000
+    optional: true
+
+# Tap Sign Out button
+- tapOn:
+    text: "Sign Out"
+    optional: true
+
+# Confirm alert - tap the destructive "Sign Out" option
+- extendedWaitUntil:
+    visible: "Are you sure"
+    timeout: 10000
+    optional: true
+
+- runFlow:
+    when:
+      visible: "Are you sure"
+    commands:
+      - tapOn:
+          text: "Sign Out"
+          optional: true
+
+- runFlow:
+    when:
+      notVisible: "Are you sure"
+    commands:
+      - tapOn:
+          text: "Sign Out"
+          optional: true
+
+# Wait for navigation to login screen
+- extendedWaitUntil:
+    visible: "Welcome back"
+    timeout: 20000
