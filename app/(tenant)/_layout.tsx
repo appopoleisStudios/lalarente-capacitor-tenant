@@ -7,7 +7,7 @@ export default function TenantLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.rsa.blue,
+        tabBarActiveTintColor: colors.role.tenant.primary, // RSA Green - Tenant primary
         tabBarInactiveTintColor: colors.gray[400],
         tabBarStyle: {
           backgroundColor: colors.background.default,
@@ -241,7 +241,9 @@ export default function TenantLayout() {
       <Tabs.Screen
         name="vendor-payments"
         options={{
-          href: null, // Hidden from tabs - accessed from maintenance or notifications
+          title: 'Pay Vendor',
+          tabBarButtonTestID: 'tab-vendor-payments',
+          tabBarIcon: ({ color, size }) => <Ionicons name="receipt-outline" size={size} color={color} />,
         }}
       />
       <Tabs.Screen

@@ -1,36 +1,71 @@
 # Owner login — uses OWNER_EMAIL/OWNER_PASSWORD from .maestro/.env via --env flags.
+# Detects whether the app is already logged in (session persisted in SecureStore)
+# and only fills the login form if needed.
 appId: com.lalarente.app
 ---
-# Wait for login screen
-- extendedWaitUntil:
-    visible:
-      id: "email-input"
-    timeout: 45000
-
-# Enter owner credentials (same pattern as tenant login)
-- tapOn:
-    id: "email-input"
-- eraseText
-- inputText: ${OWNER_EMAIL}
-
-- tapOn:
-    id: "password-input"
-- eraseText
-- inputText: ${OWNER_PASSWORD}
-
-# Tap Sign In
-- tapOn:
-    id: "sign-in-button"
-
-# Wait for owner dashboard
+# Check if already on owner dashboard (persisted session from prior owner flow)
 - extendedWaitUntil:
     visible: "Portfolio Dashboard"
-    timeout: 60000
+    timeout: 45000
     optional: true
 
-# Navigate to profile and verify
-- openLink: lalarenteapp:///(owner)/profile
-- extendedWaitUntil:
-    visible: "Owner Account"
-    timeout: 15000
-    optional: true
+# Already logged in as owner — done.
+- runFlow:
+    when:
+      visible: "Portfolio Dashboard"
+    commands:
+      - assertVisible:
+          text: "Portfolio Dashboard"
+          optional: true
+
+# Not on owner dashboard — check if we're on the login screen
+- runFlow:
+    when:
+      notVisible: "Portfolio Dashboard"
+    commands:
+      # Quick check: are we on the login screen?
+      # 10s is fast enough to catch wrong-role session without the 45s silent timeout
+      - extendedWaitUntil:
+          visible:
+            id: "email-input"
+          timeout: 10000
+          optional: true
+
+      # On login screen — proceed with credentials
+      - runFlow:
+          when:
+            visible:
+              id: "email-input"
+          commands:
+            - tapOn:
+                id: "email-input"
+            - eraseText
+            - inputText: ${OWNER_EMAIL}
+
+            - tapOn:
+                id: "password-input"
+            - eraseText
+            - inputText: ${OWNER_PASSWORD}
+
+            - tapOn:
+                id: "sign-in-button"
+
+            - extendedWaitUntil:
+                visible: "Portfolio Dashboard"
+                timeout: 60000
+                optional: true
+
+            - openLink: lalarenteapp:///(owner)/profile
+            - extendedWaitUntil:
+                visible: "Owner Account"
+                timeout: 15000
+                optional: true
+
+      # Not on login screen either — cached session for different role
+      # Suite runner must clear state between role phases
+      - runFlow:
+          when:
+            notVisible:
+              id: "email-input"
+          commands:
+            - fail: "Cached session for different role detected — run with fresh install between tenant and owner phases"

@@ -1,18 +1,48 @@
 #!/bin/bash
-# Run full E2E test suite in phases:
-# Phase 1: Tenant flows
-# Phase 2: Clears SecureStore, then Owner flows
-# Phase 3: Vendor flows
-# Reports EXIT codes for all flows at the end.
+# Lalarente — FULL E2E Test Suite
+# Runs ALL flows for ALL profiles: Tenant → Owner → Vendor
+# Clears app state between each phase (fresh install) so cached sessions don't interfere.
+# Reports PASS/FAIL for every flow with timing.
 
-set -e
-cd ~/Developer/lalarente/lalarente-app
-source .maestro/.env
+# ────────────────────────────────────────────────────
+# Usage:
+#   source .maestro/.env
+#   bash scripts/run-full-e2e-suite.sh
+# ────────────────────────────────────────────────────
 
-RESULTS_FILE="/tmp/e2e-results-$(date +%s).txt"
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$ROOT"
+
+# ── source credentials ──
+ENV_FILE="$ROOT/.maestro/.env"
+if [[ ! -f "$ENV_FILE" ]]; then
+  echo "ERROR: $ENV_FILE not found — copy .maestro/.env.example and fill credentials"
+  exit 1
+fi
+set -a; source "$ENV_FILE"; set +a
+
+for var in TENANT_EMAIL TENANT_PASSWORD OWNER_EMAIL OWNER_PASSWORD VENDOR_EMAIL VENDOR_PASSWORD; do
+  if [[ -z "${!var:-}" ]]; then
+    echo "ERROR: Set $var in .maestro/.env"
+    exit 1
+  fi
+done
+
+# ── resolve maestro ──
+source "$SCRIPT_DIR/lib/resolve-maestro.sh"
+
+RESULTS_FILE="/tmp/lalarente-e2e-$(date +%s).txt"
 > "$RESULTS_FILE"
 
+# ────────────────────────────────────────────────────
+# ALL FLOWS BY ROLE
+# ────────────────────────────────────────────────────
+
 TENANT_FLOWS=(
+  # Core tenant flows
   "01-tenant-dashboard"
   "02-tenant-lala-ai"
   "03-tenant-maintenance"
@@ -25,92 +55,155 @@ TENANT_FLOWS=(
   "13-pr10-tenant-lease-pdf"
   "14-pr10-tenant-maintenance-camera"
   "17-pr11-tenant-viewings-applications"
+  # Client feedback tenant flows
+  "client-feedback/s2-25-tenant-bell"
+  "client-feedback/s2-26-tenant-profile-docs"
+  "client-feedback/s2-31-tenant-contact-owner"
+  "client-feedback/s2-32-tenant-payments"
+  "client-feedback/s2-40-tenant-send-message"
+  # Vendor payments (tenant pays vendor invoices)
+  "20-vendor-payments"
 )
 
 OWNER_FLOWS=(
+  # Core owner flows
   "04-owner-dashboard"
   "09-pr9-owner-inspection-conduct"
   "10-pr9-owner-inspection-readonly"
   "15-pr7-owner-disputes-empty"
   "16-pr6-owner-lala-ai"
   "18-pr11-owner-applications"
+  # Client feedback owner flows
+  "client-feedback/s2-01-owner-dashboard"
+  "client-feedback/s2-02-owner-bell"
+  "client-feedback/s2-03-owner-viewings"
+  "client-feedback/s2-08-owner-leases"
+  "client-feedback/s2-10-owner-lease-messages"
+  "client-feedback/s2-11-owner-rent-roll"
+  "client-feedback/s2-13-owner-maintenance"
+  "client-feedback/s2-19-owner-messages"
+  "client-feedback/s2-21-owner-property"
 )
 
 VENDOR_FLOWS=(
-  "20-vendor-payments"
+  # Vendor parity flows
+  "vendor-dashboard"
+  "vendor-notifications"
+  "vendor-messaging"
+  "vendor-maintenance"
+  "vendor-ai-chat"
 )
+
+# ── helpers ──
+
+PASSED=0
+FAILED=0
 
 run_flow() {
   local flow="$1"
   shift
-  echo "  Running: $flow..."
+  local label="${flow#client-feedback/}"  # strip prefix for cleaner display
+  echo "  ▶ $label..."
   START=$(date +%s)
   set +e
-  ~/.maestro/bin/maestro test "$@" ".maestro/flows/$flow.yaml" 2>&1
+  "$MAESTRO_BIN" test "$@" ".maestro/flows/$flow.yaml" 2>&1
   EC=$?
   set -e
   END=$(date +%s)
   DURATION=$((END - START))
-  echo "$flow: EXIT=$EC (${DURATION}s)" >> "$RESULTS_FILE"
   if [ "$EC" -eq 0 ]; then
+    echo "    ✓ $label (${DURATION}s)" >> "$RESULTS_FILE"
     PASSED=$((PASSED + 1))
   else
+    echo "    ✗ $label FAILED (${DURATION}s) — exit $EC" >> "$RESULTS_FILE"
     FAILED=$((FAILED + 1))
   fi
 }
 
 reinstall_app() {
-  echo "  Reinstalling app..."
+  echo "  ── Reinstalling app (clears cached session) ──"
   xcrun simctl uninstall booted com.lalarente.app 2>/dev/null || true
-  # Find the existing build binary and install it (fast, no rebuild needed)
+  # Find existing build binary — fast reinstall, no rebuild
   APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "lalarenteapp.app" -type d 2>/dev/null | head -1)
   if [ -n "$APP_PATH" ]; then
     xcrun simctl install booted "$APP_PATH" 2>&1
-    echo "  App reinstalled from: $APP_PATH"
+    echo "  Installed from: $APP_PATH"
   else
-    echo "  No existing build found, rebuilding..."
-    npx expo run:ios --configuration Debug 2>&1 | tail -3
+    echo "  ERROR: No existing build found — run 'npx expo run:ios' first"
+    exit 1
   fi
 }
 
-PASSED=0
-FAILED=0
+print_header() {
+  local title="$1"
+  local len=${#title}
+  local pad=$(( (50 - len - 2) / 2 ))
+  printf '═%.0s' {1..50}
+  echo ""
+  printf '%*s %s %*s\n' "$pad" '' "$title" "$pad" ''
+  printf '═%.0s' {1..50}
+  echo ""
+}
 
-echo "========================================"
-echo "  PHASE 1: TENANT FLOWS"
-echo "========================================"
+# ════════════════════════════════════════════════════
+#  PHASE 1: TENANT
+# ════════════════════════════════════════════════════
+print_header "PHASE 1: TENANT (${#TENANT_FLOWS[@]} flows)"
 for flow in "${TENANT_FLOWS[@]}"; do
-  run_flow "$flow" --env TENANT_EMAIL="$TENANT_EMAIL" --env TENANT_PASSWORD="$TENANT_PASSWORD"
+  run_flow "$flow" \
+    --env TENANT_EMAIL="$TENANT_EMAIL" \
+    --env TENANT_PASSWORD="$TENANT_PASSWORD"
 done
 
-echo "========================================"
-echo "  CLEAR STATE FOR OWNER PHASE"
-echo "========================================"
+# ════════════════════════════════════════════════════
+#  CLEAR STATE → OWNER
+# ════════════════════════════════════════════════════
+print_header "CLEARING STATE FOR OWNER"
 reinstall_app
 
-echo "========================================"
-echo "  PHASE 2: OWNER FLOWS"
-echo "========================================"
+# ════════════════════════════════════════════════════
+#  PHASE 2: OWNER
+# ════════════════════════════════════════════════════
+print_header "PHASE 2: OWNER (${#OWNER_FLOWS[@]} flows)"
 for flow in "${OWNER_FLOWS[@]}"; do
-  run_flow "$flow" --env TENANT_EMAIL="$TENANT_EMAIL" --env TENANT_PASSWORD="$TENANT_PASSWORD" --env OWNER_EMAIL="$OWNER_EMAIL" --env OWNER_PASSWORD="$OWNER_PASSWORD"
+  run_flow "$flow" \
+    --env OWNER_EMAIL="$OWNER_EMAIL" \
+    --env OWNER_PASSWORD="$OWNER_PASSWORD"
 done
 
-echo "========================================"
-echo "  PHASE 3: VENDOR FLOWS"
-echo "========================================"
+# ════════════════════════════════════════════════════
+#  CLEAR STATE → VENDOR
+# ════════════════════════════════════════════════════
+print_header "CLEARING STATE FOR VENDOR"
+reinstall_app
+
+# ════════════════════════════════════════════════════
+#  PHASE 3: VENDOR
+# ════════════════════════════════════════════════════
+print_header "PHASE 3: VENDOR (${#VENDOR_FLOWS[@]} flows)"
 for flow in "${VENDOR_FLOWS[@]}"; do
-  run_flow "$flow" --env TENANT_EMAIL="$TENANT_EMAIL" --env TENANT_PASSWORD="$TENANT_PASSWORD"
+  run_flow "$flow" \
+    --env VENDOR_EMAIL="$VENDOR_EMAIL" \
+    --env VENDOR_PASSWORD="$VENDOR_PASSWORD"
 done
 
+# ════════════════════════════════════════════════════
+#  RESULTS
+# ════════════════════════════════════════════════════
+print_header " FULL E2E SUITE RESULTS "
 echo ""
-echo "═══════════════════════════════════════"
-echo "  FULL E2E SUITE RESULTS"
-echo "═══════════════════════════════════════"
+echo "  Tenant:  ${#TENANT_FLOWS[@]} flows"
+echo "  Owner:   ${#OWNER_FLOWS[@]} flows"
+echo "  Vendor:  ${#VENDOR_FLOWS[@]} flows"
+echo "  ──────────────────────"
+echo "  Total:   $(( ${#TENANT_FLOWS[@]} + ${#OWNER_FLOWS[@]} + ${#VENDOR_FLOWS[@]} )) flows"
+echo ""
 cat "$RESULTS_FILE"
-echo "───────────────────────────────────────"
-echo "  PASSED: $PASSED"
-echo "  FAILED: $FAILED"
-echo "  TOTAL:  $((PASSED + FAILED))"
-echo "═══════════════════════════════════════"
+echo ""
+echo "  ──────────────────────"
+echo "  PASSED:  $PASSED"
+echo "  FAILED:  $FAILED"
+echo "  TOTAL:   $((PASSED + FAILED))"
+print_header ""
 
 exit $FAILED

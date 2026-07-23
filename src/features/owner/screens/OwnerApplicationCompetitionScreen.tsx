@@ -35,7 +35,7 @@ const formatDate = (iso: string) =>
 
 const CREDIT_LABEL: Record<string, { label: string; color: string }> = {
   pending: { label: 'Pending', color: '#D97706' },
-  passed: { label: 'Passed ✓', color: colors.rsa.green },
+  passed: { label: 'Passed ✓', color: colors.role.owner.primary },
   failed: { label: 'Failed', color: colors.rsa.red },
   waived: { label: 'Waived', color: '#6B7280' },
 };
@@ -43,7 +43,7 @@ const CREDIT_LABEL: Record<string, { label: string; color: string }> = {
 const STATUS_INFO: Record<string, { label: string; color: string; bg: string }> = {
   submitted: { label: 'Submitted', color: '#D97706', bg: '#FEF3C7' },
   under_review: { label: 'Under Review', color: colors.rsa.blue, bg: '#E6EBF5' },
-  shortlisted: { label: 'Shortlisted', color: colors.rsa.green, bg: '#E6F7F0' },
+  shortlisted: { label: 'Shortlisted', color: colors.role.owner.primary, bg: '#E6F7F0' },
   backup: { label: 'Backup', color: '#7C3AED', bg: '#EDE9FE' },
 };
 
@@ -352,7 +352,7 @@ export default function OwnerApplicationCompetitionScreen() {
                 <Text style={styles.statLabel}>Total</Text>
               </View>
               <View style={styles.statBox}>
-                <Text style={[styles.statNumber, { color: colors.rsa.green }]}>
+                <Text style={[styles.statNumber, { color: colors.role.owner.primary }]}>
                   {shortlisted.length}
                 </Text>
                 <Text style={styles.statLabel}>Shortlisted</Text>
@@ -471,11 +471,11 @@ const styles = StyleSheet.create({
   approvedText: {
     flex: 1,
     fontSize: 14,
-    color: colors.rsa.green,
+    color: colors.role.owner.primary,
     fontWeight: '600',
   },
   promoteBtn: {
-    backgroundColor: colors.rsa.green,
+    backgroundColor: colors.role.owner.primary,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -571,7 +571,7 @@ const styles = StyleSheet.create({
   },
   scoreFill: {
     height: 8,
-    backgroundColor: colors.rsa.green,
+    backgroundColor: colors.role.owner.primary,
     borderRadius: 4,
   },
   scoreValue: {

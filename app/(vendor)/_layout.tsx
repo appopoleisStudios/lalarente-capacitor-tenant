@@ -7,7 +7,7 @@ export default function VendorLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.rsa.blue, // RSA Blue - Primary brand color
+        tabBarActiveTintColor: colors.role.vendor.primary, // RSA Gold - Vendor primary
         tabBarInactiveTintColor: colors.gray[400],
         tabBarStyle: {
           backgroundColor: colors.background.default,

@@ -1,6 +1,9 @@
-# Runs all Build 5 shipped client-fix + vendor parity flows (no video). Watch simulator while it runs.
-# Order: Tenant → Owner → Vendor (proven order from Build 4)
-# vendor-dashboard.yaml uses launch-app.yaml (clearState: true) — cleanly resets any prior session
+# DEPRECATED — Use 'npm run test:e2e:shipped' instead (runs run-full-e2e-suite.sh with state clearing).
+# This suite chains tenant→owner→vendor WITHOUT state clearing between roles.
+# The 04-owner-dashboard fast-fail WILL trigger after tenant flows because
+# SecureStore persists the cached tenant session. Do NOT run this after any other test.
+#
+# Kept for reference/debugging individual flow sequences on a FRESH INSTALL only.
 appId: com.lalarente.app
 ---
 # ==================== TENANT FLOWS ====================

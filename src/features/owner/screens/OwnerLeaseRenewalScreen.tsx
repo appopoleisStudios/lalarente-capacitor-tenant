@@ -395,7 +395,7 @@ export default function OwnerLeaseRenewalScreen() {
                 {latestNeg?.status === 'accepted' && (
                   <View style={styles.activeOfferRow}>
                     <Ionicons name="checkmark-circle" size={14} color={colors.rsa.green} />
-                    <Text style={[styles.activeOfferText, { color: colors.rsa.green }]}>
+                    <Text style={[styles.activeOfferText, { color: colors.role.owner.primary }]}>
                       Round {latestNeg.round}: {formatZAR(latestNeg.proposed_monthly_rent)}/mo accepted by tenant
                     </Text>
                   </View>
@@ -746,7 +746,7 @@ const styles = StyleSheet.create({
   },
   noticeChipSent: {
     backgroundColor: '#E6F7F0',
-    borderColor: colors.rsa.green,
+    borderColor: colors.role.owner.primary,
   },
   noticeChipOverdue: {
     backgroundColor: '#FEF2F2',
@@ -758,7 +758,7 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
   },
   noticeChipTextSent: {
-    color: colors.rsa.green,
+    color: colors.role.owner.primary,
   },
   noticeChipTextOverdue: {
     color: colors.rsa.red,
@@ -902,7 +902,7 @@ const styles = StyleSheet.create({
   acceptedBannerText: {
     fontSize: 13,
     fontWeight: '600',
-    color: colors.rsa.green,
+    color: colors.role.owner.primary,
     flex: 1,
   },
   executeButton: {
@@ -910,7 +910,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: colors.rsa.green,
+    backgroundColor: colors.role.owner.primary,
     borderRadius: 10,
     padding: 13,
   },
@@ -939,7 +939,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: colors.rsa.green,
+    backgroundColor: colors.role.owner.primary,
     borderRadius: 10,
     padding: 13,
     marginBottom: 8,

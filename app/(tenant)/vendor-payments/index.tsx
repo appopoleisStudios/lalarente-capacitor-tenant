@@ -13,6 +13,7 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '@/src/lib/supabase';
+import { colors } from '@/src/shared/theme/colors';
 
 interface VendorInvoice {
   id: string;
@@ -94,7 +95,7 @@ export default function VendorPaymentsList() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color="#007A4D" />
+          <ActivityIndicator size="large" color={colors.role.tenant.primary} />
         </View>
       </SafeAreaView>
     );
@@ -122,7 +123,7 @@ export default function VendorPaymentsList() {
           style={{ flex: 1 }}
           contentContainerStyle={{ padding: 16 }}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#007A4D']} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.role.tenant.primary]} />
           }
         >
           {error && (
@@ -187,7 +188,7 @@ export default function VendorPaymentsList() {
                           Invoice {invoice.invoice_number}
                         </Text>
                       </View>
-                      <Text style={{ fontSize: 22, fontWeight: '700', color: '#007A4D' }}>
+                      <Text style={{ fontSize: 22, fontWeight: '700', color: colors.role.tenant.primary }}>
                         R {invoice.total_amount.toLocaleString()}
                       </Text>
                     </View>
@@ -207,7 +208,7 @@ export default function VendorPaymentsList() {
                         style={{
                           flexDirection: 'row',
                           alignItems: 'center',
-                          backgroundColor: '#007A4D',
+                          backgroundColor: colors.role.tenant.primary,
                           paddingHorizontal: 20,
                           paddingVertical: 10,
                           borderRadius: 8,

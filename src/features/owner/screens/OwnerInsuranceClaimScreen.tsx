@@ -62,10 +62,10 @@ const STATUS_INFO: Record<ClaimStatus, { label: string; color: string; bg: strin
   submitted: { label: 'Submitted', color: '#D97706', bg: '#FEF3C7' },
   acknowledged: { label: 'Acknowledged', color: colors.rsa.blue, bg: '#E6EBF5' },
   assessment: { label: 'Under Assessment', color: '#7C3AED', bg: '#EDE9FE' },
-  approved: { label: 'Approved', color: colors.rsa.green, bg: '#E6F7F0' },
+  approved: { label: 'Approved', color: colors.role.owner.primary, bg: '#E6F7F0' },
   partially_approved: { label: 'Partially Approved', color: '#16A34A', bg: '#DCFCE7' },
   rejected: { label: 'Rejected', color: colors.rsa.red, bg: '#FEF2F2' },
-  paid_out: { label: 'Paid Out', color: colors.rsa.green, bg: '#E6F7F0' },
+  paid_out: { label: 'Paid Out', color: colors.role.owner.primary, bg: '#E6F7F0' },
   closed: { label: 'Closed', color: '#6B7280', bg: '#F3F4F6' },
 };
 
@@ -381,7 +381,7 @@ export default function OwnerInsuranceClaimScreen() {
             {claim.approved_amount != null && (
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Approved Amount</Text>
-                <Text style={[styles.detailValue, { color: colors.rsa.green, fontWeight: '700' }]}>
+                <Text style={[styles.detailValue, { color: colors.role.owner.primary, fontWeight: '700' }]}>
                   {formatZAR(claim.approved_amount)}
                 </Text>
               </View>
@@ -389,7 +389,7 @@ export default function OwnerInsuranceClaimScreen() {
             {claim.payout_received != null && (
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Payout Received</Text>
-                <Text style={[styles.detailValue, { color: colors.rsa.green, fontWeight: '800' }]}>
+                <Text style={[styles.detailValue, { color: colors.role.owner.primary, fontWeight: '800' }]}>
                   {formatZAR(claim.payout_received)}
                 </Text>
               </View>
@@ -947,8 +947,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.rsa.blue,
   },
   progressDotDone: {
-    borderColor: colors.rsa.green,
-    backgroundColor: colors.rsa.green,
+    borderColor: colors.role.owner.primary,
+    backgroundColor: colors.role.owner.primary,
   },
   progressLabel: {
     fontSize: 13,
@@ -967,7 +967,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border.default,
   },
   progressLineDone: {
-    backgroundColor: colors.rsa.green,
+    backgroundColor: colors.role.owner.primary,
   },
   // Modal
   modalContainer: {
@@ -1016,7 +1016,7 @@ const styles = StyleSheet.create({
   policyOptionCover: {
     fontSize: 14,
     fontWeight: '700',
-    color: colors.rsa.green,
+    color: colors.role.owner.primary,
   },
   sectionRow: {
     flexDirection: 'row',

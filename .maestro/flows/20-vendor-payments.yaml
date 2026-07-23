@@ -1,59 +1,12 @@
 appId: com.lalarente.app
 ---
-# Vendor Payment Flow - E2E Test (Self-contained, text-based selectors)
+# Vendor Payment Flow - E2E Test
 # Verifies tenant can see approved vendor invoices and navigate to payment screen
-# Handles both logged-in (dashboard shown) and logged-out (login screen shown) states
+# Uses standard login subflows for reliable authentication
 
-# Launch app (warm-e2e-simulator.sh has already terminated/re-launched it)
-- launchApp
-
-# Check if already logged in — dashboard shows "Welcome back," or "Search" or "Payments"
-- extendedWaitUntil:
-    visible: "Search"
-    timeout: 30000
-    optional: true
-
-# If not on dashboard, go through login flow
-- runFlow:
-    when:
-      notVisible: "Search"
-    commands:
-      # Wait for login screen to load
-      - extendedWaitUntil:
-          visible: "Lalarente"
-          timeout: 30000
-      - extendedWaitUntil:
-          visible: "Welcome back"
-          timeout: 15000
-      - extendedWaitUntil:
-          visible: "Sign in to your account"
-          timeout: 15000
-      # Type email
-      - tapOn: "your@email.com"
-      - inputText: ${TENANT_EMAIL}
-      - pressKey: Enter
-      # Type password (field auto-focused from Enter above)
-      - tapOn:
-          text: "Enter your password"
-          optional: true
-      - inputText: ${TENANT_PASSWORD}
-      - pressKey: Enter
-      # Wait for dashboard to appear
-      - extendedWaitUntil:
-          visible: "Search"
-          timeout: 60000
-          optional: true
-      # Fallback: tap Sign In button
-      - runFlow:
-          when:
-            notVisible: "Search"
-          commands:
-            - tapOn:
-                text: "Sign In"
-                optional: true
-            - extendedWaitUntil:
-                visible: "Search"
-                timeout: 60000
+# Use standard warm launch + login instead of fragile inline login
+- runFlow: ../subflows/launch-app-warm.yaml
+- runFlow: ../subflows/login-tenant.yaml
 
 # Now on dashboard — navigate to vendor payments via deep link
 - openLink: lalarenteapp:///(tenant)/vendor-payments

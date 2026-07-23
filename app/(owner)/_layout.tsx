@@ -7,7 +7,7 @@ export default function OwnerLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.rsa.blue, // RSA Blue - Primary brand color
+        tabBarActiveTintColor: colors.role.owner.primary, // RSA Blue - Owner primary
         tabBarInactiveTintColor: colors.gray[400],
         tabBarStyle: {
           backgroundColor: colors.background.default,

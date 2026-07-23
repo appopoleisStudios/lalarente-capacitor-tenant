@@ -20,7 +20,7 @@ import { colors } from '@/src/shared/theme/colors';
 const ROLE_COLORS = {
   owner: { primary: colors.rsa.blue, secondary: colors.rsa.gold },
   tenant: { primary: colors.rsa.green, secondary: colors.rsa.gold },
-  vendor: { primary: '#FF9800', secondary: '#795548' },
+  vendor: { primary: colors.role.vendor.primary, secondary: colors.role.vendor.secondary },
 };
 
 interface Props {
@@ -276,7 +276,7 @@ export default function MessagesScreen({ role = 'owner' }: Props) {
             <Ionicons
               name="create-outline"
               size={24}
-              color={role === 'vendor' ? '#FF9800' : role === 'tenant' ? colors.rsa.green : colors.rsa.blue}
+              color={role === 'vendor' ? colors.role.vendor.primary : role === 'tenant' ? colors.rsa.green : colors.rsa.blue}
             />
           </TouchableOpacity>
         </View>

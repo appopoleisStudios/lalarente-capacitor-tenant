@@ -238,7 +238,7 @@ export default function OwnerDocumentsHubScreen() {
             fileUrl: i.report_url,
             date: i.completed_date || '',
             iconName: 'clipboard',
-            iconColor: colors.rsa.green,
+            iconColor: colors.role.owner.primary,
             filter: 'inspections',
           });
         }

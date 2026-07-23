@@ -13,7 +13,7 @@
     "type-check": "tsc --noEmit --skipLibCheck",
     "test": "jest",
     "test:e2e": "bash scripts/run-e2e.sh",
-    "test:e2e:shipped": "bash scripts/run-e2e.sh .maestro/flows/build5-shipped-suite.yaml",
+    "test:e2e:shipped": "bash scripts/run-full-e2e-suite.sh",
     "test:e2e:client-feedback": "bash scripts/run-e2e-client-feedback.sh",
     "test:e2e:client-feedback:all": "bash scripts/run-e2e-macmini-pipeline.sh",
     "test:e2e:client-feedback:video": "bash scripts/run-e2e-client-feedback-video.sh",

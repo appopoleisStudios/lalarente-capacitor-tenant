@@ -73,7 +73,7 @@ export default function VendorProfileScreen() {
           <Text style={styles.headerTitle}>Profile</Text>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.rsa.blue} />
+          <ActivityIndicator size="large" color={colors.role.vendor.primary} />
         </View>
       </SafeAreaView>
     );
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: colors.rsa.blue,
+    backgroundColor: colors.role.vendor.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   badge: {
-    backgroundColor: colors.rsa.blue + '20',
+    backgroundColor: colors.role.vendor.primary + '20',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: colors.rsa.blue,
+    color: colors.role.vendor.primary,
   },
   section: {
     marginBottom: 24,
@@ -384,12 +384,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: colors.rsa.blue + '20',
+    backgroundColor: colors.role.vendor.primary + '20',
   },
   manageButtonText: {
     fontSize: 13,
     fontWeight: '600',
-    color: colors.rsa.blue,
+    color: colors.role.vendor.primary,
   },
   card: {
     backgroundColor: colors.background.default,
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   addButton: {
-    backgroundColor: colors.rsa.blue,
+    backgroundColor: colors.role.vendor.primary,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.rsa.blue + '20',
+    backgroundColor: colors.role.vendor.primary + '20',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
   servicePrice: {
     fontSize: 15,
     fontWeight: '700',
-    color: colors.rsa.green,
+    color: colors.role.vendor.primary,
   },
   servicePriceUnit: {
     fontSize: 12,
@@ -479,7 +479,7 @@ const styles = StyleSheet.create({
   viewAllText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.rsa.blue,
+    color: colors.role.vendor.primary,
   },
   areaItem: {
     flexDirection: 'row',

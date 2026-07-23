@@ -50,7 +50,7 @@ const STATUS_CONFIG: Record<HoldingDepositStatus, {
   bg: string;
 }> = {
   pending: { label: 'Awaiting Payment', color: '#D97706', bg: '#FEF3C7' },
-  paid: { label: 'Paid – Secured', color: colors.rsa.green, bg: '#E6F7F0' },
+  paid: { label: 'Paid – Secured', color: colors.role.owner.primary, bg: '#E6F7F0' },
   applied: { label: 'Applied to Lease', color: colors.rsa.blue, bg: '#E6EBF5' },
   refunded: { label: 'Refunded', color: '#6B7280', bg: '#F3F4F6' },
   forfeited: { label: 'Forfeited', color: colors.rsa.red, bg: '#FEF2F2' },
@@ -240,7 +240,7 @@ export default function OwnerHoldingDepositScreen() {
                 <Text style={styles.statLabel}>Awaiting Payment</Text>
               </View>
               <View style={styles.statBox}>
-                <Text style={[styles.statNumber, { color: colors.rsa.green }]}>{paidCount}</Text>
+                <Text style={[styles.statNumber, { color: colors.role.owner.primary }]}>{paidCount}</Text>
                 <Text style={styles.statLabel}>Paid & Active</Text>
               </View>
             </View>
@@ -369,10 +369,10 @@ function DepositCard({
         {deposit.status === 'paid' && (
           <View style={styles.cardActions}>
             <TouchableOpacity
-              style={[styles.cardActionBtn, { borderColor: colors.rsa.green }]}
+              style={[styles.cardActionBtn, { borderColor: colors.role.owner.primary }]}
               onPress={() => onApplyToLease(deposit)}
             >
-              <Text style={[styles.cardActionText, { color: colors.rsa.green }]}>
+              <Text style={[styles.cardActionText, { color: colors.role.owner.primary }]}>
                 Apply to Lease
               </Text>
             </TouchableOpacity>

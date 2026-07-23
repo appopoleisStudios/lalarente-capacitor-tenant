@@ -280,7 +280,7 @@ export default function OwnerDepositManagementScreen() {
           </View>
           <View style={[styles.summaryCard, { flex: 1 }]}>
             <Text style={styles.summaryLabel}>Interest Accrued</Text>
-            <Text style={[styles.summaryValue, { color: colors.rsa.green }]}>
+            <Text style={[styles.summaryValue, { color: colors.role.owner.primary }]}>
               {formatZAR(totalInterest)}
             </Text>
           </View>
@@ -349,7 +349,7 @@ export default function OwnerDepositManagementScreen() {
                     </View>
                     <View style={styles.detailRow}>
                       <Text style={styles.detailLabel}>Interest Earned</Text>
-                      <Text style={[styles.detailValue, { color: colors.rsa.green }]}>
+                      <Text style={[styles.detailValue, { color: colors.role.owner.primary }]}>
                         + {formatZAR(deposit.totalInterest)}
                       </Text>
                     </View>
@@ -730,7 +730,7 @@ const styles = StyleSheet.create({
   },
   accrualAmount: {
     fontSize: 13,
-    color: colors.rsa.green,
+    color: colors.role.owner.primary,
     fontWeight: '600',
   },
   actionButton: {
@@ -776,7 +776,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: colors.rsa.green,
+    backgroundColor: colors.role.owner.primary,
     borderRadius: 10,
     padding: 12,
   },

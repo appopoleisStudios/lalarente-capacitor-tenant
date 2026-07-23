@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
   resolveBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 5, paddingVertical: 10, borderRadius: 10,
-    backgroundColor: colors.rsa.green,
+    backgroundColor: colors.role.owner.primary,
   },
   resolveBtnText: { fontSize: 12, fontWeight: '700', color: '#FFF' },
   rejectBtn: {
@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
   modalCancelText: { fontSize: 15, fontWeight: '600', color: '#374151' },
   modalAcceptBtn: {
     flex: 1.5, paddingVertical: 14, borderRadius: 10, alignItems: 'center',
-    backgroundColor: colors.rsa.green,
+    backgroundColor: colors.role.owner.primary,
   },
   modalAcceptText: { fontSize: 15, fontWeight: '700', color: '#FFF' },
   modalRejectBtn: {

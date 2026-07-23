@@ -145,8 +145,8 @@ export default function OwnerInsuranceClaimsDashboard() {
             <Text style={[styles.statValue, { color: '#D97706' }]}>{summary.activeClaims}</Text>
             <Text style={styles.statLabel}>Active</Text>
           </View>
-          <View style={[styles.statCard, { borderColor: colors.rsa.green }]}>
-            <Text style={[styles.statValue, { color: colors.rsa.green }]}>
+          <View style={[styles.statCard, { borderColor: colors.role.owner.primary }]}>
+            <Text style={[styles.statValue, { color: colors.role.owner.primary }]}>
               {formatZAR(summary.totalPaidOut)}
             </Text>
             <Text style={styles.statLabel}>Paid Out</Text>
@@ -245,7 +245,7 @@ export default function OwnerInsuranceClaimsDashboard() {
                       {claim.approved_amount != null && (
                         <>
                           <Text style={styles.approvedSeparator}> → </Text>
-                          <Text style={[styles.approvedAmount, { color: colors.rsa.green }]}>
+                          <Text style={[styles.approvedAmount, { color: colors.role.owner.primary }]}>
                             {formatZAR(claim.approved_amount)}
                           </Text>
                         </>

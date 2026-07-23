@@ -96,11 +96,33 @@ export const colors = {
   
   // RSA Brand Colors (Direct access)
   rsa: {
-    green: '#007A4D',   // Primary brand color
-    gold: '#FFB81C',    // Secondary/accent color
-    blue: '#002395',    // Information/trust
-    red: '#DE3831',     // Urgent/error
+    green: '#007A4D',   // SA Flag Green - Tenant primary
+    gold: '#FFB81C',    // SA Flag Gold - Vendor primary
+    blue: '#002395',    // SA Flag Blue - Owner primary
+    red: '#DE3831',     // SA Flag Red - Errors/urgent
     white: '#FFFFFF',
     black: '#000000',
+  },
+
+  // Role-based theme colors — each role has its own primary/secondary from RSA flag
+  role: {
+    tenant: {
+      primary: '#007A4D',    // RSA Green
+      secondary: '#FFB81C',  // RSA Gold
+      tertiary: '#002395',   // RSA Blue for info links on tenant
+      background: '#e6f7f0', // Light green tint
+    },
+    owner: {
+      primary: '#002395',    // RSA Blue
+      secondary: '#007A4D',  // RSA Green
+      tertiary: '#FFB81C',   // RSA Gold for accents on owner
+      background: '#e6ebf5', // Light blue tint
+    },
+    vendor: {
+      primary: '#FFB81C',    // RSA Gold
+      secondary: '#007A4D',  // RSA Green
+      tertiary: '#002395',   // RSA Blue for info links on vendor
+      background: '#fffbf0', // Light gold tint
+    },
   },
 };
