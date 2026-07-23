@@ -1,14 +1,21 @@
 # Vendor login — uses VENDOR_EMAIL/VENDOR_PASSWORD from .maestro/.env via --env flags.
+# Detects whether the app is already logged in (session persisted in SecureStore)
+# and only fills the login form if needed.
 appId: com.lalarente.app
 ---
+# Navigate to vendor dashboard FIRST so we're on a known screen for session detection.
+# Previous flows may have navigated elsewhere. Dashboard shows notification-bell
+# if logged in as vendor, or redirects to login screen if not.
 - openLink: lalarenteapp:///(vendor)/dashboard
 
+# Wait for the app to settle on dashboard or redirect to login.
 - extendedWaitUntil:
     visible:
       id: "notification-bell"
-    timeout: 30000
+    timeout: 45000
     optional: true
 
+# Already logged in — done.
 - runFlow:
     when:
       visible:
@@ -17,6 +24,7 @@ appId: com.lalarente.app
       - assertVisible:
           id: "notification-bell"
 
+# Not logged in — go through login flow
 - runFlow:
     when:
       notVisible:
@@ -26,27 +34,19 @@ appId: com.lalarente.app
           visible:
             id: "email-input"
           timeout: 30000
+      # Enter email
       - tapOn:
           id: "email-input"
       - inputText: ${VENDOR_EMAIL}
-      - pressKey: Enter
+      # Enter password
+      - tapOn:
+          id: "password-input"
       - inputText: ${VENDOR_PASSWORD}
-      - pressKey: Enter
+      # Tap Sign In (more reliable than pressKey: Enter)
+      - tapOn:
+          id: "sign-in-button"
+      # Wait for navigation to vendor dashboard
       - extendedWaitUntil:
           visible:
             id: "notification-bell"
           timeout: 60000
-          optional: true
-      - runFlow:
-          when:
-            notVisible:
-              id: "notification-bell"
-          commands:
-            - tapOn:
-                id: "sign-in-button"
-            - extendedWaitUntil:
-                visible:
-                  id: "notification-bell"
-                timeout: 60000
-      - assertVisible:
-          id: "notification-bell"
