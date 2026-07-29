@@ -70,7 +70,7 @@ export default function VendorProfileScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Profile</Text>
+          <Text style={styles.headerTitle} testID="vendor-profile-title">Profile</Text>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.role.vendor.primary} />
@@ -90,7 +90,7 @@ export default function VendorProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profile</Text>
+        <Text style={styles.headerTitle} testID="vendor-profile-title">Profile</Text>
       </View>
 
       <ScrollView

@@ -6,7 +6,7 @@ import {
 } from '@/src/features/maintenance/api';
 import { colors } from '@/src/shared/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -25,7 +25,9 @@ type TabType = 'active' | 'completed';
 export default function VendorJobsListScreen() {
   const router = useRouter();
   const { profile } = useAuth();
-  const [activeTab, setActiveTab] = useState<TabType>('active');
+  const params = useLocalSearchParams<{ tab?: string }>();
+  const initialTab: TabType = params.tab === 'completed' ? 'completed' : 'active';
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [jobs, setJobs] = useState<VendorMaintenanceRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
