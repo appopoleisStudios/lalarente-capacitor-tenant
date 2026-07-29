@@ -7,9 +7,9 @@ appId: com.lalarente.app
 - openLink: lalarenteapp:///(vendor)/maintenance
 
 - extendedWaitUntil:
-    visible: "Maintenance"
+    visible: "Maintenance Requests"
     timeout: 20000
 
 - assertVisible:
-    text: "Maintenance"
+    text: "Maintenance Requests"
     optional: true

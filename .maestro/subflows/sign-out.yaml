@@ -1,58 +1,19 @@
 # Sign out of any profile — clears cached session so next flow starts on login screen
 # Works for tenant ("Sign Out"), owner ("Logout"), and vendor ("Logout")
-# Strategy: stopApp+launchApp → settle → detect screen → sign out if needed
+# IMPORTANT: Never use stopApp/launchApp — it kills the XCUITest driver and causes
+# kAXErrorInvalidUIElement crash. Use openLink to navigate instead.
 appId: com.lalarente.app
 ---
-# ── Step 1: Restart to known state ──
-- stopApp
-- launchApp
+# Step 1: Navigate to login screen directly via deep link
+# This also clears the user's mental state without destroying the XCUITest driver
+- openLink: lalarenteapp:///auth/login
 
-# ── Step 1a: Quick check — are we already on the login screen? ──
-# Short timeout (5s) first. If we're on login (no session), we're done fast.
+# Step 2: Wait for login screen to fully render
 - extendedWaitUntil:
     visible: "Sign in to your account"
-    timeout: 5000
-    optional: true
+    timeout: 60000
 
-# Already on login screen — already signed out. Fast path.
-- runFlow:
-    when:
-      visible: "Sign in to your account"
-    commands:
-      - assertVisible:
-          text: "Sign in to your account"
-          optional: true
-      # Done — nothing more to do
-
-# ── Step 1b: Not on login — wait for Metro + auto-redirect ──
-# Cached session: app briefly shows login screen ("Welcome back" no comma)
-# then auto-redirects to dashboard ("Welcome back," with comma).
-- runFlow:
-    when:
-      notVisible: "Sign in to your account"
-    commands:
-      - extendedWaitUntil:
-          visible: "Welcome back"
-          timeout: 120000
-          optional: true
-
-      # Small pause for any auto-redirect to finish
-      - tapOn:
-          text: "Not Now"
-          optional: true
-      - tapOn:
-          text: "Cancel"
-          optional: true
-
-      # Wait for auto-redirect to complete (dashboard with comma)
-      - extendedWaitUntil:
-          visible: "Welcome back,"
-          timeout: 10000
-          optional: true
-
-      # ── Step 2: Check if we're on the login screen ──
-# If "Sign in to your account" is visible after the settle period,
-# we're genuinely on the login screen (no cached session). Done.
+# If already on login screen — we're signed out, done
 - runFlow:
     when:
       visible: "Sign in to your account"
@@ -61,42 +22,40 @@ appId: com.lalarente.app
           text: "Sign in to your account"
           optional: true
 
-# ── Step 3: We're on dashboard — need to sign out ──
+# Step 3: Not on login screen — navigate to tenant profile to sign out
 - runFlow:
     when:
       notVisible: "Sign in to your account"
     commands:
-      # Try tenant profile first (most common)
       - openLink: lalarenteapp:///(tenant)/profile
       - extendedWaitUntil:
           visible: "My Profile"
           timeout: 30000
           optional: true
 
-      # If not tenant, try owner profile
+      # If not tenant, try owner
       - runFlow:
           when:
             notVisible: "My Profile"
           commands:
             - openLink: lalarenteapp:///(owner)/profile
             - extendedWaitUntil:
-                visible: "Profile"
+                visible: "Owner Account"
                 timeout: 20000
                 optional: true
 
-      # If not owner either, try vendor profile
+      # If not owner, try vendor
       - runFlow:
-          when:
-            notVisible: "Profile"
-          commands:
-            - openLink: lalarenteapp:///(vendor)/profile/index
-            - extendedWaitUntil:
-                visible: "Profile"
-                timeout: 20000
-                optional: true
+            when:
+              notVisible: "Owner Account"
+            commands:
+              - openLink: lalarenteapp:///(vendor)/profile
+              - extendedWaitUntil:
+                  visible: "Vendor Account"
+                  timeout: 20000
+                  optional: true
 
-      # ── Step 4: Scroll to sign-out/logout button ──
-      # Try "Sign Out" (tenant) first
+      # Scroll to find sign-out button
       - scrollUntilVisible:
           element:
             text: "Sign Out"
@@ -104,27 +63,23 @@ appId: com.lalarente.app
           timeout: 15000
           optional: true
 
-      # If not found, try "Logout" (owner/vendor)
-      - runFlow:
-          when:
-            notVisible: "Sign Out"
-          commands:
-            - scrollUntilVisible:
-                element:
-                  text: "Logout"
-                direction: DOWN
-                timeout: 15000
-                optional: true
+      - scrollUntilVisible:
+          element:
+            text: "Logout"
+          direction: DOWN
+          timeout: 10000
+          optional: true
 
-      # ── Step 5: Tap the sign-out button ──
+      # Tap sign-out button
       - tapOn:
           text: "Sign Out"
           optional: true
+
       - tapOn:
           text: "Logout"
           optional: true
 
-      # ── Step 6: Confirm alert ──
+      # Confirm alert
       - extendedWaitUntil:
           visible: "Are you sure"
           timeout: 10000
@@ -133,11 +88,12 @@ appId: com.lalarente.app
       - tapOn:
           text: "Sign Out"
           optional: true
+
       - tapOn:
           text: "Logout"
           optional: true
 
-      # ── Step 7: Wait for login screen ──
+      # Wait for login screen
       - extendedWaitUntil:
           visible: "Sign in to your account"
           timeout: 30000
