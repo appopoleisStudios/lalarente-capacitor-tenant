@@ -27,8 +27,12 @@ export function subscribeToMaintenanceRequests(
   ownerId: string,
   callback: (payload: any) => void
 ): RealtimeChannel {
+  // Use a unique channel name per owner to prevent "cannot add postgres_changes
+  // callbacks after subscribe()" error when the component remounts (StrictMode
+  // double-invoke, navigation back, or hot reload leaving a stale channel open).
+  const channelName = `maintenance_changes_${ownerId}_${Date.now()}_${Math.random()}`;
   const subscription = supabase
-    .channel('maintenance_changes')
+    .channel(channelName)
     .on(
       'postgres_changes',
       {
