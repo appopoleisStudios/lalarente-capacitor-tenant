@@ -12,7 +12,13 @@ type AuthContextType = {
   profile: Profile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, fullName: string, role: 'owner' | 'tenant') => Promise<void>;
+  signUp: (
+    email: string,
+    password: string,
+    fullName: string,
+    role: 'owner' | 'tenant' | 'vendor',
+    businessName?: string
+  ) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 };
@@ -38,17 +44,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=*`,
-        {
-          headers: {
-            apikey: SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${bearer}`,
-            'Content-Type': 'application/json',
-          },
-          signal: controller.signal,
-        }
-      );
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=*`, {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${bearer}`,
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal,
+      });
 
       clearTimeout(timeoutId);
 
@@ -76,13 +79,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Race getSession against a 5s timeout — stale AsyncStorage tokens can
         // cause the Supabase client to hang indefinitely waiting for a server
         // refresh response, leaving loading=true forever after a new APK install.
-        const timeout = new Promise<{ data: { session: null }; error: null }>(
-          resolve => setTimeout(() => resolve({ data: { session: null }, error: null }), 5000)
+        const timeout = new Promise<{ data: { session: null }; error: null }>((resolve) =>
+          setTimeout(() => resolve({ data: { session: null }, error: null }), 5000)
         );
-        const { data: { session } } = await Promise.race([
-          supabase.auth.getSession(),
-          timeout,
-        ]);
+        const {
+          data: { session },
+        } = await Promise.race([supabase.auth.getSession(), timeout]);
 
         if (session) {
           const nowSecs = Date.now() / 1000;
@@ -98,7 +100,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Refreshed successfully — use the new session.
             setSession(refreshed.session);
             setUser(refreshed.session.user);
-            fetchProfile(refreshed.session.user.id, refreshed.session.access_token).then(setProfile);
+            fetchProfile(refreshed.session.user.id, refreshed.session.access_token).then(
+              setProfile
+            );
             return;
           }
         }
@@ -130,7 +134,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // database call when SecureStore is contending (not just signIn),
         // so we must NOT block the auth state handler with an await.
         // Pass the session access_token so the REST call is authenticated.
-        fetchProfile(session.user.id, session.access_token).then(setProfile).catch(() => {});
+        fetchProfile(session.user.id, session.access_token)
+          .then(setProfile)
+          .catch(() => {});
       } else {
         setProfile(null);
       }
@@ -142,7 +148,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Sign up function
-  async function signUp(email: string, password: string, fullName: string, role: 'owner' | 'tenant') {
+  async function signUp(
+    email: string,
+    password: string,
+    fullName: string,
+    role: 'owner' | 'tenant' | 'vendor',
+    businessName?: string
+  ) {
     try {
       setLoading(true);
       const { data, error } = await supabase.auth.signUp({ email, password });
@@ -155,6 +167,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         full_name: fullName,
         email,
         role,
+        ...(role === 'vendor' && businessName ? { business_name: businessName } : {}),
       });
       if (profileError) throw new Error(profileError.message);
 
@@ -190,7 +203,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
         method: 'POST',
         headers: {
-          'apikey': SUPABASE_ANON_KEY,
+          apikey: SUPABASE_ANON_KEY,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
@@ -208,16 +221,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Set the session in supabase-js (fire-and-forget — the SDK itself
       // can hang on SecureStore writes, so we must NOT await it).
-      supabase.auth.setSession({
-        access_token: data.access_token,
-        refresh_token: data.refresh_token,
-      }).catch((err: any) => console.error('setSession error:', err));
+      supabase.auth
+        .setSession({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+        })
+        .catch((err: any) => console.error('setSession error:', err));
 
       // Manually set session state immediately so navigation is not blocked.
       // The onAuthStateChange handler also fires, but we don't wait for it.
       setSession(data as any);
       setUser(data.user);
-      fetchProfile(data.user.id, data.access_token).then(setProfile).catch(() => {});
+      fetchProfile(data.user.id, data.access_token)
+        .then(setProfile)
+        .catch(() => {});
 
       // Loading stays true until the navigation effect fires (watching profile)
       // or the safety timeout in handleLogin (15s) kicks in.

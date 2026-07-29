@@ -13,14 +13,14 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  withRepeat,
   withTiming,
-  Easing,
   FadeInDown,
   FadeIn,
 } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+
+import { useAuth } from '@/src/contexts/AuthContext';
 
 // South African flag colors
 const RSA_COLORS = {
@@ -33,8 +33,6 @@ const RSA_COLORS = {
   gray: '#F5F5F5',
   textGray: '#737373',
 };
-
-import { useAuth } from '@/src/contexts/AuthContext';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -52,7 +50,7 @@ export default function LoginScreen() {
   useEffect(() => {
     if (profile && !authLoading) {
       setLoading(false);
-      
+
       // Role-based navigation
       if (profile.role === 'owner') {
         router.replace('/(owner)/dashboard');
@@ -66,27 +64,19 @@ export default function LoginScreen() {
 
   // Animations
   const logoScale = useSharedValue(0.8);
-  const logoRotate = useSharedValue(0);
+  const logoOpacity = useSharedValue(0);
 
   useEffect(() => {
     logoScale.value = withSpring(1, {
       damping: 10,
       stiffness: 100,
     });
-    logoRotate.value = withRepeat(
-      withTiming(360, {
-        duration: 20000,
-        easing: Easing.linear,
-      }),
-      -1
-    );
+    logoOpacity.value = withTiming(1, { duration: 600 });
   }, []);
 
   const logoAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: logoScale.value },
-      { rotate: `${logoRotate.value}deg` },
-    ],
+    transform: [{ scale: logoScale.value }],
+    opacity: logoOpacity.value,
   }));
 
   const handleLogin = async () => {
@@ -137,10 +127,7 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {/* Logo Section */}
-          <Animated.View 
-            entering={FadeIn.duration(800)}
-            style={styles.logoSection}
-          >
+          <Animated.View entering={FadeIn.duration(800)} style={styles.logoSection}>
             <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>
               <View style={styles.logoRing}>
                 <View style={styles.logoInner}>
@@ -153,7 +140,7 @@ export default function LoginScreen() {
           </Animated.View>
 
           {/* Form Section */}
-          <Animated.View 
+          <Animated.View
             entering={FadeInDown.delay(200).duration(600)}
             style={styles.formContainer}
           >
@@ -162,9 +149,16 @@ export default function LoginScreen() {
 
             {/* Email Input — plain View (no entering animation) so Maestro/iOS a11y sees fields immediately */}
             <View>
-              <Text style={styles.inputLabel} accessible={false}>Email</Text>
+              <Text style={styles.inputLabel} accessible={false}>
+                Email
+              </Text>
               <View style={[styles.inputContainer, emailError ? styles.inputContainerError : null]}>
-                <Ionicons name="mail-outline" size={20} color={RSA_COLORS.textGray} style={styles.inputIcon} />
+                <Ionicons
+                  name="mail-outline"
+                  size={20}
+                  color={RSA_COLORS.textGray}
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   style={styles.input}
                   placeholder="your@email.com"
@@ -173,7 +167,11 @@ export default function LoginScreen() {
                   accessibilityHint="Email address for sign in"
                   testID="email-input"
                   value={email}
-                  onChangeText={(t) => { setEmail(t); setEmailError(''); setFormError(''); }}
+                  onChangeText={(t) => {
+                    setEmail(t);
+                    setEmailError('');
+                    setFormError('');
+                  }}
                   returnKeyType="next"
                   onSubmitEditing={() => passwordRef.current?.focus()}
                   autoCapitalize="none"
@@ -190,9 +188,18 @@ export default function LoginScreen() {
 
             {/* Password Input */}
             <View>
-              <Text style={styles.inputLabel} accessible={false}>Password</Text>
-              <View style={[styles.inputContainer, passwordError ? styles.inputContainerError : null]}>
-                <Ionicons name="lock-closed-outline" size={20} color={RSA_COLORS.textGray} style={styles.inputIcon} />
+              <Text style={styles.inputLabel} accessible={false}>
+                Password
+              </Text>
+              <View
+                style={[styles.inputContainer, passwordError ? styles.inputContainerError : null]}
+              >
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color={RSA_COLORS.textGray}
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   ref={passwordRef}
                   style={styles.input}
@@ -202,7 +209,11 @@ export default function LoginScreen() {
                   accessibilityHint="Password for sign in"
                   testID="password-input"
                   value={password}
-                  onChangeText={(t) => { setPassword(t); setPasswordError(''); setFormError(''); }}
+                  onChangeText={(t) => {
+                    setPassword(t);
+                    setPasswordError('');
+                    setFormError('');
+                  }}
                   secureTextEntry={!showPassword}
                   returnKeyType="done"
                   onSubmitEditing={handleLogin}
@@ -217,7 +228,11 @@ export default function LoginScreen() {
                   accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
                   accessibilityRole="button"
                 >
-                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={RSA_COLORS.textGray} />
+                  <Ionicons
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={20}
+                    color={RSA_COLORS.textGray}
+                  />
                 </Pressable>
               </View>
               {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
@@ -243,16 +258,21 @@ export default function LoginScreen() {
                 testID="sign-in-button"
                 accessibilityLabel="Sign In"
               >
-                <Text style={styles.signInButtonText}>
-                  {loading ? 'Signing in...' : 'Sign In'}
-                </Text>
+                <Text style={styles.signInButtonText}>{loading ? 'Signing in...' : 'Sign In'}</Text>
               </Pressable>
             </Animated.View>
 
             {/* Register Link */}
-            <Animated.View entering={FadeInDown.delay(600).duration(600)} style={styles.registerRow}>
+            <Animated.View
+              entering={FadeInDown.delay(600).duration(600)}
+              style={styles.registerRow}
+            >
               <Text style={styles.registerText}>Don't have an account? </Text>
-              <Pressable onPress={() => router.push('/auth/register' as any)} accessibilityRole="link" accessibilityLabel="Create Account">
+              <Pressable
+                onPress={() => router.push('/auth/register' as any)}
+                accessibilityRole="link"
+                accessibilityLabel="Create Account"
+              >
                 <Text style={styles.registerLink}>Create Account</Text>
               </Pressable>
             </Animated.View>
