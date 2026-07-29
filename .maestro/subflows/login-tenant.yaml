@@ -3,21 +3,16 @@
 # and only fills the login form if needed.
 appId: com.lalarente.app
 ---
-# Navigate to dashboard FIRST so we're on a known screen for session detection.
-# Previous flows may have navigated to AI chat, maintenance, etc.
-# Dashboard shows "Welcome back," (with comma) if logged in, or redirects to
-# login screen ("Welcome back" without comma) if not logged in.
+# Navigate to tenant dashboard to trigger session detection
 - openLink: lalarenteapp:///(tenant)/dashboard
 
-# Wait for the app to settle on dashboard or redirect to login.
-# 45s covers: Metro bundle load + SecureStore read + session restore + profile
-# fetch (REST API with 10s timeout) + dashboard navigation + UI render.
+# Wait up to 35s for session restore + dashboard render
 - extendedWaitUntil:
     visible: "Welcome back,"
-    timeout: 45000
+    timeout: 35000
     optional: true
 
-# Already logged in — done.
+# If dashboard visible — already logged in, done
 - runFlow:
     when:
       visible: "Welcome back,"
@@ -26,28 +21,37 @@ appId: com.lalarente.app
           text: "Welcome back,"
           optional: true
 
-# Not logged in — go through login flow
+# Not on dashboard — must be on login screen, fill credentials
 - runFlow:
     when:
       notVisible: "Welcome back,"
     commands:
+      # Go directly to login screen by deep link
+      - openLink: lalarenteapp:///auth/login
       - extendedWaitUntil:
-          visible: "Welcome back"
-          timeout: 15000
-      # Enter email
+          visible:
+            id: "email-input"
+          timeout: 30000
+
       - tapOn:
           id: "email-input"
       - eraseText
       - inputText: ${TENANT_EMAIL}
-      # Enter password
+
       - tapOn:
           id: "password-input"
       - eraseText
       - inputText: ${TENANT_PASSWORD}
-      # Tap Sign In
+
+      # Wait briefly for React state to propagate after input
+      - tapOn:
+          id: "password-input"
+
+      # Tap Sign In (button is only enabled when both fields non-empty)
       - tapOn:
           id: "sign-in-button"
-      # Wait for navigation to dashboard
+
+      # Wait up to 60s for dashboard to appear after login
       - extendedWaitUntil:
           visible: "Welcome back,"
           timeout: 60000
