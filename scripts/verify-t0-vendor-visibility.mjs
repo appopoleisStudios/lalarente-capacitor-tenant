@@ -39,7 +39,9 @@ function loadEnv() {
         }
       }
     }
-  } catch {}
+  } catch (e) {
+    console.warn(`⚠️  Failed to parse ${MAESTRO_ENV}: ${e.message}`);
+  }
   return env;
 }
 
