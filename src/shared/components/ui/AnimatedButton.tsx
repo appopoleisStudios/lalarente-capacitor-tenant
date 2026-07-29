@@ -15,6 +15,7 @@ export interface AnimatedButtonProps {
   accessibilityLabel?: string;
   accessibilityRole?: 'button' | 'link';
   disabled?: boolean;
+  testID?: string;
 }
 
 export const AnimatedButton = ({
@@ -25,6 +26,7 @@ export const AnimatedButton = ({
   accessibilityLabel,
   accessibilityRole = 'button',
   disabled = false,
+  testID,
 }: AnimatedButtonProps) => {
   const scale = useSharedValue(1);
 
@@ -55,6 +57,7 @@ export const AnimatedButton = ({
         accessibilityRole={accessibilityRole}
         accessibilityLabel={accessibilityLabel}
         disabled={disabled}
+        testID={testID}
       >
         {children}
       </Pressable>

@@ -281,6 +281,7 @@ export default function OwnerDashboardScreen() {
             </View>
           </View>
           <AnimatedButton
+            testID="notification-bell"
             accessibilityLabel="Notifications"
             onPress={() => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

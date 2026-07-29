@@ -26,6 +26,8 @@ interface ActivityItem {
     timestamp: Date;
     icon: keyof typeof Ionicons.glyphMap;
     iconColor: string;
+    requestId: string;
+    poId?: string | null;
 }
 
 interface UpcomingWork {
@@ -138,6 +140,7 @@ export default function VendorDashboardScreen() {
                     timestamp: new Date(req.my_quote.created_at),
                     icon: 'checkmark-circle',
                     iconColor: colors.success[500],
+                    requestId: req.id,
                 });
             }
 
@@ -151,6 +154,8 @@ export default function VendorDashboardScreen() {
                     timestamp: new Date(req.vendor_routed_at || req.created_at),
                     icon: 'document-text',
                     iconColor: colors.info[500],
+                    requestId: req.id,
+                    poId: req.po_id,
                 });
             }
 
@@ -164,6 +169,7 @@ export default function VendorDashboardScreen() {
                     timestamp: new Date(req.vendor_routed_at || req.created_at),
                     icon: 'hammer',
                     iconColor: colors.primary[500],
+                    requestId: req.id,
                 });
             }
 
@@ -177,6 +183,7 @@ export default function VendorDashboardScreen() {
                     timestamp: new Date(req.created_at),
                     icon: 'notifications',
                     iconColor: colors.warning[500],
+                    requestId: req.id,
                 });
             }
         });
@@ -294,6 +301,7 @@ export default function VendorDashboardScreen() {
                             count={stats.availableRequests}
                             label="Available"
                             backgroundColor={colors.info[50]}
+                            onPress={() => router.push('/(vendor)/maintenance')}
                         />
                         <StatCard
                             icon="document-text"
@@ -301,6 +309,7 @@ export default function VendorDashboardScreen() {
                             count={stats.pendingQuotes}
                             label="Quotes"
                             backgroundColor={colors.warning[50]}
+                            onPress={() => router.push('/(vendor)/maintenance')}
                         />
                     </View>
                     <View style={styles.statsRow}>
@@ -310,6 +319,7 @@ export default function VendorDashboardScreen() {
                             count={stats.activeJobs}
                             label="Active"
                             backgroundColor={colors.primary[50]}
+                            onPress={() => router.push('/(vendor)/jobs')}
                         />
                         <StatCard
                             icon="checkmark-circle"
@@ -317,25 +327,7 @@ export default function VendorDashboardScreen() {
                             count={stats.completedJobs}
                             label="Completed"
                             backgroundColor={colors.success[50]}
-                        />
-                    </View>
-                </View>
-
-                {/* Quick Actions */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Quick Actions</Text>
-                    <View style={styles.quickActionsContainer}>
-                        <QuickActionButton
-                            icon="list"
-                            label="Browse Requests"
-                            onPress={() => router.push('/(vendor)/maintenance')}
-                            color={colors.info[500]}
-                        />
-                        <QuickActionButton
-                            icon="hammer"
-                            label="My Jobs"
-                            onPress={() => router.push('/(vendor)/jobs')}
-                            color={colors.primary[500]}
+                            onPress={() => router.push('/(vendor)/jobs?tab=completed')}
                         />
                     </View>
                 </View>
@@ -350,6 +342,26 @@ export default function VendorDashboardScreen() {
                                     key={`${activity.id}-${index}`}
                                     activity={activity}
                                     formatTime={formatActivityTime}
+                                    onPress={() => {
+                                        switch (activity.type) {
+                                            case 'quote_accepted':
+                                                router.push(`/(vendor)/jobs/${activity.requestId}`);
+                                                break;
+                                            case 'po_issued':
+                                                if (activity.poId) {
+                                                    router.push(`/(vendor)/maintenance/${activity.requestId}/po/${activity.poId}`);
+                                                } else {
+                                                    router.push(`/(vendor)/jobs/${activity.requestId}`);
+                                                }
+                                                break;
+                                            case 'job_started':
+                                                router.push(`/(vendor)/jobs/${activity.requestId}`);
+                                                break;
+                                            case 'new_request':
+                                                router.push(`/(vendor)/maintenance/${activity.requestId}`);
+                                                break;
+                                        }
+                                    }}
                                 />
                             ))}
                         </View>
@@ -365,7 +377,7 @@ export default function VendorDashboardScreen() {
                                 <UpcomingWorkCard
                                     key={work.id}
                                     work={work}
-                                    onPress={() => router.push('/(vendor)/jobs')}
+                                    onPress={() => router.push(`/(vendor)/maintenance/${work.id}`)}
                                 />
                             ))}
                         </View>
@@ -382,10 +394,11 @@ interface StatCardProps {
     count: number;
     label: string;
     backgroundColor: string;
+    onPress?: () => void;
 }
 
-function StatCard({ icon, iconColor, count, label, backgroundColor }: StatCardProps) {
-    return (
+function StatCard({ icon, iconColor, count, label, backgroundColor, onPress }: StatCardProps) {
+    const card = (
         <View style={[styles.statCard, { backgroundColor }]}>
             <View style={[styles.iconContainer, { backgroundColor: iconColor }]}>
                 <Ionicons name={icon} size={28} color={colors.rsa.white} />
@@ -394,39 +407,21 @@ function StatCard({ icon, iconColor, count, label, backgroundColor }: StatCardPr
             <Text style={styles.statLabel}>{label}</Text>
         </View>
     );
-}
 
-interface QuickActionButtonProps {
-    icon: keyof typeof Ionicons.glyphMap;
-    label: string;
-    onPress: () => void;
-    color: string;
-}
-
-function QuickActionButton({ icon, label, onPress, color }: QuickActionButtonProps) {
-    return (
-        <Pressable
-            style={({ pressed }) => [
-                styles.quickActionButton,
-                pressed && styles.quickActionButtonPressed,
-            ]}
-            onPress={onPress}
-        >
-            <View style={[styles.quickActionIcon, { backgroundColor: color }]}>
-                <Ionicons name={icon} size={24} color={colors.rsa.white} />
-            </View>
-            <Text style={styles.quickActionLabel}>{label}</Text>
-        </Pressable>
-    );
+    if (onPress) {
+        return <Pressable onPress={onPress} style={{ flex: 1 }}>{card}</Pressable>;
+    }
+    return card;
 }
 
 interface ActivityCardProps {
     activity: ActivityItem;
     formatTime: (date: Date) => string;
+    onPress?: () => void;
 }
 
-function ActivityCard({ activity, formatTime }: ActivityCardProps) {
-    return (
+function ActivityCard({ activity, formatTime, onPress }: ActivityCardProps) {
+    const card = (
         <View style={styles.activityCard}>
             <View style={[styles.activityIcon, { backgroundColor: activity.iconColor + '20' }]}>
                 <Ionicons name={activity.icon} size={20} color={activity.iconColor} />
@@ -438,6 +433,11 @@ function ActivityCard({ activity, formatTime }: ActivityCardProps) {
             <Text style={styles.activityTime}>{formatTime(activity.timestamp)}</Text>
         </View>
     );
+
+    if (onPress) {
+        return <Pressable onPress={onPress} style={{ flex: 1 }}>{card}</Pressable>;
+    }
+    return card;
 }
 
 interface UpcomingWorkCardProps {
@@ -581,36 +581,6 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: colors.text.primary,
         marginBottom: 12,
-    },
-    quickActionsContainer: {
-        flexDirection: 'row',
-        gap: 12,
-    },
-    quickActionButton: {
-        flex: 1,
-        backgroundColor: colors.background.default,
-        borderRadius: 12,
-        padding: 16,
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: colors.border.default,
-    },
-    quickActionButtonPressed: {
-        backgroundColor: colors.background.tertiary,
-    },
-    quickActionIcon: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 8,
-    },
-    quickActionLabel: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: colors.text.primary,
-        textAlign: 'center',
     },
     activityContainer: {
         backgroundColor: colors.background.default,

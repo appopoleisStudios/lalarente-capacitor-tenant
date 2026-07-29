@@ -231,7 +231,7 @@ export default function MessagesScreen({ role = 'owner' }: Props) {
           <View style={styles.backButton} />
           <Text
             style={styles.headerTitle}
-            testID={role === 'tenant' ? 'tenant-messages-title' : 'owner-messages-title'}
+            testID={role === 'tenant' ? 'tenant-messages-title' : role === 'vendor' ? 'vendor-messages-title' : 'owner-messages-title'}
           >
             Messages
           </Text>
@@ -258,7 +258,7 @@ export default function MessagesScreen({ role = 'owner' }: Props) {
           )}
           <Text
             style={styles.headerTitle}
-            testID={role === 'tenant' ? 'tenant-messages-title' : 'owner-messages-title'}
+            testID={role === 'tenant' ? 'tenant-messages-title' : role === 'vendor' ? 'vendor-messages-title' : 'owner-messages-title'}
           >
             Messages
           </Text>
