@@ -27,7 +27,7 @@ const RSA = {
   error: '#DC2626',
 };
 
-type Role = 'owner' | 'tenant';
+type Role = 'owner' | 'tenant' | 'vendor';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -38,6 +38,7 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<Role>('tenant');
+  const [vendorBusinessName, setVendorBusinessName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -49,6 +50,8 @@ export default function RegisterScreen() {
         router.replace('/(owner)/dashboard');
       } else if (profile.role === 'tenant') {
         router.replace('/(tenant)/dashboard');
+      } else if (profile.role === 'vendor') {
+        router.replace('/(vendor)/dashboard');
       }
     }
   }, [profile, authLoading]);
@@ -78,10 +81,19 @@ export default function RegisterScreen() {
 
     try {
       setLoading(true);
-      await signUp(email.trim(), password, fullName.trim(), role);
+      await signUp(
+        email.trim(),
+        password,
+        fullName.trim(),
+        role,
+        vendorBusinessName.trim() || undefined
+      );
       // navigation handled by useEffect above
     } catch (err: any) {
-      Alert.alert('Registration Failed', err.message || 'Could not create account. Please try again.');
+      Alert.alert(
+        'Registration Failed',
+        err.message || 'Could not create account. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
@@ -117,24 +129,53 @@ export default function RegisterScreen() {
             {/* Role selector */}
             <Text style={styles.label}>I am a</Text>
             <View style={styles.roleRow}>
-              {(['tenant', 'owner'] as Role[]).map(r => (
+              {(['tenant', 'owner', 'vendor'] as Role[]).map((r) => (
                 <Pressable
                   key={r}
                   style={[styles.roleBtn, role === r && styles.roleBtnActive]}
                   onPress={() => setRole(r)}
                 >
                   <Text style={[styles.roleBtnText, role === r && styles.roleBtnTextActive]}>
-                    {r === 'tenant' ? 'Tenant' : 'Owner'}
+                    {r === 'tenant' ? 'Tenant' : r === 'owner' ? 'Owner' : 'Service Provider'}
                   </Text>
                 </Pressable>
               ))}
             </View>
 
+            {/* Vendor Business Name (shown only for vendor role) */}
+            {role === 'vendor' && (
+              <Animated.View entering={FadeInDown.delay(210).duration(500)}>
+                <Text style={styles.label}>Business Name</Text>
+                <View style={styles.inputContainer}>
+                  <Ionicons
+                    name="business-outline"
+                    size={20}
+                    color={RSA.textGray}
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Your business or trading name"
+                    placeholderTextColor={RSA.textGray}
+                    value={vendorBusinessName}
+                    onChangeText={setVendorBusinessName}
+                    autoCapitalize="words"
+                    editable={!loading}
+                  />
+                </View>
+              </Animated.View>
+            )}
+
             {/* Full Name */}
             <Animated.View entering={FadeInDown.delay(200).duration(500)}>
               <Text style={styles.label}>Full Name</Text>
               <View style={styles.inputContainer}>
-                <Ionicons name="person-outline" size={20} color={RSA.textGray} style={styles.inputIcon} />
+                <Ionicons
+                  name="person-outline"
+                  size={20}
+                  color={RSA.textGray}
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   style={styles.input}
                   placeholder="Your full name"
@@ -151,7 +192,12 @@ export default function RegisterScreen() {
             <Animated.View entering={FadeInDown.delay(250).duration(500)}>
               <Text style={styles.label}>Email</Text>
               <View style={styles.inputContainer}>
-                <Ionicons name="mail-outline" size={20} color={RSA.textGray} style={styles.inputIcon} />
+                <Ionicons
+                  name="mail-outline"
+                  size={20}
+                  color={RSA.textGray}
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   style={styles.input}
                   placeholder="your@email.com"
@@ -170,7 +216,12 @@ export default function RegisterScreen() {
             <Animated.View entering={FadeInDown.delay(300).duration(500)}>
               <Text style={styles.label}>Password</Text>
               <View style={styles.inputContainer}>
-                <Ionicons name="lock-closed-outline" size={20} color={RSA.textGray} style={styles.inputIcon} />
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color={RSA.textGray}
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   style={styles.input}
                   placeholder="Min. 8 chars + number or symbol"
@@ -181,8 +232,17 @@ export default function RegisterScreen() {
                   autoCapitalize="none"
                   editable={!loading}
                 />
-                <Pressable onPress={() => setShowPassword(v => !v)} style={styles.eyeBtn} accessibilityLabel={showPassword ? 'Hide password' : 'Show password'} accessibilityRole="button">
-                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={RSA.textGray} />
+                <Pressable
+                  onPress={() => setShowPassword((v) => !v)}
+                  style={styles.eyeBtn}
+                  accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                  accessibilityRole="button"
+                >
+                  <Ionicons
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={20}
+                    color={RSA.textGray}
+                  />
                 </Pressable>
               </View>
             </Animated.View>
@@ -191,7 +251,12 @@ export default function RegisterScreen() {
             <Animated.View entering={FadeInDown.delay(350).duration(500)}>
               <Text style={styles.label}>Confirm Password</Text>
               <View style={styles.inputContainer}>
-                <Ionicons name="lock-closed-outline" size={20} color={RSA.textGray} style={styles.inputIcon} />
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color={RSA.textGray}
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   style={styles.input}
                   placeholder="Repeat your password"
@@ -202,8 +267,19 @@ export default function RegisterScreen() {
                   autoCapitalize="none"
                   editable={!loading}
                 />
-                <Pressable onPress={() => setShowConfirm(v => !v)} style={styles.eyeBtn} accessibilityLabel={showConfirm ? 'Hide confirm password' : 'Show confirm password'} accessibilityRole="button">
-                  <Ionicons name={showConfirm ? 'eye-off-outline' : 'eye-outline'} size={20} color={RSA.textGray} />
+                <Pressable
+                  onPress={() => setShowConfirm((v) => !v)}
+                  style={styles.eyeBtn}
+                  accessibilityLabel={
+                    showConfirm ? 'Hide confirm password' : 'Show confirm password'
+                  }
+                  accessibilityRole="button"
+                >
+                  <Ionicons
+                    name={showConfirm ? 'eye-off-outline' : 'eye-outline'}
+                    size={20}
+                    color={RSA.textGray}
+                  />
                 </Pressable>
               </View>
             </Animated.View>
@@ -241,13 +317,21 @@ const styles = StyleSheet.create({
 
   header: { alignItems: 'center', marginBottom: 36 },
   logoRing: {
-    width: 80, height: 80, borderRadius: 40,
-    borderWidth: 2, borderColor: RSA.green,
-    borderStyle: 'dashed', padding: 6, marginBottom: 14,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    borderColor: RSA.green,
+    borderStyle: 'dashed',
+    padding: 6,
+    marginBottom: 14,
   },
   logoInner: {
-    flex: 1, backgroundColor: RSA.green,
-    borderRadius: 34, alignItems: 'center', justifyContent: 'center',
+    flex: 1,
+    backgroundColor: RSA.green,
+    borderRadius: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   logoText: { fontSize: 28, fontWeight: '800', color: RSA.white },
   appName: { fontSize: 24, fontWeight: '700', color: RSA.black },
@@ -258,15 +342,22 @@ const styles = StyleSheet.create({
   formSub: { fontSize: 14, color: RSA.textGray, marginBottom: 24 },
 
   label: {
-    fontSize: 14, fontWeight: '600', color: RSA.black,
-    marginBottom: 8, marginTop: 16,
+    fontSize: 14,
+    fontWeight: '600',
+    color: RSA.black,
+    marginBottom: 8,
+    marginTop: 16,
   },
 
   roleRow: { flexDirection: 'row', gap: 12 },
   roleBtn: {
-    flex: 1, height: 48, borderRadius: 10,
-    borderWidth: 2, borderColor: RSA.border,
-    alignItems: 'center', justifyContent: 'center',
+    flex: 1,
+    height: 48,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: RSA.border,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: RSA.gray,
   },
   roleBtnActive: { borderColor: RSA.green, backgroundColor: '#E6F7F1' },
@@ -274,9 +365,14 @@ const styles = StyleSheet.create({
   roleBtnTextActive: { color: RSA.green },
 
   inputContainer: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: RSA.white, borderWidth: 2, borderColor: RSA.border,
-    borderRadius: 12, paddingHorizontal: 14, height: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: RSA.white,
+    borderWidth: 2,
+    borderColor: RSA.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    height: 52,
   },
   inputIcon: { fontSize: 18, marginRight: 10 },
   input: { flex: 1, fontSize: 15, color: RSA.black, height: '100%' },
@@ -284,8 +380,12 @@ const styles = StyleSheet.create({
   eyeIcon: { fontSize: 18 },
 
   submitBtn: {
-    backgroundColor: RSA.green, height: 52,
-    borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginTop: 28,
+    backgroundColor: RSA.green,
+    height: 52,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 28,
   },
   submitBtnDisabled: { opacity: 0.55 },
   submitBtnText: { fontSize: 16, fontWeight: '700', color: RSA.white },
