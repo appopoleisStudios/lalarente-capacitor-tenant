@@ -3088,9 +3088,9 @@ export type Database = {
       };
       profiles: {
         Row: {
-<<<<<<< Updated upstream
           avatar_url: string | null;
           bank_details: Json | null;
+          business_name: string | null;
           created_at: string | null;
           date_of_birth: string | null;
           email: string | null;
@@ -3142,6 +3142,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null;
           bank_details?: Json | null;
+          business_name?: string | null;
           created_at?: string | null;
           date_of_birth?: string | null;
           email?: string | null;
@@ -3166,87 +3167,6 @@ export type Database = {
         };
         Relationships: [];
       };
-=======
-          avatar_url: string | null
-          bank_details: Json | null
-          business_name: string | null
-          created_at: string | null
-          date_of_birth: string | null
-          email: string | null
-          employer: string | null
-          employer_contact: string | null
-          employment_start_date: string | null
-          fica_documents: Json | null
-          full_name: string
-          id: string
-          id_number: string | null
-          monthly_income: number | null
-          onboarding_owner_done: boolean
-          onboarding_tenant_done: boolean
-          onboarding_vendor_done: boolean
-          phone: string | null
-          position: string | null
-          proof_of_address_url: string | null
-          role: Database["public"]["Enums"]["user_role"]
-          updated_at: string | null
-          utility_account_number: string | null
-          verification_status: boolean | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          bank_details?: Json | null
-          business_name?: string | null
-          created_at?: string | null
-          date_of_birth?: string | null
-          email?: string | null
-          employer?: string | null
-          employer_contact?: string | null
-          employment_start_date?: string | null
-          fica_documents?: Json | null
-          full_name: string
-          id: string
-          id_number?: string | null
-          monthly_income?: number | null
-          onboarding_owner_done?: boolean
-          onboarding_tenant_done?: boolean
-          onboarding_vendor_done?: boolean
-          phone?: string | null
-          position?: string | null
-          proof_of_address_url?: string | null
-          role: Database["public"]["Enums"]["user_role"]
-          updated_at?: string | null
-          utility_account_number?: string | null
-          verification_status?: boolean | null
-        }
-        Update: {
-          avatar_url?: string | null
-          bank_details?: Json | null
-          business_name?: string | null
-          created_at?: string | null
-          date_of_birth?: string | null
-          email?: string | null
-          employer?: string | null
-          employer_contact?: string | null
-          employment_start_date?: string | null
-          fica_documents?: Json | null
-          full_name?: string
-          id?: string
-          id_number?: string | null
-          monthly_income?: number | null
-          onboarding_owner_done?: boolean
-          onboarding_tenant_done?: boolean
-          onboarding_vendor_done?: boolean
-          phone?: string | null
-          position?: string | null
-          proof_of_address_url?: string | null
-          role?: Database["public"]["Enums"]["user_role"]
-          updated_at?: string | null
-          utility_account_number?: string | null
-          verification_status?: boolean | null
-        }
-        Relationships: []
-      }
->>>>>>> Stashed changes
       properties: {
         Row: {
           address: string;
