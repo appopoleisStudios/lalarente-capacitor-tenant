@@ -1,0 +1,98 @@
+# === VENDOR REGISTRATION E2E — test that a new vendor can register and lands on dashboard
+# Uses VENDOR_FULL_NAME, VENDOR_BUSINESS_NAME, VENDOR_EMAIL, VENDOR_PASSWORD from --env flags
+appId: com.lalarente.app
+---
+# === FRESH LAUNCH ===
+- stopApp
+- launchApp
+
+# === NAVIGATE TO REGISTER SCREEN VIA DEEP LINK ===
+- openLink: lalarenteapp:///auth/register
+
+# === WAIT FOR REGISTER SCREEN ===
+- extendedWaitUntil:
+    visible: "Get Started"
+    timeout: 30000
+
+# === SELECT SERVICE PROVIDER ROLE ===
+- tapOn:
+    text: "Service Provider"
+
+# === WAIT FOR BUSINESS NAME FIELD AND FILL IT ===
+- extendedWaitUntil:
+    visible:
+      id: "register-business-name"
+    timeout: 15000
+- tapOn:
+    id: "register-business-name"
+- inputText: ${VENDOR_BUSINESS_NAME}
+
+# === FILL FULL NAME ===
+- tapOn:
+    id: "register-full-name"
+- inputText: ${VENDOR_FULL_NAME}
+
+# === FILL EMAIL ===
+- scrollUntilVisible:
+    element:
+      id: "register-email"
+    direction: DOWN
+    timeout: 5000
+- tapOn:
+    id: "register-email"
+- eraseText
+- inputText: ${VENDOR_EMAIL}
+
+# === FILL PASSWORD ===
+- scrollUntilVisible:
+    element:
+      id: "register-password"
+    direction: DOWN
+    timeout: 5000
+- tapOn:
+    id: "register-password"
+- eraseText
+- inputText: ${VENDOR_PASSWORD}
+
+# === FILL CONFIRM PASSWORD ===
+- scrollUntilVisible:
+    element:
+      id: "register-confirm-password"
+    direction: DOWN
+    timeout: 5000
+- tapOn:
+    id: "register-confirm-password"
+- eraseText
+- inputText: ${VENDOR_PASSWORD}
+
+# === SCROLL TO SUBMIT BUTTON ===
+- scrollUntilVisible:
+    element:
+      id: "register-submit"
+    direction: DOWN
+    timeout: 5000
+
+# === TAP CREATE ACCOUNT ===
+- tapOn:
+    id: "register-submit"
+
+# === WAIT FOR VENDOR DASHBOARD (notification-bell = dashboard loaded) ===
+- extendedWaitUntil:
+    visible:
+      id: "notification-bell"
+    timeout: 90000
+
+# === VERIFY DASHBOARD ELEMENTS ===
+- assertVisible:
+    text: "Available"
+    optional: true
+- assertVisible:
+    text: "Active"
+    optional: true
+- assertVisible:
+    text: "Completed"
+    optional: true
+
+# === VERIFY WE'RE NOT ON REGISTER SCREEN ANYMORE ===
+- assertNotVisible:
+    text: "Get Started"
