@@ -161,6 +161,7 @@ export default function RegisterScreen() {
                     onChangeText={setVendorBusinessName}
                     autoCapitalize="words"
                     editable={!loading}
+                    testID="register-business-name"
                   />
                 </View>
               </Animated.View>
@@ -184,6 +185,7 @@ export default function RegisterScreen() {
                   onChangeText={setFullName}
                   autoCapitalize="words"
                   editable={!loading}
+                  testID="register-full-name"
                 />
               </View>
             </Animated.View>
@@ -208,6 +210,7 @@ export default function RegisterScreen() {
                   keyboardType="email-address"
                   autoComplete="email"
                   editable={!loading}
+                  testID="register-email"
                 />
               </View>
             </Animated.View>
@@ -231,6 +234,7 @@ export default function RegisterScreen() {
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   editable={!loading}
+                  testID="register-password"
                 />
                 <Pressable
                   onPress={() => setShowPassword((v) => !v)}
@@ -266,6 +270,7 @@ export default function RegisterScreen() {
                   secureTextEntry={!showConfirm}
                   autoCapitalize="none"
                   editable={!loading}
+                  testID="register-confirm-password"
                 />
                 <Pressable
                   onPress={() => setShowConfirm((v) => !v)}
@@ -290,6 +295,7 @@ export default function RegisterScreen() {
                 style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
                 onPress={handleRegister}
                 disabled={loading}
+                testID="register-submit"
               >
                 <Text style={styles.submitBtnText}>
                   {loading ? 'Creating Account…' : 'Create Account'}
