@@ -1,9 +1,7 @@
 import { supabase } from '@/src/lib/supabase';
 import type {
-  MaintenanceRequest,
-  MaintenanceRequestInsert,
-  MaintenanceRequestWithRelations,
-  ServiceCategory
+    MaintenanceRequest,
+    ServiceCategory
 } from '@/src/types/maintenance.types';
 
 // Feature flag for mock mode
@@ -316,8 +314,11 @@ export const maintenanceApi = {
     ownerId: string,
     callback: (payload: any) => void
   ) {
+    // Unique channel name prevents "cannot add postgres_changes callbacks after
+    // subscribe()" crash on remount (StrictMode / navigation back / hot reload).
+    const channelName = `maintenance_changes_${ownerId}_${Date.now()}_${Math.random()}`;
     const subscription = supabase
-      .channel('maintenance_changes')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {

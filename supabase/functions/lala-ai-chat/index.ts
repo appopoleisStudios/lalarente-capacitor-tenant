@@ -61,6 +61,46 @@ async function buildTenantContext(
     .join('\n\n');
 }
 
+async function buildVendorContext(
+  supabase: ReturnType<typeof createClient>,
+  vendorId: string
+): Promise<string> {
+  const [jobRes, poRes] = await Promise.all([
+    // Active jobs assigned to this vendor
+    supabase
+      .from('maintenance_requests')
+      .select('title, status, priority, created_at, property:properties(title, address, city)')
+      .eq('selected_vendor_id', vendorId)
+      .in('status', ['assigned', 'in_progress'])
+      .order('created_at', { ascending: false })
+      .limit(8),
+    // Purchase orders for this vendor
+    supabase
+      .from('purchase_orders')
+      .select('status, total_amount, created_at')
+      .eq('vendor_id', vendorId)
+      .order('created_at', { ascending: false })
+      .limit(8),
+  ]);
+
+  const activeJobs =
+    jobRes.data
+      ?.map((j: Record<string, unknown>) => {
+        const prop = j.property as { title?: string; address?: string; city?: string } | null;
+        const loc = prop ? `${prop.title || ''} (${[prop.address, prop.city].filter(Boolean).join(', ') || '?'})` : '?';
+        return `  [${j.status}] ${j.title} — ${loc} | ${String(j.created_at || '').slice(0, 10)}`;
+      })
+      .join('\n') || 'No active jobs.';
+  const purchaseOrders =
+    poRes.data
+      ?.map((po: Record<string, unknown>) => {
+        return `  [${po.status}] R ${po.total_amount ?? '?'} | ${String(po.created_at || '').slice(0, 10)}`;
+      })
+      .join('\n') || 'No purchase orders.';
+
+  return `ACTIVE JOBS:\n${activeJobs}\n\nPURCHASE ORDERS:\n${purchaseOrders}`;
+}
+
 async function buildOwnerContext(
   supabase: ReturnType<typeof createClient>,
   ownerId: string
@@ -105,6 +145,9 @@ function systemPrompt(role: string, context: string): string {
   if (role === 'owner') {
     return `${base}\n\nYou speak with a PROPERTY OWNER.\n\nCONTEXT:\n${context}`;
   }
+  if (role === 'vendor') {
+    return `${base}\n\nYou speak with a SERVICE PROVIDER (vendor) who handles maintenance jobs.\n\nCONTEXT:\n${context}`;
+  }
   return `${base}\n\nYou speak with a TENANT.\n\nCONTEXT:\n${context}`;
 }
 
@@ -148,7 +191,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    if (role !== 'tenant' && role !== 'owner') {
+    if (role !== 'tenant' && role !== 'owner' && role !== 'vendor') {
       return new Response(JSON.stringify({ error: 'Invalid role' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -185,7 +228,9 @@ serve(async (req) => {
     const context =
       role === 'owner'
         ? await buildOwnerContext(admin, user.id)
-        : await buildTenantContext(admin, user.id, body.property_id ?? null);
+        : role === 'vendor'
+          ? await buildVendorContext(admin, user.id)
+          : await buildTenantContext(admin, user.id, body.property_id ?? null);
 
     const messages: { role: string; content: string }[] = [
       { role: 'system', content: systemPrompt(role, context) },
