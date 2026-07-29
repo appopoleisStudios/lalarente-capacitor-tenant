@@ -10,11 +10,10 @@
  *
  * Usage: node scripts/verify-t0-vendor-visibility.mjs
  * 
- * Reads credentials from:
- *   1. Environment variables (VENDOR_E2E_EMAIL, VENDOR_E2E_PASSWORD)
- *   2. .maestro/.env file
+ * Reads all 4 required values from environment variables or .maestro/.env:
+ *   SUPABASE_URL, SUPABASE_ANON_KEY, VENDOR_E2E_EMAIL, VENDOR_E2E_PASSWORD
  *
- * Exits with code 0 on success, 1 on failure.
+ * Fails fast with clear error if any are missing. Exits 0 on success, 1 on failure.
  */
 
 import { readFileSync, existsSync } from 'fs';
