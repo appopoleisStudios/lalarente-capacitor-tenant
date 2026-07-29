@@ -272,6 +272,7 @@ export default function LoginScreen() {
                 onPress={() => router.push('/auth/register' as any)}
                 accessibilityRole="link"
                 accessibilityLabel="Create Account"
+                testID="create-account-link"
               >
                 <Text style={styles.registerLink}>Create Account</Text>
               </Pressable>
