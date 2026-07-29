@@ -241,9 +241,7 @@ export default function TenantLayout() {
       <Tabs.Screen
         name="vendor-payments"
         options={{
-          title: 'Pay Vendor',
-          tabBarButtonTestID: 'tab-vendor-payments',
-          tabBarIcon: ({ color, size }) => <Ionicons name="receipt-outline" size={size} color={color} />,
+          href: null, // Hidden from tabs - accessed from maintenance flow
         }}
       />
       <Tabs.Screen
