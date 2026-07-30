@@ -147,7 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Sign up function
+  // Sign up function — calls register-user edge function to bypass email confirmation
   async function signUp(
     email: string,
     password: string,
@@ -157,25 +157,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   ) {
     try {
       setLoading(true);
-      const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) throw error;
-      if (!data.user) throw new Error('Sign up failed — no user returned');
 
-      // Create profile row immediately
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: data.user.id,
-        full_name: fullName,
-        email,
-        role,
-        ...(role === 'vendor' && businessName ? { business_name: businessName } : {}),
-      });
-      if (profileError) throw new Error(profileError.message);
+      const SUPABASE_URL = Constants.expoConfig?.extra?.supabaseUrl || '';
+      const SUPABASE_ANON_KEY = Constants.expoConfig?.extra?.supabaseAnonKey || '';
 
-      // Fetch the newly created profile so AuthContext state is populated
-      const profile = await fetchProfile(data.user.id);
-      if (!profile) throw new Error('Profile creation failed — please try again');
-      setProfile(profile);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+      const res = await fetch(
+        `${SUPABASE_URL}/functions/v1/register-user`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({ email, password, fullName, role, businessName }),
+          signal: controller.signal,
+        }
+      );
+
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || 'Registration failed');
+      }
+
+      const data = await res.json();
+
+      // Set session in supabase-js (fire-and-forget)
+      supabase.auth
+        .setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        })
+        .catch((err: any) => console.error('signUp setSession error:', err));
+
+      // Manually set session state immediately so navigation is unblocked
+      setSession(data.session);
+      setUser(data.user);
+
+      // Fetch profile
+      const profile = await fetchProfile(data.user.id, data.session.access_token);
+      if (profile) {
+        setProfile(profile);
+      }
     } catch (error: any) {
+      console.error('Sign up error:', error);
       throw new Error(error.message || 'Failed to create account');
     } finally {
       setLoading(false);
