@@ -8,6 +8,7 @@
 appId: com.lalarente.app
 ---
 - stopApp
+- runFlow: ../subflows/sign-out.yaml
 - runFlow: ../subflows/login-vendor.yaml
 
 - extendedWaitUntil:

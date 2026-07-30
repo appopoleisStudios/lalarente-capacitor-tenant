@@ -5,15 +5,22 @@
 appId: com.lalarente.app
 ---
 # Step 1: Navigate to login screen directly via deep link
-# This also clears the user's mental state without destroying the XCUITest driver
 - openLink: lalarenteapp:///auth/login
 
-# Step 2: Wait for login screen to fully render
+# Step 2: Wait for login screen to appear (cached session briefly shows it before redirect)
 - extendedWaitUntil:
     visible: "Sign in to your account"
-    timeout: 60000
+    timeout: 30000
+    optional: true
 
-# If already on login screen — we're signed out, done
+# Step 3: Wait for auto-redirect to settle (up to 12s). If no redirect, stays on login.
+- extendedWaitUntil:
+    notVisible: "Sign in to your account"
+    timeout: 12000
+    optional: true
+
+# Step 4: Now check final state — still on login = no session, on dashboard = has session
+# If on login screen — already signed out, done
 - runFlow:
     when:
       visible: "Sign in to your account"
@@ -22,7 +29,7 @@ appId: com.lalarente.app
           text: "Sign in to your account"
           optional: true
 
-# Step 3: Not on login screen — navigate to tenant profile to sign out
+# If on dashboard (auto-redirected) — need to sign out
 - runFlow:
     when:
       notVisible: "Sign in to your account"

@@ -30,21 +30,31 @@ appId: com.lalarente.app
       notVisible:
         id: "notification-bell"
     commands:
+      # Go directly to login screen by deep link
+      - openLink: lalarenteapp:///auth/login
       - extendedWaitUntil:
           visible:
             id: "email-input"
           timeout: 30000
-      # Enter email
+
       - tapOn:
           id: "email-input"
+      - eraseText
       - inputText: ${VENDOR_EMAIL}
-      # Enter password
+
       - tapOn:
           id: "password-input"
+      - eraseText
       - inputText: ${VENDOR_PASSWORD}
-      # Tap Sign In (more reliable than pressKey: Enter)
+
+      # Wait briefly for React state to propagate after input
+      - tapOn:
+          id: "password-input"
+
+      # Tap Sign In (button is only enabled when both fields non-empty)
       - tapOn:
           id: "sign-in-button"
+
       # Wait for navigation to vendor dashboard
       - extendedWaitUntil:
           visible:
