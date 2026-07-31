@@ -88,10 +88,21 @@ appId: com.lalarente.app
             - eraseText
             - inputText: ${OWNER_EMAIL}
 
+            # Dismiss the keyboard before switching fields — same pattern as
+            # login-tenant/login-vendor. Without this the sign-in tap is swallowed
+            # by the iOS keyboard overlay (button center lands under the keyboard).
+            - tapOn:
+                text: "Sign in to your account"
+                optional: true
+
             - tapOn:
                 id: "password-input"
             - eraseText
             - inputText: ${OWNER_PASSWORD}
+
+            - tapOn:
+                text: "Sign in to your account"
+                optional: true
 
             - tapOn:
                 id: "sign-in-button"
