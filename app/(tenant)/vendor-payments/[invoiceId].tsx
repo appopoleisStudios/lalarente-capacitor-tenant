@@ -14,6 +14,10 @@ import {
 import * as Haptics from 'expo-haptics';
 import { supabase } from '@/src/lib/supabase';
 
+// Safe money renderer — some legacy invoices have null amounts; a bare
+// `.toLocaleString()` would crash the whole Pay Vendor screen.
+const fmtMoney = (n: number | null | undefined): string => Number(n ?? 0).toLocaleString();
+
 interface InvoiceDetail {
   id: string;
   invoice_number: string;
@@ -261,11 +265,11 @@ export default function VendorPayScreen() {
               <View style={{ flex: 1, marginRight: 12 }}>
                 <Text style={{ fontSize: 14, color: '#333' }}>{item.description}</Text>
                 <Text style={{ fontSize: 12, color: '#999' }}>
-                  {item.quantity} × R {item.unit_price.toLocaleString()}
+                  {item.quantity} × R {fmtMoney(item.unit_price)}
                 </Text>
               </View>
               <Text style={{ fontSize: 14, fontWeight: '600', color: '#333' }}>
-                R {(item.total ?? item.quantity * item.unit_price).toLocaleString()}
+                R {fmtMoney(item.total ?? item.quantity * item.unit_price)}
               </Text>
             </View>
           ))}
@@ -274,17 +278,17 @@ export default function VendorPayScreen() {
           <View style={{ marginTop: 12, gap: 8 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <Text style={{ fontSize: 14, color: '#666' }}>Subtotal</Text>
-              <Text style={{ fontSize: 14, color: '#333' }}>R {invoice.subtotal.toLocaleString()}</Text>
+              <Text style={{ fontSize: 14, color: '#333' }}>R {fmtMoney(invoice.subtotal)}</Text>
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <Text style={{ fontSize: 14, color: '#666' }}>VAT (15%)</Text>
-              <Text style={{ fontSize: 14, color: '#333' }}>R {invoice.vat_amount.toLocaleString()}</Text>
+              <Text style={{ fontSize: 14, color: '#333' }}>R {fmtMoney(invoice.vat_amount)}</Text>
             </View>
             <View style={{ height: 1, backgroundColor: '#E0E0E0' }} />
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <Text style={{ fontSize: 18, fontWeight: '700', color: '#333' }}>Total</Text>
               <Text style={{ fontSize: 18, fontWeight: '700', color: '#007A4D' }}>
-                R {invoice.total_amount.toLocaleString()}
+                R {fmtMoney(invoice.total_amount)}
               </Text>
             </View>
           </View>
