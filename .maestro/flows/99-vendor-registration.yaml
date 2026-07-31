@@ -1,47 +1,19 @@
 # === VENDOR E2E LOGIN — test that an existing vendor can log in and lands on dashboard
-# Uses VENDOR_E2E_* variables from .maestro/.env (passed via --env flags).
+# Uses VENDOR_EMAIL/VENDOR_PASSWORD from .maestro/.env (passed via --env flags).
 # The e2e-vendor@lalarente.com account must already exist with role=vendor.
-# For registration testing, generate a unique email at runtime:
-#   --env VENDOR_E2E_EMAIL="e2e-vendor+$(date +%s)@lalarente.app"
+# login-vendor handles session clearing (clearKeychain + role-aware UI sign-out).
 appId: com.lalarente.app
 ---
-# === FRESH LAUNCH ===
-- stopApp
-- launchApp
-
-# === SIGN OUT ANY CACHED SESSION ===
-- runFlow: ../subflows/sign-out.yaml
-
-# === LOGIN WITH EXISTING VENDOR ===
-- extendedWaitUntil:
-    visible:
-      id: "email-input"
-    timeout: 30000
-
-# Fill email
-- tapOn:
-    id: "email-input"
-- eraseText
-- inputText: ${VENDOR_E2E_EMAIL}
-
-# Fill password
-- tapOn:
-    id: "password-input"
-- eraseText
-- inputText: ${VENDOR_E2E_PASSWORD}
-
-# Tap Sign In
-- tapOn:
-    id: "sign-in-button"
-
-# === WAIT FOR VENDOR DASHBOARD ===
-- extendedWaitUntil:
-    visible:
-      id: "notification-bell"
-    timeout: 120000
+# === LOGIN WITH EXISTING VENDOR (handles cached-session clearing) ===
+- runFlow: ../subflows/login-vendor.yaml
 
 # === VERIFY DASHBOARD ELEMENTS ===
 # Stat card labels are icon-prefixed ("<icon>, Available") — use .*regex
+- extendedWaitUntil:
+    visible:
+      id: "notification-bell"
+    timeout: 30000
+
 - assertVisible:
     text: ".*Available.*"
     optional: true

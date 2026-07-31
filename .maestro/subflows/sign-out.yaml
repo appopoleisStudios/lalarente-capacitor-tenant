@@ -58,13 +58,13 @@ appId: com.lalarente.app
 
       - runFlow:
           when:
-            visible: "Quotes"
+            visible: ".*Quotes.*"
           commands:
             - runFlow: sign-out-vendor.yaml
 
       - runFlow:
           when:
-            visible: "Portfolio Dashboard"
+            visible: ".*Portfolio Dashboard.*"
           commands:
             - runFlow: sign-out-owner.yaml
 
