@@ -1,19 +1,12 @@
 # Vendor dashboard — login → verify dashboard loads
-# NOTE: Does NOT use launch-app.yaml (clearState) because that wipes the Expo dev client's
-# stored Metro connection URL, causing the app to show a blank "waiting for connection" screen.
-# login-vendor.yaml handles both logged-in and not-logged-in cases, like login-tenant.yaml.
-# stopApp kills the current process (which was logged in as owner from the test suite's
-# previous owner flows). When login-vendor.yaml opens a deep link next, the app starts
-# fresh (without clearState, preserving Metro connection) and shows the login screen.
+# login-vendor clears session (clearKeychain + UI fallback) without clearState
+# (clearState wipes Expo Metro URL). No deep links.
 appId: com.lalarente.app
 ---
-- stopApp
-- runFlow: ../subflows/sign-out.yaml
 - runFlow: ../subflows/login-vendor.yaml
 
 - extendedWaitUntil:
-    visible:
-      id: "notification-bell"
+    visible: "Quotes"
     timeout: 15000
 
 - assertVisible:

@@ -1,0 +1,9 @@
+# Open vendor profile via Profile tab (no deep links).
+appId: com.lalarente.app
+---
+- tapOn:
+    id: "tab-vendor-profile"
+
+- extendedWaitUntil:
+    visible: "Vendor Account"
+    timeout: 20000

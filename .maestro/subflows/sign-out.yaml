@@ -1,106 +1,73 @@
-# Sign out of any profile — clears cached session so next flow starts on login screen
-# Works for tenant ("Sign Out"), owner ("Logout"), and vendor ("Logout")
-# IMPORTANT: Never use stopApp/launchApp — it kills the XCUITest driver and causes
-# kAXErrorInvalidUIElement crash. Use openLink to navigate instead.
+# Clear any cached session so the next login subflow starts clean.
+# Detects role via tab testIDs / dashboard markers, then runs matching hard sign-out.
+# Prefer sign-out-tenant / sign-out-vendor / sign-out-owner when role is known.
+#
+# No deep links (unreliable). No stopApp (can kill XCUITest mid-suite).
 appId: com.lalarente.app
 ---
-# Step 1: Navigate to login screen directly via deep link
-- openLink: lalarenteapp:///auth/login
-
-# Step 2: Wait for login screen to appear (cached session briefly shows it before redirect)
 - extendedWaitUntil:
-    visible: "Sign in to your account"
-    timeout: 30000
+    visible:
+      id: "email-input"
+    timeout: 8000
     optional: true
 
-# Step 3: Wait for auto-redirect to settle (up to 12s). If no redirect, stays on login.
-- extendedWaitUntil:
-    notVisible: "Sign in to your account"
-    timeout: 12000
-    optional: true
-
-# Step 4: Now check final state — still on login = no session, on dashboard = has session
-# If on login screen — already signed out, done
+# Already signed out
 - runFlow:
     when:
-      visible: "Sign in to your account"
+      visible:
+        id: "email-input"
     commands:
       - assertVisible:
-          text: "Sign in to your account"
-          optional: true
+          id: "email-input"
 
-# If on dashboard (auto-redirected) — need to sign out
+# Tenant session
 - runFlow:
     when:
-      notVisible: "Sign in to your account"
+      visible:
+        id: "tab-profile"
     commands:
-      - openLink: lalarenteapp:///(tenant)/profile
-      - extendedWaitUntil:
-          visible: "My Profile"
-          timeout: 30000
-          optional: true
+      - runFlow: sign-out-tenant.yaml
 
-      # If not tenant, try owner
+# Vendor session
+- runFlow:
+    when:
+      visible:
+        id: "tab-vendor-profile"
+    commands:
+      - runFlow: sign-out-vendor.yaml
+
+# Owner session
+- runFlow:
+    when:
+      visible:
+        id: "tab-owner-profile"
+    commands:
+      - runFlow: sign-out-owner.yaml
+
+# Fallback markers if tabs not yet painted
+- runFlow:
+    when:
+      notVisible:
+        id: "email-input"
+    commands:
       - runFlow:
           when:
-            notVisible: "My Profile"
+            visible: "Welcome back,"
           commands:
-            - openLink: lalarenteapp:///(owner)/profile
-            - extendedWaitUntil:
-                visible: "Owner Account"
-                timeout: 20000
-                optional: true
+            - runFlow: sign-out-tenant.yaml
 
-      # If not owner, try vendor
       - runFlow:
-            when:
-              notVisible: "Owner Account"
-            commands:
-              - openLink: lalarenteapp:///(vendor)/profile
-              - extendedWaitUntil:
-                  visible: "Vendor Account"
-                  timeout: 20000
-                  optional: true
+          when:
+            visible: "Quotes"
+          commands:
+            - runFlow: sign-out-vendor.yaml
 
-      # Scroll to find sign-out button
-      - scrollUntilVisible:
-          element:
-            text: "Sign Out"
-          direction: DOWN
-          timeout: 15000
-          optional: true
+      - runFlow:
+          when:
+            visible: "Portfolio Dashboard"
+          commands:
+            - runFlow: sign-out-owner.yaml
 
-      - scrollUntilVisible:
-          element:
-            text: "Logout"
-          direction: DOWN
-          timeout: 10000
-          optional: true
-
-      # Tap sign-out button
-      - tapOn:
-          text: "Sign Out"
-          optional: true
-
-      - tapOn:
-          text: "Logout"
-          optional: true
-
-      # Confirm alert
-      - extendedWaitUntil:
-          visible: "Are you sure"
-          timeout: 10000
-          optional: true
-
-      - tapOn:
-          text: "Sign Out"
-          optional: true
-
-      - tapOn:
-          text: "Logout"
-          optional: true
-
-      # Wait for login screen
-      - extendedWaitUntil:
-          visible: "Sign in to your account"
-          timeout: 30000
+# Final gate — must be on login before any subsequent login-* subflow
+- assertVisible:
+    id: "email-input"

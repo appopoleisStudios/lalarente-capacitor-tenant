@@ -1,0 +1,41 @@
+# Open tenant maintenance report form via list → Report CTA/FAB (no deep links).
+# Waits for 'Report Issue' header first (renders immediately), then form fields.
+appId: com.lalarente.app
+---
+- runFlow: tap-tenant-maintenance.yaml
+
+# Try: CTA (visible when no existing requests)
+- runFlow:
+    when:
+      visible:
+        id: "maintenance-report-cta"
+    commands:
+      - tapOn:
+          id: "maintenance-report-cta"
+
+# Fallback: if not on report form screen yet, try FAB (visible when requests exist)
+- runFlow:
+    when:
+      notVisible: "Report Issue"
+    commands:
+      # Try FAB by testID (works when bundle is fresh)
+      - tapOn:
+          id: "maintenance-report-fab"
+          optional: true
+      # Last resort: tap the "+" button at top-right of header
+      - runFlow:
+          when:
+            notVisible: "Report Issue"
+          commands:
+            - tapOn:
+                point: "89%, 5%"
+
+# Wait for Report Issue header (renders immediately, independent of API data)
+- extendedWaitUntil:
+    visible: "Report Issue"
+    timeout: 30000
+
+# Wait for form fields (depend on API data — leases, categories — allow up to 45s)
+- extendedWaitUntil:
+    visible: "e.g., Leaking faucet in kitchen"
+    timeout: 45000

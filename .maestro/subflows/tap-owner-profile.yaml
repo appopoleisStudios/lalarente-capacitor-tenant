@@ -1,0 +1,9 @@
+# Open owner profile via Profile tab (no deep links).
+appId: com.lalarente.app
+---
+- tapOn:
+    id: "tab-owner-profile"
+
+- extendedWaitUntil:
+    visible: "Owner Account"
+    timeout: 20000

@@ -1,0 +1,9 @@
+# Open owner properties via tab (no deep links).
+appId: com.lalarente.app
+---
+- tapOn:
+    id: "tab-owner-properties"
+
+- extendedWaitUntil:
+    visible: "My Properties"
+    timeout: 20000

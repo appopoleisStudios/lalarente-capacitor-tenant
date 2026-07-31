@@ -10,7 +10,80 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const { email, password, fullName, role, businessName } = await req.json();
+    const body = await req.json();
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, serviceKey);
+
+    // ── Action: revoke_sessions — invalidates all sessions for a user ─────
+    // Strategy: change password (invalidates all sessions), then restore it.
+    if (body.action === 'revoke_sessions') {
+      const { email, originalPassword } = body;
+      if (!email || !originalPassword) {
+        return new Response(JSON.stringify({ error: 'Missing email or originalPassword' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Verify password is correct before any destructive action
+      const { error: verifyError } = await supabase.auth.signInWithPassword({ email, password: originalPassword });
+      if (verifyError) {
+        return new Response(JSON.stringify({ error: 'Invalid originalPassword - cannot revoke sessions' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Find user by email (explicit pagination to handle >50 users)
+      const { data: users, error: listError } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+      if (listError) {
+        return new Response(JSON.stringify({ error: listError.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const user = users.users.find(u => u.email === email);
+      if (!user) {
+        return new Response(JSON.stringify({ error: `User not found: ${email}` }), {
+          status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Step 1: Generate random temp password (invalidates all existing sessions)
+      const tempPassword = crypto.randomUUID();
+      const { error: updateError } = await supabase.auth.admin.updateUserById(user.id, {
+        password: tempPassword,
+      });
+
+      if (updateError) {
+        return new Response(JSON.stringify({ error: `Failed to update password: ${updateError.message}` }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Step 2: Restore original password
+      const { error: restoreError } = await supabase.auth.admin.updateUserById(user.id, {
+        password: originalPassword,
+      });
+
+      if (restoreError) {
+        return new Response(JSON.stringify({
+          error: `Sessions revoked but password restore failed: ${restoreError.message}`,
+          warning: `User ${email} has temp password. Contact support.`,
+        }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      return new Response(JSON.stringify({
+        message: `Sessions revoked for ${email}`,
+        user_id: user.id,
+      }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // ── Default action: register_user — creates a new user ─────────────────
+    const { email, password, fullName, role, businessName } = body;
     if (!email || !password || !fullName || !role) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -24,10 +97,6 @@ serve(async (req) => {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, serviceKey);
 
     // Create user via admin API (auto-confirmed)
     const { data: userData, error: createError } = await supabase.auth.admin.createUser({

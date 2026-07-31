@@ -153,7 +153,7 @@ export default function TenantMaintenanceListScreen() {
               {counts.all} {counts.all !== 1 ? 'issues' : 'issue'} reported
             </Text>
           </View>
-          <AnimatedButton onPress={handleReportIssue}>
+          <AnimatedButton onPress={handleReportIssue} testID="maintenance-report-fab">
             <View style={styles.reportButton}>
               <Text style={styles.reportIcon}>+</Text>
             </View>
@@ -191,7 +191,7 @@ export default function TenantMaintenanceListScreen() {
                   }
                 </Text>
                 {activeFilter === 'all' && (
-                  <AnimatedButton onPress={handleReportIssue}>
+                  <AnimatedButton onPress={handleReportIssue} testID="maintenance-report-cta">
                     <View style={styles.reportIssueButton}>
                       <Text style={styles.reportIssueButtonText}>Report an Issue</Text>
                     </View>

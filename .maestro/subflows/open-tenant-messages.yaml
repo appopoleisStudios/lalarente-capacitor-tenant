@@ -1,9 +1,15 @@
-# Open tenant messages list via deep link (tab bar scroll is flaky on iOS 26)
+# Open tenant messages via Home → Quick Action (no deep links).
 appId: com.lalarente.app
 ---
-- runFlow: login-tenant.yaml
+- tapOn:
+    id: "tab-home"
 
-- openLink: lalarenteapp:///(tenant)/messages
+- extendedWaitUntil:
+    visible: "Quick Actions"
+    timeout: 20000
+
+- tapOn:
+    id: "qa-messages"
 
 - extendedWaitUntil:
     visible:

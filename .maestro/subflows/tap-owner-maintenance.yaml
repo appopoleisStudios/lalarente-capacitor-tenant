@@ -1,0 +1,9 @@
+# Open owner maintenance via Maintenance tab (no deep links).
+appId: com.lalarente.app
+---
+- tapOn:
+    id: "tab-owner-maintenance"
+
+- extendedWaitUntil:
+    visible: "Maintenance"
+    timeout: 20000

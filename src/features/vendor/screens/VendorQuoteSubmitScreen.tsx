@@ -477,7 +477,12 @@ export default function VendorQuoteSubmitScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Timeline */}
         <View style={styles.timelineContainer}>
           <View style={styles.timelineHeader}>
@@ -547,6 +552,7 @@ export default function VendorQuoteSubmitScreen() {
                 placeholderTextColor={colors.gray[400]}
                 value={item.name}
                 onChangeText={(text) => updateLineItem(item.id, 'name', text)}
+                testID="quote-item-name"
               />
               
               <View style={styles.lineItemRow}>
@@ -559,6 +565,7 @@ export default function VendorQuoteSubmitScreen() {
                     keyboardType="numeric"
                     value={item.quantity.toString()}
                     onChangeText={(text) => updateLineItem(item.id, 'quantity', parseInt(text) || 0)}
+                    testID="quote-quantity"
                   />
                 </View>
                 
@@ -571,6 +578,7 @@ export default function VendorQuoteSubmitScreen() {
                     keyboardType="numeric"
                     value={item.unit_price > 0 ? item.unit_price.toString() : ''}
                     onChangeText={(text) => updateLineItem(item.id, 'unit_price', parseFloat(text) || 0)}
+                    testID="quote-unit-price"
                   />
                 </View>
               </View>
@@ -662,6 +670,7 @@ export default function VendorQuoteSubmitScreen() {
           <Text style={styles.sectionTitle}>⏱️ How long? (Required)</Text>
           <TouchableOpacity 
             style={styles.pickerButton}
+            testID="quote-duration-picker"
             onPress={() => setShowDurationPicker(!showDurationPicker)}
           >
             <Text style={duration ? styles.pickerButtonTextSelected : styles.pickerButtonText}>
@@ -675,6 +684,7 @@ export default function VendorQuoteSubmitScreen() {
               {DURATION_OPTIONS.map((option, index) => (
                 <TouchableOpacity
                   key={index}
+                  testID={`quote-duration-${option.replace(/[^a-z0-9]/gi, '-').toLowerCase()}`}
                   style={styles.pickerOption}
                   onPress={() => {
                     setDuration(option);
@@ -738,6 +748,7 @@ export default function VendorQuoteSubmitScreen() {
             value={notes}
             onChangeText={setNotes}
             textAlignVertical="top"
+            testID="quote-notes"
           />
         </View>
 
@@ -748,6 +759,7 @@ export default function VendorQuoteSubmitScreen() {
       <View style={styles.bottomBar}>
         <TouchableOpacity 
           style={styles.saveDraftButton} 
+          testID="quote-save-draft"
           onPress={handleSaveDraft}
         >
           <Text style={styles.saveDraftButtonText}>Save Draft</Text>
@@ -755,6 +767,7 @@ export default function VendorQuoteSubmitScreen() {
         
         <TouchableOpacity 
           style={[styles.submitButton, submitting && styles.submitButtonDisabled]} 
+          testID="quote-submit"
           onPress={handleSubmit}
           disabled={submitting}
         >

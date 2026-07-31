@@ -1,0 +1,283 @@
+# ============================================================================
+# E2E SMOKE: Tenant creates maintenance request → Vendor sees it → Vendor submits quote
+#
+# This is NOT the full maintenance lifecycle and NOT Epic B (interested → tenant select).
+# It covers T0 visibility (tenant public request discoverable) + quote submit only.
+#
+# Prerequisites:
+#   - VENDOR_EMAIL = e2e-vendor@lalarente.com (role=vendor), separate from OWNER_EMAIL
+#   - e2e vendor has Plumbing (or matching) services
+#   - TENANT_EMAIL has an active lease
+#   - REQUEST_TITLE env var — REQUIRED. Pass a UNIQUE title per run (timestamp suffix only,
+#     no regex-special chars) e.g. --env REQUEST_TITLE="E2E Test - Leaking $(date +%s)"
+#     so repeated runs don't create multiple matching rows in the vendor list.
+#   - iOS simulator with the app installed (dev build), Metro running on :8081,
+#     DB migrations applied (maintenance_requests visibility, quotes tables).
+#   - This is a device smoke test, not a CI gate: each run creates real rows on the
+#     LalaRente Supabase project. Clean up e2e requests periodically.
+#
+# Selector notes:
+#   - iOS exposes TouchableOpacity chips as "<icon>, Label" — use .*Label regex
+#   - Alerts with emoji prefixes ("Success! 🎉", "⚠️ Important Notice") need .*regex
+#   - All form inputs/buttons have testIDs for stable matching
+# ============================================================================
+appId: com.lalarente.app
+---
+# ── 0. Tenant login (clears session via clearKeychain + UI fallback) ─────
+- runFlow: ../subflows/login-tenant.yaml
+
+# ══════════════════════════════════════════════════════════════════════════
+# PART 1 — TENANT CREATES A MAINTENANCE REQUEST
+# ══════════════════════════════════════════════════════════════════════════
+
+- runFlow: ../subflows/tap-tenant-maintenance-report.yaml
+
+# Title
+- tapOn:
+    id: "maintenance-title-input"
+- eraseText
+- inputText: ${REQUEST_TITLE}
+
+# Description (scroll down from title; on-drag dismisses the keyboard)
+- swipe:
+    direction: UP
+    percentage: 0.3
+- tapOn:
+    id: "maintenance-description-input"
+- eraseText
+- inputText: "The kitchen faucet is leaking continuously. Dripping water all day. Need urgent repair to prevent water damage to the cabinet below. Noticed it this morning."
+
+# CRITICAL: dismiss the keyboard NOW. With the keyboard up, the chips are still 'visible'
+# in the iOS accessibility tree (keyboard is a separate overlay), so scrollUntilVisible
+# finds them without swiping and the tap would land on the keyboard. An explicit drag
+# triggers keyboardDismissMode="on-drag" and scrolls the view back up.
+- swipe:
+    direction: DOWN
+    percentage: 0.4
+
+# Priority chip — BELOW description, reachable by scrolling down (direction DOWN = swipe UP)
+- scrollUntilVisible:
+    element:
+      id: "maintenance-priority-high"
+    direction: DOWN
+    timeout: 15000
+    centerElement: true
+
+- tapOn:
+    id: "maintenance-priority-high"
+    retryTapIfNoChange: true
+
+# Category chip — just below priority
+- scrollUntilVisible:
+    element:
+      id: "maintenance-category-plumbing"
+    direction: DOWN
+    timeout: 10000
+    centerElement: true
+
+- tapOn:
+    id: "maintenance-category-plumbing"
+    retryTapIfNoChange: true
+
+# Submit — footer button is fixed at bottom, always reachable after keyboard dismiss
+- tapOn:
+    id: "maintenance-submit"
+
+# Success alert — title is "Success! 🎉" so match with .*Success.*
+- extendedWaitUntil:
+    visible: ".*Success.*"
+    timeout: 20000
+
+- tapOn:
+    text: "OK"
+
+- extendedWaitUntil:
+    visible: "Maintenance"
+    timeout: 20000
+
+# ══════════════════════════════════════════════════════════════════════════
+# PART 2 — SWITCH TO VENDOR (role-aware hard sign-out → vendor login)
+# ══════════════════════════════════════════════════════════════════════════
+
+- runFlow: ../subflows/sign-out-tenant.yaml
+- runFlow: ../subflows/login-vendor.yaml
+
+# ══════════════════════════════════════════════════════════════════════════
+# PART 3 — VENDOR SEES REQUEST AND SUBMITS QUOTE
+# ══════════════════════════════════════════════════════════════════════════
+
+- runFlow: ../subflows/tap-vendor-maintenance.yaml
+
+- extendedWaitUntil:
+    visible: ".*Search requests.*"
+    timeout: 20000
+
+- extendedWaitUntil:
+    visible: ".*${REQUEST_TITLE}.*"
+    timeout: 30000
+
+- assertVisible:
+    text: ".*Open.*"
+    optional: true
+
+# index: 0 — if a previous run left a same-prefix row, tap the newest (list is
+# ordered created_at desc, so the newest match is the first one)
+- tapOn:
+    text: ".*${REQUEST_TITLE}.*"
+    index: 0
+
+- extendedWaitUntil:
+    visible: "Request Details"
+    timeout: 20000
+
+- extendedWaitUntil:
+    visible: ".*${REQUEST_TITLE}.*"
+    timeout: 15000
+
+# Submit Quote button — icon-prefixed, match with testID
+- extendedWaitUntil:
+    visible:
+      id: "vendor-submit-quote"
+    timeout: 15000
+
+- tapOn:
+    id: "vendor-submit-quote"
+
+# Quote form — Work Items section (section title is "Work Items (Components)")
+- extendedWaitUntil:
+    visible: ".*Work Items.*"
+    timeout: 20000
+
+- tapOn:
+    id: "quote-item-name"
+- eraseText
+- inputText: "Labor - Faucet Repair"
+
+# Dismiss keyboard before tapping the price field (keyboard overlay traps the tap)
+- swipe:
+    direction: DOWN
+    percentage: 0.3
+
+- tapOn:
+    id: "quote-unit-price"
+- eraseText
+- inputText: "850"
+
+# Dismiss keyboard BEFORE scrolling to duration (chips/pickers stay 'visible' under keyboard)
+- swipe:
+    direction: DOWN
+    percentage: 0.3
+
+- scrollUntilVisible:
+    element:
+      id: "quote-duration-picker"
+    direction: DOWN
+    timeout: 15000
+    centerElement: true
+
+# Open the picker. CRITICAL: retryTapIfNoChange is set to FALSE — the button
+# TOGGLES open/close (setShowDurationPicker(!showDurationPicker)), so a retry would
+# open it then close it, leaving no option visible. The options render below the
+# button and may be off-screen, which is what previously caused the retry loop.
+- tapOn:
+    id: "quote-duration-picker"
+    retryTapIfNoChange: false
+
+# Options render just below the button — scroll so the option is fully on screen
+- scrollUntilVisible:
+    element:
+      id: "quote-duration-1-2-hours"
+    direction: DOWN
+    timeout: 10000
+    centerElement: true
+
+# Tap the exact duration option by testID
+- tapOn:
+    id: "quote-duration-1-2-hours"
+
+# If the tap missed and hit the bottom-bar submit instead, a 'Missing Information'
+# alert appears — dismiss it and re-tap the duration option.
+- extendedWaitUntil:
+    visible: "Missing Information"
+    timeout: 3000
+    optional: true
+
+- runFlow:
+    when:
+      visible: "Missing Information"
+    commands:
+      - tapOn:
+          text: "OK"
+      - tapOn:
+          id: "quote-duration-picker"
+          retryTapIfNoChange: false
+      - scrollUntilVisible:
+          element:
+            id: "quote-duration-1-2-hours"
+          direction: DOWN
+          timeout: 10000
+      - tapOn:
+          id: "quote-duration-1-2-hours"
+
+# Notes
+- scrollUntilVisible:
+    element:
+      id: "quote-notes"
+    direction: DOWN
+    timeout: 10000
+    centerElement: true
+- tapOn:
+    id: "quote-notes"
+- eraseText
+- inputText: "Includes all parts and labor. Same day service available."
+
+# Dismiss keyboard BEFORE submit — bottom bar is always visible, need a drag to dismiss
+- swipe:
+    direction: DOWN
+    percentage: 0.3
+
+# Submit — bottom bar button
+- tapOn:
+    id: "quote-submit"
+
+# Confirmation alert — title is "⚠️ Important Notice"
+- extendedWaitUntil:
+    visible: ".*Important Notice.*"
+    timeout: 10000
+    optional: true
+
+- runFlow:
+    when:
+      visible: ".*Important Notice.*"
+    commands:
+      - tapOn:
+          text: "Yes, Submit"
+
+# Success alert — title is "🎉 Quote Submitted!"
+- extendedWaitUntil:
+    visible: ".*Quote Submitted.*"
+    timeout: 30000
+
+- tapOn:
+    text: "OK"
+
+# ══════════════════════════════════════════════════════════════════════════
+# PART 4 — QUOTE VISIBLE ON DETAIL (smoke only)
+# ══════════════════════════════════════════════════════════════════════════
+
+- scrollUntilVisible:
+    element:
+      text: "My Quote"
+    direction: DOWN
+    timeout: 20000
+
+- assertVisible:
+    text: "My Quote"
+
+# Deterministic amount: 850 × 1 qty + 15% VAT = 977.50. The detail screen renders
+# it as "R 977.5" (trailing zero trimmed), so match .*R 977.5.* — the trailing .*
+# tolerates an optional trailing 0. Hard assert — catches pricing math regressions.
+# NOTE: bakes in current pricing model (VAT 15%, zero discount/fee). Update the
+# expected amount if pricing logic changes intentionally.
+- assertVisible:
+    text: ".*R 977.5.*"

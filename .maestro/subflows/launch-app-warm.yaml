@@ -3,6 +3,7 @@
 appId: com.lalarente.app
 ---
 - launchApp
+- runFlow: dismiss-dev-menu.yaml
 
 - extendedWaitUntil:
     visible:

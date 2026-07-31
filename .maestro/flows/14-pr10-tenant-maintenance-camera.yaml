@@ -4,7 +4,7 @@ appId: com.lalarente.app
 - runFlow: ../subflows/launch-app-warm.yaml
 - runFlow: ../subflows/login-tenant.yaml
 
-- openLink: lalarenteapp:///(tenant)/maintenance/report
+- runFlow: ../subflows/tap-tenant-maintenance-report.yaml
 
 - extendedWaitUntil:
     visible: "Report Issue"

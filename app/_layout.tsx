@@ -5,7 +5,11 @@ import { AuthProvider, useAuth } from '@/src/contexts/AuthContext';
 import { env, RELEASE_VERSION } from '@/src/core/config/env';
 import { ErrorBoundary } from '@/src/components/ErrorBoundary';
 import { QueryProvider } from '@/src/core/query/QueryProvider';
+import { disableDevToolsInterference } from '@/src/core/dev/disableDevToolsInterference';
 import '../global.css';
+
+// Prevent shake / LogBox / Expo tools FAB from opening React Native DevTools during E2E.
+disableDevToolsInterference();
 
 // Init Sentry early — before any component mounts.
 // Gated: only initializes if EXPO_PUBLIC_SENTRY_DSN is set.
@@ -40,6 +44,7 @@ function RootLayoutNav() {
       <Stack.Screen name="index" />
       <Stack.Screen name="auth/login" />
       <Stack.Screen name="auth/register" />
+      <Stack.Screen name="auth/signout" />
       <Stack.Screen name="(owner)" />
       <Stack.Screen name="(tenant)" />
       <Stack.Screen name="(vendor)" />

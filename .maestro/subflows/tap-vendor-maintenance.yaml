@@ -1,0 +1,9 @@
+# Open vendor maintenance requests via Requests tab (no deep links).
+appId: com.lalarente.app
+---
+- tapOn:
+    id: "tab-vendor-requests"
+
+- extendedWaitUntil:
+    visible: "Maintenance Requests"
+    timeout: 20000

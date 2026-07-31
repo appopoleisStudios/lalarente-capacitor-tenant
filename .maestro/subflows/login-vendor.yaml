@@ -1,62 +1,92 @@
-# Vendor login — uses VENDOR_EMAIL/VENDOR_PASSWORD from .maestro/.env via --env flags.
-# Detects whether the app is already logged in (session persisted in SecureStore)
-# and only fills the login form if needed.
+# Vendor login — VENDOR_EMAIL/VENDOR_PASSWORD from --env flags.
+# No deep links. Skips stopApp when already on login (safe mid-suite role switch).
 appId: com.lalarente.app
 ---
-# Navigate to vendor dashboard FIRST so we're on a known screen for session detection.
-# Previous flows may have navigated elsewhere. Dashboard shows notification-bell
-# if logged in as vendor, or redirects to login screen if not.
-- openLink: lalarenteapp:///(vendor)/dashboard
-
-# Wait for the app to settle on dashboard or redirect to login.
 - extendedWaitUntil:
     visible:
-      id: "notification-bell"
-    timeout: 45000
+      id: "email-input"
+    timeout: 5000
     optional: true
 
-# Already logged in — done.
-- runFlow:
-    when:
-      visible:
-        id: "notification-bell"
-    commands:
-      - assertVisible:
-          id: "notification-bell"
-
-# Not logged in — go through login flow
 - runFlow:
     when:
       notVisible:
-        id: "notification-bell"
+        id: "email-input"
     commands:
-      # Go directly to login screen by deep link
-      - openLink: lalarenteapp:///auth/login
+      - stopApp
+      - launchApp:
+          clearKeychain: true
+          arguments:
+            EXDevMenuIsOnboardingFinished: "true"
+      - runFlow: dismiss-dev-menu.yaml
+
       - extendedWaitUntil:
-          visible:
-            id: "email-input"
-          timeout: 30000
+          visible: "Welcome back"
+          timeout: 45000
+          optional: true
 
-      - tapOn:
-          id: "email-input"
-      - eraseText
-      - inputText: ${VENDOR_EMAIL}
+      - runFlow:
+          when:
+            notVisible: "Welcome back,"
+          commands:
+            - extendedWaitUntil:
+                visible:
+                  id: "email-input"
+                timeout: 30000
+                optional: true
 
-      - tapOn:
-          id: "password-input"
-      - eraseText
-      - inputText: ${VENDOR_PASSWORD}
+      - runFlow:
+          when:
+            notVisible:
+              id: "email-input"
+          commands:
+            - runFlow:
+                when:
+                  visible:
+                    id: "tab-profile"
+                commands:
+                  - runFlow: sign-out-tenant.yaml
 
-      # Wait briefly for React state to propagate after input
-      - tapOn:
-          id: "password-input"
+            - runFlow:
+                when:
+                  visible:
+                    id: "tab-vendor-profile"
+                commands:
+                  - runFlow: sign-out-vendor.yaml
 
-      # Tap Sign In (button is only enabled when both fields non-empty)
-      - tapOn:
-          id: "sign-in-button"
+            - runFlow:
+                when:
+                  visible:
+                    id: "tab-owner-profile"
+                commands:
+                  - runFlow: sign-out-owner.yaml
 
-      # Wait for navigation to vendor dashboard
-      - extendedWaitUntil:
-          visible:
-            id: "notification-bell"
-          timeout: 60000
+            - extendedWaitUntil:
+                visible:
+                  id: "email-input"
+                timeout: 30000
+
+- tapOn:
+    id: "email-input"
+- eraseText
+- inputText: ${VENDOR_EMAIL}
+
+- tapOn:
+    text: "Sign in to your account"
+    optional: true
+
+- tapOn:
+    id: "password-input"
+- eraseText
+- inputText: ${VENDOR_PASSWORD}
+
+- tapOn:
+    text: "Sign in to your account"
+    optional: true
+
+- tapOn:
+    id: "sign-in-button"
+
+- extendedWaitUntil:
+    visible: ".*Quotes.*"
+    timeout: 90000

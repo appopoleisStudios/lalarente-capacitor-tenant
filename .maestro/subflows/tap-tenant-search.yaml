@@ -1,14 +1,16 @@
-# Scroll to Quick Actions → Search
+# Open tenant search via Home → Quick Action (no deep links).
 appId: com.lalarente.app
 ---
-- extendedWaitUntil:
-    visible:
-      id: "notification-bell"
-    timeout: 15000
+- tapOn:
+    id: "tab-home"
 
-- scrollUntilVisible:
-    element: "Search"
-    direction: DOWN
+- extendedWaitUntil:
+    visible: "Quick Actions"
     timeout: 20000
 
-- tapOn: "Search"
+- tapOn:
+    id: "qa-search"
+
+- extendedWaitUntil:
+    visible: "Search"
+    timeout: 20000

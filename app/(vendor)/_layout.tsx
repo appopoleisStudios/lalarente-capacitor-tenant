@@ -33,6 +33,7 @@ export default function VendorLayout() {
         name="dashboard"
         options={{
           title: 'Dashboard',
+          tabBarButtonTestID: 'tab-vendor-home',
           tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
         }}
       />
@@ -40,6 +41,7 @@ export default function VendorLayout() {
         name="maintenance"
         options={{
           title: 'Requests',
+          tabBarButtonTestID: 'tab-vendor-requests',
           tabBarIcon: ({ color, size }) => <Ionicons name="list" size={size} color={color} />,
         }}
       />
@@ -47,6 +49,7 @@ export default function VendorLayout() {
         name="jobs/index"
         options={{
           title: 'My Jobs',
+          tabBarButtonTestID: 'tab-vendor-jobs',
           tabBarIcon: ({ color, size }) => <Ionicons name="hammer" size={size} color={color} />,
         }}
       />
@@ -54,6 +57,7 @@ export default function VendorLayout() {
         name="earnings/index"
         options={{
           title: 'Earnings',
+          tabBarButtonTestID: 'tab-vendor-earnings',
           tabBarIcon: ({ color, size }) => <Ionicons name="wallet-outline" size={size} color={color} />,
         }}
       />
@@ -61,6 +65,7 @@ export default function VendorLayout() {
         name="contracts/index"
         options={{
           title: 'Contracts',
+          tabBarButtonTestID: 'tab-vendor-contracts',
           tabBarIcon: ({ color, size }) => <Ionicons name="document-text" size={size} color={color} />,
         }}
       />
@@ -74,6 +79,7 @@ export default function VendorLayout() {
         name="ai-chat"
         options={{
           title: 'Lala AI',
+          tabBarButtonTestID: 'tab-vendor-lala-ai',
           tabBarIcon: ({ color, size }) => <Ionicons name="sparkles" size={size} color={color} />,
         }}
       />
@@ -81,6 +87,7 @@ export default function VendorLayout() {
         name="profile/index"
         options={{
           title: 'Profile',
+          tabBarButtonTestID: 'tab-vendor-profile',
           tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
         }}
       />

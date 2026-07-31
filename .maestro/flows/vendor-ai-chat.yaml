@@ -4,7 +4,8 @@ appId: com.lalarente.app
 - runFlow: ../subflows/launch-app-warm.yaml
 - runFlow: ../subflows/login-vendor.yaml
 
-- openLink: lalarenteapp:///(vendor)/ai-chat
+- tapOn:
+    id: "tab-vendor-lala-ai"
 
 - extendedWaitUntil:
     visible: "Lala Assistant"
