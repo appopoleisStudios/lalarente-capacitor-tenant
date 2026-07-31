@@ -20,8 +20,15 @@ export default function VendorPaymentCheckout() {
   const handledRef = useRef(false);
 
   const goToResult = () => {
+    // Mark handled FIRST: both onShouldStartLoadWithRequest and
+    // onNavigationStateChange fire for the same redirect, so every branch
+    // (including the missing-payment_id back-out) must be guarded exactly once.
     if (handledRef.current) return;
     handledRef.current = true;
+    if (!payment_id) {
+      router.back();
+      return;
+    }
     router.replace(`/(tenant)/vendor-payments/result?payment_id=${payment_id}`);
   };
 

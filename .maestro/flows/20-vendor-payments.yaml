@@ -83,11 +83,11 @@ appId: com.lalarente.app
 - tapOn:
     id: "checkout-close"
 
-# Back on Pay Vendor detail screen
+# Back in the tenant flow — assert a stable element (the tab bar is always
+# present; the detail screen re-fetches and shows a spinner on return)
 - extendedWaitUntil:
     visible:
-      id: "pay-vendor-title"
+      id: "tab-payments"
     timeout: 10000
-    optional: true
 
 # ✅ E2E vendor payment flow verification complete (in-app checkout confirmed)
