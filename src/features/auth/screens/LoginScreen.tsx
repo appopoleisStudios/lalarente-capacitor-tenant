@@ -21,6 +21,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useAuth } from '@/src/contexts/AuthContext';
+import { getDashboardRouteForRole } from '@/src/core/navigation/roleRoutes';
 
 // South African flag colors
 const RSA_COLORS = {
@@ -51,16 +52,14 @@ export default function LoginScreen() {
     if (profile && !authLoading) {
       setLoading(false);
 
-      // Role-based navigation
-      // 'admin' is the landlord/platform owner role — land on the owner dashboard.
-      if (profile.role === 'owner' || profile.role === 'admin') {
-        router.replace('/(owner)/dashboard');
-      } else if (profile.role === 'tenant') {
-        router.replace('/(tenant)/dashboard');
-      } else if (profile.role === 'vendor') {
-        router.replace('/(vendor)/dashboard');
+      // Role-based navigation (centralized in roleRoutes.ts — admin → owner
+      // dashboard, unknown roles → login fallback so users are never stranded)
+      const route = getDashboardRouteForRole(profile.role);
+      if (route !== '/auth/login') {
+        router.replace(route);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- router is a stable singleton in expo-router
   }, [profile, authLoading]);
 
   // Animations
@@ -73,6 +72,7 @@ export default function LoginScreen() {
       stiffness: 100,
     });
     logoOpacity.value = withTiming(1, { duration: 600 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- shared values are stable refs; run once on mount
   }, []);
 
   const logoAnimatedStyle = useAnimatedStyle(() => ({

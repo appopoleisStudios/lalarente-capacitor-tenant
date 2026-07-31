@@ -14,6 +14,7 @@ import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { getDashboardRouteForRole } from '@/src/core/navigation/roleRoutes';
 
 const RSA = {
   green: '#007A4D',
@@ -46,15 +47,14 @@ export default function RegisterScreen() {
   // Navigate after profile is set
   useEffect(() => {
     if (profile && !authLoading) {
-      // 'admin' is the landlord/platform owner role — land on the owner dashboard.
-      if (profile.role === 'owner' || profile.role === 'admin') {
-        router.replace('/(owner)/dashboard');
-      } else if (profile.role === 'tenant') {
-        router.replace('/(tenant)/dashboard');
-      } else if (profile.role === 'vendor') {
-        router.replace('/(vendor)/dashboard');
+      // Role-based navigation (centralized in roleRoutes.ts — admin → owner
+      // dashboard, unknown roles → login fallback so users are never stranded)
+      const route = getDashboardRouteForRole(profile.role);
+      if (route !== '/auth/login') {
+        router.replace(route);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- router is a stable singleton in expo-router
   }, [profile, authLoading]);
 
   const handleRegister = async () => {
