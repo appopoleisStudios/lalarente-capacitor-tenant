@@ -33,6 +33,7 @@ export default function OwnerLayout() {
         name="dashboard"
         options={{
           title: 'Dashboard',
+          tabBarButtonTestID: 'tab-owner-home',
           tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
         }}
       />
@@ -40,6 +41,7 @@ export default function OwnerLayout() {
         name="properties"
         options={{
           title: 'Properties',
+          tabBarButtonTestID: 'tab-owner-properties',
           tabBarIcon: ({ color, size }) => <Ionicons name="business" size={size} color={color} />,
         }}
       />
@@ -47,6 +49,7 @@ export default function OwnerLayout() {
         name="maintenance"
         options={{
           title: 'Maintenance',
+          tabBarButtonTestID: 'tab-owner-maintenance',
           tabBarIcon: ({ color, size }) => <Ionicons name="construct" size={size} color={color} />,
         }}
       />
@@ -54,6 +57,7 @@ export default function OwnerLayout() {
         name="tenants"
         options={{
           title: 'Tenants',
+          tabBarButtonTestID: 'tab-owner-tenants',
           tabBarIcon: ({ color, size }) => <Ionicons name="people" size={size} color={color} />,
         }}
       />
@@ -61,6 +65,7 @@ export default function OwnerLayout() {
         name="profile"
         options={{
           title: 'Profile',
+          tabBarButtonTestID: 'tab-owner-profile',
           tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
         }}
       />
@@ -68,6 +73,7 @@ export default function OwnerLayout() {
         name="ai-chat"
         options={{
           title: 'Lala AI',
+          tabBarButtonTestID: 'tab-owner-lala-ai',
           tabBarIcon: ({ color, size }) => <Ionicons name="sparkles" size={size} color={color} />,
         }}
       />

@@ -435,6 +435,7 @@ export default function VendorMaintenanceDetail() {
             </View>
           )}
           <TouchableOpacity
+            testID="vendor-submit-quote"
             style={[
               styles.submitButton,
               !request.can_quote && styles.submitButtonDisabled

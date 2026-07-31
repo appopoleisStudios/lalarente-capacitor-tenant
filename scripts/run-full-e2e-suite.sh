@@ -198,6 +198,22 @@ for flow in "${VENDOR_FLOWS[@]}"; do
 done
 
 # ════════════════════════════════════════════════════
+#  PHASE 4: E2E MAINTENANCE SMOKE (tenant creates → vendor quotes)
+#  Opt-in smoke test: creates REAL rows on the LalaRente Supabase project
+#  each run. Unique REQUEST_TITLE auto-generated so repeated runs don't
+#  multi-match in the vendor list. NO sign_out needed here — the flow
+#  self-manages sessions (cold-start stopApp + clearKeychain + role sign-outs).
+# ════════════════════════════════════════════════════
+print_header "PHASE 4: E2E MAINTENANCE SMOKE (tenant→vendor)"
+E2E_TITLE="E2E Test - Leaking $(date +%s)"
+run_flow "e2e-tenant-create-vendor-quote" \
+  --env TENANT_EMAIL="$TENANT_EMAIL" \
+  --env TENANT_PASSWORD="$TENANT_PASSWORD" \
+  --env VENDOR_EMAIL="$VENDOR_EMAIL" \
+  --env VENDOR_PASSWORD="$VENDOR_PASSWORD" \
+  --env REQUEST_TITLE="$E2E_TITLE"
+
+# ════════════════════════════════════════════════════
 #  RESULTS
 # ════════════════════════════════════════════════════
 print_header " FULL E2E SUITE RESULTS "

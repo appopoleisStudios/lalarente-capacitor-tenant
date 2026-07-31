@@ -1,0 +1,42 @@
+# Sign out a tenant session via Profile tab (no deep links).
+# Hard asserts — fails if logout did not complete.
+appId: com.lalarente.app
+---
+- tapOn:
+    id: "tab-home"
+    optional: true
+
+- tapOn:
+    id: "tab-profile"
+
+- extendedWaitUntil:
+    visible: "My Profile"
+    timeout: 30000
+
+- scrollUntilVisible:
+    element:
+      text: ".*Sign Out.*"
+    direction: DOWN
+    timeout: 15000
+
+- tapOn:
+    text: ".*Sign Out.*"
+
+- extendedWaitUntil:
+    visible: ".*Are you sure.*"
+    timeout: 10000
+
+# Alert confirmation — the alert has title "Sign Out" AND button "Sign Out";
+# index: 1 targets the button (index 0 is the non-tappable title). Icon-prefixed
+# profile button (', Sign Out') is excluded by the exact full-string regex.
+- tapOn:
+    text: "Sign Out"
+    index: 1
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+
+- assertVisible:
+    text: "Sign in to your account"

@@ -1,18 +1,12 @@
 # Self-contained owner dashboard E2E test
-# Uses login-owner subflow which handles both cached session and fresh login
+# Uses login-owner subflow which handles both cached session and fresh login.
+# Navigation uses tab taps — no deep links.
 appId: com.lalarente.app
 ---
-# === FRESH LAUNCH ===
-- stopApp
 - runFlow: ../subflows/login-owner.yaml
 
-# === VERIFY OWNER DASHBOARD ===
 - extendedWaitUntil:
     visible: "Portfolio Dashboard"
     timeout: 60000
 
-# === VERIFY OWNER PROFILE ===
-- openLink: lalarenteapp:///(owner)/profile
-- extendedWaitUntil:
-    visible: "Owner Account"
-    timeout: 20000
+- runFlow: ../subflows/tap-owner-profile.yaml

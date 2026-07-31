@@ -1,14 +1,10 @@
-# Vendor maintenance — open maintenance requests screen
+# Vendor maintenance — open maintenance requests screen via tab (no deep links).
 appId: com.lalarente.app
 ---
 - runFlow: ../subflows/launch-app-warm.yaml
 - runFlow: ../subflows/login-vendor.yaml
 
-- openLink: lalarenteapp:///(vendor)/maintenance
-
-- extendedWaitUntil:
-    visible: "Maintenance Requests"
-    timeout: 20000
+- runFlow: ../subflows/tap-vendor-maintenance.yaml
 
 - assertVisible:
     text: "Maintenance Requests"

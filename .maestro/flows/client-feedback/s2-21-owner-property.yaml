@@ -4,11 +4,7 @@ appId: com.lalarente.app
 - runFlow: ../../subflows/launch-app-warm.yaml
 - runFlow: ../../subflows/login-owner.yaml
 
-- openLink: lalarenteapp:///(owner)/properties
-
-- extendedWaitUntil:
-    visible: "My Properties"
-    timeout: 20000
+- runFlow: ../../subflows/tap-owner-properties.yaml
 
 - tapOn:
     point: "50%,35%"

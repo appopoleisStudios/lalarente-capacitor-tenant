@@ -1,0 +1,41 @@
+# Sign out a vendor session via Profile tab (no deep links).
+# Hard asserts — fails if logout did not complete.
+appId: com.lalarente.app
+---
+- tapOn:
+    id: "tab-vendor-home"
+    optional: true
+
+- tapOn:
+    id: "tab-vendor-profile"
+
+- extendedWaitUntil:
+    visible: "Vendor Account"
+    timeout: 30000
+
+- scrollUntilVisible:
+    element:
+      text: ".*Logout.*"
+    direction: DOWN
+    timeout: 15000
+
+- tapOn:
+    text: ".*Logout.*"
+
+- extendedWaitUntil:
+    visible: ".*Are you sure.*"
+    timeout: 10000
+
+# Alert confirmation — alert has title "Logout" AND button "Logout"; index: 1 targets
+# the button (index 0 is the non-tappable title).
+- tapOn:
+    text: "Logout"
+    index: 1
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+
+- assertVisible:
+    text: "Sign in to your account"

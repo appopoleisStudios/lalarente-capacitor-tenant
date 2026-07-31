@@ -243,6 +243,8 @@ export default function TenantMaintenanceReportScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
       >
         {/* Property Selection (if multiple leases) or Display (if single lease) */}
         <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.section}>
@@ -356,6 +358,7 @@ export default function TenantMaintenanceReportScreen() {
             value={title}
             onChangeText={setTitle}
             maxLength={100}
+            testID="maintenance-title-input"
           />
           {title.length > 0 && title.length < 5 && (
             <Text style={styles.validationHint}>Minimum 5 characters</Text>
@@ -375,6 +378,7 @@ export default function TenantMaintenanceReportScreen() {
             numberOfLines={5}
             textAlignVertical="top"
             maxLength={500}
+            testID="maintenance-description-input"
           />
           <View style={styles.descriptionFooter}>
             {description.length > 0 && description.length < 20 && (
@@ -399,6 +403,9 @@ export default function TenantMaintenanceReportScreen() {
             {PRIORITIES.map((item) => (
               <TouchableOpacity
                 key={item.value}
+                testID={`maintenance-priority-${item.value}`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: priority === item.value }}
                 style={[
                   styles.priorityChip,
                   priority === item.value && { backgroundColor: item.color },
@@ -434,6 +441,9 @@ export default function TenantMaintenanceReportScreen() {
             {categories.map((category) => (
               <TouchableOpacity
                 key={category.id}
+                testID={`maintenance-category-${category.name.toLowerCase().replace(/\s+/g, '-')}`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: categoryId === category.id }}
                 style={[styles.chip, categoryId === category.id && styles.chipActive]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -497,6 +507,7 @@ export default function TenantMaintenanceReportScreen() {
       {/* Submit Button */}
       <View style={styles.footer}>
         <TouchableOpacity
+          testID="maintenance-submit"
           style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
           onPress={handleSubmit}
           disabled={submitting}

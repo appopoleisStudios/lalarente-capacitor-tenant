@@ -1,0 +1,29 @@
+# T0: Tenant-Direct Visibility — vendor can discover tenant-raised requests
+#
+# NOTE: This test assumes the vendor account (e2e-vendor@lalarente.com) is 
+# already logged in. If another user is logged in, run the sign-out flow first
+# or use the API verification script: node scripts/verify-t0-vendor-visibility.mjs
+#
+# PREREQUISITES:
+#   1. Vendor must be logged in (e2e-vendor@lalarente.com / E2eVendor123!)
+#   2. A maintenance request with title containing "T0 E2E Test" and 
+#      visibility='public' must exist in the database
+#
+appId: com.lalarente.app
+---
+# ════════════════════════════════════════
+# Ensure vendor session, then open Requests tab
+# ════════════════════════════════════════
+- runFlow: ../subflows/login-vendor.yaml
+- runFlow: ../subflows/tap-vendor-maintenance.yaml
+
+- extendedWaitUntil:
+    notVisible: "Loading requests..."
+    timeout: 30000
+
+# ════════════════════════════════════════
+# Verify the API-created request appears
+# ════════════════════════════════════════
+- extendedWaitUntil:
+    visible: "T0 E2E Test"
+    timeout: 30000

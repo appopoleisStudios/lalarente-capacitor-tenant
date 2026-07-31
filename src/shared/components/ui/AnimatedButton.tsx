@@ -54,10 +54,10 @@ export const AnimatedButton = ({
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        accessibilityRole={accessibilityRole}
-        accessibilityLabel={accessibilityLabel}
         disabled={disabled}
         testID={testID}
+        accessibilityRole={accessibilityRole}
+        accessibilityLabel={accessibilityLabel}
       >
         {children}
       </Pressable>

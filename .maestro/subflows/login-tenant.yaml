@@ -1,57 +1,97 @@
-# Tenant login — uses TENANT_EMAIL/TENANT_PASSWORD from .maestro/.env via --env flags.
-# Detects whether the app is already logged in (session persisted in SecureStore)
-# and only fills the login form if needed.
+# Tenant login — TENANT_EMAIL/TENANT_PASSWORD from --env flags.
+# No deep links.
+# - If already on login (e.g. after sign-out-*), fill credentials only (no stopApp).
+# - Otherwise: stopApp + launchApp(clearKeychain) then UI sign-out if needed.
+# clearKeychain clears iOS SecureStore without clearState (which wipes Expo Metro URL).
 appId: com.lalarente.app
 ---
-# Navigate to tenant dashboard to trigger session detection
-- openLink: lalarenteapp:///(tenant)/dashboard
-
-# Wait up to 35s for session restore + dashboard render
 - extendedWaitUntil:
-    visible: "Welcome back,"
-    timeout: 35000
+    visible:
+      id: "email-input"
+    timeout: 5000
     optional: true
 
-# If dashboard visible — already logged in, done
+# Cold start path — not already on login
 - runFlow:
     when:
-      visible: "Welcome back,"
+      notVisible:
+        id: "email-input"
     commands:
-      - assertVisible:
-          text: "Welcome back,"
+      - stopApp
+      - launchApp:
+          clearKeychain: true
+          arguments:
+            EXDevMenuIsOnboardingFinished: "true"
+      - runFlow: dismiss-dev-menu.yaml
+
+      - extendedWaitUntil:
+          visible: "Welcome back"
+          timeout: 45000
           optional: true
 
-# Not on dashboard — must be on login screen, fill credentials
-- runFlow:
-    when:
-      notVisible: "Welcome back,"
-    commands:
-      # Go directly to login screen by deep link
-      - openLink: lalarenteapp:///auth/login
-      - extendedWaitUntil:
-          visible:
-            id: "email-input"
-          timeout: 30000
+      - runFlow:
+          when:
+            notVisible: "Welcome back,"
+          commands:
+            - extendedWaitUntil:
+                visible:
+                  id: "email-input"
+                timeout: 30000
+                optional: true
 
-      - tapOn:
-          id: "email-input"
-      - eraseText
-      - inputText: ${TENANT_EMAIL}
+      - runFlow:
+          when:
+            notVisible:
+              id: "email-input"
+          commands:
+            - runFlow:
+                when:
+                  visible:
+                    id: "tab-profile"
+                commands:
+                  - runFlow: sign-out-tenant.yaml
 
-      - tapOn:
-          id: "password-input"
-      - eraseText
-      - inputText: ${TENANT_PASSWORD}
+            - runFlow:
+                when:
+                  visible:
+                    id: "tab-vendor-profile"
+                commands:
+                  - runFlow: sign-out-vendor.yaml
 
-      # Wait briefly for React state to propagate after input
-      - tapOn:
-          id: "password-input"
+            - runFlow:
+                when:
+                  visible:
+                    id: "tab-owner-profile"
+                commands:
+                  - runFlow: sign-out-owner.yaml
 
-      # Tap Sign In (button is only enabled when both fields non-empty)
-      - tapOn:
-          id: "sign-in-button"
+            - extendedWaitUntil:
+                visible:
+                  id: "email-input"
+                timeout: 30000
 
-      # Wait up to 60s for dashboard to appear after login
-      - extendedWaitUntil:
-          visible: "Welcome back,"
-          timeout: 60000
+# Fill credentials (cold or warm)
+- tapOn:
+    id: "email-input"
+- eraseText
+- inputText: ${TENANT_EMAIL}
+
+- tapOn:
+    text: "Sign in to your account"
+    optional: true
+
+- tapOn:
+    id: "password-input"
+- eraseText
+- inputText: ${TENANT_PASSWORD}
+
+- tapOn:
+    text: "Sign in to your account"
+    optional: true
+
+- tapOn:
+    id: "sign-in-button"
+
+- extendedWaitUntil:
+    visible: "Welcome back,"
+    timeout: 90000

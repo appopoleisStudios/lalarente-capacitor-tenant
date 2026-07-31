@@ -1,21 +1,10 @@
 # Self-contained tenant dashboard E2E test
 # Uses re-usable login-tenant subflow which handles both cached session and fresh login.
+# Navigation uses tab / quick-action taps — no deep links.
 appId: com.lalarente.app
 ---
-# === FRESH LAUNCH ===
-- stopApp
-
-# === LOGIN (handles cached session or fresh login) ===
 - runFlow: ../subflows/login-tenant.yaml
 
-# === NAVIGATE TO MAINTENANCE ===
-- openLink: lalarenteapp:///(tenant)/maintenance
-- extendedWaitUntil:
-    visible: "Maintenance"
-    timeout: 20000
+- runFlow: ../subflows/tap-tenant-maintenance.yaml
 
-# === NAVIGATE TO AI CHAT ===
-- openLink: lalarenteapp:///(tenant)/ai-chat
-- extendedWaitUntil:
-    visible: "Lala Assistant"
-    timeout: 20000
+- runFlow: ../subflows/tap-tenant-lala-ai.yaml

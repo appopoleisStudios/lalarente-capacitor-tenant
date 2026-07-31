@@ -1,93 +1,112 @@
-# Owner login — uses OWNER_EMAIL/OWNER_PASSWORD from .maestro/.env via --env flags.
-# Detects whether the app is already logged in (session persisted in SecureStore)
-# and only fills the login form if needed.
+# Owner login — OWNER_EMAIL/OWNER_PASSWORD from --env flags.
+# No deep links. Skips stopApp when already on login (safe mid-suite role switch).
 appId: com.lalarente.app
 ---
-# Navigate to owner dashboard FIRST so we're on a known screen for session detection.
-# Previous flows may have navigated elsewhere. Dashboard shows "Portfolio Dashboard"
-# if logged in as owner, or redirects to login screen if not.
-- openLink: lalarenteapp:///(owner)/dashboard
-
-# Check if app is on owner dashboard (persisted session)
 - extendedWaitUntil:
-    visible: "Portfolio Dashboard"
-    timeout: 45000
+    visible:
+      id: "email-input"
+    timeout: 5000
     optional: true
 
-# Already logged in as owner — done.
+# Already on owner dashboard
 - runFlow:
     when:
-      visible: "Portfolio Dashboard"
+      visible: ".*Portfolio Dashboard.*"
     commands:
       - assertVisible:
-          text: "Portfolio Dashboard"
-          optional: true
+          text: ".*Portfolio Dashboard.*"
 
-# Not on owner dashboard — check if we're on the login screen
+# Need login
 - runFlow:
     when:
-      notVisible: "Portfolio Dashboard"
+      notVisible: ".*Portfolio Dashboard.*"
     commands:
-      # Quick check: are we on the login screen?
-      # 10s is fast enough to catch wrong-role session without the 45s silent timeout
-      - extendedWaitUntil:
-          visible:
-            id: "email-input"
-          timeout: 10000
-          optional: true
-
-      # On login screen — proceed with credentials
-      - runFlow:
-          when:
-            visible:
-              id: "email-input"
-          commands:
-            - tapOn:
-                id: "email-input"
-            - eraseText
-            - inputText: ${OWNER_EMAIL}
-
-            - tapOn:
-                id: "password-input"
-            - eraseText
-            - inputText: ${OWNER_PASSWORD}
-
-            - tapOn:
-                id: "sign-in-button"
-
-            - extendedWaitUntil:
-                visible: "Portfolio Dashboard"
-                timeout: 60000
-                optional: true
-
-            - openLink: lalarenteapp:///(owner)/profile
-            - extendedWaitUntil:
-                visible: "Owner Account"
-                timeout: 15000
-                optional: true
-
-      # Not on login screen either — cached session for different role
-      # Force navigate to login screen, then proceed with fresh login
       - runFlow:
           when:
             notVisible:
               id: "email-input"
           commands:
-            - openLink: lalarenteapp:///auth/login
+            - stopApp
+            - launchApp:
+                clearKeychain: true
+                arguments:
+                  EXDevMenuIsOnboardingFinished: "true"
+            - runFlow: dismiss-dev-menu.yaml
+
             - extendedWaitUntil:
-                visible:
-                  id: "email-input"
-                timeout: 30000
+                visible: ".*Portfolio Dashboard.*"
+                timeout: 45000
+                optional: true
+
+            - runFlow:
+                when:
+                  notVisible: ".*Portfolio Dashboard.*"
+                commands:
+                  - extendedWaitUntil:
+                      visible:
+                        id: "email-input"
+                      timeout: 15000
+                      optional: true
+
+            - runFlow:
+                when:
+                  notVisible:
+                    id: "email-input"
+                commands:
+                  - runFlow:
+                      when:
+                        visible:
+                          id: "tab-profile"
+                      commands:
+                        - runFlow: sign-out-tenant.yaml
+
+                  - runFlow:
+                      when:
+                        visible:
+                          id: "tab-vendor-profile"
+                      commands:
+                        - runFlow: sign-out-vendor.yaml
+
+                  - runFlow:
+                      when:
+                        visible:
+                          id: "tab-owner-profile"
+                      commands:
+                        - runFlow: sign-out-owner.yaml
+
+                  - extendedWaitUntil:
+                      visible:
+                        id: "email-input"
+                      timeout: 30000
+
+      - runFlow:
+          when:
+            notVisible: ".*Portfolio Dashboard.*"
+          commands:
             - tapOn:
                 id: "email-input"
             - eraseText
             - inputText: ${OWNER_EMAIL}
+
+            # Dismiss the keyboard before switching fields — same pattern as
+            # login-tenant/login-vendor. Without this the sign-in tap is swallowed
+            # by the iOS keyboard overlay (button center lands under the keyboard).
+            - tapOn:
+                text: "Sign in to your account"
+                optional: true
+
             - tapOn:
                 id: "password-input"
             - eraseText
             - inputText: ${OWNER_PASSWORD}
+
+            - tapOn:
+                text: "Sign in to your account"
+                optional: true
+
             - tapOn:
                 id: "sign-in-button"
+
             - extendedWaitUntil:
-                visible: "Portfolio Dashboard"
-                timeout: 60000
+                visible: ".*Portfolio Dashboard.*"
+                timeout: 90000

@@ -4,11 +4,7 @@ appId: com.lalarente.app
 - runFlow: ../../subflows/launch-app-warm.yaml
 - runFlow: ../../subflows/login-owner.yaml
 
-- openLink: lalarenteapp:///(owner)/maintenance
-
-- extendedWaitUntil:
-    visible: "Maintenance"
-    timeout: 20000
+- runFlow: ../../subflows/tap-owner-maintenance.yaml
 
 - tapOn:
     point: "50%,40%"

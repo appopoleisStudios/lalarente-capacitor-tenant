@@ -1,12 +1,8 @@
-# Open tenant profile — deep link avoids iOS 26 tab bar tap issues
+# Open tenant profile via Profile tab (no deep links).
 appId: com.lalarente.app
 ---
-- extendedWaitUntil:
-    visible:
-      id: "notification-bell"
-    timeout: 15000
-
-- openLink: lalarenteapp:///(tenant)/profile
+- tapOn:
+    id: "tab-profile"
 
 - extendedWaitUntil:
     visible:

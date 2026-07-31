@@ -697,6 +697,7 @@ export default function TenantDashboardScreen() {
                 style={styles.actionCard}
                 accessibilityRole="button"
                 accessibilityLabel="Search"
+                testID="qa-search"
                 onPress={() => router.push('/(tenant)/search' as Href)}
               >
                 <View style={[styles.actionIcon, { backgroundColor: colors.primary[50] }]}>
@@ -721,6 +722,7 @@ export default function TenantDashboardScreen() {
                 style={styles.actionCard}
                 accessibilityRole="button"
                 accessibilityLabel="Maintenance"
+                testID="qa-maintenance"
                 onPress={() => router.push('/(tenant)/maintenance' as Href)}
               >
                 <View style={[styles.actionIcon, { backgroundColor: colors.warning[50] }]}>
@@ -733,6 +735,7 @@ export default function TenantDashboardScreen() {
                 style={styles.actionCard}
                 accessibilityRole="button"
                 accessibilityLabel="Messages"
+                testID="qa-messages"
                 onPress={() => router.push('/(tenant)/messages' as Href)}
               >
                 <View style={[styles.actionIcon, { backgroundColor: colors.rsa.green + '15' }]}>

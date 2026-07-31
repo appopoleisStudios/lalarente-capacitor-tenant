@@ -49,6 +49,14 @@ module.exports = ({ config }) => {
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION"
       ],
+      // Explicit VIEW intent so Maestro openLink / OS deep links resolve lalarenteapp://…
+      intentFilters: [
+        {
+          action: "VIEW",
+          category: ["BROWSABLE", "DEFAULT"],
+          data: [{ scheme: "lalarenteapp" }],
+        },
+      ],
       config: {
         googleMaps: {
           apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY

@@ -1,8 +1,39 @@
-# Open tenant maintenance list via deep link (tab bar / scroll is flaky on iOS 26)
+# Navigate tenant to maintenance list — Quick Action primary, deep link fallback.
+# NOTE: "Quick Actions" renders BELOW the fold on the dashboard (after viewing alerts,
+# verification card, active lease card), so a plain `visible` wait fails. We must
+# scrollUntilVisible to reach the qa-maintenance button.
 appId: com.lalarente.app
 ---
-- openLink: lalarenteapp:///(tenant)/maintenance
+- tapOn:
+    id: "tab-home"
+
+# Dashboard must render first (session restore can take time after login)
+- extendedWaitUntil:
+    visible: "Welcome back,"
+    timeout: 45000
+    optional: true
+
+# Quick Actions section is below the fold — scroll down to the Maintenance button
+- scrollUntilVisible:
+    element:
+      id: "qa-maintenance"
+    direction: DOWN
+    timeout: 20000
+
+- tapOn:
+    id: "qa-maintenance"
 
 - extendedWaitUntil:
     visible: "Maintenance"
     timeout: 20000
+    optional: true
+
+# Fallback: if Quick Action tap didn't navigate, try the deep link
+- runFlow:
+    when:
+      notVisible: "Maintenance"
+    commands:
+      - openLink: lalarenteapp:///(tenant)/maintenance
+      - extendedWaitUntil:
+          visible: "Maintenance"
+          timeout: 15000

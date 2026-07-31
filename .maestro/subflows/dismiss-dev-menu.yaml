@@ -1,0 +1,31 @@
+# Dismiss Expo / RN developer menu if it opened over the app (no deep links).
+# Safe no-op when the menu is not visible.
+appId: com.lalarente.app
+---
+- runFlow:
+    when:
+      visible: "Open DevTools"
+    commands:
+      - swipe:
+          direction: DOWN
+          duration: 400
+
+- runFlow:
+    when:
+      visible: "Toggle performance monitor"
+    commands:
+      - swipe:
+          direction: DOWN
+          duration: 400
+
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - runFlow:
+          when:
+            visible: "Toggle element inspector"
+          commands:
+            - swipe:
+                direction: DOWN
+                duration: 400

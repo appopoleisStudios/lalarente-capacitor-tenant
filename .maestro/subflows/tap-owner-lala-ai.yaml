@@ -1,8 +1,8 @@
-# Open tenant Lala AI via tab (no deep links).
+# Open owner Lala AI via tab (no deep links).
 appId: com.lalarente.app
 ---
 - tapOn:
-    id: "tab-lala-ai"
+    id: "tab-owner-lala-ai"
 
 - extendedWaitUntil:
     visible: "Lala Assistant"

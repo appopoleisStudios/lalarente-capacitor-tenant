@@ -23,12 +23,12 @@ appId: com.lalarente.app
     optional: true
 
 - extendedWaitUntil:
-    visible: "Completed"
+    visible: ".*Completed.*"
     timeout: 15000
     optional: true
 
 - assertNotVisible:
-    text: "Room 1 of"
+    text: ".*Room 1 of.*"
     optional: true
 
-- assertVisible: "Inspections"
+- assertVisible: ".*Inspections.*"

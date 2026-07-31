@@ -1,15 +1,20 @@
 # Fresh app start — force login state without clearState
 # NOTE: Never use clearState: true — it wipes the Expo dev client's stored Metro server URL,
 # causing the app to show a blank "waiting for connection" screen.
-# Instead: stopApp (clean process) + launchApp (preserves Metro URL).
-# The app's root index.tsx already redirects to /auth/login when no session is active.
+# clearKeychain: true clears iOS SecureStore auth without touching Metro prefs.
+# Prefer login-* subflows for role-aware session reset + credentials.
 appId: com.lalarente.app
 ---
 - stopApp
-- launchApp
+- launchApp:
+    clearKeychain: true
+    arguments:
+      EXDevMenuIsOnboardingFinished: "true"
+
+# If shake/relaunch still surfaced the Expo/RN developer menu, dismiss it.
+- runFlow: dismiss-dev-menu.yaml
 
 # Wait for app to initialize and connect to Metro before any interactions
-# The app's root index.tsx auto-redirects to /auth/login on fresh start
 - extendedWaitUntil:
     visible:
       id: "notification-bell"
@@ -21,7 +26,6 @@ appId: com.lalarente.app
       notVisible:
         id: "notification-bell"
     commands:
-      # Not logged in — wait for login screen to render
       - extendedWaitUntil:
           visible: "Sign in to your account"
           timeout: 120000
