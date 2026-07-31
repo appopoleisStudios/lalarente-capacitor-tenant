@@ -49,12 +49,15 @@ export const AnimatedButton = ({
   };
 
   return (
-    <Animated.View style={[animatedStyle, style]} testID={testID} accessibilityRole={accessibilityRole} accessibilityLabel={accessibilityLabel}>
+    <Animated.View style={[animatedStyle, style]}>
       <Pressable
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         disabled={disabled}
+        testID={testID}
+        accessibilityRole={accessibilityRole}
+        accessibilityLabel={accessibilityLabel}
       >
         {children}
       </Pressable>
