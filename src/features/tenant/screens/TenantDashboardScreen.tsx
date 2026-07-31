@@ -266,7 +266,6 @@ export default function TenantDashboardScreen() {
       // Also filter out declined viewings where the notification was already read
       // (user already saw it on the notifications screen)
       if (filteredAlerts.length > 0) {
-        const viewingIds = filteredAlerts.map((v: any) => v.id);
         const { data: readNotifs } = await (supabase as any)
           .from('notifications')
           .select('data')
@@ -766,6 +765,19 @@ export default function TenantDashboardScreen() {
                   <Ionicons name="sparkles" size={24} color={colors.rsa.green} />
                 </View>
                 <Text style={styles.actionText} accessible={false}>Lala AI</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionCard}
+                accessibilityRole="button"
+                accessibilityLabel="Vendor Payments"
+                testID="qa-vendor-payments"
+                onPress={() => router.push('/(tenant)/vendor-payments' as Href)}
+              >
+                <View style={[styles.actionIcon, { backgroundColor: '#E0F2F1' }]}>
+                  <Ionicons name="card-outline" size={24} color="#00897B" />
+                </View>
+                <Text style={styles.actionText} accessible={false}>Vendor Payments</Text>
               </TouchableOpacity>
             </View>
           </View>
