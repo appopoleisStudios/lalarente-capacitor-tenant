@@ -1,46 +1,63 @@
+# Vendor Payment Flow - E2E Test
+# Verifies the tenant money path: approved tenant-payer invoices are visible and
+# the tenant can navigate to the PayFast payment screen.
+#
+# Prerequisites:
+#   - Run scripts/seed-tenant-vendor-invoice.mjs first (creates an APPROVED
+#     tenant-payer invoice linked to the tenant's latest maintenance request).
+#     The tenant screen only lists payer_role='tenant' + status='approved'
+#     invoices, so the seed must run before this flow.
+#   - Uses the in-app entry point (qa-vendor-payments quick action on the tenant
+#     dashboard) instead of the fragile deep link.
+#   - Selectors use testIDs (not raw text) on icon+text buttons to avoid the
+#     icon-prefix matching bug (Maestro merges icon name into accessibility text).
+#   - This is a device smoke test, not a CI gate: it verifies navigation + UI,
+#     not a live PayFast transaction (sandbox browser flow is manual).
 appId: com.lalarente.app
 ---
-# Vendor Payment Flow - E2E Test
-# Verifies tenant can see approved vendor invoices and navigate to payment screen
-# Uses standard login subflows for reliable authentication
-
-# Use standard warm launch + login instead of fragile inline login
-- runFlow: ../subflows/launch-app-warm.yaml
 - runFlow: ../subflows/login-tenant.yaml
 
-# Now on dashboard — navigate to vendor payments via deep link
-- openLink: lalarenteapp:///(tenant)/vendor-payments
+# Navigate to vendor payments via the dashboard Quick Action (in-app entry point)
+- scrollUntilVisible:
+    element:
+      id: "qa-vendor-payments"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+
+- tapOn:
+    id: "qa-vendor-payments"
 
 # Wait for the vendor payments screen header
 - extendedWaitUntil:
-    visible: "Vendor Payments"
+    visible:
+      id: "vendor-payments-title"
     timeout: 30000
 
-# Wait for invoice data to load
+# The seeded invoice must be present — REQUIRED (a missing seed means the money
+# path can't be verified, so fail loudly instead of silently passing).
 - extendedWaitUntil:
-    visible: "INV-2026-001"
-    timeout: 20000
-    optional: true
+    visible:
+      id: "invoice-number"
+    timeout: 15000
 
-# Verify Pay Now button exists and tap it
+# Verify Pay Now button exists and tap it (testID — button contains an icon)
 - assertVisible:
-    text: "Pay Now"
-    optional: true
+    id: "pay-now"
 - tapOn:
-    text: "Pay Now"
-    optional: true
+    id: "pay-now"
 
-# Wait for the detail screen to load
+# Wait for the Pay Vendor detail screen
 - extendedWaitUntil:
-    visible: "Pay Vendor"
+    visible:
+      id: "pay-vendor-title"
     timeout: 15000
 
 # Verify invoice detail elements
 - assertVisible:
-    text: "INV-2026-001"
-    optional: true
+    id: "invoice-number-detail"
 - assertVisible:
-    text: "Pay via PayFast"
+    id: "pay-via-payfast"
 - assertVisible:
     text: "Invoice Breakdown"
     optional: true
@@ -48,7 +65,7 @@ appId: com.lalarente.app
     text: "Secure Payment via PayFast"
     optional: true
 
-# Navigate back
+# Navigate back without completing payment
 - tapOn:
     text: "Cancel and go back"
     optional: true

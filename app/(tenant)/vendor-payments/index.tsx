@@ -111,7 +111,7 @@ export default function VendorPaymentsList() {
           borderBottomWidth: 1,
           borderBottomColor: '#E0E0E0',
         }}>
-          <Text style={{ fontSize: 20, fontWeight: '700', color: '#333' }}>
+          <Text style={{ fontSize: 20, fontWeight: '700', color: '#333' }} testID="vendor-payments-title">
             Vendor Payments
           </Text>
           <Text style={{ fontSize: 14, color: '#666', marginTop: 4 }}>
@@ -184,7 +184,7 @@ export default function VendorPaymentsList() {
                             {invoice.maintenance_request.title}
                           </Text>
                         )}
-                        <Text style={{ fontSize: 12, color: '#999', marginTop: 2 }}>
+                        <Text style={{ fontSize: 12, color: '#999', marginTop: 2 }} testID="invoice-number">
                           Invoice {invoice.invoice_number}
                         </Text>
                       </View>
@@ -205,6 +205,7 @@ export default function VendorPaymentsList() {
                       </Text>
 
                       <TouchableOpacity
+                        testID="pay-now"
                         style={{
                           flexDirection: 'row',
                           alignItems: 'center',

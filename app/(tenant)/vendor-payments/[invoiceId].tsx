@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -22,12 +22,12 @@ interface InvoiceDetail {
   vat_amount: number;
   status: string;
   payer_role: string;
-  line_items: Array<{
+  line_items: {
     description: string;
     quantity: number;
     unit_price: number;
     total: number;
-  }>;
+  }[];
   created_at: string;
   vendor: {
     id: string;
@@ -48,11 +48,7 @@ export default function VendorPayScreen() {
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
 
-  useEffect(() => {
-    loadInvoice();
-  }, [invoiceId]);
-
-  const loadInvoice = async () => {
+  const loadInvoice = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || !invoiceId) return;
@@ -77,7 +73,11 @@ export default function VendorPayScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [invoiceId, router]);
+
+  useEffect(() => {
+    loadInvoice();
+  }, [loadInvoice]);
 
   const handlePayViaPayFast = async () => {
     if (!invoice) return;
@@ -179,10 +179,10 @@ export default function VendorPayScreen() {
             <Ionicons name="chevron-back" size={24} color="#333" />
           </TouchableOpacity>
           <View>
-            <Text style={{ fontSize: 20, fontWeight: '700', color: '#333' }}>
+            <Text style={{ fontSize: 20, fontWeight: '700', color: '#333' }} testID="pay-vendor-title">
               Pay Vendor
             </Text>
-            <Text style={{ fontSize: 13, color: '#666' }}>
+            <Text style={{ fontSize: 13, color: '#666' }} testID="invoice-number-detail">
               Invoice {invoice.invoice_number}
             </Text>
           </View>
@@ -265,7 +265,7 @@ export default function VendorPayScreen() {
                 </Text>
               </View>
               <Text style={{ fontSize: 14, fontWeight: '600', color: '#333' }}>
-                R {item.total.toLocaleString()}
+                R {(item.total ?? item.quantity * item.unit_price).toLocaleString()}
               </Text>
             </View>
           ))}
@@ -314,6 +314,7 @@ export default function VendorPayScreen() {
         {/* Pay button */}
         <View style={{ paddingHorizontal: 16, paddingBottom: 32 }}>
           <TouchableOpacity
+            testID="pay-via-payfast"
             style={{
               flexDirection: 'row',
               alignItems: 'center',
