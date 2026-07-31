@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Alert,
-  Linking,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '@/src/lib/supabase';
@@ -98,9 +97,9 @@ export default function VendorPayScreen() {
         return;
       }
 
-      // PayFast return/cancel URLs — these open in the system browser after
-      // payment completes. The vendor-payment-redirect function serves a branded
-      // HTML page, then the app polls get-vendor-payment-status for the result.
+      // PayFast return/cancel URLs — these are intercepted INSIDE the in-app
+      // WebView checkout (checkout.tsx) and route back to the result screen,
+      // which polls get-vendor-payment-status for the outcome.
       const returnUrl = `https://vvepwaolnkzfzhzgxlwr.supabase.co/functions/v1/vendor-payment-redirect?status=success`;
       const cancelUrl = `https://vvepwaolnkzfzhzgxlwr.supabase.co/functions/v1/vendor-payment-redirect?status=cancelled`;
 
@@ -126,21 +125,16 @@ export default function VendorPayScreen() {
         throw new Error(data.error || 'Failed to create payment checkout');
       }
 
-      // Open PayFast hosted page via Linking.openURL (works in React Native)
-      // PayFast accepts GET-based redirects — the Edge Function returns payfast_redirect_url.
-      // NOTE: Linking.openURL may return false even when the browser was launched
-      // successfully (varies by platform/URL scheme). Always navigate to the result
-      // polling screen — if PayFast didn't actually open, the user can go back.
-      try {
-        await Linking.openURL(data.payfast_redirect_url);
-      } catch (linkErr) {
-        console.warn('⚠️ Linking.openURL threw (non-fatal):', linkErr);
-        // Non-fatal — the result screen will show a timeout message
-        // if the payment was never completed.
-      }
-
-      // Navigate to result screen with payment_id to poll status
-      router.replace(`/(tenant)/vendor-payments/result?payment_id=${data.payment_id}`);
+      // Open the hosted PayFast page INSIDE the app via the in-app WebView
+      // checkout screen (Razorpay-style). The checkout intercepts the
+      // return/cancel redirect and routes back to the result polling screen.
+      router.push({
+        pathname: '/(tenant)/vendor-payments/checkout',
+        params: {
+          payment_id: data.payment_id,
+          url: data.payfast_redirect_url,
+        },
+      });
     } catch (err: any) {
       Alert.alert('Payment Error', err.message || 'Failed to initiate payment. Please try again.');
     } finally {
