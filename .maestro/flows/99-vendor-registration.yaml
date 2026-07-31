@@ -41,12 +41,13 @@ appId: com.lalarente.app
     timeout: 120000
 
 # === VERIFY DASHBOARD ELEMENTS ===
+# Stat card labels are icon-prefixed ("<icon>, Available") — use .*regex
 - assertVisible:
-    text: "Available"
+    text: ".*Available.*"
     optional: true
 - assertVisible:
-    text: "Active"
+    text: ".*Active.*"
     optional: true
 - assertVisible:
-    text: "Completed"
+    text: ".*Completed.*"
     optional: true
