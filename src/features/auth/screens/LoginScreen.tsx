@@ -52,7 +52,8 @@ export default function LoginScreen() {
       setLoading(false);
 
       // Role-based navigation
-      if (profile.role === 'owner') {
+      // 'admin' is the landlord/platform owner role — land on the owner dashboard.
+      if (profile.role === 'owner' || profile.role === 'admin') {
         router.replace('/(owner)/dashboard');
       } else if (profile.role === 'tenant') {
         router.replace('/(tenant)/dashboard');
