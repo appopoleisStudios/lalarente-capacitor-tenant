@@ -15,6 +15,13 @@ import * as Haptics from 'expo-haptics';
 import { supabase } from '@/src/lib/supabase';
 import { colors } from '@/src/shared/theme/colors';
 
+// Safe money renderer — legacy invoices may have null/NaN amounts; a bare
+// `.toLocaleString()` would crash the payments list.
+const fmtMoney = (n: number | null | undefined): string => {
+  const v = Number(n ?? 0);
+  return Number.isFinite(v) ? v.toLocaleString() : '0';
+};
+
 interface VendorInvoice {
   id: string;
   invoice_number: string;
@@ -189,7 +196,7 @@ export default function VendorPaymentsList() {
                         </Text>
                       </View>
                       <Text style={{ fontSize: 22, fontWeight: '700', color: colors.role.tenant.primary }}>
-                        R {invoice.total_amount.toLocaleString()}
+                        R {fmtMoney(invoice.total_amount)}
                       </Text>
                     </View>
 

@@ -245,6 +245,12 @@ export default function TenantLayout() {
         }}
       />
       <Tabs.Screen
+        name="vendor-payments/checkout"
+        options={{
+          href: null, // Hidden from tabs - in-app WebView checkout screen
+        }}
+      />
+      <Tabs.Screen
         name="vendor-payments/[invoiceId]"
         options={{
           href: null, // Hidden from tabs - pay invoice screen
