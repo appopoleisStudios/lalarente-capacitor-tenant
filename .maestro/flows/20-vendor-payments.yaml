@@ -65,9 +65,29 @@ appId: com.lalarente.app
     text: "Secure Payment via PayFast"
     optional: true
 
-# Navigate back without completing payment
+# Tap Pay via PayFast — must open the IN-APP checkout (no system browser hop)
 - tapOn:
-    text: "Cancel and go back"
-    optional: true
+    id: "pay-via-payfast"
 
-# ✅ E2E vendor payment flow verification complete
+# Verify the in-app WebView checkout screen rendered (Razorpay-style)
+- extendedWaitUntil:
+    visible:
+      id: "checkout-title"
+    timeout: 15000
+- assertVisible:
+    text: "Secure Checkout"
+- assertVisible:
+    id: "checkout-close"
+
+# Close checkout without completing payment
+- tapOn:
+    id: "checkout-close"
+
+# Back in the tenant flow — assert a stable element (the tab bar is always
+# present; the detail screen re-fetches and shows a spinner on return)
+- extendedWaitUntil:
+    visible:
+      id: "tab-payments"
+    timeout: 10000
+
+# ✅ E2E vendor payment flow verification complete (in-app checkout confirmed)
