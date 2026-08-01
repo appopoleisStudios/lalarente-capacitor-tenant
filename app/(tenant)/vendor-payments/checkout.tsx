@@ -11,6 +11,26 @@ import { WebView, WebViewNavigation } from 'react-native-webview';
 const REDIRECT_BASE =
   'https://vvepwaolnkzfzhzgxlwr.supabase.co/functions/v1/vendor-payment-redirect';
 
+// ── Security allowlist ────────────────────────────────────────────────────
+// The checkout frame renders under a trusted "Secure Checkout" header, but the
+// initial URL arrives via route params — which anyone can forge by deep-linking
+// with a crafted ?url=. A bare https:// check would happily render a phishing
+// page inside our branded frame. So the INITIAL URL host is restricted to
+// *.payfast.co.za (the edge function always generates sandbox.payfast.co.za or
+// www.payfast.co.za). Later in-page navigations (3DS, bank confirmations) stay
+// open — only the first load is restricted.
+const isPayFastUrl = (rawUrl: string | undefined | null): boolean => {
+  if (!rawUrl) return false;
+  try {
+    const parsed = new URL(rawUrl);
+    if (parsed.protocol !== 'https:') return false;
+    const host = parsed.hostname.toLowerCase();
+    return host === 'payfast.co.za' || host.endsWith('.payfast.co.za');
+  } catch {
+    return false;
+  }
+};
+
 export default function VendorPaymentCheckout() {
   const router = useRouter();
   const { payment_id, url } = useLocalSearchParams<{
@@ -81,8 +101,10 @@ export default function VendorPaymentCheckout() {
         </View>
       </View>
 
-      {/* Hosted payment page embedded in-app (Razorpay-style, no browser hop) */}
-      {url && url.startsWith('https://') ? (
+      {/* Hosted payment page embedded in-app (Razorpay-style, no browser hop).
+          Only render when the initial URL is a genuine PayFast hosted page —
+          never an arbitrary https URL from route params. */}
+      {isPayFastUrl(url) ? (
         <WebView
           source={{ uri: url }}
           style={{ flex: 1, backgroundColor: '#F5F5F5' }}
@@ -106,10 +128,27 @@ export default function VendorPaymentCheckout() {
           allowsInlineMediaPlayback
         />
       ) : (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Ionicons name="alert-circle-outline" size={48} color="#DE3831" />
-          <Text style={{ fontSize: 15, color: '#666', marginTop: 12 }}>
-            Payment link is missing. Please go back and try again.
+        <View
+          style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+          testID="checkout-blocked"
+        >
+          <Ionicons
+            name={url ? 'shield-checkmark-outline' : 'alert-circle-outline'}
+            size={48}
+            color="#DE3831"
+          />
+          <Text
+            style={{
+              fontSize: 15,
+              color: '#666',
+              marginTop: 12,
+              textAlign: 'center',
+              paddingHorizontal: 24,
+            }}
+          >
+            {url
+              ? 'This payment link is not from a trusted provider. Please go back and try again.'
+              : 'Payment link is missing. Please go back and try again.'}
           </Text>
         </View>
       )}
