@@ -21,10 +21,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/src/lib/supabase';
-import { leaseExpiryApi, LeaseExpiryInfo, ExpiringLease } from '@/src/features/leases/api/leaseExpiry.api';
+import {
+  leaseExpiryApi,
+  LeaseExpiryInfo,
+  ExpiringLease,
+} from '@/src/features/leases/api/leaseExpiry.api';
 import { leaseRenewalApi, RenewalNegotiation } from '@/src/features/leases/api/leaseRenewal.api';
 import { colors } from '@/src/shared/theme/colors';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { ReasonPromptModal } from '@/src/shared/components/ui/ReasonPromptModal';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -51,7 +56,9 @@ export default function OwnerLeaseRenewalScreen() {
   const [escalationRate, setEscalationRate] = useState('');
   const [offerNotes, setOfferNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
   const [executingLeaseId, setExecutingLeaseId] = useState<string | null>(null);
+  const [rejectNegotiationId, setRejectNegotiationId] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -62,7 +69,9 @@ export default function OwnerLeaseRenewalScreen() {
   const loadExpiringLeases = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
 
@@ -118,7 +127,7 @@ export default function OwnerLeaseRenewalScreen() {
     setSubmitting(true);
     try {
       // Get lease end date for start of new lease
-      const target = leases.find(l => l.lease.id === offerModal);
+      const target = leases.find((l) => l.lease.id === offerModal);
       const startDate = target?.lease.end_date
         ? (() => {
             const d = new Date(target.lease.end_date);
@@ -151,7 +160,7 @@ export default function OwnerLeaseRenewalScreen() {
     if (!userId) return;
     Alert.alert(
       'Accept Tenant Terms',
-      'Are you sure you want to accept the tenant\'s proposed terms? A new lease will be drafted for both parties to sign.',
+      "Are you sure you want to accept the tenant's proposed terms? A new lease will be drafted for both parties to sign.",
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -160,7 +169,10 @@ export default function OwnerLeaseRenewalScreen() {
           onPress: async () => {
             try {
               await leaseRenewalApi.acceptRenewal(negotiationId, userId);
-              Alert.alert('Accepted', 'You have accepted the tenant\'s terms. Execute the renewal to create the new lease.');
+              Alert.alert(
+                'Accepted',
+                "You have accepted the tenant's terms. Execute the renewal to create the new lease."
+              );
               loadExpiringLeases();
             } catch (err: any) {
               Alert.alert('Error', err.message || 'Failed to accept offer');
@@ -171,22 +183,22 @@ export default function OwnerLeaseRenewalScreen() {
     );
   };
 
-  const handleRejectTenantOffer = async (negotiationId: string) => {
-    Alert.prompt(
-      'Reject Counter-Offer',
-      'Provide a reason for rejecting the tenant\'s terms (optional):',
-      async (reason) => {
-        try {
-          await leaseRenewalApi.rejectRenewal(negotiationId, reason || undefined);
-          Alert.alert('Rejected', 'The tenant\'s counter-offer has been rejected.');
-          loadExpiringLeases();
-        } catch (err: any) {
-          Alert.alert('Error', err.message || 'Failed to reject offer');
-        }
-      },
-      'plain-text',
-      '',
-    );
+  const handleRejectTenantOffer = async (reason: string) => {
+    if (!rejectNegotiationId) return;
+    const negotiationId = rejectNegotiationId;
+    setRejecting(true);
+    try {
+      await leaseRenewalApi.rejectRenewal(negotiationId, reason || undefined);
+      // Only close on success — keep the modal open (and the typed reason
+      // intact) so the owner can retry if the API call fails.
+      setRejectNegotiationId(null);
+      Alert.alert('Rejected', "The tenant's counter-offer has been rejected.");
+      loadExpiringLeases();
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to reject offer');
+    } finally {
+      setRejecting(false);
+    }
   };
 
   const handleExecuteRenewal = async (negotiationId: string, leaseId: string) => {
@@ -235,352 +247,393 @@ export default function OwnerLeaseRenewalScreen() {
     );
   }
 
-  const overdueNotices = leases.filter(l =>
-    (!l.expiry.notice80Sent && new Date() >= new Date(l.expiry.notice80Due)) ||
-    (!l.expiry.notice60Sent && new Date() >= new Date(l.expiry.notice60Due)) ||
-    (!l.expiry.notice40Sent && new Date() >= new Date(l.expiry.notice40Due))
+  const overdueNotices = leases.filter(
+    (l) =>
+      (!l.expiry.notice80Sent && new Date() >= new Date(l.expiry.notice80Due)) ||
+      (!l.expiry.notice60Sent && new Date() >= new Date(l.expiry.notice60Due)) ||
+      (!l.expiry.notice40Sent && new Date() >= new Date(l.expiry.notice40Due))
   );
 
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
-        </TouchableOpacity>
-        <Text style={styles.title}>Lease Renewals</Text>
-        {overdueNotices.length > 0 && (
-          <View style={styles.alertBadge}>
-            <Text style={styles.alertBadgeText}>{overdueNotices.length}</Text>
-          </View>
-        )}
-      </View>
-
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Overdue Notices Warning */}
-        {overdueNotices.length > 0 && (
-          <View style={styles.warningCard}>
-            <Ionicons name="alert-circle" size={20} color={colors.rsa.red} />
-            <Text style={styles.warningText}>
-              {overdueNotices.length} lease{overdueNotices.length > 1 ? 's have' : ' has'} overdue CPA notices.
-              Failure to notify tenants on time may result in penalties.
-            </Text>
-          </View>
-        )}
-
-        {/* Legal Notice */}
-        <View style={styles.legalNotice}>
-          <Ionicons name="information-circle" size={16} color={colors.rsa.blue} />
-          <Text style={styles.legalText}>
-            CPA s14(2)(c): You must notify tenants 80, 60, and 40 business days before lease expiry.
-            Showing leases expiring within 120 days.
-          </Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+          </TouchableOpacity>
+          <Text style={styles.title}>Lease Renewals</Text>
+          {overdueNotices.length > 0 && (
+            <View style={styles.alertBadge}>
+              <Text style={styles.alertBadgeText}>{overdueNotices.length}</Text>
+            </View>
+          )}
         </View>
 
-        {/* Lease List */}
-        {leases.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="checkmark-circle-outline" size={64} color={colors.gray[300]} />
-            <Text style={styles.emptyTitle}>No Expiring Leases</Text>
-            <Text style={styles.emptySubtitle}>
-              No leases are expiring within the next 120 days
+        <ScrollView contentContainerStyle={styles.content}>
+          {/* Overdue Notices Warning */}
+          {overdueNotices.length > 0 && (
+            <View style={styles.warningCard}>
+              <Ionicons name="alert-circle" size={20} color={colors.rsa.red} />
+              <Text style={styles.warningText}>
+                {overdueNotices.length} lease{overdueNotices.length > 1 ? 's have' : ' has'} overdue
+                CPA notices. Failure to notify tenants on time may result in penalties.
+              </Text>
+            </View>
+          )}
+
+          {/* Legal Notice */}
+          <View style={styles.legalNotice}>
+            <Ionicons name="information-circle" size={16} color={colors.rsa.blue} />
+            <Text style={styles.legalText}>
+              CPA s14(2)(c): You must notify tenants 80, 60, and 40 business days before lease
+              expiry. Showing leases expiring within 120 days.
             </Text>
           </View>
-        ) : (
-          leases.map(({ lease, expiry, latestNeg }) => {
-            const urgencyColor = expiry.daysUntilExpiry <= 40
-              ? colors.rsa.red
-              : expiry.daysUntilExpiry <= 60
-              ? '#F59E0B'
-              : colors.rsa.green;
 
-            const tenantResponse = lease.tenant_renewal_response;
-            const hasActiveOffer = latestNeg && ['pending', 'counter_offer'].includes(latestNeg.status);
+          {/* Lease List */}
+          {leases.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="checkmark-circle-outline" size={64} color={colors.gray[300]} />
+              <Text style={styles.emptyTitle}>No Expiring Leases</Text>
+              <Text style={styles.emptySubtitle}>
+                No leases are expiring within the next 120 days
+              </Text>
+            </View>
+          ) : (
+            leases.map(({ lease, expiry, latestNeg }) => {
+              const urgencyColor =
+                expiry.daysUntilExpiry <= 40
+                  ? colors.rsa.red
+                  : expiry.daysUntilExpiry <= 60
+                    ? '#F59E0B'
+                    : colors.rsa.green;
 
-            return (
-              <View key={lease.id} style={styles.leaseCard}>
-                {/* Card Header */}
-                <View style={styles.cardHeader}>
-                  <View style={styles.cardHeaderLeft}>
-                    <Text style={styles.propertyName}>{lease.property?.title || 'Property'}</Text>
-                    <Text style={styles.tenantName}>{lease.tenant?.full_name || 'Tenant'}</Text>
-                    <View style={[styles.expiryBadge, { backgroundColor: urgencyColor + '20' }]}>
-                      <Text style={[styles.expiryBadgeText, { color: urgencyColor }]}>
-                        {expiry.daysUntilExpiry} days remaining
+              const tenantResponse = lease.tenant_renewal_response;
+              const hasActiveOffer =
+                latestNeg && ['pending', 'counter_offer'].includes(latestNeg.status);
+
+              return (
+                <View key={lease.id} style={styles.leaseCard}>
+                  {/* Card Header */}
+                  <View style={styles.cardHeader}>
+                    <View style={styles.cardHeaderLeft}>
+                      <Text style={styles.propertyName}>{lease.property?.title || 'Property'}</Text>
+                      <Text style={styles.tenantName}>{lease.tenant?.full_name || 'Tenant'}</Text>
+                      <View style={[styles.expiryBadge, { backgroundColor: urgencyColor + '20' }]}>
+                        <Text style={[styles.expiryBadgeText, { color: urgencyColor }]}>
+                          {expiry.daysUntilExpiry} days remaining
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.cardHeaderRight}>
+                      <Text style={styles.rentLabel}>Monthly Rent</Text>
+                      <Text style={styles.rentAmount}>{formatZAR(lease.monthly_rent)}</Text>
+                      <Text style={styles.expiryDate}>
+                        Expires {new Date(lease.end_date).toLocaleDateString('en-ZA')}
                       </Text>
                     </View>
                   </View>
-                  <View style={styles.cardHeaderRight}>
-                    <Text style={styles.rentLabel}>Monthly Rent</Text>
-                    <Text style={styles.rentAmount}>{formatZAR(lease.monthly_rent)}</Text>
-                    <Text style={styles.expiryDate}>
-                      Expires {new Date(lease.end_date).toLocaleDateString('en-ZA')}
-                    </Text>
-                  </View>
-                </View>
 
-                {/* CPA Notices */}
-                <View style={styles.noticesRow}>
-                  {[
-                    { type: '80' as const, sent: expiry.notice80Sent, due: expiry.notice80Due },
-                    { type: '60' as const, sent: expiry.notice60Sent, due: expiry.notice60Due },
-                    { type: '40' as const, sent: expiry.notice40Sent, due: expiry.notice40Due },
-                  ].map((notice) => {
-                    const isOverdue = !notice.sent && new Date() >= new Date(notice.due);
-                    return (
-                      <TouchableOpacity
-                        key={notice.type}
-                        style={[
-                          styles.noticeChip,
-                          notice.sent && styles.noticeChipSent,
-                          isOverdue && styles.noticeChipOverdue,
-                        ]}
-                        onPress={() => {
-                          if (!notice.sent) {
-                            Alert.alert(
-                              `Mark ${notice.type}-Day Notice Sent`,
-                              `This records that you have sent the ${notice.type}-business-day CPA notice to the tenant.`,
-                              [
-                                { text: 'Cancel', style: 'cancel' },
-                                {
-                                  text: 'Mark Sent',
-                                  onPress: () => handleSendNotice(lease.id, notice.type),
-                                },
-                              ]
-                            );
-                          }
-                        }}
-                        disabled={notice.sent}
-                      >
-                        <Text style={[
-                          styles.noticeChipText,
-                          notice.sent && styles.noticeChipTextSent,
-                          isOverdue && styles.noticeChipTextOverdue,
-                        ]}>
-                          {notice.sent ? '✓' : isOverdue ? '!' : '○'} {notice.type}-day
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-
-                {/* Tenant Response */}
-                {tenantResponse && (
-                  <View style={styles.tenantResponseRow}>
-                    <Ionicons name="person" size={14} color={colors.text.secondary} />
-                    <Text style={styles.tenantResponseText}>
-                      Tenant response:{' '}
-                      <Text style={{ fontWeight: '700', color: colors.text.primary }}>
-                        {tenantResponse === 'renew' ? 'Wants to renew'
-                          : tenantResponse === 'terminate' ? 'Not renewing'
-                          : 'Open to negotiate'}
-                      </Text>
-                    </Text>
-                  </View>
-                )}
-
-                {/* Active Negotiation Status */}
-                {hasActiveOffer && latestNeg && (
-                  <View style={styles.activeOfferRow}>
-                    <Ionicons name="chatbubbles" size={14} color={colors.rsa.blue} />
-                    <Text style={styles.activeOfferText}>
-                      Round {latestNeg.round}: {formatZAR(latestNeg.proposed_monthly_rent)}/mo offered
-                      {latestNeg.status === 'counter_offer' ? ' (counter-offer from tenant)' : ''}
-                    </Text>
-                  </View>
-                )}
-
-                {/* Accepted negotiation status row */}
-                {latestNeg?.status === 'accepted' && (
-                  <View style={styles.activeOfferRow}>
-                    <Ionicons name="checkmark-circle" size={14} color={colors.rsa.green} />
-                    <Text style={[styles.activeOfferText, { color: colors.role.owner.primary }]}>
-                      Round {latestNeg.round}: {formatZAR(latestNeg.proposed_monthly_rent)}/mo accepted by tenant
-                    </Text>
-                  </View>
-                )}
-
-                {/* Actions */}
-                <View style={styles.cardActions}>
-                  {latestNeg?.status === 'accepted' ? (
-                    <>
-                      <View style={styles.acceptedBanner}>
-                        <Ionicons name="checkmark-circle" size={16} color={colors.rsa.green} />
-                        <Text style={styles.acceptedBannerText}>
-                          Tenant accepted · Execute to create the new lease
-                        </Text>
-                      </View>
-                      <TouchableOpacity
-                        style={[
-                          styles.executeButton,
-                          executingLeaseId === lease.id && styles.submitButtonDisabled,
-                        ]}
-                        onPress={() => handleExecuteRenewal(latestNeg.id, lease.id)}
-                        disabled={!!executingLeaseId}
-                      >
-                        {executingLeaseId === lease.id ? (
-                          <ActivityIndicator size="small" color={colors.rsa.white} />
-                        ) : (
-                          <>
-                            <Ionicons name="rocket" size={16} color={colors.rsa.white} />
-                            <Text style={styles.executeButtonText}>Execute Renewal (Create New Lease)</Text>
-                          </>
-                        )}
-                      </TouchableOpacity>
-                    </>
-                  ) : hasActiveOffer && latestNeg && latestNeg.status === 'pending' && latestNeg.initiated_by !== userId ? (
-                    // Tenant sent a counter — owner can accept, reject, or counter back
-                    <>
-                      <View style={styles.tenantCounterBanner}>
-                        <Ionicons name="swap-horizontal" size={14} color="#8B5CF6" />
-                        <Text style={styles.tenantCounterBannerText}>
-                          Tenant proposes {formatZAR(latestNeg.proposed_monthly_rent)}/mo · Round {latestNeg.round}
-                        </Text>
-                      </View>
-                      <TouchableOpacity
-                        style={styles.acceptTenantButton}
-                        onPress={() => handleAcceptTenantOffer(latestNeg.id)}
-                      >
-                        <Ionicons name="checkmark" size={16} color="#FFF" />
-                        <Text style={styles.acceptTenantButtonText}>Accept Tenant Terms</Text>
-                      </TouchableOpacity>
-                      <View style={styles.twoButtonRow}>
+                  {/* CPA Notices */}
+                  <View style={styles.noticesRow}>
+                    {[
+                      { type: '80' as const, sent: expiry.notice80Sent, due: expiry.notice80Due },
+                      { type: '60' as const, sent: expiry.notice60Sent, due: expiry.notice60Due },
+                      { type: '40' as const, sent: expiry.notice40Sent, due: expiry.notice40Due },
+                    ].map((notice) => {
+                      const isOverdue = !notice.sent && new Date() >= new Date(notice.due);
+                      return (
                         <TouchableOpacity
-                          style={styles.rejectButton}
-                          onPress={() => handleRejectTenantOffer(latestNeg.id)}
+                          key={notice.type}
+                          style={[
+                            styles.noticeChip,
+                            notice.sent && styles.noticeChipSent,
+                            isOverdue && styles.noticeChipOverdue,
+                          ]}
+                          onPress={() => {
+                            if (!notice.sent) {
+                              Alert.alert(
+                                `Mark ${notice.type}-Day Notice Sent`,
+                                `This records that you have sent the ${notice.type}-business-day CPA notice to the tenant.`,
+                                [
+                                  { text: 'Cancel', style: 'cancel' },
+                                  {
+                                    text: 'Mark Sent',
+                                    onPress: () => handleSendNotice(lease.id, notice.type),
+                                  },
+                                ]
+                              );
+                            }
+                          }}
+                          disabled={notice.sent}
                         >
-                          <Ionicons name="close" size={16} color="#DC2626" />
-                          <Text style={styles.rejectButtonText}>Reject</Text>
+                          <Text
+                            style={[
+                              styles.noticeChipText,
+                              notice.sent && styles.noticeChipTextSent,
+                              isOverdue && styles.noticeChipTextOverdue,
+                            ]}
+                          >
+                            {notice.sent ? '✓' : isOverdue ? '!' : '○'} {notice.type}-day
+                          </Text>
                         </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.counterButton}
-                          onPress={() => handleOpenOfferModal(lease.id, latestNeg.proposed_monthly_rent)}
-                        >
-                          <Ionicons name="swap-horizontal" size={16} color={colors.rsa.blue} />
-                          <Text style={styles.counterButtonText}>My Counter</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.offerButton}
-                      onPress={() => handleOpenOfferModal(lease.id, lease.monthly_rent)}
-                    >
-                      <Ionicons name="send" size={16} color={colors.rsa.white} />
-                      <Text style={styles.offerButtonText}>
-                        {hasActiveOffer ? 'Send Counter-Offer' : 'Send Renewal Offer'}
+                      );
+                    })}
+                  </View>
+
+                  {/* Tenant Response */}
+                  {tenantResponse && (
+                    <View style={styles.tenantResponseRow}>
+                      <Ionicons name="person" size={14} color={colors.text.secondary} />
+                      <Text style={styles.tenantResponseText}>
+                        Tenant response:{' '}
+                        <Text style={{ fontWeight: '700', color: colors.text.primary }}>
+                          {tenantResponse === 'renew'
+                            ? 'Wants to renew'
+                            : tenantResponse === 'terminate'
+                              ? 'Not renewing'
+                              : 'Open to negotiate'}
+                        </Text>
                       </Text>
-                    </TouchableOpacity>
+                    </View>
                   )}
+
+                  {/* Active Negotiation Status */}
+                  {hasActiveOffer && latestNeg && (
+                    <View style={styles.activeOfferRow}>
+                      <Ionicons name="chatbubbles" size={14} color={colors.rsa.blue} />
+                      <Text style={styles.activeOfferText}>
+                        Round {latestNeg.round}: {formatZAR(latestNeg.proposed_monthly_rent)}/mo
+                        offered
+                        {latestNeg.status === 'counter_offer' ? ' (counter-offer from tenant)' : ''}
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Accepted negotiation status row */}
+                  {latestNeg?.status === 'accepted' && (
+                    <View style={styles.activeOfferRow}>
+                      <Ionicons name="checkmark-circle" size={14} color={colors.rsa.green} />
+                      <Text style={[styles.activeOfferText, { color: colors.role.owner.primary }]}>
+                        Round {latestNeg.round}: {formatZAR(latestNeg.proposed_monthly_rent)}/mo
+                        accepted by tenant
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Actions */}
+                  <View style={styles.cardActions}>
+                    {latestNeg?.status === 'accepted' ? (
+                      <>
+                        <View style={styles.acceptedBanner}>
+                          <Ionicons name="checkmark-circle" size={16} color={colors.rsa.green} />
+                          <Text style={styles.acceptedBannerText}>
+                            Tenant accepted · Execute to create the new lease
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          style={[
+                            styles.executeButton,
+                            executingLeaseId === lease.id && styles.submitButtonDisabled,
+                          ]}
+                          onPress={() => handleExecuteRenewal(latestNeg.id, lease.id)}
+                          disabled={!!executingLeaseId}
+                        >
+                          {executingLeaseId === lease.id ? (
+                            <ActivityIndicator size="small" color={colors.rsa.white} />
+                          ) : (
+                            <>
+                              <Ionicons name="rocket" size={16} color={colors.rsa.white} />
+                              <Text style={styles.executeButtonText}>
+                                Execute Renewal (Create New Lease)
+                              </Text>
+                            </>
+                          )}
+                        </TouchableOpacity>
+                      </>
+                    ) : hasActiveOffer &&
+                      latestNeg &&
+                      latestNeg.status === 'pending' &&
+                      latestNeg.initiated_by !== userId ? (
+                      // Tenant sent a counter — owner can accept, reject, or counter back
+                      <>
+                        <View style={styles.tenantCounterBanner}>
+                          <Ionicons name="swap-horizontal" size={14} color="#8B5CF6" />
+                          <Text style={styles.tenantCounterBannerText}>
+                            Tenant proposes {formatZAR(latestNeg.proposed_monthly_rent)}/mo · Round{' '}
+                            {latestNeg.round}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          style={styles.acceptTenantButton}
+                          onPress={() => handleAcceptTenantOffer(latestNeg.id)}
+                        >
+                          <Ionicons name="checkmark" size={16} color="#FFF" />
+                          <Text style={styles.acceptTenantButtonText}>Accept Tenant Terms</Text>
+                        </TouchableOpacity>
+                        <View style={styles.twoButtonRow}>
+                          <TouchableOpacity
+                            style={styles.rejectButton}
+                            onPress={() => setRejectNegotiationId(latestNeg.id)}
+                          >
+                            <Ionicons name="close" size={16} color="#DC2626" />
+                            <Text style={styles.rejectButtonText}>Reject</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.counterButton}
+                            onPress={() =>
+                              handleOpenOfferModal(lease.id, latestNeg.proposed_monthly_rent)
+                            }
+                          >
+                            <Ionicons name="swap-horizontal" size={16} color={colors.rsa.blue} />
+                            <Text style={styles.counterButtonText}>My Counter</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.offerButton}
+                        onPress={() => handleOpenOfferModal(lease.id, lease.monthly_rent)}
+                      >
+                        <Ionicons name="send" size={16} color={colors.rsa.white} />
+                        <Text style={styles.offerButtonText}>
+                          {hasActiveOffer ? 'Send Counter-Offer' : 'Send Renewal Offer'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
-              </View>
-            );
-          })
-        )}
-      </ScrollView>
+              );
+            })
+          )}
+        </ScrollView>
 
-      {/* Offer Modal */}
-      <Modal
-        visible={!!offerModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setOfferModal(null)}
-      >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setOfferModal(null)}>
-              <Ionicons name="close" size={24} color={colors.text.primary} />
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>Send Renewal Offer</Text>
-            <View style={{ width: 24 }} />
-          </View>
-
-          <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
-            {/* Lease Type */}
-            <Text style={styles.fieldLabel}>Lease Type</Text>
-            <View style={styles.segmentControl}>
-              <TouchableOpacity
-                style={[styles.segment, leaseType === 'fixed' && styles.segmentActive]}
-                onPress={() => setLeaseType('fixed')}
-              >
-                <Text style={[styles.segmentText, leaseType === 'fixed' && styles.segmentTextActive]}>
-                  Fixed Term
-                </Text>
+        {/* Offer Modal */}
+        <Modal
+          visible={!!offerModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setOfferModal(null)}
+        >
+          <SafeAreaView style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setOfferModal(null)}>
+                <Ionicons name="close" size={24} color={colors.text.primary} />
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.segment, leaseType === 'month_to_month' && styles.segmentActive]}
-                onPress={() => setLeaseType('month_to_month')}
-              >
-                <Text style={[styles.segmentText, leaseType === 'month_to_month' && styles.segmentTextActive]}>
-                  Month-to-Month
-                </Text>
-              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Send Renewal Offer</Text>
+              <View style={{ width: 24 }} />
             </View>
 
-            {leaseType === 'fixed' && (
-              <>
-                <Text style={styles.fieldLabel}>Duration (months)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={durationMonths}
-                  onChangeText={setDurationMonths}
-                  keyboardType="numeric"
-                  placeholder="12"
-                  placeholderTextColor={colors.gray[400]}
-                />
-              </>
-            )}
-
-            <Text style={styles.fieldLabel}>Proposed Monthly Rent (R) *</Text>
-            <TextInput
-              style={styles.input}
-              value={proposedRent}
-              onChangeText={setProposedRent}
-              keyboardType="numeric"
-              placeholder="e.g. 9500"
-              placeholderTextColor={colors.gray[400]}
-            />
-
-            <Text style={styles.fieldLabel}>Annual Escalation Rate (% — optional)</Text>
-            <TextInput
-              style={styles.input}
-              value={escalationRate}
-              onChangeText={setEscalationRate}
-              keyboardType="numeric"
-              placeholder="e.g. 5"
-              placeholderTextColor={colors.gray[400]}
-            />
-
-            <Text style={styles.fieldLabel}>Notes (Optional)</Text>
-            <TextInput
-              style={[styles.input, styles.inputMulti]}
-              value={offerNotes}
-              onChangeText={setOfferNotes}
-              placeholder="Any terms or conditions to include..."
-              placeholderTextColor={colors.gray[400]}
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-            />
-
-            <TouchableOpacity
-              style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
-              onPress={handleSendOffer}
-              disabled={submitting}
+            <ScrollView
+              contentContainerStyle={styles.modalContent}
+              keyboardShouldPersistTaps="handled"
             >
-              {submitting ? (
-                <ActivityIndicator size="small" color={colors.rsa.white} />
-              ) : (
+              {/* Lease Type */}
+              <Text style={styles.fieldLabel}>Lease Type</Text>
+              <View style={styles.segmentControl}>
+                <TouchableOpacity
+                  style={[styles.segment, leaseType === 'fixed' && styles.segmentActive]}
+                  onPress={() => setLeaseType('fixed')}
+                >
+                  <Text
+                    style={[styles.segmentText, leaseType === 'fixed' && styles.segmentTextActive]}
+                  >
+                    Fixed Term
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.segment, leaseType === 'month_to_month' && styles.segmentActive]}
+                  onPress={() => setLeaseType('month_to_month')}
+                >
+                  <Text
+                    style={[
+                      styles.segmentText,
+                      leaseType === 'month_to_month' && styles.segmentTextActive,
+                    ]}
+                  >
+                    Month-to-Month
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {leaseType === 'fixed' && (
                 <>
-                  <Ionicons name="send" size={18} color={colors.rsa.white} />
-                  <Text style={styles.submitButtonText}>Send Renewal Offer</Text>
+                  <Text style={styles.fieldLabel}>Duration (months)</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={durationMonths}
+                    onChangeText={setDurationMonths}
+                    keyboardType="numeric"
+                    placeholder="12"
+                    placeholderTextColor={colors.gray[400]}
+                  />
                 </>
               )}
-            </TouchableOpacity>
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
+
+              <Text style={styles.fieldLabel}>Proposed Monthly Rent (R) *</Text>
+              <TextInput
+                style={styles.input}
+                value={proposedRent}
+                onChangeText={setProposedRent}
+                keyboardType="numeric"
+                placeholder="e.g. 9500"
+                placeholderTextColor={colors.gray[400]}
+              />
+
+              <Text style={styles.fieldLabel}>Annual Escalation Rate (% — optional)</Text>
+              <TextInput
+                style={styles.input}
+                value={escalationRate}
+                onChangeText={setEscalationRate}
+                keyboardType="numeric"
+                placeholder="e.g. 5"
+                placeholderTextColor={colors.gray[400]}
+              />
+
+              <Text style={styles.fieldLabel}>Notes (Optional)</Text>
+              <TextInput
+                style={[styles.input, styles.inputMulti]}
+                value={offerNotes}
+                onChangeText={setOfferNotes}
+                placeholder="Any terms or conditions to include..."
+                placeholderTextColor={colors.gray[400]}
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+              />
+
+              <TouchableOpacity
+                style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+                onPress={handleSendOffer}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <ActivityIndicator size="small" color={colors.rsa.white} />
+                ) : (
+                  <>
+                    <Ionicons name="send" size={18} color={colors.rsa.white} />
+                    <Text style={styles.submitButtonText}>Send Renewal Offer</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
+
+        {/* Reject Counter-Offer Modal */}
+        <ReasonPromptModal
+          visible={!!rejectNegotiationId}
+          title="Reject Counter-Offer"
+          message="Provide a reason for rejecting the tenant's terms (optional)."
+          placeholder="Reason for rejection (optional)..."
+          confirmLabel="Reject"
+          destructive
+          required={false}
+          submitting={rejecting}
+          onCancel={() => setRejectNegotiationId(null)}
+          onConfirm={handleRejectTenantOffer}
+        />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

@@ -1,19 +1,28 @@
 import { useAuth } from '@/src/contexts/AuthContext';
 import {
-    acceptQuote,
-    getQuoteById,
-    getQuoteRevisions,
-    rejectQuote,
-    requestQuoteRevision,
-    type Quote,
-    type QuoteRevision,
+  acceptQuote,
+  getQuoteById,
+  getQuoteRevisions,
+  rejectQuote,
+  requestQuoteRevision,
+  type Quote,
+  type QuoteRevision,
 } from '@/src/features/maintenance/api';
+import { ReasonPromptModal } from '@/src/shared/components/ui/ReasonPromptModal';
 import { colors } from '@/src/shared/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const RSA = { blue: '#002395' };
@@ -23,7 +32,11 @@ const STATUS_CONFIG = {
   submitted: { label: 'Submitted', color: colors.info[500], icon: 'document-text' },
   approved: { label: 'Approved', color: colors.success[500], icon: 'checkmark-circle' },
   rejected: { label: 'Rejected', color: colors.error[500], icon: 'close-circle' },
-  revision_requested: { label: 'Revision Requested', color: colors.warning[500], icon: 'create-outline' },
+  revision_requested: {
+    label: 'Revision Requested',
+    color: colors.warning[500],
+    icon: 'create-outline',
+  },
 };
 
 export default function OwnerQuoteDetailScreen() {
@@ -34,6 +47,7 @@ export default function OwnerQuoteDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [showRevisions, setShowRevisions] = useState(false);
+  const [showRevisionModal, setShowRevisionModal] = useState(false);
 
   useEffect(() => {
     if (quoteId) {
@@ -53,15 +67,14 @@ export default function OwnerQuoteDetailScreen() {
   const fetchQuoteDetails = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch quote
       const quoteData = await getQuoteById(quoteId);
       setQuote(quoteData);
-      
+
       // Fetch revisions
       const revisionsData = await getQuoteRevisions(quoteId);
       setRevisions(revisionsData);
-      
     } catch (error: any) {
       console.error('Error fetching quote:', error);
       Alert.alert('Error', 'Failed to load quote details');
@@ -87,10 +100,10 @@ export default function OwnerQuoteDetailScreen() {
               if (!user?.id) {
                 throw new Error('User not authenticated');
               }
-              
+
               const result = await acceptQuote(quoteId, user.id);
               console.log('✅ Quote acceptance result:', result);
-              
+
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               Alert.alert('Success', 'Quote accepted and PO generated', [
                 {
@@ -130,9 +143,9 @@ export default function OwnerQuoteDetailScreen() {
               if (!user?.id) {
                 throw new Error('User not authenticated');
               }
-              
+
               await rejectQuote(quoteId, user.id, 'Quote rejected by owner');
-              
+
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               Alert.alert('Success', 'Quote rejected', [
                 {
@@ -154,44 +167,27 @@ export default function OwnerQuoteDetailScreen() {
     );
   };
 
-  const handleRequestRevision = () => {
-    Alert.prompt(
-      'Request Revision',
-      'Please explain what changes you need:',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Send Request',
-          onPress: async (reason?: string) => {
-            if (!reason || reason.trim() === '') {
-              Alert.alert('Error', 'Please provide a reason for the revision');
-              return;
-            }
+  const handleRequestRevision = async (reason: string) => {
+    try {
+      setActionLoading(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-            try {
-              setActionLoading(true);
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
 
-              if (!user?.id) {
-                throw new Error('User not authenticated');
-              }
+      await requestQuoteRevision(quoteId, user.id, reason);
 
-              await requestQuoteRevision(quoteId, user.id, reason);
-              
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              Alert.alert('Success', 'Revision request sent to vendor');
-              fetchQuoteDetails(); // Refresh
-            } catch (error: any) {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-              Alert.alert('Error', error.message || 'Failed to request revision');
-            } finally {
-              setActionLoading(false);
-            }
-          },
-        },
-      ],
-      'plain-text'
-    );
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Success', 'Revision request sent to vendor');
+      setShowRevisionModal(false);
+      fetchQuoteDetails(); // Refresh
+    } catch (error: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', error.message || 'Failed to request revision');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   if (loading) {
@@ -316,7 +312,8 @@ export default function OwnerQuoteDetailScreen() {
             <View style={styles.revisionBadge}>
               <Ionicons name="refresh" size={16} color={colors.warning[600]} />
               <Text style={styles.revisionBadgeText}>
-                Revision {quote.revision_number} {hasRevisions ? `(${revisions.length} previous)` : ''}
+                Revision {quote.revision_number}{' '}
+                {hasRevisions ? `(${revisions.length} previous)` : ''}
               </Text>
             </View>
           )}
@@ -338,7 +335,12 @@ export default function OwnerQuoteDetailScreen() {
             <Text style={styles.sectionTitle}>
               {quote.status === 'revision_requested' ? 'Revision Requested' : 'Revision Reason'}
             </Text>
-            <View style={[styles.notesCard, { backgroundColor: colors.warning[50], borderColor: colors.warning[500] }]}>
+            <View
+              style={[
+                styles.notesCard,
+                { backgroundColor: colors.warning[50], borderColor: colors.warning[500] },
+              ]}
+            >
               <Text style={styles.notesText}>{quote.revision_reason}</Text>
             </View>
           </View>
@@ -362,7 +364,7 @@ export default function OwnerQuoteDetailScreen() {
                     })}
                   </Text>
                 </View>
-                
+
                 <View style={styles.revisionCosts}>
                   <View style={styles.revisionCostRow}>
                     <Text style={styles.revisionCostLabel}>Total</Text>
@@ -373,15 +375,33 @@ export default function OwnerQuoteDetailScreen() {
                   {index < revisions.length - 1 && (
                     <View style={styles.revisionDiff}>
                       <Ionicons
-                        name={revision.total_amount > revisions[index + 1].total_amount ? 'arrow-up' : 'arrow-down'}
+                        name={
+                          revision.total_amount > revisions[index + 1].total_amount
+                            ? 'arrow-up'
+                            : 'arrow-down'
+                        }
                         size={14}
-                        color={revision.total_amount > revisions[index + 1].total_amount ? colors.error[500] : colors.success[500]}
+                        color={
+                          revision.total_amount > revisions[index + 1].total_amount
+                            ? colors.error[500]
+                            : colors.success[500]
+                        }
                       />
-                      <Text style={[
-                        styles.revisionDiffText,
-                        { color: revision.total_amount > revisions[index + 1].total_amount ? colors.error[500] : colors.success[500] }
-                      ]}>
-                        R {Math.abs(revision.total_amount - revisions[index + 1].total_amount).toLocaleString()}
+                      <Text
+                        style={[
+                          styles.revisionDiffText,
+                          {
+                            color:
+                              revision.total_amount > revisions[index + 1].total_amount
+                                ? colors.error[500]
+                                : colors.success[500],
+                          },
+                        ]}
+                      >
+                        R{' '}
+                        {Math.abs(
+                          revision.total_amount - revisions[index + 1].total_amount
+                        ).toLocaleString()}
                       </Text>
                     </View>
                   )}
@@ -467,7 +487,7 @@ export default function OwnerQuoteDetailScreen() {
 
             <TouchableOpacity
               style={[styles.actionButton, styles.revisionButton]}
-              onPress={handleRequestRevision}
+              onPress={() => setShowRevisionModal(true)}
               disabled={actionLoading}
             >
               <Ionicons name="create-outline" size={20} color={colors.warning[600]} />
@@ -491,6 +511,18 @@ export default function OwnerQuoteDetailScreen() {
           </View>
         </View>
       )}
+
+      {/* Request Revision Modal */}
+      <ReasonPromptModal
+        visible={showRevisionModal}
+        title="Request Revision"
+        message="Please explain what changes you need from the vendor."
+        placeholder="Describe the changes required..."
+        confirmLabel="Send Request"
+        submitting={actionLoading}
+        onCancel={() => setShowRevisionModal(false)}
+        onConfirm={handleRequestRevision}
+      />
     </SafeAreaView>
   );
 }
@@ -510,11 +542,7 @@ function TimelineItem({
   return (
     <View style={styles.timelineItem}>
       <View style={[styles.timelineIcon, completed && styles.timelineIconCompleted]}>
-        <Ionicons
-          name={icon as any}
-          size={16}
-          color={completed ? '#FFFFFF' : colors.gray[400]}
-        />
+        <Ionicons name={icon as any} size={16} color={completed ? '#FFFFFF' : colors.gray[400]} />
       </View>
       <View style={styles.timelineContent}>
         <Text style={styles.timelineLabel}>{label}</Text>
@@ -530,84 +558,101 @@ const styles = StyleSheet.create({
   loadingText: { marginTop: 12, fontSize: 16, color: '#6b7280' },
   errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   errorText: { marginTop: 16, fontSize: 18, fontWeight: '600', color: '#111827' },
-  backButton: { marginTop: 24, paddingHorizontal: 24, paddingVertical: 12, backgroundColor: RSA.blue, borderRadius: 8 },
-  backButtonText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
-  
-  // Header
-  header: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
-    paddingHorizontal: 16, 
-    paddingVertical: 16, 
-    backgroundColor: '#FFFFFF', 
-    borderBottomWidth: 1, 
-    borderBottomColor: '#e5e7eb' 
+  backButton: {
+    marginTop: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: RSA.blue,
+    borderRadius: 8,
   },
-  headerButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  backButtonText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
+
+  // Header
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
-  
+
   scrollView: { flex: 1 },
-  
+
   // Status
   statusContainer: { alignItems: 'center', paddingVertical: 20 },
-  statusBadge: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 8, 
-    paddingHorizontal: 16, 
-    paddingVertical: 10, 
-    borderRadius: 20 
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
   },
   statusText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
-  
+
   // Section
   section: { marginHorizontal: 16, marginBottom: 24 },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 12 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
   // Vendor
-  vendorCard: { 
-    flexDirection: 'row', 
-    backgroundColor: '#FFFFFF', 
-    borderRadius: 12, 
-    padding: 16, 
-    borderWidth: 1, 
+  vendorCard: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
     borderColor: '#e5e7eb',
     gap: 12,
   },
-  vendorAvatar: { 
-    width: 60, 
-    height: 60, 
-    borderRadius: 30, 
-    backgroundColor: colors.gray[100], 
-    justifyContent: 'center', 
-    alignItems: 'center' 
+  vendorAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.gray[100],
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   vendorInfo: { flex: 1, justifyContent: 'center' },
   vendorNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   vendorName: { fontSize: 18, fontWeight: '700', color: '#111827' },
   vendorContact: { fontSize: 14, color: '#6b7280', marginTop: 2 },
-  contractBadge: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 4, 
-    paddingHorizontal: 8, 
-    paddingVertical: 4, 
-    backgroundColor: colors.info[50], 
-    borderRadius: 12, 
-    borderWidth: 1, 
-    borderColor: colors.info[500] 
+  contractBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: colors.info[50],
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.info[500],
   },
   contractBadgeText: { fontSize: 11, fontWeight: '600', color: colors.info[700] },
-  
+
   // Cost
-  costCard: { 
-    backgroundColor: '#FFFFFF', 
-    borderRadius: 12, 
-    padding: 16, 
-    borderWidth: 1, 
-    borderColor: '#e5e7eb' 
+  costCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   costRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   costLabel: { fontSize: 15, color: '#6b7280' },
@@ -615,50 +660,55 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: '#e5e7eb', marginVertical: 8 },
   totalLabel: { fontSize: 18, fontWeight: '700', color: '#111827' },
   totalValue: { fontSize: 24, fontWeight: '700', color: RSA.blue },
-  
+
   // Revision Badge
-  revisionBadge: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 6, 
-    marginTop: 12, 
-    paddingHorizontal: 12, 
-    paddingVertical: 8, 
-    backgroundColor: colors.warning[50], 
+  revisionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: colors.warning[50],
     borderRadius: 8,
     alignSelf: 'flex-start',
   },
   revisionBadgeText: { fontSize: 13, fontWeight: '600', color: colors.warning[700] },
-  
+
   // Revision Toggle
   revisionToggle: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   revisionToggleText: { fontSize: 14, fontWeight: '600', color: RSA.blue },
-  
+
   // Notes
-  notesCard: { 
-    backgroundColor: '#FFFFFF', 
-    borderRadius: 12, 
-    padding: 16, 
-    borderWidth: 1, 
-    borderColor: '#e5e7eb' 
+  notesCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   notesText: { fontSize: 15, color: '#374151', lineHeight: 22 },
-  
+
   // Revision History
-  revisionCard: { 
-    backgroundColor: '#FFFFFF', 
-    borderRadius: 12, 
-    padding: 16, 
-    borderWidth: 1, 
+  revisionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
     borderColor: '#e5e7eb',
     marginBottom: 12,
   },
-  revisionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  revisionNumber: { 
-    backgroundColor: colors.gray[100], 
-    paddingHorizontal: 12, 
-    paddingVertical: 6, 
-    borderRadius: 12 
+  revisionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  revisionNumber: {
+    backgroundColor: colors.gray[100],
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
   revisionNumberText: { fontSize: 13, fontWeight: '700', color: colors.gray[700] },
   revisionDate: { fontSize: 13, color: '#6b7280' },
@@ -671,28 +721,28 @@ const styles = StyleSheet.create({
   revisionReason: { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#e5e7eb' },
   revisionReasonLabel: { fontSize: 12, fontWeight: '600', color: '#6b7280', marginBottom: 4 },
   revisionReasonText: { fontSize: 14, color: '#374151', lineHeight: 20 },
-  
+
   // Timeline
   timeline: { gap: 16 },
   timelineItem: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
-  timelineIcon: { 
-    width: 32, 
-    height: 32, 
-    borderRadius: 16, 
-    backgroundColor: colors.gray[200], 
-    justifyContent: 'center', 
-    alignItems: 'center' 
+  timelineIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.gray[200],
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   timelineIconCompleted: { backgroundColor: RSA.blue },
   timelineContent: { flex: 1 },
   timelineLabel: { fontSize: 14, fontWeight: '600', color: '#111827' },
   timelineDate: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  
+
   // Footer Actions
-  footer: { 
-    padding: 16, 
-    backgroundColor: '#FFFFFF', 
-    borderTopWidth: 1, 
+  footer: {
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
@@ -701,27 +751,27 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   actionButtons: { flexDirection: 'row', gap: 8 },
-  actionButton: { 
-    flex: 1, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    gap: 6, 
-    paddingVertical: 14, 
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 2,
   },
-  rejectButton: { 
-    backgroundColor: '#FFFFFF', 
+  rejectButton: {
+    backgroundColor: '#FFFFFF',
     borderColor: colors.error[500],
   },
   rejectButtonText: { fontSize: 15, fontWeight: '700', color: colors.error[600] },
-  revisionButton: { 
-    backgroundColor: '#FFFFFF', 
+  revisionButton: {
+    backgroundColor: '#FFFFFF',
     borderColor: colors.warning[500],
   },
   revisionButtonText: { fontSize: 15, fontWeight: '700', color: colors.warning[600] },
-  acceptButton: { 
+  acceptButton: {
     backgroundColor: RSA.blue,
     borderColor: RSA.blue,
   },

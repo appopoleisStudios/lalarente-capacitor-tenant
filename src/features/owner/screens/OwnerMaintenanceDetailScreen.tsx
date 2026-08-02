@@ -13,7 +13,7 @@ import {
   requestQuoteRevision,
   type ClosureReport,
   type ProgressUpdate,
-  type PurchaseOrder
+  type PurchaseOrder,
 } from '@/src/features/maintenance/api';
 import { MediaGallery } from '@/src/features/maintenance/components/MediaGallery';
 import {
@@ -22,12 +22,21 @@ import {
   RequestPOSection,
   RequestTimelineSection,
 } from '@/src/features/owner/components';
+import { ReasonPromptModal } from '@/src/shared/components/ui/ReasonPromptModal';
 import { colors } from '@/src/shared/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const RSA = { blue: '#002395' };
@@ -58,6 +67,7 @@ export default function OwnerMaintenanceDetailScreen() {
   const [progressUpdates, setProgressUpdates] = useState<ProgressUpdate[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [revisionQuoteId, setRevisionQuoteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -114,7 +124,9 @@ export default function OwnerMaintenanceDetailScreen() {
       const poId = (data as any)?.po_id;
       if (poId) {
         try {
-          const po = await getPOByRequestId(id) || await (await import('@/src/features/maintenance/api')).getPOById(poId);
+          const po =
+            (await getPOByRequestId(id)) ||
+            (await (await import('@/src/features/maintenance/api')).getPOById(poId));
           setPurchaseOrder(po);
         } catch (error) {
           console.log('Failed to fetch PO:', error);
@@ -145,7 +157,6 @@ export default function OwnerMaintenanceDetailScreen() {
         console.log('Failed to fetch closure report:', error);
         setClosureReport(null);
       }
-
     } catch (error: any) {
       console.error('Error fetching request:', error);
       Alert.alert('Error', 'Failed to load request details');
@@ -173,25 +184,21 @@ export default function OwnerMaintenanceDetailScreen() {
   };
 
   const handlePushToVendors = () => {
-    Alert.alert(
-      'Push to Vendors',
-      'How would you like to route this request?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Select Specific Vendors',
-          onPress: () => router.push(`/(owner)/maintenance/select-vendors?id=${id}`),
-        },
-        {
-          text: 'Open Market',
-          onPress: () => handlePushToOpenMarket(),
-        },
-        {
-          text: 'Dedicated Vendors',
-          onPress: () => handleSendToDedicatedVendors(),
-        },
-      ]
-    );
+    Alert.alert('Push to Vendors', 'How would you like to route this request?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Select Specific Vendors',
+        onPress: () => router.push(`/(owner)/maintenance/select-vendors?id=${id}`),
+      },
+      {
+        text: 'Open Market',
+        onPress: () => handlePushToOpenMarket(),
+      },
+      {
+        text: 'Dedicated Vendors',
+        onPress: () => handleSendToDedicatedVendors(),
+      },
+    ]);
   };
 
   const handlePushToOpenMarket = async () => {
@@ -202,7 +209,10 @@ export default function OwnerMaintenanceDetailScreen() {
       await pushToOpenMarket(id);
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Success', 'Request pushed to open market. All vendors in this category can now see and quote on this request.');
+      Alert.alert(
+        'Success',
+        'Request pushed to open market. All vendors in this category can now see and quote on this request.'
+      );
       fetchRequest(); // Refresh
     } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -246,36 +256,32 @@ export default function OwnerMaintenanceDetailScreen() {
   };
 
   const handleClose = async () => {
-    Alert.alert(
-      'Close Request',
-      'Are you sure you want to close this request?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Close',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setActionLoading(true);
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Alert.alert('Close Request', 'Are you sure you want to close this request?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Close',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            setActionLoading(true);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-              const { closeRequest } = await import('@/src/features/maintenance/api');
-              await closeRequest(id);
+            const { closeRequest } = await import('@/src/features/maintenance/api');
+            await closeRequest(id);
 
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-              // Refresh the request to show updated status
-              fetchRequest();
-            } catch (error: any) {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-              Alert.alert('Error', error.message || 'Failed to close request');
-            } finally {
-              setActionLoading(false);
-            }
-          },
+            // Refresh the request to show updated status
+            fetchRequest();
+          } catch (error: any) {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            Alert.alert('Error', error.message || 'Failed to close request');
+          } finally {
+            setActionLoading(false);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleAcceptQuote = async (quoteId: string, vendorId: string) => {
@@ -310,7 +316,10 @@ export default function OwnerMaintenanceDetailScreen() {
               await fetchRequest();
 
               // Redirect to PO detail screen
-              console.log('🔄 Navigating to PO screen:', `/(owner)/maintenance/${id}/po/${result.po.id}`);
+              console.log(
+                '🔄 Navigating to PO screen:',
+                `/(owner)/maintenance/${id}/po/${result.po.id}`
+              );
               router.push(`/(owner)/maintenance/${id}/po/${result.po.id}`);
             } catch (error: any) {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -359,50 +368,34 @@ export default function OwnerMaintenanceDetailScreen() {
     );
   };
 
-  const handleRequestRevision = (quoteId: string) => {
-    Alert.prompt(
-      'Request Revision',
-      'Please explain what changes you need:',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Send Request',
-          onPress: async (reason?: string) => {
-            if (!reason || reason.trim() === '') {
-              Alert.alert('Error', 'Please provide a reason for the revision');
-              return;
-            }
+  const handleRequestRevision = async (reason: string) => {
+    if (!revisionQuoteId) return;
+    try {
+      setActionLoading(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-            try {
-              setActionLoading(true);
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
 
-              if (!user?.id) {
-                throw new Error('User not authenticated');
-              }
+      await requestQuoteRevision(revisionQuoteId, user.id, reason);
 
-              await requestQuoteRevision(quoteId, user.id, reason);
-
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              Alert.alert('Success', 'Revision request sent to vendor');
-              fetchRequest();
-            } catch (error: any) {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-              Alert.alert('Error', error.message || 'Failed to request revision');
-            } finally {
-              setActionLoading(false);
-            }
-          },
-        },
-      ],
-      'plain-text'
-    );
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Success', 'Revision request sent to vendor');
+      setRevisionQuoteId(null);
+      fetchRequest();
+    } catch (error: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', error.message || 'Failed to request revision');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const toggleQuoteExpanded = (quoteId: string) => {
-    setExpandedQuotes(prev => ({
+    setExpandedQuotes((prev) => ({
       ...prev,
-      [quoteId]: !prev[quoteId]
+      [quoteId]: !prev[quoteId],
     }));
   };
 
@@ -475,7 +468,8 @@ export default function OwnerMaintenanceDetailScreen() {
   const canPushToVendors = request.acknowledged_at && !request.vendor_routed_at;
 
   // Edge case: Request is in open market but no quotes received
-  const isUnquotedOpenMarket = request.acknowledged_at &&
+  const isUnquotedOpenMarket =
+    request.acknowledged_at &&
     request.vendor_routed_at &&
     request.visibility === 'public' &&
     (!quotes || quotes.length === 0) &&
@@ -555,9 +549,7 @@ export default function OwnerMaintenanceDetailScreen() {
         {/* Photos/Videos */}
         {request.images && request.images.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              Photos & Videos ({request.images.length})
-            </Text>
+            <Text style={styles.sectionTitle}>Photos & Videos ({request.images.length})</Text>
             <MediaGallery images={request.images} />
           </View>
         )}
@@ -586,9 +578,7 @@ export default function OwnerMaintenanceDetailScreen() {
                 <Text style={styles.chatButtonTitle}>
                   {request.tenant ? `Chat with ${request.tenant.full_name}` : 'No tenant assigned'}
                 </Text>
-                <Text style={styles.chatButtonSubtitle}>
-                  Discuss request details and updates
-                </Text>
+                <Text style={styles.chatButtonSubtitle}>Discuss request details and updates</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.gray[400]} />
             </View>
@@ -609,7 +599,7 @@ export default function OwnerMaintenanceDetailScreen() {
                 revisions={quoteRevisions[quote.id] || []}
                 onAccept={() => handleAcceptQuote(quote.id, quote.vendor_id)}
                 onReject={() => handleRejectQuote(quote.id)}
-                onRequestRevision={() => handleRequestRevision(quote.id)}
+                onRequestRevision={() => setRevisionQuoteId(quote.id)}
                 onViewDetails={() => router.push(`/(owner)/maintenance/${id}/quote/${quote.id}`)}
               />
             ))}
@@ -645,8 +635,12 @@ export default function OwnerMaintenanceDetailScreen() {
         <RequestPOSection
           purchaseOrder={purchaseOrder}
           requestId={id}
-          onPress={() => purchaseOrder && router.push(`/(owner)/maintenance/${id}/po/${purchaseOrder.id}`)}
-          onSendPO={() => purchaseOrder && router.push(`/(owner)/maintenance/${id}/po/${purchaseOrder.id}`)}
+          onPress={() =>
+            purchaseOrder && router.push(`/(owner)/maintenance/${id}/po/${purchaseOrder.id}`)
+          }
+          onSendPO={() =>
+            purchaseOrder && router.push(`/(owner)/maintenance/${id}/po/${purchaseOrder.id}`)
+          }
         />
 
         {/* Closure Request */}
@@ -661,9 +655,7 @@ export default function OwnerMaintenanceDetailScreen() {
               <View style={styles.closureBanner}>
                 <View style={styles.closureBannerHeader}>
                   <Ionicons name="checkmark-done-circle" size={28} color={colors.success[500]} />
-                  <Text style={styles.closureBannerTitle}>
-                    🏁 Vendor has requested job closure
-                  </Text>
+                  <Text style={styles.closureBannerTitle}>🏁 Vendor has requested job closure</Text>
                 </View>
                 <Text style={styles.closureBannerSubtitle}>
                   Review the completion notes and photos, then approve or request changes.
@@ -681,7 +673,8 @@ export default function OwnerMaintenanceDetailScreen() {
                   <View style={styles.closurePreviewItem}>
                     <Ionicons name="images" size={18} color={colors.gray[500]} />
                     <Text style={styles.closurePreviewText}>
-                      {closureReport.completion_photos.length} photo{closureReport.completion_photos.length > 1 ? 's' : ''}
+                      {closureReport.completion_photos.length} photo
+                      {closureReport.completion_photos.length > 1 ? 's' : ''}
                     </Text>
                   </View>
                 )}
@@ -716,13 +709,17 @@ export default function OwnerMaintenanceDetailScreen() {
                   <View style={styles.progressUpdateMeta}>
                     <Text style={styles.progressUpdateDate}>
                       {new Date(update.created_at).toLocaleDateString('en-ZA', {
-                        day: 'numeric', month: 'short', year: 'numeric',
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
                       })}
                     </Text>
                     {update.update_date && (
                       <Text style={styles.progressUpdateWorkDate}>
-                        Work date: {new Date(update.update_date).toLocaleDateString('en-ZA', {
-                          day: 'numeric', month: 'short',
+                        Work date:{' '}
+                        {new Date(update.update_date).toLocaleDateString('en-ZA', {
+                          day: 'numeric',
+                          month: 'short',
                         })}
                       </Text>
                     )}
@@ -744,7 +741,12 @@ export default function OwnerMaintenanceDetailScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Invoice</Text>
-              <Text style={[styles.sectionBadge, { backgroundColor: colors.info[50], color: colors.info[700] }]}>
+              <Text
+                style={[
+                  styles.sectionBadge,
+                  { backgroundColor: colors.info[50], color: colors.info[700] },
+                ]}
+              >
                 View Details
               </Text>
             </View>
@@ -760,9 +762,7 @@ export default function OwnerMaintenanceDetailScreen() {
                 <Ionicons name="receipt" size={32} color={colors.info[500]} />
                 <View style={styles.invoiceInfo}>
                   <Text style={styles.invoiceTitle}>Invoice</Text>
-                  <Text style={styles.invoiceSubtitle}>
-                    View and manage invoices for this job
-                  </Text>
+                  <Text style={styles.invoiceSubtitle}>View and manage invoices for this job</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color={colors.gray[400]} />
               </View>
@@ -807,9 +807,7 @@ export default function OwnerMaintenanceDetailScreen() {
               disabled={actionLoading}
             >
               <Ionicons name="people" size={20} color={RSA.blue} />
-              <Text style={[styles.actionButtonText, { color: RSA.blue }]}>
-                Push to Vendors
-              </Text>
+              <Text style={[styles.actionButtonText, { color: RSA.blue }]}>Push to Vendors</Text>
             </TouchableOpacity>
           )}
           {isUnquotedOpenMarket && (
@@ -835,11 +833,21 @@ export default function OwnerMaintenanceDetailScreen() {
           )}
         </View>
       )}
+
+      {/* Request Revision Modal */}
+      <ReasonPromptModal
+        visible={!!revisionQuoteId}
+        title="Request Revision"
+        message="Please explain what changes you need from the vendor."
+        placeholder="Describe the changes required..."
+        confirmLabel="Send Request"
+        submitting={actionLoading}
+        onCancel={() => setRevisionQuoteId(null)}
+        onConfirm={handleRequestRevision}
+      />
     </SafeAreaView>
   );
 }
-
-
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f9fafb' },
@@ -847,22 +855,76 @@ const styles = StyleSheet.create({
   loadingText: { marginTop: 12, fontSize: 16, color: '#6b7280' },
   errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   errorText: { marginTop: 16, fontSize: 18, fontWeight: '600', color: '#111827' },
-  backButton: { marginTop: 24, paddingHorizontal: 24, paddingVertical: 12, backgroundColor: RSA.blue, borderRadius: 8 },
+  backButton: {
+    marginTop: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: RSA.blue,
+    borderRadius: 8,
+  },
   backButtonText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 16, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
-  headerButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
   scrollView: { flex: 1 },
   badges: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingTop: 16 },
-  badge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
   badgeText: { fontSize: 12, fontWeight: '600', color: '#FFFFFF' },
   titleContainer: { paddingHorizontal: 16, marginTop: 16 },
-  requestNumber: { fontSize: 13, fontWeight: '700', color: RSA.blue, letterSpacing: 1, marginBottom: 4 },
+  requestNumber: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: RSA.blue,
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
   title: { fontSize: 24, fontWeight: '700', color: '#111827' },
-  daysCard: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 16, marginTop: 12, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#f0fdf4', borderRadius: 8, borderWidth: 1, borderColor: '#bbf7d0' },
+  daysCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    marginTop: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#f0fdf4',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
   daysText: { fontSize: 14, fontWeight: '600', color: '#166534' },
   daysSubtext: { fontSize: 12, color: '#15803d' },
-  infoCard: { marginHorizontal: 16, marginTop: 16, padding: 16, backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb' },
+  infoCard: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
   infoRow: { flexDirection: 'row', gap: 12 },
   infoContent: { flex: 1 },
   infoLabel: { fontSize: 12, fontWeight: '600', color: '#6b7280', marginBottom: 4 },
@@ -873,40 +935,96 @@ const styles = StyleSheet.create({
   description: { fontSize: 15, color: '#374151', lineHeight: 22 },
   timeline: { gap: 16 },
   timelineItem: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
-  timelineIcon: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.gray[200], justifyContent: 'center', alignItems: 'center' },
+  timelineIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.gray[200],
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   timelineIconCompleted: { backgroundColor: RSA.blue },
   timelineContent: { flex: 1 },
   timelineLabel: { fontSize: 14, fontWeight: '600', color: '#111827' },
   timelineDate: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  footer: { padding: 16, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#e5e7eb', gap: 12 },
+  footer: {
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    gap: 12,
+  },
   actionContainer: { gap: 8 },
   actionHint: { fontSize: 13, color: '#6b7280', textAlign: 'center', paddingHorizontal: 16 },
-  actionButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 12 },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
   primaryButton: { backgroundColor: RSA.blue },
   secondaryButton: { backgroundColor: '#FFFFFF', borderWidth: 2, borderColor: RSA.blue },
   warningButton: { backgroundColor: colors.warning[500] },
   actionButtonText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
 
   // Section headers
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  sectionBadge: { fontSize: 12, fontWeight: '600', color: colors.gray[600], backgroundColor: colors.gray[100], paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  sectionBadge: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.gray[600],
+    backgroundColor: colors.gray[100],
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
 
   // Chat button
-  chatButton: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb', overflow: 'hidden' },
+  chatButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    overflow: 'hidden',
+  },
   chatButtonContent: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 },
   chatButtonText: { flex: 1 },
   chatButtonTitle: { fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 2 },
   chatButtonSubtitle: { fontSize: 13, color: '#6b7280' },
 
   // Quote cards
-  quoteCard: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb', padding: 16, marginBottom: 12 },
+  quoteCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    padding: 16,
+    marginBottom: 12,
+  },
   quoteHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   quoteVendor: { flexDirection: 'row', gap: 12, flex: 1 },
   quoteVendorInfo: { justifyContent: 'center', flex: 1 },
   quoteVendorNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   quoteVendorName: { fontSize: 16, fontWeight: '600', color: '#111827' },
   quoteVendorPhone: { fontSize: 13, color: '#6b7280', marginTop: 2 },
-  contractBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, backgroundColor: colors.info[50], borderRadius: 12, borderWidth: 1, borderColor: colors.info[500] },
+  contractBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: colors.info[50],
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.info[500],
+  },
   contractBadgeText: { fontSize: 11, fontWeight: '600', color: colors.info[700] },
   quoteAmount: { alignItems: 'flex-end' },
   quoteAmountLabel: { fontSize: 12, color: '#6b7280', marginBottom: 2 },
@@ -923,7 +1041,16 @@ const styles = StyleSheet.create({
   quoteAcceptText: { fontSize: 14, fontWeight: '600', color: '#FFFFFF' },
   quoteStatusBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
   quoteStatusText: { fontSize: 13, fontWeight: '600', color: colors.success[700] },
-  quoteTapHint: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f3f4f6' },
+  quoteTapHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+  },
   quoteTapHintText: { fontSize: 13, color: colors.gray[500] },
 
   // Progress card
@@ -953,7 +1080,13 @@ const styles = StyleSheet.create({
   progressSubtitle: { fontSize: 13, color: '#6b7280', lineHeight: 18 },
 
   // PO card
-  poCard: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb', overflow: 'hidden' },
+  poCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    overflow: 'hidden',
+  },
   poHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 },
   poInfo: { flex: 1 },
   poNumber: { fontSize: 16, fontWeight: '700', color: RSA.blue, marginBottom: 2 },
@@ -963,7 +1096,13 @@ const styles = StyleSheet.create({
   poContractText: { fontSize: 12, color: colors.gray[600] },
 
   // Invoice card
-  invoiceCard: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb', overflow: 'hidden' },
+  invoiceCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    overflow: 'hidden',
+  },
   invoiceHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 },
   invoiceInfo: { flex: 1 },
   invoiceTitle: { fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 2 },

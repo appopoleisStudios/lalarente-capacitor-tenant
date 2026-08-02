@@ -1,11 +1,19 @@
 import React from 'react';
-import { View, TextInput, Text, StyleSheet, TextInputProps, ViewStyle } from 'react-native';
+import {
+  View,
+  TextInput,
+  Text,
+  StyleSheet,
+  TextInputProps,
+  TextStyle,
+  ViewStyle,
+} from 'react-native';
 
 export interface TextAreaProps extends Omit<TextInputProps, 'style'> {
   label?: string;
   error?: string;
   containerStyle?: ViewStyle;
-  inputStyle?: ViewStyle;
+  inputStyle?: TextStyle;
   maxLength?: number;
   showCount?: boolean;
 }
@@ -39,11 +47,7 @@ export function TextArea({
         />
       </View>
       <View style={styles.footer}>
-        {error ? (
-          <Text style={styles.errorText}>{error}</Text>
-        ) : (
-          <View />
-        )}
+        {error ? <Text style={styles.errorText}>{error}</Text> : <View />}
         {showCount && maxLength && (
           <Text style={styles.countText}>
             {value?.length ?? 0}/{maxLength}

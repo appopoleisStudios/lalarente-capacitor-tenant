@@ -28,6 +28,16 @@ export default function OwnerSendPOScreen() {
       if (user) setUserId(user.id);
     });
   }, []);
+
+  // Form state — ALL hooks must run before any early return (rules-of-hooks),
+  // otherwise React throws on the render where the guard bails out.
+  const [startDate, setStartDate] = useState(new Date());
+  const [startTime, setStartTime] = useState(new Date());
+  const [workInstructions, setWorkInstructions] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const params = useLocalSearchParams();
 
   // Parse params with null checks
@@ -43,14 +53,6 @@ export default function OwnerSendPOScreen() {
     router.back();
     return null;
   }
-
-  // Form state
-  const [startDate, setStartDate] = useState(new Date());
-  const [startTime, setStartTime] = useState(new Date());
-  const [workInstructions, setWorkInstructions] = useState('');
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios');
@@ -105,13 +107,7 @@ export default function OwnerSendPOScreen() {
       const scheduledDate = startDate.toISOString().split('T')[0];
       const scheduledTime = startTime.toTimeString().split(' ')[0].substring(0, 5); // HH:MM
 
-      await sendPOToVendor(
-        poId,
-        scheduledDate,
-        scheduledTime,
-        workInstructions.trim(),
-        userId!
-      );
+      await sendPOToVendor(poId, scheduledDate, scheduledTime, workInstructions.trim(), userId!);
 
       Alert.alert('Success', 'Purchase order sent to vendor', [
         {
@@ -162,10 +158,7 @@ export default function OwnerSendPOScreen() {
         {/* Start Date */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Start Date *</Text>
-          <TouchableOpacity
-            style={styles.dateButton}
-            onPress={() => setShowDatePicker(true)}
-          >
+          <TouchableOpacity style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
             <Text style={styles.dateButtonText}>{formatDate(startDate)}</Text>
           </TouchableOpacity>
         </View>
@@ -183,10 +176,7 @@ export default function OwnerSendPOScreen() {
         {/* Start Time */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Start Time *</Text>
-          <TouchableOpacity
-            style={styles.dateButton}
-            onPress={() => setShowTimePicker(true)}
-          >
+          <TouchableOpacity style={styles.dateButton} onPress={() => setShowTimePicker(true)}>
             <Text style={styles.dateButtonText}>{formatTime(startTime)}</Text>
           </TouchableOpacity>
         </View>
@@ -205,8 +195,8 @@ export default function OwnerSendPOScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Work Instructions *</Text>
         <Text style={styles.helperText}>
-          Provide detailed instructions for the vendor. Include any special requirements,
-          access instructions, or specific work details.
+          Provide detailed instructions for the vendor. Include any special requirements, access
+          instructions, or specific work details.
         </Text>
         <TextInput
           style={styles.textArea}
