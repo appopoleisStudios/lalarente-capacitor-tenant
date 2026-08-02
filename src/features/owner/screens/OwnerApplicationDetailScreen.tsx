@@ -16,11 +16,9 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { applicationsApi, ApplicationWithRelations } from '../../properties/api/applicationsApi';
-import {
-  holdingDepositApi,
-  HoldingDeposit,
-} from '../../applications/api/holdingDeposit.api';
+import { holdingDepositApi, HoldingDeposit } from '../../applications/api/holdingDeposit.api';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { ReasonPromptModal } from '@/src/shared/components/ui/ReasonPromptModal';
 
 export default function OwnerApplicationDetailScreen() {
   const router = useRouter();
@@ -32,6 +30,7 @@ export default function OwnerApplicationDetailScreen() {
   const [hasLease, setHasLease] = useState(false);
   const [holdingDeposit, setHoldingDeposit] = useState<HoldingDeposit | null>(null);
   const [showDepositModal, setShowDepositModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
   const [depositAmount, setDepositAmount] = useState('');
 
   useEffect(() => {
@@ -45,14 +44,14 @@ export default function OwnerApplicationDetailScreen() {
       setError(null);
       const data = await applicationsApi.getApplication(id);
       setApplication(data);
-      
+
       // Check if a lease already exists for this application
       const { data: existingLease } = await supabase
         .from('leases')
         .select('id')
         .eq('application_id', id)
         .single();
-      
+
       setHasLease(!!existingLease);
 
       // Load holding deposit for this application
@@ -101,7 +100,10 @@ export default function OwnerApplicationDetailScreen() {
                 { text: 'OK', onPress: loadApplication },
               ]);
             } catch (err) {
-              Alert.alert('Error', err instanceof Error ? err.message : 'Failed to approve application');
+              Alert.alert(
+                'Error',
+                err instanceof Error ? err.message : 'Failed to approve application'
+              );
             } finally {
               setProcessing(false);
             }
@@ -111,31 +113,20 @@ export default function OwnerApplicationDetailScreen() {
     );
   };
 
-  const handleReject = async () => {
-    Alert.prompt(
-      'Reject Application',
-      'Please provide a reason for rejection (optional):',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reject',
-          style: 'destructive',
-          onPress: async (reason?: string) => {
-            try {
-              setProcessing(true);
-              console.log('❌ Rejecting with reason:', reason);
-              await applicationsApi.rejectApplication(id, reason || undefined);
-              Alert.alert('Success', 'Application rejected', [{ text: 'OK', onPress: () => router.back() }]);
-            } catch (err) {
-              Alert.alert('Error', err instanceof Error ? err.message : 'Failed to reject application');
-            } finally {
-              setProcessing(false);
-            }
-          },
-        },
-      ],
-      'plain-text'
-    );
+  const handleReject = async (reason: string) => {
+    try {
+      setProcessing(true);
+      console.log('❌ Rejecting with reason:', reason);
+      await applicationsApi.rejectApplication(id, reason || undefined);
+      setShowRejectModal(false);
+      Alert.alert('Success', 'Application rejected', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
+    } catch (err) {
+      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to reject application');
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const handleRequestDeposit = async () => {
@@ -208,406 +199,459 @@ export default function OwnerApplicationDetailScreen() {
   const affordabilityPercentage = application.affordability_ratio
     ? (application.affordability_ratio * 100).toFixed(1)
     : null;
-  const isAffordable = application.affordability_ratio ? application.affordability_ratio <= 0.3 : null;
+  const isAffordable = application.affordability_ratio
+    ? application.affordability_ratio <= 0.3
+    : null;
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView>
-      <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
-            <Text style={styles.backIcon}>←</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Application Details</Text>
-        </View>
-      </View>
-
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* Property Info */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Property</Text>
-          <View style={styles.card}>
-            <Text style={styles.propertyTitle}>{application.property?.title}</Text>
-            <Text style={styles.propertyAddress}>{application.property?.address}</Text>
-            <Text style={styles.propertyRent}>
-              R {application.property?.rent_amount?.toLocaleString()}/month
-            </Text>
-          </View>
-        </View>
-
-        {/* Applicant Info */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Applicant Information</Text>
-          <View style={styles.card}>
-            <InfoRow icon="person" label="Full Name" value={application.full_name} />
-            <InfoRow icon="mail" label="Email" value={application.email} />
-            <InfoRow icon="call" label="Phone" value={application.phone} />
-            <InfoRow icon="card" label="ID Number" value={application.id_number} />
-            <InfoRow
-              icon="calendar"
-              label="Date of Birth"
-              value={application.date_of_birth ? new Date(application.date_of_birth).toLocaleDateString() : 'N/A'}
-            />
-          </View>
-        </View>
-
-        {/* Employment Info */}
-        {application.employer && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Employment Information</Text>
-            <View style={styles.card}>
-              <InfoRow icon="business" label="Employer" value={application.employer} />
-              {application.position && <InfoRow icon="briefcase" label="Position" value={application.position} />}
-              {application.monthly_income && (
-                <InfoRow
-                  icon="cash"
-                  label="Monthly Income"
-                  value={`R ${application.monthly_income.toLocaleString()}`}
-                />
-              )}
-              {application.employment_start_date && (
-                <InfoRow
-                  icon="calendar"
-                  label="Employment Start"
-                  value={new Date(application.employment_start_date).toLocaleDateString()}
-                />
-              )}
-              {application.employer_contact && (
-                <InfoRow icon="call" label="Employer Contact" value={application.employer_contact} />
-              )}
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                <Text style={styles.backIcon}>←</Text>
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>Application Details</Text>
             </View>
           </View>
-        )}
 
-        {/* Affordability */}
-        {affordabilityPercentage && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Affordability Assessment</Text>
-            <View style={[styles.card, styles.affordabilityCard]}>
-              <View style={styles.affordabilityHeader}>
-                <Ionicons
-                  name={isAffordable ? 'checkmark-circle' : 'warning'}
-                  size={32}
-                  color={isAffordable ? '#4CAF50' : '#FFA500'}
-                />
-                <View style={styles.affordabilityInfo}>
-                  <Text style={styles.affordabilityPercentage}>{affordabilityPercentage}%</Text>
-                  <Text style={styles.affordabilityLabel}>Rent-to-Income Ratio</Text>
-                </View>
-              </View>
-              <Text style={styles.affordabilityNote}>
-                {isAffordable
-                  ? '✓ Within recommended 30% threshold'
-                  : '⚠ Exceeds recommended 30% threshold'}
-              </Text>
-            </View>
-          </View>
-        )}
-
-        {/* Screening Status */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Screening Status</Text>
-          <View style={styles.card}>
-            <ScreeningRow
-              label="Background Check"
-              status={application.background_check_status || 'pending'}
-            />
-            <ScreeningRow
-              label="Credit Check"
-              status={application.credit_check_status || 'pending'}
-            />
-            <ScreeningRow
-              label="Identity Verification"
-              status={application.identity_verification_status || 'pending'}
-            />
-          </View>
-        </View>
-
-        {/* Documents */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Documents</Text>
-          <View style={styles.card}>
-            {application.id_document_url && (
-              <DocumentRow
-                label="ID Document"
-                onPress={() => openDocument(application.id_document_url!)}
-              />
-            )}
-            {application.proof_of_income_urls && application.proof_of_income_urls.length > 0 && (
-              <>
-                {application.proof_of_income_urls.map((url, index) => (
-                  <DocumentRow
-                    key={index}
-                    label={`Proof of Income ${index + 1}`}
-                    onPress={() => openDocument(url)}
-                  />
-                ))}
-              </>
-            )}
-            {application.reference_urls && application.reference_urls.length > 0 && (
-              <>
-                {application.reference_urls.map((url, index) => (
-                  <DocumentRow
-                    key={index}
-                    label={`Reference ${index + 1}`}
-                    onPress={() => openDocument(url)}
-                  />
-                ))}
-              </>
-            )}
-            {!application.id_document_url &&
-              (!application.proof_of_income_urls || application.proof_of_income_urls.length === 0) &&
-              (!application.reference_urls || application.reference_urls.length === 0) && (
-                <Text style={styles.noDocuments}>No documents uploaded</Text>
-              )}
-          </View>
-        </View>
-
-        {/* Holding Deposit */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Holding Deposit</Text>
-          {holdingDeposit ? (
-            <View style={[styles.card, styles.depositCard]}>
-              <View style={styles.depositRow}>
-                <Text style={styles.depositLabel}>Amount</Text>
-                <Text style={styles.depositAmount}>
-                  R {holdingDeposit.amount.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+            {/* Property Info */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Property</Text>
+              <View style={styles.card}>
+                <Text style={styles.propertyTitle}>{application.property?.title}</Text>
+                <Text style={styles.propertyAddress}>{application.property?.address}</Text>
+                <Text style={styles.propertyRent}>
+                  R {application.property?.rent_amount?.toLocaleString()}/month
                 </Text>
               </View>
-              <View style={styles.depositRow}>
-                <Text style={styles.depositLabel}>Status</Text>
-                <View style={[
-                  styles.depositStatusBadge,
-                  {
-                    backgroundColor:
-                      holdingDeposit.status === 'paid' ? '#E6F7F0' :
-                      holdingDeposit.status === 'applied' ? '#E6EBF5' :
-                      holdingDeposit.status === 'refunded' ? '#F3F4F6' :
-                      '#FEF3C7',
-                  },
-                ]}>
-                  <Text style={[
-                    styles.depositStatusText,
-                    {
-                      color:
-                        holdingDeposit.status === 'paid' ? '#007A4D' :
-                        holdingDeposit.status === 'applied' ? '#002395' :
-                        holdingDeposit.status === 'refunded' ? '#6B7280' :
-                        '#D97706',
-                    },
-                  ]}>
-                    {holdingDeposit.status === 'pending' ? 'Awaiting Payment' :
-                     holdingDeposit.status === 'paid' ? 'Paid — Property Secured' :
-                     holdingDeposit.status === 'applied' ? 'Applied to Lease' :
-                     holdingDeposit.status === 'refunded' ? 'Refunded' :
-                     holdingDeposit.status}
+            </View>
+
+            {/* Applicant Info */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Applicant Information</Text>
+              <View style={styles.card}>
+                <InfoRow icon="person" label="Full Name" value={application.full_name} />
+                <InfoRow icon="mail" label="Email" value={application.email} />
+                <InfoRow icon="call" label="Phone" value={application.phone} />
+                <InfoRow icon="card" label="ID Number" value={application.id_number} />
+                <InfoRow
+                  icon="calendar"
+                  label="Date of Birth"
+                  value={
+                    application.date_of_birth
+                      ? new Date(application.date_of_birth).toLocaleDateString()
+                      : 'N/A'
+                  }
+                />
+              </View>
+            </View>
+
+            {/* Employment Info */}
+            {application.employer && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Employment Information</Text>
+                <View style={styles.card}>
+                  <InfoRow icon="business" label="Employer" value={application.employer} />
+                  {application.position && (
+                    <InfoRow icon="briefcase" label="Position" value={application.position} />
+                  )}
+                  {application.monthly_income && (
+                    <InfoRow
+                      icon="cash"
+                      label="Monthly Income"
+                      value={`R ${application.monthly_income.toLocaleString()}`}
+                    />
+                  )}
+                  {application.employment_start_date && (
+                    <InfoRow
+                      icon="calendar"
+                      label="Employment Start"
+                      value={new Date(application.employment_start_date).toLocaleDateString()}
+                    />
+                  )}
+                  {application.employer_contact && (
+                    <InfoRow
+                      icon="call"
+                      label="Employer Contact"
+                      value={application.employer_contact}
+                    />
+                  )}
+                </View>
+              </View>
+            )}
+
+            {/* Affordability */}
+            {affordabilityPercentage && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Affordability Assessment</Text>
+                <View style={[styles.card, styles.affordabilityCard]}>
+                  <View style={styles.affordabilityHeader}>
+                    <Ionicons
+                      name={isAffordable ? 'checkmark-circle' : 'warning'}
+                      size={32}
+                      color={isAffordable ? '#4CAF50' : '#FFA500'}
+                    />
+                    <View style={styles.affordabilityInfo}>
+                      <Text style={styles.affordabilityPercentage}>{affordabilityPercentage}%</Text>
+                      <Text style={styles.affordabilityLabel}>Rent-to-Income Ratio</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.affordabilityNote}>
+                    {isAffordable
+                      ? '✓ Within recommended 30% threshold'
+                      : '⚠ Exceeds recommended 30% threshold'}
                   </Text>
                 </View>
               </View>
-              {holdingDeposit.payment_deadline && holdingDeposit.status === 'pending' && (
-                <View style={styles.depositRow}>
-                  <Text style={styles.depositLabel}>Pay Deadline</Text>
-                  <Text style={styles.depositDeadline}>
-                    {new Date(holdingDeposit.payment_deadline).toLocaleDateString('en-ZA')}
-                  </Text>
-                </View>
-              )}
-              {holdingDeposit.paid_at && (
-                <View style={styles.depositRow}>
-                  <Text style={styles.depositLabel}>Paid On</Text>
-                  <Text style={styles.depositValue}>
-                    {new Date(holdingDeposit.paid_at).toLocaleDateString('en-ZA')}
-                  </Text>
-                </View>
-              )}
-              {holdingDeposit.status === 'paid' && (
-                <TouchableOpacity
-                  style={styles.applyLeaseButton}
-                  onPress={() => {
-                    Alert.alert(
-                      'Apply to Lease',
-                      'Apply this holding deposit to the tenant\'s first month / security deposit?',
-                      [
-                        { text: 'Cancel', style: 'cancel' },
+            )}
+
+            {/* Screening Status */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Screening Status</Text>
+              <View style={styles.card}>
+                <ScreeningRow
+                  label="Background Check"
+                  status={application.background_check_status || 'pending'}
+                />
+                <ScreeningRow
+                  label="Credit Check"
+                  status={application.credit_check_status || 'pending'}
+                />
+                <ScreeningRow
+                  label="Identity Verification"
+                  status={application.identity_verification_status || 'pending'}
+                />
+              </View>
+            </View>
+
+            {/* Documents */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Documents</Text>
+              <View style={styles.card}>
+                {application.id_document_url && (
+                  <DocumentRow
+                    label="ID Document"
+                    onPress={() => openDocument(application.id_document_url!)}
+                  />
+                )}
+                {application.proof_of_income_urls &&
+                  application.proof_of_income_urls.length > 0 && (
+                    <>
+                      {application.proof_of_income_urls.map((url, index) => (
+                        <DocumentRow
+                          key={index}
+                          label={`Proof of Income ${index + 1}`}
+                          onPress={() => openDocument(url)}
+                        />
+                      ))}
+                    </>
+                  )}
+                {application.reference_urls && application.reference_urls.length > 0 && (
+                  <>
+                    {application.reference_urls.map((url, index) => (
+                      <DocumentRow
+                        key={index}
+                        label={`Reference ${index + 1}`}
+                        onPress={() => openDocument(url)}
+                      />
+                    ))}
+                  </>
+                )}
+                {!application.id_document_url &&
+                  (!application.proof_of_income_urls ||
+                    application.proof_of_income_urls.length === 0) &&
+                  (!application.reference_urls || application.reference_urls.length === 0) && (
+                    <Text style={styles.noDocuments}>No documents uploaded</Text>
+                  )}
+              </View>
+            </View>
+
+            {/* Holding Deposit */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Holding Deposit</Text>
+              {holdingDeposit ? (
+                <View style={[styles.card, styles.depositCard]}>
+                  <View style={styles.depositRow}>
+                    <Text style={styles.depositLabel}>Amount</Text>
+                    <Text style={styles.depositAmount}>
+                      R{' '}
+                      {holdingDeposit.amount.toLocaleString('en-ZA', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </Text>
+                  </View>
+                  <View style={styles.depositRow}>
+                    <Text style={styles.depositLabel}>Status</Text>
+                    <View
+                      style={[
+                        styles.depositStatusBadge,
                         {
-                          text: 'Apply',
-                          onPress: async () => {
-                            try {
-                              const updated = await holdingDepositApi.applyToLease(holdingDeposit.id);
-                              setHoldingDeposit(updated);
-                            } catch (err: any) {
-                              Alert.alert('Error', err.message);
-                            }
-                          },
+                          backgroundColor:
+                            holdingDeposit.status === 'paid'
+                              ? '#E6F7F0'
+                              : holdingDeposit.status === 'applied'
+                                ? '#E6EBF5'
+                                : holdingDeposit.status === 'refunded'
+                                  ? '#F3F4F6'
+                                  : '#FEF3C7',
                         },
-                      ]
-                    );
-                  }}
-                >
-                  <Text style={styles.applyLeaseButtonText}>Apply to Lease</Text>
-                </TouchableOpacity>
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.depositStatusText,
+                          {
+                            color:
+                              holdingDeposit.status === 'paid'
+                                ? '#007A4D'
+                                : holdingDeposit.status === 'applied'
+                                  ? '#002395'
+                                  : holdingDeposit.status === 'refunded'
+                                    ? '#6B7280'
+                                    : '#D97706',
+                          },
+                        ]}
+                      >
+                        {holdingDeposit.status === 'pending'
+                          ? 'Awaiting Payment'
+                          : holdingDeposit.status === 'paid'
+                            ? 'Paid — Property Secured'
+                            : holdingDeposit.status === 'applied'
+                              ? 'Applied to Lease'
+                              : holdingDeposit.status === 'refunded'
+                                ? 'Refunded'
+                                : holdingDeposit.status}
+                      </Text>
+                    </View>
+                  </View>
+                  {holdingDeposit.payment_deadline && holdingDeposit.status === 'pending' && (
+                    <View style={styles.depositRow}>
+                      <Text style={styles.depositLabel}>Pay Deadline</Text>
+                      <Text style={styles.depositDeadline}>
+                        {new Date(holdingDeposit.payment_deadline).toLocaleDateString('en-ZA')}
+                      </Text>
+                    </View>
+                  )}
+                  {holdingDeposit.paid_at && (
+                    <View style={styles.depositRow}>
+                      <Text style={styles.depositLabel}>Paid On</Text>
+                      <Text style={styles.depositValue}>
+                        {new Date(holdingDeposit.paid_at).toLocaleDateString('en-ZA')}
+                      </Text>
+                    </View>
+                  )}
+                  {holdingDeposit.status === 'paid' && (
+                    <TouchableOpacity
+                      style={styles.applyLeaseButton}
+                      onPress={() => {
+                        Alert.alert(
+                          'Apply to Lease',
+                          "Apply this holding deposit to the tenant's first month / security deposit?",
+                          [
+                            { text: 'Cancel', style: 'cancel' },
+                            {
+                              text: 'Apply',
+                              onPress: async () => {
+                                try {
+                                  const updated = await holdingDepositApi.applyToLease(
+                                    holdingDeposit.id
+                                  );
+                                  setHoldingDeposit(updated);
+                                } catch (err: any) {
+                                  Alert.alert('Error', err.message);
+                                }
+                              },
+                            },
+                          ]
+                        );
+                      }}
+                    >
+                      <Text style={styles.applyLeaseButtonText}>Apply to Lease</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ) : (
+                <View style={[styles.card, styles.noDepositCard]}>
+                  <Ionicons name="lock-open-outline" size={24} color="#999" />
+                  <Text style={styles.noDepositText}>No holding deposit requested yet</Text>
+                  {['under_review', 'shortlisted'].includes(application?.status || '') && (
+                    <TouchableOpacity
+                      style={styles.requestDepositButton}
+                      onPress={openDepositModal}
+                    >
+                      <Ionicons name="add-circle" size={16} color="#002395" />
+                      <Text style={styles.requestDepositButtonText}>Request Holding Deposit</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               )}
             </View>
-          ) : (
-            <View style={[styles.card, styles.noDepositCard]}>
-              <Ionicons name="lock-open-outline" size={24} color="#999" />
-              <Text style={styles.noDepositText}>No holding deposit requested yet</Text>
-              {['under_review', 'shortlisted'].includes(application?.status || '') && (
-                <TouchableOpacity
-                  style={styles.requestDepositButton}
-                  onPress={openDepositModal}
-                >
-                  <Ionicons name="add-circle" size={16} color="#002395" />
-                  <Text style={styles.requestDepositButtonText}>Request Holding Deposit</Text>
-                </TouchableOpacity>
-              )}
+
+            {/* Application Timeline */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Timeline</Text>
+              <View style={styles.card}>
+                <InfoRow
+                  icon="calendar"
+                  label="Submitted"
+                  value={new Date(
+                    application.submitted_at || application.created_at!
+                  ).toLocaleString()}
+                />
+                {application.reviewed_at && (
+                  <InfoRow
+                    icon="checkmark-circle"
+                    label="Reviewed"
+                    value={new Date(application.reviewed_at).toLocaleString()}
+                  />
+                )}
+                {application.approved_at && (
+                  <InfoRow
+                    icon="checkmark-done"
+                    label="Approved"
+                    value={new Date(application.approved_at).toLocaleString()}
+                  />
+                )}
+              </View>
             </View>
-          )}
-        </View>
+          </ScrollView>
 
-        {/* Application Timeline */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Timeline</Text>
-          <View style={styles.card}>
-            <InfoRow
-              icon="calendar"
-              label="Submitted"
-              value={new Date(application.submitted_at || application.created_at!).toLocaleString()}
-            />
-            {application.reviewed_at && (
-              <InfoRow
-                icon="checkmark-circle"
-                label="Reviewed"
-                value={new Date(application.reviewed_at).toLocaleString()}
-              />
-            )}
-            {application.approved_at && (
-              <InfoRow
-                icon="checkmark-done"
-                label="Approved"
-                value={new Date(application.approved_at).toLocaleString()}
-              />
-            )}
-          </View>
-        </View>
-      </ScrollView>
-
-      {/* Action Buttons */}
-      {application.status === 'submitted' || application.status === 'under_review' ? (
-        <View style={styles.actionBar}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.rejectButton]}
-            onPress={handleReject}
-            disabled={processing}
-          >
-            <Ionicons name="close-circle" size={20} color="#FFF" />
-            <Text style={styles.actionButtonText}>Reject</Text>
-          </TouchableOpacity>
-          {!holdingDeposit && (
-            <TouchableOpacity
-              style={[styles.actionButton, styles.depositButton]}
-              onPress={openDepositModal}
-              disabled={processing}
-            >
-              <Ionicons name="lock-closed" size={20} color="#FFF" />
-              <Text style={styles.actionButtonText}>Request Deposit</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            style={[styles.actionButton, styles.approveButton]}
-            onPress={handleApprove}
-            disabled={processing}
-          >
-            {processing ? (
-              <ActivityIndicator color="#FFF" />
-            ) : (
-              <>
-                <Ionicons name="checkmark-circle" size={20} color="#FFF" />
-                <Text style={styles.actionButtonText}>Approve</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
-      ) : application.status === 'approved' && !hasLease ? (
-        <View style={styles.actionBar}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.createLeaseButton]}
-            onPress={() => router.push(`/(owner)/leases/create?applicationId=${id}` as any)}
-          >
-            <Ionicons name="document-text" size={20} color="#FFF" />
-            <Text style={styles.actionButtonText}>Create Lease</Text>
-          </TouchableOpacity>
-        </View>
-      ) : application.status === 'approved' && hasLease ? (
-        <View style={styles.actionBar}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.viewLeaseButton]}
-            onPress={async () => {
-              // Get the lease ID and navigate to it
-              const { data: lease } = await supabase
-                .from('leases')
-                .select('id')
-                .eq('application_id', id)
-                .single();
-              if (lease) {
-                router.push(`/(owner)/leases/${lease.id}` as any);
-              }
-            }}
-          >
-            <Ionicons name="eye" size={20} color="#FFF" />
-            <Text style={styles.actionButtonText}>View Lease</Text>
-          </TouchableOpacity>
-        </View>
-      ) : null}
-
-      {/* Request Holding Deposit Modal */}
-      <Modal visible={showDepositModal} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Request Holding Deposit</Text>
-            <Text style={styles.modalSubtitle}>
-              The tenant will have 48 hours to pay. The property will be held for 7 days after payment.
-            </Text>
-            <Text style={styles.modalLabel}>Amount (ZAR)</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={depositAmount}
-              onChangeText={setDepositAmount}
-              keyboardType="numeric"
-              placeholder="e.g. 8500"
-            />
-            <Text style={styles.modalHint}>
-              Typically 1 month's rent · Must be refunded if application is rejected (RHA s5A)
-            </Text>
-            <View style={styles.modalActions}>
+          {/* Action Buttons */}
+          {application.status === 'submitted' || application.status === 'under_review' ? (
+            <View style={styles.actionBar}>
               <TouchableOpacity
-                style={styles.modalCancel}
-                onPress={() => { setShowDepositModal(false); setDepositAmount(''); }}
-              >
-                <Text style={styles.modalCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalConfirm, processing && { opacity: 0.7 }]}
-                onPress={handleRequestDeposit}
+                style={[styles.actionButton, styles.rejectButton]}
+                onPress={() => setShowRejectModal(true)}
                 disabled={processing}
               >
-                {processing
-                  ? <ActivityIndicator color="#FFF" size="small" />
-                  : <Text style={styles.modalConfirmText}>Send Request</Text>
-                }
+                <Ionicons name="close-circle" size={20} color="#FFF" />
+                <Text style={styles.actionButtonText}>Reject</Text>
+              </TouchableOpacity>
+              {!holdingDeposit && (
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.depositButton]}
+                  onPress={openDepositModal}
+                  disabled={processing}
+                >
+                  <Ionicons name="lock-closed" size={20} color="#FFF" />
+                  <Text style={styles.actionButtonText}>Request Deposit</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                style={[styles.actionButton, styles.approveButton]}
+                onPress={handleApprove}
+                disabled={processing}
+              >
+                {processing ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+                    <Text style={styles.actionButtonText}>Approve</Text>
+                  </>
+                )}
               </TouchableOpacity>
             </View>
-          </View>
-          </KeyboardAvoidingView>
+          ) : application.status === 'approved' && !hasLease ? (
+            <View style={styles.actionBar}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.createLeaseButton]}
+                onPress={() => router.push(`/(owner)/leases/create?applicationId=${id}` as any)}
+              >
+                <Ionicons name="document-text" size={20} color="#FFF" />
+                <Text style={styles.actionButtonText}>Create Lease</Text>
+              </TouchableOpacity>
+            </View>
+          ) : application.status === 'approved' && hasLease ? (
+            <View style={styles.actionBar}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.viewLeaseButton]}
+                onPress={async () => {
+                  // Get the lease ID and navigate to it
+                  const { data: lease } = await supabase
+                    .from('leases')
+                    .select('id')
+                    .eq('application_id', id)
+                    .single();
+                  if (lease) {
+                    router.push(`/(owner)/leases/${lease.id}` as any);
+                  }
+                }}
+              >
+                <Ionicons name="eye" size={20} color="#FFF" />
+                <Text style={styles.actionButtonText}>View Lease</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+
+          {/* Request Holding Deposit Modal */}
+          <Modal visible={showDepositModal} transparent animationType="fade">
+            <View style={styles.modalOverlay}>
+              <KeyboardAvoidingView>
+                <View style={styles.modalBox}>
+                  <Text style={styles.modalTitle}>Request Holding Deposit</Text>
+                  <Text style={styles.modalSubtitle}>
+                    The tenant will have 48 hours to pay. The property will be held for 7 days after
+                    payment.
+                  </Text>
+                  <Text style={styles.modalLabel}>Amount (ZAR)</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    value={depositAmount}
+                    onChangeText={setDepositAmount}
+                    keyboardType="numeric"
+                    placeholder="e.g. 8500"
+                  />
+                  <Text style={styles.modalHint}>
+                    Typically 1 month's rent · Must be refunded if application is rejected (RHA s5A)
+                  </Text>
+                  <View style={styles.modalActions}>
+                    <TouchableOpacity
+                      style={styles.modalCancel}
+                      onPress={() => {
+                        setShowDepositModal(false);
+                        setDepositAmount('');
+                      }}
+                    >
+                      <Text style={styles.modalCancelText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.modalConfirm, processing && { opacity: 0.7 }]}
+                      onPress={handleRequestDeposit}
+                      disabled={processing}
+                    >
+                      {processing ? (
+                        <ActivityIndicator color="#FFF" size="small" />
+                      ) : (
+                        <Text style={styles.modalConfirmText}>Send Request</Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </KeyboardAvoidingView>
+            </View>
+          </Modal>
+
+          {/* Reject Application Modal */}
+          <ReasonPromptModal
+            visible={showRejectModal}
+            title="Reject Application"
+            message="Please provide a reason for rejection (optional). The tenant will be notified."
+            placeholder="Reason for rejection (optional)..."
+            confirmLabel="Reject"
+            cancelLabel="Cancel"
+            destructive
+            required={false}
+            submitting={processing}
+            onCancel={() => setShowRejectModal(false)}
+            onConfirm={handleReject}
+          />
         </View>
-      </Modal>
-      </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

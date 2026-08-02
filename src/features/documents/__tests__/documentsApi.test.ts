@@ -17,7 +17,7 @@ jest.mock('base64-arraybuffer', () => ({
 // jest.mock factory is self-contained (no outer variable refs) to avoid
 // TDZ issues with hoisted jest.mock calls.
 
-var __mockCache: Record<string, any>;
+let __mockCache: Record<string, any>;
 
 jest.mock('../../../lib/supabase', () => {
   const c: Record<string, any> = {};
@@ -44,7 +44,12 @@ jest.mock('../../../lib/supabase', () => {
   c.mockRemove = mockRemove;
   c.mockCreateSignedUrl = mockCreateSignedUrl;
 
-  const mockStorageChain = { upload: mockUpload, getPublicUrl: mockGetPublicUrl, remove: mockRemove, createSignedUrl: mockCreateSignedUrl };
+  const mockStorageChain = {
+    upload: mockUpload,
+    getPublicUrl: mockGetPublicUrl,
+    remove: mockRemove,
+    createSignedUrl: mockCreateSignedUrl,
+  };
   const mockDbChain = {
     insert: mockInsert,
     select: jest.fn(() => ({ eq: mockEq, order: mockOrder, single: mockSingle, in: mockIn })),
@@ -197,7 +202,9 @@ describe('documentsApi.uploadDocument', () => {
   it('happy path: reads file, uploads, inserts record, returns document', async () => {
     const doc = await documentsApi.uploadDocument(makeFile(), makeInput(), uploaderId);
 
-    expect(FileSystem.readAsStringAsync).toHaveBeenCalledWith('file:///tmp/test.pdf', { encoding: 'base64' });
+    expect(FileSystem.readAsStringAsync).toHaveBeenCalledWith('file:///tmp/test.pdf', {
+      encoding: 'base64',
+    });
     expect(mockUpload).toHaveBeenCalled();
     expect(mockInsert).toHaveBeenCalled();
     expect(doc.id).toBe('doc-1');
@@ -205,21 +212,24 @@ describe('documentsApi.uploadDocument', () => {
 
   it('rejects files exceeding maxSize', async () => {
     const bigFile = makeFile({ size: 200 * 1024 * 1024 }); // 200 MB
-    await expect(documentsApi.uploadDocument(bigFile, makeInput(), uploaderId))
-      .rejects.toThrow('File size exceeds maximum');
+    await expect(documentsApi.uploadDocument(bigFile, makeInput(), uploaderId)).rejects.toThrow(
+      'File size exceeds maximum'
+    );
   });
 
   it('rejects disallowed MIME types', async () => {
     const badFile = makeFile({ mimeType: 'application/javascript' });
-    await expect(documentsApi.uploadDocument(badFile, makeInput(), uploaderId))
-      .rejects.toThrow('is not allowed');
+    await expect(documentsApi.uploadDocument(badFile, makeInput(), uploaderId)).rejects.toThrow(
+      'is not allowed'
+    );
   });
 
   it('deletes orphan file when DB insert fails', async () => {
     mockSingle.mockResolvedValueOnce({ data: null, error: { message: 'DB error' } });
 
-    await expect(documentsApi.uploadDocument(makeFile(), makeInput(), uploaderId))
-      .rejects.toThrow('Failed to create document record');
+    await expect(documentsApi.uploadDocument(makeFile(), makeInput(), uploaderId)).rejects.toThrow(
+      'Failed to create document record'
+    );
 
     expect(mockRemove).toHaveBeenCalled();
   });
@@ -227,8 +237,9 @@ describe('documentsApi.uploadDocument', () => {
   it('throws when storage upload fails', async () => {
     mockUpload.mockResolvedValueOnce({ error: { message: 'Storage quota exceeded' } });
 
-    await expect(documentsApi.uploadDocument(makeFile(), makeInput(), uploaderId))
-      .rejects.toThrow('Failed to upload file');
+    await expect(documentsApi.uploadDocument(makeFile(), makeInput(), uploaderId)).rejects.toThrow(
+      'Failed to upload file'
+    );
   });
 });
 
@@ -236,7 +247,8 @@ describe('documentsApi.uploadDocument', () => {
 
 describe('documentsApi.deleteDocument', () => {
   const docId = 'doc-1';
-  const fileUrl = 'https://supabase.co/storage/v1/object/public/documents/id_document/user-1/file.pdf';
+  const fileUrl =
+    'https://supabase.co/storage/v1/object/public/documents/id_document/user-1/file.pdf';
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -245,7 +257,11 @@ describe('documentsApi.deleteDocument', () => {
   it('fetches the document, removes from storage, deletes the record', async () => {
     const mockDeleteEq = jest.fn().mockResolvedValue({ error: null });
     dbChain.select.mockReturnValueOnce({
-      eq: jest.fn().mockReturnValue({ single: jest.fn().mockResolvedValue({ data: { file_url: fileUrl }, error: null }) }),
+      eq: jest
+        .fn()
+        .mockReturnValue({
+          single: jest.fn().mockResolvedValue({ data: { file_url: fileUrl }, error: null }),
+        }),
     } as any);
     dbChain.delete.mockReturnValueOnce({ eq: mockDeleteEq } as any);
     mockRemove.mockResolvedValueOnce({ error: null });
@@ -298,11 +314,15 @@ describe('documentsApi.getTenantVerificationDocs', () => {
   });
 
   it('throws on query error', async () => {
-    const mockInChain = { order: jest.fn().mockResolvedValue({ data: null, error: { message: 'Query failed' } }) };
+    const mockInChain = {
+      order: jest.fn().mockResolvedValue({ data: null, error: { message: 'Query failed' } }),
+    };
     const mockEqChain2 = { in: jest.fn().mockReturnValue(mockInChain) };
     const mockEqChain1 = { eq: jest.fn().mockReturnValue(mockEqChain2) };
     dbChain.select.mockReturnValueOnce({ eq: jest.fn().mockReturnValue(mockEqChain1) } as any);
 
-    await expect(documentsApi.getTenantVerificationDocs(tenantId)).rejects.toThrow('Failed to fetch verification docs');
+    await expect(documentsApi.getTenantVerificationDocs(tenantId)).rejects.toThrow(
+      'Failed to fetch verification docs'
+    );
   });
 });

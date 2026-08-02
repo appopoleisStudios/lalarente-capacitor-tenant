@@ -19,6 +19,7 @@ export { SectionHeader } from './ui/SectionHeader';
 export { ListItem } from './ui/ListItem';
 export { Avatar } from './ui/Avatar';
 export { ModalSheet } from './ui/ModalSheet';
+export { ReasonPromptModal } from './ui/ReasonPromptModal';
 
 // Form components
 export { FormField } from './forms/FormField';
