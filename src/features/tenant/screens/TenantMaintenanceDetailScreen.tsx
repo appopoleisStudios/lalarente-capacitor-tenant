@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  ActivityIndicator,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -219,7 +227,11 @@ export default function TenantMaintenanceDetailScreen() {
 
         {/* Simplified Progress Tracker */}
         <Animated.View entering={FadeInDown.delay(400).duration(500)}>
-          <TenantProgressTracker request={request} closureReport={closureReport} progressUpdates={progressUpdates} />
+          <TenantProgressTracker
+            request={request}
+            closureReport={closureReport}
+            progressUpdates={progressUpdates}
+          />
         </Animated.View>
 
         {/* Verify Work Button - Show when tenant verification pending */}
@@ -250,6 +262,36 @@ export default function TenantMaintenanceDetailScreen() {
             </TouchableOpacity>
           </Animated.View>
         )}
+
+        {/* Closure Confirm Button (Tenant→Vendor flow) - show when vendor has
+            confirmed closure with after-photos and tenant hasn't confirmed yet.
+            Excludes pending_tenant so it can never double-show with the legacy
+            Verify Work button (two-sided flow sets pending_owner, not tenant). */}
+        {closureReport?.vendor_confirmed_at &&
+          closureReport?.tenant_verification_status !== 'tenant_approved' &&
+          closureReport?.tenant_verification_status !== 'pending_tenant' && (
+            <Animated.View entering={FadeInDown.delay(460).duration(500)}>
+              <TouchableOpacity
+                style={styles.verifyWorkButton}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  router.push({
+                    pathname: '/(tenant)/maintenance/closure-confirm',
+                    params: { id: id as string },
+                  });
+                }}
+              >
+                <Ionicons name="camera" size={24} color="#FFFFFF" />
+                <View style={styles.verifyWorkTextContainer}>
+                  <Text style={styles.verifyWorkTitle}>Confirm Completed Work</Text>
+                  <Text style={styles.verifyWorkSubtitle}>
+                    Review the vendor's after-work photos and confirm with your own
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+            </Animated.View>
+          )}
 
         {/* Vendor Information */}
         {request.assigned_vendor && (
@@ -285,7 +327,10 @@ export default function TenantMaintenanceDetailScreen() {
           <Animated.View entering={FadeInDown.delay(600).duration(500)} style={styles.card}>
             <Text style={styles.cardTitle}>Progress Updates</Text>
             {progressUpdates.map((update, index) => (
-              <View key={update.id} style={[styles.updateCard, index > 0 && styles.updateCardMargin]}>
+              <View
+                key={update.id}
+                style={[styles.updateCard, index > 0 && styles.updateCardMargin]}
+              >
                 <View style={styles.updateHeader}>
                   <Text style={styles.updateDate}>{formatDate(update.created_at)}</Text>
                 </View>
@@ -317,7 +362,9 @@ export default function TenantMaintenanceDetailScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.messageLandlordBtnText}>Chat with Owner</Text>
-                  <Text style={styles.messageLandlordBtnSubtext}>Discuss this maintenance request</Text>
+                  <Text style={styles.messageLandlordBtnSubtext}>
+                    Discuss this maintenance request
+                  </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.7)" />
               </>
@@ -336,20 +383,71 @@ const styles = StyleSheet.create({
   errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   errorIcon: { fontSize: 64, marginBottom: 16 },
   errorTitle: { fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 24 },
-  retryButton: { paddingHorizontal: 24, paddingVertical: 12, backgroundColor: RSA.green, borderRadius: 8 },
+  retryButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: RSA.green,
+    borderRadius: 8,
+  },
   retryButtonText: { fontSize: 16, fontWeight: '600', color: '#ffffff' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 16, backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
-  backButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
   scrollView: { flex: 1 },
   scrollContent: { padding: 16, paddingBottom: 40 },
   statusSection: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20 },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
   statusText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
-  priorityBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20 },
+  priorityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
   priorityText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
-  card: { backgroundColor: '#ffffff', borderRadius: 12, padding: 16, marginBottom: 16, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2 },
-  cardTitle: { fontSize: 14, fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  cardTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#6b7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 12,
+  },
   requestTitle: { fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 8 },
   requestDescription: { fontSize: 15, color: '#4b5563', lineHeight: 22, marginBottom: 16 },
   metaSection: { gap: 8 },
@@ -357,15 +455,36 @@ const styles = StyleSheet.create({
   metaText: { fontSize: 14, color: '#6b7280' },
   timeline: { gap: 0 },
   timelineItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 8 },
-  timelineDot: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#e5e7eb', justifyContent: 'center', alignItems: 'center', marginTop: 2 },
+  timelineDot: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#e5e7eb',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 2,
+  },
   timelineDotActive: { backgroundColor: RSA.green },
   timelineDotCurrent: { backgroundColor: RSA.green },
   timelineContent: { flex: 1, paddingTop: 6 },
   timelineLabel: { fontSize: 14, color: '#9ca3af', fontWeight: '600' },
   timelineLabelActive: { color: '#111827' },
   currentStepHint: { fontSize: 12, color: RSA.green, fontWeight: '700', marginTop: 2 },
-  vendorCard: { flexDirection: 'row', gap: 12, padding: 12, backgroundColor: '#f9fafb', borderRadius: 8 },
-  vendorIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#e7f5ee', justifyContent: 'center', alignItems: 'center' },
+  vendorCard: {
+    flexDirection: 'row',
+    gap: 12,
+    padding: 12,
+    backgroundColor: '#f9fafb',
+    borderRadius: 8,
+  },
+  vendorIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#e7f5ee',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   vendorInfo: { flex: 1, gap: 4 },
   vendorName: { fontSize: 16, fontWeight: '700', color: '#111827' },
   vendorContact: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -377,7 +496,16 @@ const styles = StyleSheet.create({
   updateDate: { fontSize: 12, color: '#6b7280', fontWeight: '600' },
   updateNote: { fontSize: 14, color: '#111827', lineHeight: 20, marginBottom: 8 },
   updatePhotos: { marginTop: 8 },
-  helpCard: { flexDirection: 'row', gap: 12, backgroundColor: '#eff6ff', borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#bfdbfe' },
+  helpCard: {
+    flexDirection: 'row',
+    gap: 12,
+    backgroundColor: '#eff6ff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+  },
   helpContent: { flex: 1 },
   helpTitle: { fontSize: 14, fontWeight: '700', color: RSA.green, marginBottom: 4 },
   helpText: { fontSize: 13, color: '#1e40af', lineHeight: 18 },

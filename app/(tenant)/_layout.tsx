@@ -143,6 +143,12 @@ export default function TenantLayout() {
         }}
       />
       <Tabs.Screen
+        name="maintenance/closure-confirm"
+        options={{
+          href: null, // Hidden from tabs - tenant confirms completed work with photos
+        }}
+      />
+      <Tabs.Screen
         name="applications/[id]"
         options={{
           href: null, // Hidden from tabs - application detail screen
