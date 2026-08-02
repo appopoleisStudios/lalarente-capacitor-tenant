@@ -5,7 +5,8 @@
  * Why: the tenant vendor-payments screen only lists invoices where
  *   payer_role='tenant' AND status='approved' AND the linked maintenance
  *   request belongs to the logged-in tenant. The DB currently has zero such
- *   invoices, so the 20-vendor-payments Maestro flow can never pass.
+ *   invoices, so the vendor-payment-flow Maestro flow (Plane #60) can never
+ *   pass without this seed.
  *
  * Flow (RLS-safe, mirrors real app actions):
  *   1. Login as the e2e vendor → insert a 'submitted' invoice linked to the

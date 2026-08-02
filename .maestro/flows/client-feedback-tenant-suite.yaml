@@ -37,4 +37,4 @@ appId: com.lalarente.app
 # N1 — Lala AI tenant
 - runFlow: 02-tenant-lala-ai.yaml
 # Vendor Payments — pay vendor invoices for completed maintenance
-- runFlow: 20-vendor-payments.yaml
+- runFlow: vendor-payment-flow.yaml

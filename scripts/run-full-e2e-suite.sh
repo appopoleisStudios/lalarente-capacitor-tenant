@@ -61,9 +61,13 @@ TENANT_FLOWS=(
   "client-feedback/s2-31-tenant-contact-owner"
   "client-feedback/s2-32-tenant-payments"
   "client-feedback/s2-40-tenant-send-message"
-  # Vendor payments (tenant pays vendor invoices)
-  "20-vendor-payments"
 )
+
+# ── Tenant Payment Happy Path (Plane #60) ──
+# Runs OUTSIDE the tenant array: the orchestrator seeds the invoice, runs the
+# Maestro UI flow (vendor-payment-flow), then verifies the vendor_payments
+# record reached 'completed'. Wired here so record completion is part of the
+# suite, not a manual follow-up. Replaces the legacy 20-vendor-payments smoke.
 
 OWNER_FLOWS=(
   # Core owner flows
@@ -164,6 +168,25 @@ for flow in "${TENANT_FLOWS[@]}"; do
     --env TENANT_EMAIL="$TENANT_EMAIL" \
     --env TENANT_PASSWORD="$TENANT_PASSWORD"
 done
+
+# ════════════════════════════════════════════════════
+#  PHASE 1B: TENANT PAYMENT HAPPY PATH (seed → UI → verify)
+# ════════════════════════════════════════════════════
+print_header "TENANT PAYMENT HAPPY PATH (Plane #60)"
+START=$(date +%s)
+set +e
+bash "$SCRIPT_DIR/run-tenant-payment-e2e.sh" 2>&1
+EC=$?
+set -e
+END=$(date +%s)
+DURATION=$((END - START))
+if [ "$EC" -eq 0 ]; then
+  echo "    ✓ Payment Happy Path (${DURATION}s)" >> "$RESULTS_FILE"
+  PASSED=$((PASSED + 1))
+else
+  echo "    ✗ Payment Happy Path FAILED (${DURATION}s) — exit $EC" >> "$RESULTS_FILE"
+  FAILED=$((FAILED + 1))
+fi
 
 # ════════════════════════════════════════════════════
 #  CLEAR STATE → OWNER
