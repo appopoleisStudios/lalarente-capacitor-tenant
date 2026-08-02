@@ -7,8 +7,11 @@
 # scripts/verify-tenant-payment-completed.mjs — it creates the checkout, drives
 # the payment to 'completed' through the REAL payment-webhook (simulated signed
 # COMPLETE ITN, same signature code as production), then asserts the DB record.
-# Live PayFast sandbox card entry is NOT automatable in Maestro (WebView iframe)
-# — see 20-vendor-payments.yaml for the same documented constraint.
+# Live PayFast sandbox card entry is NOT automatable in Maestro (WebView iframe);
+# record completion is instead driven deterministically by
+# scripts/verify-tenant-payment-completed.mjs (signed COMPLETE ITN through the
+# real payment-webhook). scripts/run-tenant-payment-e2e.sh orchestrates
+# seed → this flow → verify so the whole happy path runs as one unit.
 #
 # Prerequisites:
 #   - Run scripts/seed-tenant-vendor-invoice.mjs first (creates an APPROVED

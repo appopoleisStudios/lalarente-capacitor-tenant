@@ -59,9 +59,34 @@ run_flow "12-pr10-tenant-messaging-keyboard"     "Messaging Keyboard"           
 run_flow "13-pr10-tenant-lease-pdf"              "Lease PDF Download"               "TENANT" "${T_ENV[@]}"
 run_flow "14-pr10-tenant-maintenance-camera"     "Maintenance Camera"               "TENANT" "${T_ENV[@]}"
 run_flow "17-pr11-tenant-viewings-applications"  "Viewings+Applications Nav"        "TENANT" "${T_ENV[@]}"
-run_flow "20-vendor-payments"                    "Vendor Payments (Tenant pays)"    "TENANT" "${T_ENV[@]}"
-run_flow "vendor-payment-flow"                 "Payment Happy Path (Plane #60)"   "TENANT" "${T_ENV[@]}"
 run_flow "client-feedback/s2-25-tenant-bell"     "S2-25: Bell Notifications"        "TENANT" "${T_ENV[@]}"
+
+# ── TENANT PAYMENT HAPPY PATH (Plane #60) ──
+# Orchestrated end-to-end: seed → Maestro UI flow → record-completion verify.
+# Replaces the legacy 20-vendor-payments smoke (same UI, now fully wired).
+#
+# Payment Happy Path (seed→UI→completed record)
+run_payment_e2e() {
+  echo ""
+  echo "━━ TENANT › Payment Happy Path (Plane #60)"
+  local output
+  output=$(bash scripts/run-tenant-payment-e2e.sh 2>&1)
+  local ec=$?
+  local slug="tenant-payment-happy-path"
+  xcrun simctl io "$UDID" screenshot "/tmp/lalarente-ss-TENANT-${slug}.png" 2>/dev/null
+  if [ $ec -eq 0 ]; then
+    echo "  ✅ PASS — Payment Happy Path (Plane #60)"
+    echo "PASS | TENANT | Payment Happy Path (Plane #60)" >> "$REPORT_FILE"
+    PASS=$((PASS+1))
+  else
+    echo "  ❌ FAIL — Payment Happy Path (Plane #60)"
+    local err=$(echo "$output" | grep -E "FAILED|✗|Error|error" | tail -3)
+    echo "  ↳ $err"
+    echo "FAIL | TENANT | Payment Happy Path (Plane #60) | $err" >> "$REPORT_FILE"
+    FAIL=$((FAIL+1))
+  fi
+}
+run_payment_e2e
 run_flow "client-feedback/s2-26-tenant-profile-docs" "S2-26: Profile+POA Upload"   "TENANT" "${T_ENV[@]}"
 run_flow "client-feedback/s2-31-tenant-contact-owner" "S2-31: Contact Owner"       "TENANT" "${T_ENV[@]}"
 run_flow "client-feedback/s2-32-tenant-payments" "S2-32: Payments History"         "TENANT" "${T_ENV[@]}"
