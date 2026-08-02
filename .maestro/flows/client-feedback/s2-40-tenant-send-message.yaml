@@ -2,6 +2,10 @@
 appId: com.lalarente.app
 ---
 - runFlow: ../../subflows/launch-app-warm.yaml
+# REQUIRED: ensure the tenant session (self-healing sign-in). Flows that skip
+# this and blindly tap tab-home fail when the app resumes on a pushed screen
+# (no tab bar) or a different role's dashboard. Mirrors flows 11/13.
+- runFlow: ../../subflows/login-tenant.yaml
 - runFlow: ../../subflows/open-tenant-messages.yaml
 
 - assertVisible:
