@@ -23,12 +23,12 @@ const corsHeaders = {
 
 const QUERY_API = 'https://api.payfast.co.za/process/query';
 
-async function notify(supabase, userId, title, body, data) {
+async function notify(supabase, userId, title, body, data, type = 'payment_failed') {
   if (!userId) return;
   try {
     await supabase.from('notifications').insert({
       user_id: userId,
-      type: 'payment_failed',
+      type,
       title,
       body,
       data: data || {},
@@ -39,11 +39,38 @@ async function notify(supabase, userId, title, body, data) {
 }
 
 /**
+ * Write an entry to the vendor_payment_ledger journal.
+ * Mirrors payment-webhook's writeVendorLedgerEntry() so reconcile's completion
+ * side effects are byte-identical to a real ITN (a late ITN skips these once
+ * the row is completed — they must exist before that).
+ */
+async function writeLedgerEntry(
+  supabase,
+  vendorPaymentId,
+  entryType,
+  amount,
+  runningBalance,
+  description
+) {
+  try {
+    await supabase.from('vendor_payment_ledger').insert({
+      vendor_payment_id: vendorPaymentId,
+      entry_type: entryType,
+      amount,
+      running_balance: runningBalance,
+      description,
+    });
+  } catch (err) {
+    console.error(`⚠️ Failed to write ledger entry for ${vendorPaymentId}:`, err); // non-fatal
+  }
+}
+
+/**
  * Query PayFast for the authoritative status of a payment.
  * Docs: https://developers.payfast.co.za/docs#query_api
  * Requires PAYFAST_MERCHANT_ID + PAYFAST_QUERY_TOKEN env vars.
- * Returns the gateway status string (e.g. 'COMPLETE', 'FAILED', 'CANCELLED')
- * or null when the gateway can't be queried.
+ * Returns the gateway record ({ payment_status, pf_payment_id, fee }) or null
+ * when the gateway can't be queried (no token / HTTP error / not found).
  */
 async function queryPayFast(paymentId, amount) {
   const merchantId = Deno.env.get('PAYFAST_MERCHANT_ID')?.trim();
@@ -53,11 +80,12 @@ async function queryPayFast(paymentId, amount) {
     return null;
   }
 
-  // Query API requires m_payment_id AND amount to look up a payment.
-  // Auth: merchant-id + merchant-key go in the request headers, the token in URL.
+  // Query API requires m_payment_id AND amount to look up a payment. The amount
+  // must match the original exactly — always 2 decimals (e.g. 1500.00), never
+  // raw float stringification (1500 or 1500.5 would not match).
   const body = new URLSearchParams({
     m_payment_id: paymentId,
-    amount: String(amount),
+    amount: Number(amount).toFixed(2),
   });
   const merchantKey = Deno.env.get('PAYFAST_MERCHANT_KEY')?.trim() || '';
 
@@ -82,16 +110,30 @@ async function queryPayFast(paymentId, amount) {
   const record = Array.isArray(records)
     ? records.find((r) => r?.m_payment_id === paymentId) || records[0]
     : null;
-  return record?.payment_status || null;
+  if (!record) {
+    console.warn(`⚠️ PayFast query returned no record for ${paymentId}`);
+    return null;
+  }
+  return {
+    status: record.payment_status,
+    pf_payment_id: record.pf_payment_id || null,
+    fee: record.fee != null ? Number(record.fee) : 0,
+  };
 }
 
+/**
+ * Map gateway status → vendor_payments.payment_status.
+ * PENDING intentionally returns null: the payment is still in flight at the
+ * gateway, so the row must STAY in 'processing' (never downgrade to 'pending'
+ * — that would resurrect the checkout UI for a live payment). The cron keeps
+ * polling it and resolves when the gateway finalizes.
+ */
 function mapGatewayStatus(status) {
   const s = (status || '').toUpperCase();
   if (s === 'COMPLETE' || s === 'COMPLETED') return 'completed';
   if (s === 'FAILED') return 'failed';
   if (s === 'CANCELLED') return 'cancelled';
-  if (s === 'PENDING') return 'pending';
-  return null; // unknown — leave for admin
+  return null; // PENDING / unknown — keep in processing, keep polling
 }
 
 serve(async (req) => {
@@ -113,7 +155,7 @@ serve(async (req) => {
     const { data: stuck, error: stuckErr } = await supabase
       .from('vendor_payments')
       .select(
-        'id, tenant_id, owner_id, vendor_id, invoice_id, total_amount, gateway_response, created_at, updated_at'
+        'id, tenant_id, owner_id, vendor_id, invoice_id, total_amount, platform_fee, platform_fee_percent, gateway_response, created_at, updated_at'
       )
       .eq('payment_status', 'processing')
       .lt('updated_at', staleBefore)
@@ -127,58 +169,9 @@ serve(async (req) => {
     for (const pay of stuck || []) {
       // Still attempt the gateway query every run (so a later-configured
       // PAYFAST_QUERY_TOKEN can auto-resolve); only the ALERT path is guarded.
-      const gatewayStatus = await queryPayFast(pay.id, pay.total_amount);
-      const mapped = mapGatewayStatus(gatewayStatus);
+      const gateway = await queryPayFast(pay.id, pay.total_amount);
 
-      if (mapped) {
-        // Gateway has an authoritative answer — resolve the row.
-        const update = {
-          payment_status: mapped,
-          gateway_response: {
-            ...(pay.gateway_response || {}),
-            reconciled: true,
-            reconciled_at: nowIso,
-            gateway_query_status: gatewayStatus,
-            reason: `Reconciled from gateway query: ${gatewayStatus}`,
-          },
-          updated_at: nowIso,
-        };
-        if (mapped === 'completed') update.paid_at = nowIso;
-
-        const { error: updateErr } = await supabase
-          .from('vendor_payments')
-          .update(update)
-          .eq('id', pay.id)
-          .eq('payment_status', 'processing'); // status guard
-
-        if (updateErr) {
-          console.error(`❌ Failed to reconcile ${pay.id}:`, updateErr);
-          continue;
-        }
-        reconciled++;
-
-        if (mapped === 'completed') {
-          // Mirror the webhook's completion side effects. The webhook's
-          // idempotency guard skips already-completed payments, so a late real
-          // ITN would NOT repair the invoice — we must mark it paid here or it
-          // stays 'approved' forever. Status-guarded like the webhook.
-          const { error: invoiceErr } = await supabase
-            .from('maintenance_invoices')
-            .update({ status: 'paid', paid_at: nowIso })
-            .eq('id', pay.invoice_id)
-            .eq('status', 'approved');
-          if (invoiceErr) {
-            console.error(`⚠️ Failed to mark invoice ${pay.invoice_id} paid:`, invoiceErr);
-          }
-          await notify(
-            supabase,
-            pay.vendor_id,
-            'Payment Completed',
-            `Payment of R ${(pay.total_amount || 0).toLocaleString('en-ZA', { minimumFractionDigits: 2 })} has been confirmed.`,
-            { vendor_payment_id: pay.id, invoice_id: pay.invoice_id }
-          );
-        }
-      } else {
+      if (!gateway) {
         // Can't query the gateway — alert the owner ONCE for manual
         // reconciliation (prevents 15-min notification spam).
         if (pay.gateway_response?.reconciliation_alerted_at) {
@@ -207,7 +200,127 @@ serve(async (req) => {
           pay.owner_id,
           'Stuck Payment Needs Review',
           `A payment has been stuck in processing for over 15 minutes. Please review invoice ${pay.invoice_id}.`,
-          { vendor_payment_id: pay.id, invoice_id: pay.invoice_id, stuck: true }
+          { vendor_payment_id: pay.id, invoice_id: pay.invoice_id, stuck: true },
+          'payment_failed'
+        );
+        continue;
+      }
+
+      const mapped = mapGatewayStatus(gateway.status);
+      if (!mapped) {
+        // Gateway queried OK but the payment is still PENDING (or unknown) —
+        // in flight at the gateway, so keep the row in 'processing' and keep
+        // polling. No alert, no status change. (Blocker #2: never downgrade a
+        // stuck 'processing' row back to 'pending'.)
+        console.log(`ℹ️ ${pay.id} still ${gateway.status} at gateway — staying in processing`);
+        continue;
+      }
+
+      // Gateway has an authoritative answer — resolve the row (status-guarded).
+      const update = {
+        payment_status: mapped,
+        gateway_response: {
+          ...(pay.gateway_response || {}),
+          reconciled: true,
+          reconciled_at: nowIso,
+          gateway_query_status: gateway.status,
+          reason: `Reconciled from gateway query: ${gateway.status}`,
+        },
+        updated_at: nowIso,
+      };
+      if (gateway.pf_payment_id) update.gateway_transaction_id = gateway.pf_payment_id;
+      if (mapped === 'completed') update.paid_at = nowIso;
+
+      const { error: updateErr } = await supabase
+        .from('vendor_payments')
+        .update(update)
+        .eq('id', pay.id)
+        .eq('payment_status', 'processing'); // status guard
+
+      if (updateErr) {
+        console.error(`❌ Failed to reconcile ${pay.id}:`, updateErr);
+        continue;
+      }
+      reconciled++;
+
+      if (mapped === 'completed') {
+        // ── Mirror the webhook's completion side effects EXACTLY. The webhook's
+        // idempotency guard skips already-completed payments, so a late real ITN
+        // would NOT re-run invoice/ledger writes — they must happen here.
+        //
+        // 1) Invoice → paid (status-guarded, with payment_reference).
+        const { error: invoiceErr } = await supabase
+          .from('maintenance_invoices')
+          .update({
+            status: 'paid',
+            paid_at: nowIso,
+            payment_reference: gateway.pf_payment_id || null,
+          })
+          .eq('id', pay.invoice_id)
+          .eq('status', 'approved');
+        if (invoiceErr) {
+          console.error(`⚠️ Failed to mark invoice ${pay.invoice_id} paid:`, invoiceErr);
+        }
+
+        // 2) Ledger journal — same 3 entries as the webhook, same running
+        //    balances. Without these the ledger would be permanently missing
+        //    the money-in event for this payment.
+        const total = Number(pay.total_amount) || 0;
+        const platformFee = Number(pay.platform_fee) || 0;
+        const gatewayFee = Number(gateway.fee) || 0;
+        const runningAfterFee = total - platformFee;
+        const runningAfterGateway = runningAfterFee - gatewayFee;
+
+        await writeLedgerEntry(
+          supabase,
+          pay.id,
+          'payment_received',
+          total,
+          total,
+          'PayFast payment received (reconciled)'
+        );
+        await writeLedgerEntry(
+          supabase,
+          pay.id,
+          'platform_fee',
+          -platformFee,
+          runningAfterFee,
+          `Platform fee (${pay.platform_fee_percent}%)`
+        );
+        await writeLedgerEntry(
+          supabase,
+          pay.id,
+          'gateway_fee',
+          -gatewayFee,
+          runningAfterGateway,
+          'PayFast transaction fee (reconciled)'
+        );
+
+        // 3) Notifications — vendor / owner / tenant, same types as the webhook.
+        const amountFormatted = `R ${total.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`;
+        await notify(
+          supabase,
+          pay.vendor_id,
+          'Payment Received for Maintenance Job',
+          `Payment of ${amountFormatted} received. Payout will be processed according to your schedule.`,
+          { vendor_payment_id: pay.id },
+          'vendor_payment_received'
+        );
+        await notify(
+          supabase,
+          pay.owner_id,
+          'Vendor Payment Completed',
+          `Payment of ${amountFormatted} has been completed for maintenance job.`,
+          { vendor_payment_id: pay.id },
+          'vendor_payment_completed'
+        );
+        await notify(
+          supabase,
+          pay.tenant_id,
+          'Payment Successful',
+          `Your payment of ${amountFormatted} has been processed successfully.`,
+          { vendor_payment_id: pay.id },
+          'payment_confirmed'
         );
       }
     }
