@@ -5,13 +5,13 @@
 
 export type MaintenanceStatus = 'open' | 'assigned' | 'in_progress' | 'completed' | 'closed';
 
-export type MmsStatus = 
-  | 'notification' 
-  | 'acknowledged' 
-  | 'vendor_routed' 
-  | 'quote_received' 
-  | 'po_issued' 
-  | 'in_progress' 
+export type MmsStatus =
+  | 'notification'
+  | 'acknowledged'
+  | 'vendor_routed'
+  | 'quote_received'
+  | 'po_issued'
+  | 'in_progress'
   | 'completed'
   | 'quoting'
   | 'vendor_routing';
@@ -78,7 +78,7 @@ export interface MaintenanceRequestWithRelations extends MaintenanceRequest {
     full_name: string | null;
     phone: string | null;
   };
-  quotes?: Array<{
+  quotes?: {
     id: string;
     vendor_id: string;
     total_amount: number | null;
@@ -88,7 +88,7 @@ export interface MaintenanceRequestWithRelations extends MaintenanceRequest {
       full_name: string | null;
       phone: string | null;
     };
-  }>;
+  }[];
 }
 
 export interface CreateMaintenanceRequestInput {
@@ -147,12 +147,26 @@ export interface ClosureReport {
   status: 'pending' | 'approved' | 'rejected';
   rejection_reason?: string | null;
   // Migration 018: Tenant verification fields
-  tenant_verification_status?: 'pending_tenant' | 'tenant_approved' | 'tenant_rejected' | 'auto_approved' | null;
+  tenant_verification_status?:
+    | 'pending_owner'
+    | 'pending_tenant'
+    | 'tenant_approved'
+    | 'tenant_rejected'
+    | 'auto_approved'
+    | 'owner_override'
+    | null;
   rejection_count?: number | null;
   forwarded_to_tenant_at?: string | null;
   tenant_verified_at?: string | null;
   tenant_rejection_reason?: string | null;
   tenant_rejection_photos?: string[] | null;
+  // Migration 047: Two-sided photo closure (Tenant→Vendor flow)
+  vendor_after_photos?: string[] | null;
+  vendor_closure_notes?: string | null;
+  vendor_confirmed_at?: string | null;
+  tenant_confirmation_photos?: string[] | null;
+  tenant_ack_at?: string | null;
+  tenant_notes?: string | null;
   created_at: string;
   updated_at: string;
 }

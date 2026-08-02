@@ -10,13 +10,13 @@ import type { ClosureReport, MaintenanceRequest } from '../types/maintenance.typ
 /**
  * Request job closure (Vendor action)
  * Vendor submits completion notes and photos to request closure
- * 
+ *
  * @param requestId - The maintenance request ID
  * @param vendorId - The vendor's user ID
  * @param completionNotes - Notes about the completed work
  * @param completionPhotos - Array of completion photo URLs (minimum 2)
  * @returns Created closure report
- * 
+ *
  * @example
  * ```typescript
  * const report = await requestClosure(
@@ -59,8 +59,9 @@ export async function requestClosure(
   }
 
   // Create closure report
-  const { data: closureReport, error: closureError } = await (supabase
-    .from('closure_reports') as any)
+  const { data: closureReport, error: closureError } = await (
+    supabase.from('closure_reports') as any
+  )
     .insert({
       maintenance_request_id: requestId,
       completion_notes: completionNotes,
@@ -76,8 +77,7 @@ export async function requestClosure(
   }
 
   // Update maintenance request
-  const { error: updateError } = await (supabase
-    .from('maintenance_requests') as any)
+  const { error: updateError } = await (supabase.from('maintenance_requests') as any)
     .update({
       closure_requested_at: new Date().toISOString(),
     })
@@ -96,11 +96,17 @@ export async function requestClosure(
     .single();
 
   if (reqWithOwner && (reqWithOwner as any).owner_id) {
-    notificationsApi.sendNotification({
-      user_id: (reqWithOwner as any).owner_id,
-      type: 'maintenance_updated',
-      data: { customTitle: 'Job Closure Requested', customBody: 'The vendor has requested job closure. Review and approve.', newStatus: 'closure_pending' },
-    }).catch(e => console.error('Failed to send closure requested notification:', e));
+    notificationsApi
+      .sendNotification({
+        user_id: (reqWithOwner as any).owner_id,
+        type: 'maintenance_updated',
+        data: {
+          customTitle: 'Job Closure Requested',
+          customBody: 'The vendor has requested job closure. Review and approve.',
+          newStatus: 'closure_pending',
+        },
+      })
+      .catch((e) => console.error('Failed to send closure requested notification:', e));
   }
 
   console.log('✅ Closure requested successfully');
@@ -109,10 +115,10 @@ export async function requestClosure(
 
 /**
  * Get closure report for a maintenance request
- * 
+ *
  * @param requestId - The maintenance request ID
  * @returns Closure report or null if not found
- * 
+ *
  * @example
  * ```typescript
  * const report = await getClosureReport(requestId);
@@ -132,11 +138,11 @@ export async function getClosureReport(requestId: string): Promise<ClosureReport
 /**
  * Approve closure report (Owner action)
  * Marks the job as completed
- * 
+ *
  * @param requestId - The maintenance request ID
  * @param ownerId - The owner's user ID
  * @returns Updated maintenance request
- * 
+ *
  * @example
  * ```typescript
  * const completed = await approveClosureReport(requestId, ownerId);
@@ -158,14 +164,12 @@ export async function approveClosureReport(
   }
 
   // Update closure report
-  await (supabase
-    .from('closure_reports') as any)
+  await (supabase.from('closure_reports') as any)
     .update({ status: 'approved' })
     .eq('maintenance_request_id', requestId);
 
   // Update maintenance request
-  const { data, error } = await (supabase
-    .from('maintenance_requests') as any)
+  const { data, error } = await (supabase.from('maintenance_requests') as any)
     .update({
       status: 'completed',
       completed_date: new Date().toISOString(),
@@ -185,18 +189,30 @@ export async function approveClosureReport(
 
   const reqData = approvedReq as any;
   if (reqData?.selected_vendor_id) {
-    notificationsApi.sendNotification({
-      user_id: reqData.selected_vendor_id,
-      type: 'maintenance_completed',
-      data: { customTitle: 'Closure Approved', customBody: 'The owner has approved the job closure.', newStatus: 'completed' },
-    }).catch(e => console.error('Failed to send closure approved to vendor:', e));
+    notificationsApi
+      .sendNotification({
+        user_id: reqData.selected_vendor_id,
+        type: 'maintenance_completed',
+        data: {
+          customTitle: 'Closure Approved',
+          customBody: 'The owner has approved the job closure.',
+          newStatus: 'completed',
+        },
+      })
+      .catch((e) => console.error('Failed to send closure approved to vendor:', e));
   }
   if (reqData?.tenant_id) {
-    notificationsApi.sendNotification({
-      user_id: reqData.tenant_id,
-      type: 'maintenance_completed',
-      data: { customTitle: 'Maintenance Completed', customBody: 'A maintenance job has been completed at your property.', newStatus: 'completed' },
-    }).catch(e => console.error('Failed to send closure approved to tenant:', e));
+    notificationsApi
+      .sendNotification({
+        user_id: reqData.tenant_id,
+        type: 'maintenance_completed',
+        data: {
+          customTitle: 'Maintenance Completed',
+          customBody: 'A maintenance job has been completed at your property.',
+          newStatus: 'completed',
+        },
+      })
+      .catch((e) => console.error('Failed to send closure approved to tenant:', e));
   }
 
   return data as MaintenanceRequest;
@@ -205,17 +221,260 @@ export async function approveClosureReport(
 /**
  * Reject closure report (Owner action)
  * Sends the job back to in_progress with rejection reason
- * 
+ *
  * @param requestId - The maintenance request ID
  * @param ownerId - The owner's user ID
  * @param reason - Reason for rejection
  * @returns Updated closure report
- * 
+ *
  * @example
  * ```typescript
  * const report = await rejectClosureReport(requestId, ownerId, 'Work incomplete');
  * ```
  */
+/**
+ * Vendor requests closure with after-work photos (Tenant→Vendor flow, migration 047)
+ * Vendor uploads photos of completed work + notes, setting vendor_confirmed_at.
+ * Reuses the existing closure_reports row — does NOT create a parallel table.
+ *
+ * @param requestId - The maintenance request ID
+ * @param vendorId - The vendor's user ID
+ * @param afterPhotos - Array of after-work photo URLs (min 2)
+ * @param notes - Optional closure notes
+ * @returns Updated closure report
+ *
+ * @example
+ * ```typescript
+ * const report = await vendorRequestClosureWithPhotos(
+ *   requestId, vendorId, ['after1.jpg', 'after2.jpg'], 'Work completed'
+ * );
+ * ```
+ */
+export async function vendorRequestClosureWithPhotos(
+  requestId: string,
+  vendorId: string,
+  afterPhotos: string[],
+  notes?: string
+): Promise<ClosureReport> {
+  console.log('📸 Vendor requesting closure with photos:', { requestId, vendorId });
+
+  if (!afterPhotos || afterPhotos.length < 2) {
+    throw new Error('Please upload at least 2 after-work photos');
+  }
+
+  // Verify vendor is assigned and work is in progress
+  const { data: request, error: fetchError } = await supabase
+    .from('maintenance_requests')
+    .select('id, selected_vendor_id, status')
+    .eq('id', requestId)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  const typedRequest = request as any;
+
+  if (typedRequest.selected_vendor_id !== vendorId) {
+    throw new Error('You are not assigned to this job');
+  }
+
+  if (typedRequest.status !== 'in_progress') {
+    throw new Error('Work must be in progress to request closure');
+  }
+
+  // Create-or-update the closure report with the vendor-side confirmation.
+  // We do NOT rely on upsert(..., { onConflict }) here: the unique constraint
+  // on closure_reports.maintenance_request_id is not guaranteed in the live
+  // DB, and upsert with onConflict throws at runtime if it is missing.
+  const existing = await getClosureReport(requestId);
+  const payload = {
+    maintenance_request_id: requestId,
+    vendor_after_photos: afterPhotos,
+    vendor_closure_notes: notes || null,
+    vendor_confirmed_at: new Date().toISOString(),
+    status: 'pending',
+    // Reset stale tenant-verification state from a previous rejection so the
+    // vendor's fresh confirmation starts clean.
+    tenant_verification_status: 'pending_owner',
+  };
+
+  let data: any;
+  let error: { message: string } | null = null;
+
+  if (existing) {
+    const res = await (supabase.from('closure_reports') as any)
+      .update(payload)
+      .eq('id', existing.id)
+      .select()
+      .single();
+    data = res.data;
+    error = res.error;
+  } else {
+    const res = await (supabase.from('closure_reports') as any).insert(payload).select().single();
+    data = res.data;
+    error = res.error;
+  }
+
+  if (error) {
+    console.error('❌ Error saving closure with photos:', error);
+    throw error;
+  }
+
+  // Update maintenance request
+  const { error: updateError } = await (supabase.from('maintenance_requests') as any)
+    .update({ closure_requested_at: new Date().toISOString() })
+    .eq('id', requestId);
+
+  if (updateError) {
+    console.error('❌ Error updating maintenance request:', updateError);
+    throw updateError;
+  }
+
+  // Notify owner and tenant that closure was requested
+  const { data: reqWithParties } = await supabase
+    .from('maintenance_requests')
+    .select('owner_id, tenant_id')
+    .eq('id', requestId)
+    .single();
+
+  const parties = (reqWithParties || {}) as any;
+  if (parties.owner_id) {
+    notificationsApi
+      .sendNotification({
+        user_id: parties.owner_id,
+        type: 'maintenance_updated',
+        data: {
+          customTitle: 'Job Closure Requested',
+          customBody: 'The vendor has submitted after-work photos. Review and confirm.',
+          newStatus: 'closure_pending',
+        },
+      })
+      .catch((e) => console.error('Failed to send closure requested notification:', e));
+  }
+  if (parties.tenant_id) {
+    notificationsApi
+      .sendNotification({
+        user_id: parties.tenant_id,
+        type: 'maintenance_updated',
+        data: {
+          customTitle: 'Closure Awaiting Confirmation',
+          customBody: 'The vendor has completed the job. Confirm the work with photos.',
+          newStatus: 'closure_pending',
+        },
+      })
+      .catch((e) => console.error('Failed to send closure confirmation notification:', e));
+  }
+
+  console.log('✅ Closure requested with photos successfully');
+  return data as ClosureReport;
+}
+
+/**
+ * Tenant confirms closure with confirmation photos (Tenant→Vendor flow, migration 047)
+ * Tenant uploads their own confirmation photos of the completed work.
+ * Requires the vendor to have already confirmed closure (vendor_confirmed_at set).
+ *
+ * @param requestId - The maintenance request ID
+ * @param tenantId - The tenant's user ID
+ * @param confirmationPhotos - Array of confirmation photo URLs (min 2)
+ * @param notes - Optional notes from the tenant
+ * @returns Updated closure report
+ *
+ * @example
+ * ```typescript
+ * const report = await tenantConfirmClosureWithPhotos(
+ *   requestId, tenantId, ['confirm1.jpg', 'confirm2.jpg'], 'Looks great'
+ * );
+ * ```
+ */
+export async function tenantConfirmClosureWithPhotos(
+  requestId: string,
+  tenantId: string,
+  confirmationPhotos: string[],
+  notes?: string
+): Promise<ClosureReport> {
+  console.log('✅ Tenant confirming closure with photos:', { requestId, tenantId });
+
+  if (!confirmationPhotos || confirmationPhotos.length < 2) {
+    throw new Error('Please upload at least 2 confirmation photos');
+  }
+
+  // Verify tenant ownership
+  const { data: request } = await supabase
+    .from('maintenance_requests')
+    .select('tenant_id')
+    .eq('id', requestId)
+    .single();
+
+  if ((request as any)?.tenant_id !== tenantId) {
+    throw new Error('Unauthorized: You are not the tenant of this request');
+  }
+
+  // Verify vendor already confirmed closure
+  const { data: existing } = await (supabase.from('closure_reports') as any)
+    .select('vendor_confirmed_at')
+    .eq('maintenance_request_id', requestId)
+    .maybeSingle();
+
+  if (!existing || !(existing as any)?.vendor_confirmed_at) {
+    throw new Error('Vendor has not yet confirmed closure with after-work photos');
+  }
+
+  // Update the closure report with the tenant-side confirmation
+  const { data, error } = await (supabase.from('closure_reports') as any)
+    .update({
+      tenant_confirmation_photos: confirmationPhotos,
+      tenant_verification_status: 'tenant_approved',
+      tenant_ack_at: new Date().toISOString(),
+      tenant_notes: notes || null,
+    })
+    .eq('maintenance_request_id', requestId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('❌ Error confirming closure with photos:', error);
+    throw error;
+  }
+
+  // Notify vendor and owner that tenant confirmed
+  const { data: reqWithParties } = await supabase
+    .from('maintenance_requests')
+    .select('owner_id, selected_vendor_id')
+    .eq('id', requestId)
+    .single();
+
+  const parties = (reqWithParties || {}) as any;
+  if (parties.selected_vendor_id) {
+    notificationsApi
+      .sendNotification({
+        user_id: parties.selected_vendor_id,
+        type: 'maintenance_updated',
+        data: {
+          customTitle: 'Closure Confirmed',
+          customBody: 'The tenant has confirmed the completed work with photos.',
+          newStatus: 'tenant_approved',
+        },
+      })
+      .catch((e) => console.error('Failed to send closure confirmed to vendor:', e));
+  }
+  if (parties.owner_id) {
+    notificationsApi
+      .sendNotification({
+        user_id: parties.owner_id,
+        type: 'maintenance_updated',
+        data: {
+          customTitle: 'Closure Confirmed by Tenant',
+          customBody: 'The tenant confirmed the job with photos. Proceed to invoice.',
+          newStatus: 'tenant_approved',
+        },
+      })
+      .catch((e) => console.error('Failed to send closure confirmed to owner:', e));
+  }
+
+  console.log('✅ Tenant confirmed closure with photos');
+  return data as ClosureReport;
+}
+
 export async function rejectClosureReport(
   requestId: string,
   ownerId: string,
@@ -233,8 +492,7 @@ export async function rejectClosureReport(
   }
 
   // Update closure report
-  const { data, error } = await (supabase
-    .from('closure_reports') as any)
+  const { data, error } = await (supabase.from('closure_reports') as any)
     .update({
       status: 'rejected',
       rejection_reason: reason,
@@ -246,8 +504,7 @@ export async function rejectClosureReport(
   if (error) throw error;
 
   // Reset closure_requested_at on maintenance request
-  await (supabase
-    .from('maintenance_requests') as any)
+  await (supabase.from('maintenance_requests') as any)
     .update({ closure_requested_at: null })
     .eq('id', requestId);
 
@@ -259,11 +516,18 @@ export async function rejectClosureReport(
     .single();
 
   if (rejectedReq && (rejectedReq as any).selected_vendor_id) {
-    notificationsApi.sendNotification({
-      user_id: (rejectedReq as any).selected_vendor_id,
-      type: 'maintenance_updated',
-      data: { customTitle: 'Closure Changes Requested', customBody: 'The owner has requested changes to the closure report.', newStatus: 'rejected', rejectionReason: reason },
-    }).catch(e => console.error('Failed to send closure rejected notification:', e));
+    notificationsApi
+      .sendNotification({
+        user_id: (rejectedReq as any).selected_vendor_id,
+        type: 'maintenance_updated',
+        data: {
+          customTitle: 'Closure Changes Requested',
+          customBody: 'The owner has requested changes to the closure report.',
+          newStatus: 'rejected',
+          rejectionReason: reason,
+        },
+      })
+      .catch((e) => console.error('Failed to send closure rejected notification:', e));
   }
 
   return data as ClosureReport;
