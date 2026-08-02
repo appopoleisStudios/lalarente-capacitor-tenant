@@ -8,6 +8,17 @@ appId: com.lalarente.app
     visible: "Quick Actions"
     timeout: 20000
 
+# MUST scroll the quick action into full view first: the Quick Actions grid
+# reaches under the tab bar (tab bar = bottom 85px of a 852px screen), and a
+# bare tapOn targets the element's center — which lands ON the tab bar and
+# never navigates. Flow 20 uses the same scrollUntilVisible pattern.
+- scrollUntilVisible:
+    element:
+      id: "qa-messages"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+
 - tapOn:
     id: "qa-messages"
 

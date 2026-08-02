@@ -27,5 +27,8 @@ appId: com.lalarente.app
           text: ${MESSAGE_TEXT}
           optional: true
 
+# Final gate: the sent message must appear in the thread bubble. The thread
+# screen (MessageThreadScreen) has NO testIDs, so asserting the old
+# tenant-messages-title (a list-screen ID) can never pass after sending.
 - assertVisible:
-    id: "tenant-messages-title"
+    text: ${MESSAGE_TEXT}
