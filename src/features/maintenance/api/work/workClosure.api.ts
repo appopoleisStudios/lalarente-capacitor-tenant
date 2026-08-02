@@ -131,10 +131,24 @@ export async function requestClosure(
  * ```
  */
 export async function getClosureReport(requestId: string): Promise<ClosureReport | null> {
+  // Prefer the ACTIVE row. Migration 050's partial unique index
+  // (uq_closure_reports_maintenance_request_active, WHERE status <> 'rejected')
+  // deliberately lets a legacy rejected row coexist with the active row, so a
+  // bare maybeSingle() can throw (multiple rows) or return the stale rejected
+  // row. Order so the active row wins:
+  //   1. status ascending  -> 'approved' < 'pending' < 'rejected', so a
+  //      rejected row sorts last.
+  //   2. vendor_confirmed_at desc, nulls last -> the two-sided flow's row
+  //      (vendor confirmed) beats a legacy pending row on the same request.
+  //   3. id ascending -> deterministic tiebreak.
   const { data, error } = await supabase
     .from('closure_reports')
     .select('*')
     .eq('maintenance_request_id', requestId)
+    .order('status', { ascending: true, nullsFirst: false })
+    .order('vendor_confirmed_at', { ascending: false, nullsFirst: false })
+    .order('id', { ascending: true })
+    .limit(1)
     .maybeSingle();
 
   if (error) throw error;
