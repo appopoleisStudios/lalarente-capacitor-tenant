@@ -39,10 +39,13 @@ export async function requestClosure(
     throw new Error('Please upload at least 2 completion photos');
   }
 
-  // Verify vendor is assigned and work is in progress
+  // Verify vendor is assigned and work is in progress.
+  // Predicate mirrors migration 050's closure_reports RLS policy:
+  // accept either selected_vendor_id (MMS quote-select flow, canonical)
+  // or vendor_id (dedicated-vendor column).
   const { data: request, error: fetchError } = await supabase
     .from('maintenance_requests')
-    .select('id, selected_vendor_id, status')
+    .select('id, selected_vendor_id, vendor_id, status')
     .eq('id', requestId)
     .single();
 
@@ -50,7 +53,10 @@ export async function requestClosure(
 
   const typedRequest = request as any;
 
-  if (typedRequest.selected_vendor_id !== vendorId) {
+  const isAssignedVendor =
+    typedRequest.selected_vendor_id === vendorId || typedRequest.vendor_id === vendorId;
+
+  if (!isAssignedVendor) {
     throw new Error('You are not assigned to this job');
   }
 
@@ -262,10 +268,14 @@ export async function vendorRequestClosureWithPhotos(
     throw new Error('Please upload at least 2 after-work photos');
   }
 
-  // Verify vendor is assigned and work is in progress
+  // Verify vendor is assigned and work is in progress.
+  // Predicate must mirror migration 050's closure_reports RLS policy:
+  // accept either selected_vendor_id (MMS quote-select flow, canonical)
+  // or vendor_id (dedicated-vendor column). Kept in sync so the client
+  // auth check can never pass while RLS silently filters the write.
   const { data: request, error: fetchError } = await supabase
     .from('maintenance_requests')
-    .select('id, selected_vendor_id, status')
+    .select('id, selected_vendor_id, vendor_id, status')
     .eq('id', requestId)
     .single();
 
@@ -273,7 +283,10 @@ export async function vendorRequestClosureWithPhotos(
 
   const typedRequest = request as any;
 
-  if (typedRequest.selected_vendor_id !== vendorId) {
+  const isAssignedVendor =
+    typedRequest.selected_vendor_id === vendorId || typedRequest.vendor_id === vendorId;
+
+  if (!isAssignedVendor) {
     throw new Error('You are not assigned to this job');
   }
 
