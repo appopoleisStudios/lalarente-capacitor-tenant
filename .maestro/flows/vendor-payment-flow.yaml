@@ -1,0 +1,103 @@
+# Vendor Payment Flow — Tenant Payment Happy Path (Plane #60)
+# Full UI smoke test of the money path: approved tenant-payer invoice →
+# invoice breakdown → Pay via PayFast → in-app Secure Checkout.
+#
+# Deterministic record completion (issue steps 7-8: "return to app and verify
+# success" + "check that vendor_payments record is completed") is driven by
+# scripts/verify-tenant-payment-completed.mjs — it creates the checkout, drives
+# the payment to 'completed' through the REAL payment-webhook (simulated signed
+# COMPLETE ITN, same signature code as production), then asserts the DB record.
+# Live PayFast sandbox card entry is NOT automatable in Maestro (WebView iframe)
+# — see 20-vendor-payments.yaml for the same documented constraint.
+#
+# Prerequisites:
+#   - Run scripts/seed-tenant-vendor-invoice.mjs first (creates an APPROVED
+#     tenant-payer invoice linked to the tenant's latest maintenance request).
+#     The tenant screen only lists payer_role='tenant' + status='approved'
+#     invoices, so the seed must run before this flow.
+#   - Uses the in-app entry point (qa-vendor-payments quick action on the tenant
+#     dashboard) instead of a fragile deep link.
+#   - Selectors use testIDs (not raw text) on icon+text buttons to avoid the
+#     icon-prefix matching bug (Maestro merges icon name into accessibility text).
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-tenant.yaml
+
+# Navigate to vendor payments via the dashboard Quick Action (in-app entry point)
+- scrollUntilVisible:
+    element:
+      id: "qa-vendor-payments"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+
+- tapOn:
+    id: "qa-vendor-payments"
+
+# Wait for the vendor payments screen header
+- extendedWaitUntil:
+    visible:
+      id: "vendor-payments-title"
+    timeout: 30000
+
+# The seeded invoice must be present — REQUIRED (a missing seed means the money
+# path can't be verified, so fail loudly instead of silently passing).
+- extendedWaitUntil:
+    visible:
+      id: "invoice-number"
+    timeout: 15000
+
+# Select the approved invoice
+- assertVisible:
+    id: "pay-now"
+- tapOn:
+    id: "pay-now"
+
+# Wait for the Pay Vendor detail screen
+- extendedWaitUntil:
+    visible:
+      id: "pay-vendor-title"
+    timeout: 15000
+
+# Review invoice breakdown
+- assertVisible:
+    id: "invoice-number-detail"
+- assertVisible:
+    id: "pay-via-payfast"
+- assertVisible:
+    text: "Invoice Breakdown"
+    optional: true
+- assertVisible:
+    text: "Secure Payment via PayFast"
+    optional: true
+
+# Tap Pay via PayFast — must open the IN-APP checkout (no system browser hop)
+- tapOn:
+    id: "pay-via-payfast"
+
+# Verify the in-app WebView checkout screen rendered (Razorpay-style)
+- extendedWaitUntil:
+    visible:
+      id: "checkout-title"
+    timeout: 15000
+- assertVisible:
+    text: "Secure Checkout"
+- assertVisible:
+    id: "checkout-close"
+
+# Close checkout without completing payment — record completion + success
+# verification is handled deterministically by
+# scripts/verify-tenant-payment-completed.mjs (simulated signed ITN through the
+# real payment-webhook edge function, then get-vendor-payment-status poll).
+- tapOn:
+    id: "checkout-close"
+
+# Back in the tenant flow — assert a stable element (the tab bar is always
+# present; the detail screen re-fetches and shows a spinner on return)
+- extendedWaitUntil:
+    visible:
+      id: "tab-payments"
+    timeout: 10000
+
+# ✅ E2E tenant payment happy path UI verification complete
+# Follow-up (deterministic, non-UI): node scripts/verify-tenant-payment-completed.mjs

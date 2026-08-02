@@ -63,6 +63,8 @@ TENANT_FLOWS=(
   "client-feedback/s2-40-tenant-send-message"
   # Vendor payments (tenant pays vendor invoices)
   "20-vendor-payments"
+  # Vendor payment happy path — full UI smoke + record completion (Plane #60)
+  "vendor-payment-flow"
 )
 
 OWNER_FLOWS=(
