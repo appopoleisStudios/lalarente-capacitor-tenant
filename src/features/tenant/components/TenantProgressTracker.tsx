@@ -9,7 +9,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import type { MaintenanceRequest, ClosureReport } from '@/src/features/maintenance/api/types/maintenance.types';
+import type {
+  MaintenanceRequest,
+  ClosureReport,
+} from '@/src/features/maintenance/api/types/maintenance.types';
 
 interface ProgressUpdate {
   id: string;
@@ -130,21 +133,21 @@ export default function TenantProgressTracker({
 
   const rejectionCount = closureReport?.rejection_count ?? 0;
   const showRejectionBadge =
-    closureReport?.tenant_verification_status === 'tenant_rejected' &&
-    rejectionCount > 0;
+    closureReport?.tenant_verification_status === 'tenant_rejected' && rejectionCount > 0;
 
   // Evidence summary
-  const totalProgressPhotos = progressUpdates.reduce(
-    (sum, u) => sum + (u.photos?.length || 0), 0
-  );
+  const totalProgressPhotos = progressUpdates.reduce((sum, u) => sum + (u.photos?.length || 0), 0);
   const totalProgressUpdates = progressUpdates.length;
-  const hasCompletionPhotos = closureReport?.completion_photos &&
+  const hasCompletionPhotos =
+    closureReport?.completion_photos &&
     Array.isArray(closureReport.completion_photos) &&
     closureReport.completion_photos.length > 0;
-  const hasTenantPhotos = (closureReport as any)?.tenant_confirmation_photos &&
+  const hasTenantPhotos =
+    (closureReport as any)?.tenant_confirmation_photos &&
     Array.isArray((closureReport as any).tenant_confirmation_photos) &&
     (closureReport as any).tenant_confirmation_photos.length > 0;
-  const hasTenantRejectionPhotos = (closureReport as any)?.tenant_rejection_photos &&
+  const hasTenantRejectionPhotos =
+    (closureReport as any)?.tenant_rejection_photos &&
     Array.isArray((closureReport as any).tenant_rejection_photos) &&
     (closureReport as any).tenant_rejection_photos.length > 0;
 
@@ -152,6 +155,16 @@ export default function TenantProgressTracker({
   const latestCompletionPhotos = hasCompletionPhotos
     ? (closureReport!.completion_photos as string[]).slice(0, 3)
     : [];
+
+  // Latest progress-update photos (Plane #63): getProgressUpdates returns
+  // newest-first, so progressUpdates[0] is the most recent daily update.
+  // Surface its photos in the timeline so the tenant sees the actual latest
+  // evidence photo, not just a count.
+  const latestProgressUpdate = progressUpdates.length > 0 ? progressUpdates[0] : null;
+  const latestProgressPhotos =
+    latestProgressUpdate?.photos && latestProgressUpdate.photos.length > 0
+      ? latestProgressUpdate.photos.slice(0, 3)
+      : [];
 
   return (
     <View style={styles.container}>
@@ -197,10 +210,7 @@ export default function TenantProgressTracker({
                 {/* Content */}
                 <View style={styles.stageContent}>
                   <Text
-                    style={[
-                      styles.stageLabel,
-                      status === 'current' && styles.stageLabelCurrent,
-                    ]}
+                    style={[styles.stageLabel, status === 'current' && styles.stageLabelCurrent]}
                   >
                     {stage.label}
                   </Text>
@@ -214,7 +224,9 @@ export default function TenantProgressTracker({
                       <Ionicons name="images-outline" size={14} color="#6B7280" />
                       <Text style={styles.evidenceBadgeText}>
                         {totalProgressUpdates} update{totalProgressUpdates > 1 ? 's' : ''}
-                        {totalProgressPhotos > 0 ? ` · ${totalProgressPhotos} photo${totalProgressPhotos > 1 ? 's' : ''}` : ''}
+                        {totalProgressPhotos > 0
+                          ? ` · ${totalProgressPhotos} photo${totalProgressPhotos > 1 ? 's' : ''}`
+                          : ''}
                       </Text>
                     </View>
                   )}
@@ -223,7 +235,8 @@ export default function TenantProgressTracker({
                     <View style={styles.evidenceBadge}>
                       <Ionicons name="images-outline" size={14} color="#6B7280" />
                       <Text style={styles.evidenceBadgeText}>
-                        {latestCompletionPhotos.length} completion photo{latestCompletionPhotos.length > 1 ? 's' : ''} available
+                        {latestCompletionPhotos.length} completion photo
+                        {latestCompletionPhotos.length > 1 ? 's' : ''} available
                       </Text>
                     </View>
                   )}
@@ -253,10 +266,14 @@ export default function TenantProgressTracker({
           <View style={styles.evidenceStats}>
             <View style={styles.evidenceStat}>
               <Text style={styles.evidenceStatValue}>{totalProgressUpdates}</Text>
-              <Text style={styles.evidenceStatLabel}>Progress{totalProgressUpdates > 1 ? 'es' : ''}</Text>
+              <Text style={styles.evidenceStatLabel}>
+                Progress{totalProgressUpdates > 1 ? 'es' : ''}
+              </Text>
             </View>
             <View style={styles.evidenceStat}>
-              <Text style={styles.evidenceStatValue}>{totalProgressPhotos + (hasCompletionPhotos ? latestCompletionPhotos.length : 0)}</Text>
+              <Text style={styles.evidenceStatValue}>
+                {totalProgressPhotos + (hasCompletionPhotos ? latestCompletionPhotos.length : 0)}
+              </Text>
               <Text style={styles.evidenceStatLabel}>Photos</Text>
             </View>
             {hasTenantPhotos && (
@@ -276,7 +293,8 @@ export default function TenantProgressTracker({
         <View style={styles.infoCard}>
           <Ionicons name="time-outline" size={20} color="#3B82F6" />
           <Text style={styles.infoText}>
-            Work started {new Date(request.work_started_at).toLocaleDateString('en-ZA', {
+            Work started{' '}
+            {new Date(request.work_started_at).toLocaleDateString('en-ZA', {
               day: 'numeric',
               month: 'short',
             })}
@@ -289,14 +307,16 @@ export default function TenantProgressTracker({
           <Ionicons name="alert-circle-outline" size={20} color="#F59E0B" />
           <View style={{ flex: 1 }}>
             <Text style={styles.infoText}>
-              Verification requested {new Date(closureReport.forwarded_to_tenant_at).toLocaleDateString('en-ZA', {
+              Verification requested{' '}
+              {new Date(closureReport.forwarded_to_tenant_at).toLocaleDateString('en-ZA', {
                 day: 'numeric',
                 month: 'short',
               })}
             </Text>
             {(closureReport as any)?.auto_approve_at && (
               <Text style={styles.infoSubtext}>
-                Auto-approves {new Date((closureReport as any).auto_approve_at).toLocaleDateString('en-ZA', {
+                Auto-approves{' '}
+                {new Date((closureReport as any).auto_approve_at).toLocaleDateString('en-ZA', {
                   day: 'numeric',
                   month: 'short',
                   hour: '2-digit',
@@ -308,6 +328,22 @@ export default function TenantProgressTracker({
         </View>
       )}
 
+      {/* Latest Work Photo Preview (Plane #63) — show the most recent
+          progress update's photos right in the timeline when work is
+          active/in-progress, so mandatory-photo evidence is visible. */}
+      {latestProgressPhotos.length > 0 && currentStageIndex >= 3 && currentStageIndex < 5 && (
+        <View style={styles.photoPreviewCard}>
+          <Text style={styles.photoPreviewTitle}>Latest Work Photo</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={styles.photoPreviewRow}>
+              {latestProgressPhotos.map((photo: string, idx: number) => (
+                <Image key={idx} source={{ uri: photo }} style={styles.photoPreviewThumb} />
+              ))}
+            </View>
+          </ScrollView>
+        </View>
+      )}
+
       {/* Completion Photos Preview */}
       {hasCompletionPhotos && currentStageIndex >= 4 && (
         <View style={styles.photoPreviewCard}>
@@ -315,11 +351,7 @@ export default function TenantProgressTracker({
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View style={styles.photoPreviewRow}>
               {latestCompletionPhotos.map((photo: string, idx: number) => (
-                <Image
-                  key={idx}
-                  source={{ uri: photo }}
-                  style={styles.photoPreviewThumb}
-                />
+                <Image key={idx} source={{ uri: photo }} style={styles.photoPreviewThumb} />
               ))}
             </View>
           </ScrollView>
