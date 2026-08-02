@@ -422,17 +422,24 @@ export async function tenantConfirmClosureWithPhotos(
     throw new Error('Unauthorized: You are not the tenant of this request');
   }
 
-  // Verify vendor already confirmed closure
+  // Verify vendor already confirmed closure. Order so the row carrying the
+  // vendor confirmation is found first: migration 050's partial unique index
+  // (WHERE status <> 'rejected') lets a legacy rejected row coexist with the
+  // active row, and a bare maybeSingle could return the stale rejected one.
   const { data: existing } = await (supabase.from('closure_reports') as any)
-    .select('vendor_confirmed_at')
+    .select('id, vendor_confirmed_at')
     .eq('maintenance_request_id', requestId)
+    .order('vendor_confirmed_at', { ascending: false, nullsFirst: false })
+    .limit(1)
     .maybeSingle();
 
   if (!existing || !(existing as any)?.vendor_confirmed_at) {
     throw new Error('Vendor has not yet confirmed closure with after-work photos');
   }
 
-  // Update the closure report with the tenant-side confirmation
+  // Update the closure report with the tenant-side confirmation.
+  // Target by row id (not maintenance_request_id) so the UPDATE can never
+  // touch both a rejected legacy row and the active row simultaneously.
   const { data, error } = await (supabase.from('closure_reports') as any)
     .update({
       tenant_confirmation_photos: confirmationPhotos,
@@ -440,7 +447,7 @@ export async function tenantConfirmClosureWithPhotos(
       tenant_ack_at: new Date().toISOString(),
       tenant_notes: notes || null,
     })
-    .eq('maintenance_request_id', requestId)
+    .eq('id', (existing as any).id)
     .select()
     .single();
 
