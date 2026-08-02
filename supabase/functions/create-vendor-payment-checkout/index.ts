@@ -30,38 +30,48 @@ interface CheckoutRequest {
   idempotency_key?: string;
 }
 
-// ─── PayFast signature generation ─────────────────────────────────────────
-// PayFast's PHP SDK uses urlencode() which encodes spaces as + (not %20).
-// JavaScript's encodeURIComponent uses %20 for spaces. To match PHP's
-// behaviour (which PayFast's server uses for signature verification), we
-// replace %20 with + after encoding.
-// See: https://developers.payfast.co.za/docs#signature
-
-// PHP's urlencode() differs from JS's encodeURIComponent:
-//   Space: JS=%20, PHP=+  → convert %20 to +
-//   Asterisk: JS=%2A, PHP=*  → convert %2A to *
-//   Tilde: JS=~, PHP=%7E  → should convert ~ to %7E (but tildes are
-//     almost never in PayFast params, so we omit this for simplicity)
+// ─── PayFast signature generation (custom / hosted checkout) ──────────────
+// Docs: https://developers.payfast.co.za/docs#step-2-signature
+//
+// CRITICAL: Use INSERTION order of the attribute set — NOT alphabetical sort.
+// Alphabetical ordering is the *API* signature format and will 400 the hosted
+// /eng/process page with "Generated signature does not match submitted signature".
+// Live probe (merchant 10051626): insertion-order → HTTP 302; alpha-sort → 400.
+//
+// PHP urlencode parity vs encodeURIComponent:
+//   Space → +, hex digits UPPERCASE, and PHP's urlencode() ALSO encodes the
+//   chars encodeURIComponent leaves unescaped (! ~ * ' ( )). Without patching
+//   those, a signed value containing any of them (e.g. a `*` in an item name)
+//   would hash differently from PayFast's PHP server → signature mismatch.
+//
+// ⚠️ KEEP IN SYNC: this function is duplicated byte-for-byte in
+//   supabase/functions/payment-webhook/index.ts and in
+//   scripts/probe-payfast-signature.mjs + scripts/simulate-vendor-payment-itn.mjs.
+//   A desync breaks ITN signature verification silently — edit all four.
 function phpUrlEncode(str: string): string {
-  return encodeURIComponent(str)
-    .replace(/%20/g, '+')   // PHP urlencode uses + for spaces
-    .replace(/%2A/g, '*');  // PHP urlencode leaves * unchanged (not %2A)
+  return encodeURIComponent(String(str).trim())
+    .replace(/%[0-9a-f]{2}/gi, (m) => m.toUpperCase())
+    .replace(/%20/g, '+')
+    .replace(/!/g, '%21')
+    .replace(/~/g, '%7E')
+    .replace(/\*/g, '%2A')
+    .replace(/'/g, '%27')
+    .replace(/\(/g, '%28')
+    .replace(/\)/g, '%29');
 }
 
-function generatePayFastSignature(
-  params: Record<string, string>,
-  passphrase: string
-): string {
-  const sortedString = Object.entries(params)
-    .filter(([key]) => key !== 'signature')
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, value]) => `${key}=${phpUrlEncode(value)}`)
-    .join('&');
-
-  const stringToHash = passphrase
-    ? `${sortedString}&passphrase=${phpUrlEncode(passphrase)}`
-    : sortedString;
-
+function generatePayFastSignature(params: Record<string, string>, passphrase: string): string {
+  // Match PayFast's PHP sample: foreach ($data as $key => $val) in array order.
+  let pfOutput = '';
+  for (const [key, value] of Object.entries(params)) {
+    if (key === 'signature') continue;
+    if (value === '' || value == null) continue;
+    pfOutput += `${key}=${phpUrlEncode(value)}&`;
+  }
+  let stringToHash = pfOutput.slice(0, -1); // drop trailing &
+  if (passphrase) {
+    stringToHash += `&passphrase=${phpUrlEncode(passphrase)}`;
+  }
   return md5(stringToHash);
 }
 
@@ -88,7 +98,10 @@ serve(async (req) => {
 
     // Verify JWT and extract user ID
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -111,12 +124,14 @@ serve(async (req) => {
     // ── Fetch invoice ────────────────────────────────────────────────────
     const { data: invoice, error: invoiceError } = await supabase
       .from('maintenance_invoices')
-      .select(`
+      .select(
+        `
         id, invoice_number, status, payer_role, total_amount, subtotal, vat_amount,
         maintenance_request_id, vendor_id, owner_id, line_items,
         maintenance_requests!inner(tenant_id, title),
         vendor:profiles!vendor_id(full_name, email, business_name)
-      `)
+      `
+      )
       .eq('id', invoice_id)
       .single();
 
@@ -148,16 +163,40 @@ serve(async (req) => {
 
     // Invoice must allow payment
     if (inv.status === 'paid') {
-      return new Response(
-        JSON.stringify({ error: 'This invoice is already paid.' }),
-        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'This invoice is already paid.' }), {
+        status: 409,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     if (inv.status !== 'approved') {
       return new Response(
-        JSON.stringify({ error: `Invoice status is '${inv.status}'. Only approved invoices can be paid.` }),
+        JSON.stringify({
+          error: `Invoice status is '${inv.status}'. Only approved invoices can be paid.`,
+        }),
         { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // ── PayFast config: read early + fail loudly if not configured ───────
+    // Must NOT create a pending vendor_payments row (or return a checkout
+    // URL) when the gateway is misconfigured — otherwise the tenant lands on
+    // a broken PayFast page with no explanation. Sandbox credentials live in
+    // Supabase secrets (PAYFAST_MERCHANT_ID/KEY/PASSPHRASE, PAYFAST_SANDBOX).
+    const sandbox = Deno.env.get('PAYFAST_SANDBOX')?.trim() !== 'false';
+    const merchantId = Deno.env.get('PAYFAST_MERCHANT_ID')?.trim() || '';
+    const merchantKey = Deno.env.get('PAYFAST_MERCHANT_KEY')?.trim() || '';
+    const passphrase = Deno.env.get('PAYFAST_PASSPHRASE')?.trim() || '';
+    const notifyUrl = `${supabaseUrl}/functions/v1/payment-webhook`;
+
+    if (!merchantId || !merchantKey) {
+      console.error('❌ create-vendor-payment-checkout: PayFast merchant credentials missing');
+      return new Response(
+        JSON.stringify({
+          error: 'Payment gateway is not configured. Please try again later.',
+          message: 'PayFast merchant credentials are missing. Please try again later.',
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -232,7 +271,9 @@ serve(async (req) => {
           console.error('⚠️ Failed to expire abandoned payment:', expireError);
           // Non-fatal — continue and let the user retry
         } else {
-          console.log(`ℹ️ Expired abandoned payment ${inFlight.id} (created ${createdAt.toISOString()})`);
+          console.log(
+            `ℹ️ Expired abandoned payment ${inFlight.id} (created ${createdAt.toISOString()})`
+          );
         }
       } else {
         return new Response(
@@ -248,7 +289,7 @@ serve(async (req) => {
 
     // ── Calculate fees ───────────────────────────────────────────────────
     const totalAmount = parseFloat(inv.total_amount);
-    const platformFeePercent = 10.00; // 10% platform fee
+    const platformFeePercent = 10.0; // 10% platform fee
     const platformFee = Math.round(totalAmount * (platformFeePercent / 100) * 100) / 100;
     const payoutFee = 0; // Weekly payout is free (default)
     const vendorPayout = totalAmount - platformFee - payoutFee;
@@ -291,39 +332,37 @@ serve(async (req) => {
     const paymentId = (payment as any).id;
 
     // ── Generate PayFast form fields ─────────────────────────────────────
-    const sandbox = Deno.env.get('PAYFAST_SANDBOX')?.trim() !== 'false';
-    const merchantId = Deno.env.get('PAYFAST_MERCHANT_ID')?.trim() || '';
-    const merchantKey = Deno.env.get('PAYFAST_MERCHANT_KEY')?.trim() || '';
-    const passphrase = Deno.env.get('PAYFAST_PASSPHRASE')?.trim() || '';
-    const notifyUrl = `${supabaseUrl}/functions/v1/payment-webhook`;
+    const vendorName =
+      (inv.vendor as any)?.business_name || (inv.vendor as any)?.full_name || 'Service Provider';
 
-    const vendorName = (inv.vendor as any)?.business_name ||
-      (inv.vendor as any)?.full_name ||
-      'Service Provider';
+    // Attribute order matches PayFast custom-integration docs / PHP sample
+    // (merchant → buyer → transaction). Empty optionals omitted before signing.
+    const fullName = (user.user_metadata?.full_name || '').trim();
+    const nameFirst = fullName.split(/\s+/)[0] || '';
+    const nameLast = fullName.split(/\s+/).slice(1).join(' ') || '';
 
-    const payfastFields: Record<string, string> = {
-      merchant_id: merchantId,
-      merchant_key: merchantKey,
-      return_url: return_url,
-      cancel_url: cancel_url,
-      notify_url: notifyUrl,
-      m_payment_id: paymentId,
-      amount: totalAmount.toFixed(2),
-      item_name: `Maintenance - ${vendorName}`,
-      item_description: `Invoice ${inv.invoice_number}: Maintenance work by ${vendorName}`,
-      email_address: user.email || '',
-      name_first: user.user_metadata?.full_name?.split(' ')[0] || '',
-      name_last: user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
+    const payfastFields: Record<string, string> = {};
+    const setField = (key: string, value: string) => {
+      const v = (value ?? '').trim();
+      if (v) payfastFields[key] = v;
     };
+    setField('merchant_id', merchantId);
+    setField('merchant_key', merchantKey);
+    setField('return_url', return_url);
+    setField('cancel_url', cancel_url);
+    setField('notify_url', notifyUrl);
+    setField('name_first', nameFirst);
+    setField('name_last', nameLast);
+    setField('email_address', user.email || '');
+    setField('m_payment_id', paymentId);
+    setField('amount', totalAmount.toFixed(2));
+    setField('item_name', `Maintenance - ${vendorName}`);
+    setField(
+      'item_description',
+      `Invoice ${inv.invoice_number}: Maintenance work by ${vendorName}`
+    );
 
-    // Generate signature — omit blank optional fields before hashing
-    // PayFast convention: empty optional fields (email_address, name_*) should
-    // be excluded from the signed parameter set to match PHP's urlencode behavior.
-    const signatureParams: Record<string, string> = {};
-    Object.entries(payfastFields).forEach(([k, v]) => {
-      if (v.trim()) signatureParams[k] = v;
-    });
-    const signature = generatePayFastSignature(signatureParams, passphrase);
+    const signature = generatePayFastSignature(payfastFields, passphrase);
     if (signature) {
       payfastFields.signature = signature;
     }
@@ -332,8 +371,8 @@ serve(async (req) => {
       ? 'https://sandbox.payfast.co.za/eng/process'
       : 'https://www.payfast.co.za/eng/process';
 
-    // Build GET-based redirect URL for React Native (Linking.openURL)
-    // PayFast hosted pages accept both POST form submission and GET URL params
+    // GET redirect for in-app WebView — same field order as the signature.
+    // Prefer POST in WebView when possible; GET is accepted by sandbox/live.
     const queryString = Object.entries(payfastFields)
       .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
       .join('&');
@@ -358,9 +397,9 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error('❌ create-vendor-payment-checkout error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Internal error', message: String(error) }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({ error: 'Internal error', message: String(error) }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });

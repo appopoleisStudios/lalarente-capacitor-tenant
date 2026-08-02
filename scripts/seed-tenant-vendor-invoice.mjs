@@ -22,18 +22,35 @@
  *   VENDOR_EMAIL, VENDOR_PASSWORD
  *   OWNER_EMAIL, OWNER_PASSWORD
  */
-const SUPABASE_URL =
-  process.env.SUPABASE_URL || 'https://vvepwaolnkzfzhzgxlwr.supabase.co';
-const ANON_KEY =
-  process.env.SUPABASE_ANON_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2ZXB3YW9sbmt6Znpoemd4bHdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM2ODAyODAsImV4cCI6MjA2OTI1NjI4MH0.WGoBvXa58a8hdaNL8hYm-q1xLBy8P7IgCxo0508QAIk';
+import { env, maestroEnv } from './lib/load-env.mjs';
 
-const TENANT_EMAIL = process.env.TENANT_EMAIL || 'navin.indraj@yahoo.com';
-const TENANT_PASSWORD = process.env.TENANT_PASSWORD || 'Nadene10_';
-const VENDOR_EMAIL = process.env.VENDOR_EMAIL || 'e2e-vendor@lalarente.com';
-const VENDOR_PASSWORD = process.env.VENDOR_PASSWORD || 'E2eVendor123!';
-const OWNER_EMAIL = process.env.OWNER_EMAIL || 'indraj.navin@gmail.com';
-const OWNER_PASSWORD = process.env.OWNER_PASSWORD || 'Nadene10_';
+const SUPABASE_URL = env('SUPABASE_URL') || env('EXPO_PUBLIC_SUPABASE_URL');
+const ANON_KEY = env('SUPABASE_ANON_KEY') || env('EXPO_PUBLIC_SUPABASE_ANON_KEY');
+if (!SUPABASE_URL || !ANON_KEY) {
+  console.error('❌ Missing SUPABASE_URL / SUPABASE_ANON_KEY — set them in env or .env');
+  process.exit(1);
+}
+
+// Login credentials — env, .env, then gitignored .maestro/.env E2E credentials.
+const TENANT_EMAIL = env('TENANT_EMAIL') || env('E2E_TENANT_EMAIL') || maestroEnv('TENANT_EMAIL');
+const TENANT_PASSWORD = env('TENANT_PASSWORD') || env('E2E_TENANT_PASSWORD') || maestroEnv('TENANT_PASSWORD');
+const VENDOR_EMAIL = env('VENDOR_EMAIL') || env('E2E_VENDOR_EMAIL') || maestroEnv('VENDOR_EMAIL');
+const VENDOR_PASSWORD = env('VENDOR_PASSWORD') || env('E2E_VENDOR_PASSWORD') || maestroEnv('VENDOR_PASSWORD');
+const OWNER_EMAIL = env('OWNER_EMAIL') || env('E2E_OWNER_EMAIL') || maestroEnv('OWNER_EMAIL');
+const OWNER_PASSWORD = env('OWNER_PASSWORD') || env('E2E_OWNER_PASSWORD') || maestroEnv('OWNER_PASSWORD');
+for (const [name, val] of [
+  ['TENANT_EMAIL', TENANT_EMAIL],
+  ['TENANT_PASSWORD', TENANT_PASSWORD],
+  ['VENDOR_EMAIL', VENDOR_EMAIL],
+  ['VENDOR_PASSWORD', VENDOR_PASSWORD],
+  ['OWNER_EMAIL', OWNER_EMAIL],
+  ['OWNER_PASSWORD', OWNER_PASSWORD],
+]) {
+  if (!val) {
+    console.error(`❌ Missing ${name} — set it in env, .env, or .maestro/.env`);
+    process.exit(1);
+  }
+}
 
 async function login(email, password) {
   const res = await fetch(

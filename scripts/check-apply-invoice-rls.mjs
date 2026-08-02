@@ -13,14 +13,22 @@
  * Usage:
  *   node scripts/check-apply-invoice-rls.mjs
  */
-const SUPABASE_URL =
-  process.env.SUPABASE_URL || 'https://vvepwaolnkzfzhzgxlwr.supabase.co';
-const ANON_KEY =
-  process.env.SUPABASE_ANON_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2ZXB3YW9sbmt6Znpoemd4bHdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM2ODAyODAsImV4cCI6MjA2OTI1NjI4MH0.WGoBvXa58a8hdaNL8hYm-q1xLBy8P7IgCxo0508QAIk';
-const PROJECT_REF = 'vvepwaolnkzfzhzgxlwr';
-const OWNER_EMAIL = process.env.OWNER_EMAIL || 'indraj.navin@gmail.com';
-const OWNER_PASSWORD = process.env.OWNER_PASSWORD || 'Nadene10_';
+import { env, maestroEnv } from './lib/load-env.mjs';
+
+const SUPABASE_URL = env('SUPABASE_URL') || env('EXPO_PUBLIC_SUPABASE_URL');
+const ANON_KEY = env('SUPABASE_ANON_KEY') || env('EXPO_PUBLIC_SUPABASE_ANON_KEY');
+if (!SUPABASE_URL || !ANON_KEY) {
+  console.error('❌ Missing SUPABASE_URL / SUPABASE_ANON_KEY — set them in env or .env');
+  process.exit(1);
+}
+const PROJECT_REF = new URL(SUPABASE_URL).hostname.split('.')[0];
+// Owner login — env, .env, then gitignored .maestro/.env E2E credentials.
+const OWNER_EMAIL = env('OWNER_EMAIL') || env('E2E_OWNER_EMAIL') || maestroEnv('OWNER_EMAIL');
+const OWNER_PASSWORD = env('OWNER_PASSWORD') || env('E2E_OWNER_PASSWORD') || maestroEnv('OWNER_PASSWORD');
+if (!OWNER_EMAIL || !OWNER_PASSWORD) {
+  console.error('❌ Missing OWNER_EMAIL / OWNER_PASSWORD — set them in env, .env, or .maestro/.env');
+  process.exit(1);
+}
 
 async function main() {
   // 1. Login as owner/admin

@@ -23,43 +23,48 @@ const corsHeaders = {
 };
 
 // ─── Signature Verification ──────────────────────────────────────────────────
-// ⚠️ MUST use phpUrlEncode to match the checkout function's encoding.
-// The checkout signs with phpUrlEncode (matching PHP's urlencode), and
-// PayFast's server verifies against the same encoding. If the webhook
-// uses a different encoding (e.g. encodeURIComponent), valid COMPLETE
-// ITNs will produce mismatched signatures → 403 → money stuck pending.
+// Must match PayFast's ITN verification (PHP sample): iterate received fields
+// IN ARRIVAL ORDER — do NOT sort alphabetically. Alphabetical sort is the API
+// format and will reject valid hosted-checkout ITNs.
 //
-// PHP's urlencode() vs JS's encodeURIComponent:
-//   Space: JS=%20, PHP=+  → convert %20 to +
-//   Asterisk: JS=%2A, PHP=*  → convert %2A to *
-//   Tilde: JS=~, PHP=%7E  → omitted (rare in PayFast params)
+// PHP urlencode parity: spaces as +, hex UPPERCASE, * unescaped.
 
+// PHP urlencode parity: spaces as +, hex UPPERCASE, and PHP's urlencode()
+// ALSO encodes the chars encodeURIComponent leaves unescaped (! ~ * ' ( )).
+//
+// ⚠️ KEEP IN SYNC: this function is duplicated byte-for-byte in
+//   supabase/functions/create-vendor-payment-checkout/index.ts and in
+//   scripts/probe-payfast-signature.mjs + scripts/simulate-vendor-payment-itn.mjs.
+//   A desync breaks ITN signature verification silently — edit all four.
 function phpUrlEncode(str: string): string {
-  return encodeURIComponent(str)
+  return encodeURIComponent(String(str).trim())
+    .replace(/%[0-9a-f]{2}/gi, (m) => m.toUpperCase())
     .replace(/%20/g, '+')
-    .replace(/%2A/g, '*');
+    .replace(/!/g, '%21')
+    .replace(/~/g, '%7E')
+    .replace(/\*/g, '%2A')
+    .replace(/'/g, '%27')
+    .replace(/\(/g, '%28')
+    .replace(/\)/g, '%29');
 }
 
-function verifyPayFastSignature(
-  params: Record<string, string>,
-  passphrase: string
-): boolean {
+function verifyPayFastSignature(params: Record<string, string>, passphrase: string): boolean {
   const receivedSig = params.signature;
   if (!receivedSig) return false;
 
-  // Build param string: sort alphabetically, exclude signature key
-  // Use phpUrlEncode to match PHP's urlencode (same as checkout function)
-  const sortedString = Object.entries(params)
-    .filter(([key]) => key !== 'signature')
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, value]) => `${key}=${phpUrlEncode(value)}`)
-    .join('&');
+  // Insertion order of the parsed form body (URLSearchParams → object preserves
+  // POST field order in modern runtimes). Matches PayFast's foreach ($pfData).
+  let pfOutput = '';
+  for (const [key, value] of Object.entries(params)) {
+    if (key === 'signature') continue;
+    if (value === '' || value == null) continue;
+    pfOutput += `${key}=${phpUrlEncode(value)}&`;
+  }
+  let stringToHash = pfOutput.slice(0, -1);
+  if (passphrase) {
+    stringToHash += `&passphrase=${phpUrlEncode(passphrase)}`;
+  }
 
-  const stringToHash = passphrase
-    ? `${sortedString}&passphrase=${phpUrlEncode(passphrase)}`
-    : sortedString;
-
-  // Compute MD5 using blueimp-md5 (works in Deno Edge Functions)
   const expectedSig = md5(stringToHash);
   return expectedSig.toLowerCase() === receivedSig.toLowerCase();
 }
@@ -279,13 +284,15 @@ async function sendPaymentNotification(
     // Fetch payment details for notification
     const { data: payment } = await supabase
       .from('payments')
-      .select(`
+      .select(
+        `
         id, amount, type,
         tenant_id, owner_id,
         leases!inner(
           properties!property_id(title)
         )
-      `)
+      `
+      )
       .eq('id', paymentId)
       .single();
 
@@ -302,9 +309,10 @@ async function sendPaymentNotification(
         user_id: (payment as any).owner_id,
         type: status === 'completed' ? 'payment_received' : 'payment_failed',
         title: status === 'completed' ? 'Payment Received' : 'Payment Failed',
-        body: status === 'completed'
-          ? `${type} of ${amountFormatted} received for ${propertyTitle}`
-          : `${type} of ${amountFormatted} failed for ${propertyTitle}`,
+        body:
+          status === 'completed'
+            ? `${type} of ${amountFormatted} received for ${propertyTitle}`
+            : `${type} of ${amountFormatted} failed for ${propertyTitle}`,
         data: { payment_id: paymentId, property_title: propertyTitle },
       } as any);
     }
@@ -315,9 +323,10 @@ async function sendPaymentNotification(
         user_id: (payment as any).tenant_id,
         type: status === 'completed' ? 'payment_confirmed' : 'payment_failed',
         title: status === 'completed' ? 'Payment Confirmed' : 'Payment Failed',
-        body: status === 'completed'
-          ? `Your ${type} of ${amountFormatted} has been received.`
-          : `Your ${type} of ${amountFormatted} was not successful. Please try again.`,
+        body:
+          status === 'completed'
+            ? `Your ${type} of ${amountFormatted} has been received.`
+            : `Your ${type} of ${amountFormatted} was not successful. Please try again.`,
         data: { payment_id: paymentId, property_title: propertyTitle },
       } as any);
     }
@@ -413,7 +422,9 @@ async function handleVendorPayFastItn(
   const amount = parseFloat(formData.amount_gross || '0');
   const fee = parseFloat(formData.fee || '0');
 
-  console.log(`📥 Vendor PayFast ITN: vp=${paymentId}, status=${paymentStatus}, tx=${transactionId}`);
+  console.log(
+    `📥 Vendor PayFast ITN: vp=${paymentId}, status=${paymentStatus}, tx=${transactionId}`
+  );
 
   // Fetch the vendor payment to verify it exists and get current state
   const { data: vp, error: vpError } = await supabase
@@ -445,13 +456,19 @@ async function handleVendorPayFastItn(
 
   // ── Amount verification ──────────────────────────────────────────────
   if (Math.abs(amount - vendorPayment.total_amount) > 0.01) {
-    console.error(`❌ Amount mismatch: ITN says ${amount}, vendor_payment says ${vendorPayment.total_amount}`);
+    console.error(
+      `❌ Amount mismatch: ITN says ${amount}, vendor_payment says ${vendorPayment.total_amount}`
+    );
     // Fail the payment so admin can investigate
     await supabase
       .from('vendor_payments')
       .update({
         payment_status: 'failed',
-        gateway_response: { error: 'Amount mismatch', itn_amount: amount, expected: vendorPayment.total_amount },
+        gateway_response: {
+          error: 'Amount mismatch',
+          itn_amount: amount,
+          expected: vendorPayment.total_amount,
+        },
         gateway_transaction_id: transactionId || null,
         gateway_fee: isNaN(fee) ? 0 : fee,
         updated_at: new Date().toISOString(),
@@ -481,7 +498,9 @@ async function handleVendorPayFastItn(
   // ── Only transition from pending|processing ──────────────────────────
   const allowedPrevStates = ['pending', 'processing'];
   if (!allowedPrevStates.includes(vendorPayment.payment_status)) {
-    console.log(`ℹ️ Vendor payment ${paymentId} status is ${vendorPayment.payment_status} — not transitioning`);
+    console.log(
+      `ℹ️ Vendor payment ${paymentId} status is ${vendorPayment.payment_status} — not transitioning`
+    );
     return new Response('OK', { status: 200 });
   }
 
@@ -514,7 +533,9 @@ async function handleVendorPayFastItn(
   }
 
   if (!updatedRows?.length) {
-    console.log(`ℹ️ Vendor payment ${paymentId} was already transitioned by another ITN — skipping side effects`);
+    console.log(
+      `ℹ️ Vendor payment ${paymentId} was already transitioned by another ITN — skipping side effects`
+    );
     return new Response('OK', { status: 200 });
   }
 
@@ -532,7 +553,7 @@ async function handleVendorPayFastItn(
     } catch (err) {
       console.error(`⚠️ Failed to send failure notification:`, err);
     }
-  }    // ── On completion: write ledger entries + update invoice + notify ─────
+  } // ── On completion: write ledger entries + update invoice + notify ─────
   if (newPaymentStatus === 'completed') {
     const gatewayFee = isNaN(fee) ? 0 : fee;
 
@@ -548,10 +569,13 @@ async function handleVendorPayFastItn(
         payment_reference: transactionId || null,
       } as any)
       .eq('id', vendorPayment.invoice_id)
-      .eq('status', 'approved');  // Atomic guard: only update if approved
+      .eq('status', 'approved'); // Atomic guard: only update if approved
 
     if (invoiceUpdateError) {
-      console.error(`⚠️ Failed to update invoice ${vendorPayment.invoice_id} to paid:`, invoiceUpdateError);
+      console.error(
+        `⚠️ Failed to update invoice ${vendorPayment.invoice_id} to paid:`,
+        invoiceUpdateError
+      );
       // Non-fatal — payment is still completed, invoice can be reconciled manually
     } else {
       console.log(`✅ Invoice ${vendorPayment.invoice_id} marked as paid`);
@@ -559,24 +583,33 @@ async function handleVendorPayFastItn(
 
     // Ledger: payment received
     await writeVendorLedgerEntry(
-      supabase, paymentId, 'payment_received',
-      vendorPayment.total_amount, vendorPayment.total_amount,
+      supabase,
+      paymentId,
+      'payment_received',
+      vendorPayment.total_amount,
+      vendorPayment.total_amount,
       'PayFast payment received'
     );
 
     // Ledger: platform fee
     const runningAfterFee = vendorPayment.total_amount - vendorPayment.platform_fee;
     await writeVendorLedgerEntry(
-      supabase, paymentId, 'platform_fee',
-      -vendorPayment.platform_fee, runningAfterFee,
+      supabase,
+      paymentId,
+      'platform_fee',
+      -vendorPayment.platform_fee,
+      runningAfterFee,
       `Platform fee (${vendorPayment.platform_fee_percent}%)`
     );
 
     // Ledger: gateway fee
     const runningAfterGateway = runningAfterFee - gatewayFee;
     await writeVendorLedgerEntry(
-      supabase, paymentId, 'gateway_fee',
-      -gatewayFee, runningAfterGateway,
+      supabase,
+      paymentId,
+      'gateway_fee',
+      -gatewayFee,
+      runningAfterGateway,
       'PayFast transaction fee'
     );
 
@@ -616,23 +649,21 @@ serve(async (req) => {
       const text = await req.text();
       const params = new URLSearchParams(text);
       const formData: Record<string, string> = {};
-      params.forEach((value, key) => { formData[key] = value; });
+      params.forEach((value, key) => {
+        formData[key] = value;
+      });
       return await handlePayFastItn(supabase, formData);
     } else {
       // Yoco webhook — JSON POST
       const body = await req.json();
       return await handleYocoWebhook(supabase, body);
     }
-
   } catch (error) {
     console.error('❌ Payment webhook error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Internal error', message: String(error) }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
-    );
+    return new Response(JSON.stringify({ error: 'Internal error', message: String(error) }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500,
+    });
   }
 });
 
