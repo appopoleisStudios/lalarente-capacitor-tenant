@@ -363,14 +363,56 @@ async function writeVendorLedgerEntry(
   }
 }
 
+/**
+ * Generate + upload the payment receipt PDF (Plane #62 slice 2).
+ * Best-effort and non-fatal: a receipt failure must never fail the ITN ack.
+ * Calls the generate-payment-receipt edge function with the service-role key.
+ */
+async function ensurePaymentReceipt(
+  supabaseUrl: string,
+  serviceKey: string,
+  vendorPaymentId: string
+): Promise<string | null> {
+  try {
+    const res = await fetch(`${supabaseUrl}/functions/v1/generate-payment-receipt`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${serviceKey}`,
+      },
+      body: JSON.stringify({ vendor_payment_id: vendorPaymentId }),
+    });
+    if (!res.ok) {
+      console.warn(`⚠️ Receipt generation returned HTTP ${res.status}`);
+      return null;
+    }
+    const data = await res.json();
+    return data.receipt_url || null;
+  } catch (err) {
+    console.error('⚠️ Failed to generate payment receipt:', err);
+    return null;
+  }
+}
+
 /** Send notification for vendor payment status changes */
 async function sendVendorPaymentNotification(
   supabase: ReturnType<typeof createClient>,
-  vendorPayment: any
+  vendorPayment: any,
+  receiptUrl?: string | null
 ): Promise<void> {
   try {
     const amountFormatted = `R ${(vendorPayment.total_amount || 0).toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`;
     const paymentId = vendorPayment.id;
+    // Data carries the receipt link so in-app deep links AND the email
+    // template's "View Receipt" button (emailTemplates payment_received) resolve.
+    const baseData: Record<string, unknown> = { vendor_payment_id: paymentId };
+    if (receiptUrl) {
+      // In-app download link only. NOTE (SA #118): NotificationType has NO
+      // 'payment_confirmed' / 'vendor_payment_*' email templates, so the
+      // email template's "View Receipt" button (payment_received only) can
+      // never render for vendor payments — keep the claim in-app.
+      baseData.receipt_url = receiptUrl;
+    }
 
     // Notify vendor
     if (vendorPayment.vendor_id) {
@@ -379,7 +421,7 @@ async function sendVendorPaymentNotification(
         type: 'vendor_payment_received',
         title: 'Payment Received for Maintenance Job',
         body: `Payment of ${amountFormatted} received. Payout will be processed according to your schedule.`,
-        data: { vendor_payment_id: paymentId },
+        data: baseData,
       } as any);
     }
 
@@ -390,7 +432,7 @@ async function sendVendorPaymentNotification(
         type: 'vendor_payment_completed',
         title: 'Vendor Payment Completed',
         body: `Payment of ${amountFormatted} has been completed for maintenance job.`,
-        data: { vendor_payment_id: paymentId },
+        data: baseData,
       } as any);
     }
 
@@ -401,7 +443,7 @@ async function sendVendorPaymentNotification(
         type: 'payment_confirmed',
         title: 'Payment Successful',
         body: `Your payment of ${amountFormatted} has been processed successfully.`,
-        data: { vendor_payment_id: paymentId },
+        data: baseData,
       } as any);
     }
 
@@ -613,8 +655,17 @@ async function handleVendorPayFastItn(
       'PayFast transaction fee'
     );
 
-    // Send notifications
-    await sendVendorPaymentNotification(supabase, vendorPayment);
+    // Send notifications (vendor/owner/tenant) — after the receipt is
+    // generated so the notification data carries the download link.
+    let receiptUrl: string | null = null;
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      receiptUrl = await ensurePaymentReceipt(supabaseUrl, supabaseServiceKey, paymentId);
+    } catch (err) {
+      console.error('⚠️ Receipt generation failed (non-fatal):', err);
+    }
+    await sendVendorPaymentNotification(supabase, vendorPayment, receiptUrl);
   }
 
   return new Response('OK', { status: 200 });

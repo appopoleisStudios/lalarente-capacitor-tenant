@@ -66,6 +66,34 @@ async function writeLedgerEntry(
 }
 
 /**
+ * Generate + upload the payment receipt PDF (Plane #62 slice 2).
+ * Best-effort and non-fatal, mirrors payment-webhook's ensurePaymentReceipt()
+ * — a receipt failure must never fail the reconcile run. Calls the
+ * generate-payment-receipt edge function with the service-role key.
+ */
+async function ensurePaymentReceipt(supabaseUrl, serviceKey, vendorPaymentId) {
+  try {
+    const res = await fetch(`${supabaseUrl}/functions/v1/generate-payment-receipt`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${serviceKey}`,
+      },
+      body: JSON.stringify({ vendor_payment_id: vendorPaymentId }),
+    });
+    if (!res.ok) {
+      console.warn(`⚠️ Receipt generation returned HTTP ${res.status}`);
+      return null;
+    }
+    const data = await res.json();
+    return data.receipt_url || null;
+  } catch (err) {
+    console.error('⚠️ Failed to generate payment receipt:', err);
+    return null;
+  }
+}
+
+/**
  * Query PayFast for the authoritative status of a payment.
  * Docs: https://developers.payfast.co.za/docs#query_api
  * Requires PAYFAST_MERCHANT_ID + PAYFAST_QUERY_TOKEN env vars.
@@ -296,14 +324,35 @@ serve(async (req) => {
           'PayFast transaction fee (reconciled)'
         );
 
-        // 3) Notifications — vendor / owner / tenant, same types as the webhook.
+        // 3) Receipt PDF — mirror the webhook so reconciled payments also get
+        //    their receipt (a late ITN skips receipt generation once the row
+        //    is completed; the generate-payment-receipt function is idempotent
+        //    and returns the cached URL if one already exists).
+        let receiptUrl = null;
+        try {
+          const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+          const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+          receiptUrl = await ensurePaymentReceipt(supabaseUrl, supabaseServiceKey, pay.id);
+        } catch (err) {
+          console.error('⚠️ Receipt generation failed (non-fatal):', err);
+        }
+
+        // 4) Notifications — vendor / owner / tenant, same types as the webhook.
         const amountFormatted = `R ${total.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`;
+        const baseData: Record<string, unknown> = { vendor_payment_id: pay.id };
+        if (receiptUrl) {
+          // In-app download link only. NOTE (SA #118): NotificationType has NO
+          // 'payment_confirmed' / 'vendor_payment_*' email templates, so the
+          // email template's "View Receipt" button (payment_received only) can
+          // never render for vendor payments — keep the claim in-app.
+          baseData.receipt_url = receiptUrl;
+        }
         await notify(
           supabase,
           pay.vendor_id,
           'Payment Received for Maintenance Job',
           `Payment of ${amountFormatted} received. Payout will be processed according to your schedule.`,
-          { vendor_payment_id: pay.id },
+          baseData,
           'vendor_payment_received'
         );
         await notify(
@@ -311,7 +360,7 @@ serve(async (req) => {
           pay.owner_id,
           'Vendor Payment Completed',
           `Payment of ${amountFormatted} has been completed for maintenance job.`,
-          { vendor_payment_id: pay.id },
+          baseData,
           'vendor_payment_completed'
         );
         await notify(
@@ -319,7 +368,7 @@ serve(async (req) => {
           pay.tenant_id,
           'Payment Successful',
           `Your payment of ${amountFormatted} has been processed successfully.`,
-          { vendor_payment_id: pay.id },
+          baseData,
           'payment_confirmed'
         );
       }

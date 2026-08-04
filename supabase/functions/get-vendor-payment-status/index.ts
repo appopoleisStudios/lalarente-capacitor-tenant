@@ -33,7 +33,10 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -63,13 +66,16 @@ serve(async (req) => {
     // ── Fetch once (include role ids for auth; omit gateway secrets) ─────
     const { data: payment, error: fetchError } = await supabase
       .from('vendor_payments')
-      .select(`
+      .select(
+        `
         id, tenant_id, vendor_id, owner_id,
         total_amount, platform_fee, platform_fee_percent, vendor_payout,
         payout_fee, payment_status, payout_status, dispute_status, paid_at,
+        receipt_url,
         created_at, updated_at,
         invoice:invoice_id(invoice_number, status, payer_role, line_items, subtotal, vat_amount)
-      `)
+      `
+      )
       .eq('id', paymentId)
       .single();
 
@@ -83,9 +89,7 @@ serve(async (req) => {
     const pmt = payment as any;
 
     const isParty =
-      pmt.tenant_id === user.id ||
-      pmt.vendor_id === user.id ||
-      pmt.owner_id === user.id;
+      pmt.tenant_id === user.id || pmt.vendor_id === user.id || pmt.owner_id === user.id;
 
     if (!isParty) {
       const { data: profile } = await supabase
@@ -115,6 +119,7 @@ serve(async (req) => {
         total_amount: pmt.total_amount,
         platform_fee: pmt.platform_fee,
         vendor_payout: pmt.vendor_payout,
+        receipt_url: pmt.receipt_url || null,
         invoice_number: invoice?.invoice_number || '',
         invoice_status: invoice?.status || '',
         created_at: pmt.created_at,
@@ -123,9 +128,9 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error('❌ get-vendor-payment-status error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Internal error', message: String(error) }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({ error: 'Internal error', message: String(error) }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });
