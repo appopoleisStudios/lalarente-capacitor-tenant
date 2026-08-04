@@ -1,0 +1,55 @@
+# Vendor Payment FULL SUITE (Plane #64)
+# Composed Maestro suite for the Tenant→Vendor payment flow.
+#
+# UI-verifiable scenarios:
+#   • Happy path            — reuses vendor-payment-flow.yaml (login → approved
+#                             tenant-payer invoice → invoice breakdown → Pay via
+#                             PayFast → in-app Secure Checkout) via runFlow.
+#   • Payer exclusivity     — the tenant vendor-payments list must NOT show an
+#                             approved OWNER-role invoice on the same request
+#                             (seeded by scripts/seed-owner-role-invoice.mjs).
+#                             Asserted with assertNotVisible below.
+#
+# Deterministic (non-UI) scenarios are driven by
+# scripts/verify-vendor-payment-scenarios.mjs through the REAL edge functions:
+#   • Payment failure → retry → success (FAILED ITN then COMPLETE ITN)
+#   • Payment cancellation (CANCELLED ITN)
+#   • Closure timeout (auto-approve after 72h via auto-approve-closures)
+#   • Dispute (tenant refuses → dispute opened → admin resolves)
+#   • Payout failure (wrong bank → vendor updates → retry)
+#
+# scripts/run-vendor-payment-full-suite.sh orchestrates:
+#   seed tenant invoice → seed owner invoice → this flow → verify scenarios.
+#
+# Prerequisites:
+#   - scripts/seed-tenant-vendor-invoice.mjs (APPROVED tenant-payer invoice)
+#   - scripts/seed-owner-role-invoice.mjs  (APPROVED owner-role invoice)
+appId: com.lalarente.app
+---
+# ── Phase A: Happy path (compose the proven Plane #60 flow) ──
+- runFlow: vendor-payment-flow.yaml
+
+# ── Phase B: Payer exclusivity ──
+# The happy path ends on the Pay Vendor DETAIL screen (checkout closed).
+# Return to the vendor-payments LIST via the tab bar (tabBarButtonTestID).
+- tapOn:
+    id: "tab-payments"
+
+# The seeded tenant-payer invoice (INV-TENANT-E2E-*) must render on the list.
+- extendedWaitUntil:
+    visible:
+      id: "vendor-payments-title"
+    timeout: 30000
+
+- assertVisible:
+    id: "invoice-number"
+
+# The seeded OWNER-role invoice (INV-OWNER-E2E-*) shares the tenant's
+# maintenance request but payer_role='owner' — the list query filters
+# payer_role='tenant', so its distinctive invoice number must NEVER render
+# for the tenant. Real-text negative assertion (no invented testID).
+- assertNotVisible:
+    text: "INV-OWNER-E2E"
+
+# ✅ Vendor payment full suite — UI-verifiable scenarios complete.
+# Follow-up (deterministic, non-UI): node scripts/verify-vendor-payment-scenarios.mjs

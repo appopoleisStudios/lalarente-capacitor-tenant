@@ -189,6 +189,30 @@ else
 fi
 
 # ════════════════════════════════════════════════════
+#  PHASE 1C: VENDOR PAYMENT FULL SUITE (Plane #64)
+#  seed tenant invoice → seed owner-role invoice → Maestro UI flow
+#  (vendor-payment-full-suite: happy path + payer exclusivity) →
+#  deterministic scenario verification (failure→retry, cancellation,
+#  closure timeout, dispute, payout failure→retry, payer exclusivity)
+#  through the REAL edge functions.
+# ════════════════════════════════════════════════════
+print_header "VENDOR PAYMENT FULL SUITE (Plane #64)"
+START=$(date +%s)
+set +e
+bash "$SCRIPT_DIR/run-vendor-payment-full-suite.sh" 2>&1
+EC=$?
+set -e
+END=$(date +%s)
+DURATION=$((END - START))
+if [ "$EC" -eq 0 ]; then
+  echo "    ✓ Vendor Payment Full Suite (${DURATION}s)" >> "$RESULTS_FILE"
+  PASSED=$((PASSED + 1))
+else
+  echo "    ✗ Vendor Payment Full Suite FAILED (${DURATION}s) — exit $EC" >> "$RESULTS_FILE"
+  FAILED=$((FAILED + 1))
+fi
+
+# ════════════════════════════════════════════════════
 #  CLEAR STATE → OWNER
 # ════════════════════════════════════════════════════
 print_header "SIGN OUT → OWNER"
