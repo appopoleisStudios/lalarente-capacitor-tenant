@@ -377,6 +377,20 @@ serve(async (req) => {
       }
     }
 
+    // ── Blocker 1 (SA #118): only completed payments get a receipt. ─────
+    // Refuse BEFORE build/upload so a non-completed payment can never get a
+    // public PDF URL — only the DB persist used to be guarded, which let a
+    // party trigger an upload and receive the URL for a pending/failed row.
+    if (payment.payment_status !== 'completed') {
+      return new Response(
+        JSON.stringify({
+          error: 'Payment not completed',
+          payment_status: payment.payment_status,
+        }),
+        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // ── Idempotency: receipt already generated? ─────────────────────────
     if (payment.receipt_url) {
       return new Response(JSON.stringify({ receipt_url: payment.receipt_url, cached: true }), {
@@ -396,7 +410,7 @@ serve(async (req) => {
       property = propRes.data;
     }
 
-    // ── Build + upload the PDF ──────────────────────────────────────────
+    // ── Build + upload the PDF (payment is verified 'completed' above) ──
     const pdfBytes = buildReceiptPdf({
       payment,
       invoice: payment.invoice,

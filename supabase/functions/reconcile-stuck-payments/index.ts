@@ -341,10 +341,11 @@ serve(async (req) => {
         const amountFormatted = `R ${total.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`;
         const baseData: Record<string, unknown> = { vendor_payment_id: pay.id };
         if (receiptUrl) {
-          // Both spellings: `receipt_url` for in-app readers, `receiptUrl` for
-          // the email template (emailTemplates.ts reads data.receiptUrl).
+          // In-app download link only. NOTE (SA #118): NotificationType has NO
+          // 'payment_confirmed' / 'vendor_payment_*' email templates, so the
+          // email template's "View Receipt" button (payment_received only) can
+          // never render for vendor payments — keep the claim in-app.
           baseData.receipt_url = receiptUrl;
-          baseData.receiptUrl = receiptUrl;
         }
         await notify(
           supabase,
