@@ -4,11 +4,14 @@
  * driven reliably through the UI (PayFast's hosted WebView is not automatable).
  *
  * Scenarios (all driven through the REAL edge functions / RLS-aware APIs):
+ *   S2 Payment cancellation — create checkout, CANCELLED ITN, assert
+ *      'cancelled' (tenant abandoned PayFast). Executed FIRST: a cancelled
+ *      payment is terminal but leaves the invoice payable.
  *   S1 Payment failure → retry → success — create checkout, FAILED ITN,
  *      assert 'failed', fresh checkout (retry), COMPLETE ITN, assert
  *      'completed' (mirrors the app's get-vendor-payment-status polling).
- *   S2 Payment cancellation — create checkout, CANCELLED ITN, assert
- *      'cancelled' (tenant abandoned PayFast).
+ *      Runs AFTER S2 so the invoice is still payable when the COMPLETE ITN
+ *      lands — otherwise the shared try would abort before S3–S6.
  *   S3 Closure timeout — seed a closure_reports row with auto_approve_at in
  *      the past + tenant_verification_status='pending_tenant', invoke the
  *      auto-approve-closures edge function (service-role key), assert it
@@ -352,8 +355,13 @@ async function main() {
   let completedPaymentId = null;
 
   try {
-    completedPaymentId = await scenarioFailureRetrySuccess(tenant, invoice);
+    // S2 (cancellation) BEFORE S1 (failure→retry→COMPLETE): a CANCELLED
+    // payment leaves the invoice payable, so S1's fresh checkouts still
+    // work. If S1 ran first, its COMPLETE ITN would mark the invoice paid
+    // and S2's checkout would be rejected — aborting the shared try before
+    // S3–S6.
     await scenarioCancellation(tenant, invoice);
+    completedPaymentId = await scenarioFailureRetrySuccess(tenant, invoice);
     await scenarioClosureTimeout(vendor, serviceKey);
     await scenarioDispute(serviceKey, completedPaymentId);
     await scenarioPayoutFailure(vendor, serviceKey, completedPaymentId);
