@@ -20,6 +20,25 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import { verifyAdmin } from '../_shared/admin.ts';
 
+// ─── Service-role auth helper ─────────────────────────────────────────────
+// The verifyAdmin helper checks for admin JWT (user token with admin profile).
+// For cron-triggered calls (which use the service-role key), we accept the
+// service-role key directly by comparing the raw token against the key from
+// the environment. This is unforgeable: a plain JWT payload decode would only
+// check the 'role' claim, which anyone can mint without a valid signature.
+
+function verifyServiceRole(authHeader: string, expectedKey: string): boolean {
+  const token = authHeader.replace('Bearer ', '').trim();
+  if (!token || !expectedKey) return false;
+  // Constant-time-ish comparison to avoid timing side-channels.
+  if (token.length !== expectedKey.length) return false;
+  let diff = 0;
+  for (let i = 0; i < token.length; i++) {
+    diff |= token.charCodeAt(i) ^ expectedKey.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -76,7 +95,8 @@ async function handleGetPayouts(
   // Fetch completed payments with any non-sent payout status
   const { data: pendingPayouts, error } = await supabase
     .from('vendor_payments')
-    .select(`
+    .select(
+      `
       id, vendor_id, total_amount, platform_fee, gateway_fee, payout_fee, vendor_payout,
       payment_status, payout_status, payout_method, payout_reference,
       payout_initiated_at, payout_completed_at, created_at, paid_at,
@@ -84,7 +104,8 @@ async function handleGetPayouts(
       maintenance_request:maintenance_request_id(title),
       vendor:vendor_id(full_name, email),
       tenant:tenant_id(full_name, email)
-    `)
+    `
+    )
     .eq('payment_status', 'completed')
     .in('payout_status', ['pending', 'processing', 'failed'])
     .order('created_at', { ascending: false });
@@ -103,27 +124,30 @@ async function handleGetPayouts(
   const mapped: MappedPayout[] = rows.map(mapPayoutRow);
 
   // Status-split counts
-  const pendingCount = mapped.filter(p => p.payout_status === 'pending').length;
-  const processingCount = mapped.filter(p => p.payout_status === 'processing').length;
-  const failedCount = mapped.filter(p => p.payout_status === 'failed').length;
+  const pendingCount = mapped.filter((p) => p.payout_status === 'pending').length;
+  const processingCount = mapped.filter((p) => p.payout_status === 'processing').length;
+  const failedCount = mapped.filter((p) => p.payout_status === 'failed').length;
 
   // True-pending sum for "Amount Owed" (only pending, not processing/failed)
   const amountOwed = mapped
-    .filter(p => p.payout_status === 'pending')
+    .filter((p) => p.payout_status === 'pending')
     .reduce((s, p) => s + p.vendor_payout, 0);
 
   // Total across all statuses (for complete picture)
   const totalAmount = mapped.reduce((s, p) => s + p.vendor_payout, 0);
 
   // Group the mapped rows by vendor_id
-  const byVendor = new Map<string, {
-    vendor_id: string;
-    full_name: string;
-    email: string | null;
-    payouts: MappedPayout[];
-    total_owed: number;
-    count: number;
-  }>();
+  const byVendor = new Map<
+    string,
+    {
+      vendor_id: string;
+      full_name: string;
+      email: string | null;
+      payouts: MappedPayout[];
+      total_owed: number;
+      count: number;
+    }
+  >();
 
   for (const payout of mapped) {
     const vid = payout.vendor_id;
@@ -156,7 +180,7 @@ async function handleGetPayouts(
       amount_owed: Math.round(amountOwed * 100) / 100,
       // Total across all statuses (for complete picture)
       total_amount: Math.round(totalAmount * 100) / 100,
-      by_vendor: Array.from(byVendor.values()).map(g => ({
+      by_vendor: Array.from(byVendor.values()).map((g) => ({
         ...g,
         total_owed: Math.round(g.total_owed * 100) / 100,
       })),
@@ -179,7 +203,9 @@ async function handleProcessPayouts(
   // Build query for pending payouts only
   let query = supabase
     .from('vendor_payments')
-    .select('id, total_amount, platform_fee, payout_fee, vendor_payout, payout_method, payout_status, vendor_id')
+    .select(
+      'id, total_amount, platform_fee, payout_fee, vendor_payout, payout_method, payout_status, vendor_id'
+    )
     .eq('payment_status', 'completed')
     .eq('payout_status', 'pending');
 
@@ -200,20 +226,22 @@ async function handleProcessPayouts(
 
   // Track which requested payout_ids were not found (already non-pending or don't exist)
   const foundIds = new Set(rows.map((r: any) => r.id));
-  const skippedIds = payout_ids && payout_ids.length > 0
-    ? payout_ids.filter(id => !foundIds.has(id))
-    : [];
+  const skippedIds =
+    payout_ids && payout_ids.length > 0 ? payout_ids.filter((id) => !foundIds.has(id)) : [];
 
   if (rows.length === 0) {
-    const response: Record<string, any> = { message: 'No pending payouts to process', processed: 0 };
+    const response: Record<string, any> = {
+      message: 'No pending payouts to process',
+      processed: 0,
+    };
     if (skippedIds.length > 0) {
       response.skipped_count = skippedIds.length;
       response.skipped_ids = skippedIds;
     }
-    return new Response(
-      JSON.stringify(response),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify(response), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 
   const now = new Date().toISOString();
@@ -235,7 +263,7 @@ async function handleProcessPayouts(
             updated_at: now,
           } as any)
           .eq('id', payout.id)
-          .eq('payout_status', 'pending');  // Guard: only if still pending
+          .eq('payout_status', 'pending'); // Guard: only if still pending
 
         if (updateError) {
           errors.push(`Failed to update ${payout.id}: ${updateError.message}`);
@@ -261,10 +289,10 @@ async function handleProcessPayouts(
     response.skipped_ids = skippedIds;
   }
 
-  return new Response(
-    JSON.stringify(response),
-    { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-  );
+  return new Response(JSON.stringify(response), {
+    status: 200,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
 }
 
 // ─── Main handler ─────────────────────────────────────────────────────────
@@ -280,6 +308,22 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const authHeader = req.headers.get('Authorization') || '';
 
+    // Accept either admin JWT (from admin dashboard) or service-role key (from cron)
+    const isServiceRole = verifyServiceRole(authHeader, supabaseServiceKey);
+
+    if (isServiceRole) {
+      // Cron-triggered call: use a synthetic admin user ID for audit logging.
+      // The service-role client has full access; no admin profile check needed.
+      if (req.method === 'GET') {
+        return await handleGetPayouts(supabase, '00000000-0000-0000-0000-000000000000');
+      }
+      if (req.method === 'POST') {
+        const body = await req.json();
+        return await handleProcessPayouts(supabase, '00000000-0000-0000-0000-000000000000', body);
+      }
+    }
+
+    // Admin JWT path (from admin dashboard)
     const { user, error: authError } = await verifyAdmin(supabase, authHeader);
     if (authError) return authError;
 
@@ -298,9 +342,9 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('❌ process-vendor-payouts error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Internal error', message: String(error) }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({ error: 'Internal error', message: String(error) }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });
