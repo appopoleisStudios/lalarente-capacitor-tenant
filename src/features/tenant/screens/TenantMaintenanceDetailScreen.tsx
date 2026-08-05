@@ -48,6 +48,14 @@ const MMS_STATUS_CONFIG: Record<string, { label: string; step: number }> = {
   completed: { label: 'Work Completed', step: 7 },
 };
 
+// Stable testIDs so Maestro E2E flows can drive the screen (Plane #61/#62).
+export const TENANT_MAINTENANCE_DETAIL_TEST_IDS = {
+  verifyWorkCta: 'maintenance-verify-work',
+  closureConfirmCta: 'maintenance-closure-confirm',
+  progressUpdate: 'maintenance-progress-update',
+  progressUpdatePhotos: 'maintenance-progress-update-photos',
+} as const;
+
 export default function TenantMaintenanceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [request, setRequest] = useState<any>(null);
@@ -250,6 +258,7 @@ export default function TenantMaintenanceDetailScreen() {
                   },
                 });
               }}
+              testID={TENANT_MAINTENANCE_DETAIL_TEST_IDS.verifyWorkCta}
             >
               <Ionicons name="checkmark-done-circle" size={24} color="#FFFFFF" />
               <View style={styles.verifyWorkTextContainer}>
@@ -280,6 +289,7 @@ export default function TenantMaintenanceDetailScreen() {
                     params: { id: id as string },
                   });
                 }}
+                testID={TENANT_MAINTENANCE_DETAIL_TEST_IDS.closureConfirmCta}
               >
                 <Ionicons name="camera" size={24} color="#FFFFFF" />
                 <View style={styles.verifyWorkTextContainer}>
@@ -330,13 +340,17 @@ export default function TenantMaintenanceDetailScreen() {
               <View
                 key={update.id}
                 style={[styles.updateCard, index > 0 && styles.updateCardMargin]}
+                testID={TENANT_MAINTENANCE_DETAIL_TEST_IDS.progressUpdate}
               >
                 <View style={styles.updateHeader}>
                   <Text style={styles.updateDate}>{formatDate(update.created_at)}</Text>
                 </View>
                 <Text style={styles.updateNote}>{update.notes}</Text>
                 {update.photos && update.photos.length > 0 && (
-                  <View style={styles.updatePhotos}>
+                  <View
+                    style={styles.updatePhotos}
+                    testID={TENANT_MAINTENANCE_DETAIL_TEST_IDS.progressUpdatePhotos}
+                  >
                     <MediaGallery images={update.photos} />
                   </View>
                 )}

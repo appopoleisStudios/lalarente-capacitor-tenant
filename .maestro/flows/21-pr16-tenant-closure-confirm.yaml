@@ -1,0 +1,160 @@
+# PR #114/#115 — Tenant closure-confirm screen + timeline progress photo
+# Drives the two screens shipped without Maestro coverage:
+#   A. Tenant detail "Confirm Completed Work" CTA → /maintenance/closure-confirm
+#      (vendor after-photos + notes, camera/gallery, notes input, submit CTA)
+#   B. Tenant timeline progress photo (progressUpdates[0].photos in the card)
+# Prerequisites:
+#   - node scripts/seed-tenant-closure-confirm.mjs (sets the request into
+#     closure-awaiting state + inserts a progress update with a photo)
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app-warm.yaml
+- runFlow: ../subflows/login-tenant.yaml
+- runFlow: ../subflows/tap-tenant-maintenance.yaml
+
+# The seed retitles the request to the deterministic string "E2E Closure Confirm",
+# so we open it by TEXT — no index-order assumptions. (Never tap "Chat with
+# Owner" — that opens the messages thread, not the request detail.)
+- extendedWaitUntil:
+    visible: "Maintenance"
+    timeout: 20000
+
+# POSITIVE list-screen marker: the "+" FAB only exists on the maintenance LIST
+# screen. A bare "Maintenance" text assert is ambiguous — the dashboard Quick
+# Actions grid ALSO renders "Maintenance", so that assert can pass while still
+# on the dashboard, and the scroll below would then scan the wrong screen.
+- extendedWaitUntil:
+    visible:
+      id: "maintenance-report-fab"
+    timeout: 10000
+    optional: true
+
+# Fallback: if the FAB never appeared we are NOT on the list — deep-link.
+- runFlow:
+    when:
+      notVisible:
+        id: "maintenance-report-fab"
+    commands:
+      - openLink: lalarenteapp:///(tenant)/maintenance
+      - extendedWaitUntil:
+          visible:
+            id: "maintenance-report-fab"
+          timeout: 15000
+
+# Bust any stale react-query list (pull-to-refresh) so the seeded retitle is
+# guaranteed to render even if the app resumed a warm session.
+- swipe:
+    start: 50%, 25%
+    end: 50%, 75%
+    duration: 600
+
+# Tap the seeded request by CARD TESTID (regex) index 0, NOT by title text:
+# the card's accessibility node is one combined element (status + title +
+# description concatenated), so an exact text: match on "E2E Closure Confirm"
+# can never resolve. The seed retitles the tenant's MOST RECENT request and the
+# list orders created_at DESC, so the seeded card is deterministically index 0.
+- extendedWaitUntil:
+    visible:
+      id: "maintenance-card-.*"
+    timeout: 20000
+
+- tapOn:
+    id: "maintenance-card-.*"
+    index: 0
+
+# Now on the detail screen — it shows a loading spinner first, then content.
+# KEY: extendedWaitUntil(visible) never SCROLLS, and the progress-photo card
+# sits near the BOTTOM of the detail scroll view — a bare visible-wait fails.
+# The closure CTA renders ABOVE the Progress Updates section, so we:
+#   1) scroll DOWN to the closure CTA (proves #114's gating logic renders)
+#   2) keep scrolling DOWN to the timeline photo (#115)
+#   3) scroll back UP to the CTA and enter closure-confirm
+
+# A. Closure-confirm CTA (#114) — "Confirm Completed Work"
+- scrollUntilVisible:
+    element:
+      id: "maintenance-closure-confirm"
+    direction: DOWN
+    timeout: 25000
+
+# B. Timeline progress photo (#115) — continue DOWN to the Progress Updates
+# card. Non-optional: the seed guarantees a progress row + photo, so a missing
+# card here is a real regression, not environment noise.
+- scrollUntilVisible:
+    element:
+      id: "maintenance-progress-update"
+    direction: DOWN
+    timeout: 20000
+- assertVisible:
+    id: "maintenance-progress-update"
+- scrollUntilVisible:
+    element:
+      id: "maintenance-progress-update-photos"
+    direction: DOWN
+    timeout: 15000
+    optional: true
+- assertVisible:
+    id: "maintenance-progress-update-photos"
+
+# Back UP to the closure CTA and enter the closure-confirm screen.
+- scrollUntilVisible:
+    element:
+      id: "maintenance-closure-confirm"
+    direction: UP
+    timeout: 20000
+
+- tapOn:
+    id: "maintenance-closure-confirm"
+
+# Closure-confirm screen renders: title, instruction, vendor photos, actions.
+# These are the screen's reason-to-exist (PR #114) — asserted non-optional.
+# NOTE: the loading state ALSO renders the header title, so waiting on the
+# title alone can pass mid-load. The instruction card only mounts after the
+# closure report fetch completes — wait on IT (non-optional) as the
+# load-complete gate, then assert the rest.
+- extendedWaitUntil:
+    visible:
+      id: "closure-confirm-title"
+    timeout: 20000
+
+- extendedWaitUntil:
+    visible:
+      id: "closure-confirm-instruction"
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: "closure-confirm-vendor-photos"
+    direction: DOWN
+    timeout: 15000
+- assertVisible:
+    text: "Vendor's After-Work Photos"
+- assertVisible:
+    text: "Vendor's Notes"
+    optional: true
+
+# Camera + Gallery entry points (the photo upload path)
+- scrollUntilVisible:
+    element:
+      id: "closure-confirm-camera"
+    direction: DOWN
+    timeout: 15000
+- assertVisible:
+    id: "closure-confirm-camera"
+- assertVisible:
+    id: "closure-confirm-gallery"
+
+# Notes input + submit CTA present (submit gated until 2 photos)
+- scrollUntilVisible:
+    element:
+      id: "closure-confirm-notes"
+    direction: DOWN
+    timeout: 15000
+- assertVisible:
+    id: "closure-confirm-notes"
+- scrollUntilVisible:
+    element:
+      id: "closure-confirm-submit"
+    direction: DOWN
+    timeout: 15000
+- assertVisible:
+    id: "closure-confirm-submit"

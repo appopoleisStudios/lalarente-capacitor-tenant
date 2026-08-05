@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, SafeAreaView, ActivityIndicator, RefreshControl, TouchableOpacity, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  SafeAreaView,
+  ActivityIndicator,
+  RefreshControl,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { messagesApi } from '@/src/features/messaging/api/messagesApi';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -18,7 +27,14 @@ export default function TenantMaintenanceListScreen() {
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
 
   // Real data from database - automatically filtered for tenant role
-  const { requests: allRequests, loading, error, refreshing, onRefresh, refetch } = useMaintenanceRequests();
+  const {
+    requests: allRequests,
+    loading,
+    error,
+    refreshing,
+    onRefresh,
+    refetch,
+  } = useMaintenanceRequests();
 
   // Refresh when screen comes into focus (after creating new request)
   useFocusEffect(
@@ -187,8 +203,7 @@ export default function TenantMaintenanceListScreen() {
                 <Text style={styles.emptySubtitle}>
                   {activeFilter === 'all'
                     ? 'Everything is working great!'
-                    : `No ${activeFilter.replace('_', ' ')} issues`
-                  }
+                    : `No ${activeFilter.replace('_', ' ')} issues`}
                 </Text>
                 {activeFilter === 'all' && (
                   <AnimatedButton onPress={handleReportIssue} testID="maintenance-report-cta">
@@ -205,61 +220,65 @@ export default function TenantMaintenanceListScreen() {
                     <AnimatedButton
                       onPress={() => handleCardPress(request.id)}
                       style={styles.cardPressable}
+                      testID={`maintenance-card-${request.id}`}
                     >
                       <View style={styles.card}>
-                      {/* Header */}
-                      <View style={styles.cardHeader}>
-                        <View style={styles.badges}>
-                          <StatusBadge status={request.status} size="small" />
-                          <PriorityIndicator priority={request.priority} size="small" />
+                        {/* Header */}
+                        <View style={styles.cardHeader}>
+                          <View style={styles.badges}>
+                            <StatusBadge status={request.status} size="small" />
+                            <PriorityIndicator priority={request.priority} size="small" />
+                          </View>
+                          <Text style={styles.date}>{formatDate(request.created_at)}</Text>
                         </View>
-                        <Text style={styles.date}>{formatDate(request.created_at)}</Text>
-                      </View>
 
-                      {/* Title */}
-                      <Text style={styles.title} numberOfLines={1}>
-                        {request.title}
-                      </Text>
+                        {/* Title */}
+                        <Text style={styles.title} numberOfLines={1}>
+                          {request.title}
+                        </Text>
 
-                      {/* Description */}
-                      <Text style={styles.description} numberOfLines={2}>
-                        {request.description}
-                      </Text>
+                        {/* Description */}
+                        <Text style={styles.description} numberOfLines={2}>
+                          {request.description}
+                        </Text>
 
-                      {/* Property & Category */}
-                      <View style={styles.meta}>
-                        {request.property && (
-                          <View style={[styles.metaItem, styles.metaItemStacked]}>
-                            <Text style={styles.metaIcon}>📍</Text>
-                            <View style={styles.metaTextBlock}>
-                              <Text style={styles.metaText} numberOfLines={1}>
-                                {request.property.title}
-                              </Text>
-                              {request.property.address ? (
-                                <Text style={styles.metaSubText} numberOfLines={1}>
-                                  {request.property.address}
-                                  {request.property.city ? `, ${request.property.city}` : ''}
+                        {/* Property & Category */}
+                        <View style={styles.meta}>
+                          {request.property && (
+                            <View style={[styles.metaItem, styles.metaItemStacked]}>
+                              <Text style={styles.metaIcon}>📍</Text>
+                              <View style={styles.metaTextBlock}>
+                                <Text style={styles.metaText} numberOfLines={1}>
+                                  {request.property.title}
                                 </Text>
-                              ) : null}
+                                {request.property.address ? (
+                                  <Text style={styles.metaSubText} numberOfLines={1}>
+                                    {request.property.address}
+                                    {request.property.city ? `, ${request.property.city}` : ''}
+                                  </Text>
+                                ) : null}
+                              </View>
                             </View>
-                          </View>
-                        )}
-                        {request.category && (
-                          <View style={styles.metaItem}>
-                            <Text style={styles.metaIcon}>🔧</Text>
-                            <Text style={styles.metaText}>{request.category.name}</Text>
+                          )}
+                          {request.category && (
+                            <View style={styles.metaItem}>
+                              <Text style={styles.metaIcon}>🔧</Text>
+                              <Text style={styles.metaText}>{request.category.name}</Text>
+                            </View>
+                          )}
+                        </View>
+
+                        {/* Vendor Info (if assigned) */}
+                        {request.assigned_vendor && (
+                          <View style={styles.vendorInfo}>
+                            <Text style={styles.vendorLabel}>Assigned to:</Text>
+                            <Text style={styles.vendorName}>
+                              {request.assigned_vendor.company_name ||
+                                request.assigned_vendor.full_name}
+                            </Text>
                           </View>
                         )}
                       </View>
-
-                      {/* Vendor Info (if assigned) */}
-                      {request.assigned_vendor && (
-                        <View style={styles.vendorInfo}>
-                          <Text style={styles.vendorLabel}>Assigned to:</Text>
-                          <Text style={styles.vendorName}>{request.assigned_vendor.company_name || request.assigned_vendor.full_name}</Text>
-                        </View>
-                      )}
-                    </View>
                     </AnimatedButton>
                     <View style={styles.cardActions}>
                       <TouchableOpacity
