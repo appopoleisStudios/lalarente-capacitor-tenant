@@ -34,6 +34,17 @@ const RSA = { blue: '#002395', green: '#007A4D', gold: '#FFB81C', red: '#DE3831'
 
 const MIN_PHOTOS_REQUIRED = 2;
 
+// Stable testIDs so Maestro E2E flows can drive the screen (Plane #61).
+export const CLOSURE_CONFIRM_TEST_IDS = {
+  title: 'closure-confirm-title',
+  instruction: 'closure-confirm-instruction',
+  vendorPhotos: 'closure-confirm-vendor-photos',
+  camera: 'closure-confirm-camera',
+  gallery: 'closure-confirm-gallery',
+  notes: 'closure-confirm-notes',
+  submit: 'closure-confirm-submit',
+} as const;
+
 export default function TenantClosureConfirmScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
@@ -105,7 +116,9 @@ export default function TenantClosureConfirmScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
             <Ionicons name="arrow-back" size={24} color="#111827" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Confirm Closure</Text>
+          <Text style={styles.headerTitle} testID={CLOSURE_CONFIRM_TEST_IDS.title}>
+            Confirm Closure
+          </Text>
           <View style={styles.headerButton} />
         </View>
         <View style={styles.loadingContainer}>
@@ -123,7 +136,9 @@ export default function TenantClosureConfirmScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
           <Ionicons name="arrow-back" size={24} color="#111827" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Confirm Closure</Text>
+        <Text style={styles.headerTitle} testID={CLOSURE_CONFIRM_TEST_IDS.title}>
+          Confirm Closure
+        </Text>
         <View style={styles.headerButton} />
       </View>
 
@@ -133,7 +148,7 @@ export default function TenantClosureConfirmScreen() {
       >
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* Instruction card */}
-          <View style={styles.instructionCard}>
+          <View style={styles.instructionCard} testID={CLOSURE_CONFIRM_TEST_IDS.instruction}>
             <Ionicons name="checkmark-done-circle" size={28} color={RSA.green} />
             <View style={styles.instructionTextWrap}>
               <Text style={styles.instructionTitle}>Work Completed?</Text>
@@ -145,7 +160,7 @@ export default function TenantClosureConfirmScreen() {
           </View>
 
           {/* Vendor's after-work photos */}
-          <View style={styles.section}>
+          <View style={styles.section} testID={CLOSURE_CONFIRM_TEST_IDS.vendorPhotos}>
             <Text style={styles.label}>Vendor's After-Work Photos</Text>
             {vendorAfterPhotos.length > 0 ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -199,11 +214,19 @@ export default function TenantClosureConfirmScreen() {
 
             {canAddMore && (
               <View style={styles.addPhotoRow}>
-                <TouchableOpacity style={styles.addPhotoButton} onPress={takePhoto}>
+                <TouchableOpacity
+                  style={styles.addPhotoButton}
+                  onPress={takePhoto}
+                  testID={CLOSURE_CONFIRM_TEST_IDS.camera}
+                >
                   <Ionicons name="camera" size={24} color={RSA.blue} />
                   <Text style={styles.addPhotoText}>Camera</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.addPhotoButton} onPress={pickMedia}>
+                <TouchableOpacity
+                  style={styles.addPhotoButton}
+                  onPress={pickMedia}
+                  testID={CLOSURE_CONFIRM_TEST_IDS.gallery}
+                >
                   <Ionicons name="images" size={24} color={RSA.blue} />
                   <Text style={styles.addPhotoText}>Gallery</Text>
                 </TouchableOpacity>
@@ -223,6 +246,7 @@ export default function TenantClosureConfirmScreen() {
               value={notes}
               onChangeText={setNotes}
               textAlignVertical="top"
+              testID={CLOSURE_CONFIRM_TEST_IDS.notes}
             />
           </View>
 
@@ -239,6 +263,7 @@ export default function TenantClosureConfirmScreen() {
           ]}
           onPress={handleSubmit}
           disabled={!hasMinPhotos || submitting}
+          testID={CLOSURE_CONFIRM_TEST_IDS.submit}
         >
           {submitting ? (
             <ActivityIndicator color="#FFFFFF" />
