@@ -22,12 +22,17 @@
 CREATE OR REPLACE FUNCTION public.admin_vendor_evidence(p_mr_id uuid)
 RETURNS jsonb
 LANGUAGE plpgsql
+SECURITY DEFINER
 SET search_path = public
 STABLE
 AS $$
 DECLARE
   result jsonb;
 BEGIN
+  IF NOT public.is_admin() THEN
+    RAISE EXCEPTION 'Access denied: admin role required';
+  END IF;
+
   SELECT jsonb_build_object(
     'photos', (
       SELECT COALESCE(jsonb_agg(

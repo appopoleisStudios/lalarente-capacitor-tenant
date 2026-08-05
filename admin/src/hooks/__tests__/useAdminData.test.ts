@@ -86,14 +86,48 @@ describe('useAdminData', () => {
   it('passes params to the RPC call', async () => {
     mockRpc.mockResolvedValue({ data: [], error: null });
 
-    renderHook(() =>
-      useAdminData('admin_toggle_dev_admin', { target_user_id: 'abc' })
-    );
+    renderHook(() => useAdminData('admin_toggle_dev_admin', { target_user_id: 'abc' }));
 
     await waitFor(() => {
       expect(mockRpc).toHaveBeenCalledWith('admin_toggle_dev_admin', {
         target_user_id: 'abc',
       });
+    });
+  });
+
+  it('does not call the RPC when enabled is false', async () => {
+    renderHook(() => useAdminData('admin_get_vendor_transaction_detail', undefined, false));
+
+    // Give the effect a chance to run — the RPC must never fire.
+    await new Promise((r) => setTimeout(r, 50));
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
+
+  it('fires the RPC when enabled flips from false to true', async () => {
+    mockRpc.mockResolvedValue({ data: { id: 'x' }, error: null });
+
+    const { result, rerender } = renderHook(
+      ({ enabled }: { enabled: boolean }) =>
+        useAdminData(
+          'admin_get_vendor_transaction_detail',
+          enabled ? { p_payment_id: 'abc' } : undefined,
+          enabled
+        ),
+      { initialProps: { enabled: false } }
+    );
+
+    // While disabled: no RPC, not loading.
+    await new Promise((r) => setTimeout(r, 50));
+    expect(mockRpc).not.toHaveBeenCalled();
+    expect(result.current.loading).toBe(false);
+
+    // Enable -> refetch fires with the real params.
+    rerender({ enabled: true });
+    await waitFor(() => {
+      expect(mockRpc).toHaveBeenCalledWith('admin_get_vendor_transaction_detail', {
+        p_payment_id: 'abc',
+      });
+      expect(result.current.data).toEqual({ id: 'x' });
     });
   });
 });
