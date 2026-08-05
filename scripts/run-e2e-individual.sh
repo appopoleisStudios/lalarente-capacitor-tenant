@@ -87,6 +87,31 @@ run_payment_e2e() {
   fi
 }
 run_payment_e2e
+
+# ── TENANT CLOSURE CONFIRM + TIMELINE PHOTO (Plane #61/#62) ──
+# Orchestrated end-to-end: seed closure state → Maestro UI flow
+# (closure-confirm screen + timeline progress photo card).
+run_closure_e2e() {
+  echo ""
+  echo "━━ TENANT › Closure Confirm + Timeline Photo (Plane #61/#62)"
+  local output
+  output=$(bash scripts/run-tenant-closure-e2e.sh 2>&1)
+  local ec=$?
+  local slug="tenant-closure-confirm"
+  xcrun simctl io "$UDID" screenshot "/tmp/lalarente-ss-TENANT-${slug}.png" 2>/dev/null
+  if [ $ec -eq 0 ]; then
+    echo "  ✅ PASS — Closure Confirm (Plane #61/#62)"
+    echo "PASS | TENANT | Closure Confirm (Plane #61/#62)" >> "$REPORT_FILE"
+    PASS=$((PASS+1))
+  else
+    echo "  ❌ FAIL — Closure Confirm (Plane #61/#62)"
+    local err=$(echo "$output" | grep -E "FAILED|✗|Error|error" | tail -3)
+    echo "  ↳ $err"
+    echo "FAIL | TENANT | Closure Confirm (Plane #61/#62) | $err" >> "$REPORT_FILE"
+    FAIL=$((FAIL+1))
+  fi
+}
+run_closure_e2e
 run_flow "client-feedback/s2-26-tenant-profile-docs" "S2-26: Profile+POA Upload"   "TENANT" "${T_ENV[@]}"
 run_flow "client-feedback/s2-31-tenant-contact-owner" "S2-31: Contact Owner"       "TENANT" "${T_ENV[@]}"
 run_flow "client-feedback/s2-32-tenant-payments" "S2-32: Payments History"         "TENANT" "${T_ENV[@]}"

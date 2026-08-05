@@ -213,6 +213,27 @@ else
 fi
 
 # ════════════════════════════════════════════════════
+#  PHASE 1D: TENANT CLOSURE CONFIRM + TIMELINE PHOTO (Plane #61/#62)
+#  seed closure state → Maestro UI flow (closure-confirm screen, after-work
+#  photos, timeline progress photo). Mirrors the payment-happy-path wiring.
+# ════════════════════════════════════════════════════
+print_header "TENANT CLOSURE CONFIRM (Plane #61/#62)"
+START=$(date +%s)
+set +e
+bash "$SCRIPT_DIR/run-tenant-closure-e2e.sh" 2>&1
+EC=$?
+set -e
+END=$(date +%s)
+DURATION=$((END - START))
+if [ "$EC" -eq 0 ]; then
+  echo "    ✓ Tenant Closure Confirm (${DURATION}s)" >> "$RESULTS_FILE"
+  PASSED=$((PASSED + 1))
+else
+  echo "    ✗ Tenant Closure Confirm FAILED (${DURATION}s) — exit $EC" >> "$RESULTS_FILE"
+  FAILED=$((FAILED + 1))
+fi
+
+# ════════════════════════════════════════════════════
 #  CLEAR STATE → OWNER
 # ════════════════════════════════════════════════════
 print_header "SIGN OUT → OWNER"
