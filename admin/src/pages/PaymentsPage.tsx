@@ -1,7 +1,20 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAdminData } from '../hooks/useAdminData';
-import type { PaymentStats, VendorRevenueStats, VendorTransactionRow, VendorDisputeRow } from '../types/admin';
+import RevenueChart from '../components/RevenueChart';
+import TransactionFilters from '../components/TransactionFilters';
+import TransactionDetailModal from '../components/TransactionDetailModal';
+import EvidenceGallery from '../components/EvidenceGallery';
+import type {
+  PaymentStats,
+  RevenuePoint,
+  VendorDisputeRow,
+  VendorPartyOptions,
+  VendorRevenueStats,
+  VendorTransactionDetail,
+  VendorTransactionFilters,
+  VendorTransactionRow,
+} from '../types/admin';
 
 type Tab = 'rent' | 'vendor-revenue' | 'disputes';
 
@@ -75,7 +88,8 @@ function RentPaymentsTab() {
   const { data: stats, loading, error } = useAdminData<PaymentStats>('admin_get_payment_stats');
 
   if (loading) return <LoadingSpinner />;
-  if (error) return <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>;
+  if (error)
+    return <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>;
 
   const cards = [
     {
@@ -83,7 +97,8 @@ function RentPaymentsTab() {
       value: stats?.total_payments.toLocaleString() ?? '0',
       icon: '💳',
       color: 'bg-blue-50 text-blue-700',
-      tooltip: 'All tenant rent payments ever created on the platform, regardless of status — paid, pending, overdue, or failed. Each row in the payments table counts as one transaction.',
+      tooltip:
+        'All tenant rent payments ever created on the platform, regardless of status — paid, pending, overdue, or failed. Each row in the payments table counts as one transaction.',
     },
     {
       label: 'Successful Payments',
@@ -97,36 +112,43 @@ function RentPaymentsTab() {
       value: stats?.overdue_payments.toLocaleString() ?? '0',
       icon: '⚠️',
       color: 'bg-red-50 text-red-700',
-      tooltip: 'Rent payments past their due date that have not been paid yet. These represent active collection risk.',
+      tooltip:
+        'Rent payments past their due date that have not been paid yet. These represent active collection risk.',
     },
     {
       label: 'Active Disputes',
       value: stats?.active_disputes.toLocaleString() ?? '0',
       icon: '⚖️',
       color: 'bg-amber-50 text-amber-700',
-      tooltip: 'Payment disputes raised by tenants that are still open or under review. Resolved/rejected disputes are excluded.',
+      tooltip:
+        'Payment disputes raised by tenants that are still open or under review. Resolved/rejected disputes are excluded.',
     },
     {
       label: 'Total Arrears Owed',
       value: `R ${(stats?.total_arrears ?? 0).toLocaleString()}`,
       icon: '📉',
       color: 'bg-orange-50 text-orange-700',
-      tooltip: 'Sum of all outstanding arrears across every tenant where the escalation has not yet been resolved. This is the total amount in the arrears escalation pipeline.',
+      tooltip:
+        'Sum of all outstanding arrears across every tenant where the escalation has not yet been resolved. This is the total amount in the arrears escalation pipeline.',
     },
     {
       label: 'Payment Success Rate',
-      value: (stats?.total_payments ?? 0) > 0
-        ? `${Math.round(((stats?.paid_payments ?? 0) / (stats?.total_payments ?? 1)) * 100)}%`
-        : '—',
+      value:
+        (stats?.total_payments ?? 0) > 0
+          ? `${Math.round(((stats?.paid_payments ?? 0) / (stats?.total_payments ?? 1)) * 100)}%`
+          : '—',
       icon: '📊',
       color: 'bg-violet-50 text-violet-700',
-      tooltip: 'Percentage of all rent payments that were successfully paid. Calculated as (successful payments ÷ total transactions) × 100.',
+      tooltip:
+        'Percentage of all rent payments that were successfully paid. Calculated as (successful payments ÷ total transactions) × 100.',
     },
   ];
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {cards.map((s) => <Card key={s.label} {...s} />)}
+      {cards.map((s) => (
+        <Card key={s.label} {...s} />
+      ))}
     </div>
   );
 }
@@ -134,11 +156,61 @@ function RentPaymentsTab() {
 // ─── Vendor Revenue Tab ─────────────────────────────────────────────────
 
 function VendorRevenueTab() {
-  const { data: stats, loading, error } = useAdminData<VendorRevenueStats>('admin_get_vendor_revenue_summary');
-  const { data: transactions, loading: txLoading, error: txError } = useAdminData<VendorTransactionRow[]>('admin_get_vendor_transactions');
+  const [rangeDays, setRangeDays] = useState(30);
+  const [filters, setFilters] = useState<VendorTransactionFilters>({
+    payment_status: null,
+    from: null,
+    to: null,
+    vendor_id: null,
+    tenant_id: null,
+  });
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const {
+    data: stats,
+    loading,
+    error,
+  } = useAdminData<VendorRevenueStats>('admin_get_vendor_revenue_summary');
+  const { data: series, loading: seriesLoading } = useAdminData<RevenuePoint[]>(
+    'admin_get_vendor_revenue_series',
+    { p_days: rangeDays }
+  );
+  const { data: options } = useAdminData<VendorPartyOptions>('admin_get_vendor_party_options');
+
+  const txParams = useCallback(() => {
+    const p: Record<string, unknown> = { p_limit: 100 };
+    if (filters.payment_status) p.p_payment_status = filters.payment_status;
+    if (filters.from) p.p_from = `${filters.from}T00:00:00Z`;
+    if (filters.to) p.p_to = `${filters.to}T23:59:59Z`;
+    if (filters.vendor_id) p.p_vendor_id = filters.vendor_id;
+    if (filters.tenant_id) p.p_tenant_id = filters.tenant_id;
+    return p;
+  }, [filters]);
+
+  const {
+    data: transactions,
+    loading: txLoading,
+    error: txError,
+  } = useAdminData<VendorTransactionRow[]>('admin_get_vendor_transactions', txParams());
+
+  const {
+    data: detail,
+    loading: detailLoading,
+    error: detailError,
+  } = useAdminData<VendorTransactionDetail>(
+    'admin_get_vendor_transaction_detail',
+    selectedId
+      ? { p_payment_id: selectedId }
+      : { p_payment_id: '00000000-0000-0000-0000-000000000000' }
+  );
+
+  const clearFilters = useCallback(() => {
+    setFilters({ payment_status: null, from: null, to: null, vendor_id: null, tenant_id: null });
+  }, []);
 
   if (loading) return <LoadingSpinner />;
-  if (error) return <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>;
+  if (error)
+    return <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>;
 
   const cards = [
     {
@@ -146,119 +218,201 @@ function VendorRevenueTab() {
       value: `R ${(stats?.gross_collected ?? 0).toLocaleString()}`,
       icon: '💰',
       color: 'bg-emerald-50 text-emerald-700',
-      tooltip: 'Total amount collected from all completed vendor payments before any deductions. This is what was charged to tenants/owners for vendor services.',
+      tooltip:
+        'Total amount collected from all completed vendor payments before any deductions. This is what was charged to tenants/owners for vendor services.',
     },
     {
       label: 'Platform Fees',
       value: `R ${(stats?.platform_fees ?? 0).toLocaleString()}`,
       icon: '📈',
       color: 'bg-blue-50 text-blue-700',
-      tooltip: 'Total platform commission earned from completed vendor payments. This is the platform\'s revenue before gateway processing fees.',
+      tooltip:
+        "Total platform commission earned from completed vendor payments. This is the platform's revenue before gateway processing fees.",
     },
     {
       label: 'Net Revenue',
       value: `R ${(stats?.net_revenue ?? 0).toLocaleString()}`,
       icon: '📊',
       color: 'bg-violet-50 text-violet-700',
-      tooltip: 'Platform revenue after deducting payment gateway processing fees. Calculated as platform_fees minus gateway_fees.',
+      tooltip:
+        'Platform revenue after deducting payment gateway processing fees. Calculated as platform_fees minus gateway_fees.',
     },
     {
       label: 'Pending Payouts',
       value: `R ${(stats?.pending_payouts_total ?? 0).toLocaleString()}`,
       icon: '⏳',
       color: 'bg-amber-50 text-amber-700',
-      tooltip: 'Total amount that has been collected from customers but not yet paid out to vendors. Payments are completed but payout status is pending or processing.',
+      tooltip:
+        'Total amount that has been collected from customers but not yet paid out to vendors. Payments are completed but payout status is pending or processing.',
     },
     {
       label: '30d Revenue',
       value: `R ${(stats?.revenue_30d ?? 0).toLocaleString()}`,
       icon: '📅',
       color: 'bg-indigo-50 text-indigo-700',
-      tooltip: 'Net platform revenue generated from vendor payments in the last 30 days. Useful for month-over-month comparison.',
+      tooltip:
+        'Net platform revenue generated from vendor payments in the last 30 days. Useful for month-over-month comparison.',
     },
     {
       label: '7d Revenue',
       value: `R ${(stats?.revenue_7d ?? 0).toLocaleString()}`,
       icon: '🔥',
       color: 'bg-orange-50 text-orange-700',
-      tooltip: 'Net platform revenue generated from vendor payments in the last 7 days. A quick pulse check on recent business activity.',
+      tooltip:
+        'Net platform revenue generated from vendor payments in the last 7 days. A quick pulse check on recent business activity.',
     },
     {
       label: 'Completed',
       value: (stats?.completed_count ?? 0).toLocaleString(),
       icon: '✅',
       color: 'bg-emerald-50 text-emerald-700',
-      tooltip: 'Number of vendor payments that have been fully completed — payment collected and processed successfully.',
+      tooltip:
+        'Number of vendor payments that have been fully completed — payment collected and processed successfully.',
     },
     {
       label: 'Active Disputes',
       value: (stats?.active_disputes ?? 0).toLocaleString(),
       icon: '⚖️',
       color: 'bg-red-50 text-red-700',
-      tooltip: 'Vendor payment disputes that are currently opened or escalated. These require admin review and resolution.',
+      tooltip:
+        'Vendor payment disputes that are currently opened or escalated. These require admin review and resolution.',
     },
   ];
+
+  const txCount = transactions?.length ?? 0;
 
   return (
     <div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map((s) => <Card key={s.label} {...s} />)}
+        {cards.map((s) => (
+          <Card key={s.label} {...s} />
+        ))}
       </div>
 
-      {/* Recent transactions */}
+      {/* Revenue over time chart */}
       <div className="mt-8">
-        <h2 className="mb-4 text-lg font-bold text-slate-900">Recent Transactions</h2>
-        {txLoading ? (
-          <LoadingSpinner />
-        ) : txError ? (
-          <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{txError}</div>
-        ) : !transactions || transactions.length === 0 ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
-            <p className="text-sm text-slate-400">No vendor payment transactions yet.</p>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-slate-900">Revenue Over Time</h2>
+          <div className="flex gap-1 rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
+            {[7, 30, 90].map((d) => (
+              <button
+                key={d}
+                onClick={() => setRangeDays(d)}
+                className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                  rangeDays === d ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-50'
+                }`}
+              >
+                {d}d
+              </button>
+            ))}
+          </div>
+        </div>
+        {seriesLoading ? (
+          <div className="flex items-center justify-center rounded-xl border border-slate-200 bg-white p-12">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" />
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-slate-200 bg-slate-50">
-                  <tr>
-                    <th className="px-4 py-3 font-semibold text-slate-600">Invoice</th>
-                    <th className="px-4 py-3 font-semibold text-slate-600">Vendor</th>
-                    <th className="px-4 py-3 font-semibold text-slate-600">Job</th>
-                    <th className="px-4 py-3 font-semibold text-slate-600">Amount</th>
-                    <th className="px-4 py-3 font-semibold text-slate-600">Fee</th>
-                    <th className="px-4 py-3 font-semibold text-slate-600">Net</th>
-                    <th className="px-4 py-3 font-semibold text-slate-600">Status</th>
-                    <th className="px-4 py-3 font-semibold text-slate-600">Paid</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {transactions.map((tx) => (
-                    <tr key={tx.id} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 font-medium text-slate-900">{tx.invoice_number || '—'}</td>
-                      <td className="px-4 py-3 text-slate-500">{tx.vendor_name || '—'}</td>
-                      <td className="px-4 py-3 text-slate-500 max-w-[200px] truncate">{tx.maintenance_title || '—'}</td>
-                      <td className="px-4 py-3 font-medium text-slate-900">R {tx.total_amount.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-slate-500">R {tx.platform_fee.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-emerald-600 font-medium">R {(tx.net_revenue ?? 0).toLocaleString()}</td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          tx.payment_status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
-                          tx.payment_status === 'failed' ? 'bg-red-100 text-red-700' :
-                          tx.payment_status === 'processing' ? 'bg-blue-100 text-blue-700' :
-                          'bg-slate-100 text-slate-600'
-                        }`}>{tx.payment_status}</span>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-slate-400">
-                        {tx.paid_at ? new Date(tx.paid_at).toLocaleDateString('en-ZA') : '—'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <RevenueChart data={series ?? []} />
         )}
+      </div>
+
+      {/* Transactions with filters */}
+      <div className="mt-8">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-slate-900">Transactions</h2>
+          <p className="text-xs text-slate-400">{txCount} shown · filters apply</p>
+        </div>
+
+        <TransactionFilters
+          options={options}
+          filters={filters}
+          onChange={setFilters}
+          onClear={clearFilters}
+        />
+
+        <div className="mt-4">
+          {txLoading ? (
+            <LoadingSpinner />
+          ) : txError ? (
+            <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{txError}</div>
+          ) : !transactions || transactions.length === 0 ? (
+            <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
+              <p className="text-sm text-slate-400">
+                No vendor payment transactions match these filters.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="border-b border-slate-200 bg-slate-50">
+                    <tr>
+                      <th className="px-4 py-3 font-semibold text-slate-600">Invoice</th>
+                      <th className="px-4 py-3 font-semibold text-slate-600">Vendor</th>
+                      <th className="px-4 py-3 font-semibold text-slate-600">Tenant</th>
+                      <th className="px-4 py-3 font-semibold text-slate-600">Job</th>
+                      <th className="px-4 py-3 font-semibold text-slate-600">Amount</th>
+                      <th className="px-4 py-3 font-semibold text-slate-600">Fee</th>
+                      <th className="px-4 py-3 font-semibold text-slate-600">Net</th>
+                      <th className="px-4 py-3 font-semibold text-slate-600">Status</th>
+                      <th className="px-4 py-3 font-semibold text-slate-600">Paid</th>
+                      <th className="px-4 py-3" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {transactions.map((tx) => (
+                      <tr key={tx.id} className="hover:bg-slate-50">
+                        <td className="px-4 py-3 font-medium text-slate-900">
+                          {tx.invoice_number || '—'}
+                        </td>
+                        <td className="px-4 py-3 text-slate-500">{tx.vendor_name || '—'}</td>
+                        <td className="px-4 py-3 text-slate-500">{tx.tenant_name || '—'}</td>
+                        <td className="px-4 py-3 text-slate-500 max-w-[180px] truncate">
+                          {tx.maintenance_title || '—'}
+                        </td>
+                        <td className="px-4 py-3 font-medium text-slate-900">
+                          R {tx.total_amount.toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-slate-500">
+                          R {tx.platform_fee.toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-emerald-600 font-medium">
+                          R {(tx.net_revenue ?? 0).toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                              tx.payment_status === 'completed'
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : tx.payment_status === 'failed'
+                                  ? 'bg-red-100 text-red-700'
+                                  : tx.payment_status === 'processing'
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : 'bg-slate-100 text-slate-600'
+                            }`}
+                          >
+                            {tx.payment_status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-slate-400">
+                          {tx.paid_at ? new Date(tx.paid_at).toLocaleDateString('en-ZA') : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() => setSelectedId(tx.id)}
+                            className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-50"
+                          >
+                            View
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Quick link to vendor payouts */}
         <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
@@ -270,6 +424,16 @@ function VendorRevenueTab() {
           </p>
         </div>
       </div>
+
+      {/* Drill-down modal — only mounted while a transaction is selected (no overlay flash on mount/close) */}
+      {selectedId && (
+        <TransactionDetailModal
+          detail={detail ?? null}
+          loading={detailLoading}
+          error={detailError}
+          onClose={() => setSelectedId(null)}
+        />
+      )}
     </div>
   );
 }
@@ -277,13 +441,22 @@ function VendorRevenueTab() {
 // ─── Disputes Tab ────────────────────────────────────────────────────────
 
 function DisputesTab() {
-  const { data: disputes, loading, error, refetch } = useAdminData<VendorDisputeRow[]>('admin_get_vendor_disputes');
+  const {
+    data: disputes,
+    loading,
+    error,
+    refetch,
+  } = useAdminData<VendorDisputeRow[]>('admin_get_vendor_disputes');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const handleAction = async (paymentId: string, action: 'resolve' | 'escalate') => {
     // Confirm before resolving
     if (action === 'resolve') {
-      if (!window.confirm('Are you sure you want to resolve this dispute? The vendor payout will proceed normally.')) {
+      if (
+        !window.confirm(
+          'Are you sure you want to resolve this dispute? The vendor payout will proceed normally.'
+        )
+      ) {
         return;
       }
     }
@@ -295,15 +468,16 @@ function DisputesTab() {
       });
       if (rpcError) throw rpcError;
       refetch();
-    } catch (err: any) {
-      alert(`Failed to ${action} dispute: ${err.message}`);
+    } catch (err: unknown) {
+      alert(`Failed to ${action} dispute: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setActionLoading(null);
     }
   };
 
   if (loading) return <LoadingSpinner />;
-  if (error) return <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>;
+  if (error)
+    return <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>;
 
   return (
     <div>
@@ -312,7 +486,10 @@ function DisputesTab() {
           <h2 className="text-lg font-bold text-slate-900">Vendor Payment Disputes</h2>
           <p className="text-sm text-slate-500">Resolve or escalate disputed vendor payments</p>
         </div>
-        <button onClick={refetch} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50">
+        <button
+          onClick={refetch}
+          className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50"
+        >
           ↻ Refresh
         </button>
       </div>
@@ -330,21 +507,42 @@ function DisputesTab() {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      d.dispute_status === 'opened' ? 'bg-red-100 text-red-700' :
-                      'bg-purple-100 text-purple-700'
-                    }`}>{d.dispute_status}</span>
+                    <span
+                      className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        d.dispute_status === 'opened'
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-purple-100 text-purple-700'
+                      }`}
+                    >
+                      {d.dispute_status}
+                    </span>
                     <span className="text-xs text-slate-400">{d.invoice_number || '—'}</span>
                   </div>
-                  <p className="mt-1 text-sm font-medium text-slate-900">{d.maintenance_title || 'Unknown job'}</p>
-                  <p className="text-xs text-slate-500">Vendor: {d.vendor_name || 'Unknown'} · Tenant: {d.tenant_name || 'Unknown'}</p>
+                  <p className="mt-1 text-sm font-medium text-slate-900">
+                    {d.maintenance_title || 'Unknown job'}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Vendor: {d.vendor_name || 'Unknown'} · Tenant: {d.tenant_name || 'Unknown'}
+                  </p>
                 </div>
                 <div className="text-right ml-4">
-                  <p className="text-lg font-bold text-slate-900">R {d.total_amount.toLocaleString()}</p>
-                  <p className="text-xs text-slate-400">Payout: R {d.vendor_payout.toLocaleString()}</p>
-                  <p className="text-xs text-slate-400">Created: {new Date(d.created_at).toLocaleDateString('en-ZA')}</p>
+                  <p className="text-lg font-bold text-slate-900">
+                    R {d.total_amount.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    Payout: R {d.vendor_payout.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    Created: {new Date(d.created_at).toLocaleDateString('en-ZA')}
+                  </p>
                 </div>
               </div>
+
+              {/* Photo evidence timeline */}
+              <div className="mt-3">
+                <EvidenceGallery evidence={d.evidence} />
+              </div>
+
               <div className="mt-3 flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
                 <button
                   onClick={() => handleAction(d.id, 'resolve')}
@@ -409,12 +607,7 @@ export default function PaymentsPage() {
       </div>
 
       {/* Tab content */}
-      <div
-        id="panel-rent"
-        role="tabpanel"
-        aria-labelledby="tab-rent"
-        hidden={activeTab !== 'rent'}
-      >
+      <div id="panel-rent" role="tabpanel" aria-labelledby="tab-rent" hidden={activeTab !== 'rent'}>
         {activeTab === 'rent' && <RentPaymentsTab />}
       </div>
       <div

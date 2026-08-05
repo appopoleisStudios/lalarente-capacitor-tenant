@@ -113,4 +113,90 @@ export interface VendorDisputeRow {
   dispute_status: string;
   payout_status: string;
   created_at: string;
+  evidence?: VendorEvidence | null;
+}
+
+/** Photo evidence entry (closure + progress photos) */
+export interface EvidencePhoto {
+  url: string;
+  stage: string;
+  at: string | null;
+}
+
+/** Event timeline entry for a maintenance request */
+export interface EvidenceTimelineEntry {
+  event: string;
+  note: string | null;
+  at: string | null;
+}
+
+/** Evidence bundle returned by admin_vendor_evidence */
+export interface VendorEvidence {
+  photos: EvidencePhoto[];
+  timeline: EvidenceTimelineEntry[];
+}
+
+/** Ledger journal entry (immutable) */
+export interface VendorLedgerEntry {
+  entry_type: string;
+  amount: number;
+  running_balance: number;
+  description: string | null;
+  created_at: string;
+}
+
+/** Full drill-down shape returned by admin_get_vendor_transaction_detail */
+export interface VendorTransactionDetail {
+  id: string;
+  invoice_number: string | null;
+  maintenance_title: string | null;
+  vendor_name: string | null;
+  tenant_name: string | null;
+  total_amount: number;
+  platform_fee: number;
+  platform_fee_percent: number;
+  gateway_fee: number;
+  payout_fee: number;
+  vendor_payout: number;
+  net_revenue: number | null;
+  payment_status: string;
+  payout_status: string;
+  dispute_status: string;
+  payout_method: string | null;
+  payout_reference: string | null;
+  payment_gateway: string | null;
+  gateway_transaction_id: string | null;
+  paid_at: string | null;
+  payout_initiated_at: string | null;
+  payout_completed_at: string | null;
+  created_at: string;
+  ledger: VendorLedgerEntry[];
+  evidence: VendorEvidence;
+}
+
+/** Daily revenue bucket returned by admin_get_vendor_revenue_series */
+export interface RevenuePoint {
+  day: string;
+  gross: number;
+  net: number;
+}
+
+/** Distinct parties for filter dropdowns (admin_get_vendor_party_options) */
+export interface VendorPartyOption {
+  id: string;
+  full_name: string | null;
+}
+
+export interface VendorPartyOptions {
+  vendors: VendorPartyOption[];
+  tenants: VendorPartyOption[];
+}
+
+/** Active transaction filters for the vendor revenue tab */
+export interface VendorTransactionFilters {
+  payment_status: string | null;
+  from: string | null;
+  to: string | null;
+  vendor_id: string | null;
+  tenant_id: string | null;
 }
