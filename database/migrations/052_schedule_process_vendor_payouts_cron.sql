@@ -1,73 +1,36 @@
 -- ============================================================================
 -- Migration 052: Schedule process-vendor-payouts via pg_cron (daily)
 -- ============================================================================
--- The process-vendor-payouts edge function is already deployed and the admin
--- dashboard is fully wired (batch initiate, mark sent, grouped by vendor).
--- This migration adds a pg_cron schedule so that the function runs daily at
--- 02:00 UTC (04:00 SAST) to auto-initiate processing for all pending payouts.
+-- Establishes the pg_cron schedule for the process-vendor-payouts edge function.
+-- The cron job runs daily at 02:00 UTC (= 04:00 SAST), after midnight, before
+-- business hours, to auto-initiate processing for all pending payouts.
 --
--- The cron job invokes the function via the Supabase Management API endpoint
--- (POST /functions/v1/process-vendor-payouts) with the service-role key.
--- We use net.http_post() to call it from within the database, matching the
--- established pattern from schedule-auto-crons.mjs.
+-- The actual cron job is created by running:
+--   node scripts/schedule-process-vendor-payouts.mjs
+--
+-- Which follows the established pattern from schedule-auto-crons.mjs:
+-- fetches the service_role key at runtime via Management API, bakes it into
+-- the cron SQL, and creates the schedule via net.http_post inside the cron.
+--
+-- The edge function accepts both:
+-- - Admin JWT (from admin dashboard — users with role='admin')
+-- - Service-role key (from cron trigger — decoded JWT role='service_role')
 --
 -- Prerequisites:
---   - supabase/functions/process-vendor-payouts already deployed
---   - SUPABASE_SERVICE_ROLE_KEY set as a database secret
+--   - supabase/functions/process-vendor-payouts deployed (with service-role auth)
+--   - SUPABASE_ACCESS_TOKEN + SUPABASE_PROJECT_ID in .env (for the script)
 -- ============================================================================
 
--- ── Helper: call the process-vendor-payouts edge function ──────────────────
--- Uses net.http_post() to invoke the function with the service-role key.
--- The function returns 200 on success, logs errors to the edge function logs.
+-- This migration is a documentation placeholder. The actual cron.schedule()
+-- call is executed by the script, which bakes the service-role key into the
+-- SQL command at runtime (never persisted to disk).
+--
+-- Run: node scripts/schedule-process-vendor-payouts.mjs
+-- Schedule: 0 2 * * * (daily at 02:00 UTC)
+-- Job name: process-vendor-payouts-daily
 
-CREATE OR REPLACE FUNCTION invoke_process_vendor_payouts()
-RETURNS TEXT
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_supabase_url TEXT;
-  v_service_key  TEXT;
-  v_result       TEXT;
-  v_http_status  INT;
-BEGIN
-  -- Read secrets (must be set in Supabase via `supabase secrets set`)
-  v_supabase_url := current_setting('secrets.supabase_url', TRUE);
-  v_service_key  := current_setting('secrets.service_role_key', TRUE);
-
-  IF v_supabase_url IS NULL OR v_service_key IS NULL THEN
-    RETURN 'ERROR: secrets.supabase_url or secrets.service_role_key not set';
-  END IF;
-
-  SELECT net.http_post(
-    url := v_supabase_url || '/functions/v1/process-vendor-payouts',
-    headers := jsonb_build_object(
-      'Authorization', 'Bearer ' || v_service_key,
-      'Content-Type', 'application/json'
-    ),
-    body := jsonb_build_object('method', 'manual_eft')
-  ) INTO v_http_status;
-
-  IF v_http_status = 200 THEN
-    RETURN 'OK: process-vendor-payouts invoked successfully';
-  ELSE
-    RETURN 'WARN: http status ' || v_http_status;
-  END IF;
-END;
-$$;
-
--- ── Schedule via pg_cron: daily at 02:00 UTC (= 04:00 SAST) ────────────────
--- Runs after midnight, before business hours, processing overnight.
-
-SELECT cron.schedule(
-  'process-vendor-payouts-daily',
-  '0 2 * * *',
-  $$SELECT invoke_process_vendor_payouts()$$
-);
-
--- ── Log the schedule creation ──────────────────────────────────────────────
 DO $$
 BEGIN
-  RAISE NOTICE '✅ process-vendor-payouts cron scheduled: daily at 02:00 UTC';
+  RAISE NOTICE 'Migration 052: Run node scripts/schedule-process-vendor-payouts.mjs to create the cron schedule';
 END;
 $$;
