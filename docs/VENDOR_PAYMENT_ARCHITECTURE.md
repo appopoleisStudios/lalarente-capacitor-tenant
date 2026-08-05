@@ -49,6 +49,7 @@
 ```
 
 **Key Principles:**
+
 - Tenant pays for the job (not the owner) when this flow is selected
 - LaLarente is **merchant of record** for collection (chargebacks / disputes hit LaLarente first)
 - LaLarente takes a commission, then pays the vendor
@@ -57,35 +58,35 @@
 
 ### Fee Structure (one formula — use everywhere)
 
-| Component | Formula | Who pays | When |
-|-----------|---------|----------|------|
-| **Invoice total** | Quote/invoice `total_amount` (VAT-inclusive as today) | Tenant | On PayFast success |
-| **Platform fee** | `round(total_amount * 0.10, 2)` | Deducted from vendor gross | On completed payment |
-| **Gateway fee (PayFast)** | Actual fee from ITN / settlement report (~3.5% + R2) | **LaLarente** (absorbed into platform fee) | Per settled transaction |
-| **Payout fee** | Instant R10 / Daily R5 / Weekly R0 | **Vendor** (deducted from vendor payout) | Per payout |
-| **Vendor payout** | `total_amount − platform_fee − payout_fee` | — | Calculated at payout time |
-| **LaLarente net** | `platform_fee − gateway_fee` | — | After settlement |
+| Component                 | Formula                                               | Who pays                                   | When                      |
+| ------------------------- | ----------------------------------------------------- | ------------------------------------------ | ------------------------- |
+| **Invoice total**         | Quote/invoice `total_amount` (VAT-inclusive as today) | Tenant                                     | On PayFast success        |
+| **Platform fee**          | `round(total_amount * 0.10, 2)`                       | Deducted from vendor gross                 | On completed payment      |
+| **Gateway fee (PayFast)** | Actual fee from ITN / settlement report (~3.5% + R2)  | **LaLarente** (absorbed into platform fee) | Per settled transaction   |
+| **Payout fee**            | Instant R10 / Daily R5 / Weekly R0                    | **Vendor** (deducted from vendor payout)   | Per payout                |
+| **Vendor payout**         | `total_amount − platform_fee − payout_fee`            | —                                          | Calculated at payout time |
+| **LaLarente net**         | `platform_fee − gateway_fee`                          | —                                          | After settlement          |
 
 **Worked example (weekly payout, free):**
 
-| Line | Amount |
-|------|--------|
-| Tenant pays | R1,000.00 |
-| Platform fee (10%) | R100.00 |
+| Line                     | Amount                  |
+| ------------------------ | ----------------------- |
+| Tenant pays              | R1,000.00               |
+| Platform fee (10%)       | R100.00                 |
 | Gateway fee (~3.5% + R2) | R37.00 (LaLarente cost) |
-| Payout fee (weekly) | R0.00 |
-| Vendor receives | R900.00 |
-| LaLarente net | R63.00 |
+| Payout fee (weekly)      | R0.00                   |
+| Vendor receives          | R900.00                 |
+| LaLarente net            | R63.00                  |
 
 **Worked example (instant payout):**
 
-| Line | Amount |
-|------|--------|
-| Tenant pays | R1,000.00 |
-| Platform fee | R100.00 |
-| Payout fee (instant) | R10.00 |
-| Vendor receives | R890.00 |
-| LaLarente net | `platform_fee − gateway_fee` (gateway still LaLarente cost) |
+| Line                 | Amount                                                      |
+| -------------------- | ----------------------------------------------------------- |
+| Tenant pays          | R1,000.00                                                   |
+| Platform fee         | R100.00                                                     |
+| Payout fee (instant) | R10.00                                                      |
+| Vendor receives      | R890.00                                                     |
+| LaLarente net        | `platform_fee − gateway_fee` (gateway still LaLarente cost) |
 
 Do **not** subtract gateway fee from vendor payout. Gateway fee only affects LaLarente net.
 
@@ -115,15 +116,15 @@ STAGE 9:  Job complete, funds settled, receipt generated
 
 ### What already exists in this repo
 
-| Piece | Status | Notes |
-|-------|--------|-------|
-| Tenant report + media upload | Built | `useMediaUpload`, maintenance report |
-| Vendor quotes | Built | `VendorQuoteSubmitScreen` |
-| Owner approve / PO | Built | Existing owner flow |
-| Maintenance invoices | Built | `maintenance_invoices` (migration 044) |
-| Closure / tenant verification | Built | `closure_reports` (migration 018) — **extend, do not invent a parallel table** |
-| PayFast config stubs | Partial | `paymentGateway.ts`, webhook fn — extend for vendor payments |
-| Job progress updates | Built | Extend with required photos + geo |
+| Piece                         | Status  | Notes                                                                          |
+| ----------------------------- | ------- | ------------------------------------------------------------------------------ |
+| Tenant report + media upload  | Built   | `useMediaUpload`, maintenance report                                           |
+| Vendor quotes                 | Built   | `VendorQuoteSubmitScreen`                                                      |
+| Owner approve / PO            | Built   | Existing owner flow                                                            |
+| Maintenance invoices          | Built   | `maintenance_invoices` (migration 044)                                         |
+| Closure / tenant verification | Built   | `closure_reports` (migration 018) — **extend, do not invent a parallel table** |
+| PayFast config stubs          | Partial | `paymentGateway.ts`, webhook fn — extend for vendor payments                   |
+| Job progress updates          | Built   | Extend with required photos + geo                                              |
 
 ### Detailed Stage Breakdown
 
@@ -168,24 +169,24 @@ VENDOR BANK
 
 ### Balance sheet (weekly payout, gateway absorbed by LaLarente)
 
-| Event | Tenant | LaLarente | Vendor | PayFast |
-|-------|--------|-----------|--------|---------|
-| Before | R10,000 | R5,000 | R2,000 | — |
-| Tenant pays R1,000 | −R1,000 | — | — | +R1,000 (float) |
-| Settled to LaLarente | — | +R1,000 | — | −R1,000 |
-| Gateway fee taken | — | −R37 | — | +R37 |
-| Payout R900 to vendor | — | −R900 | +R900 | — |
-| **Final** | **R9,000** | **R5,063** | **R2,900** | **+R37** |
+| Event                 | Tenant     | LaLarente  | Vendor     | PayFast         |
+| --------------------- | ---------- | ---------- | ---------- | --------------- |
+| Before                | R10,000    | R5,000     | R2,000     | —               |
+| Tenant pays R1,000    | −R1,000    | —          | —          | +R1,000 (float) |
+| Settled to LaLarente  | —          | +R1,000    | —          | −R1,000         |
+| Gateway fee taken     | —          | −R37       | —          | +R37            |
+| Payout R900 to vendor | —          | −R900      | +R900      | —               |
+| **Final**             | **R9,000** | **R5,063** | **R2,900** | **+R37**        |
 
 Platform fee is an accounting allocation of the R1,000, not a second charge to the tenant.
 
 ### Payout schedule options
 
-| Option | Timing | Payout fee | Default |
-|--------|--------|------------|---------|
-| Instant | Same business day (if adapter supports) | R10 | No |
-| Daily | Next business day | R5 | No |
-| Weekly | Every Monday for previous week | R0 | **Yes** |
+| Option  | Timing                                  | Payout fee | Default |
+| ------- | --------------------------------------- | ---------- | ------- |
+| Instant | Same business day (if adapter supports) | R10        | No      |
+| Daily   | Next business day                       | R5         | No      |
+| Weekly  | Every Monday for previous week          | R0         | **Yes** |
 
 Store preference in `vendor_payout_preferences` (see §5).
 
@@ -423,13 +424,13 @@ All money tables require RLS before any client write path is enabled.
 
 ### vendor_payments
 
-| Role | SELECT | INSERT | UPDATE |
-|------|--------|--------|--------|
-| Tenant (own `tenant_id`) | Yes | No (Edge Function only) | No |
-| Vendor (own `vendor_id`) | Yes (no gateway secrets) | No | No |
-| Owner (own `owner_id`) | Yes (summary fields) | No | No |
-| Service role / Edge | Yes | Yes | Yes |
-| Admin (`dev_admin` flag) | Yes | No (via Edge) | Yes |
+| Role                     | SELECT                   | INSERT                  | UPDATE |
+| ------------------------ | ------------------------ | ----------------------- | ------ |
+| Tenant (own `tenant_id`) | Yes                      | No (Edge Function only) | No     |
+| Vendor (own `vendor_id`) | Yes (no gateway secrets) | No                      | No     |
+| Owner (own `owner_id`)   | Yes (summary fields)     | No                      | No     |
+| Service role / Edge      | Yes                      | Yes                     | Yes    |
+| Admin (`dev_admin` flag) | Yes                      | No (via Edge)           | Yes    |
 
 Hide `gateway_response` raw payloads from clients; expose sanitized status fields via views or API.
 
@@ -459,24 +460,44 @@ Hide `gateway_response` raw payloads from clients; expose sanitized status field
 - Money lands in LaLarente merchant account
 - LaLarente is merchant of record
 
-### Payouts (must validate before coding Phase 4)
+### Payouts (RESOLVED 2026-08-04 — see findings below)
 
 PayFast’s product surface for **merchant → vendor bank payouts** is account-type dependent. Treat payout as an **adapter**:
 
-| Adapter | When to use |
-|---------|-------------|
+| Adapter          | When to use                                                        |
+| ---------------- | ------------------------------------------------------------------ |
 | `payfast_payout` | Only if merchant account + API confirmed for automated EFT payouts |
-| `manual_eft` | Ops exports weekly batch CSV / EFT from banking (v1-safe fallback) |
-| `instant` | Only if provider supports same-day; else queue next business day |
+| `manual_eft`     | Ops exports weekly batch CSV / EFT from banking (v1-safe fallback) |
+| `instant`        | Only if provider supports same-day; else queue next business day   |
 
 **Phase 1–2 can ship tenant collect without automated payout.** Mark `payout_status = 'pending'` and settle via weekly manual batch until adapter is live.
 
+### Findings — Plane #56 (live probe, 2026-08-04)
+
+**Verdict: `manual_eft` is the v1 path. Automated `payfast_payout` is NOT available for this merchant right now.**
+
+Evidence (reproduce with `node scripts/probe-payfast-payout.mjs`):
+
+| Check                                                                                                                                                                  | Result                                                                                                                                                                                                                                       |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Query API endpoint `POST https://sandbox.payfast.co.za/eng/process/query` (bogus payment_id)                                                                           | **HTTP 404** — PayFast serves a generic route-level HTML 404 page on both calls. An existing endpoint would return an app-level "not found" response, so this is the key signal that the API is not available for this merchant/account type |
+| Real completed `vendor_payments` row queried via the API (`gateway_transaction_id`; note: `sim-*` ids are E2E-simulated, not genuine PayFast txs — corroborating only) | **HTTP 404** — identical route-level 404, same conclusion                                                                                                                                                                                    |
+| Signature scheme (alphabetical sort + php-urlencode + `&passphrase=` md5)                                                                                              | Matches PayFast's documented `pf_calculate_signature` helper (reused `phpUrlEncode` from the hosted-checkout probe)                                                                                                                          |
+| Docs research (PayFast developer docs)                                                                                                                                 | PayFast payouts/EFT disbursement requires **formal feature enablement + risk/onboarding application**; not self-service for standard merchants. Query API is transaction-status only                                                         |
+| Rate limits / minimums / fees                                                                                                                                          | Not applicable while the API is unavailable; `manual_eft` payout fee schedule (instant R10 / daily R5 / weekly R0) applies per §1                                                                                                            |
+
+**Implication for the code:**
+
+- `vendor_payments.payout_method` defaults to `manual_eft` (migration 047) — **correct as-is**. Do not switch to `payfast_payout` until the merchant account is upgraded and re-probed.
+- `process-vendor-payouts` (batch → `processing`) + `admin-mark-payout-sent` (record EFT reference + ledger `payout_sent`/`payout_fee`) are the shipped v1 payout path. ✅
+- Re-run the probe after any PayFast account upgrade (prod merchant) to re-evaluate automated payouts for Phase 4+.
+
 ### Sandbox checklist
 
-- [ ] PayFast sandbox merchant ID / key / passphrase in Mac mini + Edge env
-- [ ] ITN URL reachable (ngrok / deployed function)
-- [ ] Signature validation unit tests
-- [ ] Confirm whether payout API exists for this merchant (document result in this file)
+- [x] PayFast sandbox merchant ID / key / passphrase in Mac mini + Edge env
+- [x] ITN URL reachable (ngrok / deployed function)
+- [x] Signature validation unit tests
+- [x] Confirm whether payout API exists for this merchant — **done (Plane #56): NOT available → `manual_eft` v1**
 
 ---
 
@@ -522,43 +543,43 @@ Tenant taps Pay
 
 ### Photo requirements
 
-| Stage | Required photos | Who | If missing |
-|-------|-----------------|-----|------------|
-| 1 Report | 1–5 of issue | Tenant | Cannot submit |
-| 4 Work | 1+ per progress update | Vendor | Cannot submit update |
-| 5 Close | 2+ after photos | Vendor | Cannot request closure |
-| 5 Close | 2+ confirmation photos | Tenant | Escalate after timeout (see §17) |
+| Stage    | Required photos        | Who    | If missing                       |
+| -------- | ---------------------- | ------ | -------------------------------- |
+| 1 Report | 1–5 of issue           | Tenant | Cannot submit                    |
+| 4 Work   | 1+ per progress update | Vendor | Cannot submit update             |
+| 5 Close  | 2+ after photos        | Vendor | Cannot request closure           |
+| 5 Close  | 2+ confirmation photos | Tenant | Escalate after timeout (see §17) |
 
 ---
 
 ## 10. Screens to Build
 
-| # | Screen | Route | Purpose | Priority |
-|---|--------|-------|---------|----------|
-| 1 | Tenant Vendor Payments List | `/(tenant)/vendor-payments` | Approved invoices awaiting tenant pay | P0 |
-| 2 | Tenant Pay Vendor | `/(tenant)/vendor-payments/[invoiceId]` | Breakdown + Pay via PayFast | P0 |
-| 3 | Tenant Payment Result | `/(tenant)/vendor-payments/result` | Success / failure return URL | P0 |
-| 4 | Closure Confirmation | `/(tenant)/maintenance/[id]/closure-confirm` | Tenant confirmation photos | P0 |
-| 5 | Vendor Earnings | `/(vendor)/earnings` | History, pending, totals | P0 |
-| 6 | Vendor Bank Details | `/(vendor)/earnings/banking` | Payout destination | P0 |
-| 7 | Admin: Payments | Admin panel | Revenue + txs + disputes | P1 |
-| 8 | Admin: Manual Payout | Admin panel | Trigger / mark batch sent | P1 |
+| #   | Screen                      | Route                                        | Purpose                               | Priority |
+| --- | --------------------------- | -------------------------------------------- | ------------------------------------- | -------- |
+| 1   | Tenant Vendor Payments List | `/(tenant)/vendor-payments`                  | Approved invoices awaiting tenant pay | P0       |
+| 2   | Tenant Pay Vendor           | `/(tenant)/vendor-payments/[invoiceId]`      | Breakdown + Pay via PayFast           | P0       |
+| 3   | Tenant Payment Result       | `/(tenant)/vendor-payments/result`           | Success / failure return URL          | P0       |
+| 4   | Closure Confirmation        | `/(tenant)/maintenance/[id]/closure-confirm` | Tenant confirmation photos            | P0       |
+| 5   | Vendor Earnings             | `/(vendor)/earnings`                         | History, pending, totals              | P0       |
+| 6   | Vendor Bank Details         | `/(vendor)/earnings/banking`                 | Payout destination                    | P0       |
+| 7   | Admin: Payments             | Admin panel                                  | Revenue + txs + disputes              | P1       |
+| 8   | Admin: Manual Payout        | Admin panel                                  | Trigger / mark batch sent             | P1       |
 
 ---
 
 ## 11. API to Build
 
-| # | Function | Purpose | Priority |
-|---|----------|---------|----------|
-| 1 | `createVendorPaymentCheckout()` | Create pending `vendor_payments`, return PayFast fields | P0 |
-| 2 | `handleVendorPaymentITN()` | Webhook: signature, idempotency, complete payment | P0 |
-| 3 | `getVendorPaymentStatus()` | Poll after return URL | P0 |
-| 4 | `getVendorEarnings()` | Vendor earnings summary | P0 |
-| 5 | `confirmClosureWithPhotos()` | Extend closure_reports two-sided confirm | P0 |
-| 6 | `getProgressTimeline()` | Extend existing timeline with photos | P0 |
-| 7 | `initiatePayout()` / `processPayoutBatch()` | Adapter: PayFast or manual_eft | P1 |
-| 8 | `disputeHoldPayment()` | Set payout `on_hold` | P1 |
-| 9 | `getLaLarenteRevenue()` | Admin metrics | P1 |
+| #   | Function                                    | Purpose                                                 | Priority |
+| --- | ------------------------------------------- | ------------------------------------------------------- | -------- |
+| 1   | `createVendorPaymentCheckout()`             | Create pending `vendor_payments`, return PayFast fields | P0       |
+| 2   | `handleVendorPaymentITN()`                  | Webhook: signature, idempotency, complete payment       | P0       |
+| 3   | `getVendorPaymentStatus()`                  | Poll after return URL                                   | P0       |
+| 4   | `getVendorEarnings()`                       | Vendor earnings summary                                 | P0       |
+| 5   | `confirmClosureWithPhotos()`                | Extend closure_reports two-sided confirm                | P0       |
+| 6   | `getProgressTimeline()`                     | Extend existing timeline with photos                    | P0       |
+| 7   | `initiatePayout()` / `processPayoutBatch()` | Adapter: PayFast or manual_eft                          | P1       |
+| 8   | `disputeHoldPayment()`                      | Set payout `on_hold`                                    | P1       |
+| 9   | `getLaLarenteRevenue()`                     | Admin metrics                                           | P1       |
 
 Client apps call Edge Functions for create checkout / status; no direct INSERT into `vendor_payments` from the device.
 
@@ -568,33 +589,33 @@ Client apps call Edge Functions for create checkout / status; no direct INSERT i
 
 ### Payment
 
-| Scenario | Action |
-|----------|--------|
-| PayFast failed | `payment_status = failed`; tenant retries (new pending row) |
-| Tenant cancels hosted page | `cancelled` or leave `pending` until TTL cancel job |
-| ITN missing | Poll + reconciliation cron |
-| Duplicate ITN | Unique on `gateway_transaction_id` → ignore |
-| Amount mismatch | Fail + admin alert; do not mark completed |
-| Invoice already paid | Reject ITN |
-| Gateway down | UX: try again later |
+| Scenario                   | Action                                                      |
+| -------------------------- | ----------------------------------------------------------- |
+| PayFast failed             | `payment_status = failed`; tenant retries (new pending row) |
+| Tenant cancels hosted page | `cancelled` or leave `pending` until TTL cancel job         |
+| ITN missing                | Poll + reconciliation cron                                  |
+| Duplicate ITN              | Unique on `gateway_transaction_id` → ignore                 |
+| Amount mismatch            | Fail + admin alert; do not mark completed                   |
+| Invoice already paid       | Reject ITN                                                  |
+| Gateway down               | UX: try again later                                         |
 
 ### Payout
 
-| Scenario | Action |
-|----------|--------|
-| Wrong bank details | `payout_status = failed`; vendor updates banking |
-| Insufficient merchant balance | Keep pending; alert admin |
-| Instant outside hours | Queue next business day |
-| Bank change mid-flight | Original destination wins once sent |
+| Scenario                      | Action                                           |
+| ----------------------------- | ------------------------------------------------ |
+| Wrong bank details            | `payout_status = failed`; vendor updates banking |
+| Insufficient merchant balance | Keep pending; alert admin                        |
+| Instant outside hours         | Queue next business day                          |
+| Bank change mid-flight        | Original destination wins once sent              |
 
 ### Dispute / closure
 
-| Scenario | Action |
-|----------|--------|
-| Tenant refuses closure | `dispute_status = opened`; payout `on_hold` |
-| Tenant silent past timeout | Escalate to admin **or** auto-approve (config — §17) |
+| Scenario                    | Action                                                            |
+| --------------------------- | ----------------------------------------------------------------- |
+| Tenant refuses closure      | `dispute_status = opened`; payout `on_hold`                       |
+| Tenant silent past timeout  | Escalate to admin **or** auto-approve (config — §17)              |
 | Vendor silent on dispute 7d | Prefer refund path after admin review (not fully automatic in v1) |
-| Partial / full refund | Admin-only via PayFast refund API; ledger `refund` entries |
+| Partial / full refund       | Admin-only via PayFast refund API; ledger `refund` entries        |
 
 ---
 
@@ -619,12 +640,12 @@ P1 after collect path works. Metrics:
 
 Notifications (high signal only for v1):
 
-| Event | Who |
-|-------|-----|
-| Closure needs tenant confirm | Tenant |
-| Payment completed | Vendor, Owner, Admin |
-| Payout sent / failed | Vendor (+ Admin on fail) |
-| Dispute opened | Admin |
+| Event                        | Who                      |
+| ---------------------------- | ------------------------ |
+| Closure needs tenant confirm | Tenant                   |
+| Payment completed            | Vendor, Owner, Admin     |
+| Payout sent / failed         | Vendor (+ Admin on fail) |
+| Dispute opened               | Admin                    |
 
 ---
 
@@ -632,47 +653,47 @@ Notifications (high signal only for v1):
 
 ### Phase 1: Foundation
 
-| # | Task | Depends on |
-|---|------|------------|
-| 1 | Migration 047: `vendor_payments`, ledger, payout prefs, invoice `payer_role`, closure/progress columns + RLS | Existing 044 / 018 |
-| 2 | TS types | Migration |
-| 3 | Edge: create checkout + ITN handler (idempotent) | Types + PayFast sandbox |
-| 4 | Closure photo API extending `closure_reports` | Migration |
+| #   | Task                                                                                                         | Depends on              |
+| --- | ------------------------------------------------------------------------------------------------------------ | ----------------------- |
+| 1   | Migration 047: `vendor_payments`, ledger, payout prefs, invoice `payer_role`, closure/progress columns + RLS | Existing 044 / 018      |
+| 2   | TS types                                                                                                     | Migration               |
+| 3   | Edge: create checkout + ITN handler (idempotent)                                                             | Types + PayFast sandbox |
+| 4   | Closure photo API extending `closure_reports`                                                                | Migration               |
 
 ### Phase 2: Tenant pay UI
 
-| # | Task |
-|---|------|
-| 5 | List + pay + result screens |
-| 6 | Wire return URL + status poll |
-| 7 | Maestro smoke: pay happy path (sandbox) |
+| #   | Task                                    |
+| --- | --------------------------------------- |
+| 5   | List + pay + result screens             |
+| 6   | Wire return URL + status poll           |
+| 7   | Maestro smoke: pay happy path (sandbox) |
 
 ### Phase 3: Closure evidence
 
-| # | Task |
-|---|------|
-| 8 | Tenant closure-confirm screen |
-| 9 | Require photos on vendor progress |
+| #   | Task                              |
+| --- | --------------------------------- |
+| 8   | Tenant closure-confirm screen     |
+| 9   | Require photos on vendor progress |
 
 ### Phase 4: Payout + earnings
 
-| # | Task |
-|---|------|
-| 10 | Vendor earnings + banking |
-| 11 | Payout adapter (`manual_eft` first, then PayFast if feasible) |
-| 12 | Batch cron / admin “mark paid” |
+| #   | Task                                                          |
+| --- | ------------------------------------------------------------- |
+| 10  | Vendor earnings + banking                                     |
+| 11  | Payout adapter (`manual_eft` first, then PayFast if feasible) |
+| 12  | Batch cron / admin “mark paid”                                |
 
 ### Phase 5: Admin
 
-| # | Task |
-|---|------|
-| 13 | Revenue dashboard, disputes, manual payout |
+| #   | Task                                       |
+| --- | ------------------------------------------ |
+| 13  | Revenue dashboard, disputes, manual payout |
 
 ### Phase 6: Polish
 
-| # | Task |
-|---|------|
-| 14 | Auto-escalation cron, receipts PDF, retry nudges, E2E suite |
+| #   | Task                                                        |
+| --- | ----------------------------------------------------------- |
+| 14  | Auto-escalation cron, receipts PDF, retry nudges, E2E suite |
 
 ---
 
@@ -697,19 +718,19 @@ Notifications (high signal only for v1):
 
 Record answers here when decided:
 
-| # | Decision | Answer | Date |
-|---|----------|--------|------|
-| 1 | Payout adapter | **manual_eft v1** — Phase 1-4 use manual batch EFT. Research PayFast payout API in parallel during Phase 1-2. If available, upgrade to automated Phase 4+. | 2026-07-16 |
-| 2 | Closure timeout | **Auto-approve after 72h** — matches existing closure_reports default. Tenant has 3 days to respond, then work auto-accepted. | 2026-07-16 |
-| 3 | Fee VAT base | **VAT-inclusive total** — platform fee calculated on total tenant sees (e.g., 10% of R1,000 incl VAT = R100). Simpler UX, higher net revenue. | 2026-07-16 |
-| 4 | Default payer_role | **Owner** — stay with existing behavior. New jobs default to Owner-pays. Owner explicitly toggles to Tenant-pays. Zero disruption. | 2026-07-16 |
-| 5 | Dispute openers | **Tenant only** — clean separation of flows. Owner handles disputes in Owner→Vendor flow; tenant handles disputes in Tenant→Vendor flow. | 2026-07-16 |
+| #   | Decision           | Answer                                                                                                                                                     | Date       |
+| --- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| 1   | Payout adapter     | **manual_eft v1** — Phase 1-4 use manual batch EFT. Research PayFast payout API in parallel during Phase 1-2. If available, upgrade to automated Phase 4+. | 2026-07-16 |
+| 2   | Closure timeout    | **Auto-approve after 72h** — matches existing closure_reports default. Tenant has 3 days to respond, then work auto-accepted.                              | 2026-07-16 |
+| 3   | Fee VAT base       | **VAT-inclusive total** — platform fee calculated on total tenant sees (e.g., 10% of R1,000 incl VAT = R100). Simpler UX, higher net revenue.              | 2026-07-16 |
+| 4   | Default payer_role | **Owner** — stay with existing behavior. New jobs default to Owner-pays. Owner explicitly toggles to Tenant-pays. Zero disruption.                         | 2026-07-16 |
+| 5   | Dispute openers    | **Tenant only** — clean separation of flows. Owner handles disputes in Owner→Vendor flow; tenant handles disputes in Tenant→Vendor flow.                   | 2026-07-16 |
 
 ---
 
 ## Revision history
 
-| Date | Change |
-|------|--------|
-| 2026-07-16 | Initial architecture draft |
+| Date       | Change                                                                                                                                                                             |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-07-16 | Initial architecture draft                                                                                                                                                         |
 | 2026-07-16 | Cursor revision: single fee formula, payer exclusivity, RLS, ITN idempotency, PayFast payout feasibility, reuse `closure_reports`, fix uniqueness, VAT/legal notes, open decisions |
