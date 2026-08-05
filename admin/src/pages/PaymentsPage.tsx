@@ -193,15 +193,16 @@ function VendorRevenueTab() {
     error: txError,
   } = useAdminData<VendorTransactionRow[]>('admin_get_vendor_transactions', txParams());
 
+  // Only fire the drill-down RPC once a row is actually selected — no
+  // placeholder zero-UUID round trip on mount/close (SA follow-up).
   const {
     data: detail,
     loading: detailLoading,
     error: detailError,
   } = useAdminData<VendorTransactionDetail>(
     'admin_get_vendor_transaction_detail',
-    selectedId
-      ? { p_payment_id: selectedId }
-      : { p_payment_id: '00000000-0000-0000-0000-000000000000' }
+    selectedId ? { p_payment_id: selectedId } : undefined,
+    !!selectedId
   );
 
   const clearFilters = useCallback(() => {
