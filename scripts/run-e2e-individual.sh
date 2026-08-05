@@ -143,6 +143,32 @@ run_flow "vendor-messaging"    "Messaging"          "VENDOR" "${V_ENV[@]}"
 run_flow "vendor-maintenance"  "Maintenance Reqs"   "VENDOR" "${V_ENV[@]}"
 run_flow "vendor-ai-chat"      "Lala AI"            "VENDOR" "${V_ENV[@]}"
 
+
+# ── VENDOR EARNINGS + BANKING (Plane #52) ──
+# Orchestrated end-to-end: seed payout prefs → Maestro UI flow
+# (earnings dashboard → banking → schedule radio change → save → verify).
+run_earnings_e2e() {
+  echo ""
+  echo "━━ VENDOR › Earnings + Banking (Plane #52)"
+  local output
+  output=$(bash scripts/run-vendor-earnings-e2e.sh 2>&1)
+  local ec=$?
+  local slug="vendor-earnings-banking"
+  xcrun simctl io "$UDID" screenshot "/tmp/lalarente-ss-VENDOR-${slug}.png" 2>/dev/null
+  if [ $ec -eq 0 ]; then
+    echo "  ✅ PASS — Earnings + Banking (Plane #52)"
+    echo "PASS | VENDOR | Earnings + Banking (Plane #52)" >> "$REPORT_FILE"
+    PASS=$((PASS+1))
+  else
+    echo "  ❌ FAIL — Earnings + Banking (Plane #52)"
+    local err=$(echo "$output" | grep -E "FAILED|✗|Error|error" | tail -3)
+    echo "  ↳ $err"
+    echo "FAIL | VENDOR | Earnings + Banking (Plane #52) | $err" >> "$REPORT_FILE"
+    FAIL=$((FAIL+1))
+  fi
+}
+run_earnings_e2e
+
 # ── E2E MAINTENANCE SMOKE (tenant creates → vendor quotes) ──
 # Opt-in smoke test: creates REAL rows on the LalaRente Supabase project each
 # run. Unique REQUEST_TITLE auto-generated so repeated runs don't multi-match.
