@@ -21,8 +21,23 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/src/lib/supabase';
 import { colors } from '@/src/shared/theme/colors';
 
-const BRAND_BLUE = colors.info[500];  // RSA Blue
+const BRAND_BLUE = colors.info[500]; // RSA Blue
 const BRAND_GREEN = colors.success[500]; // SA Green
+
+export const VENDOR_EARNINGS_TEST_IDS = {
+  title: 'vendor-earnings-title',
+  bankingButton: 'vendor-earnings-banking-button',
+  totalEarned: 'vendor-earnings-total-earned',
+  pendingTotal: 'vendor-earnings-pending-total',
+  pendingCount: 'vendor-earnings-pending-count',
+  netEarnings: 'vendor-earnings-net-earnings',
+  schedule: 'vendor-earnings-schedule',
+  feesBanner: 'vendor-earnings-fees-banner',
+  bankingStatus: 'vendor-earnings-banking-status',
+  transactionsTitle: 'vendor-earnings-transactions-title',
+  emptyState: 'vendor-earnings-empty-state',
+  transactionList: 'vendor-earnings-transaction-list',
+};
 
 interface EarningsSummary {
   total_earned_all_time: number;
@@ -114,38 +129,56 @@ export default function VendorEarningsScreen() {
     if (!dateStr) return '—';
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-GB', {
-      day: 'numeric', month: 'short', year: 'numeric',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
     });
   };
 
   const scheduleLabel = (s: string) => {
     switch (s) {
-      case 'instant': return 'Instant';
-      case 'daily': return 'Daily';
-      case 'weekly': return 'Weekly';
-      default: return s;
+      case 'instant':
+        return 'Instant';
+      case 'daily':
+        return 'Daily';
+      case 'weekly':
+        return 'Weekly';
+      default:
+        return s;
     }
   };
 
   const payoutStatusColor = (status: string) => {
     switch (status) {
-      case 'sent': return BRAND_GREEN;
-      case 'pending': return colors.warning[500];
-      case 'processing': return colors.info[500];
-      case 'failed': return colors.error[500];
-      case 'on_hold': return '#F97316';
-      default: return colors.gray[400];
+      case 'sent':
+        return BRAND_GREEN;
+      case 'pending':
+        return colors.warning[500];
+      case 'processing':
+        return colors.info[500];
+      case 'failed':
+        return colors.error[500];
+      case 'on_hold':
+        return '#F97316';
+      default:
+        return colors.gray[400];
     }
   };
 
   const payoutStatusLabel = (status: string) => {
     switch (status) {
-      case 'sent': return 'Paid';
-      case 'pending': return 'Awaiting Payout';
-      case 'processing': return 'Processing';
-      case 'failed': return 'Failed';
-      case 'on_hold': return 'On Hold';
-      default: return status;
+      case 'sent':
+        return 'Paid';
+      case 'pending':
+        return 'Awaiting Payout';
+      case 'processing':
+        return 'Processing';
+      case 'failed':
+        return 'Failed';
+      case 'on_hold':
+        return 'On Hold';
+      default:
+        return status;
     }
   };
 
@@ -162,10 +195,13 @@ export default function VendorEarningsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Earnings</Text>
+        <Text style={styles.headerTitle} testID={VENDOR_EARNINGS_TEST_IDS.title}>
+          Earnings
+        </Text>
         <TouchableOpacity
           style={styles.bankingButton}
           onPress={() => router.push('/(vendor)/earnings/banking')}
+          testID={VENDOR_EARNINGS_TEST_IDS.bankingButton}
         >
           <Ionicons name="business-outline" size={20} color={BRAND_BLUE} />
           <Text style={styles.bankingButtonText}>Banking</Text>
@@ -184,18 +220,19 @@ export default function VendorEarningsScreen() {
           <View style={[styles.summaryCard, styles.summaryCardEarned]}>
             <Ionicons name="wallet-outline" size={24} color={BRAND_BLUE} />
             <Text style={styles.summaryLabel}>Total Earned</Text>
-            <Text style={styles.summaryValue}>
+            <Text style={styles.summaryValue} testID={VENDOR_EARNINGS_TEST_IDS.totalEarned}>
               {formatCurrency(data?.summary.total_earned_all_time || 0)}
             </Text>
           </View>
           <View style={[styles.summaryCard, styles.summaryCardPending]}>
             <Ionicons name="time-outline" size={24} color={colors.warning[500]} />
             <Text style={styles.summaryLabel}>Pending</Text>
-            <Text style={styles.summaryValue}>
+            <Text style={styles.summaryValue} testID={VENDOR_EARNINGS_TEST_IDS.pendingTotal}>
               {formatCurrency(data?.summary.pending_payout_total || 0)}
             </Text>
-            <Text style={styles.summarySub}>
-              {data?.summary.pending_payout_count || 0} payment{(data?.summary.pending_payout_count || 0) !== 1 ? 's' : ''}
+            <Text style={styles.summarySub} testID={VENDOR_EARNINGS_TEST_IDS.pendingCount}>
+              {data?.summary.pending_payout_count || 0} payment
+              {(data?.summary.pending_payout_count || 0) !== 1 ? 's' : ''}
             </Text>
           </View>
         </View>
@@ -204,14 +241,17 @@ export default function VendorEarningsScreen() {
           <View style={[styles.summaryCard, styles.summaryCardNet]}>
             <Ionicons name="trending-up-outline" size={24} color={BRAND_GREEN} />
             <Text style={styles.summaryLabel}>Net Earnings</Text>
-            <Text style={[styles.summaryValue, { color: BRAND_GREEN }]}>
+            <Text
+              style={[styles.summaryValue, { color: BRAND_GREEN }]}
+              testID={VENDOR_EARNINGS_TEST_IDS.netEarnings}
+            >
               {formatCurrency(data?.summary.net_earnings || 0)}
             </Text>
           </View>
           <View style={[styles.summaryCard, styles.summaryCardSchedule]}>
             <Ionicons name="calendar-outline" size={24} color="#7C3AED" />
             <Text style={styles.summaryLabel}>Schedule</Text>
-            <Text style={styles.summaryValue}>
+            <Text style={styles.summaryValue} testID={VENDOR_EARNINGS_TEST_IDS.schedule}>
               {scheduleLabel(data?.summary.payout_schedule || 'weekly')}
             </Text>
             {data?.summary.next_scheduled_payout_date && (
@@ -223,11 +263,11 @@ export default function VendorEarningsScreen() {
         </View>
 
         {/* Platform fees info */}
-        <View style={styles.feesBanner}>
+        <View style={styles.feesBanner} testID={VENDOR_EARNINGS_TEST_IDS.feesBanner}>
           <Ionicons name="information-circle-outline" size={18} color={colors.gray[400]} />
           <Text style={styles.feesBannerText}>
-            Platform fees: {formatCurrency(data?.summary.total_platform_fees || 0)} |
-            Payout fees: {formatCurrency(data?.summary.total_payout_fees || 0)}
+            Platform fees: {formatCurrency(data?.summary.total_platform_fees || 0)} | Payout fees:{' '}
+            {formatCurrency(data?.summary.total_payout_fees || 0)}
           </Text>
         </View>
 
@@ -235,6 +275,7 @@ export default function VendorEarningsScreen() {
         <TouchableOpacity
           style={styles.bankingStatusCard}
           onPress={() => router.push('/(vendor)/earnings/banking')}
+          testID={VENDOR_EARNINGS_TEST_IDS.bankingStatus}
         >
           <View style={styles.bankingStatusLeft}>
             <Ionicons
@@ -257,10 +298,12 @@ export default function VendorEarningsScreen() {
         </TouchableOpacity>
 
         {/* Transactions */}
-        <Text style={styles.sectionTitle}>Transaction History</Text>
+        <Text style={styles.sectionTitle} testID={VENDOR_EARNINGS_TEST_IDS.transactionsTitle}>
+          Transaction History
+        </Text>
 
-        {(!data?.recent_transactions || data.recent_transactions.length === 0) ? (
-          <View style={styles.emptyState}>
+        {!data?.recent_transactions || data.recent_transactions.length === 0 ? (
+          <View style={styles.emptyState} testID={VENDOR_EARNINGS_TEST_IDS.emptyState}>
             <Ionicons name="receipt-outline" size={48} color={colors.gray[200]} />
             <Text style={styles.emptyStateTitle}>No transactions yet</Text>
             <Text style={styles.emptyStateSub}>
@@ -268,24 +311,30 @@ export default function VendorEarningsScreen() {
             </Text>
           </View>
         ) : (
-          <View style={styles.transactionsList}>
+          <View style={styles.transactionsList} testID={VENDOR_EARNINGS_TEST_IDS.transactionList}>
             {data.recent_transactions.map((tx) => (
               <View key={tx.id} style={styles.transactionCard}>
                 <View style={styles.txTop}>
                   <View style={styles.txLeft}>
-                    <Text style={styles.txTitle}>
-                      {tx.maintenance_title || 'Maintenance Job'}
-                    </Text>
+                    <Text style={styles.txTitle}>{tx.maintenance_title || 'Maintenance Job'}</Text>
                     <Text style={styles.txInvoice}>
                       {tx.invoice_number ? `Invoice ${tx.invoice_number}` : ''}
                     </Text>
                   </View>
                   <View style={styles.txRight}>
-                    <Text style={styles.txAmount}>
-                      {formatCurrency(tx.vendor_payout)}
-                    </Text>
-                    <View style={[styles.txStatusBadge, { backgroundColor: payoutStatusColor(tx.payout_status) + '20' }]}>
-                      <Text style={[styles.txStatusText, { color: payoutStatusColor(tx.payout_status) }]}>
+                    <Text style={styles.txAmount}>{formatCurrency(tx.vendor_payout)}</Text>
+                    <View
+                      style={[
+                        styles.txStatusBadge,
+                        { backgroundColor: payoutStatusColor(tx.payout_status) + '20' },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.txStatusText,
+                          { color: payoutStatusColor(tx.payout_status) },
+                        ]}
+                      >
                         {payoutStatusLabel(tx.payout_status)}
                       </Text>
                     </View>

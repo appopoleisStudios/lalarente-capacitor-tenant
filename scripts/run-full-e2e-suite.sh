@@ -272,6 +272,27 @@ done
 #  multi-match in the vendor list. NO sign_out needed here — the flow
 #  self-manages sessions (cold-start stopApp + clearKeychain + role sign-outs).
 # ════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════
+#  PHASE 3B: VENDOR EARNINGS + BANKING (Plane #52)
+#  seed payout prefs → Maestro UI flow (earnings dashboard → banking →
+#  schedule radio change → save → verify). Mirrors the closure/payment wiring.
+# ════════════════════════════════════════════════════
+print_header "VENDOR EARNINGS + BANKING (Plane #52)"
+START=$(date +%s)
+set +e
+bash "$SCRIPT_DIR/run-vendor-earnings-e2e.sh" 2>&1
+EC=$?
+set -e
+END=$(date +%s)
+DURATION=$((END - START))
+if [ "$EC" -eq 0 ]; then
+  echo "    ✓ Vendor Earnings + Banking (${DURATION}s)" >> "$RESULTS_FILE"
+  PASSED=$((PASSED + 1))
+else
+  echo "    ✗ Vendor Earnings + Banking FAILED (${DURATION}s) — exit $EC" >> "$RESULTS_FILE"
+  FAILED=$((FAILED + 1))
+fi
+
 print_header "PHASE 4: E2E MAINTENANCE SMOKE (tenant→vendor)"
 E2E_TITLE="E2E Test - Leaking $(date +%s)"
 run_flow "e2e-tenant-create-vendor-quote" \

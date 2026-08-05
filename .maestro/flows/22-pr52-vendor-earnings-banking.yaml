@@ -1,0 +1,129 @@
+# Vendor Earnings Dashboard + Banking Preferences (Plane #52)
+# login → Earnings tab (summary + transaction history) → Banking screen
+# (pre-filled prefs from seed) → change schedule via radio → save → verify.
+#
+# Prerequisites:
+#   - scripts/seed-vendor-banking.mjs has seeded the E2E vendor's payout
+#     preferences via the REAL save-vendor-payout-preferences edge function
+#     (weekly, First National Bank, ****8093). The runner orchestrates
+#     seed → flow (see scripts/run-vendor-earnings-e2e.sh).
+#   - PAYOUT_ENCRYPTION_KEY secret configured on live.
+#
+# NOTE: no text input here. iOS number-pad fields are flaky under Maestro
+# (hideKeyboard fails, tap-outside lands on the Dynamic Island, and focus
+# never moves — all inputText lands in the first field). The banking write
+# path is covered by the seed (real edge function, HTTP 200, encrypted) and
+# this flow exercises the read/render path + a radio-tap schedule change +
+# the UI save (which persists the schedule change).
+appId: com.lalarente.app
+---
+# Self-healing vendor session (same pattern as vendor-dashboard flow).
+- runFlow: ../subflows/login-vendor.yaml
+
+# ── Earnings tab ──
+- extendedWaitUntil:
+    visible:
+      id: "tab-vendor-earnings"
+    timeout: 15000
+- tapOn:
+    id: "tab-vendor-earnings"
+
+# ── Earnings dashboard ──
+- extendedWaitUntil:
+    visible:
+      id: "vendor-earnings-title"
+    timeout: 20000
+
+- assertVisible:
+    id: "vendor-earnings-total-earned"
+- assertVisible:
+    id: "vendor-earnings-pending-total"
+- assertVisible:
+    id: "vendor-earnings-net-earnings"
+- assertVisible:
+    id: "vendor-earnings-schedule"
+- assertVisible:
+    id: "vendor-earnings-fees-banner"
+
+# Pending count sub-label ("N payments") — regex match inside the node.
+- extendedWaitUntil:
+    visible: ".*payment.*"
+    timeout: 10000
+    optional: true
+
+# Transaction history — E2E vendor has completed payments from the payment
+# suites, so at least one card renders with an invoice number.
+- extendedWaitUntil:
+    visible: ".*Invoice.*"
+    timeout: 15000
+    optional: true
+
+# Banking status shows "Banking Details Set" (seeded prefs) with bank name.
+- extendedWaitUntil:
+    visible: ".*Banking Details Set.*"
+    timeout: 15000
+
+# ── Banking screen ──
+- tapOn:
+    id: "vendor-earnings-banking-button"
+
+- extendedWaitUntil:
+    visible:
+      id: "vendor-banking-title"
+    timeout: 15000
+
+# Payout schedule selector
+- assertVisible:
+    id: "vendor-banking-schedule-instant"
+- assertVisible:
+    id: "vendor-banking-schedule-daily"
+- assertVisible:
+    id: "vendor-banking-schedule-weekly"
+
+# Pre-filled values from the seed (proves the read/decrypt render path):
+# bank name + branch code are visible on screen.
+- assertVisible:
+    text: "First National Bank"
+- assertVisible:
+    text: "255005"
+
+# Change schedule to Daily via radio tap (no keyboard interaction).
+- tapOn:
+    id: "vendor-banking-schedule-daily"
+
+# Save → success alert → OK (returns to earnings screen)
+- tapOn:
+    id: "vendor-banking-save-button"
+
+- extendedWaitUntil:
+    visible: "Saved"
+    timeout: 15000
+- tapOn: "OK"
+
+# ── Verify saved state: navigate deterministically to earnings ──
+# The banking route is hidden (href: null) and lives on the ROOT stack, so
+# router.back() from it pops back to the tabs' initial route (dashboard),
+# NOT the earnings tab. Navigate dashboard → earnings deterministically.
+- extendedWaitUntil:
+    visible:
+      id: "tab-vendor-home"
+    timeout: 10000
+- tapOn:
+    id: "tab-vendor-home"
+
+- extendedWaitUntil:
+    visible: ".*Quotes.*"
+    timeout: 15000
+
+- tapOn:
+    id: "tab-vendor-earnings"
+
+- extendedWaitUntil:
+    visible:
+      id: "vendor-earnings-title"
+    timeout: 20000
+
+# Schedule card shows the persisted 'daily' label (useFocusEffect reload).
+- extendedWaitUntil:
+    visible: "Daily"
+    timeout: 20000

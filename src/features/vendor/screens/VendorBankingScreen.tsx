@@ -26,7 +26,7 @@ import * as Haptics from 'expo-haptics';
 import { supabase } from '@/src/lib/supabase';
 import { colors } from '@/src/shared/theme/colors';
 
-const BRAND_BLUE = colors.info[500];  // RSA Blue
+const BRAND_BLUE = colors.info[500]; // RSA Blue
 const BRAND_GREEN = colors.success[500]; // SA Green
 
 type PayoutSchedule = 'instant' | 'daily' | 'weekly';
@@ -51,17 +51,54 @@ interface EarningsResponse {
   } | null;
 }
 
-const SCHEDULE_OPTIONS: { value: PayoutSchedule; label: string; desc: string; fee: string }[] = [
-  { value: 'instant', label: 'Instant', desc: 'Same business day', fee: 'R10 fee' },
-  { value: 'daily', label: 'Daily', desc: 'Next business day', fee: 'R5 fee' },
-  { value: 'weekly', label: 'Weekly (Free)', desc: 'Every Monday', fee: 'Free' },
+const SCHEDULE_OPTIONS: {
+  value: PayoutSchedule;
+  label: string;
+  desc: string;
+  fee: string;
+  testID: string;
+}[] = [
+  {
+    value: 'instant',
+    label: 'Instant',
+    desc: 'Same business day',
+    fee: 'R10 fee',
+    testID: 'vendor-banking-schedule-instant',
+  },
+  {
+    value: 'daily',
+    label: 'Daily',
+    desc: 'Next business day',
+    fee: 'R5 fee',
+    testID: 'vendor-banking-schedule-daily',
+  },
+  {
+    value: 'weekly',
+    label: 'Weekly (Free)',
+    desc: 'Every Monday',
+    fee: 'Free',
+    testID: 'vendor-banking-schedule-weekly',
+  },
 ];
 
-const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [
-  { value: 'cheque', label: 'Cheque Account' },
-  { value: 'savings', label: 'Savings Account' },
-  { value: 'transmission', label: 'Transmission Account' },
+const ACCOUNT_TYPES: { value: AccountType; label: string; testID: string }[] = [
+  { value: 'cheque', label: 'Cheque Account', testID: 'vendor-banking-account-type-cheque' },
+  { value: 'savings', label: 'Savings Account', testID: 'vendor-banking-account-type-savings' },
+  {
+    value: 'transmission',
+    label: 'Transmission Account',
+    testID: 'vendor-banking-account-type-transmission',
+  },
 ];
+
+export const VENDOR_BANKING_TEST_IDS = {
+  title: 'vendor-banking-title',
+  accountHolder: 'vendor-banking-account-holder',
+  bankName: 'vendor-banking-bank-name',
+  branchCode: 'vendor-banking-branch-code',
+  accountNumber: 'vendor-banking-account-number',
+  saveButton: 'vendor-banking-save-button',
+};
 
 export default function VendorBankingScreen() {
   const router = useRouter();
@@ -143,13 +180,10 @@ export default function VendorBankingScreen() {
         payload.account_number = accountNumber.trim();
       }
 
-      const { error } = await supabase.functions.invoke(
-        'save-vendor-payout-preferences',
-        {
-          method: 'POST',
-          body: payload,
-        }
-      );
+      const { error } = await supabase.functions.invoke('save-vendor-payout-preferences', {
+        method: 'POST',
+        body: payload,
+      });
 
       if (error) throw new Error(error.message || 'Failed to save preferences');
 
@@ -167,9 +201,12 @@ export default function VendorBankingScreen() {
 
   const scheduleFeeColor = (s: PayoutSchedule) => {
     switch (s) {
-      case 'instant': return colors.error[500];
-      case 'daily': return colors.warning[500];
-      case 'weekly': return BRAND_GREEN;
+      case 'instant':
+        return colors.error[500];
+      case 'daily':
+        return colors.warning[500];
+      case 'weekly':
+        return BRAND_GREEN;
     }
   };
 
@@ -189,7 +226,9 @@ export default function VendorBankingScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.headerBack}>
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Banking Details</Text>
+        <Text style={styles.headerTitle} testID={VENDOR_BANKING_TEST_IDS.title}>
+          Banking Details
+        </Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -216,6 +255,7 @@ export default function VendorBankingScreen() {
                   styles.scheduleOption,
                   schedule === opt.value && styles.scheduleOptionActive,
                 ]}
+                testID={opt.testID}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setSchedule(opt.value);
@@ -228,10 +268,12 @@ export default function VendorBankingScreen() {
                 />
                 <View style={styles.scheduleTextWrap}>
                   <View style={styles.scheduleLabelRow}>
-                    <Text style={[
-                      styles.scheduleLabel,
-                      schedule === opt.value && styles.scheduleLabelActive,
-                    ]}>
+                    <Text
+                      style={[
+                        styles.scheduleLabel,
+                        schedule === opt.value && styles.scheduleLabelActive,
+                      ]}
+                    >
                       {opt.label}
                     </Text>
                     <Text style={[styles.scheduleFee, { color: scheduleFeeColor(opt.value) }]}>
@@ -259,6 +301,7 @@ export default function VendorBankingScreen() {
             value={bankAccountName}
             onChangeText={setBankAccountName}
             autoCapitalize="words"
+            testID={VENDOR_BANKING_TEST_IDS.accountHolder}
           />
 
           {/* Bank Name */}
@@ -269,6 +312,7 @@ export default function VendorBankingScreen() {
             placeholderTextColor={colors.text.tertiary}
             value={bankName}
             onChangeText={setBankName}
+            testID={VENDOR_BANKING_TEST_IDS.bankName}
           />
 
           {/* Branch Code */}
@@ -281,6 +325,7 @@ export default function VendorBankingScreen() {
             onChangeText={setBranchCode}
             keyboardType="number-pad"
             maxLength={10}
+            testID={VENDOR_BANKING_TEST_IDS.branchCode}
           />
 
           {/* Account Number */}
@@ -294,6 +339,7 @@ export default function VendorBankingScreen() {
             keyboardType="number-pad"
             maxLength={20}
             secureTextEntry={false}
+            testID={VENDOR_BANKING_TEST_IDS.accountNumber}
           />
           {hasExistingData && !accountNumber && (
             <Text style={styles.fieldHint}>
@@ -311,15 +357,18 @@ export default function VendorBankingScreen() {
                   styles.accountTypeOption,
                   accountType === at.value && styles.accountTypeOptionActive,
                 ]}
+                testID={at.testID}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setAccountType(at.value);
                 }}
               >
-                <Text style={[
-                  styles.accountTypeText,
-                  accountType === at.value && styles.accountTypeTextActive,
-                ]}>
+                <Text
+                  style={[
+                    styles.accountTypeText,
+                    accountType === at.value && styles.accountTypeTextActive,
+                  ]}
+                >
                   {at.label}
                 </Text>
               </TouchableOpacity>
@@ -330,8 +379,8 @@ export default function VendorBankingScreen() {
           <View style={styles.securityNote}>
             <Ionicons name="shield-checkmark-outline" size={18} color={BRAND_GREEN} />
             <Text style={styles.securityNoteText}>
-              Your bank details are encrypted at rest and used only for processing payouts.
-              We never share your banking information with third parties.
+              Your bank details are encrypted at rest and used only for processing payouts. We never
+              share your banking information with third parties.
             </Text>
           </View>
         </ScrollView>
@@ -343,6 +392,7 @@ export default function VendorBankingScreen() {
           style={[styles.saveButton, saving && { opacity: 0.6 }]}
           onPress={handleSave}
           disabled={saving}
+          testID={VENDOR_BANKING_TEST_IDS.saveButton}
         >
           {saving ? (
             <ActivityIndicator color={colors.text.inverse} />
