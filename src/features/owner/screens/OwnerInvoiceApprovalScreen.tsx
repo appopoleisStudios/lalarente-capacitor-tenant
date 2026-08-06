@@ -73,7 +73,9 @@ export default function OwnerInvoiceApprovalScreen() {
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '—';
     return new Date(dateStr).toLocaleDateString('en-ZA', {
-      day: 'numeric', month: 'short', year: 'numeric',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
     });
   };
 
@@ -247,7 +249,8 @@ export default function OwnerInvoiceApprovalScreen() {
           <View style={styles.approvedBanner}>
             <Ionicons name="checkmark-circle" size={18} color={colors.success[500]} />
             <Text style={styles.approvedText}>
-              Approved {formatDate(invoice.approved_at)}. Payment processing not yet implemented.
+              Approved {formatDate(invoice.approved_at)}. The tenant can now pay this invoice in the
+              app.
             </Text>
           </View>
         )}
@@ -255,7 +258,7 @@ export default function OwnerInvoiceApprovalScreen() {
     );
   };
 
-  const activeInvoice = invoices.find(i => i.status === 'submitted' || i.status === 'approved');
+  const activeInvoice = invoices.find((i) => i.status === 'submitted' || i.status === 'approved');
   const hasInvoices = invoices.length > 0;
 
   return (
@@ -291,7 +294,8 @@ export default function OwnerInvoiceApprovalScreen() {
           <Ionicons name="receipt-outline" size={56} color={colors.gray[300]} />
           <Text style={styles.emptyTitle}>No Invoice Yet</Text>
           <Text style={styles.emptyText}>
-            The vendor has not submitted an invoice yet. Invoices appear here after the vendor submits them.
+            The vendor has not submitted an invoice yet. Invoices appear here after the vendor
+            submits them.
           </Text>
         </View>
       )}
@@ -357,7 +361,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
-  headerButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827', flex: 1, textAlign: 'center' },
 
   scrollView: { flex: 1 },
@@ -488,8 +498,20 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   modalActions: { flexDirection: 'row', gap: 10, marginTop: 16 },
-  modalCancelButton: { flex: 1, paddingVertical: 12, borderRadius: 10, backgroundColor: colors.gray[100], alignItems: 'center' },
+  modalCancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: colors.gray[100],
+    alignItems: 'center',
+  },
   modalCancelText: { fontSize: 15, fontWeight: '600', color: '#6b7280' },
-  modalSubmitButton: { flex: 1, paddingVertical: 12, borderRadius: 10, backgroundColor: colors.error[500], alignItems: 'center' },
+  modalSubmitButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: colors.error[500],
+    alignItems: 'center',
+  },
   modalSubmitText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
 });
