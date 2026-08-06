@@ -23,10 +23,11 @@ import { colors } from '@/src/shared/theme/colors';
 const ROLE_COLORS = {
   owner: { primary: colors.rsa.blue, secondary: colors.rsa.gold },
   tenant: { primary: colors.rsa.green, secondary: colors.rsa.gold },
+  vendor: { primary: colors.role.vendor.primary, secondary: colors.role.vendor.secondary },
 };
 
 interface Props {
-  role: 'owner' | 'tenant';
+  role: 'owner' | 'tenant' | 'vendor';
 }
 
 export default function MessageThreadScreen({ role = 'owner' }: Props) {
@@ -58,7 +59,9 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
   }, [id, userId]);
 
   const initUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (user) {
       setUserId(user.id);
     }
@@ -85,27 +88,33 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
     }
   };
 
-  const handleNewMessage = useCallback((newMessage: any) => {
-    setMessages(prev => {
-      // Skip if real message ID already in list
-      if (prev.some(m => m.id === newMessage.id)) return prev;
-      // Replace any optimistic temp message with same content+sender
-      const filtered = prev.filter(m =>
-        !(String(m.id).startsWith('temp-') &&
-          m.content === newMessage.content &&
-          m.sender_id === newMessage.sender_id)
-      );
-      return [...filtered, newMessage];
-    });
+  const handleNewMessage = useCallback(
+    (newMessage: any) => {
+      setMessages((prev) => {
+        // Skip if real message ID already in list
+        if (prev.some((m) => m.id === newMessage.id)) return prev;
+        // Replace any optimistic temp message with same content+sender
+        const filtered = prev.filter(
+          (m) =>
+            !(
+              String(m.id).startsWith('temp-') &&
+              m.content === newMessage.content &&
+              m.sender_id === newMessage.sender_id
+            )
+        );
+        return [...filtered, newMessage];
+      });
 
-    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
 
-    // Mark as read if message is from the other party
-    if (newMessage.sender_id !== userId && id) {
-      const threadId = Array.isArray(id) ? id[0] : id;
-      messagesApi.markAsRead(threadId, userId!, role);
-    }
-  }, [userId, id, role]);
+      // Mark as read if message is from the other party
+      if (newMessage.sender_id !== userId && id) {
+        const threadId = Array.isArray(id) ? id[0] : id;
+        messagesApi.markAsRead(threadId, userId!, role);
+      }
+    },
+    [userId, id, role]
+  );
 
   const sendMessage = async () => {
     if (!messageText.trim() || !thread || !userId) return;
@@ -127,7 +136,7 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
       read_at: null,
       delivered_at: null,
     };
-    setMessages(prev => [...prev, optimistic]);
+    setMessages((prev) => [...prev, optimistic]);
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50);
 
     try {
@@ -138,11 +147,11 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
         sender_role: role,
       });
       // Replace optimistic message with confirmed DB row
-      setMessages(prev => prev.map(m => m.id === tempId ? sent : m));
+      setMessages((prev) => prev.map((m) => (m.id === tempId ? sent : m)));
     } catch (error) {
       console.error('Error sending message:', error);
       // Remove optimistic message and restore text so user can retry
-      setMessages(prev => prev.filter(m => m.id !== tempId));
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
       setMessageText(content);
     } finally {
       setSending(false);
@@ -229,9 +238,7 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
             </Text>
             <Text style={[styles.messageTime, isMine && styles.messageTimeMine]}>
               {formatTime(item.created_at)}
-              {isMine && item.read_at && (
-                <Text> · Read</Text>
-              )}
+              {isMine && item.read_at && <Text> · Read</Text>}
             </Text>
           </View>
         </View>
@@ -273,7 +280,9 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
             {otherParty?.avatar_url ? (
               <Image source={{ uri: otherParty.avatar_url }} style={styles.headerAvatar} />
             ) : (
-              <View style={[styles.headerAvatarPlaceholder, { backgroundColor: roleColors.primary }]}>
+              <View
+                style={[styles.headerAvatarPlaceholder, { backgroundColor: roleColors.primary }]}
+              >
                 <Text style={styles.headerAvatarText}>
                   {otherParty?.full_name?.charAt(0).toUpperCase() || '?'}
                 </Text>
@@ -309,7 +318,7 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
           ref={flatListRef}
           style={styles.messagesFlex}
           data={messages}
-          keyExtractor={item => item.id}
+          keyExtractor={(item) => item.id}
           renderItem={renderMessage}
           contentContainerStyle={styles.messagesList}
           keyboardShouldPersistTaps="handled"
