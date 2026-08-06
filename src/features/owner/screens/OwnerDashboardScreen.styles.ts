@@ -19,6 +19,7 @@ export const styles = StyleSheet.create({
     borderBottomColor: '#f3f4f6',
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
   headerSubtitle: { fontSize: 13, fontWeight: '600', color: RSA.blue, marginTop: 2 },
   notificationInner: {

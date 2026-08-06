@@ -77,6 +77,7 @@ OWNER_FLOWS=(
   "15-pr7-owner-disputes-empty"
   "16-pr6-owner-lala-ai"
   "18-pr11-owner-applications"
+  "owner-messages-entry"
   # Client feedback owner flows
   "client-feedback/s2-01-owner-dashboard"
   "client-feedback/s2-02-owner-bell"
