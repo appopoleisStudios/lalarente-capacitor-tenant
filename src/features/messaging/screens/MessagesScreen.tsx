@@ -276,8 +276,10 @@ export default function MessagesScreen({ role = 'owner' }: Props) {
             Messages
           </Text>
           {/* Compose is owner/tenant only — vendor compose isn't a valid flow
-              (no lease-picker recipient model), so hide it for vendor parity. */}
-          {role !== 'vendor' && (
+              (no lease-picker recipient model), so hide it for vendor parity.
+              Keep a matching right spacer so the centered title doesn't jam
+              right under space-between. */}
+          {role !== 'vendor' ? (
             <TouchableOpacity
               style={styles.backButton}
               onPress={() => {
@@ -292,6 +294,8 @@ export default function MessagesScreen({ role = 'owner' }: Props) {
                 color={role === 'tenant' ? colors.rsa.green : colors.rsa.blue}
               />
             </TouchableOpacity>
+          ) : (
+            <View style={styles.backButton} />
           )}
         </View>
 
