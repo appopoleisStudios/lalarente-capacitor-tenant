@@ -11,10 +11,8 @@
  */
 
 import { supabase } from '@/src/lib/supabase';
-import type {
-  ClosureReport,
-  MaintenanceRequest,
-} from '../types/maintenance.types';
+import { triggerWorkOrderReport } from './workOrderReport.api';
+import type { ClosureReport, MaintenanceRequest } from '../types/maintenance.types';
 
 type TenantVerificationStatus = 'pending' | 'approved' | 'rejected' | 'timeout_approved';
 type SenderRole = 'owner' | 'tenant';
@@ -67,8 +65,7 @@ export async function forwardClosureToTenant(
   autoApproveAt.setHours(autoApproveAt.getHours() + 72);
 
   // Update closure report
-  const { data, error } = await (supabase
-    .from('closure_reports') as any)
+  const { data, error } = await (supabase.from('closure_reports') as any)
     .update({
       tenant_verification_status: 'pending_tenant',
       forwarded_to_tenant_at: new Date().toISOString(),
@@ -127,8 +124,7 @@ export async function tenantApproveCompletion(
   }
 
   // Update closure report
-  const { data, error } = await (supabase
-    .from('closure_reports') as any)
+  const { data, error } = await (supabase.from('closure_reports') as any)
     .update({
       tenant_verification_status: 'tenant_approved',
       tenant_ack_at: new Date().toISOString(),
@@ -143,9 +139,31 @@ export async function tenantApproveCompletion(
     throw error;
   }
 
+  // Tenant approval is the completion point — the job is accepted. Mark the
+  // request completed (status-guarded so an already-completed/closed request
+  // is never regressed) BEFORE triggering the Plane #68 Work Order report:
+  // the generate-work-order-report completion gate (status IN
+  // completed/closed) 409s otherwise. Mirrors the auto-approve cron
+  // promotion in supabase/functions/auto-approve-closures/index.ts.
+  const now = new Date().toISOString();
+  const { error: mrError } = await (supabase.from('maintenance_requests') as any)
+    .update({
+      status: 'completed',
+      completed_date: now,
+      closure_approved_at: now,
+    })
+    .eq('id', requestId)
+    .eq('status', 'in_progress'); // only promote in-flight requests
+  if (mrError) {
+    console.error('❌ Failed to mark request completed on tenant approval:', mrError);
+  }
+
   console.log('✅ Tenant approved work completion');
 
   // TODO: Send notification to owner and vendor (TENANT_APPROVED_WORK)
+
+  // Plane #68 — generate + email the Work Order completion report.
+  triggerWorkOrderReport(requestId);
 
   return data as ClosureReport;
 }
@@ -199,8 +217,7 @@ export async function tenantRejectCompletion(
   }
 
   // Get current closure report to increment rejection count
-  const { data: currentClosure } = await (supabase
-    .from('closure_reports') as any)
+  const { data: currentClosure } = await (supabase.from('closure_reports') as any)
     .select('rejection_count')
     .eq('maintenance_request_id', requestId)
     .single();
@@ -211,8 +228,7 @@ export async function tenantRejectCompletion(
   console.log('📊 Rejection count:', newRejectionCount, 'Mediation:', requiresMediation);
 
   // Update closure report
-  const { data, error } = await (supabase
-    .from('closure_reports') as any)
+  const { data, error } = await (supabase.from('closure_reports') as any)
     .update({
       tenant_verification_status: 'tenant_rejected',
       tenant_ack_at: new Date().toISOString(),
@@ -235,8 +251,7 @@ export async function tenantRejectCompletion(
   }
 
   // Reset closure_requested_at on maintenance request (allows vendor to resubmit)
-  await (supabase
-    .from('maintenance_requests') as any)
+  await (supabase.from('maintenance_requests') as any)
     .update({ closure_requested_at: null })
     .eq('id', requestId);
 
@@ -290,8 +305,7 @@ export async function overrideTenantVerification(
   }
 
   // Update closure report
-  const { data, error } = await (supabase
-    .from('closure_reports') as any)
+  const { data, error } = await (supabase.from('closure_reports') as any)
     .update({
       tenant_verification_status: 'owner_override',
       owner_override_reason: reason,
@@ -355,8 +369,7 @@ export async function markAsEmergencyRepair(
   }
 
   // Update closure report to skip tenant verification
-  const { data, error } = await (supabase
-    .from('closure_reports') as any)
+  const { data, error } = await (supabase.from('closure_reports') as any)
     .update({
       tenant_verification_status: 'owner_override',
       owner_override_reason: `EMERGENCY: ${emergencyReason}`,
@@ -395,15 +408,18 @@ export async function autoApproveExpiredClosures(): Promise<ClosureReport[]> {
   const now = new Date().toISOString();
 
   // Find closures pending tenant verification that have passed auto-approve deadline
-  const { data: expiredClosures, error: fetchError } = await (supabase
-    .from('closure_reports') as any)
-    .select(`
+  const { data: expiredClosures, error: fetchError } = await (
+    supabase.from('closure_reports') as any
+  )
+    .select(
+      `
       id,
       maintenance_request_id,
       forwarded_to_tenant_at,
       auto_approve_at,
       maintenance_requests!inner(owner_id, tenant_id)
-    `)
+    `
+    )
     .eq('tenant_verification_status', 'pending_tenant')
     .lte('auto_approve_at', now)
     .limit(50); // Process max 50 at a time
@@ -424,8 +440,7 @@ export async function autoApproveExpiredClosures(): Promise<ClosureReport[]> {
   const autoApproved: ClosureReport[] = [];
 
   for (const closure of expiredClosures) {
-    const { data: updated, error: updateError } = await (supabase
-      .from('closure_reports') as any)
+    const { data: updated, error: updateError } = await (supabase.from('closure_reports') as any)
       .update({
         tenant_verification_status: 'auto_approved',
         tenant_ack_at: new Date().toISOString(),
@@ -490,8 +505,7 @@ export async function addMediationMessage(
   }
 
   // Insert mediation message
-  const { data, error } = await (supabase
-    .from('closure_mediation_messages') as any)
+  const { data, error } = await (supabase.from('closure_mediation_messages') as any)
     .insert({
       closure_report_id: closureReportId,
       sender_id: senderId,
@@ -499,10 +513,12 @@ export async function addMediationMessage(
       message: message.trim(),
       photos: photos || [],
     })
-    .select(`
+    .select(
+      `
       *,
       sender:sender_id(id, full_name, avatar_url, email)
-    `)
+    `
+    )
     .single();
 
   if (error) {
@@ -529,17 +545,16 @@ export async function addMediationMessage(
  * const messages = await getMediationMessages(closureReportId);
  * ```
  */
-export async function getMediationMessages(
-  closureReportId: string
-): Promise<MediationMessage[]> {
+export async function getMediationMessages(closureReportId: string): Promise<MediationMessage[]> {
   console.log('📖 Fetching mediation messages:', { closureReportId });
 
-  const { data, error } = await (supabase
-    .from('closure_mediation_messages') as any)
-    .select(`
+  const { data, error } = await (supabase.from('closure_mediation_messages') as any)
+    .select(
+      `
       *,
       sender:sender_id(id, full_name, avatar_url, email)
-    `)
+    `
+    )
     .eq('closure_report_id', closureReportId)
     .order('created_at', { ascending: true });
 
@@ -573,8 +588,7 @@ export async function flagForMediation(
 ): Promise<ClosureReport> {
   console.log('🚩 Flagging for mediation:', { closureReportId });
 
-  const { data, error } = await (supabase
-    .from('closure_reports') as any)
+  const { data, error } = await (supabase.from('closure_reports') as any)
     .update({
       mediation_required: true,
       mediation_reason: reason,

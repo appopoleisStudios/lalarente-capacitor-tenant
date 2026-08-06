@@ -4,15 +4,21 @@
  */
 
 import { supabase } from '@/src/lib/supabase';
-import type { MaintenanceRequest, MaintenanceStatus, MmsStatus, Priority } from '../types/maintenance.types';
+import { triggerWorkOrderReport } from '../work/workOrderReport.api';
+import type {
+  MaintenanceRequest,
+  MaintenanceStatus,
+  MmsStatus,
+  Priority,
+} from '../types/maintenance.types';
 
 /**
  * Update maintenance request status
- * 
+ *
  * @param id - The maintenance request ID
  * @param status - The new status
  * @returns Updated maintenance request
- * 
+ *
  * @example
  * ```typescript
  * const updated = await updateStatus(requestId, 'in_progress');
@@ -36,11 +42,11 @@ export async function updateStatus(
 /**
  * Update MMS (Maintenance Management System) status
  * This tracks the workflow state of the request
- * 
+ *
  * @param id - The maintenance request ID
  * @param mmsStatus - The new MMS status
  * @returns Updated maintenance request
- * 
+ *
  * @example
  * ```typescript
  * const updated = await updateMmsStatus(requestId, 'vendor_routed');
@@ -71,20 +77,17 @@ export async function updateMmsStatus(
 
 /**
  * Update maintenance request priority
- * 
+ *
  * @param id - The maintenance request ID
  * @param priority - The new priority level
  * @returns Updated maintenance request
- * 
+ *
  * @example
  * ```typescript
  * const updated = await updatePriority(requestId, 'high');
  * ```
  */
-export async function updatePriority(
-  id: string,
-  priority: Priority
-): Promise<MaintenanceRequest> {
+export async function updatePriority(id: string, priority: Priority): Promise<MaintenanceRequest> {
   const { data, error } = await supabase
     .from('maintenance_requests')
     .update({ priority })
@@ -99,10 +102,10 @@ export async function updatePriority(
 /**
  * Acknowledge a maintenance request (Owner action)
  * Marks the request as reviewed by the owner
- * 
+ *
  * @param id - The maintenance request ID
  * @returns Updated maintenance request
- * 
+ *
  * @example
  * ```typescript
  * const acknowledged = await acknowledgeRequest(requestId);
@@ -126,10 +129,10 @@ export async function acknowledgeRequest(id: string): Promise<MaintenanceRequest
 /**
  * Close a maintenance request
  * Marks the request as closed and sets completion date
- * 
+ *
  * @param id - The maintenance request ID
  * @returns Updated maintenance request
- * 
+ *
  * @example
  * ```typescript
  * const closed = await closeRequest(requestId);
@@ -147,5 +150,9 @@ export async function closeRequest(id: string): Promise<MaintenanceRequest> {
     .single();
 
   if (error) throw error;
+
+  // Plane #68 — generate + email the Work Order completion report.
+  triggerWorkOrderReport(id);
+
   return data as unknown as MaintenanceRequest;
 }

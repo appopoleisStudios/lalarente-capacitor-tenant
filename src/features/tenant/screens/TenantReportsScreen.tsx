@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
+import * as Linking from 'expo-linking';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/src/shared/theme/colors';
 import { supabase } from '@/src/lib/supabase';
@@ -41,6 +42,14 @@ interface ClosureItem {
   maintenance_request: { id: string; title: string } | null;
 }
 
+interface WorkOrderItem {
+  id: string;
+  title: string;
+  completed_date: string | null;
+  work_order_report_url: string | null;
+  work_order_report_sent_at: string | null;
+}
+
 const INSPECTION_TYPE_LABEL: Record<string, string> = {
   move_in: 'Move-In Inspection',
   periodic: 'Periodic Inspection',
@@ -60,6 +69,7 @@ export default function TenantReportsScreen() {
   const [loading, setLoading] = useState(true);
   const [inspections, setInspections] = useState<InspectionItem[]>([]);
   const [pendingClosures, setPendingClosures] = useState<ClosureItem[]>([]);
+  const [workOrders, setWorkOrders] = useState<WorkOrderItem[]>([]);
 
   useFocusEffect(
     useCallback(() => {
@@ -70,17 +80,21 @@ export default function TenantReportsScreen() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       // Fetch inspections
       const { data: inspectionData } = await supabase
         .from('inspections')
-        .select(`
+        .select(
+          `
           id, type, status, scheduled_date, completed_date,
           overall_condition, tenant_signed_at,
           property:properties!property_id(id, title)
-        `)
+        `
+        )
         .eq('tenant_id', user.id)
         .order('scheduled_date', { ascending: false })
         .limit(10);
@@ -99,17 +113,31 @@ export default function TenantReportsScreen() {
       if (reqIds.length > 0) {
         const { data: closureData } = await supabase
           .from('closure_reports')
-          .select(`
+          .select(
+            `
             id, completion_notes, completion_photos,
             tenant_verification_status, forwarded_to_tenant_at,
             maintenance_request:maintenance_requests!maintenance_request_id(id, title)
-          `)
+          `
+          )
           .eq('tenant_verification_status', 'pending_tenant')
           .in('maintenance_request_id', reqIds);
 
         setPendingClosures((closureData as any[]) ?? []);
+
+        // Plane #68 — completed jobs with a generated Work Order report.
+        const { data: workOrderData } = await supabase
+          .from('maintenance_requests')
+          .select('id, title, completed_date, work_order_report_url, work_order_report_sent_at')
+          .eq('tenant_id', user.id)
+          .in('status', ['completed', 'closed'])
+          .not('work_order_report_url', 'is', null)
+          .order('completed_date', { ascending: false })
+          .limit(20);
+        setWorkOrders((workOrderData as any[]) ?? []);
       } else {
         setPendingClosures([]);
+        setWorkOrders([]);
       }
     } catch (err) {
       console.error('Error loading reports:', err);
@@ -129,7 +157,8 @@ export default function TenantReportsScreen() {
     });
   };
 
-  const isEmpty = inspections.length === 0 && pendingClosures.length === 0;
+  const isEmpty =
+    inspections.length === 0 && pendingClosures.length === 0 && workOrders.length === 0;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -165,7 +194,7 @@ export default function TenantReportsScreen() {
               <Text style={styles.sectionSubtitle}>
                 The following maintenance jobs are completed — please review and confirm
               </Text>
-              {pendingClosures.map(closure => (
+              {pendingClosures.map((closure) => (
                 <TouchableOpacity
                   key={closure.id}
                   style={styles.closureCard}
@@ -182,7 +211,8 @@ export default function TenantReportsScreen() {
                       </Text>
                       {closure.forwarded_to_tenant_at && (
                         <Text style={styles.closureDate}>
-                          Forwarded {new Date(closure.forwarded_to_tenant_at).toLocaleDateString('en-ZA')}
+                          Forwarded{' '}
+                          {new Date(closure.forwarded_to_tenant_at).toLocaleDateString('en-ZA')}
                         </Text>
                       )}
                     </View>
@@ -196,15 +226,68 @@ export default function TenantReportsScreen() {
             </View>
           )}
 
+          {/* Completed Work Orders (Plane #68) */}
+          {workOrders.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Work Orders</Text>
+              <Text style={styles.sectionSubtitle}>
+                Completed jobs — view the Work Order report emailed to you
+              </Text>
+              {workOrders.map((wo) => (
+                <TouchableOpacity
+                  key={wo.id}
+                  style={styles.inspectionCard}
+                  onPress={() =>
+                    wo.work_order_report_url && Linking.openURL(wo.work_order_report_url)
+                  }
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.inspectionTop}>
+                    <View style={[styles.iconCircle, { backgroundColor: colors.success[50] }]}>
+                      <Ionicons name="document-text" size={20} color={colors.success[600]} />
+                    </View>
+                    <View style={styles.inspectionInfo}>
+                      <Text style={styles.inspectionType}>{wo.title}</Text>
+                      {wo.completed_date && (
+                        <Text style={styles.inspectionDate}>
+                          Completed{' '}
+                          {new Date(wo.completed_date).toLocaleDateString('en-ZA', {
+                            weekday: 'short',
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </Text>
+                      )}
+                    </View>
+                    <View style={[styles.statusBadge, { backgroundColor: colors.success[50] }]}>
+                      <Text style={[styles.statusText, { color: colors.success[600] }]}>
+                        Completed
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={[styles.signedRow, { marginTop: 10 }]}>
+                    <Ionicons name="open-outline" size={16} color={colors.primary[500]} />
+                    <Text style={styles.signedText}>View Work Order Report</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
           {/* Inspections */}
           {inspections.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Inspection Reports</Text>
-              {inspections.map(inspection => {
-                const statusCfg = INSPECTION_STATUS_CONFIG[inspection.status]
-                  ?? { label: inspection.status, color: colors.text.secondary, bg: colors.background.secondary };
+              {inspections.map((inspection) => {
+                const statusCfg = INSPECTION_STATUS_CONFIG[inspection.status] ?? {
+                  label: inspection.status,
+                  color: colors.text.secondary,
+                  bg: colors.background.secondary,
+                };
                 const typeLabel = INSPECTION_TYPE_LABEL[inspection.type] ?? inspection.type;
-                const needsSignature = inspection.status === 'pending_signatures' && !inspection.tenant_signed_at;
+                const needsSignature =
+                  inspection.status === 'pending_signatures' && !inspection.tenant_signed_at;
 
                 const navigateToInspection = () => {
                   router.push({
@@ -233,7 +316,10 @@ export default function TenantReportsScreen() {
                         )}
                         <Text style={styles.inspectionDate}>
                           {new Date(inspection.scheduled_date).toLocaleDateString('en-ZA', {
-                            weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+                            weekday: 'short',
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
                           })}
                         </Text>
                       </View>
@@ -248,7 +334,8 @@ export default function TenantReportsScreen() {
                       <View style={styles.conditionRow}>
                         <Text style={styles.conditionLabel}>Condition:</Text>
                         <Text style={styles.conditionValue}>
-                          {inspection.overall_condition.charAt(0).toUpperCase() + inspection.overall_condition.slice(1)}
+                          {inspection.overall_condition.charAt(0).toUpperCase() +
+                            inspection.overall_condition.slice(1)}
                         </Text>
                       </View>
                     )}
@@ -306,21 +393,34 @@ const styles = StyleSheet.create({
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   emptyTitle: { fontSize: 20, fontWeight: '700', color: colors.text.primary, marginTop: 16 },
   emptyText: {
-    fontSize: 14, color: colors.text.secondary, textAlign: 'center',
-    marginTop: 8, lineHeight: 20,
+    fontSize: 14,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginTop: 8,
+    lineHeight: 20,
   },
   section: { padding: 16, paddingBottom: 0 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 },
   sectionTitle: {
-    fontSize: 16, fontWeight: '700', color: colors.text.primary, marginBottom: 12,
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text.primary,
+    marginBottom: 12,
   },
   sectionSubtitle: {
-    fontSize: 13, color: colors.text.secondary, marginBottom: 12, lineHeight: 18,
+    fontSize: 13,
+    color: colors.text.secondary,
+    marginBottom: 12,
+    lineHeight: 18,
   },
   countBadge: {
     backgroundColor: colors.warning[500],
-    borderRadius: 10, minWidth: 20, height: 20,
-    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
     marginBottom: 12,
   },
   countText: { fontSize: 11, fontWeight: '700', color: colors.text.inverse },
@@ -337,16 +437,24 @@ const styles = StyleSheet.create({
   },
   closureLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   iconCircle: {
-    width: 40, height: 40, borderRadius: 20,
-    alignItems: 'center', justifyContent: 'center', marginRight: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
   },
   closureInfo: { flex: 1 },
   closureTitle: { fontSize: 14, fontWeight: '600', color: colors.text.primary },
   closureDate: { fontSize: 11, color: colors.text.tertiary, marginTop: 2 },
   actionRequired: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     backgroundColor: colors.warning[50],
-    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
   actionRequiredText: { fontSize: 12, fontWeight: '700', color: colors.warning[500] },
   inspectionCard: {
@@ -361,24 +469,38 @@ const styles = StyleSheet.create({
   inspectionProp: { fontSize: 12, color: colors.text.secondary, marginTop: 2 },
   inspectionDate: { fontSize: 12, color: colors.text.tertiary, marginTop: 2 },
   statusBadge: {
-    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
   },
   statusText: { fontSize: 11, fontWeight: '700' },
   conditionRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    marginTop: 10, paddingTop: 10,
-    borderTopWidth: 1, borderTopColor: colors.border.default,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.border.default,
   },
   conditionLabel: { fontSize: 12, color: colors.text.secondary },
   conditionValue: { fontSize: 12, fontWeight: '600', color: colors.text.primary },
   signatureAlert: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    marginTop: 10, padding: 10,
-    backgroundColor: colors.warning[50], borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: colors.warning[50],
+    borderRadius: 8,
   },
   signatureAlertText: { fontSize: 12, color: colors.warning[500], flex: 1 },
   signedRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
   },
   signedText: { fontSize: 12, color: colors.primary[500] },
 });
