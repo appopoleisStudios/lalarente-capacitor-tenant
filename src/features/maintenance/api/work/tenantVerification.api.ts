@@ -139,6 +139,25 @@ export async function tenantApproveCompletion(
     throw error;
   }
 
+  // Tenant approval is the completion point — the job is accepted. Mark the
+  // request completed (status-guarded so an already-completed/closed request
+  // is never regressed) BEFORE triggering the Plane #68 Work Order report:
+  // the generate-work-order-report completion gate (status IN
+  // completed/closed) 409s otherwise. Mirrors the auto-approve cron
+  // promotion in supabase/functions/auto-approve-closures/index.ts.
+  const now = new Date().toISOString();
+  const { error: mrError } = await (supabase.from('maintenance_requests') as any)
+    .update({
+      status: 'completed',
+      completed_date: now,
+      closure_approved_at: now,
+    })
+    .eq('id', requestId)
+    .eq('status', 'in_progress'); // only promote in-flight requests
+  if (mrError) {
+    console.error('❌ Failed to mark request completed on tenant approval:', mrError);
+  }
+
   console.log('✅ Tenant approved work completion');
 
   // TODO: Send notification to owner and vendor (TENANT_APPROVED_WORK)
