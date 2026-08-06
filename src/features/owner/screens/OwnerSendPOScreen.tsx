@@ -149,9 +149,8 @@ export default function OwnerSendPOScreen() {
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Intro */}
+        {/* Intro — no duplicate H1: the nav header already titles this screen. */}
         <View style={styles.intro}>
-          <Text style={styles.title}>Send Purchase Order</Text>
           <Text style={styles.subtitle}>Schedule work and send PO to vendor</Text>
         </View>
 
@@ -296,12 +295,6 @@ const styles = StyleSheet.create({
   },
   intro: {
     marginBottom: 24,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1A1A1A',
-    marginBottom: 8,
   },
   subtitle: {
     fontSize: 15,
