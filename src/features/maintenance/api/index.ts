@@ -18,6 +18,7 @@ import * as VendorDiscoveryAPI from './vendors/vendorDiscovery.api';
 import * as VendorRoutingAPI from './vendors/vendorRouting.api';
 import * as WorkClosureAPI from './work/workClosure.api';
 import * as WorkExecutionAPI from './work/workExecution.api';
+import * as WorkOrderReportAPI from './work/workOrderReport.api';
 
 // Export vendor maintenance API separately for backward compatibility
 import * as VendorMaintenanceAPI from './vendors/vendorMaintenance.api';
@@ -76,6 +77,7 @@ export {
 export * from './work/workClosure.api';
 export * from './work/workExecution.api';
 export * from './work/workProgress.api';
+export * from './work/workOrderReport.api';
 
 // ============================================
 // QUOTES
@@ -176,6 +178,9 @@ export const maintenanceApi = {
   getClosureReport: WorkClosureAPI.getClosureReport,
   vendorRequestClosureWithPhotos: WorkClosureAPI.vendorRequestClosureWithPhotos,
   tenantConfirmClosureWithPhotos: WorkClosureAPI.tenantConfirmClosureWithPhotos,
+
+  // Work Order Reports (Plane #68)
+  triggerWorkOrderReport: WorkOrderReportAPI.triggerWorkOrderReport,
 };
 
 /**

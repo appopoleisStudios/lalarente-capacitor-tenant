@@ -5,6 +5,7 @@
 
 import { supabase } from '@/src/lib/supabase';
 import { notificationsApi } from '@/src/features/notifications/api/notificationsApi';
+import { triggerWorkOrderReport } from './workOrderReport.api';
 import type { ClosureReport, MaintenanceRequest } from '../types/maintenance.types';
 
 /**
@@ -234,6 +235,9 @@ export async function approveClosureReport(
       })
       .catch((e) => console.error('Failed to send closure approved to tenant:', e));
   }
+
+  // Plane #68 — generate + email the Work Order completion report.
+  triggerWorkOrderReport(requestId);
 
   return data as MaintenanceRequest;
 }
@@ -504,6 +508,9 @@ export async function tenantConfirmClosureWithPhotos(
       })
       .catch((e) => console.error('Failed to send closure confirmed to owner:', e));
   }
+
+  // Plane #68 — generate + email the Work Order completion report.
+  triggerWorkOrderReport(requestId);
 
   console.log('✅ Tenant confirmed closure with photos');
   return data as ClosureReport;

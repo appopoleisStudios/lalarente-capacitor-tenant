@@ -98,6 +98,23 @@ serve(async (req) => {
       }
       autoApproved++;
 
+      // Auto-approval semantically accepts the completed work — mark the
+      // request completed so the generate-work-order-report completion gate
+      // (status IN completed/closed) passes. Without this the Plane #68
+      // report trigger below would always 409 and never fire.
+      const { error: mrError } = await supabase
+        .from('maintenance_requests')
+        .update({
+          status: 'completed',
+          completed_date: now,
+          closure_approved_at: now,
+        })
+        .eq('id', closure.maintenance_request_id)
+        .eq('status', 'in_progress'); // only promote in-flight requests
+      if (mrError) {
+        console.error(`❌ Failed to mark ${closure.maintenance_request_id} completed:`, mrError);
+      }
+
       await notify(
         supabase,
         mr?.owner_id,
@@ -119,6 +136,25 @@ serve(async (req) => {
         'The tenant did not respond within 72 hours — the completed work was auto-approved.',
         { closure_id: closure.id, maintenance_request_id: closure.maintenance_request_id }
       );
+
+      // Plane #68 — after auto-approval the work is effectively complete, so
+      // generate + email the Work Order completion report to Owner + Tenant.
+      // Fire-and-forget: a report failure must not fail the cron batch.
+      try {
+        await fetch(`${supabaseUrl}/functions/v1/generate-work-order-report`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${supabaseServiceKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ maintenance_request_id: closure.maintenance_request_id }),
+        });
+      } catch (reportErr) {
+        console.error(
+          `⚠️ Failed to trigger work order report for ${closure.maintenance_request_id}:`,
+          reportErr
+        );
+      }
     }
 
     console.log(`✅ Auto-approved ${autoApproved} closures`);

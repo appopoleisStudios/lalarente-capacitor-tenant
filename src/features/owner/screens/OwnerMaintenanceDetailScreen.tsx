@@ -27,6 +27,7 @@ import { colors } from '@/src/shared/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import * as Linking from 'expo-linking';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -769,6 +770,41 @@ export default function OwnerMaintenanceDetailScreen() {
             </TouchableOpacity>
           </View>
         )}
+
+        {/* Work Order Report (Plane #68) */}
+        {(request.status === 'completed' || request.status === 'closed') &&
+          request.work_order_report_url && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Work Order Report</Text>
+                <Text
+                  style={[
+                    styles.sectionBadge,
+                    { backgroundColor: colors.success[50], color: colors.success[700] },
+                  ]}
+                >
+                  {request.work_order_report_sent_at ? 'Emailed ✓' : 'Available'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                accessibilityLabel="View work order report"
+                accessibilityRole="button"
+                style={styles.invoiceCard}
+                onPress={() => Linking.openURL(request.work_order_report_url)}
+              >
+                <View style={styles.invoiceHeader}>
+                  <Ionicons name="document-text" size={32} color={colors.success[600]} />
+                  <View style={styles.invoiceInfo}>
+                    <Text style={styles.invoiceTitle}>Work Order</Text>
+                    <Text style={styles.invoiceSubtitle}>
+                      Completion report with photos, costs and declaration
+                    </Text>
+                  </View>
+                  <Ionicons name="open-outline" size={20} color={colors.gray[400]} />
+                </View>
+              </TouchableOpacity>
+            </View>
+          )}
 
         {/* Timeline */}
         <RequestTimelineSection request={request} quotes={quotes} purchaseOrder={purchaseOrder} />
