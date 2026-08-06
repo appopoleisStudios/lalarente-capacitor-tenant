@@ -1,0 +1,39 @@
+# Plane #77 — tenant verify screen ErrorState+retry for incomplete links
+# Deep-links /(tenant)/maintenance/verify with NO params: the screen must
+# render the shared ErrorState (previously JSON.parse/missing-requestId
+# crashed it), with a working recovery action.
+#
+# openLink via simctl can relaunch the app and race the async auth restore
+# (bounce to login) — self-heal: if the error state didn't appear, sign back
+# in and re-open the link once.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app-warm.yaml
+- runFlow: ../subflows/login-tenant.yaml
+
+- openLink: lalarenteapp:///(tenant)/maintenance/verify
+
+- extendedWaitUntil:
+    visible:
+      id: "tenant-verify-error"
+    timeout: 25000
+    optional: true
+
+- runFlow:
+    when:
+      notVisible:
+        id: "tenant-verify-error"
+    commands:
+      - runFlow: ../subflows/login-tenant.yaml
+      - openLink: lalarenteapp:///(tenant)/maintenance/verify
+      - extendedWaitUntil:
+          visible:
+            id: "tenant-verify-error"
+          timeout: 25000
+
+- assertVisible:
+    text: "Verification link incomplete"
+
+# Retry affordance recovers (navigates back)
+- tapOn:
+    text: "Go Back"

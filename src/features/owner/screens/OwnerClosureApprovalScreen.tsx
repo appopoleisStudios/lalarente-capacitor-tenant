@@ -101,9 +101,7 @@ export default function OwnerClosureApprovalScreen() {
               await approveClosureReport(id, user.id);
 
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              Alert.alert('Approved', 'Closure approved successfully.', [
-                { text: 'OK' },
-              ]);
+              Alert.alert('Approved', 'Closure approved successfully.', [{ text: 'OK' }]);
               await loadData();
             } catch (error: any) {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -141,7 +139,10 @@ export default function OwnerClosureApprovalScreen() {
 
               setForwardedToTenant(true);
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              Alert.alert('Forwarded', 'The tenant has been notified to verify the completed work.');
+              Alert.alert(
+                'Forwarded',
+                'The tenant has been notified to verify the completed work.'
+              );
             } catch (error: any) {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
               Alert.alert('Error', error.message || 'Failed to forward to tenant');
@@ -196,7 +197,8 @@ export default function OwnerClosureApprovalScreen() {
   const progressCount = progressUpdates.length;
   const hasTenant = !!(request as any)?.tenant_id;
   const isClosureApproved = closureReport?.status === 'approved';
-  const isTenantVerificationPending = closureReport?.tenant_verification_status === 'pending_tenant';
+  const isTenantVerificationPending =
+    closureReport?.tenant_verification_status === 'pending_tenant';
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -211,9 +213,12 @@ export default function OwnerClosureApprovalScreen() {
           <Ionicons name="arrow-back" size={24} color="#111827" />
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>Review Closure</Text>
+          <Text style={styles.headerTitle} testID="closure-review-title">
+            Review Closure
+          </Text>
           <Text style={styles.headerSubtitle}>
-            {request?.title?.substring(0, 40)}{request?.title?.length > 40 ? '...' : ''}
+            {request?.title?.substring(0, 40)}
+            {request?.title?.length > 40 ? '...' : ''}
           </Text>
         </View>
       </View>
@@ -239,15 +244,9 @@ export default function OwnerClosureApprovalScreen() {
                 <Ionicons name="business" size={22} color={RSA.blue} />
               </View>
               <View style={styles.vendorInfo}>
-                <Text style={styles.vendorName}>
-                  {vendor.full_name || 'Vendor'}
-                </Text>
-                {vendor.email && (
-                  <Text style={styles.vendorContact}>{vendor.email}</Text>
-                )}
-                {vendor.phone && (
-                  <Text style={styles.vendorContact}>{vendor.phone}</Text>
-                )}
+                <Text style={styles.vendorName}>{vendor.full_name || 'Vendor'}</Text>
+                {vendor.email && <Text style={styles.vendorContact}>{vendor.email}</Text>}
+                {vendor.phone && <Text style={styles.vendorContact}>{vendor.phone}</Text>}
               </View>
             </View>
           </View>
@@ -273,30 +272,20 @@ export default function OwnerClosureApprovalScreen() {
           </View>
         )}
 
-        {/* Forward to Tenant — show after approval if property has tenant */}
+        {/* Forward to Tenant — informational card after approval if the property
+            has a tenant. The single primary Forward CTA lives in the footer
+            (#77: Forward is THE primary action after approve). Theme tokens,
+            not the old #7C3AED purple. */}
         {isClosureApproved && hasTenant && !isTenantVerificationPending && !forwardedToTenant && (
           <View style={styles.section}>
             <View style={styles.forwardBanner}>
-              <Ionicons name="share-outline" size={24} color="#7C3AED" />
+              <Ionicons name="share-outline" size={24} color={colors.role.owner.primary} />
               <View style={styles.forwardBannerText}>
                 <Text style={styles.forwardBannerTitle}>Tenant Verification Available</Text>
                 <Text style={styles.forwardBannerSubtitle}>
-                  Forward this closure to the tenant for final verification. The tenant can confirm the work is satisfactory or report issues within 72 hours.
+                  Forward this closure to the tenant for final verification. The tenant can confirm
+                  the work is satisfactory or report issues within 72 hours.
                 </Text>
-                <TouchableOpacity
-                  style={styles.forwardButton}
-                  onPress={handleForwardToTenant}
-                  disabled={forwardingToTenant}
-                >
-                  {forwardingToTenant ? (
-                    <ActivityIndicator color="#FFFFFF" />
-                  ) : (
-                    <>
-                      <Ionicons name="send" size={16} color="#FFFFFF" />
-                      <Text style={styles.forwardButtonText}>Forward to Tenant</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
               </View>
             </View>
           </View>
@@ -310,7 +299,8 @@ export default function OwnerClosureApprovalScreen() {
               <View style={styles.forwardBannerText}>
                 <Text style={styles.tenantVerifTitle}>Awaiting Tenant Verification</Text>
                 <Text style={styles.tenantVerifSubtitle}>
-                  The tenant has been asked to verify the completed work. They have 72 hours to respond.
+                  The tenant has been asked to verify the completed work. They have 72 hours to
+                  respond.
                 </Text>
               </View>
             </View>
@@ -322,7 +312,9 @@ export default function OwnerClosureApprovalScreen() {
           <View style={styles.section}>
             <View style={styles.timelineHeader}>
               <Text style={styles.sectionTitle}>Progress Updates</Text>
-              <Text style={styles.timelineCount}>{progressCount} update{progressCount > 1 ? 's' : ''}</Text>
+              <Text style={styles.timelineCount}>
+                {progressCount} update{progressCount > 1 ? 's' : ''}
+              </Text>
             </View>
             {progressUpdates.slice(0, 5).map((update: any) => (
               <View key={update.id} style={styles.timelineItem}>
@@ -330,7 +322,9 @@ export default function OwnerClosureApprovalScreen() {
                 <View style={styles.timelineContent}>
                   <Text style={styles.timelineDate}>
                     {new Date(update.update_date || update.created_at).toLocaleDateString('en-ZA', {
-                      day: 'numeric', month: 'short', year: 'numeric',
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
                     })}
                   </Text>
                   <Text style={styles.timelineNotes} numberOfLines={3}>
@@ -360,6 +354,7 @@ export default function OwnerClosureApprovalScreen() {
               style={[styles.footerButton, styles.rejectButton]}
               onPress={handleReject}
               disabled={actionLoading}
+              testID="closure-reject-button"
             >
               <Ionicons name="close-circle" size={20} color={colors.error[600]} />
               <Text style={styles.rejectButtonText}>Request Changes</Text>
@@ -371,6 +366,7 @@ export default function OwnerClosureApprovalScreen() {
               style={[styles.footerButton, styles.approveButton]}
               onPress={handleApprove}
               disabled={actionLoading}
+              testID="closure-approve-button"
             >
               {actionLoading ? (
                 <ActivityIndicator color="#FFFFFF" />
@@ -382,6 +378,26 @@ export default function OwnerClosureApprovalScreen() {
               )}
             </TouchableOpacity>
           </>
+        ) : isClosureApproved && hasTenant && !isTenantVerificationPending && !forwardedToTenant ? (
+          /* #77 — Forward is the PRIMARY post-approve CTA for the owner→tenant
+             handoff: full-width owner-blue button in the footer. */
+          <TouchableOpacity
+            accessibilityLabel="Forward closure to tenant for verification"
+            accessibilityRole="button"
+            style={[styles.footerButton, styles.forwardPrimaryButton]}
+            onPress={handleForwardToTenant}
+            disabled={forwardingToTenant}
+            testID="closure-forward-button"
+          >
+            {forwardingToTenant ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <>
+                <Ionicons name="send" size={20} color="#FFFFFF" />
+                <Text style={styles.forwardPrimaryButtonText}>Forward to Tenant</Text>
+              </>
+            )}
+          </TouchableOpacity>
         ) : (
           <View style={styles.processedBanner}>
             <Ionicons
@@ -393,8 +409,8 @@ export default function OwnerClosureApprovalScreen() {
               {closureReport?.status === 'approved'
                 ? 'Closure already approved. This job has been marked as completed.'
                 : closureReport?.status === 'rejected'
-                ? 'Changes were requested. The vendor has been notified.'
-                : 'No closure report available.'}
+                  ? 'Changes were requested. The vendor has been notified.'
+                  : 'No closure report available.'}
             </Text>
           </View>
         )}
@@ -467,7 +483,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
-  headerButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerTitleContainer: { flex: 1, marginLeft: 8 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
   headerSubtitle: { fontSize: 13, color: '#6b7280', marginTop: 2 },
@@ -590,38 +612,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 14,
-    backgroundColor: '#F5F3FF',
+    backgroundColor: colors.role.owner.background,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#C4B5FD',
+    borderColor: colors.role.owner.primary,
   },
   forwardBannerText: { flex: 1 },
   forwardBannerTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#5B21B6',
+    color: colors.role.owner.primary,
     marginBottom: 4,
   },
   forwardBannerSubtitle: {
     fontSize: 13,
-    color: '#6D28D9',
+    color: colors.text.secondary,
     lineHeight: 18,
-    marginBottom: 12,
   },
-  forwardButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: '#7C3AED',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
+  forwardPrimaryButton: {
+    backgroundColor: colors.role.owner.primary,
+    borderColor: colors.role.owner.primary,
   },
-  forwardButtonText: {
-    fontSize: 14,
+  forwardPrimaryButtonText: {
+    fontSize: 15,
     fontWeight: '700',
     color: '#FFFFFF',
   },
