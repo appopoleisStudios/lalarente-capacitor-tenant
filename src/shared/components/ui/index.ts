@@ -6,3 +6,4 @@ export { Toast } from './Toast';
 export { LoadingSpinner } from './LoadingSpinner';
 export { AccessibleTouchableOpacity } from './AccessibleTouchableOpacity';
 export { ReasonPromptModal } from './ReasonPromptModal';
+export { PaymentStepsIndicator } from './PaymentStepsIndicator';

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '@/src/lib/supabase';
+import { PaymentStepsIndicator } from '@/src/shared/components/ui/PaymentStepsIndicator';
 
 // Safe money renderer — some legacy invoices have null/NaN amounts; a bare
 // `.toLocaleString()` would crash the whole Pay Vendor screen.
@@ -202,73 +203,9 @@ export default function VendorPayScreen() {
         </View>
 
         {/* Step indicator — honest 3-step flow (Review → Secure Checkout → Result).
-            Replaces the old fake 9-bubble stepper that implied a nine-step process. */}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            paddingVertical: 12,
-            backgroundColor: '#FFF',
-            marginBottom: 12,
-            gap: 8,
-          }}
-        >
-          {[
-            { label: 'Review', state: 'done' },
-            { label: 'Pay', state: 'active' },
-            { label: 'Done', state: 'todo' },
-          ].map((step, i) => (
-            <React.Fragment key={step.label}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <View
-                  style={{
-                    width: 22,
-                    height: 22,
-                    borderRadius: 11,
-                    backgroundColor:
-                      step.state === 'done'
-                        ? '#007A4D'
-                        : step.state === 'active'
-                          ? '#007A4D'
-                          : '#E5E5E5',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 11,
-                      fontWeight: '700',
-                      color: step.state === 'todo' ? '#999' : '#FFF',
-                    }}
-                  >
-                    {step.state === 'done' ? '✓' : i + 1}
-                  </Text>
-                </View>
-                <Text
-                  style={{
-                    fontSize: 12,
-                    fontWeight: step.state === 'active' ? '700' : '500',
-                    color: step.state === 'todo' ? '#999' : '#333',
-                  }}
-                >
-                  {step.label}
-                </Text>
-              </View>
-              {i < 2 && (
-                <View
-                  style={{
-                    width: 20,
-                    height: 2,
-                    // Completed step's outgoing connector is green (Review → Pay).
-                    backgroundColor: step.state === 'done' ? '#007A4D' : '#E5E5E5',
-                  }}
-                />
-              )}
-            </React.Fragment>
-          ))}
-        </View>
+            You are ON the Review step here, so Review is the active step and
+            the shared component carries progress into checkout (Pay) + result (Done). */}
+        <PaymentStepsIndicator current={0} />
 
         {/* Vendor info card */}
         <View
