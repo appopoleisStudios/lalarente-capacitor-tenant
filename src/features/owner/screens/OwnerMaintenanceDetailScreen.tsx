@@ -285,6 +285,32 @@ export default function OwnerMaintenanceDetailScreen() {
     ]);
   };
 
+  const handleSendPO = () => {
+    if (!purchaseOrder) return;
+
+    // Resolve the vendor from the accepted quote (PO.contract_id matches the
+    // quote's contract), falling back to the request's selected vendor.
+    const quote = quotes.find((q) => q.contract_id === purchaseOrder.contract_id);
+    const vendorName =
+      (quote as any)?.vendor?.full_name || (request as any)?.selected_vendor?.full_name || 'Vendor';
+    const property = (request as any)?.property as
+      | { title?: string; address?: string; city?: string }
+      | undefined;
+    const propertyAddress =
+      property?.address || [property?.title, property?.city].filter(Boolean).join(', ');
+
+    router.push({
+      pathname: '/(owner)/maintenance/send-po',
+      params: {
+        poId: purchaseOrder.id,
+        requestId: id,
+        vendorName,
+        totalAmount: String(purchaseOrder.total_amount ?? 0),
+        propertyAddress,
+      },
+    } as any);
+  };
+
   const handleAcceptQuote = async (quoteId: string, vendorId: string) => {
     Alert.alert(
       'Accept Quote',
@@ -639,9 +665,7 @@ export default function OwnerMaintenanceDetailScreen() {
           onPress={() =>
             purchaseOrder && router.push(`/(owner)/maintenance/${id}/po/${purchaseOrder.id}`)
           }
-          onSendPO={() =>
-            purchaseOrder && router.push(`/(owner)/maintenance/${id}/po/${purchaseOrder.id}`)
-          }
+          onSendPO={handleSendPO}
         />
 
         {/* Closure Request */}
