@@ -1,5 +1,10 @@
 # Vendor profile settings — Edit Profile / Notifications / Privacy wiring (Plane #71)
 # All three Account Settings rows on VendorProfileScreen must navigate.
+#
+# The Account Settings rows sit BELOW the services/service-areas cards. On a
+# populated vendor profile (services above the fold) a bare tapOn targets the
+# element's off-screen center and never lands — scroll each row into full view
+# first (same scrollUntilVisible pattern as the tenant messages subflow).
 appId: com.lalarente.app
 ---
 - runFlow: ../subflows/launch-app-warm.yaml
@@ -7,6 +12,12 @@ appId: com.lalarente.app
 - runFlow: ../subflows/tap-vendor-profile.yaml
 
 # 1. Edit Profile → edit screen (name/phone/avatar)
+- scrollUntilVisible:
+    element:
+      id: "vendor-profile-edit"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
 - tapOn:
     id: "vendor-profile-edit"
 - extendedWaitUntil:
@@ -19,6 +30,12 @@ appId: com.lalarente.app
     timeout: 15000
 
 # 2. Notifications → notifications screen
+- scrollUntilVisible:
+    element:
+      id: "vendor-profile-notifications"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
 - tapOn:
     id: "vendor-profile-notifications"
 - extendedWaitUntil:
@@ -31,6 +48,12 @@ appId: com.lalarente.app
     timeout: 15000
 
 # 3. Privacy → consent + data-rights screen
+- scrollUntilVisible:
+    element:
+      id: "vendor-profile-privacy"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
 - tapOn:
     id: "vendor-profile-privacy"
 - extendedWaitUntil:
