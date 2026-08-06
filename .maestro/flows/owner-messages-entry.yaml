@@ -1,0 +1,31 @@
+# Owner messages — always-visible entry (Plane #72)
+# Owner dashboard → header Messages button (owner-messages-button) → Messages screen.
+# No deep link: the header button must be reachable on the dashboard regardless
+# of whether any threads exist (the Messages section only renders when threads exist).
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app-warm.yaml
+- runFlow: ../subflows/login-owner.yaml
+
+# Owner dashboard loads async; wait for the header title.
+- extendedWaitUntil:
+    visible: "Portfolio Dashboard"
+    timeout: 20000
+
+# The header Messages button is always visible next to the notification bell.
+- tapOn:
+    id: "owner-messages-button"
+
+# Wait on the screen's testID, NOT the "Messages" text — the dashboard itself
+# renders a "Messages" section title (when threads exist), which could satisfy
+# a text wait prematurely during the push transition. MessagesScreen always
+# renders owner-messages-title (even in its loading state), so this truly
+# verifies the navigation landed.
+- extendedWaitUntil:
+    visible:
+      id: "owner-messages-title"
+    timeout: 15000
+
+- assertVisible:
+    text: "No Messages"
+    optional: true

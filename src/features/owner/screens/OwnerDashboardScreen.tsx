@@ -13,7 +13,14 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  ActivityIndicator,
+  TouchableOpacity,
+  RefreshControl,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -91,7 +98,9 @@ export default function OwnerDashboardScreen() {
   };
 
   const initOwner = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (user) {
       ownerIdRef.current = user.id;
       setOwnerId(user.id);
@@ -108,19 +117,23 @@ export default function OwnerDashboardScreen() {
         const aUnread = a.unread_count_owner ?? 0;
         const bUnread = b.unread_count_owner ?? 0;
         if (bUnread !== aUnread) return bUnread - aUnread;
-        return new Date(b.last_message_at ?? 0).getTime() - new Date(a.last_message_at ?? 0).getTime();
+        return (
+          new Date(b.last_message_at ?? 0).getTime() - new Date(a.last_message_at ?? 0).getTime()
+        );
       });
 
       const totalUnread = threads.reduce((sum, t) => sum + (t.unread_count_owner ?? 0), 0);
       setTotalUnreadMessages(totalUnread);
-      setMessageThreads(sorted.slice(0, 3).map(t => ({
-        id: t.id,
-        tenant_name: (t as any).tenant?.full_name ?? 'Tenant',
-        subject: t.subject,
-        unread_count: t.unread_count_owner ?? 0,
-        last_message_at: t.last_message_at,
-        category: t.category,
-      })));
+      setMessageThreads(
+        sorted.slice(0, 3).map((t) => ({
+          id: t.id,
+          tenant_name: (t as any).tenant?.full_name ?? 'Tenant',
+          subject: t.subject,
+          unread_count: t.unread_count_owner ?? 0,
+          last_message_at: t.last_message_at,
+          category: t.category,
+        }))
+      );
     } catch (err) {
       console.error('Error loading messages for dashboard:', err);
     }
@@ -134,7 +147,9 @@ export default function OwnerDashboardScreen() {
       const viewings = await viewingsApi.getOwnerViewings(ownerIdToUse);
 
       const recentViewings = viewings
-        .filter(v => ['pending', 'approved', 'expired', 'declined'].includes(v.status) && v.created_at)
+        .filter(
+          (v) => ['pending', 'approved', 'expired', 'declined'].includes(v.status) && v.created_at
+        )
         .sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime())
         .slice(0, 5);
 
@@ -165,13 +180,15 @@ export default function OwnerDashboardScreen() {
       );
 
       setViewingRequests(formattedViewings);
-      setPendingViewingsCount(viewings.filter(v => v.status === 'pending').length);
+      setPendingViewingsCount(viewings.filter((v) => v.status === 'pending').length);
 
       // Count declined viewings where owner offered alternatives (last 7 days)
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
       const withAlt = viewings.filter(
-        v => v.status === 'declined' &&
-          v.alternative_times && v.alternative_times.length > 0 &&
+        (v) =>
+          v.status === 'declined' &&
+          v.alternative_times &&
+          v.alternative_times.length > 0 &&
           (v.updated_at ?? v.created_at ?? '') >= sevenDaysAgo
       );
       setPendingAlternativesCount(withAlt.length);
@@ -185,11 +202,13 @@ export default function OwnerDashboardScreen() {
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { data } = await supabase
         .from('viewing_requests')
-        .select(`
+        .select(
+          `
           id, requested_date, requested_time, updated_at,
           property:properties!property_id(title),
           tenant:profiles!tenant_id(full_name)
-        `)
+        `
+        )
         .eq('owner_id', userId)
         .eq('status', 'cancelled')
         .gte('cancelled_at', twentyFourHoursAgo)
@@ -244,24 +263,65 @@ export default function OwnerDashboardScreen() {
     );
   }
 
-  const notificationCount = unreadNotifCount + pendingViewingsCount
-    + dashboardData.pendingTerminations
-    + dashboardData.openDisputes
-    + dashboardData.pendingClosures;
+  const notificationCount =
+    unreadNotifCount +
+    pendingViewingsCount +
+    dashboardData.pendingTerminations +
+    dashboardData.openDisputes +
+    dashboardData.pendingClosures;
 
   // Dynamic documents from real data
   const documents = [
-    { name: 'Lease Contracts', icon: 'document-text-outline', type: 'active-leases', info: `${dashboardData.documents.activeLeases} Active` },
-    { name: 'Invoices', icon: 'cash-outline', type: 'recent-invoices', info: `${dashboardData.documents.recentInvoices} Total` },
-    { name: 'Vendor Quotes', icon: 'clipboard-outline', type: 'pending-quotes', info: `${dashboardData.documents.pendingQuotes} For Review` },
+    {
+      name: 'Lease Contracts',
+      icon: 'document-text-outline',
+      type: 'active-leases',
+      info: `${dashboardData.documents.activeLeases} Active`,
+    },
+    {
+      name: 'Invoices',
+      icon: 'cash-outline',
+      type: 'recent-invoices',
+      info: `${dashboardData.documents.recentInvoices} Total`,
+    },
+    {
+      name: 'Vendor Quotes',
+      icon: 'clipboard-outline',
+      type: 'pending-quotes',
+      info: `${dashboardData.documents.pendingQuotes} For Review`,
+    },
     { name: 'Tax Reports', icon: 'calculator-outline', type: 'tax', info: 'SARS ITR12' },
-    { name: 'Compliance', icon: 'shield-checkmark-outline', type: 'compliance', info: 'FICA + COC' },
+    {
+      name: 'Compliance',
+      icon: 'shield-checkmark-outline',
+      type: 'compliance',
+      info: 'FICA + COC',
+    },
     { name: 'Deposits', icon: 'wallet-outline', type: 'deposits', info: 'Interest + Refunds' },
-    { name: 'Holding Deposits', icon: 'lock-closed-outline', type: 'holding-deposit', info: `${dashboardData.documents.holdingDepositsActive} Active` },
+    {
+      name: 'Holding Deposits',
+      icon: 'lock-closed-outline',
+      type: 'holding-deposit',
+      info: `${dashboardData.documents.holdingDepositsActive} Active`,
+    },
     { name: 'Lease Renewals', icon: 'refresh-outline', type: 'renewals', info: 'CPA Notices' },
     { name: 'Insurance', icon: 'umbrella-outline', type: 'insurance', info: 'Claims Tracker' },
-    { name: 'Disputes', icon: 'alert-circle-outline', type: 'payment-disputes', info: dashboardData.openDisputes > 0 ? `${dashboardData.openDisputes} Open` : 'Payment Queries' },
-    { name: 'Applications', icon: 'people-outline', type: 'applications', info: dashboardData.applicants.length > 0 ? `${dashboardData.applicants.length} Recent` : 'Review & Compare' },
+    {
+      name: 'Disputes',
+      icon: 'alert-circle-outline',
+      type: 'payment-disputes',
+      info:
+        dashboardData.openDisputes > 0 ? `${dashboardData.openDisputes} Open` : 'Payment Queries',
+    },
+    {
+      name: 'Applications',
+      icon: 'people-outline',
+      type: 'applications',
+      info:
+        dashboardData.applicants.length > 0
+          ? `${dashboardData.applicants.length} Recent`
+          : 'Review & Compare',
+    },
     { name: 'Inspections', icon: 'search-outline', type: 'inspections', info: 'Move-In / Out' },
     { name: 'Statements', icon: 'bar-chart-outline', type: 'statements', info: 'Monthly Income' },
   ];
@@ -275,27 +335,50 @@ export default function OwnerDashboardScreen() {
           <View style={styles.headerLeft}>
             <View>
               <Text style={styles.headerTitle}>Portfolio Dashboard</Text>
-              <Text style={styles.headerSubtitle}>
-                Welcome back, {dashboardData.userName}
-              </Text>
+              <Text style={styles.headerSubtitle}>Welcome back, {dashboardData.userName}</Text>
             </View>
           </View>
-          <AnimatedButton
-            testID="notification-bell"
-            accessibilityLabel="Notifications"
-            onPress={() => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            router.push('/(owner)/notifications' as any);
-          }}>
-            <View style={styles.notificationInner}>
-              <Ionicons name="notifications-outline" size={24} color="#111827" />
-              {notificationCount > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{notificationCount}</Text>
-                </View>
-              )}
-            </View>
-          </AnimatedButton>
+          {/* Always-visible Messages entry (Plane #72 parity with tenant). The
+              Messages section below only renders when threads exist, so without
+              this button the screen is unreachable from the dashboard. */}
+          <View style={styles.headerActions}>
+            <AnimatedButton
+              testID="owner-messages-button"
+              accessibilityLabel="Messages"
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/(owner)/messages' as any);
+              }}
+            >
+              <View style={styles.notificationInner}>
+                <Ionicons name="chatbubbles-outline" size={24} color="#111827" />
+                {totalUnreadMessages > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>
+                      {totalUnreadMessages > 99 ? '99+' : totalUnreadMessages}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </AnimatedButton>
+            <AnimatedButton
+              testID="notification-bell"
+              accessibilityLabel="Notifications"
+              onPress={() => {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                router.push('/(owner)/notifications' as any);
+              }}
+            >
+              <View style={styles.notificationInner}>
+                <Ionicons name="notifications-outline" size={24} color="#111827" />
+                {notificationCount > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{notificationCount}</Text>
+                  </View>
+                )}
+              </View>
+            </AnimatedButton>
+          </View>
         </View>
 
         <ScrollView
@@ -305,7 +388,11 @@ export default function OwnerDashboardScreen() {
           bounces
           alwaysBounceVertical
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handlePullToRefresh} tintColor="#002395" />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handlePullToRefresh}
+              tintColor="#002395"
+            />
           }
         >
           {/* Portfolio Card - Real Data */}
@@ -324,9 +411,12 @@ export default function OwnerDashboardScreen() {
                 <Ionicons name="alert-circle" size={24} color="#DC2626" />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.terminationAlertTitle}>
-                    {dashboardData.pendingTerminations} Early Termination {dashboardData.pendingTerminations === 1 ? 'Request' : 'Requests'} Pending
+                    {dashboardData.pendingTerminations} Early Termination{' '}
+                    {dashboardData.pendingTerminations === 1 ? 'Request' : 'Requests'} Pending
                   </Text>
-                  <Text style={styles.terminationAlertSub}>CPA s14 — Tenant statutory right to exit</Text>
+                  <Text style={styles.terminationAlertSub}>
+                    CPA s14 — Tenant statutory right to exit
+                  </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color="#DC2626" />
               </TouchableOpacity>
@@ -343,7 +433,8 @@ export default function OwnerDashboardScreen() {
                 <Ionicons name="shield-half-outline" size={24} color="#7C3AED" />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.processingAlertTitle}>
-                    {dashboardData.openDisputes} Payment Dispute{dashboardData.openDisputes > 1 ? 's' : ''} Open
+                    {dashboardData.openDisputes} Payment Dispute
+                    {dashboardData.openDisputes > 1 ? 's' : ''} Open
                   </Text>
                   <Text style={styles.processingAlertSub}>Tenants have raised payment queries</Text>
                 </View>
@@ -363,9 +454,12 @@ export default function OwnerDashboardScreen() {
                 <Ionicons name="checkmark-done-circle" size={24} color="#007A4D" />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.closureAlertTitle}>
-                    {dashboardData.pendingClosures} Job Closure{dashboardData.pendingClosures > 1 ? 's' : ''} Pending Review
+                    {dashboardData.pendingClosures} Job Closure
+                    {dashboardData.pendingClosures > 1 ? 's' : ''} Pending Review
                   </Text>
-                  <Text style={styles.closureAlertSub}>Vendors have completed work and requested closure approval</Text>
+                  <Text style={styles.closureAlertSub}>
+                    Vendors have completed work and requested closure approval
+                  </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color="#007A4D" />
               </TouchableOpacity>
@@ -382,9 +476,12 @@ export default function OwnerDashboardScreen() {
                 <Ionicons name="hourglass-outline" size={24} color="#7C3AED" />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.processingAlertTitle}>
-                    {dashboardData.processingPayments} Payment{dashboardData.processingPayments > 1 ? 's' : ''} Awaiting Confirmation
+                    {dashboardData.processingPayments} Payment
+                    {dashboardData.processingPayments > 1 ? 's' : ''} Awaiting Confirmation
                   </Text>
-                  <Text style={styles.processingAlertSub}>Tenants have submitted payment — confirm receipt</Text>
+                  <Text style={styles.processingAlertSub}>
+                    Tenants have submitted payment — confirm receipt
+                  </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color="#7C3AED" />
               </TouchableOpacity>
@@ -402,9 +499,12 @@ export default function OwnerDashboardScreen() {
                 <Ionicons name="swap-horizontal-outline" size={24} color="#0369A1" />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.alternativesAlertTitle}>
-                    {pendingAlternativesCount} Viewing{pendingAlternativesCount > 1 ? 's' : ''} — Alternatives Offered
+                    {pendingAlternativesCount} Viewing{pendingAlternativesCount > 1 ? 's' : ''} —
+                    Alternatives Offered
                   </Text>
-                  <Text style={styles.alternativesAlertSub}>Waiting for tenant to choose a new time slot</Text>
+                  <Text style={styles.alternativesAlertSub}>
+                    Waiting for tenant to choose a new time slot
+                  </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color="#0369A1" />
               </TouchableOpacity>
@@ -422,9 +522,12 @@ export default function OwnerDashboardScreen() {
                 <Ionicons name="calendar-outline" size={24} color="#B45309" />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.viewingAlertTitle}>
-                    {pendingViewingsCount} Viewing {pendingViewingsCount === 1 ? 'Request' : 'Requests'} Awaiting Response
+                    {pendingViewingsCount} Viewing{' '}
+                    {pendingViewingsCount === 1 ? 'Request' : 'Requests'} Awaiting Response
                   </Text>
-                  <Text style={styles.viewingAlertSub}>Tenants are waiting — approve or suggest a new time</Text>
+                  <Text style={styles.viewingAlertSub}>
+                    Tenants are waiting — approve or suggest a new time
+                  </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color="#B45309" />
               </TouchableOpacity>
@@ -438,13 +541,16 @@ export default function OwnerDashboardScreen() {
                 <TouchableOpacity
                   key={c.id}
                   style={styles.cancellationCard}
-                  onPress={() => router.push({ pathname: '/(owner)/viewings/[id]' as any, params: { id: c.id } })}
+                  onPress={() =>
+                    router.push({ pathname: '/(owner)/viewings/[id]' as any, params: { id: c.id } })
+                  }
                   activeOpacity={0.8}
                 >
                   <Ionicons name="information-circle" size={22} color="#6B7280" />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.cancellationText}>
-                      {(c.tenant as any)?.full_name ?? 'A tenant'} cancelled their viewing for {(c.property as any)?.title ?? 'a property'}
+                      {(c.tenant as any)?.full_name ?? 'A tenant'} cancelled their viewing for{' '}
+                      {(c.property as any)?.title ?? 'a property'}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -499,10 +605,8 @@ export default function OwnerDashboardScreen() {
               <ActivitySection activities={dashboardData.recentActivity} />
             </Animated.View>
           )}
-
         </ScrollView>
       </View>
     </SafeAreaView>
   );
 }
-
