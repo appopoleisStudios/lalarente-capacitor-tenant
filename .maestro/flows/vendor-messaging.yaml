@@ -1,18 +1,36 @@
-# Vendor messaging — open messages screen
+# Vendor messaging — in-app entry point (Plane #70)
+# Vendor dashboard → Quick Actions → Messages (no deep link).
+# Login handles session clearing (clearKeychain + role-aware UI sign-out).
 appId: com.lalarente.app
 ---
 - runFlow: ../subflows/launch-app-warm.yaml
 - runFlow: ../subflows/login-vendor.yaml
 
-- openLink: lalarenteapp:///(vendor)/messages
+# Vendor dashboard loads async; wait for the Quick Actions grid.
+- extendedWaitUntil:
+    visible: "Quick Actions"
+    timeout: 20000
+
+# MUST scroll the quick action into full view: the grid can sit under the tab
+# bar on smaller screens — a bare tapOn targets the element's center and lands
+# on the tab bar. Mirrors the tenant open-tenant-messages pattern.
+- scrollUntilVisible:
+    element:
+      id: "qa-messages"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+
+- tapOn:
+    id: "qa-messages"
 
 - extendedWaitUntil:
     visible: "Messages"
     timeout: 15000
 
 - assertVisible:
-    text: "No Messages"
+    id: "vendor-messages-title"
     optional: true
 - assertVisible:
-    text: "Messages"
+    text: "No Messages"
     optional: true

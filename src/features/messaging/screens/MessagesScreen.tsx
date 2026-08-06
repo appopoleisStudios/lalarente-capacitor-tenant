@@ -56,7 +56,9 @@ export default function MessagesScreen({ role = 'owner' }: Props) {
       const timeout = new Promise<{ data: { user: null } }>((resolve) =>
         setTimeout(() => resolve({ data: { user: null } }), 8000)
       );
-      const { data: { user } } = await Promise.race([getUserPromise, timeout]);
+      const {
+        data: { user },
+      } = await Promise.race([getUserPromise, timeout]);
       if (user) {
         setUserId(user.id);
       } else {
@@ -82,13 +84,14 @@ export default function MessagesScreen({ role = 'owner' }: Props) {
   };
 
   const handleThreadUpdate = (updatedThread: any) => {
-    setThreads(prev => {
-      const index = prev.findIndex(t => t.id === updatedThread.id);
+    setThreads((prev) => {
+      const index = prev.findIndex((t) => t.id === updatedThread.id);
       if (index >= 0) {
         const newThreads = [...prev];
         newThreads[index] = { ...newThreads[index], ...updatedThread };
-        return newThreads.sort((a, b) =>
-          new Date(b.last_message_at || 0).getTime() - new Date(a.last_message_at || 0).getTime()
+        return newThreads.sort(
+          (a, b) =>
+            new Date(b.last_message_at || 0).getTime() - new Date(a.last_message_at || 0).getTime()
         );
       }
       return prev;
@@ -166,7 +169,10 @@ export default function MessagesScreen({ role = 'owner' }: Props) {
             </Text>
             <Text style={styles.threadTime}>{formatTime(item.last_message_at)}</Text>
           </View>
-          <Text style={[styles.threadSubject, unreadCount > 0 && styles.textBold]} numberOfLines={1}>
+          <Text
+            style={[styles.threadSubject, unreadCount > 0 && styles.textBold]}
+            numberOfLines={1}
+          >
             {item.subject}
           </Text>
           {item.property && (
@@ -202,7 +208,7 @@ export default function MessagesScreen({ role = 'owner' }: Props) {
 
   const renderFilters = () => (
     <View style={styles.filterContainer}>
-      {(['all', 'active', 'archived'] as const).map(status => (
+      {(['all', 'active', 'archived'] as const).map((status) => (
         <TouchableOpacity
           key={status}
           style={[
@@ -211,12 +217,7 @@ export default function MessagesScreen({ role = 'owner' }: Props) {
           ]}
           onPress={() => setFilter({ ...filter, status })}
         >
-          <Text
-            style={[
-              styles.filterText,
-              filter.status === status && { color: '#FFF' },
-            ]}
-          >
+          <Text style={[styles.filterText, filter.status === status && { color: '#FFF' }]}>
             {status.charAt(0).toUpperCase() + status.slice(1)}
           </Text>
         </TouchableOpacity>
@@ -231,7 +232,13 @@ export default function MessagesScreen({ role = 'owner' }: Props) {
           <View style={styles.backButton} />
           <Text
             style={styles.headerTitle}
-            testID={role === 'tenant' ? 'tenant-messages-title' : role === 'vendor' ? 'vendor-messages-title' : 'owner-messages-title'}
+            testID={
+              role === 'tenant'
+                ? 'tenant-messages-title'
+                : role === 'vendor'
+                  ? 'vendor-messages-title'
+                  : 'owner-messages-title'
+            }
           >
             Messages
           </Text>
@@ -258,27 +265,38 @@ export default function MessagesScreen({ role = 'owner' }: Props) {
           )}
           <Text
             style={styles.headerTitle}
-            testID={role === 'tenant' ? 'tenant-messages-title' : role === 'vendor' ? 'vendor-messages-title' : 'owner-messages-title'}
+            testID={
+              role === 'tenant'
+                ? 'tenant-messages-title'
+                : role === 'vendor'
+                  ? 'vendor-messages-title'
+                  : 'owner-messages-title'
+            }
           >
             Messages
           </Text>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => {
-              const path = role === 'tenant'
-                ? '/(tenant)/messages/new'
-                : role === 'vendor'
-                  ? '/(vendor)/messages/new'
-                  : ('/(owner)/messages/new' as any);
-              router.push(path);
-            }}
-          >
-            <Ionicons
-              name="create-outline"
-              size={24}
-              color={role === 'vendor' ? colors.role.vendor.primary : role === 'tenant' ? colors.rsa.green : colors.rsa.blue}
-            />
-          </TouchableOpacity>
+          {/* Compose is owner/tenant only — vendor compose isn't a valid flow
+              (no lease-picker recipient model), so hide it for vendor parity.
+              Keep a matching right spacer so the centered title doesn't jam
+              right under space-between. */}
+          {role !== 'vendor' ? (
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => {
+                const path =
+                  role === 'tenant' ? '/(tenant)/messages/new' : ('/(owner)/messages/new' as any);
+                router.push(path);
+              }}
+            >
+              <Ionicons
+                name="create-outline"
+                size={24}
+                color={role === 'tenant' ? colors.rsa.green : colors.rsa.blue}
+              />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.backButton} />
+          )}
         </View>
 
         {/* Filters */}
@@ -287,7 +305,7 @@ export default function MessagesScreen({ role = 'owner' }: Props) {
         {/* Thread List */}
         <FlatList
           data={threads}
-          keyExtractor={item => item.id}
+          keyExtractor={(item) => item.id}
           renderItem={renderThread}
           ListEmptyComponent={renderEmpty}
           refreshControl={
