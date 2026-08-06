@@ -1,0 +1,38 @@
+# Vendor profile settings — Edit Profile / Notifications / Privacy wiring (Plane #71)
+# All three Account Settings rows on VendorProfileScreen must navigate.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app-warm.yaml
+- runFlow: ../subflows/login-vendor.yaml
+- runFlow: ../subflows/tap-vendor-profile.yaml
+
+# 1. Edit Profile → edit screen (name/phone/avatar)
+- tapOn:
+    id: "vendor-profile-edit"
+- extendedWaitUntil:
+    visible: "Edit Profile"
+    timeout: 15000
+- tapOn:
+    id: "edit-profile-back"
+- extendedWaitUntil:
+    visible: "Vendor Account"
+    timeout: 15000
+
+# 2. Notifications → notifications screen
+- tapOn:
+    id: "vendor-profile-notifications"
+- extendedWaitUntil:
+    visible: "Notifications"
+    timeout: 15000
+- tapOn:
+    id: "notification-back"
+- extendedWaitUntil:
+    visible: "Vendor Account"
+    timeout: 15000
+
+# 3. Privacy → consent + data-rights screen
+- tapOn:
+    id: "vendor-profile-privacy"
+- extendedWaitUntil:
+    visible: "Privacy & Consent"
+    timeout: 15000

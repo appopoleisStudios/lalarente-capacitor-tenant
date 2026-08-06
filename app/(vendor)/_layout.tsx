@@ -58,7 +58,9 @@ export default function VendorLayout() {
         options={{
           title: 'Earnings',
           tabBarButtonTestID: 'tab-vendor-earnings',
-          tabBarIcon: ({ color, size }) => <Ionicons name="wallet-outline" size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="wallet-outline" size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -66,7 +68,9 @@ export default function VendorLayout() {
         options={{
           title: 'Contracts',
           tabBarButtonTestID: 'tab-vendor-contracts',
-          tabBarIcon: ({ color, size }) => <Ionicons name="document-text" size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="document-text" size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -89,6 +93,12 @@ export default function VendorLayout() {
           title: 'Profile',
           tabBarButtonTestID: 'tab-vendor-profile',
           tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile/edit"
+        options={{
+          href: null, // Hidden from tabs - edit profile screen
         }}
       />
       <Tabs.Screen

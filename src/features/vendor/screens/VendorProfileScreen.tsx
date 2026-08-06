@@ -70,7 +70,9 @@ export default function VendorProfileScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle} testID="vendor-profile-title">Profile</Text>
+          <Text style={styles.headerTitle} testID="vendor-profile-title">
+            Profile
+          </Text>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.role.vendor.primary} />
@@ -90,7 +92,9 @@ export default function VendorProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle} testID="vendor-profile-title">Profile</Text>
+        <Text style={styles.headerTitle} testID="vendor-profile-title">
+          Profile
+        </Text>
       </View>
 
       <ScrollView
@@ -126,10 +130,7 @@ export default function VendorProfileScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>🛠️ Services</Text>
-            <Pressable
-              style={styles.manageButton}
-              onPress={() => router.push('/profile/services')}
-            >
+            <Pressable style={styles.manageButton} onPress={() => router.push('/profile/services')}>
               <Text style={styles.manageButtonText}>Manage</Text>
             </Pressable>
           </View>
@@ -138,10 +139,7 @@ export default function VendorProfileScreen() {
             <View style={styles.emptyCard}>
               <Text style={styles.emptyIcon}>🔧</Text>
               <Text style={styles.emptyText}>No services added yet</Text>
-              <Pressable
-                style={styles.addButton}
-                onPress={() => router.push('/profile/services')}
-              >
+              <Pressable style={styles.addButton} onPress={() => router.push('/profile/services')}>
                 <Text style={styles.addButtonText}>+ Add Services</Text>
               </Pressable>
             </View>
@@ -174,9 +172,7 @@ export default function VendorProfileScreen() {
                   style={styles.viewAllButton}
                   onPress={() => router.push('/profile/services')}
                 >
-                  <Text style={styles.viewAllText}>
-                    View all {services.length} services
-                  </Text>
+                  <Text style={styles.viewAllText}>View all {services.length} services</Text>
                 </Pressable>
               )}
             </View>
@@ -187,10 +183,7 @@ export default function VendorProfileScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>📍 Service Areas</Text>
-            <Pressable
-              style={styles.manageButton}
-              onPress={() => router.push('/profile/services')}
-            >
+            <Pressable style={styles.manageButton} onPress={() => router.push('/profile/services')}>
               <Text style={styles.manageButtonText}>Manage</Text>
             </Pressable>
           </View>
@@ -199,20 +192,14 @@ export default function VendorProfileScreen() {
             <View style={styles.emptyCard}>
               <Text style={styles.emptyIcon}>🗺️</Text>
               <Text style={styles.emptyText}>No service areas added</Text>
-              <Pressable
-                style={styles.addButton}
-                onPress={() => router.push('/profile/services')}
-              >
+              <Pressable style={styles.addButton} onPress={() => router.push('/profile/services')}>
                 <Text style={styles.addButtonText}>+ Add Areas</Text>
               </Pressable>
             </View>
           ) : (
             <View style={styles.card}>
               {serviceAreas.map((area, index) => (
-                <View
-                  key={area.id}
-                  style={[styles.areaItem, index > 0 && styles.areaItemBorder]}
-                >
+                <View key={area.id} style={[styles.areaItem, index > 0 && styles.areaItemBorder]}>
                   <Ionicons name="location" size={20} color={colors.rsa.blue} />
                   <Text style={styles.areaText}>
                     {area.city}
@@ -236,10 +223,7 @@ export default function VendorProfileScreen() {
             </Pressable>
           </View>
 
-          <Pressable
-            style={styles.menuItem}
-            onPress={() => router.push('/profile/documents')}
-          >
+          <Pressable style={styles.menuItem} onPress={() => router.push('/profile/documents')}>
             <Text style={styles.menuIcon}>📄</Text>
             <View style={styles.menuTextContainer}>
               <Text style={styles.menuText}>Business Documents</Text>
@@ -254,14 +238,37 @@ export default function VendorProfileScreen() {
         {/* Account Settings */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account Settings</Text>
-          <Pressable style={styles.menuItem}>
+          <Pressable
+            style={styles.menuItem}
+            onPress={() => router.push('/(vendor)/profile/edit')}
+            testID="vendor-profile-edit"
+            accessibilityLabel="Edit Profile"
+            accessibilityRole="button"
+          >
             <Text style={styles.menuIcon}>👤</Text>
             <Text style={styles.menuText}>Edit Profile</Text>
             <Text style={styles.menuArrow}>›</Text>
           </Pressable>
-          <Pressable style={styles.menuItem}>
+          <Pressable
+            style={styles.menuItem}
+            onPress={() => router.push('/(vendor)/notifications')}
+            testID="vendor-profile-notifications"
+            accessibilityLabel="Notifications"
+            accessibilityRole="button"
+          >
             <Text style={styles.menuIcon}>🔔</Text>
             <Text style={styles.menuText}>Notifications</Text>
+            <Text style={styles.menuArrow}>›</Text>
+          </Pressable>
+          <Pressable
+            style={styles.menuItem}
+            onPress={() => router.push('/(vendor)/privacy')}
+            testID="vendor-profile-privacy"
+            accessibilityLabel="Privacy"
+            accessibilityRole="button"
+          >
+            <Text style={styles.menuIcon}>🛡️</Text>
+            <Text style={styles.menuText}>Privacy</Text>
             <Text style={styles.menuArrow}>›</Text>
           </Pressable>
         </View>
