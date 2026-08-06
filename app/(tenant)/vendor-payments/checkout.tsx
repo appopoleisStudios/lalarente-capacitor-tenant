@@ -3,6 +3,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import React, { useRef } from 'react';
 import { View, Text, SafeAreaView, TouchableOpacity } from 'react-native';
 import { WebView, WebViewNavigation } from 'react-native-webview';
+import { PaymentStepsIndicator } from '@/src/shared/components/ui/PaymentStepsIndicator';
 
 // The edge function's return/cancel URLs point at the vendor-payment-redirect
 // function. When the hosted PayFast page navigates there (after payment or
@@ -100,6 +101,9 @@ export default function VendorPaymentCheckout() {
           </Text>
         </View>
       </View>
+
+      {/* Progress indicator — Review done, Pay is the current step. */}
+      <PaymentStepsIndicator current={1} />
 
       {/* Hosted payment page embedded in-app (Razorpay-style, no browser hop).
           Only render when the initial URL is a genuine PayFast hosted page —

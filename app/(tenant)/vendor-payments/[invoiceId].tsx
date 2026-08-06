@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '@/src/lib/supabase';
+import { PaymentStepsIndicator } from '@/src/shared/components/ui/PaymentStepsIndicator';
 
 // Safe money renderer — some legacy invoices have null/NaN amounts; a bare
 // `.toLocaleString()` would crash the whole Pay Vendor screen.
@@ -56,17 +57,21 @@ export default function VendorPayScreen() {
 
   const loadInvoice = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user || !invoiceId) return;
 
       const result: any = await (supabase as any)
         .from('maintenance_invoices')
-        .select(`
+        .select(
+          `
           id, invoice_number, total_amount, subtotal, vat_amount,
           status, payer_role, line_items, created_at,
           vendor:profiles!vendor_id(full_name, business_name),
           maintenance_request:maintenance_requests!maintenance_request_id(title, description)
-        `)
+        `
+        )
         .eq('id', invoiceId)
         .single();
 
@@ -91,7 +96,9 @@ export default function VendorPayScreen() {
     setPaying(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session?.access_token) {
         Alert.alert('Error', 'Please log in to continue');
         return;
@@ -109,7 +116,7 @@ export default function VendorPayScreen() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({
             invoice_id: invoice.id,
@@ -162,25 +169,31 @@ export default function VendorPayScreen() {
     );
   }
 
-  const vendorName = invoice.vendor?.business_name || invoice.vendor?.full_name || 'Service Provider';
+  const vendorName =
+    invoice.vendor?.business_name || invoice.vendor?.full_name || 'Service Provider';
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
       <ScrollView style={{ flex: 1, backgroundColor: '#F5F5F5' }}>
         {/* Header with back */}
-        <View style={{
-          padding: 16,
-          backgroundColor: '#FFF',
-          borderBottomWidth: 1,
-          borderBottomColor: '#E0E0E0',
-          flexDirection: 'row',
-          alignItems: 'center',
-        }}>
+        <View
+          style={{
+            padding: 16,
+            backgroundColor: '#FFF',
+            borderBottomWidth: 1,
+            borderBottomColor: '#E0E0E0',
+            flexDirection: 'row',
+            alignItems: 'center',
+          }}
+        >
           <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 12 }}>
             <Ionicons name="chevron-back" size={24} color="#333" />
           </TouchableOpacity>
           <View>
-            <Text style={{ fontSize: 20, fontWeight: '700', color: '#333' }} testID="pay-vendor-title">
+            <Text
+              style={{ fontSize: 20, fontWeight: '700', color: '#333' }}
+              testID="pay-vendor-title"
+            >
               Pay Vendor
             </Text>
             <Text style={{ fontSize: 13, color: '#666' }} testID="invoice-number-detail">
@@ -189,49 +202,37 @@ export default function VendorPayScreen() {
           </View>
         </View>
 
-        {/* Progress indicator */}
-        <View style={{
-          flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-          paddingVertical: 12, backgroundColor: '#FFF', marginBottom: 12,
-        }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            {[1,2,3,4,5,6,7,8,9].map((stage, i) => (
-              <React.Fragment key={stage}>
-                <View style={{
-                  width: 24, height: 24, borderRadius: 12,
-                  backgroundColor: stage <= 6 ? '#007A4D' : stage === 7 ? '#FFB81C' : '#E5E5E5',
-                  alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <Text style={{
-                    fontSize: 11, fontWeight: '700',
-                    color: stage <= 7 ? '#FFF' : '#999',
-                  }}>
-                    {stage <= 6 ? '✓' : stage === 7 ? '💳' : stage}
-                  </Text>
-                </View>
-                {i < 8 && (
-                  <View style={{
-                    width: 16, height: 2,
-                    backgroundColor: stage <= 6 ? '#007A4D' : '#E5E5E5',
-                  }} />
-                )}
-              </React.Fragment>
-            ))}
-          </View>
-        </View>
+        {/* Step indicator — honest 3-step flow (Review → Secure Checkout → Result).
+            You are ON the Review step here, so Review is the active step and
+            the shared component carries progress into checkout (Pay) + result (Done). */}
+        <PaymentStepsIndicator current={0} />
 
         {/* Vendor info card */}
-        <View style={{
-          backgroundColor: '#FFF', margin: 16, marginTop: 0,
-          borderRadius: 12, padding: 16,
-          shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1, shadowRadius: 4, elevation: 3,
-        }}>
+        <View
+          style={{
+            backgroundColor: '#FFF',
+            margin: 16,
+            marginTop: 0,
+            borderRadius: 12,
+            padding: 16,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 3,
+          }}
+        >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <View style={{
-              width: 48, height: 48, borderRadius: 24,
-              backgroundColor: '#E8F5E9', alignItems: 'center', justifyContent: 'center',
-            }}>
+            <View
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 24,
+                backgroundColor: '#E8F5E9',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               <Ionicons name="construct-outline" size={24} color="#007A4D" />
             </View>
             <View style={{ flex: 1 }}>
@@ -244,21 +245,35 @@ export default function VendorPayScreen() {
         </View>
 
         {/* Invoice breakdown */}
-        <View style={{
-          backgroundColor: '#FFF', marginHorizontal: 16,
-          borderRadius: 12, padding: 16, marginBottom: 12,
-          shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1, shadowRadius: 4, elevation: 3,
-        }}>
+        <View
+          style={{
+            backgroundColor: '#FFF',
+            marginHorizontal: 16,
+            borderRadius: 12,
+            padding: 16,
+            marginBottom: 12,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 3,
+          }}
+        >
           <Text style={{ fontSize: 16, fontWeight: '700', color: '#333', marginBottom: 12 }}>
             Invoice Breakdown
           </Text>
 
           {invoice.line_items?.map((item, index) => (
-            <View key={index} style={{
-              flexDirection: 'row', justifyContent: 'space-between',
-              paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#F0F0F0',
-            }}>
+            <View
+              key={index}
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                paddingVertical: 8,
+                borderBottomWidth: 1,
+                borderBottomColor: '#F0F0F0',
+              }}
+            >
               <View style={{ flex: 1, marginRight: 12 }}>
                 <Text style={{ fontSize: 14, color: '#333' }}>{item.description}</Text>
                 <Text style={{ fontSize: 12, color: '#999' }}>
@@ -292,12 +307,20 @@ export default function VendorPayScreen() {
         </View>
 
         {/* Payment info card */}
-        <View style={{
-          backgroundColor: '#FFF', marginHorizontal: 16,
-          borderRadius: 12, padding: 16, marginBottom: 24,
-          shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1, shadowRadius: 4, elevation: 3,
-        }}>
+        <View
+          style={{
+            backgroundColor: '#FFF',
+            marginHorizontal: 16,
+            borderRadius: 12,
+            padding: 16,
+            marginBottom: 24,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 3,
+          }}
+        >
           <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
             <Ionicons name="shield-checkmark-outline" size={20} color="#007A4D" />
             <View style={{ flex: 1 }}>
@@ -305,8 +328,8 @@ export default function VendorPayScreen() {
                 Secure Payment via PayFast
               </Text>
               <Text style={{ fontSize: 13, color: '#666', lineHeight: 18 }}>
-                Your payment is processed securely through PayFast, South Africa's leading
-                payment gateway. You can pay via credit/debit card or EFT.
+                Your payment is processed securely through PayFast, South Africa's leading payment
+                gateway. You can pay via credit/debit card or EFT.
               </Text>
             </View>
           </View>

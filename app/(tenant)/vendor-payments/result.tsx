@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '@/src/lib/supabase';
+import { PaymentStepsIndicator } from '@/src/shared/components/ui/PaymentStepsIndicator';
 
 interface PaymentStatus {
   payment_status: string;
@@ -188,6 +189,9 @@ export default function VendorPaymentResult() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: isSuccess ? '#F0FDF4' : '#FEF2F2' }}>
+      {/* Step indicator — Review + Pay done; Done is the active step on
+          success, or the Pay step shows the failed attempt. */}
+      <PaymentStepsIndicator current={isSuccess ? 2 : 1} error={!isSuccess} />
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
         {/* Status icon */}
         <View
