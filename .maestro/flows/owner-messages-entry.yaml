@@ -13,8 +13,14 @@ appId: com.lalarente.app
     timeout: 20000
 
 # The header Messages button is always visible next to the notification bell.
+# Let the login/landing animations settle first (SA soft: flake without
+# animation settle), then retry the tap if the push didn't register.
+- waitForAnimationToEnd:
+    timeout: 10000
+
 - tapOn:
     id: "owner-messages-button"
+    retryTapIfNoChange: true
 
 # Wait on the screen's testID, NOT the "Messages" text — the dashboard itself
 # renders a "Messages" section title (when threads exist), which could satisfy
