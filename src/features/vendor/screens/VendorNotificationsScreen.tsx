@@ -9,7 +9,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { colors } from '@/src/shared/theme/colors';
@@ -28,6 +28,10 @@ type AlertItem = {
 
 export default function VendorNotificationsScreen() {
   const router = useRouter();
+  // 'profile' when opened from the Profile tab's Account Settings row. Back
+  // from a hidden tab pops to the initial tab (Dashboard), so we navigate
+  // deterministically to the origin instead of relying on router.back().
+  const { from } = useLocalSearchParams<{ from?: string }>();
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -41,7 +45,9 @@ export default function VendorNotificationsScreen() {
   const loadAlertsAndMarkRead = async () => {
     await loadAlerts();
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
       await (supabase as any)
         .from('notifications')
@@ -55,7 +61,9 @@ export default function VendorNotificationsScreen() {
 
   const loadAlerts = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       const items: AlertItem[] = [];
@@ -63,7 +71,9 @@ export default function VendorNotificationsScreen() {
       // 1. Pending quote requests — maintenance requests pushed to this vendor
       const { data: quoteRequests } = await supabase
         .from('maintenance_requests')
-        .select('id, title, description, created_at, property:properties!property_id(title), owner:profiles!owner_id(full_name)')
+        .select(
+          'id, title, description, created_at, property:properties!property_id(title), owner:profiles!owner_id(full_name)'
+        )
         .eq('vendor_id', user.id)
         .in('status', ['open', 'assigned'])
         .is('selected_quote_id', null)
@@ -108,7 +118,9 @@ export default function VendorNotificationsScreen() {
       // 3. Active jobs assigned to vendor (exclude completed with actual_cost to avoid dupes)
       const { data: activeJobs } = await supabase
         .from('maintenance_requests')
-        .select('id, title, status, scheduled_date, created_at, closure_requested_at, closure_approved_at, actual_cost, property:properties!property_id(title)')
+        .select(
+          'id, title, status, scheduled_date, created_at, closure_requested_at, closure_approved_at, actual_cost, property:properties!property_id(title)'
+        )
         .eq('vendor_id', user.id)
         .in('status', ['in_progress', 'completed'])
         .order('created_at', { ascending: false });
@@ -116,12 +128,18 @@ export default function VendorNotificationsScreen() {
       (activeJobs ?? []).forEach((j: any) => {
         // Don't show completed-with-cost here — those appear in completed jobs section
         if (j.status === 'completed' && j.actual_cost != null) return;
-        const isPendingClosure = j.status === 'completed' && j.closure_requested_at && !j.closure_approved_at;
+        const isPendingClosure =
+          j.status === 'completed' && j.closure_requested_at && !j.closure_approved_at;
         if (j.status === 'completed' && !isPendingClosure) return; // already handled
         items.push({
           id: `job-${j.id}`,
           kind: 'job_assigned',
-          title: j.status === 'in_progress' ? 'Job In Progress' : isPendingClosure ? 'Closure Pending' : 'Job Update',
+          title:
+            j.status === 'in_progress'
+              ? 'Job In Progress'
+              : isPendingClosure
+                ? 'Closure Pending'
+                : 'Job Update',
           body: `"${j.title || 'Maintenance'}" at ${j.property?.title || 'property'}${j.scheduled_date ? ` — ${j.scheduled_date}` : ''}`,
           icon: 'construct',
           iconColor: '#4CAF50',
@@ -137,12 +155,14 @@ export default function VendorNotificationsScreen() {
         .select('id, title')
         .eq('vendor_id', user.id);
 
-      const vendorRequestIds = vendorActiveRequests?.map(r => r.id) || [];
+      const vendorRequestIds = vendorActiveRequests?.map((r) => r.id) || [];
 
       if (vendorRequestIds.length > 0) {
         const { data: closureReports } = await supabase
           .from('closure_reports')
-          .select('id, status, rejected_at, owner_accept_at, created_at, maintenance_request:maintenance_requests!maintenance_request_id(id, title)')
+          .select(
+            'id, status, rejected_at, owner_accept_at, created_at, maintenance_request:maintenance_requests!maintenance_request_id(id, title)'
+          )
           .in('maintenance_request_id', vendorRequestIds)
           .in('status', ['owner_accepted', 'owner_rejected', 'closed'])
           .order('created_at', { ascending: false })
@@ -169,7 +189,9 @@ export default function VendorNotificationsScreen() {
       // 5. Completed jobs (potential invoice items)
       const { data: completedJobs } = await supabase
         .from('maintenance_requests')
-        .select('id, title, actual_cost, completed_date, created_at, property:properties!property_id(title)')
+        .select(
+          'id, title, actual_cost, completed_date, created_at, property:properties!property_id(title)'
+        )
         .eq('vendor_id', user.id)
         .eq('status', 'completed')
         .not('actual_cost', 'is', null)
@@ -200,9 +222,11 @@ export default function VendorNotificationsScreen() {
         .limit(10);
 
       (dbNotifs ?? []).forEach((n: any) => {
-        const isDuplicate = items.some(item => {
-          if (n.type === 'quote_requested' && n.data?.requestId) return items.some(i => i.id === `quote-${n.data.requestId}`);
-          if (n.type === 'po_sent' && n.data?.poId) return items.some(i => i.id === `po-${n.data.poId}`);
+        const isDuplicate = items.some((item) => {
+          if (n.type === 'quote_requested' && n.data?.requestId)
+            return items.some((i) => i.id === `quote-${n.data.requestId}`);
+          if (n.type === 'po_sent' && n.data?.poId)
+            return items.some((i) => i.id === `po-${n.data.poId}`);
           return false;
         });
         if (!isDuplicate) {
@@ -241,6 +265,14 @@ export default function VendorNotificationsScreen() {
     router.push(item.route as any);
   };
 
+  const handleBack = () => {
+    if (from === 'profile') {
+      router.navigate('/(vendor)/profile' as never);
+    } else {
+      router.back(); // dashboard bell / other entries
+    }
+  };
+
   const formatTimeAgo = (ts: string) => {
     const diff = Date.now() - new Date(ts).getTime();
     const mins = Math.floor(diff / 60000);
@@ -264,7 +296,9 @@ export default function VendorNotificationsScreen() {
       </View>
       <View style={styles.alertContent}>
         <Text style={styles.alertTitle}>{item.title}</Text>
-        <Text style={styles.alertBody} numberOfLines={2}>{item.body}</Text>
+        <Text style={styles.alertBody} numberOfLines={2}>
+          {item.body}
+        </Text>
         <Text style={styles.alertTime}>{formatTimeAgo(item.timestamp)}</Text>
       </View>
       <Ionicons name="chevron-forward" size={18} color="#999" />
@@ -288,7 +322,12 @@ export default function VendorNotificationsScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={handleBack}
+          style={styles.backButton}
+          testID="notification-back"
+          accessibilityLabel="Go back"
+        >
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications</Text>
@@ -308,7 +347,11 @@ export default function VendorNotificationsScreen() {
           renderItem={renderItem}
           contentContainerStyle={styles.list}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.rsa.blue} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={colors.rsa.blue}
+            />
           }
         />
       )}

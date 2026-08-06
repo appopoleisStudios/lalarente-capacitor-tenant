@@ -143,6 +143,7 @@ run_flow "vendor-notifications" "Notifications"     "VENDOR" "${V_ENV[@]}"
 run_flow "vendor-messaging"    "Messaging"          "VENDOR" "${V_ENV[@]}"
 run_flow "vendor-maintenance"  "Maintenance Reqs"   "VENDOR" "${V_ENV[@]}"
 run_flow "vendor-ai-chat"      "Lala AI"            "VENDOR" "${V_ENV[@]}"
+run_flow "vendor-profile-settings" "Profile Settings (Edit/Notif/Privacy)" "VENDOR" "${V_ENV[@]}"
 
 
 # ── VENDOR EARNINGS + BANKING (Plane #52) ──

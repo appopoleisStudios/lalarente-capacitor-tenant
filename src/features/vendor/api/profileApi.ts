@@ -71,10 +71,12 @@ export const vendorProfileApi = {
       // Get services with categories
       const { data: services, error: servicesError } = await supabase
         .from('vendor_services')
-        .select(`
+        .select(
+          `
           *,
           category:service_categories(*)
-        `)
+        `
+        )
         .eq('vendor_id', vendorId)
         .eq('is_active', true);
 
@@ -121,6 +123,27 @@ export const vendorProfileApi = {
   },
 
   /**
+   * Update the vendor's basic profile fields (name / phone / avatar).
+   */
+  async updateProfile(
+    vendorId: string,
+    updates: {
+      full_name?: string;
+      phone?: string | null;
+      avatar_url?: string | null;
+    }
+  ): Promise<void> {
+    try {
+      const { error } = await supabase.from('profiles').update(updates).eq('id', vendorId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error updating vendor profile:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Get all available service categories
    */
   async getServiceCategories(): Promise<ServiceCategory[]> {
@@ -160,10 +183,12 @@ export const vendorProfileApi = {
           pricing_unit: pricingUnit,
           is_active: true,
         } as any)
-        .select(`
+        .select(
+          `
           *,
           category:service_categories(*)
-        `)
+        `
+        )
         .single();
 
       if (error) throw error;
@@ -180,10 +205,7 @@ export const vendorProfileApi = {
    */
   async removeService(serviceId: string): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('vendor_services')
-        .delete()
-        .eq('id', serviceId);
+      const { error } = await supabase.from('vendor_services').delete().eq('id', serviceId);
 
       if (error) throw error;
     } catch (error) {
@@ -225,10 +247,7 @@ export const vendorProfileApi = {
    */
   async removeServiceArea(areaId: string): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('vendor_service_areas')
-        .delete()
-        .eq('id', areaId);
+      const { error } = await supabase.from('vendor_service_areas').delete().eq('id', areaId);
 
       if (error) throw error;
     } catch (error) {
@@ -275,10 +294,7 @@ export const vendorProfileApi = {
    */
   async deleteDocument(documentId: string): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('vendor_documents')
-        .delete()
-        .eq('id', documentId);
+      const { error } = await supabase.from('vendor_documents').delete().eq('id', documentId);
 
       if (error) throw error;
     } catch (error) {

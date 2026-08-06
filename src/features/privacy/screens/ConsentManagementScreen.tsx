@@ -21,19 +21,18 @@ import { useRouter, useSegments, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/src/shared/theme/colors';
 import { supabase } from '@/src/lib/supabase';
-import {
-  consentApi,
-  OPTIONAL_CONSENTS,
-  type ConsentRecord,
-  type ConsentType,
-} from '../api';
+import { consentApi, OPTIONAL_CONSENTS, type ConsentRecord, type ConsentType } from '../api';
 
 export default function ConsentManagementScreen() {
   const router = useRouter();
   const segments = useSegments();
-  const isOwner = segments[0] === '(owner)';
-  const dataRightsPath = isOwner ? '/(owner)/privacy/data-rights' : '/(tenant)/privacy/data-rights';
-  const profilePath = isOwner ? '/(owner)/profile' : '/(tenant)/profile';
+  // Role-agnostic: derive the group from the current route so the vendor
+  // group ((vendor)) navigates back to its own profile/data-rights instead
+  // of defaulting to tenant paths.
+  const roleGroup =
+    segments[0] === '(owner)' ? '(owner)' : segments[0] === '(vendor)' ? '(vendor)' : '(tenant)';
+  const dataRightsPath = `/${roleGroup}/privacy/data-rights`;
+  const profilePath = `/${roleGroup}/profile`;
   const [userId, setUserId] = useState<string | null>(null);
   const [consents, setConsents] = useState<ConsentRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +49,9 @@ export default function ConsentManagementScreen() {
   );
 
   const initUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (user) {
       setUserId(user.id);
       fetchConsentsForUser(user.id);
@@ -130,7 +131,10 @@ export default function ConsentManagementScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.navigate(profilePath as never)} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.navigate(profilePath as never)}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Privacy & Consent</Text>
@@ -142,8 +146,8 @@ export default function ConsentManagementScreen() {
         <View style={styles.infoCard}>
           <Ionicons name="shield-checkmark" size={20} color={colors.primary[500]} />
           <Text style={styles.infoText}>
-            Your data is protected under the Protection of Personal Information Act (POPIA).
-            You can manage your consent preferences below.
+            Your data is protected under the Protection of Personal Information Act (POPIA). You can
+            manage your consent preferences below.
           </Text>
         </View>
 
