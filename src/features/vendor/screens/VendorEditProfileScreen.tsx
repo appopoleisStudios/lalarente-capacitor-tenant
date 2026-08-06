@@ -85,6 +85,12 @@ export default function VendorEditProfileScreen() {
     }
   };
 
+  // router.back() from a hidden-tab screen can pop past the Profile tab to
+  // the Dashboard (tab-history trap). Edit Profile is only ever reached from
+  // the Profile tab, so navigate back deterministically — same pattern as
+  // ConsentManagementScreen's back button.
+  const goBackToProfile = () => router.navigate('/(vendor)/profile' as never);
+
   const handleSave = async () => {
     if (!user?.id) return;
     const trimmedName = fullName.trim();
@@ -99,7 +105,7 @@ export default function VendorEditProfileScreen() {
         phone: phone.trim() || null,
         avatar_url: avatarUrl,
       });
-      Alert.alert('Success', 'Profile updated', [{ text: 'OK', onPress: () => router.back() }]);
+      Alert.alert('Success', 'Profile updated', [{ text: 'OK', onPress: goBackToProfile }]);
     } catch (err: any) {
       Alert.alert('Error', err?.message || 'Failed to update profile');
     } finally {
@@ -112,7 +118,7 @@ export default function VendorEditProfileScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={goBackToProfile}
             style={styles.backButton}
             testID="edit-profile-back"
             accessibilityLabel="Go back"
@@ -136,7 +142,7 @@ export default function VendorEditProfileScreen() {
       <KeyboardAvoidingView style={styles.flex}>
         <View style={styles.header}>
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={goBackToProfile}
             style={styles.backButton}
             testID="edit-profile-back"
             accessibilityLabel="Go back"

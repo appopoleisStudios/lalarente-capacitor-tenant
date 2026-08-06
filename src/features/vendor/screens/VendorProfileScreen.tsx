@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { colors } from '@/src/shared/theme/colors';
@@ -23,24 +23,40 @@ export default function VendorProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadProfile = async () => {
-    if (!user?.id) return;
+  // First-load flag: spinner only on the initial focus. Kept in a ref so the
+  // focus-effect callback deps stay stable — useFocusEffect re-runs whenever
+  // the callback identity changes, and deriving the flag from vendorProfile
+  // state would refetch on every response (infinite loop).
+  const loadedRef = useRef(false);
 
-    try {
-      const data = await vendorProfileApi.getProfile(user.id);
-      setVendorProfile(data);
-    } catch (error) {
-      console.error('Error loading profile:', error);
-      Alert.alert('Error', 'Failed to load profile. Please try again.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+  const loadProfile = useCallback(
+    async (showSpinner = false) => {
+      if (!user?.id) return;
+      if (showSpinner) setLoading(true);
 
-  useEffect(() => {
-    loadProfile();
-  }, [user?.id]);
+      try {
+        const data = await vendorProfileApi.getProfile(user.id);
+        setVendorProfile(data);
+      } catch (error) {
+        console.error('Error loading profile:', error);
+        if (showSpinner) Alert.alert('Error', 'Failed to load profile. Please try again.');
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [user?.id]
+  );
+
+  // Reload on every focus: spinner on first load, silent refresh on refocus
+  // (e.g. returning from Edit Profile) so saved name/phone/avatar edits show
+  // immediately instead of on the next pull-to-refresh.
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile(!loadedRef.current);
+      loadedRef.current = true;
+    }, [loadProfile])
+  );
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -251,7 +267,10 @@ export default function VendorProfileScreen() {
           </Pressable>
           <Pressable
             style={styles.menuItem}
-            onPress={() => router.push('/(vendor)/notifications')}
+            // from=profile lets the notifications screen navigate back to the
+            // Profile tab deterministically (back from a hidden tab pops to
+            // Dashboard). The dashboard bell omits the param.
+            onPress={() => router.push('/(vendor)/notifications?from=profile')}
             testID="vendor-profile-notifications"
             accessibilityLabel="Notifications"
             accessibilityRole="button"

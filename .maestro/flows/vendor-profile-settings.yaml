@@ -25,8 +25,14 @@ appId: com.lalarente.app
     timeout: 15000
 - tapOn:
     id: "edit-profile-back"
+# Landing on the Profile tab is asserted via the fixed header testID
+# (vendor-profile-title), NOT the 'Vendor Account' badge: the badge lives in
+# the profile card ABOVE the scroll fold and the tab preserves its scroll
+# offset, so it's off-screen after returning. The header is outside the
+# ScrollView and is unique to the Profile screen (Dashboard has no such ID).
 - extendedWaitUntil:
-    visible: "Vendor Account"
+    visible:
+      id: "vendor-profile-title"
     timeout: 15000
 
 # 2. Notifications → notifications screen
@@ -44,7 +50,8 @@ appId: com.lalarente.app
 - tapOn:
     id: "notification-back"
 - extendedWaitUntil:
-    visible: "Vendor Account"
+    visible:
+      id: "vendor-profile-title"
     timeout: 15000
 
 # 3. Privacy → consent + data-rights screen

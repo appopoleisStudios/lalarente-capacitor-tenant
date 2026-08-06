@@ -9,7 +9,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { colors } from '@/src/shared/theme/colors';
@@ -28,6 +28,10 @@ type AlertItem = {
 
 export default function VendorNotificationsScreen() {
   const router = useRouter();
+  // 'profile' when opened from the Profile tab's Account Settings row. Back
+  // from a hidden tab pops to the initial tab (Dashboard), so we navigate
+  // deterministically to the origin instead of relying on router.back().
+  const { from } = useLocalSearchParams<{ from?: string }>();
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -261,6 +265,14 @@ export default function VendorNotificationsScreen() {
     router.push(item.route as any);
   };
 
+  const handleBack = () => {
+    if (from === 'profile') {
+      router.navigate('/(vendor)/profile' as never);
+    } else {
+      router.back(); // dashboard bell / other entries
+    }
+  };
+
   const formatTimeAgo = (ts: string) => {
     const diff = Date.now() - new Date(ts).getTime();
     const mins = Math.floor(diff / 60000);
@@ -311,7 +323,7 @@ export default function VendorNotificationsScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={handleBack}
           style={styles.backButton}
           testID="notification-back"
           accessibilityLabel="Go back"
