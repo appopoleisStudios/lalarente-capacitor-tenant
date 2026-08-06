@@ -8,6 +8,10 @@
 //
 // Usage: node scripts/schedule-auto-crons.mjs
 // Env:   SUPABASE_ACCESS_TOKEN + SUPABASE_PROJECT_ID (or in .env)
+//
+// PREREQUISITE: the pg_net extension must be installed (provides net.http_post).
+// Apply database/migrations/055_enable_pg_net_for_crons.sql first — without it
+// every scheduled run fails with `ERROR: schema "net" does not exist`.
 import { env } from './lib/load-env.mjs';
 
 const ACCESS_TOKEN = env('SUPABASE_ACCESS_TOKEN');
