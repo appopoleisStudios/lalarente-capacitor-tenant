@@ -271,6 +271,7 @@ export default function TenantPaymentScreen() {
                 <TouchableOpacity
                   style={styles.payButton}
                   onPress={() => handleMakePayment(nextPayment)}
+                  testID="tenant-pay-now"
                 >
                   <Ionicons name="card-outline" size={20} color="#FFF" />
                   <Text style={styles.payButtonText}>Pay Now</Text>
@@ -437,6 +438,7 @@ export default function TenantPaymentScreen() {
                         <TouchableOpacity
                           style={styles.miniPayButton}
                           onPress={() => handleMakePayment(payment)}
+                          testID="tenant-mini-pay"
                         >
                           <Text style={styles.miniPayButtonText}>Pay</Text>
                         </TouchableOpacity>
@@ -516,6 +518,7 @@ export default function TenantPaymentScreen() {
                 style={[styles.modalConfirmBtn, paySubmitting && { opacity: 0.6 }]}
                 onPress={handleSubmitPayment}
                 disabled={paySubmitting}
+                testID="tenant-confirm-payment"
               >
                 {paySubmitting ? (
                   <ActivityIndicator size="small" color="#FFF" />
