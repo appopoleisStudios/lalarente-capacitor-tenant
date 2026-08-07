@@ -25,7 +25,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { AnimatedButton } from '../components/AnimatedButton';
+import { AnimatedButton } from '@/src/shared/components';
 import { PortfolioCard } from '../components/PortfolioCard';
 import { AnalyticsGrid } from '../components/AnalyticsGrid';
 import { DocumentsSection } from '../components/DocumentsSection';

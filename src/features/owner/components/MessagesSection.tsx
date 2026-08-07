@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { AnimatedButton } from './AnimatedButton';
+import { AnimatedButton } from '@/src/shared/components';
 
 interface MessageThread {
   id: string;
@@ -60,7 +60,7 @@ export const MessagesSection = ({ threads, totalUnread }: MessagesSectionProps) 
         </AnimatedButton>
       </View>
 
-      {threads.slice(0, 3).map(thread => {
+      {threads.slice(0, 3).map((thread) => {
         const categoryColor = CATEGORY_COLORS[thread.category] ?? CATEGORY_COLORS.general;
         const isUnread = thread.unread_count > 0;
 

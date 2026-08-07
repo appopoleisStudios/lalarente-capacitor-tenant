@@ -14,7 +14,7 @@ import { messagesApi } from '@/src/features/messaging/api/messagesApi';
 import { useRouter, useFocusEffect } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { AnimatedButton } from '@/src/features/owner/components/AnimatedButton';
+import { AnimatedButton } from '@/src/shared/components';
 import { MaintenanceFilters } from '@/src/features/owner/components/MaintenanceFilters';
 import { StatusBadge, PriorityIndicator } from '@/src/features/maintenance/components';
 import { useMaintenanceRequests } from '@/src/features/maintenance/hooks';

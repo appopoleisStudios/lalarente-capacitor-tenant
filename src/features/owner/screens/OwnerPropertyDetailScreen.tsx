@@ -1,9 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, Image, Alert, ActivityIndicator, Modal, TouchableOpacity, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  Image,
+  Alert,
+  ActivityIndicator,
+  Modal,
+  TouchableOpacity,
+  Dimensions,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { AnimatedButton } from '../components/AnimatedButton';
+import { AnimatedButton } from '@/src/shared/components';
 import { propertiesApi } from '../../properties/api/propertiesApi';
 import { leasesApi } from '../../properties/api/leasesApi';
 import type { PropertyWithRelations } from '../../properties/api/propertiesApi';
@@ -15,7 +25,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 export default function OwnerPropertyDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  
+
   const [property, setProperty] = useState<PropertyWithRelations | null>(null);
   const [activeLease, setActiveLease] = useState<LeaseWithRelations | null>(null);
   const [loading, setLoading] = useState(true);
@@ -93,7 +103,7 @@ export default function OwnerPropertyDetailScreen() {
     if (!property) return;
 
     const newStatus = property.status === 'available' ? 'maintenance' : 'available';
-    
+
     try {
       await propertiesApi.updateProperty(id, { status: newStatus });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -116,15 +126,16 @@ export default function OwnerPropertyDetailScreen() {
 
   const navigateImage = (direction: 'next' | 'prev') => {
     if (!property?.images) return;
-    
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
+
     if (direction === 'next') {
       const nextIndex = (currentImageIndex + 1) % property.images.length;
       setCurrentImageIndex(nextIndex);
       setFullScreenImage(property.images[nextIndex]);
     } else {
-      const prevIndex = currentImageIndex === 0 ? property.images.length - 1 : currentImageIndex - 1;
+      const prevIndex =
+        currentImageIndex === 0 ? property.images.length - 1 : currentImageIndex - 1;
       setCurrentImageIndex(prevIndex);
       setFullScreenImage(property.images[prevIndex]);
     }
@@ -164,7 +175,8 @@ export default function OwnerPropertyDetailScreen() {
     draft: { bg: '#f1f5f9', text: '#475569' },
   };
 
-  const statusColor = statusColors[property.status as keyof typeof statusColors] || statusColors.draft;
+  const statusColor =
+    statusColors[property.status as keyof typeof statusColors] || statusColors.draft;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -207,11 +219,7 @@ export default function OwnerPropertyDetailScreen() {
                     activeOpacity={0.9}
                     onPress={() => openFullScreenImage(image, index)}
                   >
-                    <Image
-                      source={{ uri: image }}
-                      style={styles.photo}
-                      resizeMode="cover"
-                    />
+                    <Image source={{ uri: image }} style={styles.photo} resizeMode="cover" />
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -282,14 +290,18 @@ export default function OwnerPropertyDetailScreen() {
                 {property.deposit_amount && (
                   <View style={styles.detailItem}>
                     <Text style={styles.detailLabel}>Deposit</Text>
-                    <Text style={styles.detailValue}>R {property.deposit_amount.toLocaleString()}</Text>
+                    <Text style={styles.detailValue}>
+                      R {property.deposit_amount.toLocaleString()}
+                    </Text>
                   </View>
                 )}
               </View>
             </View>
 
             {/* Lease Terms */}
-            {(property.minimum_lease_months || property.pets_allowed !== null || property.smoking_allowed !== null) && (
+            {(property.minimum_lease_months ||
+              property.pets_allowed !== null ||
+              property.smoking_allowed !== null) && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Lease Terms</Text>
                 <View style={styles.termsGrid}>
@@ -302,13 +314,17 @@ export default function OwnerPropertyDetailScreen() {
                   {property.pets_allowed !== null && (
                     <View style={styles.termItem}>
                       <Text style={styles.termLabel}>Pets</Text>
-                      <Text style={styles.termValue}>{property.pets_allowed ? 'Allowed' : 'Not Allowed'}</Text>
+                      <Text style={styles.termValue}>
+                        {property.pets_allowed ? 'Allowed' : 'Not Allowed'}
+                      </Text>
                     </View>
                   )}
                   {property.smoking_allowed !== null && (
                     <View style={styles.termItem}>
                       <Text style={styles.termLabel}>Smoking</Text>
-                      <Text style={styles.termValue}>{property.smoking_allowed ? 'Allowed' : 'Not Allowed'}</Text>
+                      <Text style={styles.termValue}>
+                        {property.smoking_allowed ? 'Allowed' : 'Not Allowed'}
+                      </Text>
                     </View>
                   )}
                   {property.available_from && (
@@ -362,10 +378,13 @@ export default function OwnerPropertyDetailScreen() {
                   <View style={styles.leaseInfo}>
                     <Text style={styles.leaseLabel}>Lease Period</Text>
                     <Text style={styles.leaseValue}>
-                      {new Date(activeLease.start_date).toLocaleDateString()} - {new Date(activeLease.end_date).toLocaleDateString()}
+                      {new Date(activeLease.start_date).toLocaleDateString()} -{' '}
+                      {new Date(activeLease.end_date).toLocaleDateString()}
                     </Text>
                     <Text style={styles.leaseLabel}>Monthly Rent</Text>
-                    <Text style={styles.leaseValue}>R {activeLease.monthly_rent.toLocaleString()}</Text>
+                    <Text style={styles.leaseValue}>
+                      R {activeLease.monthly_rent.toLocaleString()}
+                    </Text>
                   </View>
                 </View>
               </View>
@@ -377,22 +396,28 @@ export default function OwnerPropertyDetailScreen() {
                 <AnimatedButton onPress={handleToggleStatus}>
                   <View style={styles.actionButton}>
                     <Text style={styles.actionButtonText}>
-                      {property.status === 'available' ? 'Mark as Maintenance' : 'Mark as Available'}
+                      {property.status === 'available'
+                        ? 'Mark as Maintenance'
+                        : 'Mark as Available'}
                     </Text>
                   </View>
                 </AnimatedButton>
               )}
-              
-              <AnimatedButton onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push(`/(owner)/applications?propertyId=${id}` as any);
-              }}>
+
+              <AnimatedButton
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push(`/(owner)/applications?propertyId=${id}` as any);
+                }}
+              >
                 <View style={[styles.actionButton, styles.secondaryButton]}>
                   <Text style={styles.secondaryButtonText}>View Applications</Text>
                 </View>
               </AnimatedButton>
 
-              <AnimatedButton onPress={() => Alert.alert('Coming Soon', 'Maintenance history feature')}>
+              <AnimatedButton
+                onPress={() => Alert.alert('Coming Soon', 'Maintenance history feature')}
+              >
                 <View style={[styles.actionButton, styles.secondaryButton]}>
                   <Text style={styles.secondaryButtonText}>Maintenance History</Text>
                 </View>

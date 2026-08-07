@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 import { useRouter } from 'expo-router';
-import { AnimatedButton } from './AnimatedButton';
+import { AnimatedButton } from '@/src/shared/components';
 
 interface Applicant {
   id?: string;
@@ -18,7 +18,7 @@ interface ApplicantsSectionProps {
 
 export const ApplicantsSection = ({ applicants }: ApplicantsSectionProps) => {
   const router = useRouter();
-  
+
   return (
     <View>
       <View style={styles.header}>
@@ -45,8 +45,20 @@ export const ApplicantsSection = ({ applicants }: ApplicantsSectionProps) => {
               <Text style={styles.name}>{a.name}</Text>
               <Text style={styles.property}>{a.property}</Text>
             </View>
-            <View style={[styles.status, { backgroundColor: a.status === 'Approved' ? '#d1fae5' : '#fef3c7' }]}>
-              <Text style={[styles.statusText, { color: a.status === 'Approved' ? '#065f46' : '#92400e' }]}>{a.status}</Text>
+            <View
+              style={[
+                styles.status,
+                { backgroundColor: a.status === 'Approved' ? '#d1fae5' : '#fef3c7' },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.statusText,
+                  { color: a.status === 'Approved' ? '#065f46' : '#92400e' },
+                ]}
+              >
+                {a.status}
+              </Text>
             </View>
             <Text style={styles.date}>{a.date}</Text>
           </View>
@@ -57,11 +69,24 @@ export const ApplicantsSection = ({ applicants }: ApplicantsSectionProps) => {
 };
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, marginTop: 8 },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    marginTop: 8,
+  },
   title: { fontSize: 16, fontWeight: '700', color: '#111827' },
   seeAll: { fontSize: 13, fontWeight: '600', color: '#002395' },
   card: { marginBottom: 8 },
-  cardInner: { backgroundColor: '#ffffff', borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'center', elevation: 1 },
+  cardInner: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    elevation: 1,
+  },
   avatar: { width: 36, height: 36, borderRadius: 18, marginRight: 10 },
   info: { flex: 1 },
   name: { fontSize: 13, fontWeight: '600', color: '#111827' },

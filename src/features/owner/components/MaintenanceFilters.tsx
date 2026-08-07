@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { AnimatedButton } from './AnimatedButton';
+import { AnimatedButton } from '@/src/shared/components';
 
 const RSA = { blue: '#002395', green: '#007A4D' };
 
@@ -47,27 +47,12 @@ export const MaintenanceFilters = ({
               onFilterChange(filter.key);
             }}
           >
-            <View
-              style={[
-                styles.chip,
-                activeFilter === filter.key && styles.chipActive,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.chipText,
-                  activeFilter === filter.key && styles.chipTextActive,
-                ]}
-              >
+            <View style={[styles.chip, activeFilter === filter.key && styles.chipActive]}>
+              <Text style={[styles.chipText, activeFilter === filter.key && styles.chipTextActive]}>
                 {filter.label}
               </Text>
               {filter.count > 0 && (
-                <View
-                  style={[
-                    styles.badge,
-                    activeFilter === filter.key && styles.badgeActive,
-                  ]}
-                >
+                <View style={[styles.badge, activeFilter === filter.key && styles.badgeActive]}>
                   <Text
                     style={[
                       styles.badgeText,
