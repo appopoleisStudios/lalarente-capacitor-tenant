@@ -1,0 +1,91 @@
+# Plane #77 — Owner closure review → Approve → Forward to Tenant (primary CTA)
+# Drives OwnerClosureApprovalScreen (/maintenance/[id]/review-closure):
+#   A. Pending closure → Approve & Complete + Request Changes render
+#   B. After approve → Forward to Tenant becomes the PRIMARY footer CTA
+#   C. Forward → Awaiting Tenant Verification banner
+# Prerequisites:
+#   - node scripts/seed-owner-closure-forward.mjs (retitles the tenant's most
+#     recent request "E2E Closure Forward" + sets a pending closure report)
+#
+# NOTE: fully UI-driven — custom-scheme openLink via simctl relaunches the app
+# and races the async auth restore (bounces to login), so we navigate through
+# the tabs/detail like every other suite flow.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app-warm.yaml
+- runFlow: ../subflows/login-owner.yaml
+- runFlow: ../subflows/tap-owner-maintenance.yaml
+
+# Seeded request is deterministically retitled (tenant's most recent request,
+# listed at the top of the owner's Maintenance list).
+- extendedWaitUntil:
+    visible: "Maintenance"
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      text: ".*E2E Closure Forward.*"
+    direction: DOWN
+    timeout: 20000
+- tapOn:
+    text: ".*E2E Closure Forward.*"
+
+# Detail screen → "Review Closure Report" CTA (may sit below the fold)
+- scrollUntilVisible:
+    element:
+      text: ".*Review Closure Report.*"
+    direction: DOWN
+    timeout: 20000
+- tapOn:
+    text: ".*Review Closure Report.*"
+
+# Review screen — pending closure footer actions (approve button is the
+# load-complete gate: it only mounts after the closure report fetch resolves)
+- extendedWaitUntil:
+    visible:
+      id: "closure-review-title"
+    timeout: 20000
+- extendedWaitUntil:
+    visible:
+      id: "closure-approve-button"
+    timeout: 15000
+- assertVisible:
+    id: "closure-reject-button"
+
+# Approve → confirm alert → success alert
+- tapOn:
+    id: "closure-approve-button"
+- extendedWaitUntil:
+    visible: "^Approve Job Completion$"
+    timeout: 10000
+- tapOn:
+    text: "^Approve$"
+- extendedWaitUntil:
+    visible: "^Approved$"
+    timeout: 10000
+- tapOn:
+    text: "^OK$"
+
+# #77 — Forward becomes the PRIMARY footer CTA after approval
+- extendedWaitUntil:
+    visible:
+      id: "closure-forward-button"
+    timeout: 15000
+
+# Forward → confirm alert → success alert → awaiting banner
+- tapOn:
+    id: "closure-forward-button"
+- extendedWaitUntil:
+    visible: "^Forward to Tenant$"
+    timeout: 10000
+- tapOn:
+    text: "^Forward for Verification$"
+- extendedWaitUntil:
+    visible: "^Forwarded$"
+    timeout: 10000
+- tapOn:
+    text: "^OK$"
+
+# Handoff state visible — the owner has handed the closure to the tenant
+- extendedWaitUntil:
+    visible: "Awaiting Tenant Verification"
+    timeout: 15000

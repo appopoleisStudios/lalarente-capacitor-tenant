@@ -27,6 +27,7 @@ import {
   tenantApproveCompletion,
   tenantRejectCompletion,
 } from '@/src/features/maintenance/api/work/tenantVerification.api';
+import { ErrorState } from '@/src/shared/components/ui/ErrorState';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 
 export default function TenantVerificationScreen() {
@@ -40,11 +41,32 @@ export default function TenantVerificationScreen() {
   }, []);
   const params = useLocalSearchParams();
 
-  // Parse params
+  // Parse params safely (Plane #77) — a missing requestId or corrupted
+  // completionPhotos JSON previously threw (JSON.parse) and white-screened
+  // the tenant. Now render the shared ErrorState with a recovery action.
   const requestId = params.requestId as string;
   const completionNotes = params.completionNotes as string;
   const completionPhotosJson = params.completionPhotos as string;
-  const completionPhotos = completionPhotosJson ? JSON.parse(completionPhotosJson) : [];
+  let completionPhotos: string[] = [];
+  if (completionPhotosJson) {
+    try {
+      const parsed = JSON.parse(completionPhotosJson);
+      if (Array.isArray(parsed)) completionPhotos = parsed;
+    } catch {
+      completionPhotos = [];
+    }
+  }
+  const paramsInvalid = !requestId;
+
+  // Deep links land here with no back stack, so router.back() can no-op and
+  // strand the tenant on the error state. Fall back to the tenant home tab.
+  const handleGoBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tenant)');
+    }
+  };
 
   // State
   const [mode, setMode] = useState<'select' | 'approve' | 'reject'>('select');
@@ -100,11 +122,15 @@ export default function TenantVerificationScreen() {
       let uploadedPhotoUrls: string[] = [];
       if (approvePhotos.length > 0) {
         for (const uri of approvePhotos) {
-          const result = await uploadFile('MAINTENANCE_MEDIA', {
-            uri,
-            name: `tenant_after_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.jpg`,
-            type: 'image/jpeg',
-          }, `tenant-evidence/${requestId}`);
+          const result = await uploadFile(
+            'MAINTENANCE_MEDIA',
+            {
+              uri,
+              name: `tenant_after_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.jpg`,
+              type: 'image/jpeg',
+            },
+            `tenant-evidence/${requestId}`
+          );
           if (!result.error) {
             uploadedPhotoUrls.push(result.url);
           }
@@ -115,8 +141,7 @@ export default function TenantVerificationScreen() {
 
       // Also save tenant's after-photos as evidence
       if (uploadedPhotoUrls.length > 0) {
-        await (supabase
-          .from('closure_reports') as any)
+        await (supabase.from('closure_reports') as any)
           .update({ tenant_confirmation_photos: uploadedPhotoUrls })
           .eq('maintenance_request_id', requestId);
       }
@@ -162,11 +187,15 @@ export default function TenantVerificationScreen() {
       // Upload rejection photos to Supabase Storage
       const uploadedUrls: string[] = [];
       for (const uri of rejectionPhotos) {
-        const result = await uploadFile('MAINTENANCE_MEDIA', {
-          uri,
-          name: `rejection_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.jpg`,
-          type: 'image/jpeg',
-        }, `rejections/${requestId}`);
+        const result = await uploadFile(
+          'MAINTENANCE_MEDIA',
+          {
+            uri,
+            name: `rejection_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.jpg`,
+            type: 'image/jpeg',
+          },
+          `rejections/${requestId}`
+        );
         if (result.error) {
           Alert.alert('Upload Error', 'Failed to upload one or more photos. Please try again.');
           setIsSubmitting(false);
@@ -175,12 +204,7 @@ export default function TenantVerificationScreen() {
         uploadedUrls.push(result.url);
       }
 
-      await tenantRejectCompletion(
-        requestId,
-        userId!,
-        rejectionReason.trim(),
-        uploadedUrls
-      );
+      await tenantRejectCompletion(requestId, userId!, rejectionReason.trim(), uploadedUrls);
 
       Alert.alert(
         'Work Rejected',
@@ -200,12 +224,27 @@ export default function TenantVerificationScreen() {
     }
   };
 
+  if (paramsInvalid) {
+    return (
+      <View style={styles.errorContainer} testID="tenant-verify-error">
+        <ErrorState
+          title="Verification link incomplete"
+          message="This verification link is missing the maintenance job details. Please open it from your maintenance screen instead."
+          retryLabel="Go Back"
+          onRetry={handleGoBack}
+        />
+      </View>
+    );
+  }
+
   if (mode === 'select') {
     return (
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Verify Completed Work</Text>
+          <Text style={styles.title} testID="tenant-verify-title">
+            Verify Completed Work
+          </Text>
           <Text style={styles.subtitle}>
             Please review the work and let us know if everything is satisfactory
           </Text>
@@ -233,18 +272,12 @@ export default function TenantVerificationScreen() {
 
         {/* Decision Buttons */}
         <View style={styles.decisionContainer}>
-          <TouchableOpacity
-            style={styles.approveButton}
-            onPress={() => setMode('approve')}
-          >
+          <TouchableOpacity style={styles.approveButton} onPress={() => setMode('approve')}>
             <Ionicons name="checkmark-circle" size={24} color="#FFFFFF" />
             <Text style={styles.approveButtonText}>Work is Satisfactory</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.rejectButton}
-            onPress={() => setMode('reject')}
-          >
+          <TouchableOpacity style={styles.rejectButton} onPress={() => setMode('reject')}>
             <Ionicons name="close-circle" size={24} color="#DC2626" />
             <Text style={styles.rejectButtonText}>Work Needs Fixes</Text>
           </TouchableOpacity>
@@ -291,7 +324,8 @@ export default function TenantVerificationScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>After Photos (Optional)</Text>
           <Text style={styles.helperText}>
-            Upload photos showing the completed work as evidence. This helps document the final result.
+            Upload photos showing the completed work as evidence. This helps document the final
+            result.
           </Text>
 
           {approvePhotos.length > 0 && (
@@ -310,10 +344,7 @@ export default function TenantVerificationScreen() {
             </View>
           )}
 
-          <TouchableOpacity
-            style={styles.uploadButton}
-            onPress={() => handlePickImage('approve')}
-          >
+          <TouchableOpacity style={styles.uploadButton} onPress={() => handlePickImage('approve')}>
             <Ionicons name="camera" size={24} color="#10B981" />
             <Text style={[styles.uploadButtonText, { color: '#10B981' }]}>
               {approvePhotos.length > 0 ? 'Add More Photos' : 'Upload After Photos'}
@@ -323,7 +354,11 @@ export default function TenantVerificationScreen() {
 
         {/* Confirm Button */}
         <TouchableOpacity
-          style={[styles.submitButton, styles.approveButtonSolid, isSubmitting && styles.submitButtonDisabled]}
+          style={[
+            styles.submitButton,
+            styles.approveButtonSolid,
+            isSubmitting && styles.submitButtonDisabled,
+          ]}
           onPress={handleApprove}
           disabled={isSubmitting}
         >
@@ -357,7 +392,8 @@ export default function TenantVerificationScreen() {
       <View style={styles.warningCard}>
         <Ionicons name="information-circle" size={20} color="#D97706" />
         <Text style={styles.warningText}>
-          The vendor will be asked to return and fix the issues you report. Please be specific about what needs attention.
+          The vendor will be asked to return and fix the issues you report. Please be specific about
+          what needs attention.
         </Text>
       </View>
 
@@ -377,9 +413,7 @@ export default function TenantVerificationScreen() {
           numberOfLines={6}
           textAlignVertical="top"
         />
-        <Text style={styles.charCount}>
-          {rejectionReason.length}/10 characters
-        </Text>
+        <Text style={styles.charCount}>{rejectionReason.length}/10 characters</Text>
       </View>
 
       {/* Photo Upload */}
@@ -394,11 +428,11 @@ export default function TenantVerificationScreen() {
             {rejectionPhotos.map((photo, index) => (
               <View key={index} style={styles.photoContainer}>
                 <Image source={{ uri: photo }} style={styles.rejectionPhoto} />
-                  <TouchableOpacity
-                    style={styles.removePhotoButton}
-                    onPress={() => handleRemovePhoto('reject', index)}
-                  >
-                    <Ionicons name="close-circle" size={24} color="#DC2626" />
+                <TouchableOpacity
+                  style={styles.removePhotoButton}
+                  onPress={() => handleRemovePhoto('reject', index)}
+                >
+                  <Ionicons name="close-circle" size={24} color="#DC2626" />
                 </TouchableOpacity>
               </View>
             ))}
@@ -415,7 +449,11 @@ export default function TenantVerificationScreen() {
 
       {/* Submit Button */}
       <TouchableOpacity
-        style={[styles.submitButton, styles.rejectButtonSolid, isSubmitting && styles.submitButtonDisabled]}
+        style={[
+          styles.submitButton,
+          styles.rejectButtonSolid,
+          isSubmitting && styles.submitButtonDisabled,
+        ]}
         onPress={handleReject}
         disabled={isSubmitting}
       >
@@ -431,6 +469,10 @@ export default function TenantVerificationScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: '#F5F5F5',
+  },
+  errorContainer: {
     flex: 1,
     backgroundColor: '#F5F5F5',
   },

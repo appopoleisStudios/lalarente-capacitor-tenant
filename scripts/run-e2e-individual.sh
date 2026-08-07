@@ -112,6 +112,32 @@ run_closure_e2e() {
   fi
 }
 run_closure_e2e
+
+# ── OWNER CLOSURE REVIEW → APPROVE → FORWARD (Plane #77) ──
+# Orchestrated end-to-end: seed pending closure → owner review-closure UI →
+# Approve → Forward primary CTA → awaiting tenant verification, then the
+# tenant verify ErrorState+retry on an incomplete deep link.
+run_owner_closure_forward_e2e() {
+  echo ""
+  echo "━━ OWNER › Closure Review → Approve → Forward (Plane #77)"
+  local output
+  output=$(bash scripts/run-owner-closure-forward-e2e.sh 2>&1)
+  local ec=$?
+  local slug="owner-closure-forward"
+  xcrun simctl io "$UDID" screenshot "/tmp/lalarente-ss-OWNER-${slug}.png" 2>/dev/null
+  if [ $ec -eq 0 ]; then
+    echo "  ✅ PASS — Closure Forward (Plane #77)"
+    echo "PASS | OWNER | Closure Forward (Plane #77)" >> "$REPORT_FILE"
+    PASS=$((PASS+1))
+  else
+    echo "  ❌ FAIL — Closure Forward (Plane #77)"
+    local err=$(echo "$output" | grep -E "FAILED|✗|Error|error" | tail -3)
+    echo "  ↳ $err"
+    echo "FAIL | OWNER | Closure Forward (Plane #77) | $err" >> "$REPORT_FILE"
+    FAIL=$((FAIL+1))
+  fi
+}
+run_owner_closure_forward_e2e
 run_flow "client-feedback/s2-26-tenant-profile-docs" "S2-26: Profile+POA Upload"   "TENANT" "${T_ENV[@]}"
 run_flow "client-feedback/s2-31-tenant-contact-owner" "S2-31: Contact Owner"       "TENANT" "${T_ENV[@]}"
 run_flow "client-feedback/s2-32-tenant-payments" "S2-32: Payments History"         "TENANT" "${T_ENV[@]}"
