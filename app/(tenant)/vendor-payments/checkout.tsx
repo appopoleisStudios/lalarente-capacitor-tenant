@@ -4,6 +4,7 @@ import React, { useRef } from 'react';
 import { View, Text, SafeAreaView, TouchableOpacity } from 'react-native';
 import { WebView, WebViewNavigation } from 'react-native-webview';
 import { PaymentStepsIndicator } from '@/src/shared/components/ui/PaymentStepsIndicator';
+import { ErrorState, LoadingSpinner } from '@/src/shared/components';
 
 // The edge function's return/cancel URLs point at the vendor-payment-redirect
 // function. When the hosted PayFast page navigates there (after payment or
@@ -114,13 +115,8 @@ export default function VendorPaymentCheckout() {
           style={{ flex: 1, backgroundColor: '#F5F5F5' }}
           startInLoadingState
           renderLoading={() => (
-            <View
-              style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
-              testID="checkout-loading"
-            >
-              <Text style={{ fontSize: 15, color: '#007A4D', fontWeight: '600' }}>
-                Loading secure payment…
-              </Text>
+            <View style={{ flex: 1 }} testID="checkout-loading">
+              <LoadingSpinner color="#007A4D" message="Loading secure payment…" />
             </View>
           )}
           onShouldStartLoadWithRequest={shouldStart}
@@ -132,28 +128,15 @@ export default function VendorPaymentCheckout() {
           allowsInlineMediaPlayback
         />
       ) : (
-        <View
-          style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
-          testID="checkout-blocked"
-        >
-          <Ionicons
-            name={url ? 'shield-checkmark-outline' : 'alert-circle-outline'}
-            size={48}
-            color="#DE3831"
+        <View style={{ flex: 1 }} testID="checkout-blocked">
+          <ErrorState
+            title="Payment link unavailable"
+            message={
+              url
+                ? 'This payment link is not from a trusted provider. Please go back and try again.'
+                : 'Payment link is missing. Please go back and try again.'
+            }
           />
-          <Text
-            style={{
-              fontSize: 15,
-              color: '#666',
-              marginTop: 12,
-              textAlign: 'center',
-              paddingHorizontal: 24,
-            }}
-          >
-            {url
-              ? 'This payment link is not from a trusted provider. Please go back and try again.'
-              : 'Payment link is missing. Please go back and try again.'}
-          </Text>
         </View>
       )}
     </SafeAreaView>

@@ -7,11 +7,19 @@ export interface EmptyStateProps {
   message?: string;
   actionLabel?: string;
   onAction?: () => void;
+  testID?: string;
 }
 
-export function EmptyState({ icon = '📭', title, message, actionLabel, onAction }: EmptyStateProps) {
+export function EmptyState({
+  icon = '📭',
+  title,
+  message,
+  actionLabel,
+  onAction,
+  testID,
+}: EmptyStateProps) {
   return (
-    <View style={styles.container}>
+    <View style={styles.container} testID={testID}>
       <Text style={styles.icon}>{icon}</Text>
       <Text style={styles.title}>{title}</Text>
       {message && <Text style={styles.message}>{message}</Text>}

@@ -13,6 +13,7 @@ import {
 import * as Haptics from 'expo-haptics';
 import { supabase } from '@/src/lib/supabase';
 import { PaymentStepsIndicator } from '@/src/shared/components/ui/PaymentStepsIndicator';
+import { EmptyState, LoadingSpinner } from '@/src/shared/components';
 
 // Safe money renderer — some legacy invoices have null/NaN amounts; a bare
 // `.toLocaleString()` would crash the whole Pay Vendor screen.
@@ -150,21 +151,19 @@ export default function VendorPayScreen() {
   };
 
   if (loading) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color="#007A4D" />
-        </View>
-      </SafeAreaView>
-    );
+    return <LoadingSpinner fullScreen color="#007A4D" />;
   }
 
   if (!invoice) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 16, color: '#666' }}>Invoice not found</Text>
-        </View>
+        <EmptyState
+          icon="🧾"
+          title="Invoice not found"
+          message="This invoice may have expired or been removed. Please go back and try again."
+          actionLabel="Back to Payments"
+          onAction={() => router.back()}
+        />
       </SafeAreaView>
     );
   }

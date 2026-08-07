@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../../lib/supabase';
+import { EmptyState, LoadingSpinner } from '@/src/shared/components';
 
 const RSA = { green: '#007A4D', gold: '#FFB81C' }; // Tenant colors
 
@@ -66,7 +67,9 @@ export default function TenantPaymentScreen() {
 
   const loadData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       // Get most recent active lease (tenant may have multiple)
@@ -143,7 +146,7 @@ export default function TenantPaymentScreen() {
       setShowPayModal(false);
       Alert.alert(
         'Payment Confirmed',
-        'Your payment has been recorded as confirmed. Your landlord will verify receipt and mark it as paid.',
+        'Your payment has been recorded as confirmed. Your landlord will verify receipt and mark it as paid.'
       );
       loadData();
     } catch {
@@ -198,31 +201,19 @@ export default function TenantPaymentScreen() {
   };
 
   if (loading) {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={RSA.green} />
-        </View>
-      </SafeAreaView>
-    );
+    return <LoadingSpinner fullScreen color={RSA.green} />;
   }
 
   if (!lease) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.centerContainer}>
-          <Ionicons name="wallet-outline" size={64} color="#CCC" />
-          <Text style={styles.emptyTitle}>No Active Lease</Text>
-          <Text style={styles.emptyText}>
-            You need an active lease to view payments.
-          </Text>
-          <TouchableOpacity
-            style={styles.searchButton}
-            onPress={() => router.push('/(tenant)/search')}
-          >
-            <Text style={styles.searchButtonText}>Search Properties</Text>
-          </TouchableOpacity>
-        </View>
+        <EmptyState
+          icon="🏠"
+          title="No Active Lease"
+          message="You need an active lease to view payments."
+          actionLabel="Search Properties"
+          onAction={() => router.push('/(tenant)/search')}
+        />
       </SafeAreaView>
     );
   }
@@ -258,8 +249,8 @@ export default function TenantPaymentScreen() {
                       {getDaysUntilDue(nextPayment.due_date) === 0
                         ? 'Due Today'
                         : getDaysUntilDue(nextPayment.due_date) < 0
-                        ? `${Math.abs(getDaysUntilDue(nextPayment.due_date))} days overdue`
-                        : `Due in ${getDaysUntilDue(nextPayment.due_date)} days`}
+                          ? `${Math.abs(getDaysUntilDue(nextPayment.due_date))} days overdue`
+                          : `Due in ${getDaysUntilDue(nextPayment.due_date)} days`}
                     </Text>
                   </View>
                 </View>
@@ -316,7 +307,9 @@ export default function TenantPaymentScreen() {
             <Ionicons name="trending-up-outline" size={20} color="#DC2626" />
             <View style={styles.disputeContent}>
               <Text style={[styles.disputeTitle, { color: '#991B1B' }]}>Arrears & Escalations</Text>
-              <Text style={[styles.disputeSubtitle, { color: '#DC2626' }]}>View outstanding amounts and CPA cure period</Text>
+              <Text style={[styles.disputeSubtitle, { color: '#DC2626' }]}>
+                View outstanding amounts and CPA cure period
+              </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
           </TouchableOpacity>
@@ -341,7 +334,9 @@ export default function TenantPaymentScreen() {
             <Ionicons name="exit-outline" size={20} color="#4B5563" />
             <View style={styles.disputeContent}>
               <Text style={styles.terminationTitle}>Early Termination</Text>
-              <Text style={styles.terminationSubtitle}>Request to end your active lease agreement</Text>
+              <Text style={styles.terminationSubtitle}>
+                Request to end your active lease agreement
+              </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
           </TouchableOpacity>
@@ -378,10 +373,11 @@ export default function TenantPaymentScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Payment History</Text>
             {payments.length === 0 ? (
-              <View style={styles.emptyHistory}>
-                <Ionicons name="receipt-outline" size={48} color="#CCC" />
-                <Text style={styles.emptyHistoryText}>No payments yet</Text>
-              </View>
+              <EmptyState
+                icon="🧾"
+                title="No payments yet"
+                message="Payments for this lease will appear here once you start paying rent."
+              />
             ) : (
               <View style={styles.historyList}>
                 {payments.map((payment) => (
@@ -399,7 +395,9 @@ export default function TenantPaymentScreen() {
                           (payment.paid_date
                             ? `Paid: ${new Date(payment.paid_date).toLocaleDateString()}\n`
                             : '') +
-                          (payment.transaction_id ? `Transaction: ${payment.transaction_id}\n` : '') +
+                          (payment.transaction_id
+                            ? `Transaction: ${payment.transaction_id}\n`
+                            : '') +
                           (payment.failure_reason ? `Reason: ${payment.failure_reason}` : '')
                       );
                     }}
@@ -429,7 +427,9 @@ export default function TenantPaymentScreen() {
                           { backgroundColor: `${getStatusColor(payment.status)}15` },
                         ]}
                       >
-                        <Text style={[styles.statusText, { color: getStatusColor(payment.status) }]}>
+                        <Text
+                          style={[styles.statusText, { color: getStatusColor(payment.status) }]}
+                        >
                           {payment.status}
                         </Text>
                       </View>
@@ -466,7 +466,8 @@ export default function TenantPaymentScreen() {
               </Text>
             )}
             <Text style={styles.modalSubtitle}>
-              Confirm that you have already paid via your bank. Your landlord will verify and mark the payment as received.
+              Confirm that you have already paid via your bank. Your landlord will verify and mark
+              the payment as received.
             </Text>
 
             {/* Method Selector */}
@@ -478,7 +479,12 @@ export default function TenantPaymentScreen() {
                   style={[styles.methodChip, selectedMethod === m && styles.methodChipActive]}
                   onPress={() => setSelectedMethod(m)}
                 >
-                  <Text style={[styles.methodChipText, selectedMethod === m && styles.methodChipTextActive]}>
+                  <Text
+                    style={[
+                      styles.methodChipText,
+                      selectedMethod === m && styles.methodChipTextActive,
+                    ]}
+                  >
                     {m}
                   </Text>
                 </TouchableOpacity>
@@ -547,12 +553,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
   },
   header: {
     padding: 16,
@@ -787,11 +787,11 @@ const styles = StyleSheet.create({
   terminationButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#87a4deff', 
+    backgroundColor: '#87a4deff',
     borderRadius: 10,
     padding: 14,
     marginHorizontal: 16,
-    marginBottom: 24, 
+    marginBottom: 24,
     borderWidth: 1,
     borderColor: '#faebe6ff',
 
@@ -808,39 +808,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  emptyHistory: {
-    alignItems: 'center',
-    padding: 32,
-  },
-  emptyHistoryText: {
-    fontSize: 16,
-    color: '#999',
-    marginTop: 12,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#333',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  searchButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    backgroundColor: RSA.green,
-    borderRadius: 8,
-  },
-  searchButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
   processingPill: {
     backgroundColor: '#EDE9FE',
     paddingHorizontal: 8,
@@ -855,8 +822,11 @@ const styles = StyleSheet.create({
   // EFT Modal
   modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
   modalSheet: {
-    backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 24, paddingBottom: 40,
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
   },
   modalTitle: { fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 4 },
   modalAmount: { fontSize: 24, fontWeight: '700', color: RSA.green, marginBottom: 8 },
@@ -864,25 +834,41 @@ const styles = StyleSheet.create({
   modalLabel: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 8 },
   methodRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
   methodChip: {
-    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20,
-    borderWidth: 1.5, borderColor: '#D1D5DB', backgroundColor: '#FFF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#FFF',
   },
   methodChipActive: { borderColor: RSA.green, backgroundColor: '#F0FDF4' },
   methodChipText: { fontSize: 13, color: '#6B7280', fontWeight: '500' },
   methodChipTextActive: { color: RSA.green, fontWeight: '700' },
   referenceInput: {
-    borderWidth: 1.5, borderColor: '#D1D5DB', borderRadius: 10,
-    padding: 12, fontSize: 15, color: '#111827', marginBottom: 6,
+    borderWidth: 1.5,
+    borderColor: '#D1D5DB',
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 15,
+    color: '#111827',
+    marginBottom: 6,
   },
   modalHint: { fontSize: 11, color: '#9CA3AF', marginBottom: 24 },
   modalActions: { flexDirection: 'row', gap: 12 },
   modalCancelBtn: {
-    flex: 1, paddingVertical: 14, borderRadius: 10, alignItems: 'center',
-    borderWidth: 1, borderColor: '#E5E7EB',
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   modalCancelText: { fontSize: 15, fontWeight: '600', color: '#374151' },
   modalConfirmBtn: {
-    flex: 2, paddingVertical: 14, borderRadius: 10, alignItems: 'center',
+    flex: 2,
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
     backgroundColor: RSA.green,
   },
   modalConfirmText: { fontSize: 15, fontWeight: '700', color: '#FFF' },

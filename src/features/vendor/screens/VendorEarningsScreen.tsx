@@ -6,20 +6,12 @@
 
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
-import React, { useCallback, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/src/lib/supabase';
 import { colors } from '@/src/shared/theme/colors';
+import { EmptyState, ErrorState, LoadingSpinner } from '@/src/shared/components';
 
 const BRAND_BLUE = colors.info[500]; // RSA Blue
 const BRAND_GREEN = colors.success[500]; // SA Green
@@ -84,7 +76,7 @@ export default function VendorEarningsScreen() {
   const [data, setData] = useState<EarningsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const refreshingRef = useRef(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadEarnings = useCallback(async () => {
     try {
@@ -99,13 +91,10 @@ export default function VendorEarningsScreen() {
       setData(result);
     } catch (err: any) {
       console.error('Error loading earnings:', err);
-      if (!refreshingRef.current) {
-        Alert.alert('Error', err.message || 'Failed to load earnings data');
-      }
+      setError(err.message || 'Failed to load earnings data');
     } finally {
       setLoading(false);
       setRefreshing(false);
-      refreshingRef.current = false;
     }
   }, []);
 
@@ -118,7 +107,6 @@ export default function VendorEarningsScreen() {
 
   const onRefresh = () => {
     setRefreshing(true);
-    refreshingRef.current = true;
     loadEarnings();
   };
 
@@ -183,11 +171,22 @@ export default function VendorEarningsScreen() {
   };
 
   if (loading && !refreshing) {
+    return <LoadingSpinner fullScreen color={BRAND_BLUE} />;
+  }
+
+  if (error && !data) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={BRAND_BLUE} />
-        </View>
+        <ErrorState
+          title="Couldn't load earnings"
+          message={error}
+          retryLabel="Try Again"
+          onRetry={() => {
+            setError(null);
+            setLoading(true);
+            loadEarnings();
+          }}
+        />
       </SafeAreaView>
     );
   }
@@ -303,13 +302,12 @@ export default function VendorEarningsScreen() {
         </Text>
 
         {!data?.recent_transactions || data.recent_transactions.length === 0 ? (
-          <View style={styles.emptyState} testID={VENDOR_EARNINGS_TEST_IDS.emptyState}>
-            <Ionicons name="receipt-outline" size={48} color={colors.gray[200]} />
-            <Text style={styles.emptyStateTitle}>No transactions yet</Text>
-            <Text style={styles.emptyStateSub}>
-              Completed payments will appear here once tenants pay your invoices.
-            </Text>
-          </View>
+          <EmptyState
+            icon="🧾"
+            title="No transactions yet"
+            message="Completed payments will appear here once tenants pay your invoices."
+            testID={VENDOR_EARNINGS_TEST_IDS.emptyState}
+          />
         ) : (
           <View style={styles.transactionsList} testID={VENDOR_EARNINGS_TEST_IDS.transactionList}>
             {data.recent_transactions.map((tx) => (
@@ -365,11 +363,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.secondary,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -500,23 +493,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text.primary,
     marginBottom: 12,
-  },
-  emptyState: {
-    alignItems: 'center',
-    padding: 40,
-  },
-  emptyStateTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text.secondary,
-    marginTop: 12,
-  },
-  emptyStateSub: {
-    fontSize: 13,
-    color: colors.text.tertiary,
-    textAlign: 'center',
-    marginTop: 4,
-    lineHeight: 18,
   },
   transactionsList: {
     gap: 10,
