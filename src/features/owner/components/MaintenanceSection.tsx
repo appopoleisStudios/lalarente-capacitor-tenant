@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { AnimatedButton } from './AnimatedButton';
+import { AnimatedButton } from '@/src/shared/components';
 
 const RSA = { blue: '#002395', green: '#007A4D' };
 
@@ -38,7 +38,9 @@ export const MaintenanceSection = ({ maintenance }: MaintenanceSectionProps) => 
         >
           <View style={styles.cardInner}>
             <View style={styles.left}>
-              <View style={styles.iconContainer}><Ionicons name="construct-outline" size={16} color="#92400E" /></View>
+              <View style={styles.iconContainer}>
+                <Ionicons name="construct-outline" size={16} color="#92400E" />
+              </View>
               <View>
                 <Text style={styles.cardTitle}>{m.title}</Text>
                 <Text style={styles.unit}>{m.unit}</Text>
@@ -47,8 +49,20 @@ export const MaintenanceSection = ({ maintenance }: MaintenanceSectionProps) => 
             <View style={styles.right}>
               {m.quote && <Text style={styles.quote}>Quote: R {m.quote}</Text>}
               {m.invoice && <Text style={styles.invoice}>Invoice: R {m.invoice}</Text>}
-              <View style={[styles.status, { backgroundColor: m.status === 'Open' ? '#fef3c7' : '#dbeafe' }]}>
-                <Text style={[styles.statusText, { color: m.status === 'Open' ? '#92400e' : '#1e40af' }]}>{m.status}</Text>
+              <View
+                style={[
+                  styles.status,
+                  { backgroundColor: m.status === 'Open' ? '#fef3c7' : '#dbeafe' },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.statusText,
+                    { color: m.status === 'Open' ? '#92400e' : '#1e40af' },
+                  ]}
+                >
+                  {m.status}
+                </Text>
               </View>
             </View>
           </View>
@@ -59,13 +73,35 @@ export const MaintenanceSection = ({ maintenance }: MaintenanceSectionProps) => 
 };
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, marginTop: 8 },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    marginTop: 8,
+  },
   title: { fontSize: 16, fontWeight: '700', color: '#111827' },
   seeAll: { fontSize: 13, fontWeight: '600', color: RSA.blue },
   card: { marginBottom: 8 },
-  cardInner: { backgroundColor: '#ffffff', borderRadius: 12, padding: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', elevation: 1 },
+  cardInner: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    elevation: 1,
+  },
   left: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  iconContainer: { width: 30, height: 30, borderRadius: 15, backgroundColor: '#fef3c7', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
+  iconContainer: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#fef3c7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
   cardTitle: { fontSize: 13, fontWeight: '600', color: '#111827' },
   unit: { fontSize: 11, color: '#6b7280', marginTop: 2 },
   right: { alignItems: 'flex-end' },

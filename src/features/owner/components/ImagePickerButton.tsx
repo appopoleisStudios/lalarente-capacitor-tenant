@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, Pressable } from 'react-native';
-import { AnimatedButton } from './AnimatedButton';
+import { AnimatedButton } from '@/src/shared/components';
 
 interface ImagePickerButtonProps {
   images: string[];

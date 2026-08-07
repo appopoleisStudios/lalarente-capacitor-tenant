@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { AnimatedButton } from './AnimatedButton';
+import { AnimatedButton } from '@/src/shared/components';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 56) / 2;
@@ -29,8 +29,8 @@ export const MaintenanceStatsCard = ({
   return (
     <View style={styles.grid}>
       {stats.map((stat, index) => (
-        <Animated.View 
-          key={index} 
+        <Animated.View
+          key={index}
           entering={FadeInDown.delay(100 + index * 50).duration(500)}
           style={[styles.card, { width: CARD_WIDTH }]}
         >

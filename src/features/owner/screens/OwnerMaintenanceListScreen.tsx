@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { AnimatedButton } from '../components/AnimatedButton';
+import { AnimatedButton } from '@/src/shared/components';
 import { MaintenanceFilters } from '../components/MaintenanceFilters';
 import { StatusBadge, PriorityIndicator } from '@/src/features/maintenance/components';
 import { useMaintenanceRequests } from '@/src/features/maintenance/hooks';
@@ -15,9 +15,16 @@ type FilterType = 'all' | 'open' | 'assigned' | 'in_progress' | 'completed';
 export default function OwnerMaintenanceListScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
-  
+
   // Real data from database
-  const { requests: allRequests, loading, error, refreshing, onRefresh, refetch } = useMaintenanceRequests();
+  const {
+    requests: allRequests,
+    loading,
+    error,
+    refreshing,
+    onRefresh,
+    refetch,
+  } = useMaintenanceRequests();
 
   // Refresh when screen comes into focus (after delete/update)
   useFocusEffect(
@@ -45,7 +52,7 @@ export default function OwnerMaintenanceListScreen() {
     const date = new Date(dateString);
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    
+
     if (diffInHours < 24) {
       return `${diffInHours}h ago`;
     }

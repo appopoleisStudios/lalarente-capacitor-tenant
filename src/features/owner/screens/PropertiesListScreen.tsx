@@ -1,9 +1,17 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, TextInput, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TextInput,
+  FlatList,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { AnimatedButton } from '../components/AnimatedButton';
+import { AnimatedButton } from '@/src/shared/components';
 import { PropertyCard } from '../components/PropertyCard';
 import { useProperties } from '../../properties/hooks/useProperties';
 import { supabase } from '../../../lib/supabase';
@@ -12,12 +20,14 @@ import { styles } from './PropertiesListScreen.styles';
 export default function PropertiesListScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'rented' | 'maintenance'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'rented' | 'maintenance'>(
+    'all'
+  );
   const [sortBy, setSortBy] = useState<'newest' | 'rent_desc' | 'rent_asc'>('newest');
 
   // Get current user ID
   const [userId, setUserId] = useState<string | null>(null);
-  
+
   React.useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUserId(data.user?.id || null);
@@ -56,7 +66,9 @@ export default function PropertiesListScreen() {
       result.sort((a, b) => (a.rent_amount || 0) - (b.rent_amount || 0));
     } else {
       // newest - sort by created_at descending
-      result.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+      result.sort(
+        (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+      );
     }
 
     return result;
@@ -104,9 +116,21 @@ export default function PropertiesListScreen() {
               <View style={styles.pickerButtons}>
                 {(['all', 'available', 'rented', 'maintenance'] as const).map((status) => (
                   <AnimatedButton key={status} onPress={() => setStatusFilter(status)}>
-                    <View style={[styles.filterChip, statusFilter === status && styles.filterChipActive]}>
-                      <Text style={[styles.filterChipText, statusFilter === status && styles.filterChipTextActive]}>
-                        {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
+                    <View
+                      style={[
+                        styles.filterChip,
+                        statusFilter === status && styles.filterChipActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.filterChipText,
+                          statusFilter === status && styles.filterChipTextActive,
+                        ]}
+                      >
+                        {status === 'all'
+                          ? 'All'
+                          : status.charAt(0).toUpperCase() + status.slice(1)}
                       </Text>
                     </View>
                   </AnimatedButton>
@@ -121,8 +145,17 @@ export default function PropertiesListScreen() {
                 {(['newest', 'rent_desc', 'rent_asc'] as const).map((sort) => (
                   <AnimatedButton key={sort} onPress={() => setSortBy(sort)}>
                     <View style={[styles.filterChip, sortBy === sort && styles.filterChipActive]}>
-                      <Text style={[styles.filterChipText, sortBy === sort && styles.filterChipTextActive]}>
-                        {sort === 'newest' ? 'Newest' : sort === 'rent_desc' ? 'High-Low' : 'Low-High'}
+                      <Text
+                        style={[
+                          styles.filterChipText,
+                          sortBy === sort && styles.filterChipTextActive,
+                        ]}
+                      >
+                        {sort === 'newest'
+                          ? 'Newest'
+                          : sort === 'rent_desc'
+                            ? 'High-Low'
+                            : 'Low-High'}
                       </Text>
                     </View>
                   </AnimatedButton>
@@ -158,7 +191,9 @@ export default function PropertiesListScreen() {
           <FlatList
             data={filteredProperties}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <PropertyCard property={item as any} onView={handleView} onEdit={handleEdit} />}
+            renderItem={({ item }) => (
+              <PropertyCard property={item as any} onView={handleView} onEdit={handleEdit} />
+            )}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
             refreshControl={
@@ -172,7 +207,9 @@ export default function PropertiesListScreen() {
             ListEmptyComponent={
               <View style={styles.emptyState}>
                 <Text style={styles.emptyTitle}>No properties yet</Text>
-                <Text style={styles.emptyText}>Add your first property to start managing rent and maintenance.</Text>
+                <Text style={styles.emptyText}>
+                  Add your first property to start managing rent and maintenance.
+                </Text>
                 <AnimatedButton onPress={() => router.push('/(owner)/add-property')}>
                   <View style={styles.emptyButton}>
                     <Text style={styles.emptyButtonText}>+ Add Property</Text>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
-import { AnimatedButton } from './AnimatedButton';
+import { AnimatedButton } from '@/src/shared/components';
 
 interface Property {
   id: string;
@@ -49,23 +49,32 @@ export const PropertyCard = ({ property, onView, onEdit }: PropertyCardProps) =>
       {/* Content */}
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title} numberOfLines={1}>{property.title || 'Untitled Property'}</Text>
+          <Text style={styles.title} numberOfLines={1}>
+            {property.title || 'Untitled Property'}
+          </Text>
           <View style={[styles.statusBadge, { backgroundColor: statusColor.bg }]}>
             <Text style={[styles.statusText, { color: statusColor.text }]}>{status}</Text>
           </View>
         </View>
 
         <Text style={styles.address} numberOfLines={1}>
-          {property.address || 'No address'}, {property.city || 'Unknown'}, {property.province || 'Unknown'}
+          {property.address || 'No address'}, {property.city || 'Unknown'},{' '}
+          {property.province || 'Unknown'}
         </Text>
 
         <Text style={styles.rent}>R {(property.rent_amount || 0).toLocaleString()}</Text>
 
-        {(property.bedrooms != null || property.bathrooms != null || property.parking_spaces != null) && (
+        {(property.bedrooms != null ||
+          property.bathrooms != null ||
+          property.parking_spaces != null) && (
           <View style={styles.details}>
             {property.bedrooms != null && <Text style={styles.detail}>{property.bedrooms} bd</Text>}
-            {property.bathrooms != null && <Text style={styles.detail}>{property.bathrooms} ba</Text>}
-            {property.parking_spaces != null && <Text style={styles.detail}>{property.parking_spaces} parking</Text>}
+            {property.bathrooms != null && (
+              <Text style={styles.detail}>{property.bathrooms} ba</Text>
+            )}
+            {property.parking_spaces != null && (
+              <Text style={styles.detail}>{property.parking_spaces} parking</Text>
+            )}
           </View>
         )}
 
@@ -87,12 +96,12 @@ export const PropertyCard = ({ property, onView, onEdit }: PropertyCardProps) =>
 };
 
 const styles = StyleSheet.create({
-  card: { 
-    borderRadius: 12, 
-    overflow: 'hidden', 
-    backgroundColor: '#ffffff', 
-    marginBottom: 12, 
-    borderWidth: 1, 
+  card: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#ffffff',
+    marginBottom: 12,
+    borderWidth: 1,
     borderColor: '#e5e7eb',
     elevation: 1,
     shadowColor: '#000',
@@ -105,7 +114,12 @@ const styles = StyleSheet.create({
   placeholder: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   placeholderText: { fontSize: 12, color: '#9ca3af' },
   content: { padding: 12 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   title: { fontSize: 15, fontWeight: '600', color: '#111827', flex: 1, marginRight: 8 },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
   statusText: { fontSize: 11, fontWeight: '600' },
@@ -115,9 +129,21 @@ const styles = StyleSheet.create({
   detail: { fontSize: 12, color: '#6b7280' },
   actions: { flexDirection: 'row', gap: 8 },
   viewButtonWrapper: { flex: 1 },
-  viewButton: { backgroundColor: '#002395', paddingVertical: 10, borderRadius: 8, alignItems: 'center' },
+  viewButton: {
+    backgroundColor: '#002395',
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
   viewButtonText: { fontSize: 13, fontWeight: '600', color: '#ffffff' },
   editButtonWrapper: { flex: 1 },
-  editButton: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#d1d5db', paddingVertical: 10, borderRadius: 8, alignItems: 'center' },
+  editButton: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
   editButtonText: { fontSize: 13, fontWeight: '600', color: '#374151' },
 });

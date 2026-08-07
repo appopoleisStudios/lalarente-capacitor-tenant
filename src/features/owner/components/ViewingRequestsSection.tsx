@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { AnimatedButton } from './AnimatedButton';
+import { AnimatedButton } from '@/src/shared/components';
 
 interface ViewingRequest {
   id: string;
@@ -78,9 +78,11 @@ export const ViewingRequestsSection = ({ viewings, pendingCount }: ViewingReques
                 <Text style={styles.tenant} numberOfLines={1}>
                   {viewing.tenant_name}
                 </Text>
-                {viewing.status === 'declined' && viewing.alternative_times && viewing.alternative_times.length > 0 && (
-                  <Text style={styles.altOffered}>Alt. times offered</Text>
-                )}
+                {viewing.status === 'declined' &&
+                  viewing.alternative_times &&
+                  viewing.alternative_times.length > 0 && (
+                    <Text style={styles.altOffered}>Alt. times offered</Text>
+                  )}
               </View>
               <View style={styles.dateContainer}>
                 <Text style={styles.date}>{formatDate(viewing.requested_date)}</Text>
