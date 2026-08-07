@@ -1,17 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState, useRef } from 'react';
-import {
-  View,
-  Text,
-  SafeAreaView,
-  ActivityIndicator,
-  TouchableOpacity,
-  Linking,
-} from 'react-native';
+import { View, Text, SafeAreaView, TouchableOpacity, Linking } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '@/src/lib/supabase';
 import { PaymentStepsIndicator } from '@/src/shared/components/ui/PaymentStepsIndicator';
+import { ErrorState, LoadingSpinner } from '@/src/shared/components';
 
 interface PaymentStatus {
   payment_status: string;
@@ -135,17 +129,11 @@ export default function VendorPaymentResult() {
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          <ActivityIndicator size="large" color="#007A4D" />
-          <Text style={{ fontSize: 18, fontWeight: '700', color: '#333', marginTop: 24 }}>
-            Processing Payment
-          </Text>
-          <Text style={{ fontSize: 14, color: '#666', textAlign: 'center', marginTop: 8 }}>
-            Please wait while we confirm your payment...
-          </Text>
-        </View>
-      </SafeAreaView>
+      <LoadingSpinner
+        fullScreen
+        color="#007A4D"
+        message="Processing payment — please wait while we confirm your payment..."
+      />
     );
   }
 
@@ -154,35 +142,12 @@ export default function VendorPaymentResult() {
   if (error && !status) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          <Ionicons name="help-circle-outline" size={64} color="#FFB81C" />
-          <Text style={{ fontSize: 18, fontWeight: '700', color: '#333', marginTop: 16 }}>
-            Checking Status
-          </Text>
-          <Text
-            style={{
-              fontSize: 14,
-              color: '#666',
-              textAlign: 'center',
-              marginTop: 8,
-              lineHeight: 20,
-            }}
-          >
-            {error}
-          </Text>
-          <TouchableOpacity
-            style={{
-              marginTop: 24,
-              backgroundColor: '#007A4D',
-              paddingHorizontal: 32,
-              paddingVertical: 14,
-              borderRadius: 10,
-            }}
-            onPress={() => router.push('/(tenant)/vendor-payments')}
-          >
-            <Text style={{ fontSize: 16, fontWeight: '600', color: '#FFF' }}>Back to Payments</Text>
-          </TouchableOpacity>
-        </View>
+        <ErrorState
+          title="Checking Status"
+          message={error}
+          retryLabel="Back to Payments"
+          onRetry={() => router.push('/(tenant)/vendor-payments')}
+        />
       </SafeAreaView>
     );
   }
