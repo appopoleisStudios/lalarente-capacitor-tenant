@@ -244,10 +244,16 @@ export default function TenantLayout() {
           href: null, // Hidden from tabs - notification list from bell icon
         }}
       />
+      {/* ⚠️⚠️ VENDOR PAYMENTS MUST STAY HIDDEN FROM THE TAB BAR ⚠️⚠️
+          This has regressed multiple times (commits ad7dfe3, eb19049 both
+          re-hid it). DO NOT add a title/tabBarIcon here — the money entry
+          lives in the Payments screen Money hub (Plane #82). The Maestro
+          guard .maestro/flows/tenant-tabbar-guard.yaml fails the suite if
+          any vendor-payments route becomes a visible tab again. */}
       <Tabs.Screen
         name="vendor-payments"
         options={{
-          href: null, // Hidden from tabs - accessed from maintenance flow
+          href: null, // Hidden from tabs - accessed from Payments Money hub
         }}
       />
       <Tabs.Screen

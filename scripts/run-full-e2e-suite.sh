@@ -49,6 +49,7 @@ TENANT_FLOWS=(
   "05-pr7-tenant-tenancy-shortcuts"
   "06-pr7-tenant-disputes-empty"
   "07-pr7-tenant-application-pdf"
+  "tenant-tabbar-guard"
   "08-pr9-tenant-inspections"
   "11-pr10-tenant-maintenance-message"
   "12-pr10-tenant-messaging-keyboard"
@@ -232,6 +233,27 @@ if [ "$EC" -eq 0 ]; then
   PASSED=$((PASSED + 1))
 else
   echo "    ✗ Tenant Closure Confirm FAILED (${DURATION}s) — exit $EC" >> "$RESULTS_FILE"
+  FAILED=$((FAILED + 1))
+fi
+
+# ════════════════════════════════════════════════════
+#  PHASE 1E: OWNER CLOSURE FORWARD (Plane #77)
+#  seed pending closure → owner review-closure → Approve → Forward primary
+#  CTA → awaiting tenant verification, then tenant verify ErrorState+retry.
+# ════════════════════════════════════════════════════
+print_header "OWNER CLOSURE FORWARD (Plane #77)"
+START=$(date +%s)
+set +e
+bash "$SCRIPT_DIR/run-owner-closure-forward-e2e.sh" 2>&1
+EC=$?
+set -e
+END=$(date +%s)
+DURATION=$((END - START))
+if [ "$EC" -eq 0 ]; then
+  echo "    ✓ Owner Closure Forward (${DURATION}s)" >> "$RESULTS_FILE"
+  PASSED=$((PASSED + 1))
+else
+  echo "    ✗ Owner Closure Forward FAILED (${DURATION}s) — exit $EC" >> "$RESULTS_FILE"
   FAILED=$((FAILED + 1))
 fi
 

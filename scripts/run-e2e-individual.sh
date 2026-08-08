@@ -141,6 +141,7 @@ run_owner_closure_forward_e2e
 run_flow "client-feedback/s2-26-tenant-profile-docs" "S2-26: Profile+POA Upload"   "TENANT" "${T_ENV[@]}"
 run_flow "client-feedback/s2-31-tenant-contact-owner" "S2-31: Contact Owner"       "TENANT" "${T_ENV[@]}"
 run_flow "client-feedback/s2-32-tenant-payments" "S2-32: Payments History"         "TENANT" "${T_ENV[@]}"
+run_flow "tenant-tabbar-guard"               "Tab-bar Guard (no vendor tab)"   "TENANT" "${T_ENV[@]}"
 run_flow "client-feedback/s2-40-tenant-send-message" "S2-40: Send Message"         "TENANT" "${T_ENV[@]}"
 
 # ── OWNER FLOWS ──
