@@ -270,7 +270,9 @@ export default function OwnerDashboardScreen() {
     dashboardData.openDisputes +
     dashboardData.pendingClosures;
 
-  // Dynamic documents from real data
+  // Dynamic documents from real data. Docs with actionable counts are flagged
+  // `attention` — DocumentsSection renders them as Needs-attention rows (Plane #81),
+  // all others collapse into the compact All-documents grid. No destinations removed.
   const documents = [
     {
       name: 'Lease Contracts',
@@ -289,6 +291,7 @@ export default function OwnerDashboardScreen() {
       icon: 'clipboard-outline',
       type: 'pending-quotes',
       info: `${dashboardData.documents.pendingQuotes} For Review`,
+      attention: dashboardData.documents.pendingQuotes > 0,
     },
     { name: 'Tax Reports', icon: 'calculator-outline', type: 'tax', info: 'SARS ITR12' },
     {
@@ -303,6 +306,7 @@ export default function OwnerDashboardScreen() {
       icon: 'lock-closed-outline',
       type: 'holding-deposit',
       info: `${dashboardData.documents.holdingDepositsActive} Active`,
+      attention: dashboardData.documents.holdingDepositsActive > 0,
     },
     { name: 'Lease Renewals', icon: 'refresh-outline', type: 'renewals', info: 'CPA Notices' },
     { name: 'Insurance', icon: 'umbrella-outline', type: 'insurance', info: 'Claims Tracker' },
@@ -312,6 +316,7 @@ export default function OwnerDashboardScreen() {
       type: 'payment-disputes',
       info:
         dashboardData.openDisputes > 0 ? `${dashboardData.openDisputes} Open` : 'Payment Queries',
+      attention: dashboardData.openDisputes > 0,
     },
     {
       name: 'Applications',
@@ -321,10 +326,153 @@ export default function OwnerDashboardScreen() {
         dashboardData.applicants.length > 0
           ? `${dashboardData.applicants.length} Recent`
           : 'Review & Compare',
+      attention: dashboardData.applicants.length > 0,
     },
     { name: 'Inspections', icon: 'search-outline', type: 'inspections', info: 'Move-In / Out' },
     { name: 'Statements', icon: 'bar-chart-outline', type: 'statements', info: 'Monthly Income' },
   ];
+
+  // ─── Above-fold primary CTA (Plane #81) ────────────────────────────────────
+  // One clear action, adaptive: the highest-priority urgent item wins, otherwise
+  // default to growing the portfolio. All destinations kept — this is a focus
+  // surface, not a new screen.
+  const primaryAction = (() => {
+    if (dashboardData.pendingClosures > 0) {
+      return {
+        label: 'Approve Job Closures',
+        sub: `${dashboardData.pendingClosures} pending review`,
+        icon: 'checkmark-done-circle-outline' as const,
+        route: '/(owner)/maintenance' as const,
+      };
+    }
+    if (pendingViewingsCount > 0) {
+      return {
+        label: 'Review Viewing Requests',
+        sub: `${pendingViewingsCount} awaiting response`,
+        icon: 'calendar-outline' as const,
+        route: '/(owner)/viewings' as const,
+      };
+    }
+    if (dashboardData.openDisputes > 0) {
+      return {
+        label: 'Resolve Payment Disputes',
+        sub: `${dashboardData.openDisputes} open`,
+        icon: 'shield-half-outline' as const,
+        route: '/(owner)/payment-disputes' as const,
+      };
+    }
+    if (dashboardData.pendingTerminations > 0) {
+      return {
+        label: 'Review Early Terminations',
+        sub: `${dashboardData.pendingTerminations} pending`,
+        icon: 'alert-circle-outline' as const,
+        route: '/(owner)/early-termination' as const,
+      };
+    }
+    if (dashboardData.processingPayments > 0) {
+      return {
+        label: 'Confirm Tenant Payments',
+        sub: `${dashboardData.processingPayments} awaiting confirmation`,
+        icon: 'hourglass-outline' as const,
+        route: '/(owner)/rent-roll' as const,
+      };
+    }
+    return {
+      label: 'Add a Property',
+      sub: 'Grow your portfolio',
+      icon: 'add-circle-outline' as const,
+      route: '/(owner)/add-property' as const,
+    };
+  })();
+
+  // ─── Needs-attention hub (Plane #81) ───────────────────────────────────────
+  // The individual urgent alert cards consolidate into one hub card. Each row
+  // keeps its exact destination — nothing is dropped.
+  const attentionItems: {
+    key: string;
+    icon: string;
+    color: string;
+    bg: string;
+    title: string;
+    sub: string;
+    route: any;
+  }[] = [];
+  if (dashboardData.pendingTerminations > 0) {
+    attentionItems.push({
+      key: 'terminations',
+      icon: 'alert-circle',
+      color: '#DC2626',
+      bg: '#FEF2F2',
+      title: `${dashboardData.pendingTerminations} Early Termination${
+        dashboardData.pendingTerminations === 1 ? '' : 's'
+      } Pending`,
+      sub: 'CPA s14 — Tenant statutory right to exit',
+      route: '/(owner)/early-termination',
+    });
+  }
+  if (dashboardData.openDisputes > 0) {
+    attentionItems.push({
+      key: 'disputes',
+      icon: 'shield-half-outline',
+      color: '#7C3AED',
+      bg: '#F5F3FF',
+      title: `${dashboardData.openDisputes} Payment Dispute${
+        dashboardData.openDisputes > 1 ? 's' : ''
+      } Open`,
+      sub: 'Tenants have raised payment queries',
+      route: '/(owner)/payment-disputes',
+    });
+  }
+  if (dashboardData.pendingClosures > 0) {
+    attentionItems.push({
+      key: 'closures',
+      icon: 'checkmark-done-circle',
+      color: '#007A4D',
+      bg: '#F0FDF4',
+      title: `${dashboardData.pendingClosures} Job Closure${
+        dashboardData.pendingClosures > 1 ? 's' : ''
+      } Pending Review`,
+      sub: 'Vendors completed work — approve closure',
+      route: '/(owner)/maintenance',
+    });
+  }
+  if (dashboardData.processingPayments > 0) {
+    attentionItems.push({
+      key: 'processing-payments',
+      icon: 'hourglass-outline',
+      color: '#7C3AED',
+      bg: '#F5F3FF',
+      title: `${dashboardData.processingPayments} Payment${
+        dashboardData.processingPayments > 1 ? 's' : ''
+      } Awaiting Confirmation`,
+      sub: 'Tenants submitted payment — confirm receipt',
+      route: '/(owner)/rent-roll',
+    });
+  }
+  if (pendingAlternativesCount > 0 && pendingViewingsCount === 0) {
+    attentionItems.push({
+      key: 'alternatives',
+      icon: 'swap-horizontal-outline',
+      color: '#0369A1',
+      bg: '#E0F2FE',
+      title: `${pendingAlternativesCount} Viewing${
+        pendingAlternativesCount > 1 ? 's' : ''
+      } — Alternatives Offered`,
+      sub: 'Waiting for tenant to choose a new time slot',
+      route: '/(owner)/viewings',
+    });
+  }
+  if (pendingViewingsCount > 0) {
+    attentionItems.push({
+      key: 'viewings',
+      icon: 'calendar-outline',
+      color: '#B45309',
+      bg: '#FFF3E0',
+      title: `${pendingViewingsCount} Viewing${pendingViewingsCount === 1 ? '' : 's'} Awaiting Response`,
+      sub: 'Tenants are waiting — approve or suggest a new time',
+      route: '/(owner)/viewings',
+    });
+  }
 
   // Success state - render dashboard with real data
   return (
@@ -400,137 +548,60 @@ export default function OwnerDashboardScreen() {
             <PortfolioCard {...dashboardData.portfolio} userName={dashboardData.userName} />
           </Animated.View>
 
-          {/* Urgent Action Alerts */}
-          {dashboardData.pendingTerminations > 0 && (
-            <Animated.View entering={FadeInDown.delay(140).duration(400)}>
-              <TouchableOpacity
-                style={styles.terminationAlertCard}
-                onPress={() => router.push('/(owner)/early-termination' as any)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="alert-circle" size={24} color="#DC2626" />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.terminationAlertTitle}>
-                    {dashboardData.pendingTerminations} Early Termination{' '}
-                    {dashboardData.pendingTerminations === 1 ? 'Request' : 'Requests'} Pending
-                  </Text>
-                  <Text style={styles.terminationAlertSub}>
-                    CPA s14 — Tenant statutory right to exit
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color="#DC2626" />
-              </TouchableOpacity>
-            </Animated.View>
-          )}
+          {/* Above-fold primary CTA (Plane #81) — one adaptive action */}
+          <Animated.View entering={FadeInDown.delay(140).duration(400)}>
+            <TouchableOpacity
+              style={styles.primaryCtaCard}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.push(primaryAction.route as any);
+              }}
+              activeOpacity={0.85}
+              testID="owner-primary-action"
+              accessibilityLabel={primaryAction.label}
+            >
+              <View style={styles.primaryCtaIcon}>
+                <Ionicons name={primaryAction.icon} size={24} color="#002395" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.primaryCtaTitle}>{primaryAction.label}</Text>
+                <Text style={styles.primaryCtaSub}>{primaryAction.sub}</Text>
+              </View>
+              <Ionicons name="arrow-forward-circle" size={26} color="#002395" />
+            </TouchableOpacity>
+          </Animated.View>
 
-          {dashboardData.openDisputes > 0 && (
+          {/* Needs-attention hub (Plane #81) — one card, every destination kept */}
+          {attentionItems.length > 0 && (
             <Animated.View entering={FadeInDown.delay(155).duration(400)}>
-              <TouchableOpacity
-                style={styles.processingAlertCard}
-                onPress={() => router.push('/(owner)/payment-disputes' as any)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="shield-half-outline" size={24} color="#7C3AED" />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.processingAlertTitle}>
-                    {dashboardData.openDisputes} Payment Dispute
-                    {dashboardData.openDisputes > 1 ? 's' : ''} Open
-                  </Text>
-                  <Text style={styles.processingAlertSub}>Tenants have raised payment queries</Text>
+              <View style={styles.attentionHub}>
+                <View style={styles.attentionHubHeader}>
+                  <Text style={styles.attentionHubTitle}>Needs Attention</Text>
+                  <View style={styles.attentionHubBadge}>
+                    <Text style={styles.attentionHubBadgeText}>{attentionItems.length}</Text>
+                  </View>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color="#7C3AED" />
-              </TouchableOpacity>
-            </Animated.View>
-          )}
-
-          {/* Pending Closure Approvals */}
-          {dashboardData.pendingClosures > 0 && (
-            <Animated.View entering={FadeInDown.delay(160).duration(400)}>
-              <TouchableOpacity
-                style={styles.closureAlertCard}
-                onPress={() => router.push('/(owner)/maintenance' as any)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="checkmark-done-circle" size={24} color="#007A4D" />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.closureAlertTitle}>
-                    {dashboardData.pendingClosures} Job Closure
-                    {dashboardData.pendingClosures > 1 ? 's' : ''} Pending Review
-                  </Text>
-                  <Text style={styles.closureAlertSub}>
-                    Vendors have completed work and requested closure approval
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color="#007A4D" />
-              </TouchableOpacity>
-            </Animated.View>
-          )}
-
-          {dashboardData.processingPayments > 0 && (
-            <Animated.View entering={FadeInDown.delay(165).duration(400)}>
-              <TouchableOpacity
-                style={styles.processingAlertCard}
-                onPress={() => router.push('/(owner)/rent-roll' as any)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="hourglass-outline" size={24} color="#7C3AED" />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.processingAlertTitle}>
-                    {dashboardData.processingPayments} Payment
-                    {dashboardData.processingPayments > 1 ? 's' : ''} Awaiting Confirmation
-                  </Text>
-                  <Text style={styles.processingAlertSub}>
-                    Tenants have submitted payment — confirm receipt
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color="#7C3AED" />
-              </TouchableOpacity>
-            </Animated.View>
-          )}
-
-          {/* Declined Viewings — Alternatives Offered */}
-          {pendingAlternativesCount > 0 && pendingViewingsCount === 0 && (
-            <Animated.View entering={FadeInDown.delay(163).duration(400)}>
-              <TouchableOpacity
-                style={styles.alternativesAlertCard}
-                onPress={() => router.push('/(owner)/viewings' as any)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="swap-horizontal-outline" size={24} color="#0369A1" />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.alternativesAlertTitle}>
-                    {pendingAlternativesCount} Viewing{pendingAlternativesCount > 1 ? 's' : ''} —
-                    Alternatives Offered
-                  </Text>
-                  <Text style={styles.alternativesAlertSub}>
-                    Waiting for tenant to choose a new time slot
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color="#0369A1" />
-              </TouchableOpacity>
-            </Animated.View>
-          )}
-
-          {/* Pending Viewing Requests */}
-          {pendingViewingsCount > 0 && (
-            <Animated.View entering={FadeInDown.delay(170).duration(400)}>
-              <TouchableOpacity
-                style={styles.viewingAlertCard}
-                onPress={() => router.push('/(owner)/viewings' as any)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="calendar-outline" size={24} color="#B45309" />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.viewingAlertTitle}>
-                    {pendingViewingsCount} Viewing{' '}
-                    {pendingViewingsCount === 1 ? 'Request' : 'Requests'} Awaiting Response
-                  </Text>
-                  <Text style={styles.viewingAlertSub}>
-                    Tenants are waiting — approve or suggest a new time
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color="#B45309" />
-              </TouchableOpacity>
+                {attentionItems.map((item, index) => (
+                  <TouchableOpacity
+                    key={item.key}
+                    style={[
+                      styles.attentionRow,
+                      index < attentionItems.length - 1 && styles.attentionRowBorder,
+                    ]}
+                    onPress={() => router.push(item.route as any)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.attentionRowIcon, { backgroundColor: item.bg }]}>
+                      <Ionicons name={item.icon as any} size={20} color={item.color} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.attentionRowTitle}>{item.title}</Text>
+                      <Text style={styles.attentionRowSub}>{item.sub}</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+                  </TouchableOpacity>
+                ))}
+              </View>
             </Animated.View>
           )}
 
