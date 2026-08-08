@@ -399,6 +399,20 @@ export default function VendorDashboardScreen() {
               </View>
               <Text style={styles.actionText}>Lala AI</Text>
             </Pressable>
+            {/* Contracts quick action (Plane #83) — the tab was removed from
+                the bottom bar (7→6 tabs); Contracts lives here + under Profile. */}
+            <Pressable
+              style={({ pressed }) => [styles.actionCard, pressed && styles.actionCardPressed]}
+              testID="qa-contracts"
+              accessibilityLabel="Contracts"
+              accessibilityRole="button"
+              onPress={() => router.push('/(vendor)/contracts')}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.warning[50] }]}>
+                <Ionicons name="document-text" size={24} color={colors.warning[500]} />
+              </View>
+              <Text style={styles.actionText}>Contracts</Text>
+            </Pressable>
           </View>
         </View>
 
@@ -731,6 +745,7 @@ const styles = StyleSheet.create({
   },
   actionsGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
   },
   actionCard: {
