@@ -223,6 +223,7 @@ export default function OwnerInvoiceApprovalScreen() {
               style={[styles.actionButton, styles.rejectButton]}
               onPress={() => handleRejectPress(invoice)}
               disabled={actionLoading}
+              testID="invoice-reject-button"
             >
               <Ionicons name="close-circle" size={18} color={colors.error[600]} />
               <Text style={styles.rejectButtonText}>Reject</Text>
@@ -231,6 +232,7 @@ export default function OwnerInvoiceApprovalScreen() {
               style={[styles.actionButton, styles.approveButton]}
               onPress={() => handleApprove(invoice)}
               disabled={actionLoading}
+              testID="invoice-approve-button"
             >
               {actionLoading ? (
                 <ActivityIndicator color="#FFFFFF" size="small" />
@@ -338,6 +340,7 @@ export default function OwnerInvoiceApprovalScreen() {
                 style={[styles.modalSubmitButton, !rejectReason.trim() && { opacity: 0.5 }]}
                 onPress={submitRejection}
                 disabled={!rejectReason.trim()}
+                testID="invoice-reject-confirm"
               >
                 <Text style={styles.modalSubmitText}>Reject Invoice</Text>
               </TouchableOpacity>
