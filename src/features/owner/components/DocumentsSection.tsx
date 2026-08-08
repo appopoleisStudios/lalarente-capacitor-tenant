@@ -9,6 +9,8 @@ interface Document {
   icon: string;
   type: string;
   info: string;
+  /** Plane #81 — docs with actionable counts render in the Needs-attention list. */
+  attention?: boolean;
 }
 
 interface DocumentsSectionProps {
@@ -73,36 +75,74 @@ export const DocumentsSection = ({ documents }: DocumentsSectionProps) => {
     }
   };
 
+  const attentionDocs = documents.filter((d) => d.attention);
+  const allDocs = documents.filter((d) => !d.attention);
+
   return (
     <View>
       <View style={styles.header}>
-        <Text style={styles.title}>My Documents</Text>
-        <AnimatedButton onPress={() => router.push('/(owner)/documents' as any)}>
+        <Text style={styles.title}>Documents</Text>
+        <AnimatedButton
+          testID="documents-see-all"
+          onPress={() => router.push('/(owner)/documents' as any)}
+        >
           <Text style={styles.seeAll}>See All</Text>
         </AnimatedButton>
       </View>
-      <View style={styles.grid}>
-        {documents.map((doc) => (
-          <AnimatedButton
-            key={doc.type}
-            style={styles.card}
-            accessibilityLabel={doc.name}
-            onPress={() => handleDocumentPress(doc.type)}
-          >
-            <View style={styles.cardInner}>
-              <View style={styles.iconBox}>
-                <Ionicons name={doc.icon as any} size={20} color="#002395" />
+
+      {/* Needs attention — docs with actionable counts (Plane #81) */}
+      {attentionDocs.length > 0 && (
+        <>
+          <Text style={styles.sectionLabel}>Needs attention</Text>
+          <View style={styles.attentionList}>
+            {attentionDocs.map((doc) => (
+              <AnimatedButton
+                key={doc.type}
+                style={styles.attentionRow}
+                accessibilityLabel={doc.name}
+                onPress={() => handleDocumentPress(doc.type)}
+              >
+                <View style={styles.attentionIconBox}>
+                  <Ionicons name={doc.icon as any} size={18} color="#002395" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.attentionName} accessible={false}>
+                    {doc.name}
+                  </Text>
+                  <Text style={styles.attentionInfo} accessible={false}>
+                    {doc.info}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+              </AnimatedButton>
+            ))}
+          </View>
+        </>
+      )}
+
+      {/* All documents — compact grid, every destination still reachable */}
+      {allDocs.length > 0 && <Text style={styles.sectionLabel}>All documents</Text>}
+      {allDocs.length > 0 && (
+        <View style={styles.grid}>
+          {allDocs.map((doc) => (
+            <AnimatedButton
+              key={doc.type}
+              style={styles.card}
+              accessibilityLabel={doc.name}
+              onPress={() => handleDocumentPress(doc.type)}
+            >
+              <View style={styles.cardInner}>
+                <View style={styles.iconBox}>
+                  <Ionicons name={doc.icon as any} size={18} color="#002395" />
+                </View>
+                <Text style={styles.name} numberOfLines={2} accessible={false}>
+                  {doc.name}
+                </Text>
               </View>
-              <Text style={styles.name} numberOfLines={2} accessible={false}>
-                {doc.name}
-              </Text>
-              <Text style={styles.info} accessible={false}>
-                {doc.info}
-              </Text>
-            </View>
-          </AnimatedButton>
-        ))}
-      </View>
+            </AnimatedButton>
+          ))}
+        </View>
+      )}
     </View>
   );
 };
@@ -117,25 +157,53 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 16, fontWeight: '700', color: '#111827' },
   seeAll: { fontSize: 13, fontWeight: '600', color: '#002395' },
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  attentionList: { gap: 8, marginBottom: 16 },
+  attentionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
+    padding: 12,
+    gap: 10,
+  },
+  attentionIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  attentionName: { fontSize: 13, fontWeight: '700', color: '#111827' },
+  attentionInfo: { fontSize: 11, color: '#6B7280', marginTop: 1 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
-  card: { width: '31%' },
+  card: { width: '47%' },
   cardInner: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
-    padding: 10,
+    padding: 12,
+    flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 100,
+    gap: 10,
     elevation: 1,
   },
   iconBox: {
-    width: 36,
-    height: 36,
+    width: 32,
+    height: 32,
     borderRadius: 8,
     backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
   },
-  name: { fontSize: 10, fontWeight: '600', color: '#111827', textAlign: 'center', marginBottom: 4 },
-  info: { fontSize: 9, color: '#6b7280', textAlign: 'center' },
+  name: { fontSize: 11, fontWeight: '600', color: '#111827', flex: 1 },
 });
