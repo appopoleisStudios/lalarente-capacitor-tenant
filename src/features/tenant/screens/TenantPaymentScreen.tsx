@@ -45,6 +45,54 @@ interface Lease {
   };
 }
 
+// ─── Money hub sub-routes (Plane #82) ───────────────────────────────────────
+// The Payments screen is the single money entry point. All money destinations
+// stay reachable from here — including for tenants without an active lease
+// (the hub renders even when the lease section cannot).
+const MONEY_HUB_LINKS: {
+  href: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  iconColor: string;
+  title: string;
+  titleColor: string;
+  subtitle: string;
+  bg: string;
+  border: string;
+  testID?: string;
+}[] = [
+  {
+    href: '/(tenant)/arrears',
+    icon: 'trending-up-outline',
+    iconColor: '#DC2626',
+    title: 'Arrears & Escalations',
+    titleColor: '#991B1B',
+    subtitle: 'View outstanding amounts and CPA cure period',
+    bg: '#FEF2F2',
+    border: '#FECACA',
+  },
+  {
+    href: '/(tenant)/payment-disputes',
+    icon: 'alert-circle-outline',
+    iconColor: '#D97706',
+    title: 'Dispute a Payment',
+    titleColor: '#92400E',
+    subtitle: 'Raise a query about a charge or payment',
+    bg: '#FFFBEB',
+    border: '#FDE68A',
+  },
+  {
+    href: '/(tenant)/vendor-payments',
+    icon: 'card-outline',
+    iconColor: '#00897B',
+    title: 'Vendor Payments',
+    titleColor: '#00695C',
+    subtitle: 'Pay approved vendor invoices for completed work',
+    bg: '#E0F2F1',
+    border: '#B2DFDB',
+    testID: 'payments-vendor-payments',
+  },
+];
+
 export default function TenantPaymentScreen() {
   const router = useRouter();
   const [lease, setLease] = useState<Lease | null>(null);
@@ -205,15 +253,54 @@ export default function TenantPaymentScreen() {
   }
 
   if (!lease) {
+    // No active lease — the money hub sub-routes must still be reachable
+    // (Plane #82: single Payments entry with sub-routes; nothing dropped).
     return (
       <SafeAreaView style={styles.safeArea}>
-        <EmptyState
-          icon="🏠"
-          title="No Active Lease"
-          message="You need an active lease to view payments."
-          actionLabel="Search Properties"
-          onAction={() => router.push('/(tenant)/search')}
-        />
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Payments</Text>
+          </View>
+          <ScrollView
+            style={styles.scrollView}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[RSA.green]} />
+            }
+          >
+            <View style={styles.section}>
+              <EmptyState
+                icon="🏠"
+                title="No Active Lease"
+                message="You need an active lease to view rent payments. You can still manage the money actions below."
+                actionLabel="Search Properties"
+                onAction={() => router.push('/(tenant)/search')}
+              />
+            </View>
+            <View style={styles.moneyHub}>
+              <Text style={styles.moneyHubTitle}>Money hub</Text>
+              {MONEY_HUB_LINKS.map((link) => (
+                <TouchableOpacity
+                  key={link.href}
+                  style={[
+                    styles.disputeButton,
+                    { backgroundColor: link.bg, borderColor: link.border },
+                  ]}
+                  onPress={() => router.push(link.href as any)}
+                  testID={link.testID}
+                >
+                  <Ionicons name={link.icon} size={20} color={link.iconColor} />
+                  <View style={styles.disputeContent}>
+                    <Text style={[styles.disputeTitle, { color: link.titleColor }]}>
+                      {link.title}
+                    </Text>
+                    <Text style={styles.disputeSubtitle}>{link.subtitle}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        </View>
       </SafeAreaView>
     );
   }
@@ -300,47 +387,43 @@ export default function TenantPaymentScreen() {
             </View>
           </View>
 
-          {/* Arrears & Escalations */}
-          <TouchableOpacity
-            style={[styles.disputeButton, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}
-            onPress={() => router.push('/(tenant)/arrears' as any)}
-          >
-            <Ionicons name="trending-up-outline" size={20} color="#DC2626" />
-            <View style={styles.disputeContent}>
-              <Text style={[styles.disputeTitle, { color: '#991B1B' }]}>Arrears & Escalations</Text>
-              <Text style={[styles.disputeSubtitle, { color: '#DC2626' }]}>
-                View outstanding amounts and CPA cure period
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-          </TouchableOpacity>
-
-          {/* Dispute a Payment */}
-          <TouchableOpacity
-            style={styles.disputeButton}
-            onPress={() => router.push('/(tenant)/payment-disputes')}
-          >
-            <Ionicons name="alert-circle-outline" size={20} color="#D97706" />
-            <View style={styles.disputeContent}>
-              <Text style={styles.disputeTitle}>Dispute a Payment</Text>
-              <Text style={styles.disputeSubtitle}>Raise a query about a charge or payment</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.terminationButton}
-            onPress={() => router.push('/(tenant)/early-termination')}
-          >
-            <Ionicons name="exit-outline" size={20} color="#4B5563" />
-            <View style={styles.disputeContent}>
-              <Text style={styles.terminationTitle}>Early Termination</Text>
-              <Text style={styles.terminationSubtitle}>
-                Request to end your active lease agreement
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-          </TouchableOpacity>
+          {/* Money hub sub-routes (Plane #82) — all money destinations from one entry */}
+          <View style={styles.moneyHub}>
+            <Text style={styles.moneyHubTitle}>Money hub</Text>
+            {MONEY_HUB_LINKS.map((link) => (
+              <TouchableOpacity
+                key={link.href}
+                style={[
+                  styles.disputeButton,
+                  { backgroundColor: link.bg, borderColor: link.border },
+                ]}
+                onPress={() => router.push(link.href as any)}
+                testID={link.testID}
+              >
+                <Ionicons name={link.icon} size={20} color={link.iconColor} />
+                <View style={styles.disputeContent}>
+                  <Text style={[styles.disputeTitle, { color: link.titleColor }]}>
+                    {link.title}
+                  </Text>
+                  <Text style={styles.disputeSubtitle}>{link.subtitle}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={styles.terminationButton}
+              onPress={() => router.push('/(tenant)/early-termination')}
+            >
+              <Ionicons name="exit-outline" size={20} color="#4B5563" />
+              <View style={styles.disputeContent}>
+                <Text style={styles.terminationTitle}>Early Termination</Text>
+                <Text style={styles.terminationSubtitle}>
+                  Request to end your active lease agreement
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+            </TouchableOpacity>
+          </View>
 
           {/* Filter Tabs */}
           <View style={styles.filterContainer}>
@@ -579,6 +662,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#333',
     marginBottom: 12,
+  },
+  moneyHub: {
+    marginBottom: 8,
+  },
+  moneyHubTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 12,
+    marginHorizontal: 16,
   },
   nextPaymentCard: {
     backgroundColor: '#FFF',

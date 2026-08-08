@@ -1,0 +1,47 @@
+# Tenant tab bar regression guard (Plane #82 follow-up)
+# PREVENTS: a "Vendor Payments" tab silently reappearing on the tenant bottom
+# navbar. This has regressed multiple times (commits ad7dfe3 / eb19049 both
+# re-hid it). Any future PR that re-registers vendor-payments as a visible tab
+# FAILS this flow, so the suite can never ship the regression again.
+#
+# The guard asserts:
+#   1. The 5 canonical tabs exist (Home, Search, Payments, Profile, Lala AI)
+#   2. NO "Vendor Payments" text is visible on the dashboard — a re-added tab
+#      would render its label in the tab bar and trip assertNotVisible.
+#      (After Plane #82 the dashboard has no other "Vendor Payments" text.)
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app-warm.yaml
+- runFlow: ../subflows/login-tenant.yaml
+
+# Land on the tenant dashboard deterministically — the app may resume on a
+# pushed screen (no tab bar) after login, so tap the Home tab explicitly.
+- tapOn:
+    id: "tab-home"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "tenant-dashboard-header"
+    timeout: 30000
+
+# The 5 canonical tab bar entries must all be present.
+- assertVisible:
+    id: "tab-home"
+- assertVisible:
+    id: "tab-search"
+- assertVisible:
+    id: "tab-payments"
+- assertVisible:
+    id: "tab-profile"
+- assertVisible:
+    id: "tab-lala-ai"
+
+# THE guard: a Vendor Payments tab must NOT be in the bottom navbar. A visible
+# tab would render its label and fail this assertion on the dashboard.
+- assertNotVisible:
+    text: "Vendor Payments"
+
+# Belt-and-braces: if a future PR gives the tab a testID, this catches it too.
+- assertNotVisible:
+    id: "tab-vendor-payments"

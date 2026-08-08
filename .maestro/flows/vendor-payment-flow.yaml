@@ -18,24 +18,39 @@
 #     tenant-payer invoice linked to the tenant's latest maintenance request).
 #     The tenant screen only lists payer_role='tenant' + status='approved'
 #     invoices, so the seed must run before this flow.
-#   - Uses the in-app entry point (qa-vendor-payments quick action on the tenant
-#     dashboard) instead of a fragile deep link.
+#   - Uses the in-app entry point — the consolidated Payments hub (Plane #82):
+#     dashboard Payments quick action (qa-payments) → Payments screen
+#     (payments-vendor-payments sub-route) — instead of a fragile deep link.
 #   - Selectors use testIDs (not raw text) on icon+text buttons to avoid the
 #     icon-prefix matching bug (Maestro merges icon name into accessibility text).
 appId: com.lalarente.app
 ---
 - runFlow: ../subflows/login-tenant.yaml
 
-# Navigate to vendor payments via the dashboard Quick Action (in-app entry point)
+# Navigate to the consolidated Payments hub via the dashboard Quick Action
 - scrollUntilVisible:
     element:
-      id: "qa-vendor-payments"
+      id: "qa-payments"
     direction: DOWN
     timeout: 20000
     centerElement: true
 
 - tapOn:
-    id: "qa-vendor-payments"
+    id: "qa-payments"
+
+# Payments screen is now the money hub — open the Vendor Payments sub-route.
+# The hub sits below the fold (Next Payment card + summary, or a tall
+# EmptyState when there's no lease), so scrollUntilVisible FIRST (Maestro's
+# `visible` waits require the element in the viewport), then tap.
+- scrollUntilVisible:
+    element:
+      id: "payments-vendor-payments"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+
+- tapOn:
+    id: "payments-vendor-payments"
 
 # Wait for the vendor payments screen header
 - extendedWaitUntil:

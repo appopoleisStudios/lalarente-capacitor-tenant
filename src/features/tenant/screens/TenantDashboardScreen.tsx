@@ -18,7 +18,10 @@ import { messagesApi } from '../../messaging/api/messagesApi';
 import { colors } from '@/src/shared/theme/colors';
 
 const tenancyShortcutTestId = (title: string) =>
-  `tenancy-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`;
+  `tenancy-${title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')}`;
 
 const TENANCY_SHORTCUTS: {
   href: Href;
@@ -32,14 +35,7 @@ const TENANCY_SHORTCUTS: {
     icon: 'card-outline',
     iconColor: colors.rsa.blue,
     title: 'Payments & arrears',
-    subtitle: 'Rent, disputes, and escalation status',
-  },
-  {
-    href: '/(tenant)/payment-disputes',
-    icon: 'alert-circle-outline',
-    iconColor: colors.warning[600],
-    title: 'Payment disputes',
-    subtitle: 'Raise or track a payment query',
+    subtitle: 'Rent, vendor invoices, disputes, and arrears',
   },
   {
     href: '/(tenant)/holding-deposit',
@@ -47,13 +43,6 @@ const TENANCY_SHORTCUTS: {
     iconColor: colors.rsa.green,
     title: 'Holding deposits',
     subtitle: 'Application deposits and RHA rights',
-  },
-  {
-    href: '/(tenant)/arrears',
-    icon: 'alert-circle-outline',
-    iconColor: colors.error[500],
-    title: 'Arrears & escalation',
-    subtitle: 'Overdue payments and CPA escalation status',
   },
   {
     href: '/(tenant)/early-termination',
@@ -72,7 +61,10 @@ const TENANCY_SHORTCUTS: {
 ];
 
 const viewingsShortcutTestId = (title: string) =>
-  `viewings-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`;
+  `viewings-${title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')}`;
 
 /** Always visible — S2-43 / S2-44 (not only when list rows exist) */
 const VIEWINGS_APPLICATIONS_SHORTCUTS: {
@@ -110,11 +102,16 @@ function inspectionPropertyTitle(property: unknown): string {
 
 const getMaintenanceStatusStyle = (status: string) => {
   switch (status) {
-    case 'open': return { backgroundColor: colors.warning[50] };
-    case 'assigned': return { backgroundColor: colors.info[50] };
-    case 'in_progress': return { backgroundColor: colors.warning[50] };
-    case 'completed': return { backgroundColor: colors.primary[50] };
-    default: return { backgroundColor: colors.background.secondary };
+    case 'open':
+      return { backgroundColor: colors.warning[50] };
+    case 'assigned':
+      return { backgroundColor: colors.info[50] };
+    case 'in_progress':
+      return { backgroundColor: colors.warning[50] };
+    case 'completed':
+      return { backgroundColor: colors.primary[50] };
+    default:
+      return { backgroundColor: colors.background.secondary };
   }
 };
 
@@ -154,11 +151,20 @@ export default function TenantDashboardScreen() {
       .channel('tenant-dashboard-viewings')
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'viewing_requests', filter: `tenant_id=eq.${userId}` },
-        () => { loadDashboardData(); }
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'viewing_requests',
+          filter: `tenant_id=eq.${userId}`,
+        },
+        () => {
+          loadDashboardData();
+        }
       )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [userId]);
 
   const handlePullToRefresh = async () => {
@@ -169,7 +175,9 @@ export default function TenantDashboardScreen() {
 
   const loadDashboardData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
 
@@ -187,11 +195,13 @@ export default function TenantDashboardScreen() {
       // Get active or pending lease
       const { data: lease } = await supabase
         .from('leases')
-        .select(`
+        .select(
+          `
           *,
           property:properties!property_id(id, title, address, city, rent_amount),
           owner:profiles!owner_id(id, full_name, phone, email)
-        `)
+        `
+        )
         .eq('tenant_id', user.id)
         .in('status', ['active', 'pending_tenant_signature', 'pending_owner_signature'])
         .order('created_at', { ascending: false })
@@ -202,10 +212,10 @@ export default function TenantDashboardScreen() {
 
       // Get upcoming payment
       const payments = await paymentsApi.getTenantPayments(user.id);
-      const upcoming = payments.find(p => p.status === 'pending');
+      const upcoming = payments.find((p) => p.status === 'pending');
       setNextPayment(upcoming ?? null);
 
-      const recent = payments.filter(p => p.status === 'completed').slice(0, 3);
+      const recent = payments.filter((p) => p.status === 'completed').slice(0, 3);
       setRecentPayments(recent);
 
       // Get active maintenance requests
@@ -222,7 +232,9 @@ export default function TenantDashboardScreen() {
       // Get upcoming viewings (approved or pending)
       const { data: viewings } = await supabase
         .from('viewing_requests')
-        .select('id, requested_date, requested_time, confirmed_date, status, owner_response, property:properties!property_id(id, title, address)')
+        .select(
+          'id, requested_date, requested_time, confirmed_date, status, owner_response, property:properties!property_id(id, title, address)'
+        )
         .eq('tenant_id', user.id)
         .in('status', ['approved', 'pending'])
         .order('requested_date', { ascending: true })
@@ -237,7 +249,9 @@ export default function TenantDashboardScreen() {
       twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
       const { data: recentDeclined } = await supabase
         .from('viewing_requests')
-        .select('id, status, requested_date, requested_time, confirmed_date, owner_response, alternative_times, updated_at, created_at, property_id, property:properties!property_id(id, title)')
+        .select(
+          'id, status, requested_date, requested_time, confirmed_date, owner_response, alternative_times, updated_at, created_at, property_id, property:properties!property_id(id, title)'
+        )
         .eq('tenant_id', user.id)
         .eq('status', 'declined')
         .gte('created_at', twoWeeksAgo.toISOString())
@@ -255,12 +269,8 @@ export default function TenantDashboardScreen() {
           .in('status', ['pending', 'approved'])
           .in('property_id', declinedPropertyIds);
 
-        const activePropertyIds = new Set(
-          (activeForProps ?? []).map((v: any) => v.property_id)
-        );
-        filteredAlerts = filteredAlerts.filter(
-          (v: any) => !activePropertyIds.has(v.property_id)
-        );
+        const activePropertyIds = new Set((activeForProps ?? []).map((v: any) => v.property_id));
+        filteredAlerts = filteredAlerts.filter((v: any) => !activePropertyIds.has(v.property_id));
       }
 
       // Also filter out declined viewings where the notification was already read
@@ -277,9 +287,7 @@ export default function TenantDashboardScreen() {
           const readViewingIds = new Set(
             readNotifs.map((n: any) => n.data?.viewingId).filter(Boolean)
           );
-          filteredAlerts = filteredAlerts.filter(
-            (v: any) => !readViewingIds.has(v.id)
-          );
+          filteredAlerts = filteredAlerts.filter((v: any) => !readViewingIds.has(v.id));
         }
       }
 
@@ -299,10 +307,12 @@ export default function TenantDashboardScreen() {
       // Get pending applications
       const { data: apps } = await supabase
         .from('rental_applications')
-        .select(`
+        .select(
+          `
           id, status, created_at,
           property:properties!property_id(id, title)
-        `)
+        `
+        )
         .eq('tenant_id', user.id)
         .in('status', ['submitted', 'under_review', 'pending_verification'])
         .order('created_at', { ascending: false })
@@ -316,18 +326,22 @@ export default function TenantDashboardScreen() {
         const aUnread = a.unread_count_tenant ?? 0;
         const bUnread = b.unread_count_tenant ?? 0;
         if (bUnread !== aUnread) return bUnread - aUnread;
-        return new Date(b.last_message_at ?? 0).getTime() - new Date(a.last_message_at ?? 0).getTime();
+        return (
+          new Date(b.last_message_at ?? 0).getTime() - new Date(a.last_message_at ?? 0).getTime()
+        );
       });
       const unreadTotal = threads.reduce((sum, t) => sum + (t.unread_count_tenant ?? 0), 0);
       setTotalUnreadMessages(unreadTotal);
-      setMessageThreads(sorted.slice(0, 3).map(t => ({
-        id: t.id,
-        owner_name: (t as any).owner?.full_name ?? 'Landlord',
-        subject: t.subject,
-        unread_count: t.unread_count_tenant ?? 0,
-        last_message_at: t.last_message_at,
-        category: t.category,
-      })));
+      setMessageThreads(
+        sorted.slice(0, 3).map((t) => ({
+          id: t.id,
+          owner_name: (t as any).owner?.full_name ?? 'Landlord',
+          subject: t.subject,
+          unread_count: t.unread_count_tenant ?? 0,
+          last_message_at: t.last_message_at,
+          category: t.category,
+        }))
+      );
 
       // Check for pending inspection that needs tenant signature
       const { data: pendingInsp } = await supabase
@@ -352,14 +366,13 @@ export default function TenantDashboardScreen() {
         const ficaDocs = p.fica_documents || {};
         const hasIdNumber = !!(p.id_number || ficaDocs.id_number);
         const hasIncome = !!(p.monthly_income || ficaDocs.monthly_income);
-        const hasAddress = !!(p.proof_of_address_url);
+        const hasAddress = !!p.proof_of_address_url;
         setVerificationStatus({
           identity: hasIdNumber,
           income: hasIncome,
           references: hasAddress,
         });
       }
-
     } catch (err) {
       console.error('Error loading dashboard:', err);
     } finally {
@@ -378,8 +391,11 @@ export default function TenantDashboardScreen() {
   }
 
   const dismissNotification = async (notifId: string) => {
-    await (supabase as any).from('notifications').update({ read_at: new Date().toISOString() }).eq('id', notifId);
-    setNotifications(prev => prev.filter(n => n.id !== notifId));
+    await (supabase as any)
+      .from('notifications')
+      .update({ read_at: new Date().toISOString() })
+      .eq('id', notifId);
+    setNotifications((prev) => prev.filter((n) => n.id !== notifId));
   };
 
   // Bell badge = unread notifications (from DB) + unactioned viewing declines
@@ -416,13 +432,17 @@ export default function TenantDashboardScreen() {
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handlePullToRefresh} tintColor="#007A4D" />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handlePullToRefresh}
+              tintColor="#007A4D"
+            />
           }
         >
           {/* Viewing Response Alert Cards — from viewing_requests directly */}
           {viewingAlerts.length > 0 && (
             <View style={styles.section}>
-              {viewingAlerts.map(v => {
+              {viewingAlerts.map((v) => {
                 const isApproved = v.status === 'approved';
                 const cardBg = isApproved ? '#E8F5E9' : '#FFF3E0';
                 const borderClr = isApproved ? '#4CAF50' : '#FF9800';
@@ -432,7 +452,10 @@ export default function TenantDashboardScreen() {
                 return (
                   <TouchableOpacity
                     key={v.id}
-                    style={[styles.notifCard, { backgroundColor: cardBg, borderLeftColor: borderClr }]}
+                    style={[
+                      styles.notifCard,
+                      { backgroundColor: cardBg, borderLeftColor: borderClr },
+                    ]}
                     onPress={() => router.push(`/(tenant)/viewings/${v.id}` as any)}
                     activeOpacity={0.7}
                   >
@@ -455,7 +478,8 @@ export default function TenantDashboardScreen() {
                       ) : null}
                       {!isApproved && altTimes && altTimes.length > 0 ? (
                         <Text style={[styles.notifBody, { fontWeight: '600', color: '#E65100' }]}>
-                          {altTimes.length} alternative time{altTimes.length > 1 ? 's' : ''} proposed
+                          {altTimes.length} alternative time{altTimes.length > 1 ? 's' : ''}{' '}
+                          proposed
                         </Text>
                       ) : null}
                     </View>
@@ -469,20 +493,27 @@ export default function TenantDashboardScreen() {
           {/* Notification Alert Cards (from notifications table) */}
           {notifications.length > 0 && (
             <View style={styles.section}>
-              {notifications.map(notif => {
+              {notifications.map((notif) => {
                 const isApproved = notif.type === 'viewing_approved';
                 const isDeclined = notif.type === 'viewing_declined';
                 const viewingId = notif.data?.viewing_id || notif.data?.viewingId;
 
                 const cardColor = isApproved ? '#E8F5E9' : isDeclined ? '#FFF3E0' : '#E3F2FD';
                 const borderColor = isApproved ? '#4CAF50' : isDeclined ? '#FF9800' : '#2196F3';
-                const iconName = isApproved ? 'checkmark-circle' : isDeclined ? 'close-circle' : 'information-circle';
+                const iconName = isApproved
+                  ? 'checkmark-circle'
+                  : isDeclined
+                    ? 'close-circle'
+                    : 'information-circle';
                 const iconColor = isApproved ? '#4CAF50' : isDeclined ? '#FF9800' : '#2196F3';
 
                 return (
                   <TouchableOpacity
                     key={notif.id}
-                    style={[styles.notifCard, { backgroundColor: cardColor, borderLeftColor: borderColor }]}
+                    style={[
+                      styles.notifCard,
+                      { backgroundColor: cardColor, borderLeftColor: borderColor },
+                    ]}
                     onPress={() => {
                       dismissNotification(notif.id);
                       if ((isApproved || isDeclined) && viewingId) {
@@ -494,7 +525,9 @@ export default function TenantDashboardScreen() {
                     <Ionicons name={iconName as any} size={24} color={iconColor} />
                     <View style={styles.notifContent}>
                       <Text style={styles.notifTitle}>{notif.title}</Text>
-                      <Text style={styles.notifBody} numberOfLines={2}>{notif.body}</Text>
+                      <Text style={styles.notifBody} numberOfLines={2}>
+                        {notif.body}
+                      </Text>
                     </View>
                     <TouchableOpacity
                       onPress={(e) => {
@@ -512,7 +545,9 @@ export default function TenantDashboardScreen() {
           )}
 
           {/* Verification Status */}
-          {(!verificationStatus.identity || !verificationStatus.income || !verificationStatus.references) && (
+          {(!verificationStatus.identity ||
+            !verificationStatus.income ||
+            !verificationStatus.references) && (
             <View style={styles.section}>
               <View style={styles.verificationCard}>
                 <View style={styles.verificationHeader}>
@@ -527,7 +562,7 @@ export default function TenantDashboardScreen() {
                     { label: 'Identity Verification', done: verificationStatus.identity },
                     { label: 'Proof of Income', done: verificationStatus.income },
                     { label: 'References', done: verificationStatus.references },
-                  ].map(item => (
+                  ].map((item) => (
                     <View key={item.label} style={styles.verificationItem}>
                       <Ionicons
                         name={item.done ? 'checkmark-circle' : 'ellipse-outline'}
@@ -593,7 +628,12 @@ export default function TenantDashboardScreen() {
                       Inspection Awaiting Your Signature
                     </Text>
                     <Text style={styles.inspectionAlertSub}>
-                      {pendingInspection.type === 'move_in' ? 'Move-In' : pendingInspection.type === 'move_out' ? 'Move-Out' : 'Periodic'} inspection at {inspectionPropertyTitle(pendingInspection.property)}
+                      {pendingInspection.type === 'move_in'
+                        ? 'Move-In'
+                        : pendingInspection.type === 'move_out'
+                          ? 'Move-Out'
+                          : 'Periodic'}{' '}
+                      inspection at {inspectionPropertyTitle(pendingInspection.property)}
                     </Text>
                   </View>
                   <Ionicons name="chevron-forward" size={18} color="#8B5CF6" />
@@ -618,8 +658,12 @@ export default function TenantDashboardScreen() {
                 <View style={styles.depositLeft}>
                   <Ionicons name={item.icon} size={24} color={item.iconColor} />
                   <View>
-                    <Text style={styles.depositTitle} accessible={false}>{item.title}</Text>
-                    <Text style={styles.depositSub} accessible={false}>{item.subtitle}</Text>
+                    <Text style={styles.depositTitle} accessible={false}>
+                      {item.title}
+                    </Text>
+                    <Text style={styles.depositSub} accessible={false}>
+                      {item.subtitle}
+                    </Text>
                   </View>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
@@ -702,19 +746,24 @@ export default function TenantDashboardScreen() {
                 <View style={[styles.actionIcon, { backgroundColor: colors.primary[50] }]}>
                   <Ionicons name="search" size={24} color={colors.rsa.green} />
                 </View>
-                <Text style={styles.actionText} accessible={false}>Search</Text>
+                <Text style={styles.actionText} accessible={false}>
+                  Search
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.actionCard}
                 accessibilityRole="button"
                 accessibilityLabel="Payments"
+                testID="qa-payments"
                 onPress={() => router.push('/(tenant)/payments' as Href)}
               >
                 <View style={[styles.actionIcon, { backgroundColor: colors.info[50] }]}>
                   <Ionicons name="card" size={24} color={colors.rsa.blue} />
                 </View>
-                <Text style={styles.actionText} accessible={false}>Payments</Text>
+                <Text style={styles.actionText} accessible={false}>
+                  Payments
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -727,7 +776,9 @@ export default function TenantDashboardScreen() {
                 <View style={[styles.actionIcon, { backgroundColor: colors.warning[50] }]}>
                   <Ionicons name="construct" size={24} color={colors.warning[500]} />
                 </View>
-                <Text style={styles.actionText} accessible={false}>Maintenance</Text>
+                <Text style={styles.actionText} accessible={false}>
+                  Maintenance
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -740,7 +791,9 @@ export default function TenantDashboardScreen() {
                 <View style={[styles.actionIcon, { backgroundColor: colors.rsa.green + '15' }]}>
                   <Ionicons name="chatbubbles" size={24} color={colors.rsa.green} />
                 </View>
-                <Text style={styles.actionText} accessible={false}>Messages</Text>
+                <Text style={styles.actionText} accessible={false}>
+                  Messages
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -752,7 +805,9 @@ export default function TenantDashboardScreen() {
                 <View style={[styles.actionIcon, { backgroundColor: '#F3E8FF' }]}>
                   <Ionicons name="clipboard-outline" size={24} color="#8B5CF6" />
                 </View>
-                <Text style={styles.actionText} accessible={false}>Reports</Text>
+                <Text style={styles.actionText} accessible={false}>
+                  Reports
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -764,62 +819,57 @@ export default function TenantDashboardScreen() {
                 <View style={[styles.actionIcon, { backgroundColor: '#E8F5E9' }]}>
                   <Ionicons name="sparkles" size={24} color={colors.rsa.green} />
                 </View>
-                <Text style={styles.actionText} accessible={false}>Lala AI</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.actionCard}
-                accessibilityRole="button"
-                accessibilityLabel="Vendor Payments"
-                testID="qa-vendor-payments"
-                onPress={() => router.push('/(tenant)/vendor-payments' as Href)}
-              >
-                <View style={[styles.actionIcon, { backgroundColor: '#E0F2F1' }]}>
-                  <Ionicons name="card-outline" size={24} color="#00897B" />
-                </View>
-                <Text style={styles.actionText} accessible={false}>Vendor Payments</Text>
+                <Text style={styles.actionText} accessible={false}>
+                  Lala AI
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
 
           {/* Lease Renewal Alert — shown when < 120 days to expiry */}
-          {activeLease && activeLease.end_date && (() => {
-            const days = Math.ceil((new Date(activeLease.end_date).getTime() - Date.now()) / 86400000);
-            if (days > 0 && days <= 120) {
-              return (
-                <View style={styles.section}>
-                  <TouchableOpacity
-                    style={[
-                      styles.renewalAlertCard,
-                      days <= 40 && styles.renewalAlertUrgent,
-                    ]}
-                    onPress={() => router.push('/(tenant)/lease-renewal' as any)}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.renewalAlertLeft}>
-                      <Ionicons
-                        name="calendar-outline"
-                        size={28}
-                        color={days <= 40 ? colors.rsa.red : '#D97706'}
-                      />
-                      <View>
-                        <Text style={[styles.renewalAlertTitle, days <= 40 && { color: colors.rsa.red }]}>
-                          Lease Expiry in {days} days
-                        </Text>
-                        <Text style={styles.renewalAlertSub}>
-                          {days <= 40
-                            ? 'Respond now — CPA deadline approaching'
-                            : 'Review renewal options with your landlord'}
-                        </Text>
-                      </View>
-                    </View>
-                    <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
-                  </TouchableOpacity>
-                </View>
+          {activeLease &&
+            activeLease.end_date &&
+            (() => {
+              const days = Math.ceil(
+                (new Date(activeLease.end_date).getTime() - Date.now()) / 86400000
               );
-            }
-            return null;
-          })()}
+              if (days > 0 && days <= 120) {
+                return (
+                  <View style={styles.section}>
+                    <TouchableOpacity
+                      style={[styles.renewalAlertCard, days <= 40 && styles.renewalAlertUrgent]}
+                      onPress={() => router.push('/(tenant)/lease-renewal' as any)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.renewalAlertLeft}>
+                        <Ionicons
+                          name="calendar-outline"
+                          size={28}
+                          color={days <= 40 ? colors.rsa.red : '#D97706'}
+                        />
+                        <View>
+                          <Text
+                            style={[
+                              styles.renewalAlertTitle,
+                              days <= 40 && { color: colors.rsa.red },
+                            ]}
+                          >
+                            Lease Expiry in {days} days
+                          </Text>
+                          <Text style={styles.renewalAlertSub}>
+                            {days <= 40
+                              ? 'Respond now — CPA deadline approaching'
+                              : 'Review renewal options with your landlord'}
+                          </Text>
+                        </View>
+                      </View>
+                      <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
+                    </TouchableOpacity>
+                  </View>
+                );
+              }
+              return null;
+            })()}
 
           {/* Deposit Status — always visible when active lease exists */}
           {activeLease && (
@@ -835,7 +885,14 @@ export default function TenantDashboardScreen() {
                     <Text style={styles.depositTitle}>Security Deposit</Text>
                     {(activeLease.deposit_amount || 0) > 0 ? (
                       <Text style={styles.depositSub}>
-                        R {((activeLease.deposit_amount || 0) + (activeLease.deposit_total_interest || 0)).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        R{' '}
+                        {(
+                          (activeLease.deposit_amount || 0) +
+                          (activeLease.deposit_total_interest || 0)
+                        ).toLocaleString('en-ZA', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                         {(activeLease.deposit_total_interest || 0) > 0
                           ? ` (incl. R ${(activeLease.deposit_total_interest || 0).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} interest)`
                           : ' held in trust'}
@@ -867,8 +924,12 @@ export default function TenantDashboardScreen() {
                   <View style={styles.depositLeft}>
                     <Ionicons name={item.icon} size={24} color={item.iconColor} />
                     <View>
-                      <Text style={styles.depositTitle} accessible={false}>{item.title}</Text>
-                      <Text style={styles.depositSub} accessible={false}>{item.subtitle}</Text>
+                      <Text style={styles.depositTitle} accessible={false}>
+                        {item.title}
+                      </Text>
+                      <Text style={styles.depositSub} accessible={false}>
+                        {item.subtitle}
+                      </Text>
                     </View>
                   </View>
                   <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
@@ -886,7 +947,7 @@ export default function TenantDashboardScreen() {
                   <Text style={styles.seeAllText}>See All</Text>
                 </TouchableOpacity>
               </View>
-              {upcomingViewings.map(viewing => (
+              {upcomingViewings.map((viewing) => (
                 <TouchableOpacity
                   key={viewing.id}
                   style={styles.viewingCard}
@@ -901,27 +962,36 @@ export default function TenantDashboardScreen() {
                       {viewing.property?.title || 'Property'}
                     </Text>
                     <Text style={styles.viewingDate}>
-                      {new Date(viewing.requested_date + 'T' + (viewing.requested_time || '09:00')).toLocaleDateString('en-ZA', {
-                        weekday: 'short', day: 'numeric', month: 'short',
-                      })} at {viewing.requested_time?.slice(0, 5) || '09:00'}
+                      {new Date(
+                        viewing.requested_date + 'T' + (viewing.requested_time || '09:00')
+                      ).toLocaleDateString('en-ZA', {
+                        weekday: 'short',
+                        day: 'numeric',
+                        month: 'short',
+                      })}{' '}
+                      at {viewing.requested_time?.slice(0, 5) || '09:00'}
                     </Text>
                   </View>
-                  <View style={[
-                    styles.viewingStatusBadge,
-                    {
-                      backgroundColor: viewing.status === 'approved'
-                        ? colors.primary[50]
-                        : colors.warning[50],
-                    },
-                  ]}>
-                    <Text style={[
-                      styles.viewingStatusText,
+                  <View
+                    style={[
+                      styles.viewingStatusBadge,
                       {
-                        color: viewing.status === 'approved'
-                          ? colors.primary[500]
-                          : colors.warning[500],
+                        backgroundColor:
+                          viewing.status === 'approved' ? colors.primary[50] : colors.warning[50],
                       },
-                    ]}>
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.viewingStatusText,
+                        {
+                          color:
+                            viewing.status === 'approved'
+                              ? colors.primary[500]
+                              : colors.warning[500],
+                        },
+                      ]}
+                    >
                       {viewing.status === 'approved' ? 'Confirmed' : 'Pending'}
                     </Text>
                   </View>
@@ -939,7 +1009,7 @@ export default function TenantDashboardScreen() {
                   <Text style={styles.seeAllText}>Search More</Text>
                 </TouchableOpacity>
               </View>
-              {pendingApplications.map(app => (
+              {pendingApplications.map((app) => (
                 <TouchableOpacity
                   key={app.id}
                   style={styles.applicationCard}
@@ -985,7 +1055,7 @@ export default function TenantDashboardScreen() {
                   <Text style={styles.seeAllText}>See All</Text>
                 </TouchableOpacity>
               </View>
-              {messageThreads.map(thread => (
+              {messageThreads.map((thread) => (
                 <TouchableOpacity
                   key={thread.id}
                   style={[styles.messageCard, thread.unread_count > 0 && styles.messageCardUnread]}
@@ -996,10 +1066,16 @@ export default function TenantDashboardScreen() {
                     <Ionicons name="chatbubble-outline" size={20} color={colors.rsa.green} />
                   </View>
                   <View style={styles.messageInfo}>
-                    <Text style={[styles.messageSender, thread.unread_count > 0 && styles.messageBold]} numberOfLines={1}>
+                    <Text
+                      style={[styles.messageSender, thread.unread_count > 0 && styles.messageBold]}
+                      numberOfLines={1}
+                    >
                       {thread.owner_name}
                     </Text>
-                    <Text style={[styles.messageSubject, thread.unread_count > 0 && styles.messageBold]} numberOfLines={1}>
+                    <Text
+                      style={[styles.messageSubject, thread.unread_count > 0 && styles.messageBold]}
+                      numberOfLines={1}
+                    >
                       {thread.subject}
                     </Text>
                   </View>
@@ -1036,12 +1112,16 @@ export default function TenantDashboardScreen() {
                     <Ionicons name="construct" size={20} color={colors.warning[500]} />
                   </View>
                   <View style={styles.maintenanceInfo}>
-                    <Text style={styles.maintenanceTitle}>{request.title || 'Maintenance Request'}</Text>
+                    <Text style={styles.maintenanceTitle}>
+                      {request.title || 'Maintenance Request'}
+                    </Text>
                     <Text style={styles.maintenanceDate}>
                       {new Date(request.created_at).toLocaleDateString()}
                     </Text>
                   </View>
-                  <View style={[styles.maintenanceStatus, getMaintenanceStatusStyle(request.status)]}>
+                  <View
+                    style={[styles.maintenanceStatus, getMaintenanceStatusStyle(request.status)]}
+                  >
                     <Text style={styles.maintenanceStatusText}>{request.status}</Text>
                   </View>
                 </TouchableOpacity>
@@ -1105,23 +1185,24 @@ export default function TenantDashboardScreen() {
                 </TouchableOpacity>
               )}
 
-              {activeLease && (() => {
-                const days = activeLease.end_date
-                  ? Math.ceil((new Date(activeLease.end_date).getTime() - Date.now()) / 86400000)
-                  : null;
-                if (!days || days > 120) return null;
-                return (
-                  <TouchableOpacity
-                    style={styles.documentCard}
-                    onPress={() => router.push('/(tenant)/lease-renewal' as any)}
-                  >
-                    <View style={[styles.documentIcon, { backgroundColor: '#FEF3C7' }]}>
-                      <Ionicons name="refresh-circle" size={24} color="#D97706" />
-                    </View>
-                    <Text style={styles.documentText}>Renewal</Text>
-                  </TouchableOpacity>
-                );
-              })()}
+              {activeLease &&
+                (() => {
+                  const days = activeLease.end_date
+                    ? Math.ceil((new Date(activeLease.end_date).getTime() - Date.now()) / 86400000)
+                    : null;
+                  if (!days || days > 120) return null;
+                  return (
+                    <TouchableOpacity
+                      style={styles.documentCard}
+                      onPress={() => router.push('/(tenant)/lease-renewal' as any)}
+                    >
+                      <View style={[styles.documentIcon, { backgroundColor: '#FEF3C7' }]}>
+                        <Ionicons name="refresh-circle" size={24} color="#D97706" />
+                      </View>
+                      <Text style={styles.documentText}>Renewal</Text>
+                    </TouchableOpacity>
+                  );
+                })()}
             </View>
           </View>
 
@@ -1164,7 +1245,9 @@ export default function TenantDashboardScreen() {
               {maintenanceRequests.length > 0 && (
                 <TouchableOpacity
                   style={styles.activityItem}
-                  onPress={() => router.push(`/(tenant)/maintenance/${maintenanceRequests[0].id}` as any)}
+                  onPress={() =>
+                    router.push(`/(tenant)/maintenance/${maintenanceRequests[0].id}` as any)
+                  }
                   activeOpacity={0.7}
                 >
                   <View style={[styles.activityDot, { backgroundColor: colors.info[500] }]} />
@@ -1200,9 +1283,7 @@ export default function TenantDashboardScreen() {
                       Due: {new Date(nextPayment.due_date).toLocaleDateString()}
                     </Text>
                   </View>
-                  <Text style={styles.paymentAmount}>
-                    R {nextPayment.amount.toLocaleString()}
-                  </Text>
+                  <Text style={styles.paymentAmount}>R {nextPayment.amount.toLocaleString()}</Text>
                 </View>
                 <TouchableOpacity
                   style={styles.payButton}
