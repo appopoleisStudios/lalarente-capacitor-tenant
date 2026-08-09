@@ -63,14 +63,16 @@ export default function VendorLayout() {
           ),
         }}
       />
+      {/* ⚠️ CONTRACTS MUST STAY HIDDEN FROM THE TAB BAR (Plane #83) ⚠️
+          The tab bar was reduced 7→6 for density. Contracts is nested under
+          Profile (menu row) + Dashboard (qa-contracts quick action) — both
+          reach it in ≤2 taps. DO NOT re-add title/tabBarIcon here. The Maestro
+          guard .maestro/flows/vendor-tabbar-guard.yaml fails the suite if
+          tab-vendor-contracts ever renders again. */}
       <Tabs.Screen
         name="contracts/index"
         options={{
-          title: 'Contracts',
-          tabBarButtonTestID: 'tab-vendor-contracts',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="document-text" size={size} color={color} />
-          ),
+          href: null, // Hidden from tabs - accessed from Profile + Dashboard quick action
         }}
       />
       <Tabs.Screen

@@ -249,6 +249,23 @@ export default function VendorProfileScreen() {
             </View>
             <Text style={styles.menuArrow}>›</Text>
           </Pressable>
+
+          {/* Contracts — nested here (Plane #83): tab bar is 6 tabs, Contracts
+              reached from Profile or the Dashboard qa-contracts quick action. */}
+          <Pressable
+            style={styles.menuItem}
+            onPress={() => router.push('/(vendor)/contracts')}
+            testID="vendor-profile-contracts"
+            accessibilityLabel="Contracts"
+            accessibilityRole="button"
+          >
+            <Text style={styles.menuIcon}>📋</Text>
+            <View style={styles.menuTextContainer}>
+              <Text style={styles.menuText}>Contracts</Text>
+              <Text style={styles.menuSubtext}>Service contracts and agreements</Text>
+            </View>
+            <Text style={styles.menuArrow}>›</Text>
+          </Pressable>
         </View>
 
         {/* Account Settings */}

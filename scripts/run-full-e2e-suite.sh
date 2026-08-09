@@ -98,6 +98,7 @@ VENDOR_FLOWS=(
   "vendor-messaging"
   "vendor-maintenance"
   "vendor-ai-chat"
+  "vendor-tabbar-guard"
   "vendor-profile-settings"
 )
 

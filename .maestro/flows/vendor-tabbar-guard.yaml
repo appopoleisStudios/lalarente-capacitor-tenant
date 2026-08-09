@@ -1,0 +1,53 @@
+# Vendor tab bar regression guard (Plane #83)
+# PREVENTS: a "Contracts" tab silently reappearing in the vendor bottom navbar.
+# The tab bar was reduced 7→6 tabs (Plane #83) — Contracts is nested under
+# Profile (vendor-profile-contracts) + Dashboard (qa-contracts quick action).
+# Any future PR that re-registers contracts/index as a visible tab FAILS here,
+# so the suite can never ship the regression again.
+#
+# The guard asserts:
+#   1. The 6 canonical tabs exist (Dashboard, Requests, My Jobs, Earnings,
+#      Lala AI, Profile)
+#   2. NO Contracts tab testID (tab-vendor-contracts) is in the tab bar. The
+#      text check is intentionally NOT used here: "Contracts" legitimately
+#      appears in the dashboard quick action + profile menu, so the id check
+#      is the reliable discriminator for a tab-bar label.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app-warm.yaml
+- runFlow: ../subflows/login-vendor.yaml
+
+# Land on the vendor dashboard deterministically (tap Home tab explicitly).
+- tapOn:
+    id: "tab-vendor-home"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "qa-contracts"
+    timeout: 30000
+
+# The 6 canonical tab bar entries must all be present.
+- assertVisible:
+    id: "tab-vendor-home"
+- assertVisible:
+    id: "tab-vendor-requests"
+- assertVisible:
+    id: "tab-vendor-jobs"
+- assertVisible:
+    id: "tab-vendor-earnings"
+- assertVisible:
+    id: "tab-vendor-lala-ai"
+- assertVisible:
+    id: "tab-vendor-profile"
+
+# THE guard: a Contracts tab must NOT be in the bottom navbar.
+- assertNotVisible:
+    id: "tab-vendor-contracts"
+
+# The nested destination must be reachable from the dashboard quick action.
+- tapOn:
+    id: "qa-contracts"
+- extendedWaitUntil:
+    visible: "My Contracts"
+    timeout: 20000
