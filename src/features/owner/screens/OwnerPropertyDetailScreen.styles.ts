@@ -13,7 +13,7 @@ export const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
   },
-  
+
   // Header
   header: {
     flexDirection: 'row',
@@ -58,7 +58,7 @@ export const styles = StyleSheet.create({
   headerIcon: {
     fontSize: 18,
   },
-  
+
   // Loading & Error
   loadingContainer: {
     flex: 1,
@@ -100,12 +100,12 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#ffffff',
   },
-  
+
   // Content
   scrollView: {
     flex: 1,
   },
-  
+
   // Photo Gallery
   photoGallery: {
     height: 300,
@@ -125,12 +125,12 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     color: '#9ca3af',
   },
-  
+
   // Content
   content: {
     padding: 16,
   },
-  
+
   // Title
   titleRow: {
     flexDirection: 'row',
@@ -161,7 +161,7 @@ export const styles = StyleSheet.create({
     color: RSA.blue,
     marginBottom: 24,
   },
-  
+
   // Sections
   section: {
     marginBottom: 24,
@@ -172,14 +172,14 @@ export const styles = StyleSheet.create({
     color: '#111827',
     marginBottom: 12,
   },
-  
+
   // Address
   address: {
     fontSize: 14,
     color: '#6b7280',
     lineHeight: 20,
   },
-  
+
   // Details Grid
   detailsGrid: {
     flexDirection: 'row',
@@ -207,7 +207,7 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#111827',
   },
-  
+
   // Terms
   termsGrid: {
     gap: 12,
@@ -229,7 +229,7 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#111827',
   },
-  
+
   // Amenities
   amenitiesGrid: {
     flexDirection: 'row',
@@ -249,14 +249,14 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1e40af',
   },
-  
+
   // Description
   description: {
     fontSize: 14,
     color: '#374151',
     lineHeight: 20,
   },
-  
+
   // Tenant Card
   tenantCard: {
     backgroundColor: '#f0fdf4',
@@ -297,7 +297,7 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#166534',
   },
-  
+
   // Actions
   actionsSection: {
     marginTop: 8,
@@ -324,7 +324,7 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#374151',
   },
-  
+
   // Photo Counter
   photoCounter: {
     position: 'absolute',
@@ -340,7 +340,7 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#ffffff',
   },
-  
+
   // Full Screen Image Viewer
   fullScreenContainer: {
     flex: 1,
@@ -358,7 +358,9 @@ export const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 10,
+    // Must stay above the imageCounter (zIndex 10) — the counter's full-width
+    // absolute box previously swallowed taps aimed at the ✕ button (user bug).
+    zIndex: 20,
   },
   closeButtonText: {
     fontSize: 28,

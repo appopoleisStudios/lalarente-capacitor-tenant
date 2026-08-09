@@ -218,6 +218,9 @@ export default function OwnerPropertyDetailScreen() {
                     key={index}
                     activeOpacity={0.9}
                     onPress={() => openFullScreenImage(image, index)}
+                    testID="owner-property-photo"
+                    accessibilityRole="imagebutton"
+                    accessibilityLabel={`Property photo ${index + 1}`}
                   >
                     <Image source={{ uri: image }} style={styles.photo} resizeMode="cover" />
                   </TouchableOpacity>
@@ -443,25 +446,10 @@ export default function OwnerPropertyDetailScreen() {
         onRequestClose={closeFullScreenImage}
       >
         <View style={styles.fullScreenContainer}>
-          {/* Close Button */}
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={closeFullScreenImage}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.closeButtonText}>✕</Text>
-          </TouchableOpacity>
-
-          {/* Image Counter */}
-          {property?.images && property.images.length > 1 && (
-            <View style={styles.imageCounter}>
-              <Text style={styles.imageCounterText}>
-                {currentImageIndex + 1} / {property.images.length}
-              </Text>
-            </View>
-          )}
-
-          {/* Full Screen Image */}
+          {/* Full Screen Image — rendered FIRST so controls stay on top
+              natively (the ScrollView is a zoomable native view that would
+              otherwise swallow taps aimed at siblings rendered before it).
+              User bug: the close button was visible but not tappable. */}
           <ScrollView
             contentContainerStyle={styles.fullScreenImageContainer}
             maximumZoomScale={3}
@@ -475,6 +463,30 @@ export default function OwnerPropertyDetailScreen() {
               resizeMode="contain"
             />
           </ScrollView>
+
+          {/* Close Button */}
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={closeFullScreenImage}
+            activeOpacity={0.8}
+            testID="owner-photo-close"
+            accessibilityRole="button"
+            accessibilityLabel="Close photo viewer"
+          >
+            <Text style={styles.closeButtonText}>✕</Text>
+          </TouchableOpacity>
+
+          {/* Image Counter — pointerEvents none: this full-width absolute
+              View sits in the SAME top band as the close button and, rendered
+              after it, was swallowing every tap aimed at the ✕ (the user bug:
+              close button visible but not tappable). It is display-only. */}
+          {property?.images && property.images.length > 1 && (
+            <View style={styles.imageCounter} pointerEvents="none">
+              <Text style={styles.imageCounterText}>
+                {currentImageIndex + 1} / {property.images.length}
+              </Text>
+            </View>
+          )}
 
           {/* Navigation Arrows */}
           {property?.images && property.images.length > 1 && (

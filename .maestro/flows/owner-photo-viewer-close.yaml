@@ -1,0 +1,48 @@
+# Owner photo viewer close gate (user bug report: opening images trapped the user)
+# Verifies the full-screen photo viewer on OwnerPropertyDetailScreen:
+#   1. Properties -> first property -> detail
+#   2. Tap the first photo -> full-screen viewer opens (close button visible)
+#   3. Tap the close button -> viewer closes, back on Property Details
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app-warm.yaml
+- runFlow: ../subflows/login-owner.yaml
+- runFlow: ../subflows/tap-owner-properties.yaml
+
+- extendedWaitUntil:
+    visible: "My Properties"
+    timeout: 20000
+
+- tapOn:
+    id: "property-card-view"
+- extendedWaitUntil:
+    visible: "Property Details"
+    timeout: 15000
+
+# The photo gallery sits at the top of the detail screen (above the fold),
+# but scroll a little to ensure the gallery is rendered/stable first.
+- scrollUntilVisible:
+    element:
+      id: "owner-property-photo"
+    direction: UP
+    timeout: 15000
+    centerElement: true
+
+# Open the full-screen photo viewer
+- tapOn:
+    id: "owner-property-photo"
+
+# Viewer must show its close button (testID)
+- extendedWaitUntil:
+    visible:
+      id: "owner-photo-close"
+    timeout: 10000
+
+# Close the viewer
+- tapOn:
+    id: "owner-photo-close"
+
+# Back on the previous screen — the user must NOT be trapped
+- extendedWaitUntil:
+    visible: "Property Details"
+    timeout: 15000
