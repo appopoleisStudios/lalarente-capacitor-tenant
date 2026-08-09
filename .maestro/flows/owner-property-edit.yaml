@@ -1,0 +1,29 @@
+# Owner Property Edit — Plane #74 ship gate
+# Proves the list "Edit" button navigates to the edit route
+# (properties/[id]/edit), not the detail screen.
+appId: com.lalarente.app
+---
+# REQUIRED: ensure the owner session (self-healing sign-in).
+- runFlow: ../subflows/login-owner.yaml
+
+# Land deterministically on the Properties tab.
+- runFlow: ../subflows/tap-owner-properties.yaml
+
+- extendedWaitUntil:
+    visible: "My Properties"
+    timeout: 20000
+
+# Tap the first property card's Edit button.
+- tapOn:
+    id: "property-card-edit"
+
+# The edit route must load (its own header title, not the detail screen).
+- extendedWaitUntil:
+    visible: "Edit Property"
+    timeout: 20000
+
+# Back to the list proves the route stack is sane (no modal trap).
+- back
+- extendedWaitUntil:
+    visible: "My Properties"
+    timeout: 20000

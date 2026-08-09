@@ -234,6 +234,25 @@ export default function EditPropertyScreen() {
     setSaving(true);
 
     try {
+      // Photos: keep existing remote URLs, upload newly-picked local files to
+      // Supabase Storage (Plane #74 — complete photo Storage upload).
+      const isRemote = (uri: string) => uri.startsWith('http://') || uri.startsWith('https://');
+      const existingRemote = form.photos.filter(isRemote);
+      const newLocal = form.photos.filter((uri) => !isRemote(uri));
+
+      let finalImages = existingRemote;
+      if (newLocal.length > 0) {
+        const uploadedUrls = await propertiesApi.uploadPropertyPhotos(
+          id,
+          newLocal.map((uri) => ({
+            uri,
+            name: `photo-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`,
+            type: 'image/jpeg',
+          }))
+        );
+        finalImages = [...finalImages, ...uploadedUrls];
+      }
+
       // Update property
       await propertiesApi.updateProperty(id, {
         title: form.title,
@@ -258,7 +277,7 @@ export default function EditPropertyScreen() {
         smoking_allowed: form.smoking_allowed,
         latitude: form.latitude,
         longitude: form.longitude,
-        images: form.photos.length > 0 ? form.photos : null,
+        images: finalImages.length > 0 ? finalImages : null,
       });
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
