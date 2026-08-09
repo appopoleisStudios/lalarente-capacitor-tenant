@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { AnimatedButton } from '@/src/shared/components';
@@ -14,6 +14,7 @@ type FilterType = 'all' | 'open' | 'assigned' | 'in_progress' | 'completed';
 
 export default function OwnerMaintenanceListScreen() {
   const router = useRouter();
+  const { propertyId } = useLocalSearchParams<{ propertyId?: string }>();
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
 
   // Real data from database
@@ -33,20 +34,30 @@ export default function OwnerMaintenanceListScreen() {
     }, [refetch])
   );
 
+  // Property-scoped requests when arriving with ?propertyId= (Maintenance
+  // History from the property detail screen — Plane #85).
+  const scopedRequests = propertyId
+    ? allRequests.filter((r: any) => r.property_id === propertyId)
+    : allRequests;
+
   // Filter requests
-  const filteredRequests = allRequests.filter((request: any) => {
+  const filteredRequests = scopedRequests.filter((request: any) => {
     if (activeFilter === 'all') return true;
     return request.status === activeFilter;
   });
 
   // Calculate counts
   const counts = {
-    all: allRequests.length,
-    open: allRequests.filter((r: any) => r.status === 'open').length,
-    assigned: allRequests.filter((r: any) => r.status === 'assigned').length,
-    in_progress: allRequests.filter((r: any) => r.status === 'in_progress').length,
-    completed: allRequests.filter((r: any) => r.status === 'completed').length,
+    all: scopedRequests.length,
+    open: scopedRequests.filter((r: any) => r.status === 'open').length,
+    assigned: scopedRequests.filter((r: any) => r.status === 'assigned').length,
+    in_progress: scopedRequests.filter((r: any) => r.status === 'in_progress').length,
+    completed: scopedRequests.filter((r: any) => r.status === 'completed').length,
   };
+
+  const filteredPropertyTitle = propertyId
+    ? scopedRequests.find((r: any) => r.property_id === propertyId)?.property?.title
+    : undefined;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -125,9 +136,15 @@ export default function OwnerMaintenanceListScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Text style={styles.headerTitle}>Maintenance</Text>
-            <Text style={styles.headerSubtitle}>
-              {counts.all} total request{counts.all !== 1 ? 's' : ''}
+            <Text style={styles.headerTitle}>
+              {propertyId ? 'Maintenance History' : 'Maintenance'}
+            </Text>
+            <Text style={styles.headerSubtitle} numberOfLines={1}>
+              {propertyId
+                ? filteredPropertyTitle
+                  ? `${filteredPropertyTitle} · ${counts.all} request${counts.all !== 1 ? 's' : ''}`
+                  : `${counts.all} request${counts.all !== 1 ? 's' : ''} for this property`
+                : `${counts.all} total request${counts.all !== 1 ? 's' : ''}`}
             </Text>
           </View>
           <AnimatedButton onPress={handleNewRequest}>

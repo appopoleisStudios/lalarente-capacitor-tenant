@@ -1,0 +1,35 @@
+# Owner Property Maintenance History gate (Plane #85)
+# Verifies: Properties -> first property card -> detail -> Maintenance History
+# button navigates to a property-filtered maintenance list (header shows
+# "Maintenance History" + property title), no "Coming Soon" alert.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app-warm.yaml
+- runFlow: ../subflows/login-owner.yaml
+- runFlow: ../subflows/tap-owner-properties.yaml
+
+- extendedWaitUntil:
+    visible: "My Properties"
+    timeout: 20000
+
+# Open the first property's detail (View button)
+- tapOn:
+    id: "property-card-view"
+- extendedWaitUntil:
+    visible: "Property Details"
+    timeout: 15000
+
+# Scroll to the Maintenance History action (below the tenant/lease sections)
+- scrollUntilVisible:
+    element:
+      id: "owner-maintenance-history"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- tapOn:
+    id: "owner-maintenance-history"
+
+# Filtered list: header title flips to "Maintenance History"
+- extendedWaitUntil:
+    visible: "Maintenance History"
+    timeout: 15000

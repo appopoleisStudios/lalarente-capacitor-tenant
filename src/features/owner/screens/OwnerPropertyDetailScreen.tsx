@@ -416,7 +416,15 @@ export default function OwnerPropertyDetailScreen() {
               </AnimatedButton>
 
               <AnimatedButton
-                onPress={() => Alert.alert('Coming Soon', 'Maintenance history feature')}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push({
+                    pathname: '/(owner)/maintenance',
+                    params: { propertyId: id },
+                  } as any);
+                }}
+                testID="owner-maintenance-history"
+                accessibilityRole="button"
               >
                 <View style={[styles.actionButton, styles.secondaryButton]}>
                   <Text style={styles.secondaryButtonText}>Maintenance History</Text>
