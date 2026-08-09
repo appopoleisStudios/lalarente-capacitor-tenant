@@ -22,8 +22,10 @@ appId: com.lalarente.app
     visible: "Edit Property"
     timeout: 20000
 
-# Back to the list proves the route stack is sane (no modal trap).
-- back
+# Cancel must return to the Properties tab (deterministic navigate, not a
+# bare router.back() which pops past the tab to the Dashboard).
+- tapOn:
+    text: "Cancel"
 - extendedWaitUntil:
     visible: "My Properties"
     timeout: 20000

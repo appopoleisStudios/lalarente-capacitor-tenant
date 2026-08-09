@@ -64,6 +64,11 @@ const SERVICE_OPTIONS = [
 export default function EditPropertyScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+
+  // Deterministic return to the Properties tab. router.back() from a hidden-tab
+  // screen (properties/[id]/edit has href:null) can pop past the Properties tab
+  // to the Dashboard — same issue as the vendor profile screens.
+  const goBackToProperties = () => router.navigate('/(owner)/properties' as never);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<PropertyForm>({
@@ -139,7 +144,7 @@ export default function EditPropertyScreen() {
     } catch (err) {
       console.error('Error loading property:', err);
       Alert.alert('Error', 'Failed to load property data');
-      router.back();
+      goBackToProperties();
     } finally {
       setLoading(false);
     }
@@ -282,7 +287,7 @@ export default function EditPropertyScreen() {
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Success', 'Property updated successfully!', [
-        { text: 'OK', onPress: () => router.back() },
+        { text: 'OK', onPress: () => goBackToProperties() },
       ]);
     } catch (error) {
       console.error('Error updating property:', error);
@@ -310,13 +315,13 @@ export default function EditPropertyScreen() {
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.header}>
-            <AnimatedButton onPress={() => router.back()} hapticType="medium">
+            <AnimatedButton onPress={goBackToProperties} hapticType="medium">
               <View style={styles.backButton}>
                 <Text style={styles.backIcon}>←</Text>
               </View>
             </AnimatedButton>
             <Text style={styles.headerTitle}>Edit Property</Text>
-            <AnimatedButton onPress={() => router.back()}>
+            <AnimatedButton onPress={goBackToProperties}>
               <Text style={styles.cancelText}>Cancel</Text>
             </AnimatedButton>
           </View>
