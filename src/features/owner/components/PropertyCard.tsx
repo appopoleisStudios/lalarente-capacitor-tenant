@@ -79,7 +79,11 @@ export const PropertyCard = ({ property, onView, onEdit }: PropertyCardProps) =>
         )}
 
         <View style={styles.actions}>
-          <AnimatedButton onPress={() => onView(property.id)} style={styles.viewButtonWrapper}>
+          <AnimatedButton
+            onPress={() => onView(property.id)}
+            style={styles.viewButtonWrapper}
+            testID="property-card-view"
+          >
             <View style={styles.viewButton}>
               <Text style={styles.viewButtonText}>View</Text>
             </View>

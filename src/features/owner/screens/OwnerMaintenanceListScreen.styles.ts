@@ -51,6 +51,21 @@ export const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '700',
   },
+  // Header back button (dedicated history route, Plane #85)
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: RSA.blue,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backIcon: {
+    fontSize: 24,
+    color: '#ffffff',
+    fontWeight: '700',
+    marginTop: -2,
+  },
   scrollView: {
     flex: 1,
   },
@@ -58,7 +73,7 @@ export const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 100,
   },
-  
+
   // Loading State
   loadingContainer: {
     flex: 1,
@@ -126,7 +141,7 @@ export const styles = StyleSheet.create({
     color: '#6b7280',
     marginTop: 4,
   },
-  
+
   // Card Styles
   cardButton: {
     marginBottom: 12,

@@ -209,8 +209,17 @@ export default function AddPropertyScreen() {
         longitude: form.longitude,
       });
 
-      // TODO: Upload photos to Supabase Storage
-      // For now, we'll skip photo upload as it requires storage setup
+      // Upload picked photos to Supabase Storage (property-images bucket).
+      // uploadPropertyPhotos uploads each file, then appends the public URLs
+      // to the property row — mirrors EditPropertyScreen (#74) behavior.
+      if (form.photos.length > 0) {
+        const files = form.photos.map((uri, index) => ({
+          uri,
+          name: `photo-${Date.now()}-${index}.jpg`,
+          type: 'image/jpeg',
+        }));
+        await propertiesApi.uploadPropertyPhotos(property.id, files);
+      }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Success', 'Property created successfully!', [

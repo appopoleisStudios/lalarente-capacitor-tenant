@@ -416,7 +416,15 @@ export default function OwnerPropertyDetailScreen() {
               </AnimatedButton>
 
               <AnimatedButton
-                onPress={() => Alert.alert('Coming Soon', 'Maintenance history feature')}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  // Dedicated pushed route (not the Maintenance tab) so a
+                  // propertyId param can never stick on the tab bar — SA
+                  // REQUEST CHANGES on #144 (Plane #85 re-review).
+                  router.push(`/(owner)/maintenance/history/${id}` as never);
+                }}
+                testID="owner-maintenance-history"
+                accessibilityRole="button"
               >
                 <View style={[styles.actionButton, styles.secondaryButton]}>
                   <Text style={styles.secondaryButtonText}>Maintenance History</Text>

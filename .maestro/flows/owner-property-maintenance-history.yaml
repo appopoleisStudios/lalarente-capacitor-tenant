@@ -1,0 +1,58 @@
+# Owner Property Maintenance History gate (Plane #85 re-review)
+# Verifies:
+# 1. Properties -> first property card -> detail -> Maintenance History opens
+#    the DEDICATED history screen (header "Maintenance History" + property
+#    title in the subtitle).
+# 2. Back returns to Property Details (pushed route, deterministic).
+# 3. Tapping the Maintenance TAB after that shows the FULL unfiltered list
+#    (plain "Maintenance" header) — regression guard for the SA REQUEST
+#    CHANGES: the old ?propertyId= param stuck on the tab bar.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app-warm.yaml
+- runFlow: ../subflows/login-owner.yaml
+- runFlow: ../subflows/tap-owner-properties.yaml
+
+- extendedWaitUntil:
+    visible: "My Properties"
+    timeout: 20000
+
+# Open the first property's detail (View button)
+- tapOn:
+    id: "property-card-view"
+- extendedWaitUntil:
+    visible: "Property Details"
+    timeout: 15000
+
+# Scroll to the Maintenance History action (below the tenant/lease sections)
+- scrollUntilVisible:
+    element:
+      id: "owner-maintenance-history"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- tapOn:
+    id: "owner-maintenance-history"
+
+# Dedicated history screen: title + property-scoped subtitle
+- extendedWaitUntil:
+    visible: "Maintenance History"
+    timeout: 15000
+- assertVisible:
+    id: "owner-maintenance-history-title"
+
+# Back returns to the property detail (pushed-route back)
+- tapOn:
+    id: "owner-maintenance-history-back"
+- extendedWaitUntil:
+    visible: "Property Details"
+    timeout: 15000
+
+# Tab re-entry shows the FULL list — never the scoped "Maintenance History"
+- tapOn:
+    id: "tab-owner-maintenance"
+- extendedWaitUntil:
+    visible: "Maintenance"
+    timeout: 15000
+- assertNotVisible:
+    text: "Maintenance History"

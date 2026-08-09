@@ -294,6 +294,12 @@ export default function OwnerLayout() {
         }}
       />
       <Tabs.Screen
+        name="maintenance/history/[propertyId]"
+        options={{
+          href: null, // Hidden from tabs - property maintenance history (Plane #85)
+        }}
+      />
+      <Tabs.Screen
         name="maintenance/[id]/invoice"
         options={{
           href: null, // Hidden from tabs - invoice approval screen
