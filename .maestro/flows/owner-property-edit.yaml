@@ -1,0 +1,31 @@
+# Owner Property Edit — Plane #74 ship gate
+# Proves the list "Edit" button navigates to the edit route
+# (properties/[id]/edit), not the detail screen.
+appId: com.lalarente.app
+---
+# REQUIRED: ensure the owner session (self-healing sign-in).
+- runFlow: ../subflows/login-owner.yaml
+
+# Land deterministically on the Properties tab.
+- runFlow: ../subflows/tap-owner-properties.yaml
+
+- extendedWaitUntil:
+    visible: "My Properties"
+    timeout: 20000
+
+# Tap the first property card's Edit button.
+- tapOn:
+    id: "property-card-edit"
+
+# The edit route must load (its own header title, not the detail screen).
+- extendedWaitUntil:
+    visible: "Edit Property"
+    timeout: 20000
+
+# Cancel must return to the Properties tab (deterministic navigate, not a
+# bare router.back() which pops past the tab to the Dashboard).
+- tapOn:
+    text: "Cancel"
+- extendedWaitUntil:
+    visible: "My Properties"
+    timeout: 20000
