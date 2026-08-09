@@ -173,6 +173,7 @@ run_flow "vendor-maintenance"  "Maintenance Reqs"   "VENDOR" "${V_ENV[@]}"
 run_flow "vendor-ai-chat"      "Lala AI"            "VENDOR" "${V_ENV[@]}"
 run_flow "vendor-tabbar-guard" "Tab-bar Guard (6 tabs, no Contracts)" "VENDOR" "${V_ENV[@]}"
 run_flow "vendor-profile-settings" "Profile Settings (Edit/Notif/Privacy)" "VENDOR" "${V_ENV[@]}"
+run_flow "vendor-documents-upload" "Documents Upload (Plane #84)" "VENDOR" "${V_ENV[@]}"
 
 
 # ── VENDOR EARNINGS + BANKING (Plane #52) ──

@@ -1,4 +1,6 @@
 import { supabase } from '@/src/lib/supabase';
+import * as FileSystem from 'expo-file-system/legacy';
+import { decode } from 'base64-arraybuffer';
 
 export interface ServiceCategory {
   id: string;
@@ -257,17 +259,39 @@ export const vendorProfileApi = {
   },
 
   /**
-   * Upload a document
+   * Upload a document: reads the picked file, uploads it to the private
+   * `documents` bucket under vendor-documents/{vendorId}/, and records the row.
+   * Mirrors documentsApi.uploadDocument (base64 -> arraybuffer -> storage).
    */
   async uploadDocument(
     vendorId: string,
     docType: string,
-    fileUri: string
+    file: { uri: string; name: string; mimeType?: string; size?: number }
   ): Promise<VendorDocument> {
     try {
-      // TODO: Upload file to storage and get URL
-      // For now, use the fileUri directly
-      const fileUrl = fileUri;
+      const base64 = await FileSystem.readAsStringAsync(file.uri, {
+        encoding: 'base64',
+      });
+      const arrayBuffer = decode(base64);
+
+      const timestamp = Date.now();
+      const extension = (file.name.split('.').pop() || 'pdf').toLowerCase();
+      const fileName = `vendor-documents/${vendorId}/${timestamp}.${extension}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(fileName, arrayBuffer, {
+          contentType: file.mimeType || 'application/pdf',
+          upsert: false,
+        });
+
+      if (uploadError) {
+        console.error('Error uploading file:', uploadError);
+        throw new Error(`Failed to upload file: ${uploadError.message}`);
+      }
+
+      const { data: urlData } = supabase.storage.from('documents').getPublicUrl(fileName);
+      const fileUrl = urlData?.publicUrl || fileName;
 
       const { data, error } = await supabase
         .from('vendor_documents')
@@ -280,7 +304,14 @@ export const vendorProfileApi = {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Roll back the stored file so no orphan objects linger.
+        await supabase.storage
+          .from('documents')
+          .remove([fileName])
+          .catch(() => {});
+        throw error;
+      }
       if (!data) throw new Error('Failed to upload document');
       return data as VendorDocument;
     } catch (error) {
@@ -290,10 +321,31 @@ export const vendorProfileApi = {
   },
 
   /**
-   * Delete a document
+   * Delete a document: removes the stored object (if the file_url points into
+   * the documents bucket) and then the row. Mirrors documentsApi.deleteDocument.
    */
   async deleteDocument(documentId: string): Promise<void> {
     try {
+      const { data: doc, error: fetchError } = await supabase
+        .from('vendor_documents')
+        .select('file_url')
+        .eq('id', documentId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      if (doc?.file_url && doc.file_url.includes('/documents/')) {
+        const urlParts = doc.file_url.split('/');
+        const bucketIndex = urlParts.findIndex((p: string) => p === 'documents');
+        if (bucketIndex > -1) {
+          const filePath = urlParts.slice(bucketIndex + 1).join('/');
+          await supabase.storage
+            .from('documents')
+            .remove([filePath])
+            .catch(() => {});
+        }
+      }
+
       const { error } = await supabase.from('vendor_documents').delete().eq('id', documentId);
 
       if (error) throw error;
