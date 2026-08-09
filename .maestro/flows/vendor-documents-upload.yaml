@@ -38,6 +38,14 @@ appId: com.lalarente.app
 - assertVisible:
     id: "vendor-docs-choose-file"
 
-# Close the modal cleanly
+# Close the modal cleanly, then back must land on Profile (not Dashboard —
+# hidden-tab stack regression, same pattern as #74/#134)
 - tapOn:
     text: "Cancel"
+- tapOn:
+    id: "vendor-docs-back"
+- extendedWaitUntil:
+    visible: "Business Documents"
+    timeout: 10000
+- assertVisible:
+    id: "vendor-profile-title"

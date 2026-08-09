@@ -35,6 +35,11 @@ export default function DocumentsManagementScreen() {
   const [selectedDocType, setSelectedDocType] = useState('');
   const [uploading, setUploading] = useState(false);
 
+  // router.back() from this hidden-tab screen pops past the Profile tab to
+  // the Dashboard. Navigate to the Profile tab deterministically instead —
+  // same pattern as VendorEditProfileScreen (#134) / EditPropertyScreen (#74).
+  const goBackToProfile = () => router.navigate('/(vendor)/profile' as never);
+
   useEffect(() => {
     loadDocuments();
   }, [user?.id]);
@@ -173,7 +178,13 @@ export default function DocumentsManagementScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
+          <Pressable
+            onPress={goBackToProfile}
+            style={styles.backButton}
+            testID="vendor-docs-back"
+            accessibilityRole="button"
+            accessibilityLabel="Back to Profile"
+          >
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </Pressable>
           <Text style={styles.headerTitle}>Documents</Text>
@@ -193,7 +204,13 @@ export default function DocumentsManagementScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={goBackToProfile}
+          style={styles.backButton}
+          testID="vendor-docs-back"
+          accessibilityRole="button"
+          accessibilityLabel="Back to Profile"
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </Pressable>
         <Text style={styles.headerTitle}>Documents</Text>
