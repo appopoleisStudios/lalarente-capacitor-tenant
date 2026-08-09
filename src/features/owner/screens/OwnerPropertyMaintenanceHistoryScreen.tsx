@@ -1,22 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { AnimatedButton } from '@/src/shared/components';
-import { MaintenanceFilters } from '../components/MaintenanceFilters';
 import { StatusBadge, PriorityIndicator } from '@/src/features/maintenance/components';
 import { useMaintenanceRequests } from '@/src/features/maintenance/hooks';
 import { styles } from './OwnerMaintenanceListScreen.styles';
 
-type FilterType = 'all' | 'open' | 'assigned' | 'in_progress' | 'completed';
-
-export default function OwnerMaintenanceListScreen() {
+/**
+ * Property-scoped maintenance history (Plane #85).
+ *
+ * Dedicated pushed route — NOT the Maintenance tab — so a `?propertyId=` param
+ * can never stick on the tab bar (the SA REQUEST CHANGES regression: after
+ * History → Dashboard → Maintenance, the tab stayed scoped). The tab list
+ * remains the full, unfiltered list; this screen carries the property filter
+ * and a working back button.
+ */
+export default function OwnerPropertyMaintenanceHistoryScreen() {
   const router = useRouter();
-  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const { propertyId } = useLocalSearchParams<{ propertyId: string }>();
 
-  // Real data from database
   const {
     requests: allRequests,
     loading,
@@ -26,26 +31,18 @@ export default function OwnerMaintenanceListScreen() {
     refetch,
   } = useMaintenanceRequests();
 
-  // Refresh when screen comes into focus (after delete/update)
-  useFocusEffect(
-    React.useCallback(() => {
-      refetch();
-    }, [refetch])
-  );
+  // Refresh when screen comes into focus (after a request status change)
+  useEffect(() => {
+    refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propertyId]);
 
-  // Filter requests
-  const filteredRequests = allRequests.filter((request: any) => {
-    if (activeFilter === 'all') return true;
-    return request.status === activeFilter;
-  });
+  const scopedRequests = (allRequests as any[]).filter((r) => r.property_id === propertyId);
+  const propertyTitle = scopedRequests[0]?.property?.title;
 
-  // Calculate counts
-  const counts = {
-    all: allRequests.length,
-    open: allRequests.filter((r: any) => r.status === 'open').length,
-    assigned: allRequests.filter((r: any) => r.status === 'assigned').length,
-    in_progress: allRequests.filter((r: any) => r.status === 'in_progress').length,
-    completed: allRequests.filter((r: any) => r.status === 'completed').length,
+  const handleCardPress = (requestId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push(`/(owner)/maintenance/${requestId}`);
   };
 
   const formatDate = (dateString: string) => {
@@ -53,37 +50,48 @@ export default function OwnerMaintenanceListScreen() {
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
 
-    if (diffInHours < 24) {
-      return `${diffInHours}h ago`;
-    }
+    if (diffInHours < 24) return `${diffInHours}h ago`;
     const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays < 7) {
-      return `${diffInDays}d ago`;
-    }
+    if (diffInDays < 7) return `${diffInDays}d ago`;
     return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
   };
 
-  const handleNewRequest = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push('/(owner)/maintenance/new');
-  };
+  const header = (
+    <View style={styles.header}>
+      <View style={styles.headerLeft}>
+        <Text style={styles.headerTitle} testID="owner-maintenance-history-title">
+          Maintenance History
+        </Text>
+        <Text style={styles.headerSubtitle} numberOfLines={1}>
+          {propertyTitle
+            ? `${propertyTitle} · ${scopedRequests.length} request${scopedRequests.length !== 1 ? 's' : ''}`
+            : `${scopedRequests.length} request${scopedRequests.length !== 1 ? 's' : ''} for this property`}
+        </Text>
+      </View>
+      <AnimatedButton
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          // Deterministic return to the property detail — router.back() from a
+          // hidden-tab pushed route can pop to the tab root instead (same
+          // pattern as #74/#134/#143 back-stack fixes).
+          router.navigate(`/(owner)/properties/${propertyId}` as never);
+        }}
+        testID="owner-maintenance-history-back"
+        accessibilityRole="button"
+        accessibilityLabel="Back to Property Details"
+      >
+        <View style={styles.backButton}>
+          <Text style={styles.backIcon}>‹</Text>
+        </View>
+      </AnimatedButton>
+    </View>
+  );
 
-  const handleCardPress = (requestId: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push(`/(owner)/maintenance/${requestId}`);
-  };
-
-  // Loading state
   if (loading && !refreshing) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <Text style={styles.headerTitle}>Maintenance</Text>
-              <Text style={styles.headerSubtitle}>Loading...</Text>
-            </View>
-          </View>
+          {header}
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#002395" />
             <Text style={styles.loadingText}>Loading requests...</Text>
@@ -93,17 +101,11 @@ export default function OwnerMaintenanceListScreen() {
     );
   }
 
-  // Error state
   if (error) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <Text style={styles.headerTitle}>Maintenance</Text>
-              <Text style={styles.headerSubtitle}>Error</Text>
-            </View>
-          </View>
+          {header}
           <View style={styles.errorContainer}>
             <Text style={styles.errorIcon}>⚠️</Text>
             <Text style={styles.errorTitle}>Failed to load requests</Text>
@@ -122,29 +124,8 @@ export default function OwnerMaintenanceListScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.headerTitle}>Maintenance</Text>
-            <Text style={styles.headerSubtitle}>
-              {counts.all} total request{counts.all !== 1 ? 's' : ''}
-            </Text>
-          </View>
-          <AnimatedButton onPress={handleNewRequest}>
-            <View style={styles.addButton}>
-              <Text style={styles.addIcon}>+</Text>
-            </View>
-          </AnimatedButton>
-        </View>
+        {header}
 
-        {/* Filters */}
-        <MaintenanceFilters
-          activeFilter={activeFilter}
-          onFilterChange={setActiveFilter}
-          counts={counts}
-        />
-
-        {/* Content */}
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
@@ -153,24 +134,22 @@ export default function OwnerMaintenanceListScreen() {
           }
           showsVerticalScrollIndicator={false}
         >
-          {/* Requests List */}
           <Animated.View entering={FadeInDown.delay(100).duration(500)}>
-            {filteredRequests.length === 0 ? (
+            {scopedRequests.length === 0 ? (
               <View style={styles.emptyContainer}>
                 <Text style={styles.emptyIcon}>🔧</Text>
-                <Text style={styles.emptyTitle}>No requests found</Text>
-                <Text style={styles.emptySubtitle}>All caught up!</Text>
+                <Text style={styles.emptyTitle}>No maintenance history</Text>
+                <Text style={styles.emptySubtitle}>No requests for this property yet</Text>
               </View>
             ) : (
               <View>
-                {filteredRequests.map((request: any, index: number) => (
+                {scopedRequests.map((request: any, index: number) => (
                   <AnimatedButton
                     key={request.id}
                     onPress={() => handleCardPress(request.id)}
                     style={styles.cardButton}
                   >
                     <View style={styles.card}>
-                      {/* Header */}
                       <View style={styles.cardHeader}>
                         <View style={styles.badges}>
                           <StatusBadge status={request.status} size="small" />
@@ -184,33 +163,22 @@ export default function OwnerMaintenanceListScreen() {
                         <Text style={styles.date}>{formatDate(request.created_at)}</Text>
                       </View>
 
-                      {/* Title */}
                       <Text style={styles.title} numberOfLines={1}>
                         {request.title}
                       </Text>
 
-                      {/* Description */}
                       <Text style={styles.description} numberOfLines={2}>
                         {request.description}
                       </Text>
 
-                      {/* Property & Category */}
-                      <View style={styles.meta}>
-                        {request.property && (
-                          <View style={styles.metaItem}>
-                            <Text style={styles.metaIcon}>📍</Text>
-                            <Text style={styles.metaText} numberOfLines={1}>
-                              {request.property.title}
-                            </Text>
-                          </View>
-                        )}
-                        {request.category && (
+                      {request.category && (
+                        <View style={styles.meta}>
                           <View style={styles.metaItem}>
                             <Text style={styles.metaIcon}>🔧</Text>
                             <Text style={styles.metaText}>{request.category.name}</Text>
                           </View>
-                        )}
-                      </View>
+                        </View>
+                      )}
                     </View>
                   </AnimatedButton>
                 ))}
