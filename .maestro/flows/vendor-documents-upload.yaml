@@ -1,0 +1,43 @@
+# Vendor Documents Upload gate (Plane #84)
+# Verifies the documents screen is fully wired: Profile -> Business Documents,
+# "Why upload documents?" info renders, Upload New Document opens the modal,
+# a doc type is selectable, and Choose File is enabled (native iOS picker
+# cannot be driven by Maestro — the API path is covered by unit/RLS probes).
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app-warm.yaml
+- runFlow: ../subflows/login-vendor.yaml
+- runFlow: ../subflows/tap-vendor-profile.yaml
+
+# Documents menu row (must scroll: Services/Areas sit above the fold)
+- scrollUntilVisible:
+    element:
+      id: "vendor-profile-documents"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- tapOn:
+    id: "vendor-profile-documents"
+
+- extendedWaitUntil:
+    visible: "Why upload documents?"
+    timeout: 20000
+
+# No "Coming Soon" — the upload button opens the modal directly
+- tapOn:
+    id: "vendor-docs-upload-button"
+
+- extendedWaitUntil:
+    visible: "Upload Document"
+    timeout: 10000
+
+# Pick a doc type -> Choose File becomes enabled (tap by testID — the
+# card text is inside a Pressable and isn't reliably matchable on iOS)
+- tapOn:
+    id: "vendor-docs-type-ID"
+- assertVisible:
+    id: "vendor-docs-choose-file"
+
+# Close the modal cleanly
+- tapOn:
+    text: "Cancel"

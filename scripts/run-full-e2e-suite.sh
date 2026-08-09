@@ -101,6 +101,7 @@ VENDOR_FLOWS=(
   "vendor-ai-chat"
   "vendor-tabbar-guard"
   "vendor-profile-settings"
+  "vendor-documents-upload"
 )
 
 # ── helpers ──

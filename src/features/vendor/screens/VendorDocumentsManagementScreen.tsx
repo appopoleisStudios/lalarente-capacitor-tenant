@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-// import * as DocumentPicker from 'expo-document-picker'; // TODO: Install expo-document-picker
+import * as DocumentPicker from 'expo-document-picker';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { colors } from '@/src/shared/theme/colors';
 import { vendorProfileApi, VendorDocument } from '@/src/features/vendor/api/profileApi';
@@ -62,37 +62,46 @@ export default function DocumentsManagementScreen() {
       return;
     }
 
-    // TODO: Implement document picker once expo-document-picker is installed
-    Alert.alert('Coming Soon', 'Document upload will be available soon');
-    
-    // try {
-    //   const result = await DocumentPicker.getDocumentAsync({
-    //     type: ['application/pdf', 'image/*'],
-    //     copyToCacheDirectory: true,
-    //   });
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'image/*'],
+        copyToCacheDirectory: true,
+      });
 
-    //   if (result.canceled) {
-    //     return;
-    //   }
+      if (result.canceled) {
+        return;
+      }
 
-    //   const file = result.assets[0];
-    //   await handleUploadDocument(file.uri);
-    // } catch (error) {
-    //   console.error('Error picking document:', error);
-    //   Alert.alert('Error', 'Failed to pick document. Please try again.');
-    // }
+      const file = result.assets[0];
+      const MAX_SIZE = 10 * 1024 * 1024; // 10MB, matches helper text
+      if (file.size && file.size > MAX_SIZE) {
+        Alert.alert('File Too Large', 'Maximum file size is 10MB. Please select a smaller file.');
+        return;
+      }
+
+      await handleUploadDocument({
+        uri: file.uri,
+        name: file.name || 'document',
+        mimeType: file.mimeType || 'application/pdf',
+        size: file.size || 0,
+      });
+    } catch (error) {
+      console.error('Error picking document:', error);
+      Alert.alert('Error', 'Failed to pick document. Please try again.');
+    }
   };
 
-  const handleUploadDocument = async (fileUri: string) => {
+  const handleUploadDocument = async (file: {
+    uri: string;
+    name: string;
+    mimeType?: string;
+    size?: number;
+  }) => {
     if (!user?.id) return;
 
     try {
       setUploading(true);
-      const newDoc = await vendorProfileApi.uploadDocument(
-        user.id,
-        selectedDocType,
-        fileUri
-      );
+      const newDoc = await vendorProfileApi.uploadDocument(user.id, selectedDocType, file);
 
       setDocuments([newDoc, ...documents]);
       setShowAddModal(false);
@@ -198,8 +207,8 @@ export default function DocumentsManagementScreen() {
           <View style={styles.infoTextContainer}>
             <Text style={styles.infoTitle}>Why upload documents?</Text>
             <Text style={styles.infoText}>
-              Verified documents help build trust with property owners and increase your
-              chances of getting hired.
+              Verified documents help build trust with property owners and increase your chances of
+              getting hired.
             </Text>
           </View>
         </View>
@@ -208,6 +217,8 @@ export default function DocumentsManagementScreen() {
         <Pressable
           style={styles.addDocumentButton}
           onPress={() => setShowAddModal(true)}
+          testID="vendor-docs-upload-button"
+          accessibilityRole="button"
         >
           <Ionicons name="add-circle" size={24} color={colors.background.default} />
           <Text style={styles.addDocumentText}>Upload New Document</Text>
@@ -218,9 +229,7 @@ export default function DocumentsManagementScreen() {
           <View style={styles.emptyCard}>
             <Text style={styles.emptyIcon}>📄</Text>
             <Text style={styles.emptyText}>No documents uploaded yet</Text>
-            <Text style={styles.emptySubtext}>
-              Upload your business documents to get verified
-            </Text>
+            <Text style={styles.emptySubtext}>Upload your business documents to get verified</Text>
           </View>
         ) : (
           <>
@@ -238,11 +247,12 @@ export default function DocumentsManagementScreen() {
                       >
                         <Text style={styles.docIcon}>{docType?.icon || '📄'}</Text>
                         <View style={styles.docInfo}>
-                          <Text style={styles.docTitle}>
-                            {docType?.label || doc.doc_type}
-                          </Text>
+                          <Text style={styles.docTitle}>{docType?.label || doc.doc_type}</Text>
                           <Text style={styles.docDate}>
-                            Uploaded {doc.uploaded_at ? new Date(doc.uploaded_at).toLocaleDateString() : 'Unknown'}
+                            Uploaded{' '}
+                            {doc.uploaded_at
+                              ? new Date(doc.uploaded_at).toLocaleDateString()
+                              : 'Unknown'}
                           </Text>
                         </View>
                         <View style={styles.docActions}>
@@ -258,10 +268,7 @@ export default function DocumentsManagementScreen() {
                               color={getStatusColor(doc.status)}
                             />
                             <Text
-                              style={[
-                                styles.statusText,
-                                { color: getStatusColor(doc.status) },
-                              ]}
+                              style={[styles.statusText, { color: getStatusColor(doc.status) }]}
                             >
                               {getStatusText(doc.status)}
                             </Text>
@@ -294,11 +301,14 @@ export default function DocumentsManagementScreen() {
                       >
                         <Text style={styles.docIcon}>{docType?.icon || '📄'}</Text>
                         <View style={styles.docInfo}>
-                          <Text style={styles.docTitle}>
-                            {docType?.label || doc.doc_type}
-                          </Text>
+                          <Text style={styles.docTitle}>{docType?.label || doc.doc_type}</Text>
                           <Text style={styles.docDate}>
-                            Approved {doc.reviewed_at ? new Date(doc.reviewed_at).toLocaleDateString() : doc.uploaded_at ? new Date(doc.uploaded_at).toLocaleDateString() : 'Unknown'}
+                            Approved{' '}
+                            {doc.reviewed_at
+                              ? new Date(doc.reviewed_at).toLocaleDateString()
+                              : doc.uploaded_at
+                                ? new Date(doc.uploaded_at).toLocaleDateString()
+                                : 'Unknown'}
                           </Text>
                         </View>
                         <View style={styles.docActions}>
@@ -314,10 +324,7 @@ export default function DocumentsManagementScreen() {
                               color={getStatusColor(doc.status)}
                             />
                             <Text
-                              style={[
-                                styles.statusText,
-                                { color: getStatusColor(doc.status) },
-                              ]}
+                              style={[styles.statusText, { color: getStatusColor(doc.status) }]}
                             >
                               {getStatusText(doc.status)}
                             </Text>
@@ -350,14 +357,15 @@ export default function DocumentsManagementScreen() {
                       >
                         <Text style={styles.docIcon}>{docType?.icon || '📄'}</Text>
                         <View style={styles.docInfo}>
-                          <Text style={styles.docTitle}>
-                            {docType?.label || doc.doc_type}
-                          </Text>
-                          {doc.notes && (
-                            <Text style={styles.docNotes}>Reason: {doc.notes}</Text>
-                          )}
+                          <Text style={styles.docTitle}>{docType?.label || doc.doc_type}</Text>
+                          {doc.notes && <Text style={styles.docNotes}>Reason: {doc.notes}</Text>}
                           <Text style={styles.docDate}>
-                            Rejected {doc.reviewed_at ? new Date(doc.reviewed_at).toLocaleDateString() : doc.uploaded_at ? new Date(doc.uploaded_at).toLocaleDateString() : 'Unknown'}
+                            Rejected{' '}
+                            {doc.reviewed_at
+                              ? new Date(doc.reviewed_at).toLocaleDateString()
+                              : doc.uploaded_at
+                                ? new Date(doc.uploaded_at).toLocaleDateString()
+                                : 'Unknown'}
                           </Text>
                         </View>
                         <View style={styles.docActions}>
@@ -373,10 +381,7 @@ export default function DocumentsManagementScreen() {
                               color={getStatusColor(doc.status)}
                             />
                             <Text
-                              style={[
-                                styles.statusText,
-                                { color: getStatusColor(doc.status) },
-                              ]}
+                              style={[styles.statusText, { color: getStatusColor(doc.status) }]}
                             >
                               {getStatusText(doc.status)}
                             </Text>
@@ -427,6 +432,9 @@ export default function DocumentsManagementScreen() {
                       selectedDocType === type.value && styles.docTypeCardSelected,
                     ]}
                     onPress={() => setSelectedDocType(type.value)}
+                    testID={`vendor-docs-type-${type.value}`}
+                    accessibilityRole="button"
+                    accessibilityLabel={type.label}
                   >
                     <Text style={styles.docTypeIcon}>{type.icon}</Text>
                     <Text
@@ -441,9 +449,7 @@ export default function DocumentsManagementScreen() {
                 ))}
               </View>
 
-              <Text style={styles.helperText}>
-                💡 Accepted formats: PDF, JPG, PNG (Max 10MB)
-              </Text>
+              <Text style={styles.helperText}>💡 Accepted formats: PDF, JPG, PNG (Max 10MB)</Text>
             </ScrollView>
 
             <View style={styles.modalFooter}>
@@ -461,6 +467,8 @@ export default function DocumentsManagementScreen() {
                 ]}
                 onPress={handlePickDocument}
                 disabled={!selectedDocType || uploading}
+                testID="vendor-docs-choose-file"
+                accessibilityRole="button"
               >
                 {uploading ? (
                   <ActivityIndicator size="small" color={colors.background.default} />

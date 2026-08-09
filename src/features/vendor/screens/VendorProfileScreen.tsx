@@ -239,7 +239,13 @@ export default function VendorProfileScreen() {
             </Pressable>
           </View>
 
-          <Pressable style={styles.menuItem} onPress={() => router.push('/profile/documents')}>
+          <Pressable
+            style={styles.menuItem}
+            onPress={() => router.push('/profile/documents')}
+            testID="vendor-profile-documents"
+            accessibilityLabel="Business Documents"
+            accessibilityRole="button"
+          >
             <Text style={styles.menuIcon}>📄</Text>
             <View style={styles.menuTextContainer}>
               <Text style={styles.menuText}>Business Documents</Text>
