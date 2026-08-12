@@ -1,18 +1,22 @@
 import { useAuth } from '@/src/contexts/AuthContext';
-import { getVendorRequestById, type VendorMaintenanceRequest } from '@/src/features/maintenance/api';
+import {
+  getVendorRequestById,
+  type VendorMaintenanceRequest,
+} from '@/src/features/maintenance/api';
 import { colors } from '@/src/shared/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams, useSegments } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router, useFocusEffect, useLocalSearchParams, useSegments } from 'expo-router';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -58,6 +62,21 @@ interface LineItem {
   unit_price: number;
 }
 
+// ─── Draft persistence (device-local, survives app restarts) ────────────────
+// Keyed per vendor + request so drafts never bleed across requests/vendors.
+const DRAFT_KEY_PREFIX = 'quote_draft_v1';
+const getDraftKey = (vendorId: string, requestId: string) =>
+  `${DRAFT_KEY_PREFIX}_${vendorId}_${requestId}`;
+
+interface QuoteDraft {
+  lineItems: LineItem[];
+  discount: number;
+  duration: string;
+  warranty: string;
+  notes: string;
+  savedAt: string;
+}
+
 export default function VendorQuoteSubmitScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
@@ -65,16 +84,16 @@ export default function VendorQuoteSubmitScreen() {
   const [request, setRequest] = useState<VendorMaintenanceRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  
+
   // Detect if we're in edit mode by checking the route segments
   const isEditMode = (segments as string[]).includes('edit');
-  
+
   // Debug logging
   useEffect(() => {
     console.log('🔍 VendorQuoteSubmitScreen - Route segments:', segments);
     console.log('🔍 VendorQuoteSubmitScreen - isEditMode:', isEditMode);
   }, [segments, isEditMode]);
-  
+
   // Form state
   const [lineItems, setLineItems] = useState<LineItem[]>([
     { id: '1', name: '', quantity: 1, unit_price: 0 },
@@ -86,15 +105,31 @@ export default function VendorQuoteSubmitScreen() {
   const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [showWarrantyPicker, setShowWarrantyPicker] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
+  // Guards against re-restoring over the vendor's edits on repeated focuses.
+  // Once a draft has been restored this session it stays restored (the vendor
+  // is editing it); only a Discard resets the flag and deletes the draft.
+  const restoredThisSession = useRef(false);
 
   useEffect(() => {
     if (id && user?.id) {
       fetchRequestDetails();
-      loadDraftIfExists();
     }
   }, [id, user?.id]);
 
-  const handleUseTemplate = (template: typeof COMMON_ITEMS[0]) => {
+  // Load the draft on EVERY focus (not just mount): the quote screen lives on a
+  // hidden tab route, so replace/push back and forth keeps the instance mounted
+  // and a mount-only effect never re-runs on re-entry. useFocusEffect mirrors the
+  // request-detail screen's refresh pattern.
+  useFocusEffect(
+    useCallback(() => {
+      if (id && user?.id) {
+        loadDraftIfExists();
+      }
+    }, [id, user?.id])
+  );
+
+  const handleUseTemplate = (template: (typeof COMMON_ITEMS)[0]) => {
     const newItem: LineItem = {
       id: Date.now().toString(),
       name: template.name,
@@ -107,9 +142,25 @@ export default function VendorQuoteSubmitScreen() {
 
   const loadDraftIfExists = async () => {
     try {
-      // TODO: Implement draft loading once AsyncStorage is properly configured
-      // For now, skip draft loading
-      console.log('Draft loading will be implemented in next update');
+      // In edit mode the existing (submitted) quote data wins — never overlay it.
+      if (isEditMode || !user?.id) return;
+      // Already restored this session — do NOT clobber the vendor's edits.
+      if (restoredThisSession.current) return;
+      const raw = await AsyncStorage.getItem(getDraftKey(user.id, id));
+      if (!raw) return;
+      const draft = JSON.parse(raw) as QuoteDraft;
+      setLineItems(
+        draft.lineItems.length > 0
+          ? draft.lineItems
+          : [{ id: '1', name: '', quantity: 1, unit_price: 0 }]
+      );
+      setDiscount(draft.discount || 0);
+      setDuration(draft.duration || '');
+      setWarranty(draft.warranty || 'No warranty');
+      setNotes(draft.notes || '');
+      setDraftRestored(true);
+      restoredThisSession.current = true;
+      console.log('💾 Draft restored for request', id);
     } catch (error) {
       console.error('Error loading draft:', error);
     }
@@ -122,7 +173,7 @@ export default function VendorQuoteSubmitScreen() {
         throw new Error('User not authenticated');
       }
       const data = await getVendorRequestById(id, user.id);
-      
+
       // Check if vendor can quote (skip in edit mode)
       if (!isEditMode && !data.can_quote) {
         Alert.alert(
@@ -130,8 +181,8 @@ export default function VendorQuoteSubmitScreen() {
           'Your service categories do not match this request. Please update your profile first.',
           [
             { text: 'Cancel', onPress: () => router.back(), style: 'cancel' },
-            { 
-              text: 'Update Profile', 
+            {
+              text: 'Update Profile',
               onPress: () => {
                 router.back();
                 router.push('/(vendor)/profile/services');
@@ -141,16 +192,16 @@ export default function VendorQuoteSubmitScreen() {
         );
         return;
       }
-      
+
       setRequest(data);
-      
+
       console.log('🔍 Request loaded:', {
         hasQuote: !!data.my_quote,
         quoteId: data.my_quote?.id,
         quoteStatus: data.my_quote?.status,
         isEditMode,
       });
-      
+
       // Load existing quote data in edit mode
       if (isEditMode && data.my_quote) {
         console.log('✅ Loading quote data in edit mode');
@@ -170,23 +221,23 @@ export default function VendorQuoteSubmitScreen() {
   const loadExistingQuoteData = async (quoteId: string) => {
     try {
       console.log('📝 Loading existing quote data for:', quoteId);
-      
+
       // Import quotesApi
       const { quotesApi } = await import('@/src/features/maintenance/api/quotesApi');
-      
+
       // Fetch quote with line items
       const quote = await quotesApi.getQuoteById(quoteId);
       console.log('📝 Quote loaded:', quote);
-      
+
       // Fetch quote lines
       const { supabase } = await import('@/src/lib/supabase');
       const { data: quoteLines } = await supabase
         .from('quote_lines')
         .select('*')
         .eq('quote_id', quoteId);
-      
+
       console.log('📝 Quote lines loaded:', quoteLines);
-      
+
       // Pre-fill form with existing data
       if (quoteLines && quoteLines.length > 0) {
         const loadedItems: LineItem[] = quoteLines.map((line: any, index: number) => ({
@@ -198,10 +249,10 @@ export default function VendorQuoteSubmitScreen() {
         console.log('📝 Setting line items:', loadedItems);
         setLineItems(loadedItems);
       }
-      
+
       setDiscount(quote.discount_amount || 0);
       setNotes(quote.notes || '');
-      
+
       // TODO: Load duration and warranty from quote metadata if stored
     } catch (error) {
       console.error('Error loading quote data:', error);
@@ -210,10 +261,10 @@ export default function VendorQuoteSubmitScreen() {
   };
 
   // Calculate totals
-  const subtotal = lineItems.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
+  const subtotal = lineItems.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
   const vatAmount = subtotal * 0.15; // 15% VAT
   const total = subtotal + vatAmount - discount;
-  const platformFee = total * 0.10; // Assume 10% platform fee
+  const platformFee = total * 0.1; // Assume 10% platform fee
   const estimatedEarnings = total - platformFee;
 
   const addLineItem = () => {
@@ -226,16 +277,14 @@ export default function VendorQuoteSubmitScreen() {
       Alert.alert('Cannot Remove', 'You must have at least one line item');
       return;
     }
-    setLineItems(lineItems.filter(item => item.id !== id));
+    setLineItems(lineItems.filter((item) => item.id !== id));
   };
 
   const updateLineItem = (id: string, field: keyof LineItem, value: any) => {
-    setLineItems(lineItems.map(item => 
-      item.id === id ? { ...item, [field]: value } : item
-    ));
+    setLineItems(lineItems.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
   };
 
-  const useTemplate = (template: typeof COMMON_ITEMS[0]) => {
+  const useTemplate = (template: (typeof COMMON_ITEMS)[0]) => {
     const lastItem = lineItems[lineItems.length - 1];
     if (lastItem.name === '' && lastItem.unit_price === 0) {
       // Update the last empty item
@@ -244,19 +293,22 @@ export default function VendorQuoteSubmitScreen() {
     } else {
       // Add new item
       const newId = (lineItems.length + 1).toString();
-      setLineItems([...lineItems, { 
-        id: newId, 
-        name: template.name, 
-        quantity: 1, 
-        unit_price: template.typical_price 
-      }]);
+      setLineItems([
+        ...lineItems,
+        {
+          id: newId,
+          name: template.name,
+          quantity: 1,
+          unit_price: template.typical_price,
+        },
+      ]);
     }
     setShowTemplates(false);
   };
 
   const validateForm = (): boolean => {
     // Check if at least one line item has data
-    const hasValidItems = lineItems.some(item => item.name.trim() !== '' && item.unit_price > 0);
+    const hasValidItems = lineItems.some((item) => item.name.trim() !== '' && item.unit_price > 0);
     if (!hasValidItems) {
       Alert.alert('Missing Information', 'Please add at least one work item with a price');
       return false;
@@ -287,8 +339,8 @@ export default function VendorQuoteSubmitScreen() {
         `You are about to update your quote to R ${total.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}. Continue?`,
         [
           { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Update', 
+          {
+            text: 'Update',
             style: 'default',
             onPress: submitQuote,
           },
@@ -300,17 +352,17 @@ export default function VendorQuoteSubmitScreen() {
         '⚠️ Important Notice',
         `Once you submit this quote for R ${total.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}, you CANNOT edit it until the property owner requests changes.\n\nAre you sure all details are correct?`,
         [
-          { 
-            text: 'Save Draft', 
+          {
+            text: 'Save Draft',
             style: 'cancel',
             onPress: handleSaveDraft,
           },
-          { 
-            text: 'Review Again', 
+          {
+            text: 'Review Again',
             style: 'default',
           },
-          { 
-            text: 'Yes, Submit', 
+          {
+            text: 'Yes, Submit',
             style: 'destructive',
             onPress: submitQuote,
           },
@@ -322,7 +374,7 @@ export default function VendorQuoteSubmitScreen() {
   const submitQuote = async () => {
     try {
       setSubmitting(true);
-      
+
       if (!user?.id || !request) {
         throw new Error('Missing required data');
       }
@@ -347,17 +399,14 @@ export default function VendorQuoteSubmitScreen() {
 
         // Update quote lines
         const { supabase } = await import('@/src/lib/supabase');
-        
+
         // Delete existing lines
-        await supabase
-          .from('quote_lines')
-          .delete()
-          .eq('quote_id', request.my_quote.id);
-        
+        await supabase.from('quote_lines').delete().eq('quote_id', request.my_quote.id);
+
         // Insert new lines
         const lineItemsToInsert = lineItems
-          .filter(item => item.name.trim() !== '')
-          .map(item => ({
+          .filter((item) => item.name.trim() !== '')
+          .map((item) => ({
             quote_id: request.my_quote!.id,
             description: item.name,
             qty: item.quantity,
@@ -365,18 +414,18 @@ export default function VendorQuoteSubmitScreen() {
             unit: 'unit',
             tax_rate: 0.15,
           }));
-        
-        await (supabase
-          .from('quote_lines') as any)
-          .insert(lineItemsToInsert);
+
+        await (supabase.from('quote_lines') as any).insert(lineItemsToInsert);
+
+        await clearDraft();
 
         // Show success message
         Alert.alert(
           '✅ Quote Updated!',
           'Your revised quote has been sent to the property owner.',
           [
-            { 
-              text: 'OK', 
+            {
+              text: 'OK',
               onPress: () => {
                 router.replace(`/(vendor)/maintenance/${id}`);
               },
@@ -398,16 +447,18 @@ export default function VendorQuoteSubmitScreen() {
           notes: notes || undefined,
           estimated_duration: duration,
           warranty_period: warranty,
-          line_items: lineItems.filter(item => item.name.trim() !== ''),
+          line_items: lineItems.filter((item) => item.name.trim() !== ''),
         });
+
+        await clearDraft();
 
         // Show success message
         Alert.alert(
           '🎉 Quote Submitted!',
           'Your quote has been sent to the property owner. You will be notified when they respond.',
           [
-            { 
-              text: 'OK', 
+            {
+              text: 'OK',
               onPress: () => {
                 router.replace(`/(vendor)/maintenance/${id}`);
               },
@@ -417,7 +468,10 @@ export default function VendorQuoteSubmitScreen() {
       }
     } catch (error: any) {
       console.error('Error submitting quote:', error);
-      Alert.alert('Error', `Failed to ${isEditMode ? 'update' : 'submit'} quote. Please try again.`);
+      Alert.alert(
+        'Error',
+        `Failed to ${isEditMode ? 'update' : 'submit'} quote. Please try again.`
+      );
     } finally {
       setSubmitting(false);
     }
@@ -426,19 +480,35 @@ export default function VendorQuoteSubmitScreen() {
   const handleSaveDraft = async () => {
     try {
       // Validate at least some data is entered
-      const hasData = lineItems.some(item => item.name.trim() !== '' || item.unit_price > 0);
+      const hasData = lineItems.some((item) => item.name.trim() !== '' || item.unit_price > 0);
       if (!hasData) {
         Alert.alert('Nothing to Save', 'Please add at least one item before saving draft');
         return;
       }
 
+      if (!user?.id) {
+        Alert.alert('Error', 'User not authenticated');
+        return;
+      }
+
       setSubmitting(true);
 
-      // For now, just show a message (AsyncStorage needs to be properly set up)
-      // TODO: Implement actual draft saving once AsyncStorage is configured
+      const draft: QuoteDraft = {
+        lineItems,
+        discount,
+        duration,
+        warranty,
+        notes,
+        savedAt: new Date().toISOString(),
+      };
+      await AsyncStorage.setItem(getDraftKey(user.id, id), JSON.stringify(draft));
+      // A re-saved draft is restorable again on a later focus (e.g. after the
+      // vendor restored an older draft, edited, and saved over it).
+      restoredThisSession.current = false;
+
       Alert.alert(
-        '💾 Draft Feature Coming Soon',
-        'Draft saving will be available in the next update. For now, please complete your quote or take a screenshot.',
+        '💾 Draft Saved!',
+        'Your quote draft has been saved on this device. It will be restored when you come back to this request.',
         [{ text: 'OK' }]
       );
     } catch (error) {
@@ -446,6 +516,33 @@ export default function VendorQuoteSubmitScreen() {
       Alert.alert('Error', 'Failed to save draft');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDiscardDraft = async () => {
+    try {
+      if (!user?.id) return;
+      await AsyncStorage.removeItem(getDraftKey(user.id, id));
+      setDraftRestored(false);
+      restoredThisSession.current = false;
+      // Reset the form to a clean slate (the draft pre-filled these fields).
+      setLineItems([{ id: '1', name: '', quantity: 1, unit_price: 0 }]);
+      setDiscount(0);
+      setDuration('');
+      setWarranty('No warranty');
+      setNotes('');
+    } catch (error) {
+      console.error('Error discarding draft:', error);
+    }
+  };
+
+  const clearDraft = async () => {
+    if (!user?.id) return;
+    try {
+      await AsyncStorage.removeItem(getDraftKey(user.id, id));
+    } catch {
+      // Non-fatal: a stale draft only restores if the vendor re-enters the
+      // same request, where the quote is already submitted.
     }
   };
 
@@ -468,15 +565,41 @@ export default function VendorQuoteSubmitScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
+        {/* Back: router.back() on these hidden-tab routes pops to the tab ROOT
+            (vendor dashboard) instead of the previous screen — same class of
+            bug as the tenant/owner back-nav fixes. Navigate explicitly to the
+            request detail, which is where the quote form is always entered
+            from (list → detail → quote). */}
+        <TouchableOpacity
+          onPress={() => router.replace(`/(vendor)/maintenance/${id}` as any)}
+          style={styles.headerButton}
+          testID="quote-back"
+        >
           <Ionicons name="arrow-back" size={24} color="#111827" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{isEditMode ? 'Revise Quote' : 'Submit Quote'}</Text>
-        <TouchableOpacity onPress={handleSaveDraft} style={styles.headerButton}>
+        <TouchableOpacity
+          onPress={handleSaveDraft}
+          style={styles.headerButton}
+          testID="quote-save-draft-header"
+        >
           <Ionicons name="save-outline" size={24} color={RSA.blue} />
         </TouchableOpacity>
       </View>
-
+      {/* Draft restored banner — shown only when a saved draft was pre-filled */}
+      {draftRestored && (
+        <View style={styles.draftBanner} testID="quote-draft-restored-banner">
+          <Ionicons name="document-text-outline" size={18} color={colors.info[600]} />
+          <Text style={styles.draftBannerText}>Draft restored</Text>
+          <TouchableOpacity
+            onPress={handleDiscardDraft}
+            testID="quote-draft-discard"
+            style={styles.draftDiscardButton}
+          >
+            <Text style={styles.draftDiscardText}>Discard</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -531,13 +654,13 @@ export default function VendorQuoteSubmitScreen() {
         {/* Work Items Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Work Items (Components)</Text>
-          
+
           {lineItems.map((item, index) => (
             <View key={item.id} style={styles.lineItemCard}>
               <View style={styles.lineItemHeader}>
                 <Text style={styles.lineItemNumber}>{index + 1}.</Text>
                 {lineItems.length > 1 && (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     onPress={() => removeLineItem(item.id)}
                     style={styles.removeButton}
                   >
@@ -545,7 +668,7 @@ export default function VendorQuoteSubmitScreen() {
                   </TouchableOpacity>
                 )}
               </View>
-              
+
               <TextInput
                 style={styles.input}
                 placeholder="Item name (e.g., Pipe Replacement)"
@@ -554,7 +677,7 @@ export default function VendorQuoteSubmitScreen() {
                 onChangeText={(text) => updateLineItem(item.id, 'name', text)}
                 testID="quote-item-name"
               />
-              
+
               <View style={styles.lineItemRow}>
                 <View style={styles.lineItemField}>
                   <Text style={styles.fieldLabel}>Quantity</Text>
@@ -564,11 +687,13 @@ export default function VendorQuoteSubmitScreen() {
                     placeholderTextColor={colors.gray[400]}
                     keyboardType="numeric"
                     value={item.quantity.toString()}
-                    onChangeText={(text) => updateLineItem(item.id, 'quantity', parseInt(text) || 0)}
+                    onChangeText={(text) =>
+                      updateLineItem(item.id, 'quantity', parseInt(text) || 0)
+                    }
                     testID="quote-quantity"
                   />
                 </View>
-                
+
                 <View style={styles.lineItemField}>
                   <Text style={styles.fieldLabel}>Unit Price (R)</Text>
                   <TextInput
@@ -577,16 +702,21 @@ export default function VendorQuoteSubmitScreen() {
                     placeholderTextColor={colors.gray[400]}
                     keyboardType="numeric"
                     value={item.unit_price > 0 ? item.unit_price.toString() : ''}
-                    onChangeText={(text) => updateLineItem(item.id, 'unit_price', parseFloat(text) || 0)}
+                    onChangeText={(text) =>
+                      updateLineItem(item.id, 'unit_price', parseFloat(text) || 0)
+                    }
                     testID="quote-unit-price"
                   />
                 </View>
               </View>
-              
+
               <View style={styles.lineItemTotal}>
                 <Text style={styles.lineItemTotalLabel}>Item Total:</Text>
                 <Text style={styles.lineItemTotalAmount}>
-                  R {(item.quantity * item.unit_price).toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
+                  R{' '}
+                  {(item.quantity * item.unit_price).toLocaleString('en-ZA', {
+                    minimumFractionDigits: 2,
+                  })}
                 </Text>
               </View>
             </View>
@@ -597,8 +727,8 @@ export default function VendorQuoteSubmitScreen() {
             <Text style={styles.addButtonText}>Add Item</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.templatesButton} 
+          <TouchableOpacity
+            style={styles.templatesButton}
             onPress={() => setShowTemplates(!showTemplates)}
           >
             <Ionicons name="list" size={20} color={RSA.blue} />
@@ -658,7 +788,8 @@ export default function VendorQuoteSubmitScreen() {
             <View style={styles.earningsContainer}>
               <Ionicons name="checkmark-circle" size={20} color={RSA.green} />
               <Text style={styles.earningsText}>
-                You'll earn: ~R {estimatedEarnings.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
+                You'll earn: ~R{' '}
+                {estimatedEarnings.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
               </Text>
             </View>
             <Text style={styles.earningsNote}>(after platform fee)</Text>
@@ -668,7 +799,7 @@ export default function VendorQuoteSubmitScreen() {
         {/* Duration */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>⏱️ How long? (Required)</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.pickerButton}
             testID="quote-duration-picker"
             onPress={() => setShowDurationPicker(!showDurationPicker)}
@@ -678,7 +809,7 @@ export default function VendorQuoteSubmitScreen() {
             </Text>
             <Ionicons name="chevron-down" size={20} color={colors.gray[500]} />
           </TouchableOpacity>
-          
+
           {showDurationPicker && (
             <View style={styles.pickerContainer}>
               {DURATION_OPTIONS.map((option, index) => (
@@ -692,9 +823,7 @@ export default function VendorQuoteSubmitScreen() {
                   }}
                 >
                   <Text style={styles.pickerOptionText}>{option}</Text>
-                  {duration === option && (
-                    <Ionicons name="checkmark" size={20} color={RSA.blue} />
-                  )}
+                  {duration === option && <Ionicons name="checkmark" size={20} color={RSA.blue} />}
                 </TouchableOpacity>
               ))}
             </View>
@@ -704,14 +833,14 @@ export default function VendorQuoteSubmitScreen() {
         {/* Warranty */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>🛡️ Warranty (Optional)</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.pickerButton}
             onPress={() => setShowWarrantyPicker(!showWarrantyPicker)}
           >
             <Text style={styles.pickerButtonTextSelected}>{warranty}</Text>
             <Ionicons name="chevron-down" size={20} color={colors.gray[500]} />
           </TouchableOpacity>
-          
+
           {showWarrantyPicker && (
             <View style={styles.pickerContainer}>
               {WARRANTY_OPTIONS.map((option, index) => (
@@ -724,9 +853,7 @@ export default function VendorQuoteSubmitScreen() {
                   }}
                 >
                   <Text style={styles.pickerOptionText}>{option}</Text>
-                  {warranty === option && (
-                    <Ionicons name="checkmark" size={20} color={RSA.blue} />
-                  )}
+                  {warranty === option && <Ionicons name="checkmark" size={20} color={RSA.blue} />}
                 </TouchableOpacity>
               ))}
             </View>
@@ -736,9 +863,7 @@ export default function VendorQuoteSubmitScreen() {
         {/* Notes */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>📝 Notes (Optional)</Text>
-          <Text style={styles.exampleText}>
-            Example: "Includes all materials and cleanup"
-          </Text>
+          <Text style={styles.exampleText}>Example: "Includes all materials and cleanup"</Text>
           <TextInput
             style={styles.textArea}
             placeholder="Add any additional notes..."
@@ -754,19 +879,18 @@ export default function VendorQuoteSubmitScreen() {
 
         <View style={{ height: 120 }} />
       </ScrollView>
-
       {/* Bottom Action Bar */}
       <View style={styles.bottomBar}>
-        <TouchableOpacity 
-          style={styles.saveDraftButton} 
+        <TouchableOpacity
+          style={styles.saveDraftButton}
           testID="quote-save-draft"
           onPress={handleSaveDraft}
         >
           <Text style={styles.saveDraftButtonText}>Save Draft</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.submitButton, submitting && styles.submitButtonDisabled]} 
+
+        <TouchableOpacity
+          style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
           testID="quote-submit"
           onPress={handleSubmit}
           disabled={submitting}
@@ -775,8 +899,14 @@ export default function VendorQuoteSubmitScreen() {
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
             <>
-              <Text style={styles.submitButtonText}>{isEditMode ? 'Update Quote' : 'Submit Quote'}</Text>
-              <Ionicons name={isEditMode ? "checkmark-circle" : "rocket"} size={20} color="#FFFFFF" />
+              <Text style={styles.submitButtonText}>
+                {isEditMode ? 'Update Quote' : 'Submit Quote'}
+              </Text>
+              <Ionicons
+                name={isEditMode ? 'checkmark-circle' : 'rocket'}
+                size={20}
+                color="#FFFFFF"
+              />
             </>
           )}
         </TouchableOpacity>
@@ -800,8 +930,29 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
-  headerButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
+
+  draftBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.info[50],
+    marginHorizontal: 16,
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  draftBannerText: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.info[700] },
+  draftDiscardButton: { paddingHorizontal: 8, paddingVertical: 4 },
+  draftDiscardText: { fontSize: 14, fontWeight: '700', color: colors.error[500] },
 
   scrollView: { flex: 1 },
 

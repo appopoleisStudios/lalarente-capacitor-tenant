@@ -5,35 +5,39 @@
 appId: com.lalarente.app
 ---
 - tapOn:
-    id: "tab-home"
+    id: 'tab-home'
 
 # Dashboard must render first (session restore can take time after login)
 - extendedWaitUntil:
-    visible: "Welcome back,"
+    visible: 'Welcome back,'
     timeout: 45000
     optional: true
 
-# Quick Actions section is below the fold — scroll down to the Maintenance button
+# Quick Actions section is below the fold — scroll down to the Maintenance button.
+# CRITICAL: centerElement must be true — the grid reaches under the tab bar, and a
+# bare tapOn targets the element's center which lands ON the tab bar and never
+# navigates (same fix as open-tenant-messages.yaml).
 - scrollUntilVisible:
     element:
-      id: "qa-maintenance"
+      id: 'qa-maintenance'
     direction: DOWN
     timeout: 20000
+    centerElement: true
 
 - tapOn:
-    id: "qa-maintenance"
+    id: 'qa-maintenance'
 
 - extendedWaitUntil:
-    visible: "Maintenance"
+    visible: 'Maintenance'
     timeout: 20000
     optional: true
 
 # Fallback: if Quick Action tap didn't navigate, try the deep link
 - runFlow:
     when:
-      notVisible: "Maintenance"
+      notVisible: 'Maintenance'
     commands:
       - openLink: lalarenteapp:///(tenant)/maintenance
       - extendedWaitUntil:
-          visible: "Maintenance"
+          visible: 'Maintenance'
           timeout: 15000
