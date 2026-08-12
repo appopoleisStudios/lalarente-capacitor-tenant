@@ -446,10 +446,11 @@ export default function OwnerPropertyDetailScreen() {
         onRequestClose={closeFullScreenImage}
       >
         <View style={styles.fullScreenContainer}>
-          {/* Full Screen Image — rendered FIRST so controls stay on top
-              natively (the ScrollView is a zoomable native view that would
-              otherwise swallow taps aimed at siblings rendered before it).
-              User bug: the close button was visible but not tappable. */}
+          {/* Full Screen Image — rendered FIRST so controls stack on top natively.
+              User bug root cause: the full-width imageCounter box (same top band)
+              swallowed close taps; fixed via pointerEvents="none" + zIndex bump.
+              Keep controls AFTER the ScrollView + above it in z so nothing can
+              cover them again. */}
           <ScrollView
             contentContainerStyle={styles.fullScreenImageContainer}
             maximumZoomScale={3}

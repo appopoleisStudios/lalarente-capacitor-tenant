@@ -10,39 +10,46 @@ appId: com.lalarente.app
 - runFlow: ../subflows/tap-owner-properties.yaml
 
 - extendedWaitUntil:
-    visible: "My Properties"
+    visible: 'My Properties'
     timeout: 20000
 
 - tapOn:
-    id: "property-card-view"
+    id: 'property-card-view'
 - extendedWaitUntil:
-    visible: "Property Details"
+    visible: 'Property Details'
     timeout: 15000
 
 # The photo gallery sits at the top of the detail screen (above the fold),
 # but scroll a little to ensure the gallery is rendered/stable first.
 - scrollUntilVisible:
     element:
-      id: "owner-property-photo"
+      id: 'owner-property-photo'
     direction: UP
     timeout: 15000
     centerElement: true
 
 # Open the full-screen photo viewer
 - tapOn:
-    id: "owner-property-photo"
+    id: 'owner-property-photo'
 
 # Viewer must show its close button (testID)
 - extendedWaitUntil:
     visible:
-      id: "owner-photo-close"
+      id: 'owner-photo-close'
     timeout: 10000
 
 # Close the viewer
 - tapOn:
-    id: "owner-photo-close"
+    id: 'owner-photo-close'
+
+# DEFINITIVE proof of dismissal: the transparent modal keeps the underlying
+# detail screen in the a11y tree even while OPEN, so a bare 'back on detail'
+# assert can false-pass. The close button only exists inside the modal — its
+# absence proves the viewer really dismissed.
+- assertNotVisible:
+    id: 'owner-photo-close'
 
 # Back on the previous screen — the user must NOT be trapped
 - extendedWaitUntil:
-    visible: "Property Details"
+    visible: 'Property Details'
     timeout: 15000

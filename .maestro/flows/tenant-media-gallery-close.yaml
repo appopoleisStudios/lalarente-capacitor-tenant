@@ -1,0 +1,99 @@
+# Tenant MediaGallery smoke — open a timeline progress photo full-screen, tap
+# the close button, and return to the detail screen (same user-bug class as the
+# owner property photo viewer: close visible but not tappable).
+#
+# Prerequisites:
+#   - node scripts/seed-tenant-closure-confirm.mjs (retitles the tenant's most
+#     recent request to "E2E Closure Confirm" + inserts a progress update WITH
+#     a photo, which renders MediaGallery in the Progress Updates card)
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app-warm.yaml
+- runFlow: ../subflows/login-tenant.yaml
+- runFlow: ../subflows/tap-tenant-maintenance.yaml
+
+# POSITIVE list-screen marker: the "+" FAB only exists on the maintenance LIST
+# screen. Mirrors flow 21 — a warm resume can land on a pushed screen (no tab
+# bar), so the FAB wait is optional + a deep-link recovers deterministically.
+- extendedWaitUntil:
+    visible:
+      id: 'maintenance-report-fab'
+    timeout: 20000
+    optional: true
+
+- runFlow:
+    when:
+      notVisible:
+        id: 'maintenance-report-fab'
+    commands:
+      - openLink: lalarenteapp:///(tenant)/maintenance
+      - extendedWaitUntil:
+          visible:
+            id: 'maintenance-report-fab'
+          timeout: 15000
+
+# Open the seeded request by CARD TESTID index 0 (list is created_at DESC, so
+# the retitled seed card is deterministically first — see flow 21).
+- extendedWaitUntil:
+    visible:
+      id: 'maintenance-card-.*'
+    timeout: 20000
+- tapOn:
+    id: 'maintenance-card-.*'
+    index: 0
+
+# The progress-photo card sits near the BOTTOM of the detail ScrollView — wait
+# alone never scrolls, so drive DOWN to the Progress Updates card first, then
+# to the MediaGallery photos container (identical to flow 21's steps).
+- scrollUntilVisible:
+    element:
+      id: 'maintenance-progress-update'
+    direction: DOWN
+    timeout: 20000
+- assertVisible:
+    id: 'maintenance-progress-update'
+- scrollUntilVisible:
+    element:
+      id: 'maintenance-progress-update-photos'
+    direction: DOWN
+    timeout: 15000
+- assertVisible:
+    id: 'maintenance-progress-update-photos'
+
+# MediaGallery is inside that container — its thumbnails carry the
+# media-gallery-thumb testID (multiple matches; tap the first).
+- scrollUntilVisible:
+    element:
+      id: 'media-gallery-thumb'
+    direction: DOWN
+    timeout: 15000
+
+# OPEN the full-screen viewer.
+- tapOn:
+    id: 'media-gallery-thumb'
+    index: 0
+
+# The viewer opened — close button must be tappable NOW (the bug was: visible
+# but dead). Assert it, then tap it.
+- extendedWaitUntil:
+    visible:
+      id: 'media-gallery-close'
+    timeout: 10000
+- tapOn:
+    id: 'media-gallery-close'
+
+# CLOSED — DEFINITIVE proof of dismissal: the transparent modal keeps the
+# underlying detail screen in the a11y tree even while OPEN, so a bare
+# 'back on detail' assert can false-pass. The close button only exists inside
+# the modal — its absence proves the viewer really dismissed.
+- assertNotVisible:
+    id: 'media-gallery-close'
+
+# And we must be back on the detail screen (the Progress Updates card
+# container is a positive marker that only exists on the detail screen).
+- extendedWaitUntil:
+    visible:
+      id: 'maintenance-progress-update'
+    timeout: 10000
+- assertVisible:
+    id: 'maintenance-progress-update'

@@ -58,13 +58,11 @@ export function MediaGallery({ images }: MediaGalleryProps) {
         animationType="fade"
         onRequestClose={() => setSelectedIndex(null)}
       >
-        {' '}
         <View style={styles.modalContainer}>
-          {/* Media Viewer — rendered FIRST so controls stay on top natively
-              (the ScrollView is a zoomable/paging native view that would
-              otherwise swallow taps aimed at siblings rendered before it).
-              Same user bug as the owner photo viewer: close was visible but
-              not tappable. */}
+          {/* Media Viewer — rendered FIRST so controls stack on top natively.
+              The real trap was the owner viewer's full-width imageCounter box
+              swallowing close taps (fixed via pointerEvents="none" + zIndex);
+              keep the reorder + zIndex so no sibling can cover the controls. */}
           <ScrollView
             horizontal
             pagingEnabled
