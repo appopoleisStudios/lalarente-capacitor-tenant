@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { View, Image, Text, TouchableOpacity, Modal, StyleSheet, Dimensions, ScrollView } from 'react-native';
+import {
+  View,
+  Image,
+  Text,
+  TouchableOpacity,
+  Modal,
+  StyleSheet,
+  Dimensions,
+  ScrollView,
+} from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/src/shared/theme/colors';
@@ -27,6 +36,9 @@ export function MediaGallery({ images }: MediaGalleryProps) {
             key={index}
             style={styles.thumbnail}
             onPress={() => setSelectedIndex(index)}
+            testID="media-gallery-thumb"
+            accessibilityRole="imagebutton"
+            accessibilityLabel={`Media item ${index + 1}`}
           >
             {isVideo(url) ? (
               <View style={styles.videoThumbnail}>
@@ -47,15 +59,10 @@ export function MediaGallery({ images }: MediaGalleryProps) {
         onRequestClose={() => setSelectedIndex(null)}
       >
         <View style={styles.modalContainer}>
-          {/* Close Button */}
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => setSelectedIndex(null)}
-          >
-            <Ionicons name="close" size={32} color="#FFFFFF" />
-          </TouchableOpacity>
-
-          {/* Media Viewer */}
+          {/* Media Viewer — rendered FIRST so controls stack on top natively.
+              The real trap was the owner viewer's full-width imageCounter box
+              swallowing close taps (fixed via pointerEvents="none" + zIndex);
+              keep the reorder + zIndex so no sibling can cover the controls. */}
           <ScrollView
             horizontal
             pagingEnabled
@@ -73,15 +80,22 @@ export function MediaGallery({ images }: MediaGalleryProps) {
                     shouldPlay={index === selectedIndex}
                   />
                 ) : (
-                  <Image
-                    source={{ uri: url }}
-                    style={styles.fullMedia}
-                    resizeMode="contain"
-                  />
+                  <Image source={{ uri: url }} style={styles.fullMedia} resizeMode="contain" />
                 )}
               </View>
             ))}
           </ScrollView>
+
+          {/* Close Button */}
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => setSelectedIndex(null)}
+            testID="media-gallery-close"
+            accessibilityRole="button"
+            accessibilityLabel="Close media viewer"
+          >
+            <Ionicons name="close" size={32} color="#FFFFFF" />
+          </TouchableOpacity>
 
           {/* Counter */}
           {selectedIndex !== null && (

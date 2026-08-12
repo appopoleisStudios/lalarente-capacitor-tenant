@@ -75,6 +75,7 @@ OWNER_FLOWS=(
   "04-owner-dashboard"
   "owner-property-edit"
   "owner-property-maintenance-history"
+  "owner-photo-viewer-close"
   "09-pr9-owner-inspection-conduct"
   "10-pr9-owner-inspection-readonly"
   "15-pr7-owner-disputes-empty"

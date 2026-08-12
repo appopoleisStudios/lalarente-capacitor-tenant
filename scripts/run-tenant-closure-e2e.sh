@@ -50,11 +50,22 @@ node "$ROOT/scripts/seed-tenant-closure-confirm.mjs"
 
 # ── Step 2: Maestro UI flow ──
 echo ""
-echo "── 2/2 MAESTRO UI FLOW (21-pr16-tenant-closure-confirm) ──"
+echo "── 2/3 MAESTRO UI FLOW (21-pr16-tenant-closure-confirm) ──"
 "$MAESTRO_BIN" test \
   --env TENANT_EMAIL="$TENANT_EMAIL" \
   --env TENANT_PASSWORD="$TENANT_PASSWORD" \
   "$ROOT/.maestro/flows/21-pr16-tenant-closure-confirm.yaml"
 
+# ── Step 3: MediaGallery open/close smoke (user bug — PR #145) ──
+# Reuses the SAME seeded state: the timeline progress-update photo renders
+# MediaGallery on the detail screen. Proves open full-screen → close button
+# tappable → back on the detail screen (the exact bug class the user hit).
 echo ""
-echo "✅ TENANT CLOSURE E2E PASSED (seed → closure-confirm UI → timeline photo)"
+echo "── 3/3 MAESTRO GATE (tenant-media-gallery-close) ──"
+"$MAESTRO_BIN" test \
+  --env TENANT_EMAIL="$TENANT_EMAIL" \
+  --env TENANT_PASSWORD="$TENANT_PASSWORD" \
+  "$ROOT/.maestro/flows/tenant-media-gallery-close.yaml"
+
+echo ""
+echo "✅ TENANT CLOSURE E2E PASSED (seed → closure-confirm UI → timeline photo → MediaGallery close)"
