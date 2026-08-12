@@ -210,6 +210,14 @@ echo ""; echo "═══ E2E SMOKE (TENANT→VENDOR) ═══"
 E2E_TITLE="E2E Test - Leaking $(date +%s)"
 run_flow "e2e-tenant-create-vendor-quote" "Tenant creates→Vendor quotes" "E2E" "${T_ENV[@]}" "${V_ENV[@]}" --env REQUEST_TITLE="$E2E_TITLE"
 
+# ── VENDOR QUOTE DRAFT (Plane #86) ──
+# Creates a fresh request (tenant) → vendor fills quote → Save Draft → back →
+# re-enter → restored values → Discard. Same prerequisites as the smoke above.
+# DISTINCT title from the smoke flow so the vendor list never cross-matches
+# two same-titled requests (index:0 relies on newest-first ordering).
+E2E_DRAFT_TITLE="E2E Draft - $(date +%s)"
+run_flow "vendor-quote-draft" "Vendor quote Save-Draft→Restore" "E2E" "${T_ENV[@]}" "${V_ENV[@]}" --env REQUEST_TITLE="$E2E_DRAFT_TITLE"
+
 # ── SUMMARY ──
 echo ""
 echo "======================================================"

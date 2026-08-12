@@ -331,6 +331,18 @@ run_flow "e2e-tenant-create-vendor-quote" \
   --env VENDOR_PASSWORD="$VENDOR_PASSWORD" \
   --env REQUEST_TITLE="$E2E_TITLE"
 
+# ── VENDOR QUOTE DRAFT (Plane #86) ──
+# Fresh request (tenant) → vendor fills quote → Save Draft → back → re-enter →
+# restored values → Discard. DISTINCT title from the smoke flow so the vendor
+# list never cross-matches two same-titled requests.
+E2E_DRAFT_TITLE="E2E Draft - $(date +%s)"
+run_flow "vendor-quote-draft" \
+  --env TENANT_EMAIL="$TENANT_EMAIL" \
+  --env TENANT_PASSWORD="$TENANT_PASSWORD" \
+  --env VENDOR_EMAIL="$VENDOR_EMAIL" \
+  --env VENDOR_PASSWORD="$VENDOR_PASSWORD" \
+  --env REQUEST_TITLE="$E2E_DRAFT_TITLE"
+
 # ════════════════════════════════════════════════════
 #  RESULTS
 # ════════════════════════════════════════════════════

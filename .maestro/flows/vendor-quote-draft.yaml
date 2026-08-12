@@ -1,0 +1,173 @@
+# ============================================================================
+# VENDOR QUOTE DRAFT — Plane #86
+# Vendor fills a quote form → Save Draft → leaves the screen → returns →
+# the draft is restored (banner + pre-filled values) → Discard clears it.
+#
+# Prerequisites:
+#   - Same as e2e-tenant-create-vendor-quote.yaml: e2e vendor (plumbing
+#     services), e2e tenant, REQUEST_TITLE env, app installed on the sim,
+#     Metro on :8081, migrations applied.
+#   - A FRESH request is created each run (unique title) so the draft key
+#     (vendorId_requestId) is never reused and assertions are deterministic.
+# ============================================================================
+appId: com.lalarente.app
+---
+# ── 0. Tenant login + create a fresh maintenance request ────────────────────
+- runFlow: ../subflows/login-tenant.yaml
+- runFlow: ../subflows/tap-tenant-maintenance-report.yaml
+
+- tapOn:
+    id: 'maintenance-title-input'
+- eraseText
+- inputText: ${REQUEST_TITLE}
+
+- swipe:
+    direction: UP
+    percentage: 0.3
+- tapOn:
+    id: 'maintenance-description-input'
+- eraseText
+- inputText: 'Draft test request - kitchen tap dripping. Saving quote as draft.'
+
+- swipe:
+    direction: DOWN
+    percentage: 0.4
+
+- scrollUntilVisible:
+    element:
+      id: 'maintenance-priority-high'
+    direction: DOWN
+    timeout: 15000
+    centerElement: true
+- tapOn:
+    id: 'maintenance-priority-high'
+    retryTapIfNoChange: true
+
+- scrollUntilVisible:
+    element:
+      id: 'maintenance-category-plumbing'
+    direction: DOWN
+    timeout: 10000
+    centerElement: true
+- tapOn:
+    id: 'maintenance-category-plumbing'
+    retryTapIfNoChange: true
+
+- tapOn:
+    id: 'maintenance-submit'
+- extendedWaitUntil:
+    visible: '.*Success.*'
+    timeout: 20000
+- tapOn:
+    text: 'OK'
+- extendedWaitUntil:
+    visible: 'Maintenance'
+    timeout: 20000
+
+# ── 1. Switch to vendor ─────────────────────────────────────────────────────
+- runFlow: ../subflows/sign-out-tenant.yaml
+- runFlow: ../subflows/login-vendor.yaml
+
+# ── 2. Open the request and fill the quote form ─────────────────────────────
+- runFlow: ../subflows/tap-vendor-maintenance.yaml
+- extendedWaitUntil:
+    visible: '.*Search requests.*'
+    timeout: 20000
+- extendedWaitUntil:
+    visible: '.*${REQUEST_TITLE}.*'
+    timeout: 30000
+- tapOn:
+    text: '.*${REQUEST_TITLE}.*'
+    index: 0
+
+- extendedWaitUntil:
+    visible: 'Request Details'
+    timeout: 20000
+- extendedWaitUntil:
+    visible:
+      id: 'vendor-submit-quote'
+    timeout: 15000
+- tapOn:
+    id: 'vendor-submit-quote'
+
+# Quote form — fill ONE item with a distinctive price (deterministic assert later)
+- extendedWaitUntil:
+    visible: '.*Work Items.*'
+    timeout: 20000
+- tapOn:
+    id: 'quote-item-name'
+- eraseText
+- inputText: 'Labor - Draft Restore Check'
+- swipe:
+    direction: DOWN
+    percentage: 0.3
+- tapOn:
+    id: 'quote-unit-price'
+- eraseText
+- inputText: '1234'
+- swipe:
+    direction: DOWN
+    percentage: 0.3
+
+# ── 3. Save Draft ───────────────────────────────────────────────────────────
+- tapOn:
+    id: 'quote-save-draft'
+- extendedWaitUntil:
+    visible: '.*Draft Saved.*'
+    timeout: 10000
+- tapOn:
+    text: 'OK'
+
+# ── 4. Leave the screen (back to request detail), then return ───────────────
+- tapOn:
+    id: 'quote-back'
+- extendedWaitUntil:
+    visible:
+      id: 'vendor-submit-quote'
+    timeout: 15000
+
+# Re-enter the quote form — the draft MUST be restored
+- tapOn:
+    id: 'vendor-submit-quote'
+- extendedWaitUntil:
+    visible:
+      id: 'quote-draft-restored-banner'
+    timeout: 15000
+
+# Draft content restored — item name (input value) + the deterministic
+# computed total (1234 × 1 qty + 15% VAT = 1419.10). Asserting the total proves
+# the restored draft actually flowed into the totals math. NOTE: Hermes' en-ZA
+# ICU formatting trims the trailing zero ("R 1,419.1") and may vary the
+# thousands separator, so match the digits only (".*419.*").
+- extendedWaitUntil:
+    visible: 'Labor - Draft Restore Check'
+    timeout: 10000
+# Cost Summary is BELOW the fold on the re-entered form — scroll it into view
+# before asserting (off-screen elements are not visible to Maestro).
+- scrollUntilVisible:
+    element:
+      text: '.*419.*'
+    direction: DOWN
+    timeout: 15000
+    centerElement: true
+- assertVisible:
+    text: '.*419.*'
+
+# ── 5. Discard the draft → banner gone + form reset ─────────────────────────
+# Scroll back to the top where the restored-banner sits (we just scrolled down
+# to the Cost Summary).
+- scrollUntilVisible:
+    element:
+      id: 'quote-draft-discard'
+    direction: UP
+    timeout: 15000
+    centerElement: true
+- tapOn:
+    id: 'quote-draft-discard'
+
+- extendedWaitUntil:
+    notVisible:
+      id: 'quote-draft-restored-banner'
+    timeout: 10000
+- assertNotVisible:
+    text: 'Labor - Draft Restore Check'
