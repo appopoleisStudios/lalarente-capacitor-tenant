@@ -17,31 +17,44 @@ appId: com.lalarente.app
 # Land on the tenant dashboard deterministically — the app may resume on a
 # pushed screen (no tab bar) after login, so tap the Home tab explicitly.
 - tapOn:
-    id: "tab-home"
+    id: 'tab-home'
     retryTapIfNoChange: true
 
 - extendedWaitUntil:
     visible:
-      id: "tenant-dashboard-header"
+      id: 'tenant-dashboard-header'
     timeout: 30000
 
 # The 5 canonical tab bar entries must all be present.
 - assertVisible:
-    id: "tab-home"
+    id: 'tab-home'
 - assertVisible:
-    id: "tab-search"
+    id: 'tab-search'
 - assertVisible:
-    id: "tab-payments"
+    id: 'tab-payments'
 - assertVisible:
-    id: "tab-profile"
+    id: 'tab-profile'
 - assertVisible:
-    id: "tab-lala-ai"
+    id: 'tab-lala-ai'
 
-# THE guard: a Vendor Payments tab must NOT be in the bottom navbar. A visible
-# tab would render its label and fail this assertion on the dashboard.
+# THE guard: a Vendor Payments tab must NOT be in the bottom navbar.
+#
+# ⚠️ REGRESSION (Aug 12): a re-registered tab can render with the RAW ROUTE
+# NAME as its label (e.g. "vendor-payments/index") and NO testID — that is
+# exactly how the bug survived four previous "re-hide" PRs (name mismatch in
+# _layout.tsx auto-registered the route as a visible tab). The old guard
+# (text "Vendor Payments" + id "tab-vendor-payments") passed VACUOUSLY while
+# the tab was on screen. Maestro text matchers are regex, so this single
+# catch-all covers EVERY label form (title, raw route name, a11y label
+# "vendor-payments/index, tab, N of N").
 - assertNotVisible:
-    text: "Vendor Payments"
+    text: '.*vendor-payments.*'
 
-# Belt-and-braces: if a future PR gives the tab a testID, this catches it too.
+# Belt-and-braces: a visible "Vendor Payments"/"Pay Vendor" title or testID
+# is caught by the catch-all above; these also guard future renames.
 - assertNotVisible:
-    id: "tab-vendor-payments"
+    text: '.*Vendor Payments.*'
+- assertNotVisible:
+    id: 'tab-vendor-payments'
+- assertNotVisible:
+    id: 'tab-pay-vendor'
