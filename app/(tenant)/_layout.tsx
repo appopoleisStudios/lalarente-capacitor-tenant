@@ -245,13 +245,20 @@ export default function TenantLayout() {
         }}
       />
       {/* ⚠️⚠️ VENDOR PAYMENTS MUST STAY HIDDEN FROM THE TAB BAR ⚠️⚠️
-          This has regressed multiple times (commits ad7dfe3, eb19049 both
-          re-hid it). DO NOT add a title/tabBarIcon here — the money entry
-          lives in the Payments screen Money hub (Plane #82). The Maestro
-          guard .maestro/flows/tenant-tabbar-guard.yaml fails the suite if
-          any vendor-payments route becomes a visible tab again. */}
+          ROOT CAUSE (fixed Aug 12): this block declared name="vendor-payments",
+          but there is NO route file vendor-payments.tsx — the real route is
+          vendor-payments/index.tsx. An undeclared route in a directory is
+          AUTO-REGISTERED as a visible tab by expo-router (label = raw route
+          name, no testID), which is why the tab survived every previous
+          re-hide (commits ad7dfe3 / eb19049) and why the old guard passed
+          vacuously. The name MUST match the route file exactly:
+          "vendor-payments/index".
+          DO NOT add a title/tabBarIcon here — the money entry lives in the
+          Payments screen Money hub (Plane #82). The Maestro guard
+          .maestro/flows/tenant-tabbar-guard.yaml fails the suite if any
+          vendor-payments route becomes a visible tab again. */}
       <Tabs.Screen
-        name="vendor-payments"
+        name="vendor-payments/index"
         options={{
           href: null, // Hidden from tabs - accessed from Payments Money hub
         }}
