@@ -1,0 +1,43 @@
+# FeaturePin ship-gate (Plane #90)
+# Verifies the note-pin primitive end-to-end on the Owner dashboard:
+# pin visible -> tap -> how-to sheet opens -> "Got it" dismiss -> sheet closes
+# and the pin is gone (per-user AsyncStorage dismissal persists).
+#
+# NOTE: all assertions use testIDs — never text. The pin button's
+# accessibilityLabel contains the same words as the sheet title, so Maestro's
+# text-regex matching can false-positive on the a11y tree after dismissal.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+
+- extendedWaitUntil:
+    visible: "Portfolio Dashboard"
+    timeout: 60000
+
+# Pin must be visible next to the dashboard title
+- assertVisible:
+    id: "feature-pin-owner-dashboard-priority"
+
+# Tap it -> how-to sheet opens with the message + dismiss button
+- tapOn:
+    id: "feature-pin-owner-dashboard-priority"
+
+- extendedWaitUntil:
+    visible:
+      id: "feature-pin-message"
+    timeout: 15000
+
+- assertVisible:
+    id: "feature-pin-dismiss"
+
+# Dismiss -> sheet closes and the pin stays dismissed for this user
+- tapOn:
+    id: "feature-pin-dismiss"
+
+- extendedWaitUntil:
+    notVisible:
+      id: "feature-pin-message"
+    timeout: 15000
+
+- assertNotVisible:
+    id: "feature-pin-owner-dashboard-priority"

@@ -7,3 +7,4 @@ export { LoadingSpinner } from './LoadingSpinner';
 export { AccessibleTouchableOpacity } from './AccessibleTouchableOpacity';
 export { ReasonPromptModal } from './ReasonPromptModal';
 export { PaymentStepsIndicator } from './PaymentStepsIndicator';
+export { FeaturePin } from './FeaturePin';

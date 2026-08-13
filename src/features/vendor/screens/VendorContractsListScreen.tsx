@@ -22,6 +22,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/src/lib/supabase';
+import { FeaturePin } from '@/src/shared/components';
 import { colors } from '@/src/shared/theme/colors';
 
 const BRAND_BLUE = colors.info[500];
@@ -76,7 +77,9 @@ function formatDate(dateStr: string | null) {
   if (!dateStr) return '—';
   const date = new Date(dateStr);
   return date.toLocaleDateString('en-GB', {
-    day: 'numeric', month: 'short', year: 'numeric',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
   });
 }
 
@@ -105,28 +108,45 @@ function statusColor(status: string): string {
 
 function statusLabel(status: string): string {
   switch (status) {
-    case 'active': return 'Active';
-    case 'in_progress': return 'In Progress';
-    case 'acknowledged': return 'Acknowledged';
-    case 'completed': return 'Completed';
-    case 'expired': return 'Expired';
-    case 'terminated': return 'Terminated';
-    case 'cancelled': return 'Cancelled';
-    case 'draft': return 'Draft';
-    case 'pending_owner': return 'Awaiting Owner';
-    case 'pending_vendor': return 'Awaiting You';
-    case 'pending_tenant': return 'Awaiting Tenant';
-    case 'quoting': return 'Awaiting Quote';
-    default: return status;
+    case 'active':
+      return 'Active';
+    case 'in_progress':
+      return 'In Progress';
+    case 'acknowledged':
+      return 'Acknowledged';
+    case 'completed':
+      return 'Completed';
+    case 'expired':
+      return 'Expired';
+    case 'terminated':
+      return 'Terminated';
+    case 'cancelled':
+      return 'Cancelled';
+    case 'draft':
+      return 'Draft';
+    case 'pending_owner':
+      return 'Awaiting Owner';
+    case 'pending_vendor':
+      return 'Awaiting You';
+    case 'pending_tenant':
+      return 'Awaiting Tenant';
+    case 'quoting':
+      return 'Awaiting Quote';
+    default:
+      return status;
   }
 }
 
 function priorityIcon(priority: string | null): keyof typeof Ionicons.glyphMap {
   switch (priority) {
-    case 'urgent': return 'alert-circle';
-    case 'high': return 'arrow-up-circle';
-    case 'medium': return 'remove-circle';
-    default: return 'ellipse-outline';
+    case 'urgent':
+      return 'alert-circle';
+    case 'high':
+      return 'arrow-up-circle';
+    case 'medium':
+      return 'remove-circle';
+    default:
+      return 'ellipse-outline';
   }
 }
 
@@ -140,7 +160,9 @@ export default function VendorContractsListScreen() {
 
   const loadContracts = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         Alert.alert('Error', 'You must be logged in.');
         return;
@@ -148,7 +170,8 @@ export default function VendorContractsListScreen() {
 
       const { data, error } = await supabase
         .from('service_contracts')
-        .select(`
+        .select(
+          `
           id, title, status, contract_type, contract_value,
           start_date, end_date, completion_date,
           auto_renew, priority, sla_hours,
@@ -157,7 +180,8 @@ export default function VendorContractsListScreen() {
           property:property_id(title),
           maintenance_request:maintenance_request_id(title),
           owner:profiles!owner_id(full_name)
-        `)
+        `
+        )
         .eq('vendor_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -190,11 +214,16 @@ export default function VendorContractsListScreen() {
 
   const filteredContracts = contracts.filter((c) => {
     switch (activeTab) {
-      case 'active': return ACTIVE_STATUSES.includes(c.status);
-      case 'pending': return PENDING_STATUSES.includes(c.status);
-      case 'expired': return EXPIRED_STATUSES.includes(c.status);
-      case 'other': return isOtherStatus(c.status);
-      default: return false;
+      case 'active':
+        return ACTIVE_STATUSES.includes(c.status);
+      case 'pending':
+        return PENDING_STATUSES.includes(c.status);
+      case 'expired':
+        return EXPIRED_STATUSES.includes(c.status);
+      case 'other':
+        return isOtherStatus(c.status);
+      default:
+        return false;
     }
   });
 
@@ -211,10 +240,17 @@ export default function VendorContractsListScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Contracts</Text>
-        <Text style={styles.headerCount}>
-          {contracts.length} total
-        </Text>
+        <View style={styles.headerTitleRow}>
+          <Text style={styles.headerTitle}>My Contracts</Text>
+          <FeaturePin
+            pinId="vendor-contracts"
+            title="Your contracts"
+            message="Active is work you've accepted or are doing now. Pending needs someone's action (often yours — check 'Awaiting You'). Expired is the finished history. Open a contract for full details."
+            aiRoute="/(vendor)/ai-chat"
+            aiPrompt="Where are my contracts and what does each status mean?"
+          />
+        </View>
+        <Text style={styles.headerCount}>{contracts.length} total</Text>
       </View>
 
       {/* Status Tabs */}
@@ -222,11 +258,16 @@ export default function VendorContractsListScreen() {
         {TAB_OPTIONS.map((tab) => {
           const count = contracts.filter((c) => {
             switch (tab.key) {
-              case 'active': return ACTIVE_STATUSES.includes(c.status);
-              case 'pending': return PENDING_STATUSES.includes(c.status);
-              case 'expired': return EXPIRED_STATUSES.includes(c.status);
-              case 'other': return isOtherStatus(c.status);
-              default: return false;
+              case 'active':
+                return ACTIVE_STATUSES.includes(c.status);
+              case 'pending':
+                return PENDING_STATUSES.includes(c.status);
+              case 'expired':
+                return EXPIRED_STATUSES.includes(c.status);
+              case 'other':
+                return isOtherStatus(c.status);
+              default:
+                return false;
             }
           }).length;
           return (
@@ -235,10 +276,7 @@ export default function VendorContractsListScreen() {
               accessibilityLabel={`${tab.label} contracts tab`}
               accessibilityRole="button"
               accessibilityState={{ selected: activeTab === tab.key }}
-              style={[
-                styles.tabButton,
-                activeTab === tab.key && styles.tabButtonActive,
-              ]}
+              style={[styles.tabButton, activeTab === tab.key && styles.tabButtonActive]}
               onPress={() => setActiveTab(tab.key)}
             >
               <Ionicons
@@ -247,21 +285,22 @@ export default function VendorContractsListScreen() {
                 color={activeTab === tab.key ? BRAND_BLUE : colors.gray[400]}
                 accessibilityElementsHidden
               />
-              <Text style={[
-                styles.tabLabel,
-                activeTab === tab.key && styles.tabLabelActive,
-              ]}>
+              <Text style={[styles.tabLabel, activeTab === tab.key && styles.tabLabelActive]}>
                 {tab.label}
               </Text>
               {count > 0 && (
-                <View style={[
-                  styles.tabBadge,
-                  { backgroundColor: activeTab === tab.key ? BRAND_BLUE : colors.gray[200] },
-                ]}>
-                  <Text style={[
-                    styles.tabBadgeText,
-                    { color: activeTab === tab.key ? '#FFF' : colors.gray[500] },
-                  ]}>
+                <View
+                  style={[
+                    styles.tabBadge,
+                    { backgroundColor: activeTab === tab.key ? BRAND_BLUE : colors.gray[200] },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.tabBadgeText,
+                      { color: activeTab === tab.key ? '#FFF' : colors.gray[500] },
+                    ]}
+                  >
                     {count}
                   </Text>
                 </View>
@@ -281,18 +320,28 @@ export default function VendorContractsListScreen() {
         {filteredContracts.length === 0 ? (
           <View style={styles.emptyState} accessibilityLabel={`No ${activeTab} contracts`}>
             <Ionicons
-              name={activeTab === 'other' ? 'ellipsis-horizontal-circle-outline' : activeTab === 'active' ? 'checkmark-done-outline' : activeTab === 'pending' ? 'time-outline' : 'archive-outline'}
+              name={
+                activeTab === 'other'
+                  ? 'ellipsis-horizontal-circle-outline'
+                  : activeTab === 'active'
+                    ? 'checkmark-done-outline'
+                    : activeTab === 'pending'
+                      ? 'time-outline'
+                      : 'archive-outline'
+              }
               size={48}
               color={colors.gray[200]}
             />
-            <Text style={styles.emptyStateTitle}>
-              No {activeTab} contracts
-            </Text>
+            <Text style={styles.emptyStateTitle}>No {activeTab} contracts</Text>
             <Text style={styles.emptyStateSub}>
-              {activeTab === 'active' && 'Active job contracts will appear here when you accept work.'}
-              {activeTab === 'pending' && 'Pending contracts are waiting for owner or vendor action.'}
-              {activeTab === 'expired' && 'Completed, expired, or cancelled contracts will show here.'}
-              {activeTab === 'other' && 'Contracts with unknown or unexpected statuses will appear here.'}
+              {activeTab === 'active' &&
+                'Active job contracts will appear here when you accept work.'}
+              {activeTab === 'pending' &&
+                'Pending contracts are waiting for owner or vendor action.'}
+              {activeTab === 'expired' &&
+                'Completed, expired, or cancelled contracts will show here.'}
+              {activeTab === 'other' &&
+                'Contracts with unknown or unexpected statuses will appear here.'}
             </Text>
           </View>
         ) : (
@@ -316,7 +365,12 @@ export default function VendorContractsListScreen() {
                       <Ionicons name="refresh" size={14} color={BRAND_GREEN} />
                     )}
                   </View>
-                  <View style={[styles.statusBadge, { backgroundColor: statusColor(contract.status) + '15' }]}>
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      { backgroundColor: statusColor(contract.status) + '15' },
+                    ]}
+                  >
                     <Text style={[styles.statusText, { color: statusColor(contract.status) }]}>
                       {statusLabel(contract.status)}
                     </Text>
@@ -351,7 +405,9 @@ export default function VendorContractsListScreen() {
                     <Ionicons
                       name={priorityIcon(contract.priority)}
                       size={16}
-                      color={contract.priority === 'urgent' ? colors.error[500] : colors.warning[500]}
+                      color={
+                        contract.priority === 'urgent' ? colors.error[500] : colors.warning[500]
+                      }
                     />
                   )}
                 </View>
@@ -403,6 +459,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.default,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.default,
+  },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   headerTitle: {
     fontSize: 22,

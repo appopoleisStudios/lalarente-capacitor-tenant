@@ -73,6 +73,7 @@ TENANT_FLOWS=(
 OWNER_FLOWS=(
   # Core owner flows
   "04-owner-dashboard"
+  "owner-feature-pin"
   "owner-property-edit"
   "owner-property-maintenance-history"
   "owner-photo-viewer-close"

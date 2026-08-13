@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../../lib/supabase';
-import { EmptyState, LoadingSpinner } from '@/src/shared/components';
+import { EmptyState, FeaturePin, LoadingSpinner } from '@/src/shared/components';
 
 const RSA = { green: '#007A4D', gold: '#FFB81C' }; // Tenant colors
 
@@ -259,7 +259,16 @@ export default function TenantPaymentScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Payments</Text>
+            <View style={styles.headerRow}>
+              <Text style={styles.headerTitle}>Payments</Text>
+              <FeaturePin
+                pinId="tenant-payments-hub"
+                title="Payments hub"
+                message="Pay your rent, raise a dispute, or pay approved vendor invoices — everything money-related lives here. Tap Pay Now, then confirm once the money has left your bank."
+                aiRoute="/(tenant)/ai-chat"
+                aiPrompt="How do I pay rent in this app?"
+              />
+            </View>
           </View>
           <ScrollView
             style={styles.scrollView}
@@ -310,7 +319,16 @@ export default function TenantPaymentScreen() {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Payments</Text>
+          <View style={styles.headerRow}>
+            <Text style={styles.headerTitle}>Payments</Text>
+            <FeaturePin
+              pinId="tenant-payments-hub"
+              title="Payments hub"
+              message="Pay your rent, raise a dispute, or pay approved vendor invoices — everything money-related lives here. Tap Pay Now, then confirm once the money has left your bank."
+              aiRoute="/(tenant)/ai-chat"
+              aiPrompt="How do I pay rent in this app?"
+            />
+          </View>
         </View>
 
         <ScrollView
@@ -645,6 +663,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   headerTitle: {
     fontSize: 20,

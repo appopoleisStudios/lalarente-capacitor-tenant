@@ -6,6 +6,7 @@ import {
   type MaintenanceInvoice,
 } from '@/src/features/maintenance/api';
 import { colors } from '@/src/shared/theme/colors';
+import { FeaturePin } from '@/src/shared/components';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -275,9 +276,16 @@ export default function OwnerInvoiceApprovalScreen() {
           <Ionicons name="arrow-back" size={24} color="#111827" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Invoice</Text>
-        <View style={styles.headerButton} />
+        <View style={styles.headerButton}>
+          <FeaturePin
+            pinId="owner-invoice-approve"
+            title="Approving an invoice"
+            message="Approve sends the invoice to your tenant to pay in the app. Reject asks the vendor to fix it — add a reason so they know what to change. Approved invoices show a green banner here."
+            aiRoute="/(owner)/ai-chat"
+            aiPrompt="How do I approve a vendor invoice?"
+          />
+        </View>
       </View>
-
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={RSA.blue} />

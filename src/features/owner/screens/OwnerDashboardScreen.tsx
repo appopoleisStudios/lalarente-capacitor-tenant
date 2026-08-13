@@ -25,7 +25,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { AnimatedButton } from '@/src/shared/components';
+import { AnimatedButton, FeaturePin } from '@/src/shared/components';
 import { PortfolioCard } from '../components/PortfolioCard';
 import { AnalyticsGrid } from '../components/AnalyticsGrid';
 import { DocumentsSection } from '../components/DocumentsSection';
@@ -485,6 +485,13 @@ export default function OwnerDashboardScreen() {
               <Text style={styles.headerTitle}>Portfolio Dashboard</Text>
               <Text style={styles.headerSubtitle}>Welcome back, {dashboardData.userName}</Text>
             </View>
+            <FeaturePin
+              pinId="owner-dashboard-priority"
+              title="Your dashboard, at a glance"
+              message="The highlighted action card is what needs you most right now (approve closures, review viewings, confirm payments). 'Needs Attention' lists everything waiting on you. Tap any row to jump straight to it."
+              aiRoute="/(owner)/ai-chat"
+              aiPrompt="What needs my attention on my dashboard?"
+            />
           </View>
           {/* Always-visible Messages entry (Plane #72 parity with tenant). The
               Messages section below only renders when threads exist, so without
