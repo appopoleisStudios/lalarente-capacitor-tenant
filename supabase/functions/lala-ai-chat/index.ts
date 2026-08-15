@@ -30,6 +30,33 @@ function fmtMaintenance(m: Record<string, unknown>): string {
   return `[${m.status}] ${m.title || 'Request'} — ${m.priority || 'normal'} priority (${String(m.created_at || '').slice(0, 10)})`;
 }
 
+function fmtLease(l: Record<string, unknown>): string {
+  const escVal = l.rent_escalation_value;
+  const escType = (l.rent_escalation_type as string) || '';
+  const escalation =
+    escVal != null
+      ? `${escType === 'fixed' ? `R ${escVal}` : `${escVal}%`} every ${l.rent_escalation_frequency_months ?? '—'} month(s)`
+      : 'not specified';
+  const deposit =
+    l.deposit_amount != null
+      ? `R ${l.deposit_amount}${l.deposit_refund_status ? ` (refund ${l.deposit_refund_status}${l.deposit_refund_amount != null ? `, R ${l.deposit_refund_amount}` : ''}${l.deposit_refund_deadline ? `, by ${String(l.deposit_refund_deadline).slice(0, 10)}` : ''})` : ''}`
+      : 'not recorded';
+  const lines = [
+    `Lease: ${l.lease_type || 'standard'} (status ${l.status})`,
+    `Period: ${String(l.start_date || '').slice(0, 10)} to ${String(l.end_date || '').slice(0, 10)}`,
+    `Rent: R ${l.monthly_rent ?? '—'} per month, due day ${l.payment_due_day ?? '—'}`,
+    `Deposit: ${deposit}`,
+    `Escalation: ${escalation}`,
+    `Early termination: notice ${l.early_termination_notice_period_days ?? '—'} day(s)${l.early_termination_penalty != null ? `, penalty R ${l.early_termination_penalty}` : ''}`,
+  ];
+  if (l.auto_converted_to_mtm) {
+    lines.push(
+      'Auto-converted to month-to-month (renewal_count: ' + String(l.renewal_count ?? 0) + ').'
+    );
+  }
+  return lines.join('\n');
+}
+
 async function buildTenantContext(
   supabase: ReturnType<typeof createClient>,
   userId: string,
@@ -37,7 +64,13 @@ async function buildTenantContext(
 ): Promise<string> {
   let query = supabase
     .from('leases')
-    .select('status, monthly_rent, end_date, property:properties(id, title, address, city, rent_amount, status)')
+    .select(
+      'status, lease_type, start_date, end_date, monthly_rent, payment_due_day, renewal_count, auto_converted_to_mtm, ' +
+        'deposit_amount, deposit_refund_status, deposit_refund_amount, deposit_refund_deadline, ' +
+        'rent_escalation_type, rent_escalation_value, rent_escalation_frequency_months, ' +
+        'early_termination_notice_period_days, early_termination_penalty, ' +
+        'property:properties(id, title, address, city, rent_amount, status)'
+    )
     .eq('tenant_id', userId)
     .in('status', ['active', 'pending_tenant_signature', 'pending_owner_signature'])
     .order('created_at', { ascending: false })
@@ -56,7 +89,7 @@ async function buildTenantContext(
     .map((l: Record<string, unknown>) => {
       const prop = l.property as Record<string, unknown> | null;
       const propBlock = prop ? fmtProperty(prop) : 'Property details unavailable';
-      return `${propBlock}\n  Lease status: ${l.status}\n  Monthly rent: R ${l.monthly_rent ?? '—'}\n  Ends: ${String(l.end_date || '—').slice(0, 10)}`;
+      return `${propBlock}\n${fmtLease(l)}`;
     })
     .join('\n\n');
 }
@@ -87,7 +120,9 @@ async function buildVendorContext(
     jobRes.data
       ?.map((j: Record<string, unknown>) => {
         const prop = j.property as { title?: string; address?: string; city?: string } | null;
-        const loc = prop ? `${prop.title || ''} (${[prop.address, prop.city].filter(Boolean).join(', ') || '?'})` : '?';
+        const loc = prop
+          ? `${prop.title || ''} (${[prop.address, prop.city].filter(Boolean).join(', ') || '?'})`
+          : '?';
         return `  [${j.status}] ${j.title} — ${loc} | ${String(j.created_at || '').slice(0, 10)}`;
       })
       .join('\n') || 'No active jobs.';
@@ -106,7 +141,11 @@ async function buildOwnerContext(
   ownerId: string
 ): Promise<string> {
   const [propRes, maintRes, leaseRes] = await Promise.all([
-    supabase.from('properties').select('title, status, rent_amount, address, city').eq('owner_id', ownerId).limit(10),
+    supabase
+      .from('properties')
+      .select('title, status, rent_amount, address, city')
+      .eq('owner_id', ownerId)
+      .limit(10),
     supabase
       .from('maintenance_requests')
       .select('title, status, priority, created_at')
@@ -115,14 +154,21 @@ async function buildOwnerContext(
       .limit(8),
     supabase
       .from('leases')
-      .select('status, monthly_rent, end_date, tenant:profiles!tenant_id(full_name), property:properties(title)')
+      .select(
+        'status, lease_type, start_date, end_date, monthly_rent, payment_due_day, renewal_count, auto_converted_to_mtm, ' +
+          'deposit_amount, deposit_refund_status, deposit_refund_amount, deposit_refund_deadline, ' +
+          'rent_escalation_type, rent_escalation_value, rent_escalation_frequency_months, ' +
+          'early_termination_notice_period_days, early_termination_penalty, ' +
+          'tenant:profiles!tenant_id(full_name), property:properties(title)'
+      )
       .eq('owner_id', ownerId)
       .eq('status', 'active')
       .limit(8),
   ]);
 
   const properties =
-    propRes.data?.map((p) => fmtProperty(p as Record<string, unknown>)).join('\n') || 'No properties.';
+    propRes.data?.map((p) => fmtProperty(p as Record<string, unknown>)).join('\n') ||
+    'No properties.';
   const maintenance =
     maintRes.data?.map((m) => fmtMaintenance(m as Record<string, unknown>)).join('\n') ||
     'No maintenance requests.';
@@ -131,7 +177,7 @@ async function buildOwnerContext(
       ?.map((l: Record<string, unknown>) => {
         const tenant = l.tenant as { full_name?: string } | null;
         const prop = l.property as { title?: string } | null;
-        return `  - ${prop?.title || '?'}: ${tenant?.full_name || 'Tenant'} | R ${l.monthly_rent ?? '?'} | ends ${String(l.end_date || '').slice(0, 10)}`;
+        return `  - ${prop?.title || '?'} (${tenant?.full_name || 'Tenant'}):\n${fmtLease(l).replace(/^/gm, '      ')}`;
       })
       .join('\n') || 'No active leases.';
 
@@ -140,7 +186,7 @@ async function buildOwnerContext(
 
 function systemPrompt(role: string, context: string): string {
   const base =
-    'You are Lala, the LaLarente assistant for South African residential rentals. Be professional, concise (max 4 sentences unless listing). Never invent data not in CONTEXT. If unknown, say to check the app or contact the other party. Do not give legal advice.';
+    'You are Lala, the LaLarente assistant for South African residential rentals. Be professional, concise (max 4 sentences unless listing). Never invent data not in CONTEXT. If unknown, say to check the app or contact the other party. Do not give legal advice.\n\nWhen asked about lease terms (e.g. "what does my lease say", rent, deposit, escalation, notice period, payment due date), quote the actual values from CONTEXT — period, monthly rent, due day, deposit and refund status, escalation, early-termination terms. If a specific term is not present in CONTEXT, say it is not recorded rather than guessing.';
 
   if (role === 'owner') {
     return `${base}\n\nYou speak with a PROPERTY OWNER.\n\nCONTEXT:\n${context}`;
@@ -238,7 +284,10 @@ serve(async (req) => {
 
     for (const turn of (body.history ?? []).slice(-MAX_HISTORY)) {
       if (turn?.role === 'user' || turn?.role === 'assistant') {
-        messages.push({ role: turn.role, content: String(turn.content ?? '').slice(0, MAX_TEXT_LEN) });
+        messages.push({
+          role: turn.role,
+          content: String(turn.content ?? '').slice(0, MAX_TEXT_LEN),
+        });
       }
     }
     messages.push({ role: 'user', content: text });
