@@ -1,0 +1,70 @@
+# Property 3D tour viewer gate (Plane #92 Phase 1)
+#   Prereq: scripts/seed-property-3d-tour.mjs (sets media_3d_url on the owner's
+#   first property — the "View in 3D" CTA only renders when a tour is attached).
+#   1. Owner Properties -> first property -> detail
+#   2. "View in 3D" CTA visible -> tap -> fullscreen viewer opens (close button)
+#   3. Close -> back on Property Details (user must never be trapped)
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app-warm.yaml
+- runFlow: ../subflows/login-owner.yaml
+- runFlow: ../subflows/tap-owner-properties.yaml
+
+- extendedWaitUntil:
+    visible: 'My Properties'
+    timeout: 20000
+
+- tapOn:
+    id: 'property-card-view'
+- extendedWaitUntil:
+    visible: 'Property Details'
+    timeout: 15000
+
+# The CTA sits under the photo gallery — ensure it's rendered/in-view
+- scrollUntilVisible:
+    element:
+      id: 'owner-view-3d'
+    direction: DOWN
+    timeout: 15000
+    centerElement: true
+
+- assertVisible:
+    id: 'owner-view-3d'
+
+# Open the fullscreen 3D viewer
+- tapOn:
+    id: 'owner-view-3d'
+
+# Viewer chrome must show: title + always-visible close button
+- extendedWaitUntil:
+    visible:
+      id: 'view3d-title'
+    timeout: 10000
+
+- extendedWaitUntil:
+    visible:
+      id: 'view3d-close'
+    timeout: 10000
+
+# FULLSCREEN proof (SA #152 blocker): the owner tab bar must NOT render under
+# the WebView while the viewer is focused — viewer is immersive, not a pane.
+- assertNotVisible:
+    id: 'tab-owner-home'
+- assertNotVisible:
+    id: 'tab-owner-properties'
+
+# Close the viewer
+- tapOn:
+    id: 'view3d-close'
+
+# DEFINITIVE proof of dismissal: view3d-close only exists on the viewer screen;
+# its absence proves the viewer really closed and the user is not trapped.
+- assertNotVisible:
+    id: 'view3d-close'
+
+# Back on the previous screen, tab bar restored
+- extendedWaitUntil:
+    visible: 'Property Details'
+    timeout: 15000
+- assertVisible:
+    id: 'tab-owner-home'

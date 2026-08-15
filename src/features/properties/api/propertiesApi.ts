@@ -15,7 +15,7 @@ export interface PropertyWithRelations extends Property {
     email: string | null;
     phone: string | null;
   };
-  leases?: Array<{
+  leases?: {
     id: string;
     start_date: string;
     end_date: string;
@@ -27,10 +27,8 @@ export interface PropertyWithRelations extends Property {
       email: string | null;
       phone: string | null;
     };
-  }>;
+  }[];
 }
-
-
 
 // Input types for API operations
 export interface CreatePropertyInput {
@@ -56,6 +54,7 @@ export interface CreatePropertyInput {
   latitude?: number | null;
   longitude?: number | null;
   images?: string[] | null;
+  media_3d_url?: string | null;
   lease_terms?: any | null;
 }
 
@@ -82,6 +81,7 @@ export interface UpdatePropertyInput {
   longitude?: number | null;
   status?: PropertyStatus;
   images?: string[] | null;
+  media_3d_url?: string | null;
   lease_terms?: any | null;
 }
 
@@ -103,25 +103,25 @@ export interface SearchCriteria {
   city?: string;
   province?: string;
   search_text?: string; // Free text search across title, description, address
-  
+
   // Price filters
   min_rent?: number;
   max_rent?: number;
-  
+
   // Property specs
   min_bedrooms?: number;
   max_bedrooms?: number;
   min_bathrooms?: number;
   max_bathrooms?: number;
   property_types?: string[];
-  
+
   // Amenities
   amenities?: string[];
   parking_required?: boolean;
-  
+
   // Sorting
   sort_by?: 'price_asc' | 'price_desc' | 'newest' | 'bedrooms_asc' | 'bedrooms_desc';
-  
+
   // Pagination
   limit?: number;
   offset?: number;
@@ -205,10 +205,7 @@ export const propertiesApi = {
    * Delete a property (soft delete by setting status to vacant)
    */
   async deleteProperty(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('properties')
-      .update({ status: 'vacant' })
-      .eq('id', id);
+    const { error } = await supabase.from('properties').update({ status: 'vacant' }).eq('id', id);
 
     if (error) {
       console.error('Error deleting property:', error);
@@ -221,13 +218,9 @@ export const propertiesApi = {
    */
   async getProperty(id: string): Promise<PropertyWithRelations> {
     console.log('🔍 Fetching property with ID:', id);
-    
+
     // Fetch property without join first
-    const { data, error } = await supabase
-      .from('properties')
-      .select('*')
-      .eq('id', id)
-      .single();
+    const { data, error } = await supabase.from('properties').select('*').eq('id', id).single();
 
     if (error) {
       console.error('❌ Error fetching property:', error);
@@ -236,18 +229,18 @@ export const propertiesApi = {
 
     console.log('✅ Property data fetched');
     console.log('🆔 Owner ID:', data.owner_id);
-    
+
     // Always fetch owner separately to avoid RLS issues with joins
     let ownerData = null;
     if (data.owner_id) {
       console.log('👤 Fetching owner profile for ID:', data.owner_id);
-      
+
       const { data: owner, error: ownerError } = await supabase
         .from('profiles')
         .select('id, full_name, email, phone')
         .eq('id', data.owner_id)
         .single();
-      
+
       if (ownerError) {
         console.error('❌ Error fetching owner:', ownerError);
         console.error('⚠️ Property has owner_id but no matching profile exists!');
@@ -263,28 +256,30 @@ export const propertiesApi = {
         ownerData = owner;
       }
     }
-    
+
     // Attach owner to property data
     (data as any).owner = ownerData;
 
     // Fetch leases separately if needed
     const { data: leases } = await supabase
       .from('leases')
-      .select(`
+      .select(
+        `
         id,
         start_date,
         end_date,
         monthly_rent,
         status,
         tenant:profiles!tenant_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('property_id', id);
 
     const result = {
       ...data,
       leases: leases || [],
     } as PropertyWithRelations;
-    
+
     console.log('🎁 Final property with owner:', result.owner);
     return result;
   },
@@ -298,10 +293,12 @@ export const propertiesApi = {
   ): Promise<PropertyWithRelations[]> {
     let query = supabase
       .from('properties')
-      .select(`
+      .select(
+        `
         *,
         owner:profiles!owner_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('owner_id', ownerId);
 
     // Apply filters
@@ -365,13 +362,14 @@ export const propertiesApi = {
     }
 
     // Fetch leases for all properties
-    const propertyIds = data?.map(p => p.id) || [];
+    const propertyIds = data?.map((p) => p.id) || [];
     let leasesData: any[] = [];
-    
+
     if (propertyIds.length > 0) {
       const { data: leases } = await supabase
         .from('leases')
-        .select(`
+        .select(
+          `
           id,
           property_id,
           start_date,
@@ -379,16 +377,17 @@ export const propertiesApi = {
           monthly_rent,
           status,
           tenant:profiles!tenant_id(id, full_name, email, phone)
-        `)
+        `
+        )
         .in('property_id', propertyIds);
-      
+
       leasesData = leases || [];
     }
 
     // Combine properties with their leases
-    const propertiesWithLeases = (data || []).map(property => ({
+    const propertiesWithLeases = (data || []).map((property) => ({
       ...property,
-      leases: leasesData.filter(lease => lease.property_id === property.id),
+      leases: leasesData.filter((lease) => lease.property_id === property.id),
     }));
 
     return propertiesWithLeases as PropertyWithRelations[];
@@ -400,10 +399,13 @@ export const propertiesApi = {
   async searchProperties(criteria: SearchCriteria): Promise<SearchResult> {
     let query = supabase
       .from('properties')
-      .select(`
+      .select(
+        `
         *,
         owner:profiles!owner_id(id, full_name, email, phone)
-      `, { count: 'exact' })
+      `,
+        { count: 'exact' }
+      )
       .eq('status', 'available'); // Only show available properties
 
     // Free text search across multiple fields
@@ -488,7 +490,7 @@ export const propertiesApi = {
     // Pagination
     const limit = criteria.limit || 20;
     const offset = criteria.offset || 0;
-    
+
     query = query.range(offset, offset + limit - 1);
 
     const { data, error, count } = await query;
@@ -523,7 +525,7 @@ export const propertiesApi = {
     }
 
     // Get unique property types
-    const types = [...new Set(data?.map(p => p.property_type) || [])];
+    const types = [...new Set(data?.map((p) => p.property_type) || [])];
     return types.filter(Boolean);
   },
 
@@ -542,7 +544,7 @@ export const propertiesApi = {
     }
 
     // Get unique cities
-    const cities = [...new Set(data?.map(p => p.city) || [])];
+    const cities = [...new Set(data?.map((p) => p.city) || [])];
     return cities.filter(Boolean).sort();
   },
 
@@ -561,7 +563,7 @@ export const propertiesApi = {
     }
 
     // Get unique provinces
-    const provinces = [...new Set(data?.map(p => p.province) || [])];
+    const provinces = [...new Set(data?.map((p) => p.province) || [])];
     return provinces.filter(Boolean).sort();
   },
 
@@ -578,7 +580,7 @@ export const propertiesApi = {
       return { min: 0, max: 0 };
     }
 
-    const rents = data.map(p => p.rent_amount).filter(Boolean);
+    const rents = data.map((p) => p.rent_amount).filter(Boolean);
     return {
       min: Math.min(...rents),
       max: Math.max(...rents),
@@ -620,12 +622,13 @@ export const propertiesApi = {
     }
 
     const total = properties?.length || 0;
-    const available = properties?.filter(p => p.status === 'available').length || 0;
-    const rented = properties?.filter(p => p.status === 'rented').length || 0;
-    const maintenance = properties?.filter(p => p.status === 'maintenance').length || 0;
-    const totalMonthlyIncome = properties
-      ?.filter(p => p.status === 'rented')
-      .reduce((sum, p) => sum + (p.rent_amount || 0), 0) || 0;
+    const available = properties?.filter((p) => p.status === 'available').length || 0;
+    const rented = properties?.filter((p) => p.status === 'rented').length || 0;
+    const maintenance = properties?.filter((p) => p.status === 'maintenance').length || 0;
+    const totalMonthlyIncome =
+      properties
+        ?.filter((p) => p.status === 'rented')
+        .reduce((sum, p) => sum + (p.rent_amount || 0), 0) || 0;
 
     return {
       total,
@@ -647,7 +650,7 @@ export const propertiesApi = {
    */
   async uploadPropertyPhotos(
     propertyId: string,
-    files: Array<{ uri: string; name: string; type: string }>
+    files: { uri: string; name: string; type: string }[]
   ): Promise<string[]> {
     const uploadedUrls: string[] = [];
 
@@ -661,12 +664,12 @@ export const propertiesApi = {
 
         // Convert file to blob for upload
         let fileBlob: Blob;
-        
+
         // Handle React Native file (uri-based)
         if (file.uri.startsWith('file://') || file.uri.startsWith('content://')) {
           const response = await fetch(file.uri);
           fileBlob = await response.blob();
-        } 
+        }
         // Handle web file or data URI
         else if (file.uri.startsWith('data:')) {
           const response = await fetch(file.uri);
@@ -724,7 +727,7 @@ export const propertiesApi = {
       const url = new URL(photoUrl);
       const pathParts = url.pathname.split('/');
       const bucketIndex = pathParts.indexOf(STORAGE_BUCKETS.PROPERTY_IMAGES);
-      
+
       if (bucketIndex === -1) {
         throw new Error('Invalid photo URL');
       }
@@ -743,12 +746,14 @@ export const propertiesApi = {
 
       // Remove URL from property images array
       const property = await this.getProperty(propertyId);
-      const updatedImages = (property.images || []).filter(url => url !== photoUrl);
+      const updatedImages = (property.images || []).filter((url) => url !== photoUrl);
 
       await this.updateProperty(propertyId, { images: updatedImages });
     } catch (error) {
       console.error('Error in deletePropertyPhoto:', error);
-      throw new Error(`Failed to delete photo: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to delete photo: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   },
 
@@ -762,7 +767,9 @@ export const propertiesApi = {
       await this.updateProperty(propertyId, { images: orderedUrls });
     } catch (error) {
       console.error('Error reordering photos:', error);
-      throw new Error(`Failed to reorder photos: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to reorder photos: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   },
 
@@ -772,7 +779,7 @@ export const propertiesApi = {
    * 1. Use Supabase Image Transformations (if available)
    * 2. Or generate thumbnails on upload using a service like Sharp
    * 3. Or use a CDN with image transformation capabilities
-   * 
+   *
    * @param imageUrl - Full image URL
    * @returns Thumbnail URL (currently returns same URL)
    */
