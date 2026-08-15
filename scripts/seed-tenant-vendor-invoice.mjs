@@ -101,10 +101,14 @@ async function main() {
   const requestOwnerId = mr.owner_id || ownerId;
   console.log(`✓ Using maintenance request: ${mr.title} (${mr.id})`);
 
-  // 3. Check for an existing invoice on this request — reuse instead of
-  //    duplicating (leftover 'submitted' from a prior run gets approved).
+  // 3. Check for an existing TENANT-payer invoice on this request — reuse
+  //    instead of duplicating (leftover 'submitted' from a prior run gets
+  //    approved). MUST scope to payer_role=tenant: since migration 064 the
+  //    tenant role can no longer see owner-payable invoices, so an approved
+  //    INV-OWNER-E2E on the same request must NOT satisfy this check (it is
+  //    the exclusivity control, not the tenant money path).
   const existingRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/maintenance_invoices?select=id,invoice_number,status&maintenance_request_id=eq.${mr.id}`,
+    `${SUPABASE_URL}/rest/v1/maintenance_invoices?select=id,invoice_number,status,payer_role&maintenance_request_id=eq.${mr.id}&payer_role=eq.tenant`,
     { headers: headers(owner.access_token) }
   );
   const existing = await existingRes.json();

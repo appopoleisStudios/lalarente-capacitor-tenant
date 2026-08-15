@@ -117,7 +117,10 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
   );
 
   const sendMessage = async () => {
-    if (!messageText.trim() || !thread || !userId) return;
+    // `sending` guards the native submit path (Enter) — the button already
+    // disables itself, but a rapid double-Enter in the pre-render window
+    // would otherwise fire two inserts.
+    if (!messageText.trim() || !thread || !userId || sending) return;
 
     const content = messageText.trim();
     setMessageText('');
@@ -346,6 +349,14 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
               multiline
               maxLength={2000}
               onFocus={scrollToBottom}
+              // Enter-to-send: the keyboard return key sends instead of inserting
+              // a newline (multiline keeps the composer growing; submitBehavior
+              // turns the return key into a send action on RN >= 0.76).
+              returnKeyType="send"
+              submitBehavior="submit"
+              blurOnSubmit={false}
+              onSubmitEditing={sendMessage}
+              testID="thread-message-input"
             />
             <TouchableOpacity
               style={[
@@ -355,6 +366,7 @@ export default function MessageThreadScreen({ role = 'owner' }: Props) {
               ]}
               onPress={sendMessage}
               disabled={!messageText.trim() || sending}
+              testID="thread-send-button"
             >
               {sending ? (
                 <ActivityIndicator size="small" color="#FFF" />

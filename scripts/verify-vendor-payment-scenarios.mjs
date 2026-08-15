@@ -231,28 +231,71 @@ async function scenarioClosureTimeout(vendor, serviceKey) {
   }
 
   const past = new Date(Date.now() - 75 * 60 * 60 * 1000).toISOString();
-  const insertRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/closure_reports?select=id,tenant_verification_status`,
-    {
-      method: 'POST',
-      headers: { ...H(vendor.access_token), Prefer: 'return=representation' },
-      body: JSON.stringify({
-        maintenance_request_id: mr.id,
-        status: 'pending',
-        tenant_verification_status: 'pending_tenant',
-        auto_approve_at: past,
-        forwarded_to_tenant_at: past,
-        completion_notes: 'E2E: closure timeout scenario',
-      }),
-    }
+
+  // Idempotent setup: the partial unique index
+  // uq_closure_reports_maintenance_request_active allows at most ONE
+  // non-rejected closure per request, so a re-run against the same MR (a
+  // prior run left an auto_approved row behind) would 409 on INSERT.
+  // Vendors CAN UPDATE their own closure rows (migration 050 policy), so
+  // RESET the existing row in place instead of inserting a duplicate.
+  const existingRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/closure_reports?select=id&maintenance_request_id=eq.${mr.id}&status=neq.rejected&limit=1`,
+    { headers: H(vendor.access_token) }
   );
-  const inserted = await insertRes.json().catch(() => []);
-  if (!insertRes.ok) {
-    throw new Error(`Closure insert failed (${insertRes.status}): ${JSON.stringify(inserted).slice(0, 300)}`);
+  if (!existingRes.ok) {
+    throw new Error(`Closure lookup failed (${existingRes.status}) — cannot reset existing row.`);
+  }
+  const existingRows = await existingRes.json().catch(() => []);
+  const existing = Array.isArray(existingRows) ? existingRows[0] : null;
+
+  // Columns verified against the LIVE schema: no auto_approved_at column
+  // (auto-approve stamps tenant_verification_status='auto_approved' + tenant_ack_at),
+  // and the reject column is rejection_reason.
+  const resetPayload = {
+    status: 'pending',
+    tenant_verification_status: 'pending_tenant',
+    auto_approve_at: past,
+    forwarded_to_tenant_at: past,
+    tenant_ack_at: null,
+    rejection_reason: null,
+    completion_notes: 'E2E: closure timeout scenario',
+  };
+
+  let inserted;
+  if (existing?.id) {
+    const updRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/closure_reports?id=eq.${existing.id}`,
+      {
+        method: 'PATCH',
+        headers: { ...H(vendor.access_token), Prefer: 'return=representation' },
+        body: JSON.stringify(resetPayload),
+      }
+    );
+    inserted = await updRes.json().catch(() => []);
+    if (!updRes.ok) {
+      throw new Error(`Closure reset failed (${updRes.status}): ${JSON.stringify(inserted).slice(0, 300)}`);
+    }
+    console.log(`  ℹ️ Reused existing closure ${existing.id} (reset to pending_tenant)`);
+  } else {
+    const insertRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/closure_reports?select=id,tenant_verification_status`,
+      {
+        method: 'POST',
+        headers: { ...H(vendor.access_token), Prefer: 'return=representation' },
+        body: JSON.stringify({
+          maintenance_request_id: mr.id,
+          ...resetPayload,
+        }),
+      }
+    );
+    inserted = await insertRes.json().catch(() => []);
+    if (!insertRes.ok) {
+      throw new Error(`Closure insert failed (${insertRes.status}): ${JSON.stringify(inserted).slice(0, 300)}`);
+    }
   }
   const closure = Array.isArray(inserted) ? inserted[0] : inserted;
   if (!closure?.id) {
-    throw new Error('Closure insert returned no row — check RLS closure insert policy (vendor must be assigned).');
+    throw new Error('Closure insert/reset returned no row — check RLS closure policy (vendor must be assigned).');
   }
 
   // Invoke the real auto-approve-closures edge function with the service key

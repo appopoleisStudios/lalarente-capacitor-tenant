@@ -31,9 +31,21 @@ appId: com.lalarente.app
 
 # ── Phase B: Payer exclusivity ──
 # The happy path ends on the Pay Vendor DETAIL screen (checkout closed).
-# Return to the vendor-payments LIST via the tab bar (tabBarButtonTestID).
+# Return to the Payments hub via the tab bar, then open the Vendor Payments
+# sub-route (Plane #82 consolidated hub — the list is NOT the tab root anymore).
 - tapOn:
     id: "tab-payments"
+
+# The hub may sit below the fold — scroll it into view before tapping.
+- scrollUntilVisible:
+    element:
+      id: "payments-vendor-payments"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+
+- tapOn:
+    id: "payments-vendor-payments"
 
 # The seeded tenant-payer invoice (INV-TENANT-E2E-*) must render on the list.
 - extendedWaitUntil:
