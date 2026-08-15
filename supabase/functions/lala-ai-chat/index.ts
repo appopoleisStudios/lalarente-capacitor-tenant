@@ -33,10 +33,19 @@ function fmtMaintenance(m: Record<string, unknown>): string {
 function fmtLease(l: Record<string, unknown>): string {
   const escVal = l.rent_escalation_value;
   const escType = (l.rent_escalation_type as string) || '';
-  const escalation =
-    escVal != null
-      ? `${escType === 'fixed' ? `R ${escVal}` : `${escVal}%`} every ${l.rent_escalation_frequency_months ?? '—'} month(s)`
-      : 'not specified';
+  const escFreq = l.rent_escalation_frequency_months ?? '—';
+  // DB enum (migration 006) is fixed_percentage | fixed_amount | cpi_linked.
+  // Map each explicitly — the old `escType === 'fixed'` check never matched, so
+  // a fixed_amount of 500 was printed as "500%" (a lying CONTEXT string).
+  // cpi_linked has no owner-set value to quote, so print it as CPI-linked only.
+  let escalation = 'not specified';
+  if (escType === 'fixed_percentage') {
+    escalation = `${escVal ?? '—'}% every ${escFreq} month(s)`;
+  } else if (escType === 'fixed_amount') {
+    escalation = `R ${escVal ?? '—'} every ${escFreq} month(s)`;
+  } else if (escType === 'cpi_linked') {
+    escalation = `CPI-linked every ${escFreq} month(s)`;
+  }
   const deposit =
     l.deposit_amount != null
       ? `R ${l.deposit_amount}${l.deposit_refund_status ? ` (refund ${l.deposit_refund_status}${l.deposit_refund_amount != null ? `, R ${l.deposit_refund_amount}` : ''}${l.deposit_refund_deadline ? `, by ${String(l.deposit_refund_deadline).slice(0, 10)}` : ''})` : ''}`
