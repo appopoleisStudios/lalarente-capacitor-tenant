@@ -22,6 +22,29 @@ type Message = {
   role: 'user' | 'ai';
 };
 
+// Plane #91 — role-based contextual starter chips shown on the empty state.
+// Tapping one sends the question immediately (shortest path to competence).
+const PROMPT_CHIPS: Record<'tenant' | 'owner' | 'vendor', string[]> = {
+  tenant: [
+    'How do I pay rent?',
+    'What is Pay Vendor?',
+    'Explain closure confirm',
+    'What does my lease say?',
+  ],
+  owner: [
+    'What needs my attention?',
+    'How do I approve an invoice?',
+    'Explain early termination',
+    'How do I forward a closure?',
+  ],
+  vendor: [
+    'How do payouts work?',
+    'Where are my contracts?',
+    'How do I request closure?',
+    'How do I quote a job?',
+  ],
+};
+
 export default function LalaChatScreen() {
   // Pin→AI handoff (Plane #90): FeaturePin deep-links here with a `prompt`
   // param (e.g. ?prompt=How+do+I+pay+rent%3F). Prefill the composer so the
@@ -65,8 +88,16 @@ export default function LalaChatScreen() {
         return;
       }
 
+      // Match the app's canonical role mapping (roleRoutes.ts / useMaintenanceRequests):
+      // 'admin' is the landlord/platform-owner role and lands on the OWNER dashboard.
+      // Without this, an admin-role owner would get chatRole='tenant' and render
+      // tenant chips — SA #151 caught exactly that on the E2E owner account.
       const role =
-        profile?.role === 'owner' ? 'owner' : profile?.role === 'vendor' ? 'vendor' : 'tenant';
+        profile?.role === 'owner' || profile?.role === 'admin'
+          ? 'owner'
+          : profile?.role === 'vendor'
+            ? 'vendor'
+            : 'tenant';
       setChatRole(role);
 
       if (role === 'tenant') {
@@ -128,10 +159,12 @@ export default function LalaChatScreen() {
     }
   };
 
-  const handleSend = () => {
-    if (inputText.trim() === '' || !sessionReady) return;
+  // All send paths are gated on sessionReady (chips hidden until then; the
+  // composer + send button already wait), so a pre-ready tap cannot happen.
+  const sendText = (text: string) => {
+    const userText = text.trim();
+    if (userText === '' || !sessionReady || isLoading) return;
 
-    const userText = inputText.trim();
     const newUserMsg: Message = {
       id: nextMessageId(),
       text: userText,
@@ -142,6 +175,14 @@ export default function LalaChatScreen() {
     setMessages(nextMessages);
     setInputText('');
     fetchAiResponse(userText, nextMessages);
+  };
+
+  const handleSend = () => {
+    sendText(inputText);
+  };
+
+  const handleChipPress = (chipText: string) => {
+    sendText(chipText);
   };
 
   const handleRetry = () => {
@@ -183,6 +224,28 @@ export default function LalaChatScreen() {
                 <Ionicons name="chatbubble-outline" size={40} color="#737373" />
                 <Text style={styles.emptyTitle}>Ask me anything about your property</Text>
                 <Text style={styles.emptySub}>Rent, maintenance, lease details, and more.</Text>
+                {/* SA #151: chips must NOT render before the session resolves.
+                    chatRole defaults to 'tenant', so an owner tapping chip-0
+                    before loadSession finishes would send the TENANT prompt.
+                    Hide chips until sessionReady — the composer already waits. */}
+                {!sessionReady ? (
+                  <Text style={styles.chipLoading}>Loading your assistant…</Text>
+                ) : (
+                  <View style={styles.chipWrap}>
+                    {PROMPT_CHIPS[chatRole].map((chip, i) => (
+                      <Pressable
+                        key={chip}
+                        testID={`lala-chip-${i}`}
+                        style={styles.chip}
+                        onPress={() => handleChipPress(chip)}
+                        disabled={isLoading}
+                      >
+                        <Ionicons name="sparkles" size={13} color="#007A4D" />
+                        <Text style={styles.chipText}>{chip}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
               </View>
             ) : null
           }
@@ -266,6 +329,28 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     maxWidth: 250,
   },
+  chipWrap: {
+    marginTop: 24,
+    alignSelf: 'stretch',
+    paddingHorizontal: 8,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F2F7F4',
+    borderWidth: 1,
+    borderColor: '#D8E4DC',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginBottom: 8,
+    gap: 6,
+    alignSelf: 'flex-start',
+  },
+  chipText: { fontSize: 13, color: '#0B3D2E', fontWeight: '500' },
+  // Honest init state while the session loads — chips are hidden (SA #151),
+  // so a subtle placeholder sits in their place until sessionReady.
+  chipLoading: { marginTop: 24, fontSize: 13, color: '#737373' },
   bubble: {
     maxWidth: '80%',
     borderRadius: 16,

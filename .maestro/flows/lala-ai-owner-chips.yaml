@@ -1,0 +1,36 @@
+# Lala AI contextual starter chips — OWNER role (Plane #91, SA #151 re-check)
+#   SA blocker: chips rendered with the default chatRole='tenant' while
+#   loadSession resolved, so an owner tapping chip-0 sent "How do I pay rent?"
+#   instead of "What needs my attention?". Chips are now hidden until
+#   sessionReady — this gate proves the owner prompt is the one that fires.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app-warm.yaml
+- runFlow: ../subflows/login-owner.yaml
+- runFlow: ../subflows/tap-owner-lala-ai.yaml
+
+# Empty-state chips only appear after the session resolves (owner role)
+- extendedWaitUntil:
+    visible:
+      id: "lala-chip-0"
+    timeout: 15000
+
+# Tap the first chip → the OWNER prompt bubble must appear (not the tenant one)
+- tapOn:
+    id: "lala-chip-0"
+
+- extendedWaitUntil:
+    visible: "What needs my attention?"
+    timeout: 10000
+
+- extendedWaitUntil:
+    visible: "Lala is typing..."
+    timeout: 10000
+    optional: true
+
+- extendedWaitUntil:
+    notVisible: "Lala is typing..."
+    timeout: 45000
+
+- extendedWaitUntil:
+    notVisible: "Network error"
