@@ -147,6 +147,7 @@ run_flow "client-feedback/s2-40-tenant-send-message" "S2-40: Send Message"      
 # ── OWNER FLOWS ──
 echo ""; echo "═══ OWNER ═══"
 run_flow "04-owner-dashboard"                    "Dashboard"                        "OWNER" "${O_ENV[@]}"
+run_flow "owner-feature-pin"                  "Feature Pin intro (Plane #90)"    "OWNER" "${O_ENV[@]}"
 run_flow "owner-property-edit"                 "Property Edit nav (Plane #74)"    "OWNER" "${O_ENV[@]}"
 run_flow "owner-property-maintenance-history"  "Property Maintenance History (Plane #85)" "OWNER" "${O_ENV[@]}"
 run_flow "owner-photo-viewer-close"           "Owner photo viewer close (user bug)" "OWNER" "${O_ENV[@]}"

@@ -159,8 +159,11 @@ export default function VendorPaymentsList() {
               title="No Pending Payments"
               message={
                 'You have no approved vendor invoices awaiting payment.\n' +
-                'Invoices appear here after a vendor completes work and submits their invoice.'
+                'Invoices appear here after a vendor completes work and submits their invoice.\n\n' +
+                'Check your maintenance tab to see completed jobs.'
               }
+              actionLabel="View Maintenance"
+              onAction={() => router.push('/(tenant)/maintenance')}
             />
           ) : (
             <Animated.View entering={FadeInDown.delay(100).duration(500)}>

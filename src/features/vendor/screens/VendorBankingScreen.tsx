@@ -24,6 +24,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '@/src/lib/supabase';
+import { FeaturePin } from '@/src/shared/components';
 import { colors } from '@/src/shared/theme/colors';
 
 const BRAND_BLUE = colors.info[500]; // RSA Blue
@@ -229,7 +230,15 @@ export default function VendorBankingScreen() {
         <Text style={styles.headerTitle} testID={VENDOR_BANKING_TEST_IDS.title}>
           Banking Details
         </Text>
-        <View style={{ width: 40 }} />
+        <View style={{ width: 40 }}>
+          <FeaturePin
+            pinId="vendor-banking"
+            title="Banking details"
+            message="This is where you receive payouts. Choose a schedule (Instant costs more, Weekly is free) and enter your bank details once. They're encrypted and only used for payouts."
+            aiRoute="/(vendor)/ai-chat"
+            aiPrompt="How do I set up my banking details?"
+          />
+        </View>
       </View>
 
       <KeyboardAvoidingView

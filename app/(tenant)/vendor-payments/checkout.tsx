@@ -4,7 +4,7 @@ import React, { useRef } from 'react';
 import { View, Text, SafeAreaView, TouchableOpacity } from 'react-native';
 import { WebView, WebViewNavigation } from 'react-native-webview';
 import { PaymentStepsIndicator } from '@/src/shared/components/ui/PaymentStepsIndicator';
-import { ErrorState, LoadingSpinner } from '@/src/shared/components';
+import { ErrorState, FeaturePin, LoadingSpinner } from '@/src/shared/components';
 
 // The edge function's return/cancel URLs point at the vendor-payment-redirect
 // function. When the hosted PayFast page navigates there (after payment or
@@ -101,6 +101,14 @@ export default function VendorPaymentCheckout() {
             Complete your payment securely inside the app
           </Text>
         </View>
+        <View style={{ flex: 1 }} />
+        <FeaturePin
+          pinId="tenant-pay-vendor-checkout"
+          title="Secure Checkout"
+          message="You're paying inside the app through PayFast — no need to leave. Fill in your card or banking details on the secure page. When you finish (or cancel), you'll come straight back to a result screen."
+          aiRoute="/(tenant)/ai-chat"
+          aiPrompt="What is Pay Vendor and how does checkout work?"
+        />
       </View>
 
       {/* Progress indicator — Review done, Pay is the current step. */}

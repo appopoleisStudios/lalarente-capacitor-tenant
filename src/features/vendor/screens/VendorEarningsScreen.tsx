@@ -11,7 +11,7 @@ import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/src/lib/supabase';
 import { colors } from '@/src/shared/theme/colors';
-import { EmptyState, ErrorState, LoadingSpinner } from '@/src/shared/components';
+import { EmptyState, ErrorState, FeaturePin, LoadingSpinner } from '@/src/shared/components';
 
 const BRAND_BLUE = colors.info[500]; // RSA Blue
 const BRAND_GREEN = colors.success[500]; // SA Green
@@ -194,9 +194,18 @@ export default function VendorEarningsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle} testID={VENDOR_EARNINGS_TEST_IDS.title}>
-          Earnings
-        </Text>
+        <View style={styles.headerTitleRow}>
+          <Text style={styles.headerTitle} testID={VENDOR_EARNINGS_TEST_IDS.title}>
+            Earnings
+          </Text>
+          <FeaturePin
+            pinId="vendor-earnings"
+            title="Your earnings"
+            message="Total Earned is what tenants have paid; Net Earnings is your take after platform and payout fees. Pending shows money queued for payout. Set up Banking to receive payouts — until then earnings stay on hold."
+            aiRoute="/(vendor)/ai-chat"
+            aiPrompt="How do payouts work for vendors?"
+          />
+        </View>
         <TouchableOpacity
           style={styles.bankingButton}
           onPress={() => router.push('/(vendor)/earnings/banking')}
@@ -373,6 +382,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.default,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.default,
+  },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   headerTitle: {
     fontSize: 22,

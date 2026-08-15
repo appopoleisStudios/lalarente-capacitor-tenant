@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,10 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/src/lib/supabase';
-import {
-  sendLalaChatMessage,
-  type ChatHistoryTurn,
-} from '../api/lalaChatApi';
+import { sendLalaChatMessage, type ChatHistoryTurn } from '../api/lalaChatApi';
 
 type Message = {
   id: string;
@@ -25,6 +23,11 @@ type Message = {
 };
 
 export default function LalaChatScreen() {
+  // Pin→AI handoff (Plane #90): FeaturePin deep-links here with a `prompt`
+  // param (e.g. ?prompt=How+do+I+pay+rent%3F). Prefill the composer so the
+  // user only has to press send — the edge fn already supports role + property
+  // context.
+  const { prompt: handoffPrompt } = useLocalSearchParams<{ prompt?: string }>();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -38,7 +41,10 @@ export default function LalaChatScreen() {
 
   const loadSession = useCallback(async () => {
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
       if (userError) {
         setError('Could not load your session. Please sign in again.');
         return;
@@ -59,7 +65,8 @@ export default function LalaChatScreen() {
         return;
       }
 
-      const role = profile?.role === 'owner' ? 'owner' : profile?.role === 'vendor' ? 'vendor' : 'tenant';
+      const role =
+        profile?.role === 'owner' ? 'owner' : profile?.role === 'vendor' ? 'vendor' : 'tenant';
       setChatRole(role);
 
       if (role === 'tenant') {
@@ -87,6 +94,15 @@ export default function LalaChatScreen() {
     loadSession();
   }, [loadSession]);
 
+  // Prefill the composer from a pin handoff once, when the screen is ready.
+  useEffect(() => {
+    if (sessionReady && handoffPrompt && typeof handoffPrompt === 'string' && !inputText) {
+      setInputText(handoffPrompt);
+    }
+    // Only run once sessionReady flips true with a non-empty handoff prompt.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionReady, handoffPrompt]);
+
   const buildHistory = (msgs: Message[]): ChatHistoryTurn[] =>
     msgs.map((m) => ({
       role: m.role === 'user' ? 'user' : 'assistant',
@@ -103,10 +119,7 @@ export default function LalaChatScreen() {
         property_id: propertyId,
         history: buildHistory(historySource),
       });
-      setMessages((prev) => [
-        ...prev,
-        { id: nextMessageId(), text: reply, role: 'ai' },
-      ]);
+      setMessages((prev) => [...prev, { id: nextMessageId(), text: reply, role: 'ai' }]);
     } catch (err) {
       console.error('Chat error:', err);
       setError(err instanceof Error ? err.message : 'Network error. Please try again later.');
@@ -169,29 +182,19 @@ export default function LalaChatScreen() {
               <View style={styles.emptyState}>
                 <Ionicons name="chatbubble-outline" size={40} color="#737373" />
                 <Text style={styles.emptyTitle}>Ask me anything about your property</Text>
-                <Text style={styles.emptySub}>
-                  Rent, maintenance, lease details, and more.
-                </Text>
+                <Text style={styles.emptySub}>Rent, maintenance, lease details, and more.</Text>
               </View>
             ) : null
           }
           renderItem={({ item }) => (
-            <View
-              style={[
-                styles.messageRow,
-                item.role === 'user' ? styles.userRow : styles.aiRow,
-              ]}
-            >
+            <View style={[styles.messageRow, item.role === 'user' ? styles.userRow : styles.aiRow]}>
               {item.role === 'ai' && (
                 <View style={styles.aiAvatar}>
                   <Ionicons name="chatbubble-ellipses-outline" size={16} color="#007A4D" />
                 </View>
               )}
               <View
-                style={[
-                  styles.bubble,
-                  item.role === 'user' ? styles.userBubble : styles.aiBubble,
-                ]}
+                style={[styles.bubble, item.role === 'user' ? styles.userBubble : styles.aiBubble]}
               >
                 <Text style={item.role === 'user' ? styles.userText : styles.aiText}>
                   {item.text}

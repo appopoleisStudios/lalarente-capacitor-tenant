@@ -29,6 +29,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useMediaUpload } from '@/src/features/maintenance/hooks';
 import { getClosureReport, tenantConfirmClosureWithPhotos } from '@/src/features/maintenance/api';
+import { FeaturePin } from '@/src/shared/components';
 
 const RSA = { blue: '#002395', green: '#007A4D', gold: '#FFB81C', red: '#DE3831' };
 
@@ -139,7 +140,15 @@ export default function TenantClosureConfirmScreen() {
         <Text style={styles.headerTitle} testID={CLOSURE_CONFIRM_TEST_IDS.title}>
           Confirm Closure
         </Text>
-        <View style={styles.headerButton} />
+        <View style={styles.headerButton}>
+          <FeaturePin
+            pinId="tenant-closure-confirm"
+            title="Confirming completed work"
+            message="The vendor says the job is done. Check their after-work photos, then upload at least 2 of your own showing the result before confirming. This is your proof the work is finished."
+            aiRoute="/(tenant)/ai-chat"
+            aiPrompt="What happens when I confirm closure?"
+          />
+        </View>
       </View>
 
       <KeyboardAvoidingView
