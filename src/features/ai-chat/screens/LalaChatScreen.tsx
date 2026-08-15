@@ -88,8 +88,16 @@ export default function LalaChatScreen() {
         return;
       }
 
+      // Match the app's canonical role mapping (roleRoutes.ts / useMaintenanceRequests):
+      // 'admin' is the landlord/platform-owner role and lands on the OWNER dashboard.
+      // Without this, an admin-role owner would get chatRole='tenant' and render
+      // tenant chips — SA #151 caught exactly that on the E2E owner account.
       const role =
-        profile?.role === 'owner' ? 'owner' : profile?.role === 'vendor' ? 'vendor' : 'tenant';
+        profile?.role === 'owner' || profile?.role === 'admin'
+          ? 'owner'
+          : profile?.role === 'vendor'
+            ? 'vendor'
+            : 'tenant';
       setChatRole(role);
 
       if (role === 'tenant') {
