@@ -74,6 +74,8 @@ OWNER_FLOWS=(
   # Core owner flows
   "04-owner-dashboard"
   "owner-property-edit"
+  # Prereq seed for the 3D tour gate (media_3d_url must be set or CTA won't render)
+  "property-3d-tour"
   "owner-property-maintenance-history"
   "owner-photo-viewer-close"
   "09-pr9-owner-inspection-conduct"
@@ -272,6 +274,9 @@ sign_out_and_stop
 #  PHASE 2: OWNER
 # ════════════════════════════════════════════════════
 print_header "PHASE 2: OWNER (${#OWNER_FLOWS[@]} flows)"
+# Prereq seed for the 3D tour gate (Plane #92): media_3d_url must be set or
+# the 'View in 3D' CTA won't render. Mirrors the payment/closure seed wiring.
+node "$SCRIPT_DIR/seed-property-3d-tour.mjs" >/dev/null 2>&1 || echo "⚠ 3D seed failed — property-3d-tour may skip the CTA"
 for flow in "${OWNER_FLOWS[@]}"; do
   run_flow "$flow" \
     --env OWNER_EMAIL="$OWNER_EMAIL" \

@@ -3186,6 +3186,7 @@ export type Database = {
           latitude: number | null;
           lease_terms: Json | null;
           longitude: number | null;
+          media_3d_url: string | null;
           minimum_lease_months: number | null;
           owner_id: string;
           parking_spaces: number | null;
@@ -3220,6 +3221,7 @@ export type Database = {
           latitude?: number | null;
           lease_terms?: Json | null;
           longitude?: number | null;
+          media_3d_url?: string | null;
           minimum_lease_months?: number | null;
           owner_id: string;
           parking_spaces?: number | null;
@@ -3254,6 +3256,7 @@ export type Database = {
           latitude?: number | null;
           lease_terms?: Json | null;
           longitude?: number | null;
+          media_3d_url?: string | null;
           minimum_lease_months?: number | null;
           owner_id?: string;
           parking_spaces?: number | null;

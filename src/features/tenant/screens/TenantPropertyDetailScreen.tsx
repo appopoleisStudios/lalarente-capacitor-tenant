@@ -106,8 +106,10 @@ export default function TenantPropertyDetailScreen() {
       }
 
       setProperty(data);
-      
-      const { data: { user } } = await supabase.auth.getUser();
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         // Check if tenant already has an active lease on this property
         const { data: tenantLease, error: leaseError } = await supabase
@@ -136,7 +138,7 @@ export default function TenantPropertyDetailScreen() {
           // Store the application for status display
           setApplicationStatus(existingApp.status);
           setApplicationId(existingApp.id);
-          
+
           // Check for pending applications (draft, submitted, under_review)
           if (['draft', 'submitted', 'under_review'].includes(existingApp.status)) {
             setHasActiveApplication(true);
@@ -146,7 +148,7 @@ export default function TenantPropertyDetailScreen() {
             const rejectedDate = new Date(existingApp.rejected_at);
             const threeMonthsAgo = new Date();
             threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-            
+
             if (rejectedDate > threeMonthsAgo) {
               setHasActiveApplication(true);
             } else {
@@ -156,8 +158,7 @@ export default function TenantPropertyDetailScreen() {
           // Approved applications - user should not apply again
           else if (existingApp.status === 'approved') {
             setHasActiveApplication(true);
-          }
-          else {
+          } else {
             setHasActiveApplication(false);
           }
         } else {
@@ -204,7 +205,9 @@ export default function TenantPropertyDetailScreen() {
 
     // Profile completion gate
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data: profile } = await supabase
@@ -222,7 +225,7 @@ export default function TenantPropertyDetailScreen() {
       if (missing.length > 0) {
         Alert.alert(
           'Complete Your Profile',
-          `Before you can apply, please provide:\n\n${missing.map(m => `\u2022 ${m}`).join('\n')}`,
+          `Before you can apply, please provide:\n\n${missing.map((m) => `\u2022 ${m}`).join('\n')}`,
           [
             { text: 'Cancel', style: 'cancel' },
             { text: 'Go to Profile', onPress: () => router.push('/(tenant)/profile' as any) },
@@ -261,7 +264,10 @@ export default function TenantPropertyDetailScreen() {
         `${property.owner.full_name}\n${property.owner.phone || ''}\n${property.owner.email || ''}`,
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Call', onPress: () => property.owner?.phone && Linking.openURL(`tel:${property.owner.phone}`) },
+          {
+            text: 'Call',
+            onPress: () => property.owner?.phone && Linking.openURL(`tel:${property.owner.phone}`),
+          },
           { text: 'Message', onPress: () => router.push('/(tenant)/messages' as any) },
         ]
       );
@@ -347,13 +353,41 @@ export default function TenantPropertyDetailScreen() {
             </View>
           )}
 
+          {/* View in 3D CTA (Plane #92 Phase 1) — only when a tour is attached */}
+          {property.media_3d_url ? (
+            <TouchableOpacity
+              style={styles.view3dButton}
+              activeOpacity={0.85}
+              onPress={() => {
+                // backTo = role property tab root: lets the viewer close land on
+                // the detail (hidden-tab stack), never the Dashboard (#74/#143).
+                router.push({
+                  pathname: '/(tenant)/properties/[id]/view3d',
+                  params: { id, backTo: '/(tenant)/properties' },
+                } as never);
+              }}
+              testID="tenant-view-3d"
+              accessibilityRole="button"
+              accessibilityLabel="View this property in 3D"
+            >
+              <Ionicons name="cube-outline" size={22} color="#FFF" />
+              <View style={styles.view3dTextWrap}>
+                <Text style={styles.view3dTitle}>View in 3D</Text>
+                <Text style={styles.view3dSub}>Walk the property before you visit</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.75)" />
+            </TouchableOpacity>
+          ) : null}
+
           {/* Property Info */}
           <View style={styles.content}>
             {/* Title and Price */}
             <View style={styles.titleSection}>
               <View style={styles.titleRow}>
                 <Text style={styles.title}>{property.title}</Text>
-                <View style={[styles.statusBadge, getStatusBadgeStyle(property.status || 'available')]}>
+                <View
+                  style={[styles.statusBadge, getStatusBadgeStyle(property.status || 'available')]}
+                >
                   <Text style={styles.statusBadgeText}>{property.status || 'available'}</Text>
                 </View>
               </View>
@@ -375,12 +409,10 @@ export default function TenantPropertyDetailScreen() {
             {property.owner && (
               <View style={styles.ownerRow}>
                 <Ionicons name="person-outline" size={18} color="#666" />
-                <Text style={styles.ownerText}>
-                  Listed by {property.owner.full_name}
-                </Text>
+                <Text style={styles.ownerText}>Listed by {property.owner.full_name}</Text>
               </View>
             )}
-            
+
             {/* Quick Stats */}
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
@@ -417,7 +449,10 @@ export default function TenantPropertyDetailScreen() {
               <View style={styles.detailsGrid}>
                 <DetailRow label="Type" value={property.property_type} />
                 {property.deposit_amount && (
-                  <DetailRow label="Deposit" value={`R ${property.deposit_amount.toLocaleString()}`} />
+                  <DetailRow
+                    label="Deposit"
+                    value={`R ${property.deposit_amount.toLocaleString()}`}
+                  />
                 )}
                 {property.available_from && (
                   <DetailRow
@@ -491,15 +526,11 @@ export default function TenantPropertyDetailScreen() {
           <View style={[styles.statusBanner, getStatusBannerStyle(applicationStatus)]}>
             <Ionicons name={getStatusIcon(applicationStatus)} size={20} color="#FFF" />
             <View style={styles.statusBannerContent}>
-              <Text style={styles.statusBannerTitle}>
-                {getStatusTitle(applicationStatus)}
-              </Text>
-              <Text style={styles.statusBannerText}>
-                {getStatusMessage(applicationStatus)}
-              </Text>
+              <Text style={styles.statusBannerTitle}>{getStatusTitle(applicationStatus)}</Text>
+              <Text style={styles.statusBannerText}>{getStatusMessage(applicationStatus)}</Text>
             </View>
             {applicationId && (
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => router.push(`/(tenant)/applications/${applicationId}` as any)}
                 style={styles.viewApplicationButton}
               >
@@ -513,25 +544,39 @@ export default function TenantPropertyDetailScreen() {
         {/* Action Buttons - Only show if property is available */}
         {property.status === 'available' && !error && (
           <View style={styles.actionBar}>
-            <TouchableOpacity 
-              style={[styles.viewingButton, isCurrentProperty && styles.disabledButton]} 
+            <TouchableOpacity
+              style={[styles.viewingButton, isCurrentProperty && styles.disabledButton]}
               onPress={handleRequestViewing}
               disabled={isCurrentProperty}
             >
-              <Ionicons name="calendar-outline" size={20} color={isCurrentProperty ? '#999' : RSA.green} />
-              <Text style={[styles.viewingButtonText, isCurrentProperty && styles.disabledButtonText]}>
+              <Ionicons
+                name="calendar-outline"
+                size={20}
+                color={isCurrentProperty ? '#999' : RSA.green}
+              />
+              <Text
+                style={[styles.viewingButtonText, isCurrentProperty && styles.disabledButtonText]}
+              >
                 Request Viewing
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.applyButton, (isCurrentProperty || hasActiveApplication) && styles.disabledButton]} 
+            <TouchableOpacity
+              style={[
+                styles.applyButton,
+                (isCurrentProperty || hasActiveApplication) && styles.disabledButton,
+              ]}
               onPress={handleApply}
               disabled={isCurrentProperty || hasActiveApplication}
             >
-              <Text style={[styles.applyButtonText, (isCurrentProperty || hasActiveApplication) && styles.disabledButtonText]}>
-                {isCurrentProperty 
-                  ? 'Current Property' 
-                  : hasActiveApplication 
+              <Text
+                style={[
+                  styles.applyButtonText,
+                  (isCurrentProperty || hasActiveApplication) && styles.disabledButtonText,
+                ]}
+              >
+                {isCurrentProperty
+                  ? 'Current Property'
+                  : hasActiveApplication
                     ? applicationStatus === 'rejected'
                       ? 'Cannot Reapply Yet'
                       : applicationStatus === 'approved'
@@ -733,6 +778,32 @@ const styles = StyleSheet.create({
   noImage: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  // View in 3D CTA (Plane #92 Phase 1)
+  view3dButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0B0B0F',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginHorizontal: 16,
+    marginTop: 14,
+  },
+  view3dTextWrap: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  view3dTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+  view3dSub: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.65)',
+    marginTop: 2,
   },
   imageCounter: {
     position: 'absolute',

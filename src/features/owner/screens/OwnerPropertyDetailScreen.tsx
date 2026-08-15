@@ -238,6 +238,34 @@ export default function OwnerPropertyDetailScreen() {
             </View>
           )}
 
+          {/* View in 3D CTA (Plane #92 Phase 1) — only when a tour is attached */}
+          {property.media_3d_url ? (
+            <View style={styles.view3dWrap}>
+              <AnimatedButton
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  // backTo = role property tab root: lets the viewer close land on
+                  // the detail (hidden-tab stack), never the Dashboard (#74/#143).
+                  router.push({
+                    pathname: '/(owner)/properties/[id]/view3d',
+                    params: { id, backTo: '/(owner)/properties' },
+                  } as never);
+                }}
+                testID="owner-view-3d"
+                accessibilityRole="button"
+              >
+                <View style={styles.view3dButton}>
+                  <Text style={styles.view3dButtonIcon}>🧭</Text>
+                  <View style={styles.view3dButtonTextWrap}>
+                    <Text style={styles.view3dButtonTitle}>View in 3D</Text>
+                    <Text style={styles.view3dButtonSub}>Walk the property in-app</Text>
+                  </View>
+                  <Text style={styles.view3dChevron}>›</Text>
+                </View>
+              </AnimatedButton>
+            </View>
+          ) : null}
+
           {/* Property Info */}
           <View style={styles.content}>
             {/* Title and Status */}

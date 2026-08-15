@@ -83,6 +83,12 @@ export default function TenantLayout() {
         }}
       />
       <Tabs.Screen
+        name="properties/[id]/view3d"
+        options={{
+          href: null, // Hidden from tabs - fullscreen 3D tour viewer
+        }}
+      />
+      <Tabs.Screen
         name="apply/[propertyId]"
         options={{
           href: null, // Hidden from tabs - application form

@@ -41,6 +41,7 @@ interface PropertyForm {
   pets_allowed: boolean;
   smoking_allowed: boolean;
   photos: string[];
+  media_3d_url: string;
   latitude: number | null;
   longitude: number | null;
 }
@@ -92,6 +93,7 @@ export default function EditPropertyScreen() {
     pets_allowed: false,
     smoking_allowed: false,
     photos: [],
+    media_3d_url: '',
     latitude: null,
     longitude: null,
   });
@@ -138,6 +140,7 @@ export default function EditPropertyScreen() {
         pets_allowed: property.pets_allowed || false,
         smoking_allowed: property.smoking_allowed || false,
         photos: property.images || [],
+        media_3d_url: property.media_3d_url || '',
         latitude: (property as any).latitude || null,
         longitude: (property as any).longitude || null,
       });
@@ -283,6 +286,7 @@ export default function EditPropertyScreen() {
         latitude: form.latitude,
         longitude: form.longitude,
         images: finalImages.length > 0 ? finalImages : null,
+        media_3d_url: form.media_3d_url.trim() || null,
       });
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -373,6 +377,25 @@ export default function EditPropertyScreen() {
                   ))}
                 </ScrollView>
               )}
+            </View>
+
+            {/* 3D Tour URL (Plane #92 Phase 1) */}
+            <View style={styles.section}>
+              <Text style={styles.label}>3D Tour Link (optional)</Text>
+              <Text style={styles.helperText}>
+                Paste a Matterport / Polycam / 3D tour URL to let prospects walk the property
+                in-app.
+              </Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://my.matterport.com/show/?m=…"
+                placeholderTextColor="#9ca3af"
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+                value={form.media_3d_url}
+                onChangeText={(text) => setForm({ ...form, media_3d_url: text })}
+              />
             </View>
 
             {/* Amenities */}

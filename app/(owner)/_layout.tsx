@@ -96,6 +96,12 @@ export default function OwnerLayout() {
         }}
       />
       <Tabs.Screen
+        name="properties/[id]/view3d"
+        options={{
+          href: null, // Hidden from tabs - fullscreen 3D tour viewer
+        }}
+      />
+      <Tabs.Screen
         name="maintenance/new"
         options={{
           href: null, // Hidden from tabs - detail screen

@@ -126,6 +126,42 @@ export const styles = StyleSheet.create({
     color: '#9ca3af',
   },
 
+  // View in 3D CTA (Plane #92 Phase 1)
+  view3dWrap: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+  },
+  view3dButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0B0B0F',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  view3dButtonIcon: {
+    fontSize: 22,
+    marginRight: 12,
+  },
+  view3dButtonTextWrap: {
+    flex: 1,
+  },
+  view3dButtonTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  view3dButtonSub: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.65)',
+    marginTop: 2,
+  },
+  view3dChevron: {
+    fontSize: 24,
+    color: 'rgba(255,255,255,0.7)',
+    marginLeft: 8,
+  },
+
   // Content
   content: {
     padding: 16,
