@@ -22,6 +22,29 @@ type Message = {
   role: 'user' | 'ai';
 };
 
+// Plane #91 — role-based contextual starter chips shown on the empty state.
+// Tapping one sends the question immediately (shortest path to competence).
+const PROMPT_CHIPS: Record<'tenant' | 'owner' | 'vendor', string[]> = {
+  tenant: [
+    'How do I pay rent?',
+    'What is Pay Vendor?',
+    'Explain closure confirm',
+    'What does my lease say?',
+  ],
+  owner: [
+    'What needs my attention?',
+    'How do I approve an invoice?',
+    'Explain early termination',
+    'How do I forward a closure?',
+  ],
+  vendor: [
+    'How do payouts work?',
+    'Where are my contracts?',
+    'How do I request closure?',
+    'How do I quote a job?',
+  ],
+};
+
 export default function LalaChatScreen() {
   // Pin→AI handoff (Plane #90): FeaturePin deep-links here with a `prompt`
   // param (e.g. ?prompt=How+do+I+pay+rent%3F). Prefill the composer so the
@@ -38,6 +61,11 @@ export default function LalaChatScreen() {
   const flatListRef = useRef<FlatList<Message>>(null);
   const messageIdRef = useRef(0);
   const nextMessageId = () => `lala-${++messageIdRef.current}`;
+  // SA #151: a chip tap (or send) that lands before the session has finished
+  // loading used to silently no-op (`sendText` returned early on
+  // `!sessionReady`). Queue the text and flush it the moment the session is
+  // ready — the tap is never dead.
+  const pendingSendRef = useRef<string | null>(null);
 
   const loadSession = useCallback(async () => {
     try {
@@ -128,10 +156,17 @@ export default function LalaChatScreen() {
     }
   };
 
-  const handleSend = () => {
-    if (inputText.trim() === '' || !sessionReady) return;
+  const sendText = (text: string) => {
+    const userText = text.trim();
+    if (userText === '' || isLoading) return;
 
-    const userText = inputText.trim();
+    // Session (role + property context) is still loading — queue instead of
+    // dropping the tap. Flushed by the effect below once sessionReady flips.
+    if (!sessionReady) {
+      pendingSendRef.current = userText;
+      return;
+    }
+
     const newUserMsg: Message = {
       id: nextMessageId(),
       text: userText,
@@ -142,6 +177,25 @@ export default function LalaChatScreen() {
     setMessages(nextMessages);
     setInputText('');
     fetchAiResponse(userText, nextMessages);
+  };
+
+  // Flush a queued message as soon as the session is ready.
+  useEffect(() => {
+    if (sessionReady && pendingSendRef.current) {
+      const queued = pendingSendRef.current;
+      pendingSendRef.current = null;
+      sendText(queued);
+    }
+    // Only depends on sessionReady — queued text is read via ref.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionReady]);
+
+  const handleSend = () => {
+    sendText(inputText);
+  };
+
+  const handleChipPress = (chipText: string) => {
+    sendText(chipText);
   };
 
   const handleRetry = () => {
@@ -183,6 +237,20 @@ export default function LalaChatScreen() {
                 <Ionicons name="chatbubble-outline" size={40} color="#737373" />
                 <Text style={styles.emptyTitle}>Ask me anything about your property</Text>
                 <Text style={styles.emptySub}>Rent, maintenance, lease details, and more.</Text>
+                <View style={styles.chipWrap}>
+                  {PROMPT_CHIPS[chatRole].map((chip, i) => (
+                    <Pressable
+                      key={chip}
+                      testID={`lala-chip-${i}`}
+                      style={[styles.chip, !sessionReady && styles.chipPending]}
+                      onPress={() => handleChipPress(chip)}
+                      disabled={isLoading}
+                    >
+                      <Ionicons name="sparkles" size={13} color="#007A4D" />
+                      <Text style={styles.chipText}>{chip}</Text>
+                    </Pressable>
+                  ))}
+                </View>
               </View>
             ) : null
           }
@@ -266,6 +334,28 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     maxWidth: 250,
   },
+  chipWrap: {
+    marginTop: 24,
+    alignSelf: 'stretch',
+    paddingHorizontal: 8,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F2F7F4',
+    borderWidth: 1,
+    borderColor: '#D8E4DC',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginBottom: 8,
+    gap: 6,
+    alignSelf: 'flex-start',
+  },
+  chipText: { fontSize: 13, color: '#0B3D2E', fontWeight: '500' },
+  // Disabled chrome while the session loads — chips stay tappable (tap queues
+  // and auto-sends) but dimmed so the brief init state is honest (SA #151).
+  chipPending: { opacity: 0.55 },
   bubble: {
     maxWidth: '80%',
     borderRadius: 16,

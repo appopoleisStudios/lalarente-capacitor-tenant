@@ -1,0 +1,42 @@
+# Lala AI contextual starter chips (Plane #91) — empty state shows role chips;
+# tapping one sends the question immediately and a reply lands.
+#
+# NOTE: chips are asserted/tapped by testID (lala-chip-N). The chip is a
+# Pressable wrapping an Ionicons glyph + <Text>, so iOS flattens the child
+# text into the parent's accessibility label and plain text-regex matching
+# fails even though the chip is visibly rendered (verified via OCR).
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app-warm.yaml
+- runFlow: ../subflows/login-tenant.yaml
+- runFlow: ../subflows/tap-tenant-lala-ai.yaml
+- assertVisible: "Lala Assistant"
+
+# Empty-state chips are visible (tenant role) — assert by testID
+- extendedWaitUntil:
+    visible:
+      id: "lala-chip-0"
+    timeout: 15000
+
+# Tap the first chip → user bubble appears, Lala types, reply lands
+- tapOn:
+    id: "lala-chip-0"
+
+# User bubble carries the chip text (plain Text in a View — text matching OK here)
+- extendedWaitUntil:
+    visible: "How do I pay rent?"
+    timeout: 10000
+
+- extendedWaitUntil:
+    visible: "Lala is typing..."
+    timeout: 10000
+    optional: true
+
+- extendedWaitUntil:
+    notVisible: "Lala is typing..."
+    timeout: 45000
+
+- extendedWaitUntil:
+    notVisible: "Network error"
+    timeout: 5000
+    optional: true

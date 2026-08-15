@@ -45,6 +45,7 @@ TENANT_FLOWS=(
   # Core tenant flows
   "01-tenant-dashboard"
   "02-tenant-lala-ai"
+  "lala-ai-contextual-chips"
   "03-tenant-maintenance"
   "05-pr7-tenant-tenancy-shortcuts"
   "06-pr7-tenant-disputes-empty"
