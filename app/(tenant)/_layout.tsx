@@ -86,6 +86,8 @@ export default function TenantLayout() {
         name="properties/[id]/view3d"
         options={{
           href: null, // Hidden from tabs - fullscreen 3D tour viewer
+          // Immersive: hide the tab bar while the 3D viewer is focused (SA #152).
+          tabBarStyle: { display: 'none' },
         }}
       />
       <Tabs.Screen

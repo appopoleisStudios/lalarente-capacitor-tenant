@@ -46,6 +46,13 @@ appId: com.lalarente.app
       id: 'view3d-close'
     timeout: 10000
 
+# FULLSCREEN proof (SA #152 blocker): the owner tab bar must NOT render under
+# the WebView while the viewer is focused — viewer is immersive, not a pane.
+- assertNotVisible:
+    id: 'tab-owner-home'
+- assertNotVisible:
+    id: 'tab-owner-properties'
+
 # Close the viewer
 - tapOn:
     id: 'view3d-close'
@@ -55,7 +62,9 @@ appId: com.lalarente.app
 - assertNotVisible:
     id: 'view3d-close'
 
-# Back on the previous screen
+# Back on the previous screen, tab bar restored
 - extendedWaitUntil:
     visible: 'Property Details'
     timeout: 15000
+- assertVisible:
+    id: 'tab-owner-home'
