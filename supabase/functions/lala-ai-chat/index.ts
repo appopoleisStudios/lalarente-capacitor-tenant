@@ -1,4 +1,6 @@
 // Lala AI — Supabase Edge Function (Groq + property context)
+// Answers from the user's REAL data (leases, payments, maintenance, quotes,
+// POs, earnings) rather than generic app-process descriptions.
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 
@@ -10,6 +12,10 @@ const corsHeaders = {
 const GROQ_MODEL = Deno.env.get('GROQ_MODEL')?.trim() || 'llama-3.1-8b-instant';
 const MAX_HISTORY = 12;
 const MAX_TEXT_LEN = 2000;
+const MAX_GROQ_RETRIES = 4;
+// Backoff schedule for Groq rate limits (429 TPM/RPM) — the free tier window is
+// 60s and requests now carry ~1.4k tokens, so short retries cannot clear it.
+const GROQ_RETRY_DELAYS_MS = [2500, 5000, 10000];
 
 type ChatBody = {
   text?: string;
@@ -17,6 +23,8 @@ type ChatBody = {
   property_id?: string | null;
   history?: { role: string; content: string }[];
 };
+
+// ─── Formatters ────────────────────────────────────────────────────────────
 
 function fmtProperty(p: Record<string, unknown>): string {
   const title = (p.title as string) || 'Untitled';
@@ -66,12 +74,47 @@ function fmtLease(l: Record<string, unknown>): string {
   return lines.join('\n');
 }
 
+function fmtRentPayment(p: Record<string, unknown>): string {
+  const prop = p.property as { title?: string } | null;
+  const where = prop?.title ? ` @ ${prop.title}` : '';
+  const due = p.due_date ? ` due ${String(p.due_date).slice(0, 10)}` : '';
+  const paid = p.paid_date ? ` paid ${String(p.paid_date).slice(0, 10)}` : '';
+  const owed =
+    p.amount_outstanding != null && Number(p.amount_outstanding) > 0
+      ? ` (R ${p.amount_outstanding} outstanding)`
+      : '';
+  const overdue = p.days_overdue ? `, ${p.days_overdue}d overdue` : '';
+  return `[${p.status}] R ${p.amount ?? '—'}${where}${due}${paid}${owed}${overdue}`;
+}
+
+function fmtVendorPayment(p: Record<string, unknown>): string {
+  const invoice = p.invoice as { invoice_number?: string | null } | null;
+  const job = p.maintenance_request as { title?: string | null } | null;
+  const ref = invoice?.invoice_number ? ` INV-${invoice.invoice_number}` : '';
+  const jobRef = job?.title ? ` · ${job.title}` : '';
+  return `[${p.payment_status}] R ${p.total_amount ?? '—'}${ref}${jobRef} (payout ${p.payout_status ?? '—'})`;
+}
+
+function fmtQuote(q: Record<string, unknown>): string {
+  const prop = q.property as { title?: string } | null;
+  const req = q.request as { title?: string } | null;
+  const where = prop?.title ? ` @ ${prop.title}` : '';
+  const what = req?.title ? ` · ${req.title}` : '';
+  return `[${q.status}] R ${q.total_amount ?? q.subtotal ?? '—'}${what}${where} (${String(q.created_at || '').slice(0, 10)})`;
+}
+
+function fmtPO(p: Record<string, unknown>): string {
+  return `[${p.status}] ${p.po_number || 'PO'} R ${p.total_amount ?? p.subtotal ?? '—'}${p.work_instructions ? ` · ${p.work_instructions}` : ''}`;
+}
+
+// ─── Context builders (REAL user data) ────────────────────────────────────
+
 async function buildTenantContext(
   supabase: ReturnType<typeof createClient>,
   userId: string,
   propertyId: string | null
 ): Promise<string> {
-  let query = supabase
+  let leaseQuery = supabase
     .from('leases')
     .select(
       'status, lease_type, start_date, end_date, monthly_rent, payment_due_day, renewal_count, auto_converted_to_mtm, ' +
@@ -86,28 +129,103 @@ async function buildTenantContext(
     .limit(5);
 
   if (propertyId) {
-    query = query.eq('property_id', propertyId);
+    leaseQuery = leaseQuery.eq('property_id', propertyId);
   }
 
-  const { data: leases } = await query;
-  if (!leases?.length) {
-    return 'No active lease found for this tenant.';
+  const [leaseRes, payRes, vendorPayRes, maintRes] = await Promise.all([
+    leaseQuery,
+    // Rent payments owed/paid by this tenant
+    supabase
+      .from('payments')
+      .select(
+        'amount, amount_outstanding, days_overdue, status, due_date, paid_date, property:properties(title)'
+      )
+      .eq('tenant_id', userId)
+      .order('due_date', { ascending: false })
+      .limit(8), // Vendor invoices the tenant owes — filter owed statuses in SQL FIRST, then
+    // limit, so an older unpaid invoice is never dropped by a recency cap.
+    supabase
+      .from('vendor_payments')
+      .select(
+        'total_amount, payment_status, payout_status, created_at, invoice:invoice_id(invoice_number), maintenance_request:maintenance_request_id(title)'
+      )
+      .eq('tenant_id', userId)
+      .in('payment_status', ['pending', 'processing', 'failed'])
+      .order('created_at', { ascending: false })
+      .limit(6),
+    // Maintenance the tenant raised
+    supabase
+      .from('maintenance_requests')
+      .select('title, status, priority, created_at')
+      .eq('tenant_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(8),
+  ]);
+
+  const parts: string[] = [];
+
+  const leases = leaseRes.data as Record<string, unknown>[] | null;
+  if (leases?.length) {
+    parts.push(
+      'LEASES:\n' +
+        leases
+          .map((l) => {
+            const prop = l.property as Record<string, unknown> | null;
+            const propBlock = prop ? fmtProperty(prop) : 'Property details unavailable';
+            return `${propBlock}\n${fmtLease(l)}`;
+          })
+          .join('\n\n')
+    );
+  } else {
+    parts.push('LEASES: none active');
   }
 
-  return leases
-    .map((l: Record<string, unknown>) => {
-      const prop = l.property as Record<string, unknown> | null;
-      const propBlock = prop ? fmtProperty(prop) : 'Property details unavailable';
-      return `${propBlock}\n${fmtLease(l)}`;
-    })
-    .join('\n\n');
+  const payments = payRes.data as Record<string, unknown>[] | null;
+  if (payments?.length) {
+    const open = payments.filter(
+      (p) => p.status === 'pending' || p.status === 'overdue' || Number(p.amount_outstanding) > 0
+    );
+    parts.push(
+      'RENT PAYMENTS:\n' +
+        payments.map((p) => fmtRentPayment(p)).join('\n') +
+        (open.length
+          ? `\nOpen: ${open.length} (${open.filter((p) => p.status === 'overdue').length} overdue)`
+          : '')
+    );
+  } else {
+    parts.push('RENT PAYMENTS: none recorded');
+  }
+  const owedVendor = vendorPayRes.data as Record<string, unknown>[] | null;
+  if (owedVendor?.length) {
+    parts.push(
+      'VENDOR PAYMENTS YOU OWE:\n' + owedVendor.map((p) => fmtVendorPayment(p)).join('\n')
+    );
+  } else {
+    parts.push('VENDOR PAYMENTS: none currently owed');
+  }
+
+  const maint = maintRes.data as Record<string, unknown>[] | null;
+  if (maint?.length) {
+    const openMaint = maint.filter(
+      (m) => !['completed', 'cancelled', 'closed'].includes(String(m.status))
+    );
+    parts.push(
+      'MAINTENANCE YOU RAISED:\n' +
+        maint.map((m) => fmtMaintenance(m)).join('\n') +
+        (openMaint.length ? `\nOpen: ${openMaint.length}` : '')
+    );
+  } else {
+    parts.push('MAINTENANCE YOU RAISED: none');
+  }
+
+  return parts.join('\n\n');
 }
 
 async function buildVendorContext(
   supabase: ReturnType<typeof createClient>,
   vendorId: string
 ): Promise<string> {
-  const [jobRes, poRes] = await Promise.all([
+  const [jobRes, poRes, quoteRes, earningsRes] = await Promise.all([
     // Active jobs assigned to this vendor
     supabase
       .from('maintenance_requests')
@@ -115,15 +233,37 @@ async function buildVendorContext(
       .eq('selected_vendor_id', vendorId)
       .in('status', ['assigned', 'in_progress'])
       .order('created_at', { ascending: false })
-      .limit(8),
-    // Purchase orders for this vendor
+      .limit(6),
+    // Purchase orders for this vendor (purchase_orders has NO vendor_id column;
+    // link via maintenance_requests.po_id -> purchase_orders.id, confirmed live FK)
     supabase
-      .from('purchase_orders')
-      .select('status, total_amount, created_at')
+      .from('maintenance_requests')
+      .select('po:po_id(po_number, status, total_amount, subtotal, created_at, work_instructions)')
+      .eq('selected_vendor_id', vendorId)
+      .not('po_id', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(6),
+    // Quotes this vendor has submitted
+    supabase
+      .from('quotes')
+      .select(
+        'status, subtotal, total_amount, created_at, request:request_id(title), property:properties(title)'
+      )
       .eq('vendor_id', vendorId)
       .order('created_at', { ascending: false })
-      .limit(8),
+      .limit(6), // Earnings / payout status from vendor_payments — NO row limit: totals must
+    // be exact across ALL transactions (get-vendor-earnings does the same). The
+    // display slice below caps the 'Recent:' line instead.
+    supabase
+      .from('vendor_payments')
+      .select(
+        'total_amount, vendor_payout, platform_fee, payout_fee, payment_status, payout_status, paid_at, invoice:invoice_id(invoice_number), maintenance_request:maintenance_request_id(title)'
+      )
+      .eq('vendor_id', vendorId)
+      .order('created_at', { ascending: false }),
   ]);
+
+  const parts: string[] = [];
 
   const activeJobs =
     jobRes.data
@@ -135,21 +275,46 @@ async function buildVendorContext(
         return `  [${j.status}] ${j.title} — ${loc} | ${String(j.created_at || '').slice(0, 10)}`;
       })
       .join('\n') || 'No active jobs.';
+  parts.push(`ACTIVE JOBS:\n${activeJobs}`);
+  const poRows = (poRes.data || []) as Array<{ po?: Record<string, unknown> | null }>;
   const purchaseOrders =
-    poRes.data
-      ?.map((po: Record<string, unknown>) => {
-        return `  [${po.status}] R ${po.total_amount ?? '?'} | ${String(po.created_at || '').slice(0, 10)}`;
-      })
+    poRows
+      .filter((r) => r.po)
+      .map((r) => `  ${fmtPO(r.po!)} | ${String(r.po?.created_at || '').slice(0, 10)}`)
       .join('\n') || 'No purchase orders.';
+  parts.push(`PURCHASE ORDERS:\n${purchaseOrders}`);
 
-  return `ACTIVE JOBS:\n${activeJobs}\n\nPURCHASE ORDERS:\n${purchaseOrders}`;
+  const quotes =
+    quoteRes.data?.map((q: Record<string, unknown>) => `  ${fmtQuote(q)}`).join('\n') ||
+    'No quotes submitted.';
+  parts.push(`QUOTES SUBMITTED:\n${quotes}`);
+
+  // Earnings summary from vendor_payments (mirrors get-vendor-earnings)
+  const vps = (earningsRes.data || []) as Record<string, unknown>[];
+  const completed = vps.filter((p) => p.payment_status === 'completed');
+  const totalEarned = completed.reduce((s, p) => s + Number(p.vendor_payout || 0), 0);
+  const pendingPayouts = completed.filter((p) => p.payout_status === 'pending');
+  const pendingTotal = pendingPayouts.reduce((s, p) => s + Number(p.vendor_payout || 0), 0);
+  parts.push(
+    `EARNINGS:\n` +
+      (vps.length
+        ? `  Total earned (net): R ${totalEarned.toFixed(2)}\n` +
+          `  Pending payout: ${pendingPayouts.length} payment(s) totalling R ${pendingTotal.toFixed(2)}\n` +
+          `  Recent: ${vps
+            .slice(0, 6)
+            .map((p) => fmtVendorPayment(p))
+            .join(' | ')}`
+        : `  No earnings recorded yet.`)
+  );
+
+  return parts.join('\n\n');
 }
 
 async function buildOwnerContext(
   supabase: ReturnType<typeof createClient>,
   ownerId: string
 ): Promise<string> {
-  const [propRes, maintRes, leaseRes] = await Promise.all([
+  const [propRes, maintRes, leaseRes, rentPayRes, quoteRes, poRes] = await Promise.all([
     supabase
       .from('properties')
       .select('title, status, rent_amount, address, city')
@@ -157,7 +322,9 @@ async function buildOwnerContext(
       .limit(10),
     supabase
       .from('maintenance_requests')
-      .select('title, status, priority, created_at')
+      .select(
+        'title, status, priority, created_at, po:po_id(po_number, status, total_amount, subtotal, created_at, work_instructions)'
+      )
       .eq('owner_id', ownerId)
       .order('created_at', { ascending: false })
       .limit(8),
@@ -172,15 +339,46 @@ async function buildOwnerContext(
       )
       .eq('owner_id', ownerId)
       .eq('status', 'active')
-      .limit(8),
+      .limit(6),
+    // Rent payments on this owner's properties
+    supabase
+      .from('payments')
+      .select(
+        'amount, amount_outstanding, days_overdue, status, due_date, paid_date, tenant:profiles!tenant_id(full_name), property:properties(title)'
+      )
+      .eq('owner_id', ownerId)
+      .order('due_date', { ascending: false })
+      .limit(10),
+    // Quotes awaiting owner decision
+    supabase
+      .from('quotes')
+      .select(
+        'status, subtotal, total_amount, created_at, request:request_id(title), property:properties(title)'
+      )
+      .eq('owner_id', ownerId)
+      .in('status', ['submitted', 'requested', 'revision_requested'])
+      .order('created_at', { ascending: false })
+      .limit(6),
   ]);
+
+  const parts: string[] = [];
 
   const properties =
     propRes.data?.map((p) => fmtProperty(p as Record<string, unknown>)).join('\n') ||
     'No properties.';
+  parts.push(`PROPERTIES:\n${properties}`);
+
   const maintenance =
     maintRes.data?.map((m) => fmtMaintenance(m as Record<string, unknown>)).join('\n') ||
     'No maintenance requests.';
+  const openMaint =
+    maintRes.data?.filter(
+      (m) => !['completed', 'cancelled', 'closed'].includes(String(m.status))
+    ) || [];
+  parts.push(
+    `MAINTENANCE:\n${maintenance}${openMaint.length ? `\nOpen: ${openMaint.length}` : ''}`
+  );
+
   const leases =
     leaseRes.data
       ?.map((l: Record<string, unknown>) => {
@@ -189,47 +387,165 @@ async function buildOwnerContext(
         return `  - ${prop?.title || '?'} (${tenant?.full_name || 'Tenant'}):\n${fmtLease(l).replace(/^/gm, '      ')}`;
       })
       .join('\n') || 'No active leases.';
+  parts.push(`ACTIVE LEASES:\n${leases}`);
 
-  return `PROPERTIES:\n${properties}\n\nMAINTENANCE:\n${maintenance}\n\nACTIVE LEASES:\n${leases}`;
+  // Rent payments (actuals)
+  const rentPays = rentPayRes.data as Record<string, unknown>[] | null;
+  if (rentPays?.length) {
+    const overdue = rentPays.filter((p) => p.status === 'overdue' || Number(p.days_overdue) > 0);
+    const pending = rentPays.filter((p) => p.status === 'pending' || p.status === 'partial');
+    parts.push(
+      'RENT COLLECTIONS:\n' +
+        rentPays
+          .map((p) => {
+            const tenant = p.tenant as { full_name?: string } | null;
+            const prop = p.property as { title?: string } | null;
+            const label = [tenant?.full_name, prop?.title].filter(Boolean).join(' @ ');
+            return `  [${p.status}] R ${p.amount ?? '—'} ${label ? `(${label})` : ''}${p.due_date ? ` due ${String(p.due_date).slice(0, 10)}` : ''}${p.paid_date ? ` paid ${String(p.paid_date).slice(0, 10)}` : ''}${Number(p.days_overdue) > 0 ? `, ${p.days_overdue}d overdue` : ''}`;
+          })
+          .join('\n') +
+        (overdue.length || pending.length
+          ? `\nNeeds attention: ${overdue.length} overdue, ${pending.length} pending`
+          : '')
+    );
+  } else {
+    parts.push('RENT COLLECTIONS: none recorded');
+  }
+
+  // Quotes awaiting decision
+  const pendingQuotes = quoteRes.data as Record<string, unknown>[] | null;
+  parts.push(
+    pendingQuotes?.length
+      ? `QUOTES AWAITING YOUR DECISION:\n${pendingQuotes.map((q) => `  ${fmtQuote(q)}`).join('\n')}`
+      : 'QUOTES AWAITING YOUR DECISION: none'
+  );
+
+  // Purchase orders (linked via maintenance_requests.po_id -> purchase_orders.id;
+  // purchase_orders has no owner_id column)
+  const poRows = (maintRes.data || []) as Array<{ po?: Record<string, unknown> | null }>;
+  const pos = poRows.filter((r) => r.po).map((r) => r.po!);
+  const seenPo = new Set<string>();
+  const uniquePos = pos.filter((p) => {
+    const k = String(p.po_number as string);
+    if (seenPo.has(k)) return false;
+    seenPo.add(k);
+    return true;
+  });
+  parts.push(
+    uniquePos.length
+      ? `PURCHASE ORDERS:\n${uniquePos.map((p) => `  ${fmtPO(p)} | ${String(p.created_at || '').slice(0, 10)}`).join('\n')}`
+      : 'PURCHASE ORDERS: none'
+  );
+
+  return parts.join('\n\n');
 }
 
 function systemPrompt(role: string, context: string): string {
-  // Merged: #153 lease-term quoting rule + #91 money/action guardrails.
+  // DATA-FIRST: quote the actuals from CONTEXT; only explain app flows when the
+  // specific data is genuinely absent. The old playbook phrasing ("explain this
+  // app's flows") is what produced generic process-speak — keep it as a last
+  // resort, not the primary behavior.
   const base =
-    'You are Lala, the LaLarente assistant for South African residential rentals. Be professional, concise (max 4 sentences unless listing). ' +
-    'Never invent data not in CONTEXT. If unknown, say to check the app or contact the other party. ' +
-    'Do not give legal advice, and never invent bank account numbers, payment references, or contract terms — ' +
-    'point users to the in-app screen where they can act (Payments, Pay Vendor, Maintenance, Earnings & Banking).\n\n' +
-    'When asked about lease terms (e.g. "what does my lease say", rent, deposit, escalation, notice period, payment due date), ' +
-    'quote the actual values from CONTEXT — period, monthly rent, due day, deposit and refund status, escalation, ' +
-    'early-termination terms. If a specific term is not present in CONTEXT, say it is not recorded rather than guessing.';
+    'You are Lala, the LaLarente assistant for South African residential rentals. Be professional and concise (max 4 sentences unless listing).\n\n' +
+    'ANSWER FROM CONTEXT FIRST. The CONTEXT section below contains this user\u2019s ACTUAL data: lease terms, rent payments and statuses, maintenance requests, quotes, purchase orders, and earnings. ' +
+    'When the user asks about their money, their lease, their maintenance, or anything else in CONTEXT, QUOTE THE SPECIFIC VALUES (amounts, dates, statuses, due days, property names) from CONTEXT. ' +
+    'Never answer with generic app-process descriptions when the concrete data is present in CONTEXT.\n' +
+    'Only describe how to do something in the app if the specific data is NOT in CONTEXT (e.g. no payment rows exist). Then briefly point to the in-app screen where they can act.\n' +
+    'Never invent data not in CONTEXT. If a specific term is not recorded in CONTEXT, say it is not recorded rather than guessing.\n' +
+    'Do not give legal advice, and never invent bank account numbers, payment references, or contract terms — point users to the in-app screen where they can act (Payments, Pay Vendor, Maintenance, Earnings & Banking).\n\n' +
+    'Lease questions (rent, deposit, escalation, notice period, due date, renewal): quote the actual values from CONTEXT. If a term is absent, say it is not recorded.\n\n' +
+    `You speak with a ${
+      role === 'owner'
+        ? 'PROPERTY OWNER.'
+        : role === 'vendor'
+          ? 'SERVICE PROVIDER (vendor).'
+          : 'TENANT.'
+    }`;
 
-  // Plane #91 — role playbooks teach this app's vocabulary and flows.
+  // Role playbooks — vocabulary + where to act, used ONLY when CONTEXT lacks the data.
   const playbooks: Record<string, string> = {
     tenant:
-      "TENANT PLAYBOOK — explain this app's flows: “Pay rent” lives in the Payments tab (rent invoice → PayFast secure checkout). " +
-      '“Pay Vendor” is an approved vendor invoice the tenant owes — pay it from the Vendor Payments screen in-app. ' +
-      '“Closure confirm” is when the owner approves a completed maintenance job and forwards it to you to verify/close. ' +
-      'Maintenance: raise a request from the Maintenance tab with photos. Lease: view terms/expiry from your tenancy shortcuts.',
+      'App navigation for the tenant: Pay rent in the Payments tab (rent invoice → PayFast secure checkout). ' +
+      'Pay a vendor invoice you owe from the Vendor Payments screen. ' +
+      'Confirm job closure after the owner approves. Raise maintenance from the Maintenance tab with photos. ' +
+      'View lease terms/expiry from tenancy shortcuts.',
     owner:
-      "OWNER PLAYBOOK — explain this app's flows: “Needs attention” is the dashboard hub of urgent items (closures to review, invoices to approve). " +
-      '“Approve an invoice” happens on the invoice screen (Approve/Reject). ' +
-      '“Forward a closure” = review vendor closure evidence, approve, forward to the tenant to verify, then the work order report is sent. ' +
-      '“Early termination” is negotiated in the Lease Renewal flow. Vendor payouts are vendor-side (Earnings & Banking).',
+      'App navigation for the owner: approve/reject invoices and quotes on the invoice/quote screens; ' +
+      'review closure evidence and forward to the tenant; negotiate early termination in Lease Renewal. ' +
+      'Vendor payouts are vendor-side (Earnings & Banking).',
     vendor:
-      "VENDOR PLAYBOOK — explain this app's flows: payouts are driven by completed/approved vendor payments — see Earnings & Banking for balance, schedule, and bank details. " +
-      'Contracts live under Profile → Contracts. “Request closure” happens from a job after work is done (with photos). ' +
-      'Quotes: submit a quote with price + duration from the job detail. Money questions: point to Earnings & Banking; never invent amounts.',
+      'App navigation for the vendor: payouts and bank details live under Earnings & Banking; ' +
+      'contracts under Profile → Contracts; request closure from a job (with photos) after work is done; ' +
+      'submit quotes (price + duration) from job detail. Never invent money amounts.',
   };
 
-  const roleLine =
-    role === 'owner'
-      ? 'You speak with a PROPERTY OWNER.'
-      : role === 'vendor'
-        ? 'You speak with a SERVICE PROVIDER (vendor) who handles maintenance jobs.'
-        : 'You speak with a TENANT.';
+  return `${base}\n\n${playbooks[role] ?? ''}\n\nCONTEXT:\n${context}`;
+}
 
-  return `${base}\n\n${roleLine}\n\n${playbooks[role] ?? ''}\n\nCONTEXT:\n${context}`;
+// ─── Groq call with retry/backoff for rate limits (429) and 5xx ───────────
+async function callGroq(
+  groqKey: string,
+  messages: { role: string; content: string }[]
+): Promise<{ reply: string; error?: string }> {
+  let lastErr = '';
+  for (let attempt = 1; attempt <= MAX_GROQ_RETRIES; attempt++) {
+    let groqRes: Response;
+    try {
+      groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${groqKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: GROQ_MODEL,
+          messages,
+          max_tokens: 512,
+          temperature: 0.4,
+        }),
+      });
+    } catch (e) {
+      lastErr = `network: ${e instanceof Error ? e.message : 'unknown'}`;
+      if (attempt < MAX_GROQ_RETRIES) {
+        await new Promise((r) => setTimeout(r, GROQ_RETRY_DELAYS_MS[attempt - 1] ?? 3000));
+        continue;
+      }
+      break;
+    }
+
+    if (groqRes.ok) {
+      const groqJson = await groqRes.json();
+      const reply = groqJson?.choices?.[0]?.message?.content;
+      if (reply && typeof reply === 'string') {
+        return { reply: reply.trim() };
+      }
+      lastErr = 'empty AI response';
+      if (attempt < MAX_GROQ_RETRIES) {
+        await new Promise((r) => setTimeout(r, 1000 * attempt));
+        continue;
+      }
+      break;
+    }
+
+    let errSummary = groqRes.statusText || 'unknown';
+    try {
+      const errJson = await groqRes.json();
+      const msg = errJson?.error?.message ?? errJson?.message;
+      if (typeof msg === 'string' && msg.length > 0) {
+        errSummary = msg.slice(0, 200);
+      }
+    } catch {
+      /* ignore non-JSON body */
+    }
+    lastErr = `HTTP ${groqRes.status}: ${errSummary}`;
+    console.error('Groq error:', groqRes.status, errSummary);
+
+    // Retry only rate limits and server errors; 4xx (except 429) are not retryable.
+    const retryable = groqRes.status === 429 || groqRes.status >= 500;
+    if (!retryable || attempt >= MAX_GROQ_RETRIES) break;
+    await new Promise((r) => setTimeout(r, GROQ_RETRY_DELAYS_MS[attempt - 1] ?? 3000));
+  }
+  return { reply: '', error: lastErr || 'AI provider error' };
 }
 
 serve(async (req) => {
@@ -327,48 +643,15 @@ serve(async (req) => {
     }
     messages.push({ role: 'user', content: text });
 
-    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${groqKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages,
-        max_tokens: 512,
-        temperature: 0.4,
-      }),
-    });
-
-    if (!groqRes.ok) {
-      let errSummary = groqRes.statusText || 'unknown';
-      try {
-        const errJson = await groqRes.json();
-        const msg = errJson?.error?.message ?? errJson?.message;
-        if (typeof msg === 'string' && msg.length > 0) {
-          errSummary = msg.slice(0, 200);
-        }
-      } catch {
-        /* ignore non-JSON body */
-      }
-      console.error('Groq error:', groqRes.status, errSummary);
-      return new Response(JSON.stringify({ error: 'AI provider error' }), {
+    const { reply, error } = await callGroq(groqKey, messages);
+    if (!reply) {
+      return new Response(JSON.stringify({ error: error || 'AI provider error' }), {
         status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const groqJson = await groqRes.json();
-    const reply = groqJson?.choices?.[0]?.message?.content;
-    if (!reply || typeof reply !== 'string') {
-      return new Response(JSON.stringify({ error: 'Empty AI response' }), {
-        status: 502,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    return new Response(JSON.stringify({ reply: reply.trim() }), {
+    return new Response(JSON.stringify({ reply }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {
