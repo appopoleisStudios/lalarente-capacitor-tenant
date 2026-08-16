@@ -387,7 +387,8 @@ export default function OwnerDashboardScreen() {
 
   // ─── Needs-attention hub (Plane #81) ───────────────────────────────────────
   // The individual urgent alert cards consolidate into one hub card. Each row
-  // keeps its exact destination — nothing is dropped.
+  // keeps its exact destination — nothing is dropped. `count` carries the real
+  // item count per row so the badge totals actual urgent items (not categories).
   const attentionItems: {
     key: string;
     icon: string;
@@ -396,6 +397,7 @@ export default function OwnerDashboardScreen() {
     title: string;
     sub: string;
     route: any;
+    count: number;
   }[] = [];
   if (dashboardData.pendingTerminations > 0) {
     attentionItems.push({
@@ -408,6 +410,7 @@ export default function OwnerDashboardScreen() {
       } Pending`,
       sub: 'CPA s14 — Tenant statutory right to exit',
       route: '/(owner)/early-termination',
+      count: dashboardData.pendingTerminations,
     });
   }
   if (dashboardData.openDisputes > 0) {
@@ -421,6 +424,7 @@ export default function OwnerDashboardScreen() {
       } Open`,
       sub: 'Tenants have raised payment queries',
       route: '/(owner)/payment-disputes',
+      count: dashboardData.openDisputes,
     });
   }
   if (dashboardData.pendingClosures > 0) {
@@ -434,6 +438,7 @@ export default function OwnerDashboardScreen() {
       } Pending Review`,
       sub: 'Vendors completed work — approve closure',
       route: '/(owner)/maintenance',
+      count: dashboardData.pendingClosures,
     });
   }
   if (dashboardData.processingPayments > 0) {
@@ -447,6 +452,7 @@ export default function OwnerDashboardScreen() {
       } Awaiting Confirmation`,
       sub: 'Tenants submitted payment — confirm receipt',
       route: '/(owner)/rent-roll',
+      count: dashboardData.processingPayments,
     });
   }
   if (pendingAlternativesCount > 0 && pendingViewingsCount === 0) {
@@ -460,6 +466,7 @@ export default function OwnerDashboardScreen() {
       } — Alternatives Offered`,
       sub: 'Waiting for tenant to choose a new time slot',
       route: '/(owner)/viewings',
+      count: pendingAlternativesCount,
     });
   }
   if (pendingViewingsCount > 0) {
@@ -471,8 +478,10 @@ export default function OwnerDashboardScreen() {
       title: `${pendingViewingsCount} Viewing${pendingViewingsCount === 1 ? '' : 's'} Awaiting Response`,
       sub: 'Tenants are waiting — approve or suggest a new time',
       route: '/(owner)/viewings',
+      count: pendingViewingsCount,
     });
   }
+  const attentionTotal = attentionItems.reduce((sum, item) => sum + item.count, 0);
 
   // Success state - render dashboard with real data
   return (
@@ -555,7 +564,8 @@ export default function OwnerDashboardScreen() {
             <PortfolioCard {...dashboardData.portfolio} userName={dashboardData.userName} />
           </Animated.View>
 
-          {/* Above-fold primary CTA (Plane #81) — one adaptive action */}
+          {/* Above-fold primary CTA (Plane #81) — one adaptive action. Reads as a
+              single "next step" hero, distinct from the Needs-attention list. */}
           <Animated.View entering={FadeInDown.delay(140).duration(400)}>
             <TouchableOpacity
               style={styles.primaryCtaCard}
@@ -565,12 +575,13 @@ export default function OwnerDashboardScreen() {
               }}
               activeOpacity={0.85}
               testID="owner-primary-action"
-              accessibilityLabel={primaryAction.label}
+              accessibilityLabel={`Next step: ${primaryAction.label}`}
             >
               <View style={styles.primaryCtaIcon}>
                 <Ionicons name={primaryAction.icon} size={24} color="#002395" />
               </View>
               <View style={{ flex: 1 }}>
+                <Text style={styles.primaryCtaEyebrow}>YOUR NEXT STEP</Text>
                 <Text style={styles.primaryCtaTitle}>{primaryAction.label}</Text>
                 <Text style={styles.primaryCtaSub}>{primaryAction.sub}</Text>
               </View>
@@ -578,14 +589,21 @@ export default function OwnerDashboardScreen() {
             </TouchableOpacity>
           </Animated.View>
 
-          {/* Needs-attention hub (Plane #81) — one card, every destination kept */}
+          {/* Needs-attention hub (Plane #81) — one card, every destination kept.
+              Frames as the FULL list, so it complements (not duplicates) the
+              single next-step CTA above. */}
           {attentionItems.length > 0 && (
             <Animated.View entering={FadeInDown.delay(155).duration(400)}>
               <View style={styles.attentionHub}>
                 <View style={styles.attentionHubHeader}>
-                  <Text style={styles.attentionHubTitle}>Needs Attention</Text>
+                  <View style={{ flex: 1, paddingRight: 8 }}>
+                    <Text style={styles.attentionHubTitle}>Needs Attention</Text>
+                    <Text style={styles.attentionHubSub}>Everything waiting on you</Text>
+                  </View>
                   <View style={styles.attentionHubBadge}>
-                    <Text style={styles.attentionHubBadgeText}>{attentionItems.length}</Text>
+                    <Text style={styles.attentionHubBadgeText}>
+                      {attentionTotal > 99 ? '99+' : attentionTotal}
+                    </Text>
                   </View>
                 </View>
                 {attentionItems.map((item, index) => (
