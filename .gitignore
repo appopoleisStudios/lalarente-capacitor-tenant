@@ -49,6 +49,10 @@ yarn-error.*
 qa-videos/
 qa-videos/.tmp-*
 
+# Plane #87 money-path visual captures — transient review artifacts
+visual-review/
+money-*.png
+
 # Supabase
 supabase/.branches
 supabase/.temp

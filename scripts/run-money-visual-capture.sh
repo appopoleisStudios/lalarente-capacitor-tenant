@@ -61,11 +61,15 @@ echo "── 3/3 VENDOR CAPTURE (earnings/banking) ──"
   "$ROOT/.maestro/flows/money-path-capture-vendor.yaml"
 
 # Maestro writes takeScreenshot PNGs to cwd — keep them out of the repo root.
-echo ""
-echo "── Move captures out of repo root ──"
-mkdir -p "$ROOT/visual-review"
-mv "$ROOT"/money-*.png "$ROOT/visual-review/" 2>/dev/null && \
-  echo "✅ captures → visual-review/ ($(ls "$ROOT"/visual-review/*.png 2>/dev/null | wc -l | tr -d ' ') pngs)" || \
-  echo "(no money-*.png in repo root)"
+# trap EXIT guarantees cleanup even if a flow fails under set -e.
+cleanup_captures() {
+  mkdir -p "$ROOT/visual-review"
+  if mv "$ROOT"/money-*.png "$ROOT/visual-review/" 2>/dev/null; then
+    echo "✅ captures → visual-review/ ($(ls "$ROOT"/visual-review/*.png 2>/dev/null | wc -l | tr -d ' ') pngs)"
+  else
+    echo "(no money-*.png in repo root)"
+  fi
+}
+trap cleanup_captures EXIT
 
 echo "✅ MONEY-PATH VISUAL CAPTURE COMPLETE — see visual-review/"
