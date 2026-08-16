@@ -1,0 +1,87 @@
+# Tenant Money-Path Visual Capture (Plane #87 — human visual UX review)
+# Tenant half only, independent of the vendor flow so a flaky PayFast checkout
+# WebView can never starve the vendor-side captures (split per reviewer).
+# Capture-only: navigation + takeScreenshot, no functional assertions.
+#
+# Prerequisites:
+#   - scripts/seed-tenant-vendor-invoice.mjs has created an APPROVED
+#     tenant-payer invoice (so the vendor-payments list is populated).
+#   - E2E credentials in .maestro/.env.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-tenant.yaml
+
+# Payments hub via dashboard Quick Action
+- scrollUntilVisible:
+    element:
+      id: "qa-payments"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+
+- tapOn:
+    id: "qa-payments"
+
+- extendedWaitUntil:
+    visible:
+      id: "payments-vendor-payments"
+    timeout: 20000
+- takeScreenshot: "money-tenant-payments-hub"
+
+# Vendor Payments sub-route — MUST scroll into view first (the hub entry sits
+# at/under the tab-bar edge; a bare tapOn targets its center which lands ON the
+# tab bar and never navigates — same class of bug as qa-messages). Proven
+# pattern from vendor-payment-flow.yaml.
+- scrollUntilVisible:
+    element:
+      id: "payments-vendor-payments"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+
+- tapOn:
+    id: "payments-vendor-payments"
+
+- extendedWaitUntil:
+    visible:
+      id: "vendor-payments-title"
+    timeout: 30000
+- takeScreenshot: "money-tenant-vendor-payments-list"
+
+# Pay Vendor detail (navigation CTA is pay-now — proven in vendor-payment-flow.yaml)
+- assertVisible:
+    id: "pay-now"
+- tapOn:
+    id: "pay-now"
+- extendedWaitUntil:
+    visible:
+      id: "pay-vendor-title"
+    timeout: 15000
+- takeScreenshot: "money-tenant-pay-vendor-detail"
+
+# In-app Secure Checkout (WebView — PayFast iframe can be slow to render; the
+# proven vendor-payment-flow.yaml asserts the same selector at 15s). Capture-only:
+# both waits optional so a slow WebView can't strand the flow.
+- tapOn:
+    id: "pay-via-payfast"
+- extendedWaitUntil:
+    visible:
+      id: "checkout-title"
+    timeout: 30000
+    optional: true
+- takeScreenshot: "money-tenant-secure-checkout"
+
+- tapOn:
+    id: "checkout-close"
+    optional: true
+
+# Back on the detail — wait for the tab bar, then sign out. 30s: a slow
+# PayFast WebView can delay the close returning us to the detail screen.
+- extendedWaitUntil:
+    visible:
+      id: "tab-payments"
+    timeout: 30000
+
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+# ✅ Tenant money-path visual capture complete

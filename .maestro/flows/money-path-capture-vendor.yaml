@@ -1,0 +1,48 @@
+# Vendor Money-Path Visual Capture (Plane #87 — human visual UX review)
+# Vendor half only, independent of the tenant flow (split per reviewer) so the
+# flaky PayFast checkout WebView can never starve the vendor-side captures.
+# Capture-only: navigation + takeScreenshot, no functional assertions.
+#
+# Prerequisites:
+#   - scripts/seed-vendor-banking.mjs has seeded the E2E vendor's payout
+#     preferences (so the Banking screen renders pre-filled values).
+#   - E2E credentials in .maestro/.env.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-vendor.yaml
+
+# ── Earnings tab ──
+- extendedWaitUntil:
+    visible:
+      id: "tab-vendor-earnings"
+    timeout: 15000
+- tapOn:
+    id: "tab-vendor-earnings"
+
+# ── Earnings dashboard ──
+- extendedWaitUntil:
+    visible:
+      id: "vendor-earnings-title"
+    timeout: 20000
+- takeScreenshot: "money-vendor-earnings-dashboard"
+
+# ── Banking preferences ──
+# The banking entry can sit below the fold — scroll into view first (same
+# pattern as the hub-entry fix) before the bare tap.
+- scrollUntilVisible:
+    element:
+      id: "vendor-earnings-banking-button"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+
+- tapOn:
+    id: "vendor-earnings-banking-button"
+
+- extendedWaitUntil:
+    visible:
+      id: "vendor-banking-title"
+    timeout: 15000
+- takeScreenshot: "money-vendor-banking-prefs"
+
+# ✅ Vendor money-path visual capture complete
