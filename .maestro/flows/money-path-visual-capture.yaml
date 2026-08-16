@@ -1,0 +1,129 @@
+# Money-Path Visual Capture (Plane #87 — human visual UX review)
+# Captures screenshots of the money-path screens for the perceptual gate:
+#   tenant Payments hub → Vendor Payments list → Pay Vendor detail →
+#   in-app Secure Checkout → vendor Earnings dashboard → Banking prefs.
+# Functional assertions are the Maestro gate; this flow only navigates and
+# takesScreenshot so a human/vision pass can review chrome.
+#
+# Prerequisites:
+#   - scripts/seed-tenant-vendor-invoice.mjs has created an APPROVED
+#     tenant-payer invoice (so the vendor-payments list is populated).
+#   - E2E credentials in .maestro/.env.
+appId: com.lalarente.app
+---
+# ── Tenant money path ──
+- runFlow: ../subflows/login-tenant.yaml
+
+- scrollUntilVisible:
+    element:
+      id: "qa-payments"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+
+- tapOn:
+    id: "qa-payments"
+
+# Payments hub
+- extendedWaitUntil:
+    visible:
+      id: "payments-vendor-payments"
+    timeout: 20000
+- takeScreenshot: "money-tenant-payments-hub"
+
+# Vendor Payments sub-route — MUST scroll into view first (the hub entry sits
+# at/under the tab-bar edge; a bare tapOn targets its center which lands ON the
+# tab bar and never navigates — same class of bug as qa-messages). Proven
+# pattern from vendor-payment-flow.yaml.
+- scrollUntilVisible:
+    element:
+      id: "payments-vendor-payments"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+
+- tapOn:
+    id: "payments-vendor-payments"
+- extendedWaitUntil:
+    visible:
+      id: "vendor-payments-title"
+    timeout: 30000
+- takeScreenshot: "money-tenant-vendor-payments-list"
+
+# Pay Vendor detail (invoice breakdown) — navigation CTA is pay-now (proven
+# in vendor-payment-flow.yaml); invoice-number is a display Text node only.
+- assertVisible:
+    id: "pay-now"
+- tapOn:
+    id: "pay-now"
+- extendedWaitUntil:
+    visible:
+      id: "pay-vendor-title"
+    timeout: 15000
+- takeScreenshot: "money-tenant-pay-vendor-detail"
+
+# In-app Secure Checkout (WebView — PayFast iframe can be slow to render;
+# the proven vendor-payment-flow.yaml asserts the same selector at 15s and
+# passes in the full suite). Capture-only: optional so a slow WebView cannot
+# block the vendor-side money captures.
+- tapOn:
+    id: "pay-via-payfast"
+- extendedWaitUntil:
+    visible:
+      id: "checkout-title"
+    timeout: 30000
+    optional: true
+- takeScreenshot: "money-tenant-secure-checkout"
+
+# checkout-close mirrors checkout-title's optionality: the PayFast WebView
+# can keep the native close button unready; a capture flow must not let it
+# block the vendor-side money captures.
+- tapOn:
+    id: "checkout-close"
+    optional: true
+
+# Back on the detail — wait for the tab bar, then sign out. 30s: a slow
+# PayFast WebView can delay the close returning us to the detail screen
+# (reviewer hardening — the optional close must not strand the flow).
+- extendedWaitUntil:
+    visible:
+      id: "tab-payments"
+    timeout: 30000
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+# ── Vendor money path ──
+- runFlow: ../subflows/login-vendor.yaml
+
+- extendedWaitUntil:
+    visible:
+      id: "tab-vendor-earnings"
+    timeout: 15000
+- tapOn:
+    id: "tab-vendor-earnings"
+
+# Earnings dashboard
+- extendedWaitUntil:
+    visible:
+      id: "vendor-earnings-title"
+    timeout: 20000
+- takeScreenshot: "money-vendor-earnings-dashboard"
+
+# Banking preferences screen (additive capture; selectors from 22-pr52).
+# The banking entry can sit below the fold — scroll into view first (same
+# pattern as the hub-entry fix) before the bare tap.
+- scrollUntilVisible:
+    element:
+      id: "vendor-earnings-banking-button"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+
+- tapOn:
+    id: "vendor-earnings-banking-button"
+- extendedWaitUntil:
+    visible:
+      id: "vendor-banking-title"
+    timeout: 15000
+- takeScreenshot: "money-vendor-banking-prefs"
+
+# ✅ Money-path visual capture complete
