@@ -219,6 +219,8 @@ export const VendorMaintenanceListScreen: React.FC = () => {
       <TouchableOpacity
         key="pending-quotes"
         testID="vendor-filter-pending-quotes"
+        accessibilityRole="button"
+        accessibilityState={{ selected: quotesOnly }}
         style={[styles.filterButton, isActive && styles.filterButtonActive]}
         onPress={() => {
           setQuotesOnly(true);
