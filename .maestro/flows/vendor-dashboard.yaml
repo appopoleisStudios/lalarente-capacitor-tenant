@@ -1,4 +1,4 @@
-# Vendor dashboard — login → verify dashboard loads
+# Vendor dashboard — login → verify dashboard loads + card navigation gates
 # login-vendor clears session (clearKeychain + UI fallback) without clearState
 # (clearState wipes Expo Metro URL). No deep links.
 appId: com.lalarente.app
@@ -23,3 +23,35 @@ appId: com.lalarente.app
 - assertVisible:
     text: ".*Completed.*"
     optional: true
+
+# ── Regression gate 1: Completed card → My Jobs on the COMPLETED tab ──────────
+# jobs/index is a tab screen that stays mounted; the ?tab=completed param is only
+# honored if re-applied on focus. Tapping the Completed card must land on the
+# Completed tab (subtitle "N completed job(s)"), never the Active tab.
+- tapOn:
+    id: "vendor-stat-completed"
+- extendedWaitUntil:
+    visible: "My Jobs"
+    timeout: 15000
+- assertVisible:
+    text: ".*completed job.*"
+    optional: true
+- assertVisible:
+    text: "Completed"
+
+# Back to dashboard, then ── Regression gate 2: Quotes card → My Quotes view ──
+# (pending-quotes filter), not the plain requests tab.
+- tapOn:
+    id: "tab-vendor-home"
+- extendedWaitUntil:
+    visible: ".*Quotes.*"
+    timeout: 15000
+- tapOn:
+    id: "vendor-stat-quotes"
+- extendedWaitUntil:
+    visible: "Maintenance Requests"
+    timeout: 15000
+- assertVisible:
+    id: "vendor-filter-pending-quotes"
+- assertVisible:
+    text: "My Quotes"
