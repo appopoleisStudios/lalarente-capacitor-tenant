@@ -17,12 +17,16 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as DocumentPicker from 'expo-document-picker';
 import { colors } from '@/src/shared/theme/colors';
 import { supabase } from '@/src/lib/supabase';
+import { documentsApi } from '@/src/features/documents/api/documentsApi';
+import type { Document } from '@/src/features/documents/types';
 
 type Tab = 'fica' | 'property';
 
@@ -46,6 +50,12 @@ interface PropertyCompliance {
   ficaTenantsVerified: number;
   ficaTenantsPending: number;
 }
+
+/** Subset of the documents row used by the compliance checklist (partial select). */
+type ComplianceDoc = Pick<
+  Document,
+  'id' | 'property_id' | 'filename' | 'title' | 'created_at' | 'tags'
+>;
 
 const STATUS_ICON: Record<string, { icon: string; color: string }> = {
   verified: { icon: 'checkmark-circle', color: colors.primary[500] },
@@ -73,12 +83,20 @@ const RISK_COLORS: Record<string, string> = {
 };
 
 const COMPLIANCE_ITEMS = [
-  { key: 'eoc', label: 'Electrical Certificate of Compliance (COC)', law: 'Occupational Health & Safety Act' },
+  {
+    key: 'eoc',
+    label: 'Electrical Certificate of Compliance (COC)',
+    law: 'Occupational Health & Safety Act',
+  },
   { key: 'gas', label: 'Gas Certificate of Compliance', law: 'Pressure Equipment Regulations' },
   { key: 'rates', label: 'Rates Clearance Certificate', law: 'Municipal Systems Act' },
   { key: 'insurance', label: 'Property Insurance', law: 'Best practice / Bond requirement' },
   { key: 'fica', label: 'FICA Registration (FIC)', law: 'Financial Intelligence Centre Act' },
-  { key: 'popia', label: 'POPIA Registration (Information Regulator)', law: 'Protection of Personal Information Act' },
+  {
+    key: 'popia',
+    label: 'POPIA Registration (Information Regulator)',
+    law: 'Protection of Personal Information Act',
+  },
 ];
 
 export default function OwnerComplianceScreen() {
@@ -87,6 +105,8 @@ export default function OwnerComplianceScreen() {
   const [ownerId, setOwnerId] = useState<string | null>(null);
   const [ficaData, setFicaData] = useState<TenantFica[]>([]);
   const [propertyData, setPropertyData] = useState<PropertyCompliance[]>([]);
+  const [complianceDocs, setComplianceDocs] = useState<Record<string, ComplianceDoc>>({});
+  const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -100,7 +120,9 @@ export default function OwnerComplianceScreen() {
   );
 
   const initOwner = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (user) {
       setOwnerId(user.id);
       fetchAll(user.id);
@@ -109,8 +131,100 @@ export default function OwnerComplianceScreen() {
 
   const fetchAll = async (uid: string) => {
     setLoading(true);
-    await Promise.all([fetchFica(uid), fetchProperties(uid)]);
+    await Promise.all([fetchFica(uid), fetchProperties(uid), fetchComplianceDocs(uid)]);
     setLoading(false);
+  };
+
+  /**
+   * Load the owner's uploaded compliance certificates (type 'other' tagged
+   * ['compliance', <item-key>]) grouped per property + checklist item.
+   * Plane #69 — completes the Property Compliance tab (was a dead stub).
+   */
+  const fetchComplianceDocs = async (uid: string) => {
+    try {
+      const { data } = await supabase
+        .from('documents')
+        .select('id, property_id, filename, title, created_at, tags')
+        .eq('owner_id', uid)
+        .contains('tags', ['compliance'])
+        .order('created_at', { ascending: false });
+
+      const map: Record<string, ComplianceDoc> = {};
+      (data || []).forEach((doc: ComplianceDoc) => {
+        const itemKey = (doc.tags || []).find((t) => t !== 'compliance');
+        const key = doc.property_id && itemKey ? `${doc.property_id}:${itemKey}` : '';
+        // Query is ordered desc — first row per key is the latest upload.
+        if (key && !map[key]) map[key] = doc;
+      });
+      setComplianceDocs(map);
+    } catch (err) {
+      console.error('Error fetching compliance docs:', err);
+    }
+  };
+
+  /**
+   * Pick a file and upload it as a compliance certificate for the property.
+   * Mirrors the #84 vendor-documents pattern: picker -> documentsApi
+   * (base64 -> documents bucket -> documents row with property/owner links).
+   */
+  const handleUpload = async (
+    property: PropertyCompliance,
+    item: { key: string; label: string; law: string }
+  ) => {
+    if (!ownerId) return;
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'image/*'],
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled) return;
+
+      const file = result.assets[0];
+      const MAX_SIZE = 10 * 1024 * 1024; // matches the 'other' category limit
+      if (file.size && file.size > MAX_SIZE) {
+        Alert.alert('File Too Large', 'Maximum file size is 10MB. Please select a smaller file.');
+        return;
+      }
+
+      setUploadingKey(`${property.propertyId}:${item.key}`);
+
+      // Replace ordering is deliberate: upload the NEW cert first, then delete
+      // the previous one only after success. Deleting first would lose the old
+      // legal certificate if the new upload failed; a failed delete afterwards
+      // only leaves a hidden stale duplicate (latest-wins map hides it).
+      const previous = complianceDocs[`${property.propertyId}:${item.key}`];
+
+      await documentsApi.uploadDocument(
+        {
+          uri: file.uri,
+          name: file.name || 'certificate',
+          size: file.size || 0,
+          mimeType: file.mimeType || 'application/pdf',
+        },
+        {
+          type: 'other',
+          title: `${item.label} — ${property.propertyTitle}`,
+          access_level: 'owner_only',
+          property_id: property.propertyId,
+          owner_id: ownerId,
+          tags: ['compliance', item.key],
+        },
+        ownerId
+      );
+
+      if (previous?.id) {
+        await documentsApi.deleteDocument(previous.id).catch((err) => {
+          console.warn('Failed to delete previous certificate:', err);
+        });
+      }
+
+      await fetchComplianceDocs(ownerId);
+      Alert.alert('Success', `${item.label} uploaded for ${property.propertyTitle}.`);
+    } catch (err) {
+      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to upload certificate');
+    } finally {
+      setUploadingKey(null);
+    }
   };
 
   const fetchFica = async (uid: string) => {
@@ -126,8 +240,8 @@ export default function OwnerComplianceScreen() {
 
       if (!apps?.length) return;
 
-      const tenantIds = [...new Set(apps.map(a => a.tenant_id))];
-      const propertyIds = [...new Set(apps.map(a => a.property_id))];
+      const tenantIds = [...new Set(apps.map((a) => a.tenant_id))];
+      const propertyIds = [...new Set(apps.map((a) => a.property_id))];
 
       const [{ data: profiles }, { data: properties }] = await Promise.all([
         supabase.from('profiles').select('id, full_name').in('id', tenantIds),
@@ -135,21 +249,27 @@ export default function OwnerComplianceScreen() {
       ]);
 
       const tenantMap: Record<string, string> = {};
-      profiles?.forEach(p => { tenantMap[p.id] = p.full_name; });
+      profiles?.forEach((p) => {
+        tenantMap[p.id] = p.full_name;
+      });
       const propMap: Record<string, string> = {};
-      properties?.forEach(p => { propMap[p.id] = p.title; });
+      properties?.forEach((p) => {
+        propMap[p.id] = p.title;
+      });
 
-      setFicaData(apps.map(a => ({
-        applicationId: a.id,
-        tenantName: tenantMap[a.tenant_id] || 'Tenant',
-        propertyTitle: propMap[a.property_id] || 'Property',
-        identityStatus: a.identity_verification_status,
-        creditStatus: a.credit_check_status,
-        backgroundStatus: a.background_check_status,
-        riskLevel: a.risk_level,
-        idDocumentUrl: a.id_document_url,
-        applicationStatus: a.status,
-      })));
+      setFicaData(
+        apps.map((a) => ({
+          applicationId: a.id,
+          tenantName: tenantMap[a.tenant_id] || 'Tenant',
+          propertyTitle: propMap[a.property_id] || 'Property',
+          identityStatus: a.identity_verification_status,
+          creditStatus: a.credit_check_status,
+          backgroundStatus: a.background_check_status,
+          riskLevel: a.risk_level,
+          idDocumentUrl: a.id_document_url,
+          applicationStatus: a.status,
+        }))
+      );
     } catch (err) {
       console.error('Error fetching FICA data:', err);
     }
@@ -166,7 +286,7 @@ export default function OwnerComplianceScreen() {
       if (!properties?.length) return;
 
       // Get FICA verification counts per property
-      const propertyIds = properties.map(p => p.id);
+      const propertyIds = properties.map((p) => p.id);
       const { data: apps } = await supabase
         .from('rental_applications')
         .select('property_id, identity_verification_status')
@@ -175,7 +295,7 @@ export default function OwnerComplianceScreen() {
 
       const verifiedCounts: Record<string, number> = {};
       const pendingCounts: Record<string, number> = {};
-      apps?.forEach(a => {
+      apps?.forEach((a) => {
         if (a.identity_verification_status === 'verified') {
           verifiedCounts[a.property_id] = (verifiedCounts[a.property_id] || 0) + 1;
         } else {
@@ -183,25 +303,35 @@ export default function OwnerComplianceScreen() {
         }
       });
 
-      setPropertyData(properties.map(p => ({
-        propertyId: p.id,
-        propertyTitle: p.title,
-        address: p.address,
-        ficaTenantsVerified: verifiedCounts[p.id] || 0,
-        ficaTenantsPending: pendingCounts[p.id] || 0,
-      })));
+      setPropertyData(
+        properties.map((p) => ({
+          propertyId: p.id,
+          propertyTitle: p.title,
+          address: p.address,
+          ficaTenantsVerified: verifiedCounts[p.id] || 0,
+          ficaTenantsPending: pendingCounts[p.id] || 0,
+        }))
+      );
     } catch (err) {
       console.error('Error fetching properties:', err);
     }
   };
 
-  const ficaVerified = ficaData.filter(f => f.identityStatus === 'verified').length;
-  const ficaPending = ficaData.filter(f => !f.identityStatus || f.identityStatus === 'pending').length;
+  const ficaVerified = ficaData.filter((f) => f.identityStatus === 'verified').length;
+  const ficaPending = ficaData.filter(
+    (f) => !f.identityStatus || f.identityStatus === 'pending'
+  ).length;
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+          testID="owner-compliance-back"
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Compliance</Text>
@@ -238,8 +368,8 @@ export default function OwnerComplianceScreen() {
               <View style={styles.infoBanner}>
                 <Ionicons name="shield-checkmark-outline" size={18} color={colors.info[500]} />
                 <Text style={styles.infoText}>
-                  FICA requires you to verify the identity of all tenants (Know Your Customer).
-                  As a property practitioner, non-compliance carries criminal penalties.
+                  FICA requires you to verify the identity of all tenants (Know Your Customer). As a
+                  property practitioner, non-compliance carries criminal penalties.
                 </Text>
               </View>
 
@@ -265,11 +395,12 @@ export default function OwnerComplianceScreen() {
                   <Text style={styles.emptyText}>No approved tenant applications yet</Text>
                 </View>
               ) : (
-                ficaData.map(tenant => {
+                ficaData.map((tenant) => {
                   const idCfg = getStatusConfig(tenant.identityStatus);
                   const creditCfg = getStatusConfig(tenant.creditStatus);
                   const bgCfg = getStatusConfig(tenant.backgroundStatus);
-                  const riskColor = RISK_COLORS[tenant.riskLevel?.toLowerCase() || ''] || colors.gray[400];
+                  const riskColor =
+                    RISK_COLORS[tenant.riskLevel?.toLowerCase() || ''] || colors.gray[400];
                   return (
                     <View key={tenant.applicationId} style={styles.ficaCard}>
                       <View style={styles.ficaCardHeader}>
@@ -287,11 +418,7 @@ export default function OwnerComplianceScreen() {
                       </View>
                       <View style={styles.ficaChecks}>
                         <View style={styles.ficaCheckItem}>
-                          <Ionicons
-                            name={idCfg.icon as any}
-                            size={16}
-                            color={idCfg.color}
-                          />
+                          <Ionicons name={idCfg.icon as any} size={16} color={idCfg.color} />
                           <Text style={styles.ficaCheckLabel}>Identity</Text>
                           <Text style={[styles.ficaCheckStatus, { color: idCfg.color }]}>
                             {tenant.identityStatus || 'Not started'}
@@ -309,11 +436,7 @@ export default function OwnerComplianceScreen() {
                           </Text>
                         </View>
                         <View style={styles.ficaCheckItem}>
-                          <Ionicons
-                            name={bgCfg.icon as any}
-                            size={16}
-                            color={bgCfg.color}
-                          />
+                          <Ionicons name={bgCfg.icon as any} size={16} color={bgCfg.color} />
                           <Text style={styles.ficaCheckLabel}>Background</Text>
                           <Text style={[styles.ficaCheckStatus, { color: bgCfg.color }]}>
                             {tenant.backgroundStatus || 'Not started'}
@@ -337,8 +460,8 @@ export default function OwnerComplianceScreen() {
               <View style={styles.infoBanner}>
                 <Ionicons name="document-text-outline" size={18} color={colors.info[500]} />
                 <Text style={styles.infoText}>
-                  SA law requires specific certificates before renting out a property.
-                  Upload and track your compliance documents here.
+                  SA law requires specific certificates before renting out a property. Upload and
+                  track your compliance documents here.
                 </Text>
               </View>
 
@@ -348,12 +471,10 @@ export default function OwnerComplianceScreen() {
                   <Text style={styles.emptyText}>No properties found</Text>
                 </View>
               ) : (
-                propertyData.map(prop => (
+                propertyData.map((prop) => (
                   <View key={prop.propertyId} style={styles.propCard}>
                     <Text style={styles.propTitle}>{prop.propertyTitle}</Text>
-                    {prop.address && (
-                      <Text style={styles.propAddress}>{prop.address}</Text>
-                    )}
+                    {prop.address && <Text style={styles.propAddress}>{prop.address}</Text>}
 
                     {/* FICA tenant status for this property */}
                     {(prop.ficaTenantsVerified > 0 || prop.ficaTenantsPending > 0) && (
@@ -361,43 +482,67 @@ export default function OwnerComplianceScreen() {
                         <Ionicons name="people" size={14} color={colors.text.secondary} />
                         <Text style={styles.ficaStatusText}>
                           {prop.ficaTenantsVerified} tenant(s) verified
-                          {prop.ficaTenantsPending > 0 ? `, ${prop.ficaTenantsPending} pending` : ''}
+                          {prop.ficaTenantsPending > 0
+                            ? `, ${prop.ficaTenantsPending} pending`
+                            : ''}
                         </Text>
                       </View>
                     )}
 
-                    {/* Compliance checklist */}
+                    {/* Compliance checklist — live upload tracking (Plane #69) */}
                     <View style={styles.checklistDivider} />
-                    {COMPLIANCE_ITEMS.map(item => (
-                      <View key={item.key} style={styles.checklistItem}>
-                        <View style={styles.checklistLeft}>
-                          {/* No real data for certificates yet — show upload prompts */}
-                          <Ionicons
-                            name="ellipse-outline"
-                            size={18}
-                            color={colors.gray[300]}
-                          />
-                          <View style={{ flex: 1, marginLeft: 10 }}>
-                            <Text style={styles.checklistLabel}>{item.label}</Text>
-                            <Text style={styles.checklistLaw}>{item.law}</Text>
+                    {COMPLIANCE_ITEMS.map((item) => {
+                      const doc = complianceDocs[`${prop.propertyId}:${item.key}`];
+                      const isUploading = uploadingKey === `${prop.propertyId}:${item.key}`;
+                      return (
+                        <View key={item.key} style={styles.checklistItem}>
+                          <View style={styles.checklistLeft}>
+                            <Ionicons
+                              name={doc ? 'checkmark-circle' : 'ellipse-outline'}
+                              size={18}
+                              color={doc ? colors.primary[500] : colors.gray[300]}
+                            />
+                            <View style={{ flex: 1, marginLeft: 10 }}>
+                              <Text style={styles.checklistLabel}>{item.label}</Text>
+                              <Text style={styles.checklistLaw}>
+                                {doc
+                                  ? doc.created_at
+                                    ? `Uploaded ${new Date(doc.created_at).toLocaleDateString()}`
+                                    : 'Uploaded'
+                                  : item.law}
+                              </Text>
+                            </View>
                           </View>
+                          {isUploading ? (
+                            <View style={styles.uploadBtn}>
+                              <ActivityIndicator size="small" color={colors.rsa.blue} />
+                            </View>
+                          ) : (
+                            <TouchableOpacity
+                              style={[styles.uploadBtn, doc && styles.uploadBtnDone]}
+                              onPress={() => handleUpload(prop, item)}
+                              testID={`owner-compliance-upload-${item.key}`}
+                              accessibilityRole="button"
+                              accessibilityLabel={
+                                doc ? `Replace ${item.label}` : `Upload ${item.label}`
+                              }
+                            >
+                              <Ionicons
+                                name={doc ? 'refresh' : 'cloud-upload-outline'}
+                                size={14}
+                                color={doc ? colors.primary[500] : colors.rsa.blue}
+                              />
+                              <Text style={[styles.uploadBtnText, doc && styles.uploadBtnTextDone]}>
+                                {doc ? 'Replace' : 'Upload'}
+                              </Text>
+                            </TouchableOpacity>
+                          )}
                         </View>
-                        <TouchableOpacity style={styles.uploadBtn}>
-                          <Text style={styles.uploadBtnText}>Upload</Text>
-                        </TouchableOpacity>
-                      </View>
-                    ))}
+                      );
+                    })}
                   </View>
                 ))
               )}
-
-              <View style={styles.comingSoon}>
-                <Ionicons name="construct-outline" size={16} color={colors.warning[500]} />
-                <Text style={styles.comingSoonText}>
-                  Certificate upload and expiry tracking coming soon.
-                  Track COC, gas compliance, rates clearance, and insurance renewals automatically.
-                </Text>
-              </View>
             </>
           )}
           <View style={{ height: 100 }} />
@@ -631,21 +776,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.rsa.blue,
   },
-  comingSoon: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    backgroundColor: colors.warning[50],
-    padding: 12,
-    borderRadius: 10,
-    marginTop: 4,
-    marginBottom: 10,
+  uploadBtnDone: {
+    backgroundColor: colors.primary[500] + '12',
+    borderColor: colors.primary[500] + '40',
   },
-  comingSoonText: {
-    flex: 1,
-    fontSize: 12,
-    color: colors.warning[700],
-    lineHeight: 16,
+  uploadBtnTextDone: {
+    color: colors.primary[500],
   },
   empty: {
     alignItems: 'center',

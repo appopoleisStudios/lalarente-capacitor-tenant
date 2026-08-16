@@ -80,6 +80,7 @@ OWNER_FLOWS=(
   "property-3d-tour"
   "owner-property-maintenance-history"
   "owner-photo-viewer-close"
+  "owner-compliance-upload"
   "09-pr9-owner-inspection-conduct"
   "10-pr9-owner-inspection-readonly"
   "15-pr7-owner-disputes-empty"
