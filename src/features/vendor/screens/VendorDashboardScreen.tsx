@@ -403,6 +403,19 @@ export default function VendorDashboardScreen() {
               </View>
               <Text style={styles.actionText}>Lala AI</Text>
             </Pressable>
+            {/* Invoices quick action (Plane #105) */}
+            <Pressable
+              style={({ pressed }) => [styles.actionCard, pressed && styles.actionCardPressed]}
+              testID="qa-invoices"
+              accessibilityLabel="Invoices"
+              accessibilityRole="button"
+              onPress={() => router.push('/(vendor)/invoices')}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.success[50] }]}>
+                <Ionicons name="receipt" size={24} color={colors.success[500]} />
+              </View>
+              <Text style={styles.actionText}>Invoices</Text>
+            </Pressable>
             {/* Contracts quick action (Plane #83) — the tab was removed from
                 the bottom bar (7→6 tabs); Contracts lives here + under Profile. */}
             <Pressable

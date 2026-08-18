@@ -1,8 +1,11 @@
 import { useAuth } from '@/src/contexts/AuthContext';
 import {
   getMaintenanceRequestById,
+  getInvoicesByRequest,
   submitInvoice,
+  resubmitInvoice,
   type InvoiceLineItem,
+  type MaintenanceInvoice,
 } from '@/src/features/maintenance/api';
 import { colors } from '@/src/shared/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
@@ -39,9 +42,13 @@ function nextKey(): string {
 }
 
 export default function VendorInvoiceSubmitScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id: string; edit?: string }>();
+  const id = params.id;
+  const editParam = Array.isArray(params.edit) ? params.edit[0] : params.edit;
   const { user } = useAuth();
   const abortRef = useRef<AbortController | null>(null);
+
+  const [isResubmit, setIsResubmit] = useState(!!editParam);
 
   const [loading, setLoading] = useState(true);
   const [request, setRequest] = useState<any>(null);
@@ -51,6 +58,7 @@ export default function VendorInvoiceSubmitScreen() {
     { key: '1', description: '', quantity: '1', unitPrice: '' },
   ]);
   const [submitting, setSubmitting] = useState(false);
+  const [existingInvoice, setExistingInvoice] = useState<MaintenanceInvoice | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -66,6 +74,30 @@ export default function VendorInvoiceSubmitScreen() {
       const req = await getMaintenanceRequestById(id);
       if (abortRef.current?.signal.aborted) return;
       setRequest(req);
+
+      // If editing a rejected invoice, load it and populate the form
+      if (editParam) {
+        const invoices = await getInvoicesByRequest(id);
+        const target = invoices.find((inv) => inv.id === editParam && inv.status === 'rejected');
+        if (target) {
+          setExistingInvoice(target);
+          setNotes(target.notes || '');
+          setPayerRole(target.payer_role || 'owner');
+          // Populate line items from the rejected invoice
+          const items: LineItemEntry[] = (target.line_items || []).map((li: any, i: number) => ({
+            key: `resubmit_${i}`,
+            description: li.description || '',
+            quantity: String(li.quantity || 1),
+            unitPrice: String(li.unit_price || 0),
+          }));
+          if (items.length > 0) {
+            setLineItems(items);
+          }
+        } else {
+          // Invoice was already approved/paid — fall back to fresh submit
+          setIsResubmit(false);
+        }
+      }
     } catch (error: any) {
       console.error('Error loading request:', error);
       Alert.alert('Error', 'Failed to load request details');
@@ -75,7 +107,7 @@ export default function VendorInvoiceSubmitScreen() {
   };
 
   const addLineItem = () => {
-    setLineItems(prev => [
+    setLineItems((prev) => [
       ...prev,
       { key: nextKey(), description: '', quantity: '1', unitPrice: '' },
     ]);
@@ -83,12 +115,12 @@ export default function VendorInvoiceSubmitScreen() {
 
   const removeLineItem = (key: string) => {
     if (lineItems.length <= 1) return;
-    setLineItems(prev => prev.filter(item => item.key !== key));
+    setLineItems((prev) => prev.filter((item) => item.key !== key));
   };
 
   const updateLineItem = (key: string, field: keyof LineItemEntry, value: string) => {
-    setLineItems(prev =>
-      prev.map(item => (item.key === key ? { ...item, [field]: value } : item))
+    setLineItems((prev) =>
+      prev.map((item) => (item.key === key ? { ...item, [field]: value } : item))
     );
   };
 
@@ -113,11 +145,14 @@ export default function VendorInvoiceSubmitScreen() {
 
   const handleSubmit = async () => {
     const validItems = lineItems.filter(
-      item => item.description.trim() && parseFloat(item.unitPrice) > 0
+      (item) => item.description.trim() && parseFloat(item.unitPrice) > 0
     );
 
     if (validItems.length === 0) {
-      Alert.alert('No Line Items', 'Please add at least one line item with a description and price.');
+      Alert.alert(
+        'No Line Items',
+        'Please add at least one line item with a description and price.'
+      );
       return;
     }
 
@@ -127,26 +162,43 @@ export default function VendorInvoiceSubmitScreen() {
       return;
     }
 
-    Alert.alert(
-      'Submit Invoice',
-      `Total: R ${totals.total.toLocaleString()}\n\nSubmit this invoice to the owner for approval?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Submit Invoice',
-          onPress: async () => {
-            try {
-              setSubmitting(true);
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const alertTitle = isResubmit && existingInvoice ? 'Resubmit Invoice' : 'Submit Invoice';
+    const payerLabel = payerRole === 'tenant' ? 'tenant' : 'owner';
+    const alertMsg =
+      isResubmit && existingInvoice
+        ? `Total: R ${totals.total.toLocaleString()}\n\nResubmit this updated invoice for approval?`
+        : `Total: R ${totals.total.toLocaleString()}\n\nSubmit this invoice to the ${payerLabel} for approval?`;
+    Alert.alert(alertTitle, alertMsg, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Submit Invoice',
+        onPress: async () => {
+          try {
+            setSubmitting(true);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-              if (!user?.id) throw new Error('Not authenticated');
+            if (!user?.id) throw new Error('Not authenticated');
 
-              const invoiceLineItems = validItems.map(item => ({
-                description: item.description.trim(),
-                quantity: parseFloat(item.quantity) || 1,
-                unit_price: parseFloat(item.unitPrice) || 0,
-              }));
+            const invoiceLineItems = validItems.map((item) => ({
+              description: item.description.trim(),
+              quantity: parseFloat(item.quantity) || 1,
+              unit_price: parseFloat(item.unitPrice) || 0,
+            }));
 
+            if (isResubmit && existingInvoice) {
+              await resubmitInvoice(
+                existingInvoice.id,
+                user.id,
+                invoiceLineItems,
+                notes.trim() || undefined
+              );
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              Alert.alert(
+                'Invoice Resubmitted',
+                'Your updated invoice has been sent for approval.',
+                [{ text: 'OK', onPress: () => router.back() }]
+              );
+            } else {
               await submitInvoice(
                 id,
                 user.id,
@@ -156,21 +208,22 @@ export default function VendorInvoiceSubmitScreen() {
                 notes.trim() || undefined,
                 payerRole
               );
-
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              Alert.alert('Invoice Submitted', 'Your invoice has been sent to the owner for approval.', [
-                { text: 'OK', onPress: () => router.back() },
-              ]);
-            } catch (error: any) {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-              Alert.alert('Error', error.message || 'Failed to submit invoice');
-            } finally {
-              setSubmitting(false);
+              Alert.alert(
+                'Invoice Submitted',
+                'Your invoice has been sent to the owner for approval.',
+                [{ text: 'OK', onPress: () => router.back() }]
+              );
             }
-          },
+          } catch (error: any) {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            Alert.alert('Error', error.message || 'Failed to submit invoice');
+          } finally {
+            setSubmitting(false);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   if (loading) {
@@ -198,7 +251,9 @@ export default function VendorInvoiceSubmitScreen() {
         >
           <Ionicons name="arrow-back" size={24} color="#111827" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Submit Invoice</Text>
+        <Text style={styles.headerTitle}>
+          {isResubmit ? 'Edit & Resubmit Invoice' : 'Submit Invoice'}
+        </Text>
         <View style={styles.headerButton} />
       </View>
 
@@ -241,7 +296,7 @@ export default function VendorInvoiceSubmitScreen() {
                 placeholder="Description of work (e.g., Labour, Materials)"
                 placeholderTextColor={colors.gray[400]}
                 value={item.description}
-                onChangeText={v => updateLineItem(item.key, 'description', v)}
+                onChangeText={(v) => updateLineItem(item.key, 'description', v)}
               />
 
               <View style={styles.numericRow}>
@@ -252,7 +307,7 @@ export default function VendorInvoiceSubmitScreen() {
                     placeholder="1"
                     placeholderTextColor={colors.gray[400]}
                     value={item.quantity}
-                    onChangeText={v => updateLineItem(item.key, 'quantity', v)}
+                    onChangeText={(v) => updateLineItem(item.key, 'quantity', v)}
                     keyboardType="decimal-pad"
                   />
                 </View>
@@ -263,7 +318,7 @@ export default function VendorInvoiceSubmitScreen() {
                     placeholder="0.00"
                     placeholderTextColor={colors.gray[400]}
                     value={item.unitPrice}
-                    onChangeText={v => updateLineItem(item.key, 'unitPrice', v)}
+                    onChangeText={(v) => updateLineItem(item.key, 'unitPrice', v)}
                     keyboardType="decimal-pad"
                   />
                 </View>
@@ -298,63 +353,85 @@ export default function VendorInvoiceSubmitScreen() {
             </View>
           </View>
 
-          {/* Payer Selection */}
-          <Text style={styles.sectionTitle}>Who Pays?</Text>
-          <Text style={styles.sectionSubtitle}>
-            Select who will be responsible for paying this invoice.
-          </Text>
-
-          <View style={styles.payerRow}>
-            <TouchableOpacity
-              style={[
-                styles.payerOption,
-                payerRole === 'owner' && styles.payerOptionActive,
-              ]}
-              onPress={() => setPayerRole('owner')}
+          {/* Rejection reason banner (resubmit mode) */}
+          {isResubmit && existingInvoice?.rejection_reason && (
+            <View
+              style={{
+                backgroundColor: colors.error[50],
+                padding: 12,
+                borderRadius: 8,
+                marginBottom: 16,
+                borderLeftWidth: 4,
+                borderLeftColor: colors.error[500],
+              }}
             >
-              <Ionicons
-                name={payerRole === 'owner' ? 'radio-button-on' : 'radio-button-off'}
-                size={20}
-                color={payerRole === 'owner' ? RSA.blue : colors.gray[400]}
-              />
-              <View style={styles.payerTextWrap}>
-                <Text style={[
-                  styles.payerLabel,
-                  payerRole === 'owner' && styles.payerLabelActive,
-                ]}>
-                  Owner Pays
-                </Text>
-                <Text style={styles.payerDesc}>
-                  Landlord pays from rental income or directly
-                </Text>
-              </View>
-            </TouchableOpacity>
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: '700',
+                  color: colors.error[700],
+                  marginBottom: 4,
+                }}
+              >
+                Rejection Reason
+              </Text>
+              <Text style={{ fontSize: 13, color: colors.error[600], lineHeight: 18 }}>
+                {existingInvoice.rejection_reason}
+              </Text>
+            </View>
+          )}
 
-            <TouchableOpacity
-              style={[
-                styles.payerOption,
-                payerRole === 'tenant' && styles.payerOptionActive,
-              ]}
-              onPress={() => setPayerRole('tenant')}
-            >
-              <Ionicons
-                name={payerRole === 'tenant' ? 'radio-button-on' : 'radio-button-off'}
-                size={20}
-                color={payerRole === 'tenant' ? RSA.blue : colors.gray[400]}
-              />
-              <View style={styles.payerTextWrap}>
-                <Text style={[
-                  styles.payerLabel,
-                  payerRole === 'tenant' && styles.payerLabelActive,
-                ]}>
-                  Tenant Pays
-                </Text>
-                <Text style={styles.payerDesc}>
-                  Tenant pays directly via PayFast checkout
-                </Text>
+          {/* Payer Selection (hidden in resubmit mode — keep original payer) */}
+          {!isResubmit && (
+            <>
+              <Text style={styles.sectionTitle}>Who Pays?</Text>
+              <Text style={styles.sectionSubtitle}>
+                Select who will be responsible for paying this invoice.
+              </Text>
+
+              <View style={styles.payerRow}>
+                <TouchableOpacity
+                  style={[styles.payerOption, payerRole === 'owner' && styles.payerOptionActive]}
+                  onPress={() => setPayerRole('owner')}
+                >
+                  <Ionicons
+                    name={payerRole === 'owner' ? 'radio-button-on' : 'radio-button-off'}
+                    size={20}
+                    color={payerRole === 'owner' ? RSA.blue : colors.gray[400]}
+                  />
+                  <View style={styles.payerTextWrap}>
+                    <Text
+                      style={[styles.payerLabel, payerRole === 'owner' && styles.payerLabelActive]}
+                    >
+                      Owner Pays
+                    </Text>
+                    <Text style={styles.payerDesc}>
+                      Landlord pays from rental income or directly
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.payerOption, payerRole === 'tenant' && styles.payerOptionActive]}
+                  onPress={() => setPayerRole('tenant')}
+                >
+                  <Ionicons
+                    name={payerRole === 'tenant' ? 'radio-button-on' : 'radio-button-off'}
+                    size={20}
+                    color={payerRole === 'tenant' ? RSA.blue : colors.gray[400]}
+                  />
+                  <View style={styles.payerTextWrap}>
+                    <Text
+                      style={[styles.payerLabel, payerRole === 'tenant' && styles.payerLabelActive]}
+                    >
+                      Tenant Pays
+                    </Text>
+                    <Text style={styles.payerDesc}>Tenant pays directly via PayFast checkout</Text>
+                  </View>
+                </TouchableOpacity>
               </View>
-            </TouchableOpacity>
-          </View>
+            </>
+          )}
 
           {/* Notes */}
           <Text style={styles.sectionTitle}>Notes (Optional)</Text>
@@ -388,7 +465,7 @@ export default function VendorInvoiceSubmitScreen() {
             <>
               <Ionicons name="send" size={18} color="#FFFFFF" />
               <Text style={styles.submitButtonText}>
-                Submit Invoice — {formatCurrency(totals.total)}
+                {isResubmit ? 'Resubmit' : 'Submit Invoice'} — {formatCurrency(totals.total)}
               </Text>
             </>
           )}
@@ -413,7 +490,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
-  headerButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827', flex: 1, textAlign: 'center' },
 
   scrollView: { flex: 1 },

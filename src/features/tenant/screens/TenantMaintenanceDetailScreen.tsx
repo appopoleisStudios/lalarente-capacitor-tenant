@@ -13,7 +13,11 @@ import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { getMaintenanceRequestById, getProgressUpdates } from '@/src/features/maintenance/api';
+import {
+  getMaintenanceRequestById,
+  getProgressUpdates,
+  getInvoicesByRequest,
+} from '@/src/features/maintenance/api';
 import { messagesApi } from '@/src/features/messaging/api/messagesApi';
 import { getClosureReport } from '@/src/features/maintenance/api/work/workClosure.api';
 import { MediaGallery } from '@/src/features/maintenance/components/MediaGallery';
@@ -61,6 +65,7 @@ export default function TenantMaintenanceDetailScreen() {
   const [request, setRequest] = useState<any>(null);
   const [progressUpdates, setProgressUpdates] = useState<any[]>([]);
   const [closureReport, setClosureReport] = useState<any>(null);
+  const [tenantInvoices, setTenantInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [openingMessages, setOpeningMessages] = useState(false);
 
@@ -89,6 +94,18 @@ export default function TenantMaintenanceDetailScreen() {
       if (data.closure_requested_at) {
         const closure = await getClosureReport(id);
         setClosureReport(closure);
+      }
+
+      // Fetch tenant-billed invoices (Plane #109 entry point)
+      try {
+        const allInvoices = await getInvoicesByRequest(id);
+        setTenantInvoices(
+          allInvoices.filter(
+            (inv: any) => inv.payer_role === 'tenant' && inv.status === 'submitted'
+          )
+        );
+      } catch (_) {
+        // Non-critical — invoice section just won't render
       }
     } catch (error: any) {
       console.error('Error fetching request:', error);
@@ -356,6 +373,30 @@ export default function TenantMaintenanceDetailScreen() {
                 )}
               </View>
             ))}
+          </Animated.View>
+        )}
+
+        {/* Invoice Approval CTA (Plane #109) — only when tenant is billed */}
+        {tenantInvoices.length > 0 && (
+          <Animated.View entering={FadeInDown.delay(470).duration(500)}>
+            <TouchableOpacity
+              style={styles.verifyWorkButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.push(`/(tenant)/maintenance/${id}/invoice`);
+              }}
+              testID="tenant-invoice-review"
+            >
+              <Ionicons name="receipt" size={24} color="#FFFFFF" />
+              <View style={styles.verifyWorkTextContainer}>
+                <Text style={styles.verifyWorkTitle}>Review Invoice</Text>
+                <Text style={styles.verifyWorkSubtitle}>
+                  {tenantInvoices.length} invoice{tenantInvoices.length > 1 ? 's' : ''} waiting for
+                  your approval
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
           </Animated.View>
         )}
 

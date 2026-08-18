@@ -115,6 +115,12 @@ export default function TenantLayout() {
         }}
       />
       <Tabs.Screen
+        name="maintenance/[id]/invoice"
+        options={{
+          href: null, // Hidden from tabs - tenant invoice approve/reject (Plane #109)
+        }}
+      />
+      <Tabs.Screen
         name="messages"
         options={{
           href: null, // Hidden from tabs - accessed from dashboard

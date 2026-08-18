@@ -63,6 +63,12 @@ export default function VendorLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="invoices"
+        options={{
+          href: null, // Hidden from tabs - accessed from Dashboard or Jobs
+        }}
+      />
       {/* ⚠️ CONTRACTS MUST STAY HIDDEN FROM THE TAB BAR (Plane #83) ⚠️
           The tab bar was reduced 7→6 for density. Contracts is nested under
           Profile (menu row) + Dashboard (qa-contracts quick action) — both
