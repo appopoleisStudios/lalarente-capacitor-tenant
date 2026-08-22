@@ -1,0 +1,41 @@
+# Owner FICA / screening — prove display-only on the simulator
+# Code can set "pending". Maestro must see the rows AND no Start/Run button.
+# Native bureau APIs cannot run here; this gate is "unwired on purpose until #98".
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+
+- extendedWaitUntil:
+    visible: "Portfolio Dashboard"
+    timeout: 60000
+
+- scrollUntilVisible:
+    element:
+      text: "Compliance"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+
+- tapOn:
+    text: "Compliance"
+
+- extendedWaitUntil:
+    visible: "FICA / Tenant KYC"
+    timeout: 20000
+
+- assertVisible:
+    text: "Identity"
+- assertVisible:
+    text: "Credit"
+- assertVisible:
+    text: "Background"
+
+# Fail if someone wires a Start CTA without a real bureau (or without updating this flow)
+- assertNotVisible:
+    text: "Start check"
+- assertNotVisible:
+    text: "Run check"
+- assertNotVisible:
+    text: "Initiate background"
+- assertNotVisible:
+    text: "Initiate credit"

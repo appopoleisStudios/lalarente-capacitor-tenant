@@ -417,14 +417,14 @@ export default function OwnerComplianceScreen() {
                         )}
                       </View>
                       <View style={styles.ficaChecks}>
-                        <View style={styles.ficaCheckItem}>
+                        <View style={styles.ficaCheckItem} testID="fica-check-identity">
                           <Ionicons name={idCfg.icon as any} size={16} color={idCfg.color} />
                           <Text style={styles.ficaCheckLabel}>Identity</Text>
                           <Text style={[styles.ficaCheckStatus, { color: idCfg.color }]}>
                             {tenant.identityStatus || 'Not started'}
                           </Text>
                         </View>
-                        <View style={styles.ficaCheckItem}>
+                        <View style={styles.ficaCheckItem} testID="fica-check-credit">
                           <Ionicons
                             name={creditCfg.icon as any}
                             size={16}
@@ -435,7 +435,7 @@ export default function OwnerComplianceScreen() {
                             {tenant.creditStatus || 'Not started'}
                           </Text>
                         </View>
-                        <View style={styles.ficaCheckItem}>
+                        <View style={styles.ficaCheckItem} testID="fica-check-background">
                           <Ionicons name={bgCfg.icon as any} size={16} color={bgCfg.color} />
                           <Text style={styles.ficaCheckLabel}>Background</Text>
                           <Text style={[styles.ficaCheckStatus, { color: bgCfg.color }]}>

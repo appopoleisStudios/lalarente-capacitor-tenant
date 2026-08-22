@@ -1,0 +1,14 @@
+{
+  "note": "Static JSX under-counts these. Multiply per entity (property, tenant, job).",
+  "inspection": {
+    "rooms": 10,
+    "checklistItems": 82,
+    "conditionChipsPerItem": 5,
+    "photoRequiredPerRoom": true,
+    "types": ["move_in", "periodic", "move_out"],
+    "conservativeTapsPerConduct": 157
+  },
+  "complianceCertsPerProperty": ["eoc", "gas", "rates", "insurance", "fica", "popia"],
+  "ficaModulesPerTenant": ["identity", "credit", "background"],
+  "applicationWizardSteps": ["Personal", "Employment", "Documents", "Review"]
+}

@@ -1,0 +1,746 @@
+{
+  "count": 104,
+  "byFeature": {
+    "ai-chat": 1,
+    "auth": 2,
+    "documents": 3,
+    "inspections": 5,
+    "maintenance": 1,
+    "messaging": 3,
+    "owner": 40,
+    "privacy": 2,
+    "properties": 1,
+    "tenant": 27,
+    "vendor": 19
+  },
+  "screens": [
+    {
+      "file": "src/features/ai-chat/screens/LalaChatScreen.tsx",
+      "feature": "ai-chat",
+      "name": "LalaChatScreen",
+      "lines": 430,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/auth/screens/LoginScreen.tsx",
+      "feature": "auth",
+      "name": "LoginScreen",
+      "lines": 452,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/auth/screens/RegisterScreen.tsx",
+      "feature": "auth",
+      "name": "RegisterScreen",
+      "lines": 332,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/documents/screens/DocumentUploadScreen.tsx",
+      "feature": "documents",
+      "name": "DocumentUploadScreen",
+      "lines": 632,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/documents/screens/DocumentViewerScreen.tsx",
+      "feature": "documents",
+      "name": "DocumentViewerScreen",
+      "lines": 633,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/documents/screens/DocumentsScreen.tsx",
+      "feature": "documents",
+      "name": "DocumentsScreen",
+      "lines": 488,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/inspections/screens/InspectionScreen.tsx",
+      "feature": "inspections",
+      "name": "InspectionScreen",
+      "lines": 1278,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/inspections/screens/OwnerInspectionDetailScreen.tsx",
+      "feature": "inspections",
+      "name": "OwnerInspectionDetailScreen",
+      "lines": 497,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/inspections/screens/OwnerInspectionRoute.tsx",
+      "feature": "inspections",
+      "name": "OwnerInspectionRoute",
+      "lines": 51,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/inspections/screens/OwnerInspectionsListScreen.tsx",
+      "feature": "inspections",
+      "name": "OwnerInspectionsListScreen",
+      "lines": 310,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/inspections/screens/OwnerScheduleInspectionScreen.tsx",
+      "feature": "inspections",
+      "name": "OwnerScheduleInspectionScreen",
+      "lines": 423,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/maintenance/screens/ReportMaintenanceScreen.tsx",
+      "feature": "maintenance",
+      "name": "ReportMaintenanceScreen",
+      "lines": 454,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/messaging/screens/ComposeMessageScreen.tsx",
+      "feature": "messaging",
+      "name": "ComposeMessageScreen",
+      "lines": 485,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/messaging/screens/MessageThreadScreen.tsx",
+      "feature": "messaging",
+      "name": "MessageThreadScreen",
+      "lines": 617,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/messaging/screens/MessagesScreen.tsx",
+      "feature": "messaging",
+      "name": "MessagesScreen",
+      "lines": 491,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/AddPropertyScreen.tsx",
+      "feature": "owner",
+      "name": "AddPropertyScreen",
+      "lines": 638,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/EditPropertyScreen.tsx",
+      "feature": "owner",
+      "name": "EditPropertyScreen",
+      "lines": 707,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerApplicationCompetitionScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerApplicationCompetitionScreen",
+      "lines": 654,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerApplicationDetailScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerApplicationDetailScreen",
+      "lines": 1101,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerApplicationsScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerApplicationsScreen",
+      "lines": 617,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerArrearsManagementScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerArrearsManagementScreen",
+      "lines": 594,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerClosureApprovalScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerClosureApprovalScreen",
+      "lines": 799,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerComplianceScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerComplianceScreen",
+      "lines": 796,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerDashboardScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerDashboardScreen",
+      "lines": 709,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerDepositManagementScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerDepositManagementScreen",
+      "lines": 861,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerDocumentsHubScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerDocumentsHubScreen",
+      "lines": 641,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerEarlyTerminationScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerEarlyTerminationScreen",
+      "lines": 458,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerHoldingDepositScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerHoldingDepositScreen",
+      "lines": 822,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerInsuranceClaimScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerInsuranceClaimScreen",
+      "lines": 1107,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerInsuranceClaimsDashboard.tsx",
+      "feature": "owner",
+      "name": "OwnerInsuranceClaimsDashboard",
+      "lines": 491,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerInvoiceApprovalScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerInvoiceApprovalScreen",
+      "lines": 529,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerInvoicesScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerInvoicesScreen",
+      "lines": 592,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerLeaseCreateScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerLeaseCreateScreen",
+      "lines": 604,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerLeaseDetailScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerLeaseDetailScreen",
+      "lines": 1198,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerLeaseRenewalScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerLeaseRenewalScreen",
+      "lines": 1044,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerMaintenanceDetailScreen",
+      "lines": 1348,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerMaintenanceListScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerMaintenanceListScreen",
+      "lines": 225,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerMonthlyStatementScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerMonthlyStatementScreen",
+      "lines": 474,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerNotificationsScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerNotificationsScreen",
+      "lines": 415,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerPODetailScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerPODetailScreen",
+      "lines": 930,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerPaymentDisputesScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerPaymentDisputesScreen",
+      "lines": 527,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerProgressTimelineScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerProgressTimelineScreen",
+      "lines": 329,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerPropertyDetailScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerPropertyDetailScreen",
+      "lines": 544,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerPropertyMaintenanceHistoryScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerPropertyMaintenanceHistoryScreen",
+      "lines": 193,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerQuoteDetailScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerQuoteDetailScreen",
+      "lines": 780,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerRenewalsDashboardScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerRenewalsDashboardScreen",
+      "lines": 306,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerRentRollScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerRentRollScreen",
+      "lines": 703,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerSendPOScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerSendPOScreen",
+      "lines": 410,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerTaxReportScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerTaxReportScreen",
+      "lines": 571,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerViewingDetailScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerViewingDetailScreen",
+      "lines": 1318,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/OwnerViewingsScreen.tsx",
+      "feature": "owner",
+      "name": "OwnerViewingsScreen",
+      "lines": 692,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/ProfileScreen.tsx",
+      "feature": "owner",
+      "name": "ProfileScreen",
+      "lines": 292,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/PropertiesListScreen.tsx",
+      "feature": "owner",
+      "name": "PropertiesListScreen",
+      "lines": 225,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/TenantsScreen.tsx",
+      "feature": "owner",
+      "name": "TenantsScreen",
+      "lines": 588,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/owner/screens/VendorSelectionScreen.tsx",
+      "feature": "owner",
+      "name": "VendorSelectionScreen",
+      "lines": 786,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/privacy/screens/ConsentManagementScreen.tsx",
+      "feature": "privacy",
+      "name": "ConsentManagementScreen",
+      "lines": 364,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/privacy/screens/DataSubjectRightsScreen.tsx",
+      "feature": "privacy",
+      "name": "DataSubjectRightsScreen",
+      "lines": 672,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/properties/screens/PropertyView3DScreen.tsx",
+      "feature": "properties",
+      "name": "PropertyView3DScreen",
+      "lines": 221,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantApplicationDetailScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantApplicationDetailScreen",
+      "lines": 441,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantApplicationScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantApplicationScreen",
+      "lines": 1272,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantApplicationStatusScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantApplicationStatusScreen",
+      "lines": 649,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantArrearsScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantArrearsScreen",
+      "lines": 530,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantClosureConfirmScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantClosureConfirmScreen",
+      "lines": 396,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantDashboardScreen",
+      "lines": 2141,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantDepositStatusScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantDepositStatusScreen",
+      "lines": 599,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantDocumentsScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantDocumentsScreen",
+      "lines": 695,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantEarlyTerminationScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantEarlyTerminationScreen",
+      "lines": 294,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantHoldingDepositScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantHoldingDepositScreen",
+      "lines": 544,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantLeaseJourneyScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantLeaseJourneyScreen",
+      "lines": 540,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantLeaseRenewalScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantLeaseRenewalScreen",
+      "lines": 970,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantLeaseScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantLeaseScreen",
+      "lines": 1079,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantMaintenanceDetailScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantMaintenanceDetailScreen",
+      "lines": 588,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantMaintenanceListScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantMaintenanceListScreen",
+      "lines": 305,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantMaintenanceReportScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantMaintenanceReportScreen",
+      "lines": 712,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantNotificationsScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantNotificationsScreen",
+      "lines": 417,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantPaymentDisputeScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantPaymentDisputeScreen",
+      "lines": 486,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantPaymentScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantPaymentScreen",
+      "lines": 995,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantProfileScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantProfileScreen",
+      "lines": 804,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantPropertyDetailScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantPropertyDetailScreen",
+      "lines": 1116,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantReportsScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantReportsScreen",
+      "lines": 507,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantRequestViewingScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantRequestViewingScreen",
+      "lines": 713,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantSearchScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantSearchScreen",
+      "lines": 565,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantVerificationScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantVerificationScreen",
+      "lines": 676,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantViewingDetailScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantViewingDetailScreen",
+      "lines": 754,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/tenant/screens/TenantViewingsScreen.tsx",
+      "feature": "tenant",
+      "name": "TenantViewingsScreen",
+      "lines": 604,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/vendor/screens/RequestClosureScreen.tsx",
+      "feature": "vendor",
+      "name": "RequestClosureScreen",
+      "lines": 291,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/vendor/screens/SubmitProgressUpdateScreen.tsx",
+      "feature": "vendor",
+      "name": "SubmitProgressUpdateScreen",
+      "lines": 281,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/vendor/screens/VendorBankingScreen.tsx",
+      "feature": "vendor",
+      "name": "VendorBankingScreen",
+      "lines": 604,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/vendor/screens/VendorContractDetailScreen.tsx",
+      "feature": "vendor",
+      "name": "VendorContractDetailScreen",
+      "lines": 785,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/vendor/screens/VendorContractsListScreen.tsx",
+      "feature": "vendor",
+      "name": "VendorContractsListScreen",
+      "lines": 625,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/vendor/screens/VendorDashboardScreen.tsx",
+      "feature": "vendor",
+      "name": "VendorDashboardScreen",
+      "lines": 943,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/vendor/screens/VendorDocumentsManagementScreen.tsx",
+      "feature": "vendor",
+      "name": "VendorDocumentsManagementScreen",
+      "lines": 788,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/vendor/screens/VendorEarningsScreen.tsx",
+      "feature": "vendor",
+      "name": "VendorEarningsScreen",
+      "lines": 575,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/vendor/screens/VendorEditProfileScreen.tsx",
+      "feature": "vendor",
+      "name": "VendorEditProfileScreen",
+      "lines": 348,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/vendor/screens/VendorInvoiceSubmitScreen.tsx",
+      "feature": "vendor",
+      "name": "VendorInvoiceSubmitScreen",
+      "lines": 580,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/vendor/screens/VendorJobDetailScreen.tsx",
+      "feature": "vendor",
+      "name": "VendorJobDetailScreen",
+      "lines": 901,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/vendor/screens/VendorJobsListScreen.tsx",
+      "feature": "vendor",
+      "name": "VendorJobsListScreen",
+      "lines": 345,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/vendor/screens/VendorMaintenanceListScreen.tsx",
+      "feature": "vendor",
+      "name": "VendorMaintenanceListScreen",
+      "lines": 626,
+      "defaultExport": false
+    },
+    {
+      "file": "src/features/vendor/screens/VendorNotificationsScreen.tsx",
+      "feature": "vendor",
+      "name": "VendorNotificationsScreen",
+      "lines": 447,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/vendor/screens/VendorPODetailScreen.tsx",
+      "feature": "vendor",
+      "name": "VendorPODetailScreen",
+      "lines": 702,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/vendor/screens/VendorProfileScreen.tsx",
+      "feature": "vendor",
+      "name": "VendorProfileScreen",
+      "lines": 597,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/vendor/screens/VendorQuoteDetailScreen.tsx",
+      "feature": "vendor",
+      "name": "VendorQuoteDetailScreen",
+      "lines": 601,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/vendor/screens/VendorQuoteSubmitScreen.tsx",
+      "feature": "vendor",
+      "name": "VendorQuoteSubmitScreen",
+      "lines": 1229,
+      "defaultExport": true
+    },
+    {
+      "file": "src/features/vendor/screens/VendorServicesManagementScreen.tsx",
+      "feature": "vendor",
+      "name": "VendorServicesManagementScreen",
+      "lines": 780,
+      "defaultExport": true
+    }
+  ]
+}

@@ -20,7 +20,8 @@
     "test:e2e:video": "bash scripts/run-e2e-video.sh",
     "test:e2e:record": "bash scripts/record-e2e.sh",
     "supabase:types": "npx supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > src/core/types/database.ts",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "inventory": "node scripts/generate-product-inventory.mjs"
   },
   "engines": {
     "node": ">=24.4.1 <25.0.0",

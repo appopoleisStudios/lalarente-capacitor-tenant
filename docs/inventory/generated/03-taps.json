@@ -1,0 +1,3959 @@
+{
+  "totals": {
+    "textInputs": 180,
+    "switches": 5,
+    "pressables": 817,
+    "onPress": 852,
+    "emptyOnPress": 0,
+    "testIds": 122,
+    "navOps": 434,
+    "alerts": 548
+  },
+  "files": [
+    {
+      "file": "app/(tenant)/vendor-payments/[invoiceId].tsx",
+      "testIds": ["pay-vendor-title", "invoice-number-detail", "pay-via-payfast"],
+      "testIdCount": 3,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "{ pathname: '/(tenant"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 3,
+      "onPress": 3,
+      "emptyOnPress": 0,
+      "alerts": 3
+    },
+    {
+      "file": "app/(tenant)/vendor-payments/checkout.tsx",
+      "testIds": ["checkout-close", "checkout-title", "checkout-loading", "checkout-blocked"],
+      "testIdCount": 4,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "replace",
+          "raw": "`/(tenant"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 1,
+      "onPress": 1,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "app/(tenant)/vendor-payments/index.tsx",
+      "testIds": ["vendor-payments-title", "invoice-number", "pay-now"],
+      "testIdCount": 3,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "`/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 1,
+      "onPress": 1,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "app/(tenant)/vendor-payments/result.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 5,
+      "onPress": 5,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "app/(vendor)/maintenance/[id].tsx",
+      "testIds": ["vendor-submit-quote"],
+      "testIdCount": 1,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "`/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": "`/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": "'/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": "`/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": "`/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": "`/(vendor"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "'/(vendor"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 6,
+      "onPress": 6,
+      "emptyOnPress": 0,
+      "alerts": 4
+    },
+    {
+      "file": "app/_layout.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "replace",
+          "raw": "'/auth/login'"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 0,
+      "onPress": 0,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "app/auth/signout.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "replace",
+          "raw": "'/auth/login'"
+        },
+        {
+          "op": "replace",
+          "raw": "'/auth/login'"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 0,
+      "onPress": 0,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "app/test-components.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 0,
+      "onPress": 3,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/ai-chat/screens/LalaChatScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 1,
+      "switches": 0,
+      "pressables": 3,
+      "onPress": 3,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/auth/screens/LoginScreen.tsx",
+      "testIds": ["email-input", "password-input", "sign-in-button", "create-account-link"],
+      "testIdCount": 4,
+      "nav": [
+        {
+          "op": "replace",
+          "raw": "route"
+        },
+        {
+          "op": "push",
+          "raw": "'/auth/register' as any"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 3,
+      "switches": 0,
+      "pressables": 3,
+      "onPress": 3,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/auth/screens/RegisterScreen.tsx",
+      "testIds": [
+        "register-business-name",
+        "register-full-name",
+        "register-email",
+        "register-password",
+        "register-confirm-password",
+        "register-submit"
+      ],
+      "testIdCount": 6,
+      "nav": [
+        {
+          "op": "replace",
+          "raw": "route"
+        },
+        {
+          "op": "replace",
+          "raw": "'/auth/login'"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 5,
+      "switches": 0,
+      "pressables": 6,
+      "onPress": 6,
+      "emptyOnPress": 0,
+      "alerts": 5
+    },
+    {
+      "file": "src/features/documents/screens/DocumentUploadScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 3,
+      "switches": 0,
+      "pressables": 8,
+      "onPress": 8,
+      "emptyOnPress": 0,
+      "alerts": 7
+    },
+    {
+      "file": "src/features/documents/screens/DocumentViewerScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 6,
+      "onPress": 6,
+      "emptyOnPress": 0,
+      "alerts": 8
+    },
+    {
+      "file": "src/features/documents/screens/DocumentsScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "`/(${role}"
+        },
+        {
+          "op": "push",
+          "raw": "`/(${role}"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 1,
+      "switches": 0,
+      "pressables": 5,
+      "onPress": 5,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/inspections/screens/InspectionScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "docsPath as any"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 3,
+      "switches": 0,
+      "pressables": 22,
+      "onPress": 22,
+      "emptyOnPress": 0,
+      "alerts": 11
+    },
+    {
+      "file": "src/features/inspections/screens/OwnerInspectionDetailScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 5,
+      "onPress": 5,
+      "emptyOnPress": 0,
+      "alerts": 3
+    },
+    {
+      "file": "src/features/inspections/screens/OwnerInspectionsListScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 6,
+      "onPress": 6,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/inspections/screens/OwnerScheduleInspectionScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "{ pathname: '/(owner"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 1,
+      "switches": 0,
+      "pressables": 6,
+      "onPress": 6,
+      "emptyOnPress": 0,
+      "alerts": 4
+    },
+    {
+      "file": "src/features/leases/components/SignatureModal.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 3,
+      "onPress": 3,
+      "emptyOnPress": 0,
+      "alerts": 3
+    },
+    {
+      "file": "src/features/maintenance/components/MaintenanceCard.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 1,
+      "onPress": 1,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/maintenance/components/MediaGallery.tsx",
+      "testIds": ["media-gallery-thumb", "media-gallery-close"],
+      "testIdCount": 2,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 2,
+      "onPress": 2,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/maintenance/screens/ReportMaintenanceScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 2,
+      "switches": 0,
+      "pressables": 11,
+      "onPress": 11,
+      "emptyOnPress": 0,
+      "alerts": 7
+    },
+    {
+      "file": "src/features/messaging/screens/ComposeMessageScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "replace",
+          "raw": "dest as any"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "replace",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 2,
+      "switches": 0,
+      "pressables": 9,
+      "onPress": 9,
+      "emptyOnPress": 0,
+      "alerts": 4
+    },
+    {
+      "file": "src/features/messaging/screens/MessageThreadScreen.tsx",
+      "testIds": ["thread-message-input", "thread-send-button"],
+      "testIdCount": 2,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 1,
+      "switches": 0,
+      "pressables": 2,
+      "onPress": 2,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/messaging/screens/MessagesScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "`/(${role}"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "path"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 4,
+      "onPress": 4,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/owner/components/AnalyticsGrid.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "card.route as any"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 1,
+      "onPress": 1,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/owner/components/ApplicantsSection.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 2,
+      "onPress": 2,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/owner/components/DocumentsSection.tsx",
+      "testIds": ["documents-see-all"],
+      "testIdCount": 1,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 3,
+      "onPress": 3,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/owner/components/ImagePickerButton.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 2,
+      "onPress": 2,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/owner/components/LocationPicker.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 0,
+      "onPress": 2,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/owner/components/MaintenanceFilters.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 1,
+      "onPress": 1,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/owner/components/MaintenanceSection.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 2,
+      "onPress": 2,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/owner/components/MessagesSection.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 2,
+      "onPress": 2,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/owner/components/PortfolioCard.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 3,
+      "onPress": 3,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/owner/components/PropertyCard.tsx",
+      "testIds": ["property-card-view", "property-card-edit"],
+      "testIdCount": 2,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 2,
+      "onPress": 2,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/owner/components/QuoteCard.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 5,
+      "onPress": 5,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/owner/components/RequestPOSection.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 2,
+      "onPress": 2,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/owner/components/SimpleLocationPicker.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 4,
+      "switches": 0,
+      "pressables": 0,
+      "onPress": 0,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/owner/components/ViewingRequestsSection.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 2,
+      "onPress": 2,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/owner/screens/AddPropertyScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 17,
+      "switches": 2,
+      "pressables": 11,
+      "onPress": 11,
+      "emptyOnPress": 0,
+      "alerts": 5
+    },
+    {
+      "file": "src/features/owner/screens/EditPropertyScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "navigate",
+          "raw": "'/(owner"
+        }
+      ],
+      "hrefs": ["null"],
+      "textInputs": 14,
+      "switches": 2,
+      "pressables": 11,
+      "onPress": 11,
+      "emptyOnPress": 0,
+      "alerts": 5
+    },
+    {
+      "file": "src/features/owner/screens/OwnerApplicationCompetitionScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 6,
+      "onPress": 6,
+      "emptyOnPress": 0,
+      "alerts": 10
+    },
+    {
+      "file": "src/features/owner/screens/OwnerApplicationDetailScreen.tsx",
+      "testIds": ["screening-row-background", "screening-row-credit", "screening-row-identity"],
+      "testIdCount": 3,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 1,
+      "switches": 0,
+      "pressables": 12,
+      "onPress": 15,
+      "emptyOnPress": 0,
+      "alerts": 11
+    },
+    {
+      "file": "src/features/owner/screens/OwnerApplicationsScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": " `/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 8,
+      "onPress": 8,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/owner/screens/OwnerArrearsManagementScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "navigate",
+          "raw": "'/(owner"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 5,
+      "onPress": 5,
+      "emptyOnPress": 0,
+      "alerts": 9
+    },
+    {
+      "file": "src/features/owner/screens/OwnerClosureApprovalScreen.tsx",
+      "testIds": [
+        "closure-review-title",
+        "closure-reject-button",
+        "closure-approve-button",
+        "closure-forward-button"
+      ],
+      "testIdCount": 4,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 1,
+      "switches": 0,
+      "pressables": 6,
+      "onPress": 6,
+      "emptyOnPress": 0,
+      "alerts": 10
+    },
+    {
+      "file": "src/features/owner/screens/OwnerComplianceScreen.tsx",
+      "testIds": [
+        "owner-compliance-back",
+        "fica-check-identity",
+        "fica-check-credit",
+        "fica-check-background"
+      ],
+      "testIdCount": 4,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 4,
+      "onPress": 4,
+      "emptyOnPress": 0,
+      "alerts": 3
+    },
+    {
+      "file": "src/features/owner/screens/OwnerDashboardScreen.tsx",
+      "testIds": ["owner-messages-button", "notification-bell", "owner-primary-action"],
+      "testIdCount": 3,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "primaryAction.route as any"
+        },
+        {
+          "op": "push",
+          "raw": "item.route as any"
+        },
+        {
+          "op": "push",
+          "raw": "{ pathname: '/(owner"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 6,
+      "onPress": 6,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/owner/screens/OwnerDepositManagementScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 2,
+      "switches": 0,
+      "pressables": 9,
+      "onPress": 9,
+      "emptyOnPress": 0,
+      "alerts": 11
+    },
+    {
+      "file": "src/features/owner/screens/OwnerDocumentsHubScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "route as any"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 4,
+      "onPress": 4,
+      "emptyOnPress": 0,
+      "alerts": 2
+    },
+    {
+      "file": "src/features/owner/screens/OwnerEarlyTerminationScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 1,
+      "switches": 0,
+      "pressables": 5,
+      "onPress": 5,
+      "emptyOnPress": 0,
+      "alerts": 5
+    },
+    {
+      "file": "src/features/owner/screens/OwnerHoldingDepositScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 2,
+      "switches": 0,
+      "pressables": 9,
+      "onPress": 9,
+      "emptyOnPress": 0,
+      "alerts": 12
+    },
+    {
+      "file": "src/features/owner/screens/OwnerInsuranceClaimScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "replace",
+          "raw": "`/(owner"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 5,
+      "switches": 0,
+      "pressables": 13,
+      "onPress": 13,
+      "emptyOnPress": 0,
+      "alerts": 14
+    },
+    {
+      "file": "src/features/owner/screens/OwnerInsuranceClaimsDashboard.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 6,
+      "onPress": 6,
+      "emptyOnPress": 0,
+      "alerts": 1
+    },
+    {
+      "file": "src/features/owner/screens/OwnerInvoiceApprovalScreen.tsx",
+      "testIds": ["invoice-reject-button", "invoice-approve-button", "invoice-reject-confirm"],
+      "testIdCount": 3,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 1,
+      "switches": 0,
+      "pressables": 5,
+      "onPress": 5,
+      "emptyOnPress": 0,
+      "alerts": 7
+    },
+    {
+      "file": "src/features/owner/screens/OwnerInvoicesScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 6,
+      "onPress": 6,
+      "emptyOnPress": 0,
+      "alerts": 6
+    },
+    {
+      "file": "src/features/owner/screens/OwnerLeaseCreateScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 9,
+      "switches": 0,
+      "pressables": 7,
+      "onPress": 7,
+      "emptyOnPress": 0,
+      "alerts": 8
+    },
+    {
+      "file": "src/features/owner/screens/OwnerLeaseDetailScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "{ pathname: '/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 11,
+      "onPress": 10,
+      "emptyOnPress": 0,
+      "alerts": 15
+    },
+    {
+      "file": "src/features/owner/screens/OwnerLeaseRenewalScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 4,
+      "switches": 0,
+      "pressables": 12,
+      "onPress": 12,
+      "emptyOnPress": 0,
+      "alerts": 15
+    },
+    {
+      "file": "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "{ pathname: '/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 11,
+      "onPress": 12,
+      "emptyOnPress": 0,
+      "alerts": 23
+    },
+    {
+      "file": "src/features/owner/screens/OwnerMaintenanceListScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 3,
+      "onPress": 3,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/owner/screens/OwnerMonthlyStatementScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 4,
+      "onPress": 4,
+      "emptyOnPress": 0,
+      "alerts": 2
+    },
+    {
+      "file": "src/features/owner/screens/OwnerNotificationsScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "item.route as any"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 3,
+      "onPress": 3,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/owner/screens/OwnerPODetailScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 6,
+      "switches": 0,
+      "pressables": 9,
+      "onPress": 9,
+      "emptyOnPress": 0,
+      "alerts": 9
+    },
+    {
+      "file": "src/features/owner/screens/OwnerPaymentDisputesScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 3,
+      "switches": 0,
+      "pressables": 8,
+      "onPress": 8,
+      "emptyOnPress": 0,
+      "alerts": 5
+    },
+    {
+      "file": "src/features/owner/screens/OwnerProgressTimelineScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 1,
+      "onPress": 1,
+      "emptyOnPress": 0,
+      "alerts": 1
+    },
+    {
+      "file": "src/features/owner/screens/OwnerPropertyDetailScreen.tsx",
+      "testIds": [
+        "owner-property-photo",
+        "owner-view-3d",
+        "owner-maintenance-history",
+        "owner-photo-close"
+      ],
+      "testIdCount": 4,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "{ pathname: '/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 12,
+      "onPress": 12,
+      "emptyOnPress": 0,
+      "alerts": 3
+    },
+    {
+      "file": "src/features/owner/screens/OwnerPropertyMaintenanceHistoryScreen.tsx",
+      "testIds": ["owner-maintenance-history-title", "owner-maintenance-history-back"],
+      "testIdCount": 2,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "navigate",
+          "raw": "`/(owner"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 3,
+      "onPress": 3,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/owner/screens/OwnerQuoteDetailScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 6,
+      "onPress": 6,
+      "emptyOnPress": 0,
+      "alerts": 9
+    },
+    {
+      "file": "src/features/owner/screens/OwnerRenewalsDashboardScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "navigate",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 3,
+      "onPress": 3,
+      "emptyOnPress": 0,
+      "alerts": 3
+    },
+    {
+      "file": "src/features/owner/screens/OwnerRentRollScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 6,
+      "onPress": 6,
+      "emptyOnPress": 0,
+      "alerts": 6
+    },
+    {
+      "file": "src/features/owner/screens/OwnerSendPOScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 1,
+      "switches": 0,
+      "pressables": 5,
+      "onPress": 5,
+      "emptyOnPress": 0,
+      "alerts": 6
+    },
+    {
+      "file": "src/features/owner/screens/OwnerTaxReportScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 3,
+      "onPress": 3,
+      "emptyOnPress": 0,
+      "alerts": 2
+    },
+    {
+      "file": "src/features/owner/screens/OwnerViewingDetailScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 3,
+      "switches": 0,
+      "pressables": 19,
+      "onPress": 19,
+      "emptyOnPress": 0,
+      "alerts": 9
+    },
+    {
+      "file": "src/features/owner/screens/OwnerViewingsScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "{ pathname: '/(owner"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 4,
+      "onPress": 4,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/owner/screens/ProfileScreen.tsx",
+      "testIds": ["owner-profile-email"],
+      "testIdCount": 1,
+      "nav": [
+        {
+          "op": "replace",
+          "raw": "'/auth/login'"
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 2,
+      "switches": 0,
+      "pressables": 6,
+      "onPress": 6,
+      "emptyOnPress": 0,
+      "alerts": 3
+    },
+    {
+      "file": "src/features/owner/screens/PropertiesListScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 1,
+      "switches": 0,
+      "pressables": 5,
+      "onPress": 5,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/owner/screens/TenantsScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "'/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        },
+        {
+          "op": "push",
+          "raw": "`/(owner"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 6,
+      "onPress": 6,
+      "emptyOnPress": 0,
+      "alerts": 1
+    },
+    {
+      "file": "src/features/owner/screens/VendorSelectionScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 2,
+      "switches": 0,
+      "pressables": 8,
+      "onPress": 8,
+      "emptyOnPress": 0,
+      "alerts": 14
+    },
+    {
+      "file": "src/features/privacy/components/ConsentCaptureModal.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 4,
+      "onPress": 4,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/privacy/screens/ConsentManagementScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "navigate",
+          "raw": "profilePath as never"
+        },
+        {
+          "op": "navigate",
+          "raw": "dataRightsPath as never"
+        },
+        {
+          "op": "navigate",
+          "raw": "dataRightsPath as never"
+        },
+        {
+          "op": "navigate",
+          "raw": "dataRightsPath as never"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 1,
+      "pressables": 4,
+      "onPress": 4,
+      "emptyOnPress": 0,
+      "alerts": 1
+    },
+    {
+      "file": "src/features/privacy/screens/DataSubjectRightsScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 5,
+      "switches": 0,
+      "pressables": 7,
+      "onPress": 7,
+      "emptyOnPress": 0,
+      "alerts": 7
+    },
+    {
+      "file": "src/features/properties/screens/PropertyView3DScreen.tsx",
+      "testIds": ["view3d-close", "view3d-title", "view3d-error-back"],
+      "testIdCount": 3,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "navigate",
+          "raw": "`${backTo}/${id}` as never"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": ["null"],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 2,
+      "onPress": 2,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/tenant/screens/TenantApplicationDetailScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 3,
+      "onPress": 3,
+      "emptyOnPress": 0,
+      "alerts": 3
+    },
+    {
+      "file": "src/features/tenant/screens/TenantApplicationScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 10,
+      "switches": 0,
+      "pressables": 11,
+      "onPress": 11,
+      "emptyOnPress": 0,
+      "alerts": 29
+    },
+    {
+      "file": "src/features/tenant/screens/TenantApplicationStatusScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 5,
+      "onPress": 5,
+      "emptyOnPress": 0,
+      "alerts": 3
+    },
+    {
+      "file": "src/features/tenant/screens/TenantArrearsScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 1,
+      "switches": 0,
+      "pressables": 7,
+      "onPress": 7,
+      "emptyOnPress": 0,
+      "alerts": 3
+    },
+    {
+      "file": "src/features/tenant/screens/TenantClosureConfirmScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 1,
+      "switches": 0,
+      "pressables": 6,
+      "onPress": 6,
+      "emptyOnPress": 0,
+      "alerts": 5
+    },
+    {
+      "file": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "testIds": [
+        "tenant-dashboard-header",
+        "notification-bell",
+        "view-lease-details",
+        "qa-search",
+        "qa-payments",
+        "qa-maintenance",
+        "qa-messages"
+      ],
+      "testIdCount": 7,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "`/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "`/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "{ pathname: '/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "item.href"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "item.href"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "`/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "`/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "`/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "`/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "`/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        }
+      ],
+      "hrefs": [
+        "'/(tenant)/payments'",
+        "'/(tenant)/holding-deposit'",
+        "'/(tenant)/early-termination'",
+        "'/(tenant)/reports'",
+        "'/(tenant)/viewings'",
+        "'/(tenant)/application-status'"
+      ],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 41,
+      "onPress": 41,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/tenant/screens/TenantDepositStatusScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 4,
+      "onPress": 4,
+      "emptyOnPress": 0,
+      "alerts": 4
+    },
+    {
+      "file": "src/features/tenant/screens/TenantDocumentsScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 5,
+      "onPress": 5,
+      "emptyOnPress": 0,
+      "alerts": 5
+    },
+    {
+      "file": "src/features/tenant/screens/TenantEarlyTerminationScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "navigate",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "navigate",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "navigate",
+          "raw": "'/(tenant"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 1,
+      "switches": 0,
+      "pressables": 3,
+      "onPress": 3,
+      "emptyOnPress": 0,
+      "alerts": 3
+    },
+    {
+      "file": "src/features/tenant/screens/TenantHoldingDepositScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 3,
+      "onPress": 3,
+      "emptyOnPress": 0,
+      "alerts": 4
+    },
+    {
+      "file": "src/features/tenant/screens/TenantLeaseJourneyScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 4,
+      "onPress": 4,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/tenant/screens/TenantLeaseRenewalScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 4,
+      "switches": 0,
+      "pressables": 13,
+      "onPress": 13,
+      "emptyOnPress": 0,
+      "alerts": 11
+    },
+    {
+      "file": "src/features/tenant/screens/TenantLeaseScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "{ pathname: '/(tenant"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 9,
+      "onPress": 8,
+      "emptyOnPress": 0,
+      "alerts": 10
+    },
+    {
+      "file": "src/features/tenant/screens/TenantMaintenanceDetailScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "`/(tenant"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "{ pathname: '/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "{ pathname: '/(tenant"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 7,
+      "onPress": 7,
+      "emptyOnPress": 0,
+      "alerts": 3
+    },
+    {
+      "file": "src/features/tenant/screens/TenantMaintenanceListScreen.tsx",
+      "testIds": ["maintenance-report-fab", "maintenance-report-cta"],
+      "testIdCount": 2,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "`/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "`/(tenant"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 5,
+      "onPress": 5,
+      "emptyOnPress": 0,
+      "alerts": 2
+    },
+    {
+      "file": "src/features/tenant/screens/TenantMaintenanceReportScreen.tsx",
+      "testIds": [
+        "maintenance-title-input",
+        "maintenance-description-input",
+        "maintenance-add-camera",
+        "maintenance-submit"
+      ],
+      "testIdCount": 4,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 2,
+      "switches": 0,
+      "pressables": 11,
+      "onPress": 11,
+      "emptyOnPress": 0,
+      "alerts": 10
+    },
+    {
+      "file": "src/features/tenant/screens/TenantNotificationsScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "item.route as any"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 3,
+      "onPress": 3,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/tenant/screens/TenantPaymentDisputeScreen.tsx",
+      "testIds": ["payment-disputes-title", "payment-disputes-title"],
+      "testIdCount": 2,
+      "nav": [
+        {
+          "op": "navigate",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "navigate",
+          "raw": "'/(tenant"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 2,
+      "switches": 0,
+      "pressables": 5,
+      "onPress": 5,
+      "emptyOnPress": 0,
+      "alerts": 5
+    },
+    {
+      "file": "src/features/tenant/screens/TenantPaymentScreen.tsx",
+      "testIds": ["tenant-pay-now", "tenant-mini-pay", "tenant-confirm-payment"],
+      "testIdCount": 3,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "link.href as any"
+        },
+        {
+          "op": "push",
+          "raw": "link.href as any"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        }
+      ],
+      "hrefs": [
+        "'/(tenant)/arrears'",
+        "'/(tenant)/payment-disputes'",
+        "'/(tenant)/vendor-payments'"
+      ],
+      "textInputs": 1,
+      "switches": 0,
+      "pressables": 12,
+      "onPress": 12,
+      "emptyOnPress": 0,
+      "alerts": 3
+    },
+    {
+      "file": "src/features/tenant/screens/TenantProfileScreen.tsx",
+      "testIds": ["tenant-profile-title", "tenant-profile-email"],
+      "testIdCount": 2,
+      "nav": [
+        {
+          "op": "replace",
+          "raw": "'/auth/login'"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 8,
+      "switches": 0,
+      "pressables": 7,
+      "onPress": 7,
+      "emptyOnPress": 0,
+      "alerts": 9
+    },
+    {
+      "file": "src/features/tenant/screens/TenantPropertyDetailScreen.tsx",
+      "testIds": ["tenant-view-3d"],
+      "testIdCount": 1,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "{ pathname: '/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "`/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "{ pathname: '/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "`/(tenant"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 9,
+      "onPress": 9,
+      "emptyOnPress": 0,
+      "alerts": 6
+    },
+    {
+      "file": "src/features/tenant/screens/TenantReportsScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "{ pathname: '/(tenant"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "{ pathname: '/(tenant"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 5,
+      "onPress": 5,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/tenant/screens/TenantRequestViewingScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "`/(tenant"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 1,
+      "switches": 0,
+      "pressables": 6,
+      "onPress": 6,
+      "emptyOnPress": 0,
+      "alerts": 7
+    },
+    {
+      "file": "src/features/tenant/screens/TenantSearchScreen.tsx",
+      "testIds": ["tenant-search-results"],
+      "testIdCount": 1,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "`/(tenant"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 3,
+      "switches": 0,
+      "pressables": 7,
+      "onPress": 7,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/tenant/screens/TenantVerificationScreen.tsx",
+      "testIds": ["tenant-verify-error", "tenant-verify-title"],
+      "testIdCount": 2,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "replace",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 2,
+      "switches": 0,
+      "pressables": 10,
+      "onPress": 10,
+      "emptyOnPress": 0,
+      "alerts": 10
+    },
+    {
+      "file": "src/features/tenant/screens/TenantViewingDetailScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "{ pathname: '/(tenant"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 7,
+      "onPress": 7,
+      "emptyOnPress": 0,
+      "alerts": 6
+    },
+    {
+      "file": "src/features/tenant/screens/TenantViewingsScreen.tsx",
+      "testIds": ["screen-back", "screen-back"],
+      "testIdCount": 2,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "{ pathname: '/(tenant"
+        },
+        {
+          "op": "push",
+          "raw": "'/(tenant"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 5,
+      "onPress": 5,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/vendor/components/JobCard.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 1,
+      "onPress": 1,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/vendor/components/RequestCard.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 1,
+      "onPress": 1,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/vendor/screens/RequestClosureScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 1,
+      "switches": 0,
+      "pressables": 5,
+      "onPress": 5,
+      "emptyOnPress": 0,
+      "alerts": 5
+    },
+    {
+      "file": "src/features/vendor/screens/SubmitProgressUpdateScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 1,
+      "switches": 0,
+      "pressables": 5,
+      "onPress": 5,
+      "emptyOnPress": 0,
+      "alerts": 5
+    },
+    {
+      "file": "src/features/vendor/screens/VendorBankingScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 4,
+      "switches": 0,
+      "pressables": 4,
+      "onPress": 4,
+      "emptyOnPress": 0,
+      "alerts": 7
+    },
+    {
+      "file": "src/features/vendor/screens/VendorContractDetailScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "`/(vendor"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 6,
+      "onPress": 6,
+      "emptyOnPress": 0,
+      "alerts": 4
+    },
+    {
+      "file": "src/features/vendor/screens/VendorContractsListScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "`/(vendor"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 2,
+      "onPress": 2,
+      "emptyOnPress": 0,
+      "alerts": 2
+    },
+    {
+      "file": "src/features/vendor/screens/VendorDashboardScreen.tsx",
+      "testIds": [
+        "vendor-messages-button",
+        "notification-bell",
+        "vendor-stat-available",
+        "vendor-stat-quotes",
+        "vendor-stat-active",
+        "vendor-stat-completed",
+        "qa-messages",
+        "qa-lala-ai",
+        "qa-contracts"
+      ],
+      "testIdCount": 9,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "'/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": "'/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": "'/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": "'/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": "'/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": "'/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": "'/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": "'/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": "'/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": "'/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": "`/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": "`/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": " `/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": "`/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": "`/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": "`/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": "`/(vendor"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 10,
+      "onPress": 16,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/vendor/screens/VendorDocumentsManagementScreen.tsx",
+      "testIds": [
+        "vendor-docs-back",
+        "vendor-docs-back",
+        "vendor-docs-upload-button",
+        "vendor-docs-choose-file"
+      ],
+      "testIdCount": 4,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "navigate",
+          "raw": "'/(vendor"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 10,
+      "onPress": 10,
+      "emptyOnPress": 0,
+      "alerts": 9
+    },
+    {
+      "file": "src/features/vendor/screens/VendorEarningsScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "'/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": "'/(vendor"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 2,
+      "onPress": 2,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/vendor/screens/VendorEditProfileScreen.tsx",
+      "testIds": [
+        "edit-profile-back",
+        "edit-profile-title",
+        "edit-profile-back",
+        "edit-profile-title",
+        "edit-profile-save",
+        "edit-profile-avatar",
+        "edit-profile-name",
+        "edit-profile-phone"
+      ],
+      "testIdCount": 8,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "navigate",
+          "raw": "'/(vendor"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 2,
+      "switches": 0,
+      "pressables": 4,
+      "onPress": 4,
+      "emptyOnPress": 0,
+      "alerts": 6
+    },
+    {
+      "file": "src/features/vendor/screens/VendorInvoiceSubmitScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 4,
+      "switches": 0,
+      "pressables": 6,
+      "onPress": 6,
+      "emptyOnPress": 0,
+      "alerts": 6
+    },
+    {
+      "file": "src/features/vendor/screens/VendorJobDetailScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "`/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": "`/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": "`/(vendor"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "`/(vendor"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 7,
+      "onPress": 7,
+      "emptyOnPress": 0,
+      "alerts": 4
+    },
+    {
+      "file": "src/features/vendor/screens/VendorJobsListScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "`/(vendor"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 1,
+      "switches": 0,
+      "pressables": 2,
+      "onPress": 3,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/vendor/screens/VendorMaintenanceListScreen.tsx",
+      "testIds": ["vendor-filter-pending-quotes"],
+      "testIdCount": 1,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "`/(vendor"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 1,
+      "switches": 0,
+      "pressables": 8,
+      "onPress": 9,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/vendor/screens/VendorNotificationsScreen.tsx",
+      "testIds": ["notification-back"],
+      "testIdCount": 1,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "item.route as any"
+        },
+        {
+          "op": "navigate",
+          "raw": "'/(vendor"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 2,
+      "onPress": 2,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/features/vendor/screens/VendorPODetailScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "replace",
+          "raw": "`/(vendor"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 2,
+      "switches": 0,
+      "pressables": 10,
+      "onPress": 10,
+      "emptyOnPress": 0,
+      "alerts": 10
+    },
+    {
+      "file": "src/features/vendor/screens/VendorProfileScreen.tsx",
+      "testIds": [
+        "vendor-profile-title",
+        "vendor-profile-title",
+        "vendor-profile-documents",
+        "vendor-profile-contracts",
+        "vendor-profile-edit",
+        "vendor-profile-notifications",
+        "vendor-profile-privacy"
+      ],
+      "testIdCount": 7,
+      "nav": [
+        {
+          "op": "replace",
+          "raw": "'/auth/login'"
+        },
+        {
+          "op": "push",
+          "raw": "'/profile/services'"
+        },
+        {
+          "op": "push",
+          "raw": "'/profile/services'"
+        },
+        {
+          "op": "push",
+          "raw": "'/profile/services'"
+        },
+        {
+          "op": "push",
+          "raw": "'/profile/services'"
+        },
+        {
+          "op": "push",
+          "raw": "'/profile/services'"
+        },
+        {
+          "op": "push",
+          "raw": "'/profile/documents'"
+        },
+        {
+          "op": "push",
+          "raw": "'/profile/documents'"
+        },
+        {
+          "op": "push",
+          "raw": "'/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": "'/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": "'/(vendor"
+        },
+        {
+          "op": "push",
+          "raw": "'/(vendor"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 12,
+      "onPress": 12,
+      "emptyOnPress": 0,
+      "alerts": 3
+    },
+    {
+      "file": "src/features/vendor/screens/VendorQuoteDetailScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 6,
+      "switches": 0,
+      "pressables": 6,
+      "onPress": 6,
+      "emptyOnPress": 0,
+      "alerts": 5
+    },
+    {
+      "file": "src/features/vendor/screens/VendorQuoteSubmitScreen.tsx",
+      "testIds": [
+        "quote-back",
+        "quote-save-draft-header",
+        "quote-draft-restored-banner",
+        "quote-draft-discard",
+        "quote-item-name",
+        "quote-quantity",
+        "quote-unit-price",
+        "quote-duration-picker",
+        "quote-notes",
+        "quote-save-draft",
+        "quote-submit"
+      ],
+      "testIdCount": 11,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "push",
+          "raw": "'/(vendor"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "replace",
+          "raw": "`/(vendor"
+        },
+        {
+          "op": "replace",
+          "raw": "`/(vendor"
+        },
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "replace",
+          "raw": "`/(vendor"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 5,
+      "switches": 0,
+      "pressables": 13,
+      "onPress": 13,
+      "emptyOnPress": 0,
+      "alerts": 16
+    },
+    {
+      "file": "src/features/vendor/screens/VendorServicesManagementScreen.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "back",
+          "raw": ""
+        },
+        {
+          "op": "back",
+          "raw": ""
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 4,
+      "switches": 0,
+      "pressables": 14,
+      "onPress": 14,
+      "emptyOnPress": 0,
+      "alerts": 13
+    },
+    {
+      "file": "src/shared/components/forms/Select.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 3,
+      "onPress": 3,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/shared/components/forms/TextArea.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 1,
+      "switches": 0,
+      "pressables": 0,
+      "onPress": 0,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/shared/components/forms/__tests__/FormField.test.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 4,
+      "switches": 0,
+      "pressables": 0,
+      "onPress": 0,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/shared/components/ui/AnimatedButton.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 1,
+      "onPress": 1,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/shared/components/ui/Button.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 1,
+      "onPress": 1,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/shared/components/ui/Card.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 1,
+      "onPress": 1,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/shared/components/ui/Chip.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 1,
+      "onPress": 1,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/shared/components/ui/EmptyState.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 1,
+      "onPress": 1,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/shared/components/ui/ErrorState.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 1,
+      "onPress": 1,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/shared/components/ui/FeaturePin.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [
+        {
+          "op": "push",
+          "raw": "{ pathname: aiRoute, params: { prompt: aiPrompt } } as Href"
+        }
+      ],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 3,
+      "onPress": 3,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/shared/components/ui/IconButton.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 1,
+      "onPress": 1,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/shared/components/ui/Input.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 1,
+      "switches": 0,
+      "pressables": 0,
+      "onPress": 0,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/shared/components/ui/ListItem.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 1,
+      "onPress": 1,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/shared/components/ui/ModalSheet.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 2,
+      "onPress": 2,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/shared/components/ui/ReasonPromptModal.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 2,
+      "onPress": 2,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/shared/components/ui/SearchBar.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 1,
+      "switches": 0,
+      "pressables": 1,
+      "onPress": 1,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/shared/components/ui/SectionHeader.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 1,
+      "onPress": 1,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/shared/components/ui/__tests__/AccessibleTouchableOpacity.test.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 0,
+      "onPress": 10,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/shared/components/ui/__tests__/AnimatedButton.test.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 7,
+      "onPress": 7,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/shared/components/ui/__tests__/Button.test.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 0,
+      "onPress": 7,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/shared/components/ui/__tests__/Chip.test.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 0,
+      "onPress": 1,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/shared/components/ui/__tests__/IconButton.test.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 0,
+      "onPress": 4,
+      "emptyOnPress": 0,
+      "alerts": 0
+    },
+    {
+      "file": "src/shared/components/ui/__tests__/ListItem.test.tsx",
+      "testIds": [],
+      "testIdCount": 0,
+      "nav": [],
+      "hrefs": [],
+      "textInputs": 0,
+      "switches": 0,
+      "pressables": 0,
+      "onPress": 2,
+      "emptyOnPress": 0,
+      "alerts": 0
+    }
+  ]
+}

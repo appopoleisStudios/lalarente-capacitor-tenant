@@ -1,0 +1,1486 @@
+{
+  "generatedAt": "2026-08-16T13:24:07.358Z",
+  "counts": {
+    "appTsx": 133,
+    "byRole": {
+      "owner": 54,
+      "tenant": 41,
+      "vendor": 29,
+      "root": 6,
+      "auth": 3,
+      "admin": 14
+    }
+  },
+  "routes": [
+    {
+      "file": "app/index.tsx",
+      "route": "/",
+      "role": "root",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "expo-router",
+      "bytes": 119,
+      "lines": 6
+    },
+    {
+      "file": "app/_layout.tsx",
+      "route": "/_layout",
+      "role": "root",
+      "isLayout": true,
+      "isSpecial": false,
+      "reexports": "expo-router",
+      "bytes": 2119,
+      "lines": 68
+    },
+    {
+      "file": "app/(owner)/index.tsx",
+      "route": "/(owner)/",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "expo-router",
+      "bytes": 131,
+      "lines": 6
+    },
+    {
+      "file": "app/(owner)/_layout.tsx",
+      "route": "/(owner)/_layout",
+      "role": "owner",
+      "isLayout": true,
+      "isSpecial": false,
+      "reexports": "expo-router",
+      "bytes": 9832,
+      "lines": 361
+    },
+    {
+      "file": "app/(owner)/add-property.tsx",
+      "route": "/(owner)/add-property",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/AddPropertyScreen",
+      "bytes": 74,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/ai-chat.tsx",
+      "route": "/(owner)/ai-chat",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/ai-chat/screens/LalaChatScreen",
+      "bytes": 108,
+      "lines": 4
+    },
+    {
+      "file": "app/(owner)/application-competition.tsx",
+      "route": "/(owner)/application-competition",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerApplicationCompetitionScreen",
+      "bytes": 162,
+      "lines": 3
+    },
+    {
+      "file": "app/(owner)/applications.tsx",
+      "route": "/(owner)/applications",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerApplicationsScreen",
+      "bytes": 80,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/applications/[id].tsx",
+      "route": "/(owner)/applications/[id]",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerApplicationDetailScreen",
+      "bytes": 85,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/arrears.tsx",
+      "route": "/(owner)/arrears",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerArrearsManagementScreen",
+      "bytes": 85,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/compliance.tsx",
+      "route": "/(owner)/compliance",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerComplianceScreen",
+      "bytes": 78,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/dashboard.tsx",
+      "route": "/(owner)/dashboard",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerDashboardScreen",
+      "bytes": 77,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/deposits.tsx",
+      "route": "/(owner)/deposits",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerDepositManagementScreen",
+      "bytes": 147,
+      "lines": 3
+    },
+    {
+      "file": "app/(owner)/documents.tsx",
+      "route": "/(owner)/documents",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerDocumentsHubScreen",
+      "bytes": 132,
+      "lines": 3
+    },
+    {
+      "file": "app/(owner)/documents/[id].tsx",
+      "route": "/(owner)/documents/[id]",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/documents/screens/DocumentViewerScreen",
+      "bytes": 189,
+      "lines": 6
+    },
+    {
+      "file": "app/(owner)/early-termination.tsx",
+      "route": "/(owner)/early-termination",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerEarlyTerminationScreen",
+      "bytes": 144,
+      "lines": 3
+    },
+    {
+      "file": "app/(owner)/holding-deposit.tsx",
+      "route": "/(owner)/holding-deposit",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerHoldingDepositScreen",
+      "bytes": 138,
+      "lines": 3
+    },
+    {
+      "file": "app/(owner)/inspections.tsx",
+      "route": "/(owner)/inspections",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/inspections/screens/OwnerInspectionsListScreen",
+      "bytes": 147,
+      "lines": 3
+    },
+    {
+      "file": "app/(owner)/inspections/[id].tsx",
+      "route": "/(owner)/inspections/[id]",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/inspections/screens/OwnerInspectionRoute",
+      "bytes": 83,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/inspections/new.tsx",
+      "route": "/(owner)/inspections/new",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/inspections/screens/OwnerScheduleInspectionScreen",
+      "bytes": 157,
+      "lines": 4
+    },
+    {
+      "file": "app/(owner)/insurance.tsx",
+      "route": "/(owner)/insurance",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerInsuranceClaimsDashboard",
+      "bytes": 150,
+      "lines": 3
+    },
+    {
+      "file": "app/(owner)/insurance/[id].tsx",
+      "route": "/(owner)/insurance/[id]",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerInsuranceClaimScreen",
+      "bytes": 138,
+      "lines": 3
+    },
+    {
+      "file": "app/(owner)/insurance/new.tsx",
+      "route": "/(owner)/insurance/new",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerInsuranceClaimScreen",
+      "bytes": 138,
+      "lines": 3
+    },
+    {
+      "file": "app/(owner)/invoices.tsx",
+      "route": "/(owner)/invoices",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerInvoicesScreen",
+      "bytes": 76,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/leases/[id].tsx",
+      "route": "/(owner)/leases/[id]",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "../../../src/features/owner/screens/OwnerLeaseDetailScreen",
+      "bytes": 137,
+      "lines": 4
+    },
+    {
+      "file": "app/(owner)/leases/create.tsx",
+      "route": "/(owner)/leases/create",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "../../../src/features/owner/screens/OwnerLeaseCreateScreen",
+      "bytes": 137,
+      "lines": 4
+    },
+    {
+      "file": "app/(owner)/maintenance.tsx",
+      "route": "/(owner)/maintenance",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerMaintenanceListScreen",
+      "bytes": 83,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/maintenance/[id].tsx",
+      "route": "/(owner)/maintenance/[id]",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerMaintenanceDetailScreen",
+      "bytes": 85,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/maintenance/[id]/invoice.tsx",
+      "route": "/(owner)/maintenance/[id]/invoice",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerInvoiceApprovalScreen",
+      "bytes": 83,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/maintenance/[id]/po/[poId].tsx",
+      "route": "/(owner)/maintenance/[id]/po/[poId]",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerPODetailScreen",
+      "bytes": 76,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/maintenance/[id]/progress-timeline.tsx",
+      "route": "/(owner)/maintenance/[id]/progress-timeline",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerProgressTimelineScreen",
+      "bytes": 84,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/maintenance/[id]/quote/[quoteId].tsx",
+      "route": "/(owner)/maintenance/[id]/quote/[quoteId]",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerQuoteDetailScreen",
+      "bytes": 79,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/maintenance/[id]/review-closure.tsx",
+      "route": "/(owner)/maintenance/[id]/review-closure",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerClosureApprovalScreen",
+      "bytes": 83,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/maintenance/history/[propertyId].tsx",
+      "route": "/(owner)/maintenance/history/[propertyId]",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerPropertyMaintenanceHistoryScreen",
+      "bytes": 94,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/maintenance/new.tsx",
+      "route": "/(owner)/maintenance/new",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/maintenance/screens/ReportMaintenanceScreen",
+      "bytes": 86,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/maintenance/select-vendors.tsx",
+      "route": "/(owner)/maintenance/select-vendors",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/VendorSelectionScreen",
+      "bytes": 78,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/maintenance/send-po.tsx",
+      "route": "/(owner)/maintenance/send-po",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerSendPOScreen",
+      "bytes": 114,
+      "lines": 3
+    },
+    {
+      "file": "app/(owner)/messages.tsx",
+      "route": "/(owner)/messages",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/messaging/screens/MessagesScreen",
+      "bytes": 171,
+      "lines": 6
+    },
+    {
+      "file": "app/(owner)/messages/[id].tsx",
+      "route": "/(owner)/messages/[id]",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/messaging/screens/MessageThreadScreen",
+      "bytes": 191,
+      "lines": 6
+    },
+    {
+      "file": "app/(owner)/messages/new.tsx",
+      "route": "/(owner)/messages/new",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/messaging/screens/ComposeMessageScreen",
+      "bytes": 195,
+      "lines": 6
+    },
+    {
+      "file": "app/(owner)/notifications.tsx",
+      "route": "/(owner)/notifications",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerNotificationsScreen",
+      "bytes": 135,
+      "lines": 3
+    },
+    {
+      "file": "app/(owner)/payment-disputes.tsx",
+      "route": "/(owner)/payment-disputes",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerPaymentDisputesScreen",
+      "bytes": 141,
+      "lines": 3
+    },
+    {
+      "file": "app/(owner)/privacy.tsx",
+      "route": "/(owner)/privacy",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/privacy/screens/ConsentManagementScreen",
+      "bytes": 82,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/privacy/data-rights.tsx",
+      "route": "/(owner)/privacy/data-rights",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/privacy/screens/DataSubjectRightsScreen",
+      "bytes": 82,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/profile.tsx",
+      "route": "/(owner)/profile",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/ProfileScreen",
+      "bytes": 70,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/properties.tsx",
+      "route": "/(owner)/properties",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/PropertiesListScreen",
+      "bytes": 77,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/properties/[id].tsx",
+      "route": "/(owner)/properties/[id]",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerPropertyDetailScreen",
+      "bytes": 82,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/properties/[id]/edit.tsx",
+      "route": "/(owner)/properties/[id]/edit",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/EditPropertyScreen",
+      "bytes": 75,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/properties/[id]/view3d.tsx",
+      "route": "/(owner)/properties/[id]/view3d",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/properties/screens/PropertyView3DScreen",
+      "bytes": 82,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/renewals.tsx",
+      "route": "/(owner)/renewals",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerLeaseRenewalScreen",
+      "bytes": 80,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/rent-roll.tsx",
+      "route": "/(owner)/rent-roll",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerRentRollScreen",
+      "bytes": 76,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/statements.tsx",
+      "route": "/(owner)/statements",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerMonthlyStatementScreen",
+      "bytes": 145,
+      "lines": 4
+    },
+    {
+      "file": "app/(owner)/tax-reports.tsx",
+      "route": "/(owner)/tax-reports",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerTaxReportScreen",
+      "bytes": 77,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/tenants.tsx",
+      "route": "/(owner)/tenants",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/TenantsScreen",
+      "bytes": 70,
+      "lines": 2
+    },
+    {
+      "file": "app/(owner)/viewings.tsx",
+      "route": "/(owner)/viewings",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerViewingsScreen",
+      "bytes": 120,
+      "lines": 3
+    },
+    {
+      "file": "app/(owner)/viewings/[id].tsx",
+      "route": "/(owner)/viewings/[id]",
+      "role": "owner",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/owner/screens/OwnerViewingDetailScreen",
+      "bytes": 136,
+      "lines": 4
+    },
+    {
+      "file": "app/(tenant)/index.tsx",
+      "route": "/(tenant)/",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "expo-router",
+      "bytes": 133,
+      "lines": 6
+    },
+    {
+      "file": "app/(tenant)/_layout.tsx",
+      "route": "/(tenant)/_layout",
+      "role": "tenant",
+      "isLayout": true,
+      "isSpecial": false,
+      "reexports": "expo-router",
+      "bytes": 8622,
+      "lines": 295
+    },
+    {
+      "file": "app/(tenant)/ai-chat.tsx",
+      "route": "/(tenant)/ai-chat",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/ai-chat/screens/LalaChatScreen",
+      "bytes": 108,
+      "lines": 4
+    },
+    {
+      "file": "app/(tenant)/application-status.tsx",
+      "route": "/(tenant)/application-status",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/tenant/screens/TenantApplicationStatusScreen",
+      "bytes": 151,
+      "lines": 3
+    },
+    {
+      "file": "app/(tenant)/applications/[id].tsx",
+      "route": "/(tenant)/applications/[id]",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/tenant/screens/TenantApplicationDetailScreen",
+      "bytes": 152,
+      "lines": 4
+    },
+    {
+      "file": "app/(tenant)/apply/[propertyId].tsx",
+      "route": "/(tenant)/apply/[propertyId]",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/tenant/screens/TenantApplicationScreen",
+      "bytes": 81,
+      "lines": 2
+    },
+    {
+      "file": "app/(tenant)/arrears.tsx",
+      "route": "/(tenant)/arrears",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/tenant/screens/TenantArrearsScreen",
+      "bytes": 121,
+      "lines": 3
+    },
+    {
+      "file": "app/(tenant)/dashboard.tsx",
+      "route": "/(tenant)/dashboard",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/tenant/screens/TenantDashboardScreen",
+      "bytes": 79,
+      "lines": 2
+    },
+    {
+      "file": "app/(tenant)/deposit.tsx",
+      "route": "/(tenant)/deposit",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/tenant/screens/TenantDepositStatusScreen",
+      "bytes": 139,
+      "lines": 3
+    },
+    {
+      "file": "app/(tenant)/documents.tsx",
+      "route": "/(tenant)/documents",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/tenant/screens/TenantDocumentsScreen",
+      "bytes": 79,
+      "lines": 2
+    },
+    {
+      "file": "app/(tenant)/early-termination.tsx",
+      "route": "/(tenant)/early-termination",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/tenant/screens/TenantEarlyTerminationScreen",
+      "bytes": 86,
+      "lines": 2
+    },
+    {
+      "file": "app/(tenant)/holding-deposit.tsx",
+      "route": "/(tenant)/holding-deposit",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/tenant/screens/TenantHoldingDepositScreen",
+      "bytes": 142,
+      "lines": 3
+    },
+    {
+      "file": "app/(tenant)/inspections/[id].tsx",
+      "route": "/(tenant)/inspections/[id]",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/inspections/screens/InspectionScreen",
+      "bytes": 189,
+      "lines": 6
+    },
+    {
+      "file": "app/(tenant)/lease.tsx",
+      "route": "/(tenant)/lease",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/tenant/screens/TenantLeaseScreen",
+      "bytes": 116,
+      "lines": 4
+    },
+    {
+      "file": "app/(tenant)/lease-journey.tsx",
+      "route": "/(tenant)/lease-journey",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/tenant/screens/TenantLeaseJourneyScreen",
+      "bytes": 82,
+      "lines": 2
+    },
+    {
+      "file": "app/(tenant)/lease-renewal.tsx",
+      "route": "/(tenant)/lease-renewal",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/tenant/screens/TenantLeaseRenewalScreen",
+      "bytes": 136,
+      "lines": 3
+    },
+    {
+      "file": "app/(tenant)/maintenance.tsx",
+      "route": "/(tenant)/maintenance",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/tenant/screens/TenantMaintenanceListScreen",
+      "bytes": 85,
+      "lines": 2
+    },
+    {
+      "file": "app/(tenant)/maintenance/[id].tsx",
+      "route": "/(tenant)/maintenance/[id]",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/tenant/screens/TenantMaintenanceDetailScreen",
+      "bytes": 87,
+      "lines": 2
+    },
+    {
+      "file": "app/(tenant)/maintenance/closure-confirm.tsx",
+      "route": "/(tenant)/maintenance/closure-confirm",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/tenant/screens/TenantClosureConfirmScreen",
+      "bytes": 84,
+      "lines": 2
+    },
+    {
+      "file": "app/(tenant)/maintenance/report.tsx",
+      "route": "/(tenant)/maintenance/report",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/tenant/screens/TenantMaintenanceReportScreen",
+      "bytes": 87,
+      "lines": 2
+    },
+    {
+      "file": "app/(tenant)/maintenance/verify.tsx",
+      "route": "/(tenant)/maintenance/verify",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/tenant/screens/TenantVerificationScreen",
+      "bytes": 82,
+      "lines": 2
+    },
+    {
+      "file": "app/(tenant)/messages.tsx",
+      "route": "/(tenant)/messages",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/messaging/screens/MessagesScreen",
+      "bytes": 173,
+      "lines": 6
+    },
+    {
+      "file": "app/(tenant)/messages/[id].tsx",
+      "route": "/(tenant)/messages/[id]",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/messaging/screens/MessageThreadScreen",
+      "bytes": 193,
+      "lines": 6
+    },
+    {
+      "file": "app/(tenant)/messages/new.tsx",
+      "route": "/(tenant)/messages/new",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/messaging/screens/ComposeMessageScreen",
+      "bytes": 81,
+      "lines": 2
+    },
+    {
+      "file": "app/(tenant)/notifications.tsx",
+      "route": "/(tenant)/notifications",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/tenant/screens/TenantNotificationsScreen",
+      "bytes": 139,
+      "lines": 3
+    },
+    {
+      "file": "app/(tenant)/payment-disputes.tsx",
+      "route": "/(tenant)/payment-disputes",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/tenant/screens/TenantPaymentDisputeScreen",
+      "bytes": 84,
+      "lines": 2
+    },
+    {
+      "file": "app/(tenant)/payments.tsx",
+      "route": "/(tenant)/payments",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "../../src/features/tenant/screens/TenantPaymentScreen",
+      "bytes": 126,
+      "lines": 4
+    },
+    {
+      "file": "app/(tenant)/privacy.tsx",
+      "route": "/(tenant)/privacy",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/privacy/screens/ConsentManagementScreen",
+      "bytes": 82,
+      "lines": 2
+    },
+    {
+      "file": "app/(tenant)/privacy/data-rights.tsx",
+      "route": "/(tenant)/privacy/data-rights",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/privacy/screens/DataSubjectRightsScreen",
+      "bytes": 82,
+      "lines": 2
+    },
+    {
+      "file": "app/(tenant)/profile.tsx",
+      "route": "/(tenant)/profile",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/tenant/screens/TenantProfileScreen",
+      "bytes": 77,
+      "lines": 2
+    },
+    {
+      "file": "app/(tenant)/properties/[id].tsx",
+      "route": "/(tenant)/properties/[id]",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/tenant/screens/TenantPropertyDetailScreen",
+      "bytes": 84,
+      "lines": 2
+    },
+    {
+      "file": "app/(tenant)/properties/[id]/view3d.tsx",
+      "route": "/(tenant)/properties/[id]/view3d",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/properties/screens/PropertyView3DScreen",
+      "bytes": 82,
+      "lines": 2
+    },
+    {
+      "file": "app/(tenant)/reports.tsx",
+      "route": "/(tenant)/reports",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/tenant/screens/TenantReportsScreen",
+      "bytes": 77,
+      "lines": 2
+    },
+    {
+      "file": "app/(tenant)/search.tsx",
+      "route": "/(tenant)/search",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/tenant/screens/TenantSearchScreen",
+      "bytes": 76,
+      "lines": 2
+    },
+    {
+      "file": "app/(tenant)/vendor-payments/index.tsx",
+      "route": "/(tenant)/vendor-payments/",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@expo/vector-icons",
+      "bytes": 9530,
+      "lines": 275
+    },
+    {
+      "file": "app/(tenant)/vendor-payments/[invoiceId].tsx",
+      "route": "/(tenant)/vendor-payments/[invoiceId]",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@expo/vector-icons",
+      "bytes": 12806,
+      "lines": 375
+    },
+    {
+      "file": "app/(tenant)/vendor-payments/checkout.tsx",
+      "route": "/(tenant)/vendor-payments/checkout",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@expo/vector-icons",
+      "bytes": 5854,
+      "lines": 153
+    },
+    {
+      "file": "app/(tenant)/vendor-payments/result.tsx",
+      "route": "/(tenant)/vendor-payments/result",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@expo/vector-icons",
+      "bytes": 11901,
+      "lines": 336
+    },
+    {
+      "file": "app/(tenant)/viewings.tsx",
+      "route": "/(tenant)/viewings",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "../../src/features/tenant/screens/TenantViewingsScreen",
+      "bytes": 129,
+      "lines": 4
+    },
+    {
+      "file": "app/(tenant)/viewings/[id].tsx",
+      "route": "/(tenant)/viewings/[id]",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "../../../src/features/tenant/screens/TenantViewingDetailScreen",
+      "bytes": 147,
+      "lines": 4
+    },
+    {
+      "file": "app/(tenant)/viewings/request.tsx",
+      "route": "/(tenant)/viewings/request",
+      "role": "tenant",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "../../../src/features/tenant/screens/TenantRequestViewingScreen",
+      "bytes": 150,
+      "lines": 4
+    },
+    {
+      "file": "app/(vendor)/index.tsx",
+      "route": "/(vendor)/",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "expo-router",
+      "bytes": 133,
+      "lines": 6
+    },
+    {
+      "file": "app/(vendor)/_layout.tsx",
+      "route": "/(vendor)/_layout",
+      "role": "vendor",
+      "isLayout": true,
+      "isSpecial": false,
+      "reexports": "expo-router",
+      "bytes": 6285,
+      "lines": 217
+    },
+    {
+      "file": "app/(vendor)/ai-chat.tsx",
+      "route": "/(vendor)/ai-chat",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/ai-chat/screens/LalaChatScreen",
+      "bytes": 108,
+      "lines": 4
+    },
+    {
+      "file": "app/(vendor)/contracts/index.tsx",
+      "route": "/(vendor)/contracts/",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/vendor/screens/VendorContractsListScreen",
+      "bytes": 83,
+      "lines": 2
+    },
+    {
+      "file": "app/(vendor)/contracts/[id].tsx",
+      "route": "/(vendor)/contracts/[id]",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/vendor/screens/VendorContractDetailScreen",
+      "bytes": 84,
+      "lines": 2
+    },
+    {
+      "file": "app/(vendor)/dashboard.tsx",
+      "route": "/(vendor)/dashboard",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/vendor/screens/VendorDashboardScreen",
+      "bytes": 79,
+      "lines": 2
+    },
+    {
+      "file": "app/(vendor)/earnings/index.tsx",
+      "route": "/(vendor)/earnings/",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/vendor/screens/VendorEarningsScreen",
+      "bytes": 78,
+      "lines": 2
+    },
+    {
+      "file": "app/(vendor)/earnings/banking.tsx",
+      "route": "/(vendor)/earnings/banking",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/vendor/screens/VendorBankingScreen",
+      "bytes": 77,
+      "lines": 2
+    },
+    {
+      "file": "app/(vendor)/jobs/index.tsx",
+      "route": "/(vendor)/jobs/",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/vendor/screens/VendorJobsListScreen",
+      "bytes": 78,
+      "lines": 2
+    },
+    {
+      "file": "app/(vendor)/jobs/[id].tsx",
+      "route": "/(vendor)/jobs/[id]",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/vendor/screens/VendorJobDetailScreen",
+      "bytes": 79,
+      "lines": 2
+    },
+    {
+      "file": "app/(vendor)/jobs/[id]/progress-update.tsx",
+      "route": "/(vendor)/jobs/[id]/progress-update",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/vendor/screens/SubmitProgressUpdateScreen",
+      "bytes": 84,
+      "lines": 2
+    },
+    {
+      "file": "app/(vendor)/jobs/[id]/request-closure.tsx",
+      "route": "/(vendor)/jobs/[id]/request-closure",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/vendor/screens/RequestClosureScreen",
+      "bytes": 78,
+      "lines": 2
+    },
+    {
+      "file": "app/(vendor)/jobs/[id]/submit-invoice.tsx",
+      "route": "/(vendor)/jobs/[id]/submit-invoice",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/vendor/screens/VendorInvoiceSubmitScreen",
+      "bytes": 83,
+      "lines": 2
+    },
+    {
+      "file": "app/(vendor)/maintenance.tsx",
+      "route": "/(vendor)/maintenance",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "react",
+      "bytes": 227,
+      "lines": 7
+    },
+    {
+      "file": "app/(vendor)/maintenance/[id].tsx",
+      "route": "/(vendor)/maintenance/[id]",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/contexts/AuthContext",
+      "bytes": 23938,
+      "lines": 680
+    },
+    {
+      "file": "app/(vendor)/maintenance/[id]/po/[poId].tsx",
+      "route": "/(vendor)/maintenance/[id]/po/[poId]",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/vendor/screens/VendorPODetailScreen",
+      "bytes": 78,
+      "lines": 2
+    },
+    {
+      "file": "app/(vendor)/maintenance/[id]/quote/[quoteId].tsx",
+      "route": "/(vendor)/maintenance/[id]/quote/[quoteId]",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/vendor/screens/VendorQuoteDetailScreen",
+      "bytes": 81,
+      "lines": 2
+    },
+    {
+      "file": "app/(vendor)/maintenance/[id]/quote/edit.tsx",
+      "route": "/(vendor)/maintenance/[id]/quote/edit",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/vendor/screens/VendorQuoteSubmitScreen",
+      "bytes": 81,
+      "lines": 2
+    },
+    {
+      "file": "app/(vendor)/maintenance/[id]/quote/new.tsx",
+      "route": "/(vendor)/maintenance/[id]/quote/new",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/vendor/screens/VendorQuoteSubmitScreen",
+      "bytes": 81,
+      "lines": 2
+    },
+    {
+      "file": "app/(vendor)/messages.tsx",
+      "route": "/(vendor)/messages",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/messaging/screens/MessagesScreen",
+      "bytes": 173,
+      "lines": 6
+    },
+    {
+      "file": "app/(vendor)/messages/[id].tsx",
+      "route": "/(vendor)/messages/[id]",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/messaging/screens/MessageThreadScreen",
+      "bytes": 193,
+      "lines": 6
+    },
+    {
+      "file": "app/(vendor)/messages/new.tsx",
+      "route": "/(vendor)/messages/new",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/messaging/screens/ComposeMessageScreen",
+      "bytes": 81,
+      "lines": 2
+    },
+    {
+      "file": "app/(vendor)/notifications.tsx",
+      "route": "/(vendor)/notifications",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/vendor/screens/VendorNotificationsScreen",
+      "bytes": 139,
+      "lines": 3
+    },
+    {
+      "file": "app/(vendor)/privacy.tsx",
+      "route": "/(vendor)/privacy",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/privacy/screens/ConsentManagementScreen",
+      "bytes": 82,
+      "lines": 2
+    },
+    {
+      "file": "app/(vendor)/privacy/data-rights.tsx",
+      "route": "/(vendor)/privacy/data-rights",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/privacy/screens/DataSubjectRightsScreen",
+      "bytes": 82,
+      "lines": 2
+    },
+    {
+      "file": "app/(vendor)/profile/index.tsx",
+      "route": "/(vendor)/profile/",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/vendor/screens/VendorProfileScreen",
+      "bytes": 77,
+      "lines": 2
+    },
+    {
+      "file": "app/(vendor)/profile/documents.tsx",
+      "route": "/(vendor)/profile/documents",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/vendor/screens/VendorDocumentsManagementScreen",
+      "bytes": 89,
+      "lines": 2
+    },
+    {
+      "file": "app/(vendor)/profile/edit.tsx",
+      "route": "/(vendor)/profile/edit",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/vendor/screens/VendorEditProfileScreen",
+      "bytes": 81,
+      "lines": 2
+    },
+    {
+      "file": "app/(vendor)/profile/services.tsx",
+      "route": "/(vendor)/profile/services",
+      "role": "vendor",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/vendor/screens/VendorServicesManagementScreen",
+      "bytes": 88,
+      "lines": 2
+    },
+    {
+      "file": "app/+html.tsx",
+      "route": "/+html",
+      "role": "root",
+      "isLayout": false,
+      "isSpecial": true,
+      "reexports": "expo-router/html",
+      "bytes": 1389,
+      "lines": 39
+    },
+    {
+      "file": "app/+not-found.tsx",
+      "route": "/+not-found",
+      "role": "root",
+      "isLayout": false,
+      "isSpecial": true,
+      "reexports": "expo-router",
+      "bytes": 836,
+      "lines": 41
+    },
+    {
+      "file": "admin/src/pages/DashboardPage.tsx",
+      "route": "/admin/DashboardPage",
+      "role": "admin",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": null,
+      "bytes": 3972,
+      "lines": 137
+    },
+    {
+      "file": "admin/src/pages/DevAuditPage.tsx",
+      "route": "/admin/DevAuditPage",
+      "role": "admin",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": null,
+      "bytes": 6059,
+      "lines": 166
+    },
+    {
+      "file": "admin/src/pages/DevEnvPage.tsx",
+      "route": "/admin/DevEnvPage",
+      "role": "admin",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": null,
+      "bytes": 4444,
+      "lines": 99
+    },
+    {
+      "file": "admin/src/pages/DevGithubPage.tsx",
+      "route": "/admin/DevGithubPage",
+      "role": "admin",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": null,
+      "bytes": 7125,
+      "lines": 186
+    },
+    {
+      "file": "admin/src/pages/DevLogsPage.tsx",
+      "route": "/admin/DevLogsPage",
+      "role": "admin",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": null,
+      "bytes": 8178,
+      "lines": 223
+    },
+    {
+      "file": "admin/src/pages/DevPlanePage.tsx",
+      "route": "/admin/DevPlanePage",
+      "role": "admin",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": null,
+      "bytes": 9346,
+      "lines": 219
+    },
+    {
+      "file": "admin/src/pages/DevSupabasePage.tsx",
+      "route": "/admin/DevSupabasePage",
+      "role": "admin",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": null,
+      "bytes": 6524,
+      "lines": 193
+    },
+    {
+      "file": "admin/src/pages/LeasesPage.tsx",
+      "route": "/admin/LeasesPage",
+      "role": "admin",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": null,
+      "bytes": 2201,
+      "lines": 68
+    },
+    {
+      "file": "admin/src/pages/LoginPage.tsx",
+      "route": "/admin/LoginPage",
+      "role": "admin",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": null,
+      "bytes": 3550,
+      "lines": 103
+    },
+    {
+      "file": "admin/src/pages/MaintenancePage.tsx",
+      "route": "/admin/MaintenancePage",
+      "role": "admin",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": null,
+      "bytes": 3094,
+      "lines": 80
+    },
+    {
+      "file": "admin/src/pages/PaymentsPage.tsx",
+      "route": "/admin/PaymentsPage",
+      "role": "admin",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": null,
+      "bytes": 25101,
+      "lines": 633
+    },
+    {
+      "file": "admin/src/pages/PropertiesPage.tsx",
+      "route": "/admin/PropertiesPage",
+      "role": "admin",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": null,
+      "bytes": 2023,
+      "lines": 60
+    },
+    {
+      "file": "admin/src/pages/UsersPage.tsx",
+      "route": "/admin/UsersPage",
+      "role": "admin",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": null,
+      "bytes": 3395,
+      "lines": 98
+    },
+    {
+      "file": "admin/src/pages/VendorPayoutsPage.tsx",
+      "route": "/admin/VendorPayoutsPage",
+      "role": "admin",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": null,
+      "bytes": 13511,
+      "lines": 339
+    },
+    {
+      "file": "app/auth/login.tsx",
+      "route": "/auth/login",
+      "role": "auth",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/auth/screens/LoginScreen",
+      "bytes": 67,
+      "lines": 2
+    },
+    {
+      "file": "app/auth/register.tsx",
+      "route": "/auth/register",
+      "role": "auth",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "@/src/features/auth/screens/RegisterScreen",
+      "bytes": 105,
+      "lines": 4
+    },
+    {
+      "file": "app/auth/signout.tsx",
+      "route": "/auth/signout",
+      "role": "auth",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "react",
+      "bytes": 1057,
+      "lines": 41
+    },
+    {
+      "file": "app/modal.tsx",
+      "route": "/modal",
+      "role": "root",
+      "isLayout": false,
+      "isSpecial": true,
+      "reexports": "expo-status-bar",
+      "bytes": 923,
+      "lines": 36
+    },
+    {
+      "file": "app/test-components.tsx",
+      "route": "/test-components",
+      "role": "root",
+      "isLayout": false,
+      "isSpecial": false,
+      "reexports": "react",
+      "bytes": 2002,
+      "lines": 75
+    }
+  ]
+}
