@@ -314,14 +314,17 @@ export default function OwnerApplicationDetailScreen() {
               <Text style={styles.sectionTitle}>Screening Status</Text>
               <View style={styles.card}>
                 <ScreeningRow
+                  testID="screening-row-background"
                   label="Background Check"
                   status={application.background_check_status || 'pending'}
                 />
                 <ScreeningRow
+                  testID="screening-row-credit"
                   label="Credit Check"
                   status={application.credit_check_status || 'pending'}
                 />
                 <ScreeningRow
+                  testID="screening-row-identity"
                   label="Identity Verification"
                   status={application.identity_verification_status || 'pending'}
                 />
@@ -667,7 +670,15 @@ const InfoRow = ({ icon, label, value }: { icon: any; label: string; value: stri
   </View>
 );
 
-const ScreeningRow = ({ label, status }: { label: string; status: string }) => {
+const ScreeningRow = ({
+  label,
+  status,
+  testID,
+}: {
+  label: string;
+  status: string;
+  testID?: string;
+}) => {
   const getStatusColor = () => {
     switch (status) {
       case 'completed':
@@ -681,7 +692,7 @@ const ScreeningRow = ({ label, status }: { label: string; status: string }) => {
   };
 
   return (
-    <View style={styles.screeningRow}>
+    <View style={styles.screeningRow} testID={testID}>
       <Text style={styles.screeningLabel}>{label}</Text>
       <View style={[styles.screeningBadge, { backgroundColor: getStatusColor() }]}>
         <Text style={styles.screeningStatus}>{status}</Text>

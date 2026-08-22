@@ -123,6 +123,17 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // Hero affordance — a small uppercase eyebrow separates the single next-step
+  // action from the Needs-attention list below (Plane #81 hero+detail restyle).
+  primaryCtaEyebrow: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 1.1,
+    // ~5.7:1 on #FFB81C (WCAG AA) — darker than #7A5A00 (~3.7:1) for 9px text.
+    color: '#5A3E00',
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
   primaryCtaTitle: { fontSize: 15, fontWeight: '800', color: '#111827' },
   primaryCtaSub: { fontSize: 12, color: '#4B5563', marginTop: 2 },
   // ─── Needs-attention hub (Plane #81) ───────────────────────────────────────
@@ -142,6 +153,8 @@ export const styles = StyleSheet.create({
     marginBottom: 10,
   },
   attentionHubTitle: { fontSize: 15, fontWeight: '700', color: '#111827' },
+  // Frames the hub as the FULL list, complementing the single next-step CTA.
+  attentionHubSub: { fontSize: 11, color: '#6B7280', marginTop: 1 },
   attentionHubBadge: {
     minWidth: 22,
     height: 22,

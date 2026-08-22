@@ -9,4 +9,12 @@ appId: com.lalarente.app
     visible: "Portfolio Dashboard"
     timeout: 60000
 
+# Hero+detail restyle (Plane #81 follow-up): the primary CTA must read as a
+# single next-step affordance — assert the YOUR NEXT STEP eyebrow so a
+# regression back to a bare action card fails this gate. Above the fold.
+- assertVisible:
+    text: "YOUR NEXT STEP"
+- assertVisible:
+    id: "owner-primary-action"
+
 - runFlow: ../subflows/tap-owner-profile.yaml

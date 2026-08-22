@@ -35,7 +35,7 @@ export const InvoiceErrorCode = {
   MAINTENANCE_REQUEST_NOT_FOUND: 'MAINTENANCE_REQUEST_NOT_FOUND',
 } as const;
 
-export type InvoiceErrorCode = typeof InvoiceErrorCode[keyof typeof InvoiceErrorCode];
+export type InvoiceErrorCode = (typeof InvoiceErrorCode)[keyof typeof InvoiceErrorCode];
 
 /**
  * Custom error class that includes a machine-readable error code
@@ -70,21 +70,19 @@ async function logAuditEvent(
   const maxRetries = 1;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      await supabase
-        .from('maintenance_invoice_audit_logs' as any)
-        .insert({
-          invoice_id: invoiceId,
-          actor_id: actorId,
-          owner_id: ownerId,
-          vendor_id: vendorId,
-          event,
-          metadata: metadata || null,
-        });
+      await supabase.from('maintenance_invoice_audit_logs' as any).insert({
+        invoice_id: invoiceId,
+        actor_id: actorId,
+        owner_id: ownerId,
+        vendor_id: vendorId,
+        event,
+        metadata: metadata || null,
+      });
       break; // success — exit retry loop
     } catch (err) {
       if (attempt < maxRetries) {
         // Brief backoff before retry
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
       } else {
         // Final attempt failed — log to console as fallback
         console.error('Failed to write invoice audit log after retry:', err);
@@ -125,6 +123,7 @@ export interface MaintenanceInvoice {
   property_id: string;
   invoice_number: string;
   status: 'submitted' | 'approved' | 'rejected' | 'paid' | 'cancelled';
+  payer_role: 'owner' | 'tenant';
   line_items: InvoiceLineItem[];
   subtotal: number;
   vat_amount: number;
@@ -153,7 +152,9 @@ const ACTIONABLE_STATUSES = ['submitted'] as const;
  */
 function generateInvoiceNumber(): string {
   const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
-  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  const random = Math.floor(Math.random() * 10000)
+    .toString()
+    .padStart(4, '0');
   return `INV-${date}-${random}`;
 }
 
@@ -181,13 +182,22 @@ function validateLineItems(lineItems: InvoiceLineItem[]): void {
 
   for (const [i, item] of lineItems.entries()) {
     if (!item.description || item.description.trim().length === 0) {
-      throw new InvoiceError(InvoiceErrorCode.VALIDATION_ERROR, `Line item ${i + 1}: description is required`);
+      throw new InvoiceError(
+        InvoiceErrorCode.VALIDATION_ERROR,
+        `Line item ${i + 1}: description is required`
+      );
     }
     if (!Number.isFinite(item.quantity) || item.quantity <= 0) {
-      throw new InvoiceError(InvoiceErrorCode.VALIDATION_ERROR, `Line item ${i + 1}: quantity must be a positive number`);
+      throw new InvoiceError(
+        InvoiceErrorCode.VALIDATION_ERROR,
+        `Line item ${i + 1}: quantity must be a positive number`
+      );
     }
     if (!Number.isFinite(item.unit_price) || item.unit_price < 0) {
-      throw new InvoiceError(InvoiceErrorCode.VALIDATION_ERROR, `Line item ${i + 1}: unit price must be a non-negative number`);
+      throw new InvoiceError(
+        InvoiceErrorCode.VALIDATION_ERROR,
+        `Line item ${i + 1}: unit price must be a non-negative number`
+      );
     }
   }
 }
@@ -319,11 +329,17 @@ export async function submitInvoice(
   if (error) throw error;
 
   // Notify owner that an invoice was submitted
-  notificationsApi.sendNotification({
-    user_id: ownerId,
-    type: 'maintenance_updated',
-    data: { customTitle: 'Invoice Submitted', customBody: `Invoice ${invoiceNumber} for R${totals.total_amount} has been submitted.`, newStatus: 'invoice_submitted' },
-  }).catch(e => console.error('Failed to send invoice submitted notification:', e));
+  notificationsApi
+    .sendNotification({
+      user_id: ownerId,
+      type: 'maintenance_updated',
+      data: {
+        customTitle: 'Invoice Submitted',
+        customBody: `Invoice ${invoiceNumber} for R${totals.total_amount} has been submitted.`,
+        newStatus: 'invoice_submitted',
+      },
+    })
+    .catch((e) => console.error('Failed to send invoice submitted notification:', e));
 
   return data as unknown as MaintenanceInvoice;
 }
@@ -331,9 +347,7 @@ export async function submitInvoice(
 /**
  * Get invoices for a maintenance request
  */
-export async function getInvoicesByRequest(
-  requestId: string
-): Promise<MaintenanceInvoice[]> {
+export async function getInvoicesByRequest(requestId: string): Promise<MaintenanceInvoice[]> {
   const { data, error } = await supabase
     .from('maintenance_invoices' as any)
     .select('*')
@@ -363,7 +377,10 @@ export async function approveInvoice(
 
   // 2. Authorization: only the invoice's owner can approve
   if (invoice.owner_id !== ownerId) {
-    throw new InvoiceError(InvoiceErrorCode.NOT_AUTHORISED, 'You are not authorised to approve this invoice');
+    throw new InvoiceError(
+      InvoiceErrorCode.NOT_AUTHORISED,
+      'You are not authorised to approve this invoice'
+    );
   }
 
   // 3. Concurrent status check: only submitted invoices can be approved
@@ -390,7 +407,10 @@ export async function approveInvoice(
   if (error) throw error;
   if (!data) {
     // Race condition: another request already changed the status
-    throw new InvoiceError(InvoiceErrorCode.RACE_CONDITION, 'Invoice was already modified by another request. Please refresh and try again.');
+    throw new InvoiceError(
+      InvoiceErrorCode.RACE_CONDITION,
+      'Invoice was already modified by another request. Please refresh and try again.'
+    );
   }
 
   // 5. Audit trail
@@ -400,11 +420,17 @@ export async function approveInvoice(
   });
 
   // Notify vendor that invoice was approved
-  notificationsApi.sendNotification({
-    user_id: invoice.vendor_id,
-    type: 'maintenance_updated',
-    data: { customTitle: 'Invoice Approved', customBody: `Invoice ${invoice.invoice_number} has been approved.`, newStatus: 'approved' },
-  }).catch(e => console.error('Failed to send invoice approved notification:', e));
+  notificationsApi
+    .sendNotification({
+      user_id: invoice.vendor_id,
+      type: 'maintenance_updated',
+      data: {
+        customTitle: 'Invoice Approved',
+        customBody: `Invoice ${invoice.invoice_number} has been approved.`,
+        newStatus: 'approved',
+      },
+    })
+    .catch((e) => console.error('Failed to send invoice approved notification:', e));
 
   return data as unknown as MaintenanceInvoice;
 }
@@ -422,7 +448,10 @@ export async function rejectInvoice(
   reason: string
 ): Promise<MaintenanceInvoice> {
   if (!reason.trim()) {
-    throw new InvoiceError(InvoiceErrorCode.REJECTION_REASON_REQUIRED, 'Please provide a reason for rejection');
+    throw new InvoiceError(
+      InvoiceErrorCode.REJECTION_REASON_REQUIRED,
+      'Please provide a reason for rejection'
+    );
   }
 
   // 1. Fetch current invoice state
@@ -433,7 +462,10 @@ export async function rejectInvoice(
 
   // 2. Authorization: only the invoice's owner can reject
   if (invoice.owner_id !== ownerId) {
-    throw new InvoiceError(InvoiceErrorCode.NOT_AUTHORISED, 'You are not authorised to reject this invoice');
+    throw new InvoiceError(
+      InvoiceErrorCode.NOT_AUTHORISED,
+      'You are not authorised to reject this invoice'
+    );
   }
 
   // 3. Concurrent status check
@@ -459,7 +491,10 @@ export async function rejectInvoice(
 
   if (error) throw error;
   if (!data) {
-    throw new InvoiceError(InvoiceErrorCode.RACE_CONDITION, 'Invoice was already modified by another request. Please refresh and try again.');
+    throw new InvoiceError(
+      InvoiceErrorCode.RACE_CONDITION,
+      'Invoice was already modified by another request. Please refresh and try again.'
+    );
   }
 
   // 5. Audit trail
@@ -469,11 +504,17 @@ export async function rejectInvoice(
   });
 
   // Notify vendor that invoice was rejected
-  notificationsApi.sendNotification({
-    user_id: invoice.vendor_id,
-    type: 'maintenance_updated',
-    data: { customTitle: 'Invoice Rejected', customBody: `Invoice ${invoice.invoice_number} has been rejected.`, rejectionReason: reason.trim() },
-  }).catch(e => console.error('Failed to send invoice rejected notification:', e));
+  notificationsApi
+    .sendNotification({
+      user_id: invoice.vendor_id,
+      type: 'maintenance_updated',
+      data: {
+        customTitle: 'Invoice Rejected',
+        customBody: `Invoice ${invoice.invoice_number} has been rejected.`,
+        rejectionReason: reason.trim(),
+      },
+    })
+    .catch((e) => console.error('Failed to send invoice rejected notification:', e));
 
   return data as unknown as MaintenanceInvoice;
 }
@@ -481,9 +522,7 @@ export async function rejectInvoice(
 /**
  * Get all invoices for an owner (for the owner invoices screen)
  */
-export async function getInvoicesByOwner(
-  ownerId: string
-): Promise<MaintenanceInvoice[]> {
+export async function getInvoicesByOwner(ownerId: string): Promise<MaintenanceInvoice[]> {
   const { data, error } = await supabase
     .from('maintenance_invoices' as any)
     .select('*')
@@ -492,4 +531,333 @@ export async function getInvoicesByOwner(
 
   if (error) throw error;
   return (data || []) as unknown as MaintenanceInvoice[];
+}
+
+// ─── Tenant approve / reject (Plane #109) ────────────────────────────────────
+
+/**
+ * Tenant approves an invoice they are billed for (payer_role='tenant').
+ *
+ * Security:
+ * 1. Fetches the invoice; verifies payer_role is 'tenant'
+ * 2. Checks the caller has an active lease on the request's property
+ * 3. Only allows approving invoices in 'submitted' status
+ */
+export async function tenantApproveInvoice(
+  invoiceId: string,
+  tenantId: string
+): Promise<MaintenanceInvoice> {
+  const invoice = await getInvoiceById(invoiceId);
+  if (!invoice) {
+    throw new InvoiceError(InvoiceErrorCode.INVOICE_NOT_FOUND, 'Invoice not found');
+  }
+
+  if (invoice.payer_role !== 'tenant') {
+    throw new InvoiceError(
+      InvoiceErrorCode.NOT_AUTHORISED,
+      'This invoice is not billed to the tenant'
+    );
+  }
+
+  // Verify tenant has an active lease on the request's property
+  const { data: lease } = await supabase
+    .from('leases' as any)
+    .select('id')
+    .eq('tenant_id', tenantId)
+    .eq('property_id', invoice.property_id)
+    .in('status', ['active', 'month_to_month'])
+    .limit(1)
+    .single();
+
+  if (!lease) {
+    throw new InvoiceError(
+      InvoiceErrorCode.NOT_AUTHORISED,
+      'You do not have an active lease for this property'
+    );
+  }
+
+  if (!ACTIONABLE_STATUSES.includes(invoice.status as any)) {
+    throw new InvoiceError(
+      InvoiceErrorCode.INVALID_STATUS_TRANSITION,
+      'Only submitted invoices can be approved'
+    );
+  }
+
+  const { data, error } = await supabase
+    .from('maintenance_invoices' as any)
+    .update({
+      status: 'approved',
+      approved_at: new Date().toISOString(),
+      approved_by: tenantId,
+    })
+    .eq('id', invoiceId)
+    .eq('status', 'submitted')
+    .select()
+    .single();
+
+  if (error) throw error;
+  if (!data) {
+    throw new InvoiceError(
+      InvoiceErrorCode.RACE_CONDITION,
+      'Invoice was already modified. Please refresh and try again.'
+    );
+  }
+
+  await logAuditEvent(
+    'invoice_approved_by_tenant',
+    invoiceId,
+    tenantId,
+    invoice.owner_id,
+    invoice.vendor_id,
+    {
+      invoice_number: invoice.invoice_number,
+      amount: invoice.total_amount,
+    }
+  );
+
+  // Notify owner that tenant approved
+  notificationsApi
+    .sendNotification({
+      user_id: invoice.owner_id,
+      type: 'maintenance_updated',
+      data: {
+        customTitle: 'Invoice Approved by Tenant',
+        customBody: `Tenant approved invoice ${invoice.invoice_number} for R${invoice.total_amount}.`,
+        newStatus: 'approved',
+      },
+    })
+    .catch((e) => console.error('Failed to send tenant approve notification:', e));
+
+  return data as unknown as MaintenanceInvoice;
+}
+
+/**
+ * Tenant rejects an invoice they are billed for (payer_role='tenant').
+ *
+ * Security:
+ * 1. Same as tenantApproveInvoice
+ * 2. Requires a rejection reason
+ */
+export async function tenantRejectInvoice(
+  invoiceId: string,
+  tenantId: string,
+  reason: string
+): Promise<MaintenanceInvoice> {
+  if (!reason.trim()) {
+    throw new InvoiceError(
+      InvoiceErrorCode.REJECTION_REASON_REQUIRED,
+      'Please provide a reason for rejection'
+    );
+  }
+
+  const invoice = await getInvoiceById(invoiceId);
+  if (!invoice) {
+    throw new InvoiceError(InvoiceErrorCode.INVOICE_NOT_FOUND, 'Invoice not found');
+  }
+
+  if (invoice.payer_role !== 'tenant') {
+    throw new InvoiceError(
+      InvoiceErrorCode.NOT_AUTHORISED,
+      'This invoice is not billed to the tenant'
+    );
+  }
+
+  const { data: lease } = await supabase
+    .from('leases' as any)
+    .select('id')
+    .eq('tenant_id', tenantId)
+    .eq('property_id', invoice.property_id)
+    .in('status', ['active', 'month_to_month'])
+    .limit(1)
+    .single();
+
+  if (!lease) {
+    throw new InvoiceError(
+      InvoiceErrorCode.NOT_AUTHORISED,
+      'You do not have an active lease for this property'
+    );
+  }
+
+  if (!ACTIONABLE_STATUSES.includes(invoice.status as any)) {
+    throw new InvoiceError(
+      InvoiceErrorCode.INVALID_STATUS_TRANSITION,
+      'Only submitted invoices can be rejected'
+    );
+  }
+
+  const { data, error } = await supabase
+    .from('maintenance_invoices' as any)
+    .update({
+      status: 'rejected',
+      rejected_at: new Date().toISOString(),
+      rejection_reason: reason.trim(),
+    })
+    .eq('id', invoiceId)
+    .eq('status', 'submitted')
+    .select()
+    .single();
+
+  if (error) throw error;
+  if (!data) {
+    throw new InvoiceError(
+      InvoiceErrorCode.RACE_CONDITION,
+      'Invoice was already modified. Please refresh and try again.'
+    );
+  }
+
+  await logAuditEvent(
+    'invoice_rejected_by_tenant',
+    invoiceId,
+    tenantId,
+    invoice.owner_id,
+    invoice.vendor_id,
+    {
+      invoice_number: invoice.invoice_number,
+      reason: reason.trim(),
+    }
+  );
+
+  // Notify owner that tenant rejected
+  notificationsApi
+    .sendNotification({
+      user_id: invoice.owner_id,
+      type: 'maintenance_updated',
+      data: {
+        customTitle: 'Invoice Rejected by Tenant',
+        customBody: `Tenant rejected invoice ${invoice.invoice_number}: ${reason.trim()}`,
+        rejectionReason: reason.trim(),
+      },
+    })
+    .catch((e) => console.error('Failed to send tenant reject notification:', e));
+
+  return data as unknown as MaintenanceInvoice;
+}
+
+// ─── Vendor resubmit after rejection (Plane #108) ─────────────────────────────
+
+/**
+ * Get all invoices submitted by a vendor (for vendor invoices list)
+ */
+export async function getInvoicesByVendor(vendorId: string): Promise<MaintenanceInvoice[]> {
+  const { data, error } = await supabase
+    .from('maintenance_invoices' as any)
+    .select('*')
+    .eq('vendor_id', vendorId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data || []) as unknown as MaintenanceInvoice[];
+}
+
+/**
+ * Vendor resubmits a rejected invoice with updated line items.
+ *
+ * Security:
+ * 1. Only the original vendor can resubmit
+ * 2. Invoice must be in 'rejected' status
+ * 3. New line items are validated
+ */
+export async function resubmitInvoice(
+  invoiceId: string,
+  vendorId: string,
+  lineItems: InvoiceLineItem[],
+  notes?: string
+): Promise<MaintenanceInvoice> {
+  validateLineItems(lineItems);
+
+  const preTotals = calculateTotals(lineItems);
+  if (preTotals.subtotal <= 0) {
+    throw new InvoiceError(
+      InvoiceErrorCode.VALIDATION_ERROR,
+      'Invoice subtotal must be greater than zero'
+    );
+  }
+
+  const invoice = await getInvoiceById(invoiceId);
+  if (!invoice) {
+    throw new InvoiceError(InvoiceErrorCode.INVOICE_NOT_FOUND, 'Invoice not found');
+  }
+
+  if (invoice.vendor_id !== vendorId) {
+    throw new InvoiceError(
+      InvoiceErrorCode.NOT_AUTHORISED,
+      'You are not authorised to resubmit this invoice'
+    );
+  }
+
+  if (invoice.status !== 'rejected') {
+    throw new InvoiceError(
+      InvoiceErrorCode.INVALID_STATUS_TRANSITION,
+      'Only rejected invoices can be resubmitted'
+    );
+  }
+
+  const { data, error } = await supabase
+    .from('maintenance_invoices' as any)
+    .update({
+      status: 'submitted',
+      line_items: lineItems,
+      subtotal: preTotals.subtotal,
+      vat_amount: preTotals.vat_amount,
+      total_amount: preTotals.total_amount,
+      notes: notes ?? invoice.notes,
+      rejection_reason: null,
+      rejected_at: null,
+    })
+    .eq('id', invoiceId)
+    .eq('status', 'rejected')
+    .select()
+    .single();
+
+  if (error) throw error;
+  if (!data) {
+    throw new InvoiceError(
+      InvoiceErrorCode.RACE_CONDITION,
+      'Invoice was already modified. Please refresh and try again.'
+    );
+  }
+
+  await logAuditEvent('invoice_resubmitted', invoiceId, vendorId, invoice.owner_id, vendorId, {
+    invoice_number: invoice.invoice_number,
+    new_total: preTotals.total_amount,
+  });
+
+  // Notify the payer (owner or tenant) that the invoice was resubmitted
+  if (invoice.payer_role === 'tenant') {
+    // Notify the tenant via lease lookup
+    const { data: leaseRow } = await supabase
+      .from('leases' as any)
+      .select('tenant_id')
+      .eq('property_id', invoice.property_id)
+      .in('status', ['active', 'month_to_month'])
+      .limit(1)
+      .single();
+    if (leaseRow) {
+      notificationsApi
+        .sendNotification({
+          user_id: (leaseRow as any).tenant_id,
+          type: 'maintenance_updated',
+          data: {
+            customTitle: 'Invoice Resubmitted',
+            customBody: `Invoice ${invoice.invoice_number} has been resubmitted with updated details. Please review.`,
+            newStatus: 'submitted',
+          },
+        })
+        .catch((e) => console.error('Failed to send resubmit notification to tenant:', e));
+    }
+  } else {
+    notificationsApi
+      .sendNotification({
+        user_id: invoice.owner_id,
+        type: 'maintenance_updated',
+        data: {
+          customTitle: 'Invoice Resubmitted',
+          customBody: `Invoice ${invoice.invoice_number} has been resubmitted with updated details.`,
+          newStatus: 'submitted',
+        },
+      })
+      .catch((e) => console.error('Failed to send resubmit notification:', e));
+  }
+
+  return data as unknown as MaintenanceInvoice;
 }

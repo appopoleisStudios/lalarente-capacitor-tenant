@@ -1,0 +1,2175 @@
+{
+  "count": 434,
+  "edges": [
+    {
+      "from": "app/(tenant)/vendor-payments/[invoiceId].tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "app/(tenant)/vendor-payments/[invoiceId].tsx",
+      "op": "push",
+      "toRaw": "{ pathname: '/(tenant"
+    },
+    {
+      "from": "app/(tenant)/vendor-payments/[invoiceId].tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "app/(tenant)/vendor-payments/[invoiceId].tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "app/(tenant)/vendor-payments/[invoiceId].tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "app/(tenant)/vendor-payments/checkout.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "app/(tenant)/vendor-payments/checkout.tsx",
+      "op": "replace",
+      "toRaw": "`/(tenant"
+    },
+    {
+      "from": "app/(tenant)/vendor-payments/checkout.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "app/(tenant)/vendor-payments/index.tsx",
+      "op": "push",
+      "toRaw": "`/(tenant"
+    },
+    {
+      "from": "app/(tenant)/vendor-payments/index.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "app/(tenant)/vendor-payments/result.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "app/(tenant)/vendor-payments/result.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "app/(tenant)/vendor-payments/result.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "app/(tenant)/vendor-payments/result.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "app/(tenant)/vendor-payments/result.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "app/(vendor)/maintenance/[id].tsx",
+      "op": "push",
+      "toRaw": "`/(vendor"
+    },
+    {
+      "from": "app/(vendor)/maintenance/[id].tsx",
+      "op": "push",
+      "toRaw": "`/(vendor"
+    },
+    {
+      "from": "app/(vendor)/maintenance/[id].tsx",
+      "op": "push",
+      "toRaw": "'/(vendor"
+    },
+    {
+      "from": "app/(vendor)/maintenance/[id].tsx",
+      "op": "push",
+      "toRaw": "`/(vendor"
+    },
+    {
+      "from": "app/(vendor)/maintenance/[id].tsx",
+      "op": "push",
+      "toRaw": "`/(vendor"
+    },
+    {
+      "from": "app/(vendor)/maintenance/[id].tsx",
+      "op": "push",
+      "toRaw": "`/(vendor"
+    },
+    {
+      "from": "app/(vendor)/maintenance/[id].tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "app/(vendor)/maintenance/[id].tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "app/(vendor)/maintenance/[id].tsx",
+      "op": "push",
+      "toRaw": "'/(vendor"
+    },
+    {
+      "from": "app/_layout.tsx",
+      "op": "replace",
+      "toRaw": "'/auth/login'"
+    },
+    {
+      "from": "app/auth/signout.tsx",
+      "op": "replace",
+      "toRaw": "'/auth/login'"
+    },
+    {
+      "from": "app/auth/signout.tsx",
+      "op": "replace",
+      "toRaw": "'/auth/login'"
+    },
+    {
+      "from": "src/features/auth/screens/LoginScreen.tsx",
+      "op": "replace",
+      "toRaw": "route"
+    },
+    {
+      "from": "src/features/auth/screens/LoginScreen.tsx",
+      "op": "push",
+      "toRaw": "'/auth/register' as any"
+    },
+    {
+      "from": "src/features/auth/screens/RegisterScreen.tsx",
+      "op": "replace",
+      "toRaw": "route"
+    },
+    {
+      "from": "src/features/auth/screens/RegisterScreen.tsx",
+      "op": "replace",
+      "toRaw": "'/auth/login'"
+    },
+    {
+      "from": "src/features/documents/screens/DocumentUploadScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/documents/screens/DocumentUploadScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/documents/screens/DocumentViewerScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/documents/screens/DocumentViewerScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/documents/screens/DocumentViewerScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/documents/screens/DocumentsScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(${role}"
+    },
+    {
+      "from": "src/features/documents/screens/DocumentsScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(${role}"
+    },
+    {
+      "from": "src/features/inspections/screens/InspectionScreen.tsx",
+      "op": "push",
+      "toRaw": "docsPath as any"
+    },
+    {
+      "from": "src/features/inspections/screens/InspectionScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/inspections/screens/OwnerInspectionDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/inspections/screens/OwnerInspectionDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/inspections/screens/OwnerInspectionsListScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/inspections/screens/OwnerInspectionsListScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/inspections/screens/OwnerInspectionsListScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/inspections/screens/OwnerInspectionsListScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/inspections/screens/OwnerInspectionsListScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/inspections/screens/OwnerScheduleInspectionScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/inspections/screens/OwnerScheduleInspectionScreen.tsx",
+      "op": "push",
+      "toRaw": "{ pathname: '/(owner"
+    },
+    {
+      "from": "src/features/inspections/screens/OwnerScheduleInspectionScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/inspections/screens/OwnerScheduleInspectionScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/maintenance/screens/ReportMaintenanceScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/maintenance/screens/ReportMaintenanceScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/maintenance/screens/ReportMaintenanceScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/messaging/screens/ComposeMessageScreen.tsx",
+      "op": "replace",
+      "toRaw": "dest as any"
+    },
+    {
+      "from": "src/features/messaging/screens/ComposeMessageScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/messaging/screens/ComposeMessageScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/messaging/screens/ComposeMessageScreen.tsx",
+      "op": "replace",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/messaging/screens/ComposeMessageScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/messaging/screens/ComposeMessageScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/messaging/screens/MessageThreadScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/messaging/screens/MessagesScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(${role}"
+    },
+    {
+      "from": "src/features/messaging/screens/MessagesScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/messaging/screens/MessagesScreen.tsx",
+      "op": "push",
+      "toRaw": "path"
+    },
+    {
+      "from": "src/features/owner/components/AnalyticsGrid.tsx",
+      "op": "push",
+      "toRaw": "card.route as any"
+    },
+    {
+      "from": "src/features/owner/components/ApplicantsSection.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/components/ApplicantsSection.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/components/DocumentsSection.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/components/DocumentsSection.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/components/DocumentsSection.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/components/DocumentsSection.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/components/DocumentsSection.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/components/DocumentsSection.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/components/DocumentsSection.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/components/DocumentsSection.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/components/DocumentsSection.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/components/DocumentsSection.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/components/DocumentsSection.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/components/DocumentsSection.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/components/DocumentsSection.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/components/DocumentsSection.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/components/MaintenanceSection.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/components/MaintenanceSection.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/components/MessagesSection.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/components/MessagesSection.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/components/PortfolioCard.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/components/PortfolioCard.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/components/PortfolioCard.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/components/ViewingRequestsSection.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/components/ViewingRequestsSection.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/AddPropertyScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/AddPropertyScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/AddPropertyScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/EditPropertyScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/EditPropertyScreen.tsx",
+      "op": "navigate",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerApplicationCompetitionScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerApplicationCompetitionScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerApplicationCompetitionScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerApplicationDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerApplicationDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerApplicationDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerApplicationDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerApplicationDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerApplicationsScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerApplicationsScreen.tsx",
+      "op": "push",
+      "toRaw": " `/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerApplicationsScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerArrearsManagementScreen.tsx",
+      "op": "navigate",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerClosureApprovalScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerClosureApprovalScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerComplianceScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "primaryAction.route as any"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "item.route as any"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "{ pathname: '/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerDepositManagementScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerDepositManagementScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerDocumentsHubScreen.tsx",
+      "op": "push",
+      "toRaw": "route as any"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerDocumentsHubScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerDocumentsHubScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerEarlyTerminationScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerHoldingDepositScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerHoldingDepositScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerInsuranceClaimScreen.tsx",
+      "op": "replace",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerInsuranceClaimScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerInsuranceClaimScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerInsuranceClaimScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerInsuranceClaimsDashboard.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerInsuranceClaimsDashboard.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerInsuranceClaimsDashboard.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerInsuranceClaimsDashboard.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerInsuranceClaimsDashboard.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerInvoiceApprovalScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerInvoicesScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerInvoicesScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerInvoicesScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerInvoicesScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerLeaseCreateScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerLeaseCreateScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerLeaseCreateScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerLeaseCreateScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerLeaseDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerLeaseDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerLeaseDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "{ pathname: '/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerLeaseDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerLeaseRenewalScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerLeaseRenewalScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "{ pathname: '/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerMaintenanceListScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerMaintenanceListScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerMonthlyStatementScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerMonthlyStatementScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerNotificationsScreen.tsx",
+      "op": "push",
+      "toRaw": "item.route as any"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerNotificationsScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerNotificationsScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerPODetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerPODetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerPaymentDisputesScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerProgressTimelineScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerPropertyDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerPropertyDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerPropertyDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerPropertyDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerPropertyDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "{ pathname: '/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerPropertyDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerPropertyDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerPropertyMaintenanceHistoryScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerPropertyMaintenanceHistoryScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerPropertyMaintenanceHistoryScreen.tsx",
+      "op": "navigate",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerQuoteDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerQuoteDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerQuoteDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerQuoteDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerRenewalsDashboardScreen.tsx",
+      "op": "navigate",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerRenewalsDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerRentRollScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerRentRollScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerSendPOScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerSendPOScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerSendPOScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerSendPOScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerTaxReportScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerTaxReportScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerViewingDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerViewingDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerViewingDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerViewingDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerViewingDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerViewingDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerViewingDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerViewingsScreen.tsx",
+      "op": "push",
+      "toRaw": "{ pathname: '/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/OwnerViewingsScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/OwnerViewingsScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/ProfileScreen.tsx",
+      "op": "replace",
+      "toRaw": "'/auth/login'"
+    },
+    {
+      "from": "src/features/owner/screens/ProfileScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/ProfileScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/ProfileScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/ProfileScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/PropertiesListScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/PropertiesListScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/PropertiesListScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/PropertiesListScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/TenantsScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/TenantsScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/TenantsScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(owner"
+    },
+    {
+      "from": "src/features/owner/screens/VendorSelectionScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/VendorSelectionScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/owner/screens/VendorSelectionScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/privacy/screens/ConsentManagementScreen.tsx",
+      "op": "navigate",
+      "toRaw": "profilePath as never"
+    },
+    {
+      "from": "src/features/privacy/screens/ConsentManagementScreen.tsx",
+      "op": "navigate",
+      "toRaw": "dataRightsPath as never"
+    },
+    {
+      "from": "src/features/privacy/screens/ConsentManagementScreen.tsx",
+      "op": "navigate",
+      "toRaw": "dataRightsPath as never"
+    },
+    {
+      "from": "src/features/privacy/screens/ConsentManagementScreen.tsx",
+      "op": "navigate",
+      "toRaw": "dataRightsPath as never"
+    },
+    {
+      "from": "src/features/privacy/screens/DataSubjectRightsScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/properties/screens/PropertyView3DScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/properties/screens/PropertyView3DScreen.tsx",
+      "op": "navigate",
+      "toRaw": "`${backTo}/${id}` as never"
+    },
+    {
+      "from": "src/features/properties/screens/PropertyView3DScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantApplicationDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantApplicationDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantApplicationScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantApplicationScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantApplicationScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantApplicationStatusScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantApplicationStatusScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantApplicationStatusScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantApplicationStatusScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantArrearsScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantArrearsScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantArrearsScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantArrearsScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantClosureConfirmScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantClosureConfirmScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantClosureConfirmScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "{ pathname: '/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "item.href"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "item.href"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDepositStatusScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDepositStatusScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDepositStatusScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantDocumentsScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantEarlyTerminationScreen.tsx",
+      "op": "navigate",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantEarlyTerminationScreen.tsx",
+      "op": "navigate",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantEarlyTerminationScreen.tsx",
+      "op": "navigate",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantHoldingDepositScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantHoldingDepositScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantLeaseJourneyScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantLeaseJourneyScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantLeaseJourneyScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantLeaseRenewalScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantLeaseRenewalScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantLeaseRenewalScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantLeaseScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantLeaseScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantLeaseScreen.tsx",
+      "op": "push",
+      "toRaw": "{ pathname: '/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantMaintenanceDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantMaintenanceDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantMaintenanceDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantMaintenanceDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantMaintenanceDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantMaintenanceDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "{ pathname: '/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantMaintenanceDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "{ pathname: '/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantMaintenanceListScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantMaintenanceListScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantMaintenanceListScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantMaintenanceReportScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantMaintenanceReportScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantMaintenanceReportScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantMaintenanceReportScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantMaintenanceReportScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantNotificationsScreen.tsx",
+      "op": "push",
+      "toRaw": "item.route as any"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantNotificationsScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantNotificationsScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantPaymentDisputeScreen.tsx",
+      "op": "navigate",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantPaymentDisputeScreen.tsx",
+      "op": "navigate",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantPaymentScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantPaymentScreen.tsx",
+      "op": "push",
+      "toRaw": "link.href as any"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantPaymentScreen.tsx",
+      "op": "push",
+      "toRaw": "link.href as any"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantPaymentScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantProfileScreen.tsx",
+      "op": "replace",
+      "toRaw": "'/auth/login'"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantProfileScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantPropertyDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "{ pathname: '/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantPropertyDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantPropertyDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantPropertyDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantPropertyDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantPropertyDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "{ pathname: '/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantPropertyDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantReportsScreen.tsx",
+      "op": "push",
+      "toRaw": "{ pathname: '/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantReportsScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantReportsScreen.tsx",
+      "op": "push",
+      "toRaw": "{ pathname: '/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantRequestViewingScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantRequestViewingScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantRequestViewingScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantSearchScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantVerificationScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantVerificationScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantVerificationScreen.tsx",
+      "op": "replace",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantVerificationScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantVerificationScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantViewingDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantViewingDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantViewingDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "{ pathname: '/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantViewingDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantViewingDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantViewingDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantViewingsScreen.tsx",
+      "op": "push",
+      "toRaw": "{ pathname: '/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantViewingsScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(tenant"
+    },
+    {
+      "from": "src/features/tenant/screens/TenantViewingsScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/tenant/screens/TenantViewingsScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/RequestClosureScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/RequestClosureScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/SubmitProgressUpdateScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/SubmitProgressUpdateScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/VendorBankingScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/VendorBankingScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/VendorContractDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/VendorContractDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/VendorContractDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorContractsListScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": " `/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorDashboardScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorDocumentsManagementScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/VendorDocumentsManagementScreen.tsx",
+      "op": "navigate",
+      "toRaw": "'/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorEarningsScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorEarningsScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorEditProfileScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/VendorEditProfileScreen.tsx",
+      "op": "navigate",
+      "toRaw": "'/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorInvoiceSubmitScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/VendorInvoiceSubmitScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/VendorJobDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorJobDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorJobDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorJobDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/VendorJobDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/VendorJobDetailScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorJobsListScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorMaintenanceListScreen.tsx",
+      "op": "push",
+      "toRaw": "`/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorNotificationsScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/VendorNotificationsScreen.tsx",
+      "op": "push",
+      "toRaw": "item.route as any"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorNotificationsScreen.tsx",
+      "op": "navigate",
+      "toRaw": "'/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorNotificationsScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/VendorPODetailScreen.tsx",
+      "op": "replace",
+      "toRaw": "`/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorPODetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/VendorPODetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/VendorPODetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/VendorProfileScreen.tsx",
+      "op": "replace",
+      "toRaw": "'/auth/login'"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorProfileScreen.tsx",
+      "op": "push",
+      "toRaw": "'/profile/services'"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorProfileScreen.tsx",
+      "op": "push",
+      "toRaw": "'/profile/services'"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorProfileScreen.tsx",
+      "op": "push",
+      "toRaw": "'/profile/services'"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorProfileScreen.tsx",
+      "op": "push",
+      "toRaw": "'/profile/services'"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorProfileScreen.tsx",
+      "op": "push",
+      "toRaw": "'/profile/services'"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorProfileScreen.tsx",
+      "op": "push",
+      "toRaw": "'/profile/documents'"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorProfileScreen.tsx",
+      "op": "push",
+      "toRaw": "'/profile/documents'"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorProfileScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorProfileScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorProfileScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorProfileScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorQuoteDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/VendorQuoteDetailScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/VendorQuoteSubmitScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/VendorQuoteSubmitScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/VendorQuoteSubmitScreen.tsx",
+      "op": "push",
+      "toRaw": "'/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorQuoteSubmitScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/VendorQuoteSubmitScreen.tsx",
+      "op": "replace",
+      "toRaw": "`/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorQuoteSubmitScreen.tsx",
+      "op": "replace",
+      "toRaw": "`/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorQuoteSubmitScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/VendorQuoteSubmitScreen.tsx",
+      "op": "replace",
+      "toRaw": "`/(vendor"
+    },
+    {
+      "from": "src/features/vendor/screens/VendorServicesManagementScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/features/vendor/screens/VendorServicesManagementScreen.tsx",
+      "op": "back",
+      "toRaw": ""
+    },
+    {
+      "from": "src/shared/components/ui/FeaturePin.tsx",
+      "op": "push",
+      "toRaw": "{ pathname: aiRoute, params: { prompt: aiPrompt } } as Href"
+    }
+  ]
+}

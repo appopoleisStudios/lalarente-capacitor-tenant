@@ -1,26 +1,30 @@
-import { getVendorAvailableRequests, type VendorMaintenanceRequest } from '@/src/features/maintenance/api';
+import {
+  getVendorAvailableRequests,
+  type VendorMaintenanceRequest,
+} from '@/src/features/maintenance/api';
 import { RequestCard } from '@/src/features/vendor/components/RequestCard';
 import { supabase } from '@/src/lib/supabase';
 import { colors } from '@/src/shared/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    FlatList,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 type StatusFilter = 'all' | 'open' | 'assigned' | 'in_progress' | 'completed';
 
 export const VendorMaintenanceListScreen: React.FC = () => {
   const router = useRouter();
+  const params = useLocalSearchParams<{ tab?: string }>();
   const [requests, setRequests] = useState<VendorMaintenanceRequest[]>([]);
   const [filteredRequests, setFilteredRequests] = useState<VendorMaintenanceRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,8 +36,19 @@ export const VendorMaintenanceListScreen: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Pending-quotes view: the dashboard "Quotes" card deep-links here via
+  // ?tab=pending-quotes. Like jobs/index, this is a TAB screen that stays
+  // mounted, so the param must be re-applied on every focus — not just first
+  // mount (regression: Quotes card used to land on the plain requests tab).
+  const [quotesOnly, setQuotesOnly] = useState(false);
+  useFocusEffect(
+    useCallback(() => {
+      setQuotesOnly(params.tab === 'pending-quotes');
+    }, [params.tab])
+  );
+
   // Categories for filter dropdown
-  const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
 
   // Pagination
@@ -43,7 +58,9 @@ export const VendorMaintenanceListScreen: React.FC = () => {
 
   // Get current user
   const getCurrentUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     return user;
   };
 
@@ -96,7 +113,7 @@ export const VendorMaintenanceListScreen: React.FC = () => {
         setRequests(data);
         setHasMore(data.length >= PAGE_SIZE);
       } else {
-        setRequests(prev => page === 1 ? data : [...prev, ...data]);
+        setRequests((prev) => (page === 1 ? data : [...prev, ...data]));
         setHasMore(data.length >= PAGE_SIZE);
       }
     } catch (err: any) {
@@ -112,11 +129,17 @@ export const VendorMaintenanceListScreen: React.FC = () => {
   const applyFilters = useCallback(() => {
     let filtered = [...requests];
 
+    // Pending-quotes view: only requests where the vendor has a submitted
+    // quote awaiting the owner's decision.
+    if (quotesOnly) {
+      filtered = filtered.filter((req) => req.my_quote?.status === 'submitted');
+    }
+
     // Apply search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
-        req =>
+        (req) =>
           req.title.toLowerCase().includes(query) ||
           req.description.toLowerCase().includes(query) ||
           req.property?.address.toLowerCase().includes(query) ||
@@ -125,7 +148,7 @@ export const VendorMaintenanceListScreen: React.FC = () => {
     }
 
     setFilteredRequests(filtered);
-  }, [requests, searchQuery]);
+  }, [requests, searchQuery, quotesOnly]);
 
   // Initial load
   useEffect(() => {
@@ -151,7 +174,7 @@ export const VendorMaintenanceListScreen: React.FC = () => {
   // Handle load more
   const handleLoadMore = () => {
     if (!loading && hasMore) {
-      setPage(prev => prev + 1);
+      setPage((prev) => prev + 1);
       loadRequests();
     }
   };
@@ -162,7 +185,7 @@ export const VendorMaintenanceListScreen: React.FC = () => {
   };
 
   // Status filter buttons
-  const statusFilters: Array<{ key: StatusFilter; label: string }> = [
+  const statusFilters: { key: StatusFilter; label: string }[] = [
     { key: 'all', label: 'All' },
     { key: 'open', label: 'Open' },
     { key: 'assigned', label: 'Assigned' },
@@ -170,15 +193,43 @@ export const VendorMaintenanceListScreen: React.FC = () => {
 
   // Render filter button
   const renderFilterButton = (filter: { key: StatusFilter; label: string }) => {
-    const isActive = statusFilter === filter.key;
+    const isActive = statusFilter === filter.key && !quotesOnly;
     return (
       <TouchableOpacity
         key={filter.key}
         style={[styles.filterButton, isActive && styles.filterButtonActive]}
-        onPress={() => setStatusFilter(filter.key)}
+        onPress={() => {
+          setQuotesOnly(false);
+          setStatusFilter(filter.key);
+          router.setParams({ tab: 'all' });
+        }}
       >
         <Text style={[styles.filterButtonText, isActive && styles.filterButtonTextActive]}>
           {filter.label}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
+  // Pending-quotes toggle ("My Quotes") — the dashboard Quotes card opens this
+  // via ?tab=pending-quotes; the chip lets the vendor reach it from the tab.
+  const renderQuotesButton = () => {
+    const isActive = quotesOnly;
+    return (
+      <TouchableOpacity
+        key="pending-quotes"
+        testID="vendor-filter-pending-quotes"
+        accessibilityRole="button"
+        accessibilityState={{ selected: quotesOnly }}
+        style={[styles.filterButton, isActive && styles.filterButtonActive]}
+        onPress={() => {
+          setQuotesOnly(true);
+          setStatusFilter('all');
+          router.setParams({ tab: 'pending-quotes' });
+        }}
+      >
+        <Text style={[styles.filterButtonText, isActive && styles.filterButtonTextActive]}>
+          My Quotes
         </Text>
       </TouchableOpacity>
     );
@@ -195,7 +246,7 @@ export const VendorMaintenanceListScreen: React.FC = () => {
         <Text style={styles.categoryButtonText}>
           {categoryFilter === 'all'
             ? 'All Categories'
-            : categories.find(c => c.id === categoryFilter)?.name || 'Category'}
+            : categories.find((c) => c.id === categoryFilter)?.name || 'Category'}
         </Text>
         <Ionicons
           name={showCategoryDropdown ? 'chevron-up' : 'chevron-down'}
@@ -226,7 +277,7 @@ export const VendorMaintenanceListScreen: React.FC = () => {
             )}
           </TouchableOpacity>
 
-          {categories.map(category => (
+          {categories.map((category) => (
             <TouchableOpacity
               key={category.id}
               style={styles.dropdownItem}
@@ -257,11 +308,15 @@ export const VendorMaintenanceListScreen: React.FC = () => {
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Ionicons name="document-text-outline" size={64} color={colors.gray[300]} />
-      <Text style={styles.emptyStateTitle}>No requests found</Text>
+      <Text style={styles.emptyStateTitle}>
+        {quotesOnly ? 'No pending quotes' : 'No requests found'}
+      </Text>
       <Text style={styles.emptyStateText}>
-        {searchQuery
-          ? 'Try adjusting your search or filters'
-          : 'Check back later for new maintenance requests'}
+        {quotesOnly
+          ? "Quotes you have submitted are waiting for the owner's decision"
+          : searchQuery
+            ? 'Try adjusting your search or filters'
+            : 'Check back later for new maintenance requests'}
       </Text>
     </View>
   );
@@ -340,6 +395,7 @@ export const VendorMaintenanceListScreen: React.FC = () => {
           contentContainerStyle={styles.statusFilters}
         >
           {statusFilters.map(renderFilterButton)}
+          {renderQuotesButton()}
         </ScrollView>
 
         {renderCategoryDropdown()}
@@ -351,7 +407,7 @@ export const VendorMaintenanceListScreen: React.FC = () => {
         renderItem={({ item }) => (
           <RequestCard request={item} onPress={() => handleRequestPress(item)} />
         )}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl

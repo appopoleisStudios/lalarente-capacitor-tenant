@@ -1,4 +1,4 @@
-# Vendor dashboard — login → verify dashboard loads
+# Vendor dashboard — login → verify dashboard loads + card navigation gates
 # login-vendor clears session (clearKeychain + UI fallback) without clearState
 # (clearState wipes Expo Metro URL). No deep links.
 appId: com.lalarente.app
@@ -23,3 +23,43 @@ appId: com.lalarente.app
 - assertVisible:
     text: ".*Completed.*"
     optional: true
+
+# ── Regression gate 1: Completed card → My Jobs on the COMPLETED tab ──────────
+# jobs/index is a tab screen that stays mounted; the ?tab=completed param is only
+# honored if re-applied on focus. Tapping the Completed card must land on the
+# Completed tab (subtitle "N completed job(s)"), never the Active tab.
+# Fail-closed: the subtitle ALWAYS reads "N active job(s)" or "N completed job(s)",
+# so asserting the completed variant (non-optional) + asserting the active variant
+# is NOT visible catches the regression (card landing on the Active tab).
+- tapOn:
+    id: "vendor-stat-completed"
+- extendedWaitUntil:
+    visible: "My Jobs"
+    timeout: 15000
+- assertVisible:
+    text: ".*completed job.*"
+- assertNotVisible:
+    text: ".*active job.*"
+- assertVisible:
+    text: "Completed"
+
+# Back to dashboard, then ── Regression gate 2: Quotes card → My Quotes view ──
+# (pending-quotes filter), not the plain requests tab. Fail-closed: the My Quotes
+# chip is always rendered, so asserting the chip exists proves nothing — we assert
+# it is SELECTED (accessibilityState.selected, wired in the screen), which only
+# happens when the ?tab=pending-quotes param was applied.
+- tapOn:
+    id: "tab-vendor-home"
+- extendedWaitUntil:
+    visible: ".*Quotes.*"
+    timeout: 15000
+- tapOn:
+    id: "vendor-stat-quotes"
+- extendedWaitUntil:
+    visible: "Maintenance Requests"
+    timeout: 15000
+- assertVisible:
+    id: "vendor-filter-pending-quotes"
+    selected: true
+- assertVisible:
+    text: "My Quotes"

@@ -331,6 +331,7 @@ export default function VendorDashboardScreen() {
               count={stats.availableRequests}
               label="Available"
               backgroundColor={colors.info[50]}
+              testID="vendor-stat-available"
               onPress={() => router.push('/(vendor)/maintenance')}
             />
             <StatCard
@@ -339,7 +340,8 @@ export default function VendorDashboardScreen() {
               count={stats.pendingQuotes}
               label="Quotes"
               backgroundColor={colors.warning[50]}
-              onPress={() => router.push('/(vendor)/maintenance')}
+              testID="vendor-stat-quotes"
+              onPress={() => router.push('/(vendor)/maintenance?tab=pending-quotes')}
             />
           </View>
           <View style={styles.statsRow}>
@@ -349,7 +351,8 @@ export default function VendorDashboardScreen() {
               count={stats.activeJobs}
               label="Active"
               backgroundColor={colors.primary[50]}
-              onPress={() => router.push('/(vendor)/jobs')}
+              testID="vendor-stat-active"
+              onPress={() => router.push('/(vendor)/jobs?tab=active')}
             />
             <StatCard
               icon="checkmark-circle"
@@ -357,6 +360,7 @@ export default function VendorDashboardScreen() {
               count={stats.completedJobs}
               label="Completed"
               backgroundColor={colors.success[50]}
+              testID="vendor-stat-completed"
               onPress={() => router.push('/(vendor)/jobs?tab=completed')}
             />
           </View>
@@ -398,6 +402,19 @@ export default function VendorDashboardScreen() {
                 <Ionicons name="sparkles" size={24} color={colors.info[500]} />
               </View>
               <Text style={styles.actionText}>Lala AI</Text>
+            </Pressable>
+            {/* Invoices quick action (Plane #105) */}
+            <Pressable
+              style={({ pressed }) => [styles.actionCard, pressed && styles.actionCardPressed]}
+              testID="qa-invoices"
+              accessibilityLabel="Invoices"
+              accessibilityRole="button"
+              onPress={() => router.push('/(vendor)/invoices')}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.success[50] }]}>
+                <Ionicons name="receipt" size={24} color={colors.success[500]} />
+              </View>
+              <Text style={styles.actionText}>Invoices</Text>
             </Pressable>
             {/* Contracts quick action (Plane #83) — the tab was removed from
                 the bottom bar (7→6 tabs); Contracts lives here + under Profile. */}
@@ -527,10 +544,19 @@ interface StatCardProps {
   count: number;
   label: string;
   backgroundColor: string;
+  testID?: string;
   onPress?: () => void;
 }
 
-function StatCard({ icon, iconColor, count, label, backgroundColor, onPress }: StatCardProps) {
+function StatCard({
+  icon,
+  iconColor,
+  count,
+  label,
+  backgroundColor,
+  testID,
+  onPress,
+}: StatCardProps) {
   const card = (
     <View style={[styles.statCard, { backgroundColor }]}>
       <View style={[styles.iconContainer, { backgroundColor: iconColor }]}>
@@ -543,7 +569,7 @@ function StatCard({ icon, iconColor, count, label, backgroundColor, onPress }: S
 
   if (onPress) {
     return (
-      <Pressable onPress={onPress} style={{ flex: 1 }}>
+      <Pressable testID={testID} onPress={onPress} style={{ flex: 1 }}>
         {card}
       </Pressable>
     );

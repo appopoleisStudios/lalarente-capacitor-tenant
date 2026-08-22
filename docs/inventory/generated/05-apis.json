@@ -1,0 +1,4798 @@
+{
+  "apiFiles": 54,
+  "edgeFunctions": [
+    "supabase/functions/accrue-deposit-interest",
+    "supabase/functions/admin-mark-payout-sent",
+    "supabase/functions/admin-proxy",
+    "supabase/functions/auto-approve-closures",
+    "supabase/functions/auto-expire-viewings",
+    "supabase/functions/create-vendor-payment-checkout",
+    "supabase/functions/generate-payment-receipt",
+    "supabase/functions/generate-work-order-report",
+    "supabase/functions/get-vendor-earnings",
+    "supabase/functions/get-vendor-payment-status",
+    "supabase/functions/lala-ai-chat",
+    "supabase/functions/payment-retry-nudges",
+    "supabase/functions/payment-webhook",
+    "supabase/functions/process-vendor-payouts",
+    "supabase/functions/reconcile-stuck-payments",
+    "supabase/functions/register-user",
+    "supabase/functions/save-vendor-payout-preferences",
+    "supabase/functions/vendor-payment-redirect"
+  ],
+  "orphanMethods": [
+    {
+      "file": "src/features/ai-chat/api/lalaChatApi.ts",
+      "method": "getAccessToken"
+    },
+    {
+      "file": "src/features/ai-chat/api/lalaChatApi.ts",
+      "method": "parseInvokeError"
+    },
+    {
+      "file": "src/features/applications/api/applicationCompetition.api.ts",
+      "method": "calculateAffordabilityRatio"
+    },
+    {
+      "file": "src/features/applications/api/holdingDeposit.api.ts",
+      "method": "getPropertyDeposits"
+    },
+    {
+      "file": "src/features/documents/api/documentsApi.ts",
+      "method": "getDocumentStats"
+    },
+    {
+      "file": "src/features/documents/api/documentsApi.ts",
+      "method": "getExpiringDocuments"
+    },
+    {
+      "file": "src/features/documents/api/documentsApi.ts",
+      "method": "logAccess"
+    },
+    {
+      "file": "src/features/documents/api/documentsApi.ts",
+      "method": "updateDocument"
+    },
+    {
+      "file": "src/features/inspections/api/inspectionsApi.ts",
+      "method": "calculateDepositRefund"
+    },
+    {
+      "file": "src/features/inspections/api/inspectionsApi.ts",
+      "method": "cancelInspection"
+    },
+    {
+      "file": "src/features/inspections/api/inspectionsApi.ts",
+      "method": "compareInspections"
+    },
+    {
+      "file": "src/features/inspections/api/inspectionsApi.ts",
+      "method": "finalizeInspection"
+    },
+    {
+      "file": "src/features/inspections/api/inspectionsApi.ts",
+      "method": "getLeaseInspections"
+    },
+    {
+      "file": "src/features/inspections/api/inspectionsApi.ts",
+      "method": "getMoveInInspection"
+    },
+    {
+      "file": "src/features/inspections/api/inspectionsApi.ts",
+      "method": "getPropertyInspections"
+    },
+    {
+      "file": "src/features/inspections/api/inspectionsApi.ts",
+      "method": "getTenantInspections"
+    },
+    {
+      "file": "src/features/inspections/api/inspectionsApi.ts",
+      "method": "rescheduleInspection"
+    },
+    {
+      "file": "src/features/inspections/api/inspectionsApi.ts",
+      "method": "startInspection"
+    },
+    {
+      "file": "src/features/inspections/api/inspectionsApi.ts",
+      "method": "updateInspectionNotes"
+    },
+    {
+      "file": "src/features/insurance/api/insuranceClaims.api.ts",
+      "method": "createPolicy"
+    },
+    {
+      "file": "src/features/insurance/api/insuranceClaims.api.ts",
+      "method": "getPropertyPolicies"
+    },
+    {
+      "file": "src/features/insurance/api/insuranceClaims.api.ts",
+      "method": "updateClaimStatus"
+    },
+    {
+      "file": "src/features/leases/api/leaseAutomation.api.ts",
+      "method": "checkExpiredForAutoConversion"
+    },
+    {
+      "file": "src/features/leases/api/leaseAutomation.api.ts",
+      "method": "checkPendingEscalations"
+    },
+    {
+      "file": "src/features/leases/api/leaseAutomation.api.ts",
+      "method": "convertToMonthToMonth"
+    },
+    {
+      "file": "src/features/leases/api/leaseAutomation.api.ts",
+      "method": "processRentEscalation"
+    },
+    {
+      "file": "src/features/leases/api/leaseExpiry.api.ts",
+      "method": "getOverdueNotices"
+    },
+    {
+      "file": "src/features/leases/api/leaseTermination.api.ts",
+      "method": "getTerminationDetails"
+    },
+    {
+      "file": "src/features/maintenance/api/invoices/invoices.api.ts",
+      "method": "calculateTotals"
+    },
+    {
+      "file": "src/features/maintenance/api/invoices/invoices.api.ts",
+      "method": "generateInvoiceNumber"
+    },
+    {
+      "file": "src/features/maintenance/api/invoices/invoices.api.ts",
+      "method": "getInvoiceById"
+    },
+    {
+      "file": "src/features/maintenance/api/invoices/invoices.api.ts",
+      "method": "getInvoicesByOwner"
+    },
+    {
+      "file": "src/features/maintenance/api/invoices/invoices.api.ts",
+      "method": "logAuditEvent"
+    },
+    {
+      "file": "src/features/maintenance/api/invoices/invoices.api.ts",
+      "method": "validateLineItems"
+    },
+    {
+      "file": "src/features/maintenance/api/purchase-orders/poActions.api.ts",
+      "method": "findVendorByPO"
+    },
+    {
+      "file": "src/features/maintenance/api/purchase-orders/poAudit.api.ts",
+      "method": "getCompleteHistory"
+    },
+    {
+      "file": "src/features/maintenance/api/purchase-orders/purchaseOrders.api.ts",
+      "method": "createPO"
+    },
+    {
+      "file": "src/features/maintenance/api/purchaseOrdersApi.ts",
+      "method": "getPOByContract"
+    },
+    {
+      "file": "src/features/maintenance/api/quotesApi.ts",
+      "method": "acceptQuoteOld"
+    },
+    {
+      "file": "src/features/maintenance/api/quotesApi.ts",
+      "method": "rejectQuoteOld"
+    },
+    {
+      "file": "src/features/maintenance/api/quotesApi.ts",
+      "method": "requestRevision"
+    },
+    {
+      "file": "src/features/maintenance/api/vendors/vendorQuoteRequests.api.ts",
+      "method": "createQuoteRequests"
+    },
+    {
+      "file": "src/features/maintenance/api/vendors/vendorQuoteRequests.api.ts",
+      "method": "getQuoteRequestsForVendor"
+    },
+    {
+      "file": "src/features/maintenance/api/vendors/vendorQuoteRequests.api.ts",
+      "method": "updateQuoteRequestStatus"
+    },
+    {
+      "file": "src/features/maintenance/api/work/tenantVerification.api.ts",
+      "method": "addMediationMessage"
+    },
+    {
+      "file": "src/features/maintenance/api/work/tenantVerification.api.ts",
+      "method": "autoApproveExpiredClosures"
+    },
+    {
+      "file": "src/features/maintenance/api/work/tenantVerification.api.ts",
+      "method": "flagForMediation"
+    },
+    {
+      "file": "src/features/maintenance/api/work/tenantVerification.api.ts",
+      "method": "getMediationMessages"
+    },
+    {
+      "file": "src/features/maintenance/api/work/tenantVerification.api.ts",
+      "method": "markAsEmergencyRepair"
+    },
+    {
+      "file": "src/features/maintenance/api/work/tenantVerification.api.ts",
+      "method": "overrideTenantVerification"
+    },
+    {
+      "file": "src/features/maintenance/api/work/workProgress.api.ts",
+      "method": "addProgressNote"
+    },
+    {
+      "file": "src/features/maintenance/api/work/workProgress.api.ts",
+      "method": "getProgressTimeline"
+    },
+    {
+      "file": "src/features/messaging/api/messagesApi.ts",
+      "method": "archiveThread"
+    },
+    {
+      "file": "src/features/messaging/api/messagesApi.ts",
+      "method": "closeThread"
+    },
+    {
+      "file": "src/features/messaging/api/messagesApi.ts",
+      "method": "getThreadSummaries"
+    },
+    {
+      "file": "src/features/messaging/api/messagesApi.ts",
+      "method": "onMessage"
+    },
+    {
+      "file": "src/features/messaging/api/messagesApi.ts",
+      "method": "onUpdate"
+    },
+    {
+      "file": "src/features/messaging/api/messagesApi.ts",
+      "method": "reopenThread"
+    },
+    {
+      "file": "src/features/notifications/api/notificationsApi.ts",
+      "method": "deleteNotification"
+    },
+    {
+      "file": "src/features/notifications/api/notificationsApi.ts",
+      "method": "deleteReadNotifications"
+    },
+    {
+      "file": "src/features/notifications/api/notificationsApi.ts",
+      "method": "getDefaultChannels"
+    },
+    {
+      "file": "src/features/notifications/api/notificationsApi.ts",
+      "method": "getNotificationContent"
+    },
+    {
+      "file": "src/features/notifications/api/notificationsApi.ts",
+      "method": "getNotificationStats"
+    },
+    {
+      "file": "src/features/notifications/api/notificationsApi.ts",
+      "method": "getUserNotifications"
+    },
+    {
+      "file": "src/features/notifications/api/notificationsApi.ts",
+      "method": "getUserPreferences"
+    },
+    {
+      "file": "src/features/notifications/api/notificationsApi.ts",
+      "method": "markAllAsRead"
+    },
+    {
+      "file": "src/features/notifications/api/notificationsApi.ts",
+      "method": "registerPushToken"
+    },
+    {
+      "file": "src/features/notifications/api/notificationsApi.ts",
+      "method": "removePushToken"
+    },
+    {
+      "file": "src/features/notifications/api/notificationsApi.ts",
+      "method": "sendPushNotification"
+    },
+    {
+      "file": "src/features/notifications/api/notificationsApi.ts",
+      "method": "sendSms"
+    },
+    {
+      "file": "src/features/notifications/api/notificationsApi.ts",
+      "method": "subscribeToNotifications"
+    },
+    {
+      "file": "src/features/notifications/api/notificationsApi.ts",
+      "method": "updateUserPreferences"
+    },
+    {
+      "file": "src/features/owner/api/ownerDashboardApi.ts",
+      "method": "buildActivityFeed"
+    },
+    {
+      "file": "src/features/owner/api/ownerDashboardApi.ts",
+      "method": "calculateAnalytics"
+    },
+    {
+      "file": "src/features/owner/api/ownerDashboardApi.ts",
+      "method": "calculateDocumentStats"
+    },
+    {
+      "file": "src/features/owner/api/ownerDashboardApi.ts",
+      "method": "calculatePortfolioStats"
+    },
+    {
+      "file": "src/features/owner/api/ownerDashboardApi.ts",
+      "method": "fetchHoldingDepositsCount"
+    },
+    {
+      "file": "src/features/owner/api/ownerDashboardApi.ts",
+      "method": "fetchOpenDisputesCount"
+    },
+    {
+      "file": "src/features/owner/api/ownerDashboardApi.ts",
+      "method": "fetchPendingClosureCount"
+    },
+    {
+      "file": "src/features/owner/api/ownerDashboardApi.ts",
+      "method": "fetchPendingTerminationsCount"
+    },
+    {
+      "file": "src/features/owner/api/ownerDashboardApi.ts",
+      "method": "fetchProcessingPaymentsCount"
+    },
+    {
+      "file": "src/features/owner/api/ownerDashboardApi.ts",
+      "method": "fetchRecentViewings"
+    },
+    {
+      "file": "src/features/owner/api/ownerDashboardApi.ts",
+      "method": "fetchUserProfile"
+    },
+    {
+      "file": "src/features/owner/api/ownerDashboardApi.ts",
+      "method": "formatApplicants"
+    },
+    {
+      "file": "src/features/owner/api/ownerDashboardApi.ts",
+      "method": "formatMaintenanceItems"
+    },
+    {
+      "file": "src/features/owner/api/ownerDashboardApi.ts",
+      "method": "formatRelativeTime"
+    },
+    {
+      "file": "src/features/payments/api/arrearsEscalation.api.ts",
+      "method": "evaluatePayment"
+    },
+    {
+      "file": "src/features/payments/api/arrearsEscalation.api.ts",
+      "method": "getTenantEscalations"
+    },
+    {
+      "file": "src/features/payments/api/arrearsEscalation.api.ts",
+      "method": "startCurePeriod"
+    },
+    {
+      "file": "src/features/payments/api/paymentDisputes.api.ts",
+      "method": "getLeaseArrangements"
+    },
+    {
+      "file": "src/features/payments/api/paymentDisputes.api.ts",
+      "method": "getPaymentDisputes"
+    },
+    {
+      "file": "src/features/payments/api/paymentProcessing.api.ts",
+      "method": "calculateInterestForLease"
+    },
+    {
+      "file": "src/features/payments/api/paymentProcessing.api.ts",
+      "method": "getTenantPaymentSummary"
+    },
+    {
+      "file": "src/features/payments/api/paymentProcessing.api.ts",
+      "method": "processOverpayment"
+    },
+    {
+      "file": "src/features/payments/api/paymentProcessing.api.ts",
+      "method": "processPartialPayment"
+    },
+    {
+      "file": "src/features/payments/api/paymentProcessing.api.ts",
+      "method": "splitPayment"
+    },
+    {
+      "file": "src/features/privacy/api/consent.api.ts",
+      "method": "getAllConsents"
+    },
+    {
+      "file": "src/features/privacy/api/consent.api.ts",
+      "method": "hasActiveConsent"
+    },
+    {
+      "file": "src/features/privacy/api/dataSubjectRights.api.ts",
+      "method": "getAccessRequests"
+    },
+    {
+      "file": "src/features/privacy/api/dataSubjectRights.api.ts",
+      "method": "getAuditLog"
+    },
+    {
+      "file": "src/features/privacy/api/dataSubjectRights.api.ts",
+      "method": "getCorrectionRequests"
+    },
+    {
+      "file": "src/features/privacy/api/dataSubjectRights.api.ts",
+      "method": "getDeletionRequests"
+    },
+    {
+      "file": "src/features/properties/api/applicationsApi.ts",
+      "method": "getApplicationStats"
+    },
+    {
+      "file": "src/features/properties/api/applicationsApi.ts",
+      "method": "getPropertyApplications"
+    },
+    {
+      "file": "src/features/properties/api/applicationsApi.ts",
+      "method": "getTenantApplications"
+    },
+    {
+      "file": "src/features/properties/api/applicationsApi.ts",
+      "method": "initiateBackgroundCheck"
+    },
+    {
+      "file": "src/features/properties/api/applicationsApi.ts",
+      "method": "initiateCreditCheck"
+    },
+    {
+      "file": "src/features/properties/api/applicationsApi.ts",
+      "method": "requestAdditionalDocuments"
+    },
+    {
+      "file": "src/features/properties/api/applicationsApi.ts",
+      "method": "verifyIdentity"
+    },
+    {
+      "file": "src/features/properties/api/leasesApi.ts",
+      "method": "createLease"
+    },
+    {
+      "file": "src/features/properties/api/leasesApi.ts",
+      "method": "generateLeaseDocument"
+    },
+    {
+      "file": "src/features/properties/api/leasesApi.ts",
+      "method": "getLease"
+    },
+    {
+      "file": "src/features/properties/api/leasesApi.ts",
+      "method": "getLeaseHistory"
+    },
+    {
+      "file": "src/features/properties/api/leasesApi.ts",
+      "method": "getLeaseStats"
+    },
+    {
+      "file": "src/features/properties/api/leasesApi.ts",
+      "method": "getOwnerLeases"
+    },
+    {
+      "file": "src/features/properties/api/leasesApi.ts",
+      "method": "getTenantLeases"
+    },
+    {
+      "file": "src/features/properties/api/leasesApi.ts",
+      "method": "signLease"
+    },
+    {
+      "file": "src/features/properties/api/leasesApi.ts",
+      "method": "terminateLease"
+    },
+    {
+      "file": "src/features/properties/api/leasesApi.ts",
+      "method": "updateLease"
+    },
+    {
+      "file": "src/features/properties/api/paymentsApi.ts",
+      "method": "calculateInterestOnArrears"
+    },
+    {
+      "file": "src/features/properties/api/paymentsApi.ts",
+      "method": "completePayment"
+    },
+    {
+      "file": "src/features/properties/api/paymentsApi.ts",
+      "method": "createPayment"
+    },
+    {
+      "file": "src/features/properties/api/paymentsApi.ts",
+      "method": "failPayment"
+    },
+    {
+      "file": "src/features/properties/api/paymentsApi.ts",
+      "method": "generateRecurringPayments"
+    },
+    {
+      "file": "src/features/properties/api/paymentsApi.ts",
+      "method": "getDaysOverdue"
+    },
+    {
+      "file": "src/features/properties/api/paymentsApi.ts",
+      "method": "getLeasePayments"
+    },
+    {
+      "file": "src/features/properties/api/paymentsApi.ts",
+      "method": "getOverduePayments"
+    },
+    {
+      "file": "src/features/properties/api/paymentsApi.ts",
+      "method": "getPayment"
+    },
+    {
+      "file": "src/features/properties/api/paymentsApi.ts",
+      "method": "getPropertyPaymentHistory"
+    },
+    {
+      "file": "src/features/properties/api/paymentsApi.ts",
+      "method": "getUpcomingPayments"
+    },
+    {
+      "file": "src/features/properties/api/paymentsApi.ts",
+      "method": "processPayment"
+    },
+    {
+      "file": "src/features/properties/api/paymentsApi.ts",
+      "method": "retryPayment"
+    },
+    {
+      "file": "src/features/properties/api/paymentsApi.ts",
+      "method": "updateInterestAccrual"
+    },
+    {
+      "file": "src/features/properties/api/propertiesApi.ts",
+      "method": "deletePropertyPhoto"
+    },
+    {
+      "file": "src/features/properties/api/propertiesApi.ts",
+      "method": "generateThumbnailUrl"
+    },
+    {
+      "file": "src/features/properties/api/propertiesApi.ts",
+      "method": "getAvailableCities"
+    },
+    {
+      "file": "src/features/properties/api/propertiesApi.ts",
+      "method": "getAvailableProvinces"
+    },
+    {
+      "file": "src/features/properties/api/propertiesApi.ts",
+      "method": "getPropertyStats"
+    },
+    {
+      "file": "src/features/properties/api/propertiesApi.ts",
+      "method": "getPropertyTypes"
+    },
+    {
+      "file": "src/features/properties/api/propertiesApi.ts",
+      "method": "getRentPriceRange"
+    },
+    {
+      "file": "src/features/properties/api/propertiesApi.ts",
+      "method": "reorderPropertyPhotos"
+    },
+    {
+      "file": "src/features/properties/api/propertiesApi.ts",
+      "method": "searchProperties"
+    },
+    {
+      "file": "src/features/properties/api/propertiesApi.ts",
+      "method": "updatePropertyStatus"
+    },
+    {
+      "file": "src/features/properties/api/viewingsApi.ts",
+      "method": "getPropertyViewings"
+    },
+    {
+      "file": "src/features/properties/api/viewingsApi.ts",
+      "method": "getUpcomingViewings"
+    },
+    {
+      "file": "src/features/properties/api/viewingsApi.ts",
+      "method": "getViewingStats"
+    },
+    {
+      "file": "src/features/properties/api/viewingsApi.ts",
+      "method": "isPast"
+    },
+    {
+      "file": "src/features/properties/api/viewingsApi.ts",
+      "method": "isToday"
+    },
+    {
+      "file": "src/features/properties/api/viewingsApi.ts",
+      "method": "rescheduleViewing"
+    }
+  ],
+  "apis": [
+    {
+      "file": "src/features/ai-chat/api/lalaChatApi.ts",
+      "methodCount": 3,
+      "methods": [
+        {
+          "name": "getAccessToken",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "parseInvokeError",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "sendLalaChatMessage",
+          "callers": 1,
+          "callerFiles": ["src/features/ai-chat/screens/LalaChatScreen.tsx"]
+        }
+      ]
+    },
+    {
+      "file": "src/features/applications/api/applicationCompetition.api.ts",
+      "methodCount": 6,
+      "methods": [
+        {
+          "name": "calculateAffordabilityRatio",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getRankedApplications",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerApplicationCompetitionScreen.tsx"]
+        },
+        {
+          "name": "promoteNextBackup",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerApplicationCompetitionScreen.tsx"]
+        },
+        {
+          "name": "selectWinner",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerApplicationCompetitionScreen.tsx"]
+        },
+        {
+          "name": "setBackupRank",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerApplicationCompetitionScreen.tsx"]
+        },
+        {
+          "name": "shortlistApplication",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerApplicationCompetitionScreen.tsx"]
+        }
+      ]
+    },
+    {
+      "file": "src/features/applications/api/holdingDeposit.api.ts",
+      "methodCount": 6,
+      "methods": [
+        {
+          "name": "applyToLease",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/owner/screens/OwnerApplicationDetailScreen.tsx",
+            "src/features/owner/screens/OwnerHoldingDepositScreen.tsx"
+          ]
+        },
+        {
+          "name": "confirmPayment",
+          "callers": 1,
+          "callerFiles": ["src/features/tenant/screens/TenantHoldingDepositScreen.tsx"]
+        },
+        {
+          "name": "createDeposit",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/owner/screens/OwnerApplicationDetailScreen.tsx",
+            "src/features/owner/screens/OwnerHoldingDepositScreen.tsx"
+          ]
+        },
+        {
+          "name": "getPropertyDeposits",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getTenantDeposits",
+          "callers": 1,
+          "callerFiles": ["src/features/tenant/screens/TenantHoldingDepositScreen.tsx"]
+        },
+        {
+          "name": "refundDeposit",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerHoldingDepositScreen.tsx"]
+        }
+      ]
+    },
+    {
+      "file": "src/features/deposits/api/depositInterest.api.ts",
+      "methodCount": 4,
+      "methods": [
+        {
+          "name": "calculateCurrentBalance",
+          "callers": 1,
+          "callerFiles": ["src/features/deposits/api/__tests__/depositInterest.test.ts"]
+        },
+        {
+          "name": "calculateMonthlyInterest",
+          "callers": 1,
+          "callerFiles": ["src/features/deposits/api/__tests__/depositInterest.test.ts"]
+        },
+        {
+          "name": "calculateRefundAmount",
+          "callers": 1,
+          "callerFiles": ["src/features/deposits/api/depositRefund.api.ts"]
+        },
+        {
+          "name": "getInterestHistory",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/owner/screens/OwnerDepositManagementScreen.tsx",
+            "src/features/tenant/screens/TenantDepositStatusScreen.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/deposits/api/depositRefund.api.ts",
+      "methodCount": 5,
+      "methods": [
+        {
+          "name": "getRefundStatus",
+          "callers": 1,
+          "callerFiles": ["src/features/tenant/screens/TenantDepositStatusScreen.tsx"]
+        },
+        {
+          "name": "initiateRefund",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/owner/screens/OwnerDepositManagementScreen.tsx",
+            "src/features/owner/screens/OwnerEarlyTerminationScreen.tsx"
+          ]
+        },
+        {
+          "name": "processRefund",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerDepositManagementScreen.tsx"]
+        },
+        {
+          "name": "proposeDeduction",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerDepositManagementScreen.tsx"]
+        },
+        {
+          "name": "respondToDeduction",
+          "callers": 1,
+          "callerFiles": ["src/features/tenant/screens/TenantDepositStatusScreen.tsx"]
+        }
+      ]
+    },
+    {
+      "file": "src/features/documents/api/documentsApi.ts",
+      "methodCount": 14,
+      "methods": [
+        {
+          "name": "deleteDocument",
+          "callers": 5,
+          "callerFiles": [
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/owner/screens/OwnerComplianceScreen.tsx",
+            "src/features/vendor/api/profileApi.ts",
+            "src/features/vendor/screens/VendorDocumentsManagementScreen.tsx"
+          ]
+        },
+        {
+          "name": "extendRetention",
+          "callers": 1,
+          "callerFiles": ["src/features/documents/screens/DocumentViewerScreen.tsx"]
+        },
+        {
+          "name": "getDocument",
+          "callers": 1,
+          "callerFiles": ["src/features/documents/screens/DocumentViewerScreen.tsx"]
+        },
+        {
+          "name": "getDocumentStats",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getDownloadUrl",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/tenant/screens/TenantDocumentsScreen.tsx"
+          ]
+        },
+        {
+          "name": "getExpiringDocuments",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getLeaseDocuments",
+          "callers": 1,
+          "callerFiles": ["src/features/documents/screens/DocumentsScreen.tsx"]
+        },
+        {
+          "name": "getPropertyDocuments",
+          "callers": 1,
+          "callerFiles": ["src/features/documents/screens/DocumentsScreen.tsx"]
+        },
+        {
+          "name": "getTenantVerificationDocs",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/tenant/screens/TenantDocumentsScreen.tsx"
+          ]
+        },
+        {
+          "name": "getUserDocuments",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/documents/screens/DocumentsScreen.tsx",
+            "src/features/tenant/screens/TenantDocumentsScreen.tsx"
+          ]
+        },
+        {
+          "name": "logAccess",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "searchDocuments",
+          "callers": 1,
+          "callerFiles": ["src/features/documents/screens/DocumentsScreen.tsx"]
+        },
+        {
+          "name": "updateDocument",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "uploadDocument",
+          "callers": 7,
+          "callerFiles": [
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/owner/screens/OwnerComplianceScreen.tsx",
+            "src/features/owner/utils/pdfReports.ts",
+            "src/features/tenant/screens/TenantDocumentsScreen.tsx",
+            "src/features/vendor/api/profileApi.ts",
+            "src/features/vendor/screens/VendorDocumentsManagementScreen.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/inspections/api/inspectionsApi.ts",
+      "methodCount": 19,
+      "methods": [
+        {
+          "name": "calculateDepositRefund",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "cancelInspection",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "compareInspections",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "completeInspection",
+          "callers": 1,
+          "callerFiles": ["src/features/inspections/screens/InspectionScreen.tsx"]
+        },
+        {
+          "name": "createInspection",
+          "callers": 1,
+          "callerFiles": ["src/features/inspections/screens/OwnerScheduleInspectionScreen.tsx"]
+        },
+        {
+          "name": "finalizeInspection",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getInspection",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/inspections/screens/InspectionScreen.tsx",
+            "src/features/inspections/screens/OwnerInspectionDetailScreen.tsx",
+            "src/features/inspections/screens/OwnerInspectionRoute.tsx"
+          ]
+        },
+        {
+          "name": "getLeaseInspections",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getMoveInInspection",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getOwnerInspections",
+          "callers": 1,
+          "callerFiles": ["src/features/inspections/screens/OwnerInspectionsListScreen.tsx"]
+        },
+        {
+          "name": "getPropertyInspections",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getTenantInspections",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "rescheduleInspection",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "scheduleMoveInInspection",
+          "callers": 1,
+          "callerFiles": ["src/features/inspections/screens/OwnerScheduleInspectionScreen.tsx"]
+        },
+        {
+          "name": "scheduleMoveOutInspection",
+          "callers": 1,
+          "callerFiles": ["src/features/inspections/screens/OwnerScheduleInspectionScreen.tsx"]
+        },
+        {
+          "name": "signInspection",
+          "callers": 1,
+          "callerFiles": ["src/features/inspections/screens/InspectionScreen.tsx"]
+        },
+        {
+          "name": "startInspection",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "updateInspectionNotes",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "updateInspectionRooms",
+          "callers": 1,
+          "callerFiles": ["src/features/inspections/screens/InspectionScreen.tsx"]
+        }
+      ]
+    },
+    {
+      "file": "src/features/insurance/api/insuranceClaims.api.ts",
+      "methodCount": 10,
+      "methods": [
+        {
+          "name": "addClaimDocument",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerInsuranceClaimScreen.tsx"]
+        },
+        {
+          "name": "createClaim",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerInsuranceClaimScreen.tsx"]
+        },
+        {
+          "name": "createPolicy",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getClaimDocuments",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerInsuranceClaimScreen.tsx"]
+        },
+        {
+          "name": "getClaimsSummary",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerInsuranceClaimsDashboard.tsx"]
+        },
+        {
+          "name": "getOwnerClaims",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerInsuranceClaimsDashboard.tsx"]
+        },
+        {
+          "name": "getOwnerPolicies",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerInsuranceClaimScreen.tsx"]
+        },
+        {
+          "name": "getPropertyPolicies",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "submitClaim",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerInsuranceClaimScreen.tsx"]
+        },
+        {
+          "name": "updateClaimStatus",
+          "callers": 0,
+          "callerFiles": []
+        }
+      ]
+    },
+    {
+      "file": "src/features/leases/api/leaseAutomation.api.ts",
+      "methodCount": 6,
+      "methods": [
+        {
+          "name": "calculateNextEscalationDate",
+          "callers": 1,
+          "callerFiles": ["src/features/leases/api/__tests__/leaseAutomation.test.ts"]
+        },
+        {
+          "name": "checkExpiredForAutoConversion",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "checkPendingEscalations",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "convertToMonthToMonth",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "processRentEscalation",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "return",
+          "callers": 255,
+          "callerFiles": [
+            "src/components/ErrorBoundary.tsx",
+            "src/contexts/AuthContext.tsx",
+            "src/core/config/__tests__/env.test.ts",
+            "src/core/dev/disableDevToolsInterference.ts",
+            "src/core/navigation/roleRoutes.ts",
+            "src/core/query/QueryProvider.tsx",
+            "src/core/query/queryErrors.ts",
+            "src/features/ai-chat/api/lalaChatApi.ts",
+            "src/features/ai-chat/screens/LalaChatScreen.tsx",
+            "src/features/applications/api/applicationCompetition.api.ts",
+            "src/features/applications/api/holdingDeposit.api.ts",
+            "src/features/auth/screens/LoginScreen.tsx",
+            "src/features/auth/screens/RegisterScreen.tsx",
+            "src/features/deposits/api/depositInterest.api.ts",
+            "src/features/deposits/api/depositRefund.api.ts",
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/documents/screens/DocumentsScreen.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/leases/api/leaseExpiry.api.ts",
+      "methodCount": 7,
+      "methods": [
+        {
+          "name": "calculateDaysUntilExpiry",
+          "callers": 1,
+          "callerFiles": ["src/features/leases/api/__tests__/leaseExpiry.test.ts"]
+        },
+        {
+          "name": "determineLeaseStatus",
+          "callers": 1,
+          "callerFiles": ["src/features/leases/api/__tests__/leaseExpiry.test.ts"]
+        },
+        {
+          "name": "getExpiringLeases",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/owner/screens/OwnerLeaseRenewalScreen.tsx",
+            "src/features/owner/screens/OwnerRenewalsDashboardScreen.tsx",
+            "src/features/properties/api/leasesApi.ts"
+          ]
+        },
+        {
+          "name": "getLeaseExpiryInfo",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/owner/screens/OwnerLeaseRenewalScreen.tsx",
+            "src/features/owner/screens/OwnerRenewalsDashboardScreen.tsx",
+            "src/features/tenant/screens/TenantLeaseRenewalScreen.tsx"
+          ]
+        },
+        {
+          "name": "getOverdueNotices",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "recordNoticeSent",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/owner/screens/OwnerLeaseRenewalScreen.tsx",
+            "src/features/owner/screens/OwnerRenewalsDashboardScreen.tsx"
+          ]
+        },
+        {
+          "name": "recordTenantResponse",
+          "callers": 1,
+          "callerFiles": ["src/features/tenant/screens/TenantLeaseRenewalScreen.tsx"]
+        }
+      ]
+    },
+    {
+      "file": "src/features/leases/api/leaseRenewal.api.ts",
+      "methodCount": 11,
+      "methods": [
+        {
+          "name": "acceptRenewal",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/owner/screens/OwnerLeaseRenewalScreen.tsx",
+            "src/features/tenant/screens/TenantLeaseRenewalScreen.tsx"
+          ]
+        },
+        {
+          "name": "calculateRenewalEndDate",
+          "callers": 1,
+          "callerFiles": ["src/features/leases/api/__tests__/leaseRenewal.test.ts"]
+        },
+        {
+          "name": "calculateResponseDeadline",
+          "callers": 1,
+          "callerFiles": ["src/features/leases/api/__tests__/leaseRenewal.test.ts"]
+        },
+        {
+          "name": "counterOffer",
+          "callers": 1,
+          "callerFiles": ["src/features/tenant/screens/TenantLeaseRenewalScreen.tsx"]
+        },
+        {
+          "name": "executeRenewal",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerLeaseRenewalScreen.tsx"]
+        },
+        {
+          "name": "getLatestNegotiation",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerLeaseRenewalScreen.tsx"]
+        },
+        {
+          "name": "getNegotiationHistory",
+          "callers": 1,
+          "callerFiles": ["src/features/tenant/screens/TenantLeaseRenewalScreen.tsx"]
+        },
+        {
+          "name": "getNextRound",
+          "callers": 1,
+          "callerFiles": ["src/features/leases/api/__tests__/leaseRenewal.test.ts"]
+        },
+        {
+          "name": "proposeRenewal",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerLeaseRenewalScreen.tsx"]
+        },
+        {
+          "name": "rejectRenewal",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/owner/screens/OwnerLeaseRenewalScreen.tsx",
+            "src/features/tenant/screens/TenantLeaseRenewalScreen.tsx"
+          ]
+        },
+        {
+          "name": "return",
+          "callers": 255,
+          "callerFiles": [
+            "src/components/ErrorBoundary.tsx",
+            "src/contexts/AuthContext.tsx",
+            "src/core/config/__tests__/env.test.ts",
+            "src/core/dev/disableDevToolsInterference.ts",
+            "src/core/navigation/roleRoutes.ts",
+            "src/core/query/QueryProvider.tsx",
+            "src/core/query/queryErrors.ts",
+            "src/features/ai-chat/api/lalaChatApi.ts",
+            "src/features/ai-chat/screens/LalaChatScreen.tsx",
+            "src/features/applications/api/applicationCompetition.api.ts",
+            "src/features/applications/api/holdingDeposit.api.ts",
+            "src/features/auth/screens/LoginScreen.tsx",
+            "src/features/auth/screens/RegisterScreen.tsx",
+            "src/features/deposits/api/depositInterest.api.ts",
+            "src/features/deposits/api/depositRefund.api.ts",
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/documents/screens/DocumentsScreen.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/leases/api/leaseTermination.api.ts",
+      "methodCount": 10,
+      "methods": [
+        {
+          "name": "acceptTermination",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerEarlyTerminationScreen.tsx"]
+        },
+        {
+          "name": "calculateNoticeDays",
+          "callers": 1,
+          "callerFiles": ["src/features/leases/api/__tests__/leaseTermination.test.ts"]
+        },
+        {
+          "name": "calculatePenaltyAmount",
+          "callers": 1,
+          "callerFiles": ["src/features/leases/api/__tests__/leaseTermination.test.ts"]
+        },
+        {
+          "name": "calculateRemainingMonths",
+          "callers": 1,
+          "callerFiles": ["src/features/leases/api/__tests__/leaseTermination.test.ts"]
+        },
+        {
+          "name": "calculateTerminationPenalty",
+          "callers": 1,
+          "callerFiles": ["src/features/tenant/screens/TenantEarlyTerminationScreen.tsx"]
+        },
+        {
+          "name": "declineTermination",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerEarlyTerminationScreen.tsx"]
+        },
+        {
+          "name": "getPendingTerminations",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerEarlyTerminationScreen.tsx"]
+        },
+        {
+          "name": "getTerminatedLeases",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerEarlyTerminationScreen.tsx"]
+        },
+        {
+          "name": "getTerminationDetails",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "requestTermination",
+          "callers": 1,
+          "callerFiles": ["src/features/tenant/screens/TenantEarlyTerminationScreen.tsx"]
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/invoices/invoices.api.ts",
+      "methodCount": 13,
+      "methods": [
+        {
+          "name": "approveInvoice",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerInvoiceApprovalScreen.tsx"]
+        },
+        {
+          "name": "calculateTotals",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "constructor",
+          "callers": 1,
+          "callerFiles": ["src/features/leases/api/storageService.ts"]
+        },
+        {
+          "name": "generateInvoiceNumber",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getInvoiceById",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getInvoicesByOwner",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getInvoicesByRequest",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerInvoiceApprovalScreen.tsx"]
+        },
+        {
+          "name": "logAuditEvent",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "rejectInvoice",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerInvoiceApprovalScreen.tsx"]
+        },
+        {
+          "name": "return",
+          "callers": 255,
+          "callerFiles": [
+            "src/components/ErrorBoundary.tsx",
+            "src/contexts/AuthContext.tsx",
+            "src/core/config/__tests__/env.test.ts",
+            "src/core/dev/disableDevToolsInterference.ts",
+            "src/core/navigation/roleRoutes.ts",
+            "src/core/query/QueryProvider.tsx",
+            "src/core/query/queryErrors.ts",
+            "src/features/ai-chat/api/lalaChatApi.ts",
+            "src/features/ai-chat/screens/LalaChatScreen.tsx",
+            "src/features/applications/api/applicationCompetition.api.ts",
+            "src/features/applications/api/holdingDeposit.api.ts",
+            "src/features/auth/screens/LoginScreen.tsx",
+            "src/features/auth/screens/RegisterScreen.tsx",
+            "src/features/deposits/api/depositInterest.api.ts",
+            "src/features/deposits/api/depositRefund.api.ts",
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/documents/screens/DocumentsScreen.tsx"
+          ]
+        },
+        {
+          "name": "submitInvoice",
+          "callers": 1,
+          "callerFiles": ["src/features/vendor/screens/VendorInvoiceSubmitScreen.tsx"]
+        },
+        {
+          "name": "super",
+          "callers": 1,
+          "callerFiles": ["src/features/leases/api/storageService.ts"]
+        },
+        {
+          "name": "validateLineItems",
+          "callers": 0,
+          "callerFiles": []
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/maintenanceApi.ts",
+      "methodCount": 37,
+      "methods": [
+        {
+          "name": "acknowledgeRequest",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/requests/maintenanceWorkflow.api.ts",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "closeRequest",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/requests/maintenanceWorkflow.api.ts",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "createMaintenanceRequest",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/requests/maintenanceRequests.api.ts",
+            "src/features/maintenance/screens/ReportMaintenanceScreen.tsx",
+            "src/features/tenant/screens/TenantMaintenanceReportScreen.tsx"
+          ]
+        },
+        {
+          "name": "declineQuoteRequest",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/vendors/vendorMaintenance.api.ts"
+          ]
+        },
+        {
+          "name": "deleteMaintenanceRequest",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/requests/maintenanceRequests.api.ts",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "filterByPriority",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/requests/maintenanceFilters.api.ts",
+            "src/features/maintenance/hooks/__tests__/useMaintenanceRequests.test.ts",
+            "src/features/maintenance/hooks/useMaintenanceRequests.ts"
+          ]
+        },
+        {
+          "name": "filterByStatus",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/requests/maintenanceFilters.api.ts",
+            "src/features/maintenance/hooks/__tests__/useMaintenanceRequests.test.ts",
+            "src/features/maintenance/hooks/useMaintenanceRequests.ts"
+          ]
+        },
+        {
+          "name": "getAvailableRequests",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/vendors/vendorMaintenance.api.ts"
+          ]
+        },
+        {
+          "name": "getClosureReport",
+          "callers": 7,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/work/workClosure.api.ts",
+            "src/features/owner/screens/OwnerClosureApprovalScreen.tsx",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+            "src/features/tenant/screens/TenantClosureConfirmScreen.tsx",
+            "src/features/tenant/screens/TenantMaintenanceDetailScreen.tsx",
+            "src/features/vendor/screens/VendorJobDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "getDedicatedVendors",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/vendors/vendorDiscovery.api.ts",
+            "src/features/maintenance/api/vendors/vendorRouting.api.ts",
+            "src/features/owner/screens/VendorSelectionScreen.tsx"
+          ]
+        },
+        {
+          "name": "getMaintenanceRequestById",
+          "callers": 11,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/requests/maintenanceRequests.api.ts",
+            "src/features/maintenance/hooks/__tests__/useMaintenanceDetail.test.ts",
+            "src/features/maintenance/hooks/useMaintenanceDetail.ts",
+            "src/features/owner/screens/OwnerClosureApprovalScreen.tsx",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+            "src/features/owner/screens/OwnerProgressTimelineScreen.tsx",
+            "src/features/owner/screens/VendorSelectionScreen.tsx",
+            "src/features/tenant/screens/TenantMaintenanceDetailScreen.tsx",
+            "src/features/vendor/screens/VendorInvoiceSubmitScreen.tsx",
+            "src/features/vendor/screens/VendorJobDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "getMaintenanceRequests",
+          "callers": 5,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/requests/maintenanceRequests.api.ts",
+            "src/features/maintenance/hooks/__tests__/useMaintenanceRequests.test.ts",
+            "src/features/maintenance/hooks/useMaintenanceRequests.ts",
+            "src/features/owner/api/ownerDashboardApi.ts"
+          ]
+        },
+        {
+          "name": "getMyJobs",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/vendors/vendorMaintenance.api.ts"
+          ]
+        },
+        {
+          "name": "getOwnerProperties",
+          "callers": 7,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/requests/maintenanceRequests.api.ts",
+            "src/features/maintenance/screens/ReportMaintenanceScreen.tsx",
+            "src/features/owner/api/ownerDashboardApi.ts",
+            "src/features/owner/screens/OwnerRentRollScreen.tsx",
+            "src/features/properties/api/propertiesApi.ts",
+            "src/features/properties/hooks/useProperties.ts"
+          ]
+        },
+        {
+          "name": "getProgressUpdates",
+          "callers": 8,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/work/workExecution.api.ts",
+            "src/features/owner/screens/OwnerClosureApprovalScreen.tsx",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+            "src/features/owner/screens/OwnerProgressTimelineScreen.tsx",
+            "src/features/tenant/components/TenantProgressTracker.tsx",
+            "src/features/tenant/screens/TenantMaintenanceDetailScreen.tsx",
+            "src/features/vendor/screens/VendorJobDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "getPropertyOwner",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/requests/maintenanceRequests.api.ts"
+          ]
+        },
+        {
+          "name": "getRequestById",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/vendors/vendorMaintenance.api.ts"
+          ]
+        },
+        {
+          "name": "getServiceCategories",
+          "callers": 6,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/requests/maintenanceFilters.api.ts",
+            "src/features/maintenance/screens/ReportMaintenanceScreen.tsx",
+            "src/features/tenant/screens/TenantMaintenanceReportScreen.tsx",
+            "src/features/vendor/api/profileApi.ts",
+            "src/features/vendor/screens/VendorServicesManagementScreen.tsx"
+          ]
+        },
+        {
+          "name": "getVendorCategories",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/vendors/vendorDiscovery.api.ts"
+          ]
+        },
+        {
+          "name": "getVendorsByCategory",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/vendors/vendorDiscovery.api.ts",
+            "src/features/owner/screens/VendorSelectionScreen.tsx"
+          ]
+        },
+        {
+          "name": "getVendorsForRequest",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/vendors/vendorDiscovery.api.ts"
+          ]
+        },
+        {
+          "name": "inviteVendorByEmail",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/vendors/vendorRouting.api.ts",
+            "src/features/owner/screens/VendorSelectionScreen.tsx"
+          ]
+        },
+        {
+          "name": "pushToDedicatedVendors",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/vendors/vendorRouting.api.ts",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "pushToOpenMarket",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/vendors/vendorRouting.api.ts",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+            "src/features/owner/screens/VendorSelectionScreen.tsx"
+          ]
+        },
+        {
+          "name": "pushToSelectedVendors",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/vendors/vendorRouting.api.ts",
+            "src/features/owner/screens/VendorSelectionScreen.tsx"
+          ]
+        },
+        {
+          "name": "requestClosure",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/work/workClosure.api.ts",
+            "src/features/vendor/screens/RequestClosureScreen.tsx"
+          ]
+        },
+        {
+          "name": "searchVendorByEmail",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/vendors/vendorDiscovery.api.ts",
+            "src/features/owner/screens/VendorSelectionScreen.tsx"
+          ]
+        },
+        {
+          "name": "startWork",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/work/workExecution.api.ts",
+            "src/features/vendor/screens/VendorJobDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "submitProgressUpdate",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/work/workExecution.api.ts",
+            "src/features/vendor/screens/SubmitProgressUpdateScreen.tsx"
+          ]
+        },
+        {
+          "name": "submitQuote",
+          "callers": 5,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/quotes/quotes.api.ts",
+            "src/features/maintenance/api/quotesApi.ts",
+            "src/features/maintenance/api/vendors/vendorMaintenance.api.ts",
+            "src/features/vendor/screens/VendorQuoteSubmitScreen.tsx"
+          ]
+        },
+        {
+          "name": "subscribeToMaintenanceRequests",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/requests/maintenanceSubscriptions.api.ts",
+            "src/features/maintenance/hooks/__tests__/useMaintenanceRequests.test.ts",
+            "src/features/maintenance/hooks/useMaintenanceRequests.ts"
+          ]
+        },
+        {
+          "name": "unsubscribe",
+          "callers": 11,
+          "callerFiles": [
+            "src/contexts/AuthContext.tsx",
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/messages/messageSubscriptions.api.ts",
+            "src/features/maintenance/api/messagesApi.ts",
+            "src/features/maintenance/api/quotes/quoteSubscriptions.api.ts",
+            "src/features/maintenance/api/quotesApi.ts",
+            "src/features/maintenance/api/requests/maintenanceSubscriptions.api.ts",
+            "src/features/maintenance/hooks/__tests__/useMaintenanceRequests.test.ts",
+            "src/features/messaging/api/messagesApi.ts",
+            "src/features/messaging/screens/MessageThreadScreen.tsx",
+            "src/features/messaging/screens/MessagesScreen.tsx"
+          ]
+        },
+        {
+          "name": "updateJobStatus",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/vendors/vendorMaintenance.api.ts"
+          ]
+        },
+        {
+          "name": "updateMaintenanceRequest",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/requests/maintenanceRequests.api.ts",
+            "src/features/maintenance/screens/ReportMaintenanceScreen.tsx",
+            "src/features/tenant/screens/TenantMaintenanceReportScreen.tsx"
+          ]
+        },
+        {
+          "name": "updateMmsStatus",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/requests/maintenanceWorkflow.api.ts"
+          ]
+        },
+        {
+          "name": "updatePriority",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/requests/maintenanceWorkflow.api.ts"
+          ]
+        },
+        {
+          "name": "updateStatus",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/requests/maintenanceWorkflow.api.ts"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/messages/messageSubscriptions.api.ts",
+      "methodCount": 4,
+      "methods": [
+        {
+          "name": "async",
+          "callers": 181,
+          "callerFiles": [
+            "src/contexts/AuthContext.tsx",
+            "src/features/ai-chat/api/lalaChatApi.ts",
+            "src/features/ai-chat/screens/LalaChatScreen.tsx",
+            "src/features/applications/api/applicationCompetition.api.ts",
+            "src/features/applications/api/holdingDeposit.api.ts",
+            "src/features/auth/screens/LoginScreen.tsx",
+            "src/features/auth/screens/RegisterScreen.tsx",
+            "src/features/deposits/api/depositInterest.api.ts",
+            "src/features/deposits/api/depositRefund.api.ts",
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/documents/screens/DocumentsScreen.tsx",
+            "src/features/inspections/api/inspectionsApi.ts",
+            "src/features/inspections/screens/InspectionScreen.tsx",
+            "src/features/inspections/screens/OwnerInspectionDetailScreen.tsx",
+            "src/features/inspections/screens/OwnerInspectionRoute.tsx",
+            "src/features/inspections/screens/OwnerInspectionsListScreen.tsx",
+            "src/features/inspections/screens/OwnerScheduleInspectionScreen.tsx"
+          ]
+        },
+        {
+          "name": "callback",
+          "callers": 7,
+          "callerFiles": [
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/api/messagesApi.ts",
+            "src/features/maintenance/api/quotes/quoteSubscriptions.api.ts",
+            "src/features/maintenance/api/quotesApi.ts",
+            "src/features/maintenance/api/requests/maintenanceSubscriptions.api.ts",
+            "src/features/notifications/api/notificationsApi.ts",
+            "src/features/vendor/screens/VendorProfileScreen.tsx"
+          ]
+        },
+        {
+          "name": "subscribeToMessages",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/messagesApi.ts"
+          ]
+        },
+        {
+          "name": "unsubscribe",
+          "callers": 11,
+          "callerFiles": [
+            "src/contexts/AuthContext.tsx",
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/api/messagesApi.ts",
+            "src/features/maintenance/api/quotes/quoteSubscriptions.api.ts",
+            "src/features/maintenance/api/quotesApi.ts",
+            "src/features/maintenance/api/requests/maintenanceSubscriptions.api.ts",
+            "src/features/maintenance/hooks/__tests__/useMaintenanceRequests.test.ts",
+            "src/features/messaging/api/messagesApi.ts",
+            "src/features/messaging/screens/MessageThreadScreen.tsx",
+            "src/features/messaging/screens/MessagesScreen.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/messages/messages.api.ts",
+      "methodCount": 5,
+      "methods": [
+        {
+          "name": "getMessages",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/messagesApi.ts"
+          ]
+        },
+        {
+          "name": "getUnreadCount",
+          "callers": 6,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/messagesApi.ts",
+            "src/features/messaging/api/messagesApi.ts",
+            "src/features/messaging/screens/MessagesScreen.tsx",
+            "src/features/notifications/api/notificationsApi.ts",
+            "src/features/vendor/screens/VendorDashboardScreen.tsx"
+          ]
+        },
+        {
+          "name": "markAsRead",
+          "callers": 5,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/messagesApi.ts",
+            "src/features/messaging/api/messagesApi.ts",
+            "src/features/messaging/screens/MessageThreadScreen.tsx",
+            "src/features/notifications/api/notificationsApi.ts"
+          ]
+        },
+        {
+          "name": "return",
+          "callers": 255,
+          "callerFiles": [
+            "src/components/ErrorBoundary.tsx",
+            "src/contexts/AuthContext.tsx",
+            "src/core/config/__tests__/env.test.ts",
+            "src/core/dev/disableDevToolsInterference.ts",
+            "src/core/navigation/roleRoutes.ts",
+            "src/core/query/QueryProvider.tsx",
+            "src/core/query/queryErrors.ts",
+            "src/features/ai-chat/api/lalaChatApi.ts",
+            "src/features/ai-chat/screens/LalaChatScreen.tsx",
+            "src/features/applications/api/applicationCompetition.api.ts",
+            "src/features/applications/api/holdingDeposit.api.ts",
+            "src/features/auth/screens/LoginScreen.tsx",
+            "src/features/auth/screens/RegisterScreen.tsx",
+            "src/features/deposits/api/depositInterest.api.ts",
+            "src/features/deposits/api/depositRefund.api.ts",
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/documents/screens/DocumentsScreen.tsx"
+          ]
+        },
+        {
+          "name": "sendMessage",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/messagesApi.ts",
+            "src/features/messaging/api/messagesApi.ts",
+            "src/features/messaging/screens/MessageThreadScreen.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/messagesApi.ts",
+      "methodCount": 8,
+      "methods": [
+        {
+          "name": "async",
+          "callers": 181,
+          "callerFiles": [
+            "src/contexts/AuthContext.tsx",
+            "src/features/ai-chat/api/lalaChatApi.ts",
+            "src/features/ai-chat/screens/LalaChatScreen.tsx",
+            "src/features/applications/api/applicationCompetition.api.ts",
+            "src/features/applications/api/holdingDeposit.api.ts",
+            "src/features/auth/screens/LoginScreen.tsx",
+            "src/features/auth/screens/RegisterScreen.tsx",
+            "src/features/deposits/api/depositInterest.api.ts",
+            "src/features/deposits/api/depositRefund.api.ts",
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/documents/screens/DocumentsScreen.tsx",
+            "src/features/inspections/api/inspectionsApi.ts",
+            "src/features/inspections/screens/InspectionScreen.tsx",
+            "src/features/inspections/screens/OwnerInspectionDetailScreen.tsx",
+            "src/features/inspections/screens/OwnerInspectionRoute.tsx",
+            "src/features/inspections/screens/OwnerInspectionsListScreen.tsx",
+            "src/features/inspections/screens/OwnerScheduleInspectionScreen.tsx"
+          ]
+        },
+        {
+          "name": "callback",
+          "callers": 7,
+          "callerFiles": [
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/api/messages/messageSubscriptions.api.ts",
+            "src/features/maintenance/api/quotes/quoteSubscriptions.api.ts",
+            "src/features/maintenance/api/quotesApi.ts",
+            "src/features/maintenance/api/requests/maintenanceSubscriptions.api.ts",
+            "src/features/notifications/api/notificationsApi.ts",
+            "src/features/vendor/screens/VendorProfileScreen.tsx"
+          ]
+        },
+        {
+          "name": "getMessages",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/messages/messages.api.ts"
+          ]
+        },
+        {
+          "name": "getUnreadCount",
+          "callers": 6,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/messages/messages.api.ts",
+            "src/features/messaging/api/messagesApi.ts",
+            "src/features/messaging/screens/MessagesScreen.tsx",
+            "src/features/notifications/api/notificationsApi.ts",
+            "src/features/vendor/screens/VendorDashboardScreen.tsx"
+          ]
+        },
+        {
+          "name": "markAsRead",
+          "callers": 5,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/messages/messages.api.ts",
+            "src/features/messaging/api/messagesApi.ts",
+            "src/features/messaging/screens/MessageThreadScreen.tsx",
+            "src/features/notifications/api/notificationsApi.ts"
+          ]
+        },
+        {
+          "name": "sendMessage",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/messages/messages.api.ts",
+            "src/features/messaging/api/messagesApi.ts",
+            "src/features/messaging/screens/MessageThreadScreen.tsx"
+          ]
+        },
+        {
+          "name": "subscribeToMessages",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/messages/messageSubscriptions.api.ts"
+          ]
+        },
+        {
+          "name": "unsubscribe",
+          "callers": 11,
+          "callerFiles": [
+            "src/contexts/AuthContext.tsx",
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/api/messages/messageSubscriptions.api.ts",
+            "src/features/maintenance/api/quotes/quoteSubscriptions.api.ts",
+            "src/features/maintenance/api/quotesApi.ts",
+            "src/features/maintenance/api/requests/maintenanceSubscriptions.api.ts",
+            "src/features/maintenance/hooks/__tests__/useMaintenanceRequests.test.ts",
+            "src/features/messaging/api/messagesApi.ts",
+            "src/features/messaging/screens/MessageThreadScreen.tsx",
+            "src/features/messaging/screens/MessagesScreen.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/purchase-orders/poActions.api.ts",
+      "methodCount": 7,
+      "methods": [
+        {
+          "name": "acceptPO",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/purchase-orders/__tests__/poActions.test.ts",
+            "src/features/vendor/screens/VendorPODetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "findVendorByPO",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "rejectPO",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/purchase-orders/__tests__/poActions.test.ts",
+            "src/features/vendor/screens/VendorPODetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "return",
+          "callers": 255,
+          "callerFiles": [
+            "src/components/ErrorBoundary.tsx",
+            "src/contexts/AuthContext.tsx",
+            "src/core/config/__tests__/env.test.ts",
+            "src/core/dev/disableDevToolsInterference.ts",
+            "src/core/navigation/roleRoutes.ts",
+            "src/core/query/QueryProvider.tsx",
+            "src/core/query/queryErrors.ts",
+            "src/features/ai-chat/api/lalaChatApi.ts",
+            "src/features/ai-chat/screens/LalaChatScreen.tsx",
+            "src/features/applications/api/applicationCompetition.api.ts",
+            "src/features/applications/api/holdingDeposit.api.ts",
+            "src/features/auth/screens/LoginScreen.tsx",
+            "src/features/auth/screens/RegisterScreen.tsx",
+            "src/features/deposits/api/depositInterest.api.ts",
+            "src/features/deposits/api/depositRefund.api.ts",
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/documents/screens/DocumentsScreen.tsx"
+          ]
+        },
+        {
+          "name": "sendPOToVendor",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/purchaseOrdersApi.ts",
+            "src/features/owner/screens/OwnerPODetailScreen.tsx",
+            "src/features/owner/screens/OwnerSendPOScreen.tsx"
+          ]
+        },
+        {
+          "name": "updatePOStatus",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/purchase-orders/__tests__/poActions.test.ts",
+            "src/features/maintenance/api/purchaseOrdersApi.ts",
+            "src/features/vendor/screens/VendorPODetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "verifyVendorAssignment",
+          "callers": 1,
+          "callerFiles": [
+            "src/features/maintenance/api/purchase-orders/__tests__/poActions.test.ts"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/purchase-orders/poAudit.api.ts",
+      "methodCount": 2,
+      "methods": [
+        {
+          "name": "getCompleteHistory",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getDisputeAuditTrail",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/purchaseOrdersApi.ts"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/purchase-orders/poRevisions.api.ts",
+      "methodCount": 2,
+      "methods": [
+        {
+          "name": "createPORevision",
+          "callers": 1,
+          "callerFiles": ["src/features/maintenance/api/purchase-orders/purchaseOrders.api.ts"]
+        },
+        {
+          "name": "getPORevisions",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/purchaseOrdersApi.ts",
+            "src/features/owner/screens/OwnerPODetailScreen.tsx",
+            "src/features/vendor/screens/VendorPODetailScreen.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/purchase-orders/purchaseOrders.api.ts",
+      "methodCount": 5,
+      "methods": [
+        {
+          "name": "createPO",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getPOById",
+          "callers": 6,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/purchaseOrdersApi.ts",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+            "src/features/owner/screens/OwnerPODetailScreen.tsx",
+            "src/features/vendor/screens/VendorJobDetailScreen.tsx",
+            "src/features/vendor/screens/VendorPODetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "getPOByRequestId",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/purchaseOrdersApi.ts",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+            "src/features/vendor/screens/VendorJobDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "getPOWithDetails",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/purchaseOrdersApi.ts"
+          ]
+        },
+        {
+          "name": "updatePO",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/purchaseOrdersApi.ts",
+            "src/features/owner/screens/OwnerPODetailScreen.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/purchaseOrdersApi.ts",
+      "methodCount": 9,
+      "methods": [
+        {
+          "name": "getDisputeAuditTrail",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/purchase-orders/poAudit.api.ts"
+          ]
+        },
+        {
+          "name": "getPOByContract",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getPOById",
+          "callers": 6,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/purchase-orders/purchaseOrders.api.ts",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+            "src/features/owner/screens/OwnerPODetailScreen.tsx",
+            "src/features/vendor/screens/VendorJobDetailScreen.tsx",
+            "src/features/vendor/screens/VendorPODetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "getPOByRequestId",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/purchase-orders/purchaseOrders.api.ts",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+            "src/features/vendor/screens/VendorJobDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "getPORevisions",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/purchase-orders/poRevisions.api.ts",
+            "src/features/owner/screens/OwnerPODetailScreen.tsx",
+            "src/features/vendor/screens/VendorPODetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "getPOWithDetails",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/purchase-orders/purchaseOrders.api.ts"
+          ]
+        },
+        {
+          "name": "sendPOToVendor",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/purchase-orders/poActions.api.ts",
+            "src/features/owner/screens/OwnerPODetailScreen.tsx",
+            "src/features/owner/screens/OwnerSendPOScreen.tsx"
+          ]
+        },
+        {
+          "name": "updatePO",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/purchase-orders/purchaseOrders.api.ts",
+            "src/features/owner/screens/OwnerPODetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "updatePOStatus",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/purchase-orders/__tests__/poActions.test.ts",
+            "src/features/maintenance/api/purchase-orders/poActions.api.ts",
+            "src/features/vendor/screens/VendorPODetailScreen.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/quotes/quoteActions.api.ts",
+      "methodCount": 4,
+      "methods": [
+        {
+          "name": "acceptQuote",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/quotesApi.ts",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+            "src/features/owner/screens/OwnerQuoteDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "generatePOFromQuote",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/quotesApi.ts"
+          ]
+        },
+        {
+          "name": "rejectQuote",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/quotesApi.ts",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+            "src/features/owner/screens/OwnerQuoteDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "requestQuoteRevision",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/quotesApi.ts",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+            "src/features/owner/screens/OwnerQuoteDetailScreen.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/quotes/quoteRevisions.api.ts",
+      "methodCount": 2,
+      "methods": [
+        {
+          "name": "createQuoteRevision",
+          "callers": 1,
+          "callerFiles": ["src/features/maintenance/api/quotes/quotes.api.ts"]
+        },
+        {
+          "name": "getQuoteRevisions",
+          "callers": 5,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/quotesApi.ts",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+            "src/features/owner/screens/OwnerQuoteDetailScreen.tsx",
+            "src/features/vendor/screens/VendorQuoteDetailScreen.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/quotes/quoteSubscriptions.api.ts",
+      "methodCount": 4,
+      "methods": [
+        {
+          "name": "async",
+          "callers": 181,
+          "callerFiles": [
+            "src/contexts/AuthContext.tsx",
+            "src/features/ai-chat/api/lalaChatApi.ts",
+            "src/features/ai-chat/screens/LalaChatScreen.tsx",
+            "src/features/applications/api/applicationCompetition.api.ts",
+            "src/features/applications/api/holdingDeposit.api.ts",
+            "src/features/auth/screens/LoginScreen.tsx",
+            "src/features/auth/screens/RegisterScreen.tsx",
+            "src/features/deposits/api/depositInterest.api.ts",
+            "src/features/deposits/api/depositRefund.api.ts",
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/documents/screens/DocumentsScreen.tsx",
+            "src/features/inspections/api/inspectionsApi.ts",
+            "src/features/inspections/screens/InspectionScreen.tsx",
+            "src/features/inspections/screens/OwnerInspectionDetailScreen.tsx",
+            "src/features/inspections/screens/OwnerInspectionRoute.tsx",
+            "src/features/inspections/screens/OwnerInspectionsListScreen.tsx",
+            "src/features/inspections/screens/OwnerScheduleInspectionScreen.tsx"
+          ]
+        },
+        {
+          "name": "callback",
+          "callers": 7,
+          "callerFiles": [
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/api/messages/messageSubscriptions.api.ts",
+            "src/features/maintenance/api/messagesApi.ts",
+            "src/features/maintenance/api/quotesApi.ts",
+            "src/features/maintenance/api/requests/maintenanceSubscriptions.api.ts",
+            "src/features/notifications/api/notificationsApi.ts",
+            "src/features/vendor/screens/VendorProfileScreen.tsx"
+          ]
+        },
+        {
+          "name": "subscribeToQuotes",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/quotesApi.ts",
+            "src/features/maintenance/hooks/useQuotes.ts"
+          ]
+        },
+        {
+          "name": "unsubscribe",
+          "callers": 11,
+          "callerFiles": [
+            "src/contexts/AuthContext.tsx",
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/api/messages/messageSubscriptions.api.ts",
+            "src/features/maintenance/api/messagesApi.ts",
+            "src/features/maintenance/api/quotesApi.ts",
+            "src/features/maintenance/api/requests/maintenanceSubscriptions.api.ts",
+            "src/features/maintenance/hooks/__tests__/useMaintenanceRequests.test.ts",
+            "src/features/messaging/api/messagesApi.ts",
+            "src/features/messaging/screens/MessageThreadScreen.tsx",
+            "src/features/messaging/screens/MessagesScreen.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/quotes/quotes.api.ts",
+      "methodCount": 7,
+      "methods": [
+        {
+          "name": "await",
+          "callers": 181,
+          "callerFiles": [
+            "src/contexts/AuthContext.tsx",
+            "src/features/ai-chat/api/lalaChatApi.ts",
+            "src/features/ai-chat/screens/LalaChatScreen.tsx",
+            "src/features/applications/api/applicationCompetition.api.ts",
+            "src/features/applications/api/holdingDeposit.api.ts",
+            "src/features/auth/screens/LoginScreen.tsx",
+            "src/features/auth/screens/RegisterScreen.tsx",
+            "src/features/deposits/api/depositInterest.api.ts",
+            "src/features/deposits/api/depositRefund.api.ts",
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/documents/screens/DocumentsScreen.tsx",
+            "src/features/inspections/api/inspectionsApi.ts",
+            "src/features/inspections/screens/InspectionScreen.tsx",
+            "src/features/inspections/screens/OwnerInspectionDetailScreen.tsx",
+            "src/features/inspections/screens/OwnerInspectionRoute.tsx",
+            "src/features/inspections/screens/OwnerInspectionsListScreen.tsx",
+            "src/features/inspections/screens/OwnerScheduleInspectionScreen.tsx"
+          ]
+        },
+        {
+          "name": "getApprovedQuote",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/quotesApi.ts"
+          ]
+        },
+        {
+          "name": "getQuoteById",
+          "callers": 6,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/quotes/quoteActions.api.ts",
+            "src/features/maintenance/api/quotesApi.ts",
+            "src/features/owner/screens/OwnerQuoteDetailScreen.tsx",
+            "src/features/vendor/screens/VendorQuoteDetailScreen.tsx",
+            "src/features/vendor/screens/VendorQuoteSubmitScreen.tsx"
+          ]
+        },
+        {
+          "name": "getQuotesByRequest",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/quotesApi.ts",
+            "src/features/maintenance/hooks/useQuotes.ts",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "return",
+          "callers": 255,
+          "callerFiles": [
+            "src/components/ErrorBoundary.tsx",
+            "src/contexts/AuthContext.tsx",
+            "src/core/config/__tests__/env.test.ts",
+            "src/core/dev/disableDevToolsInterference.ts",
+            "src/core/navigation/roleRoutes.ts",
+            "src/core/query/QueryProvider.tsx",
+            "src/core/query/queryErrors.ts",
+            "src/features/ai-chat/api/lalaChatApi.ts",
+            "src/features/ai-chat/screens/LalaChatScreen.tsx",
+            "src/features/applications/api/applicationCompetition.api.ts",
+            "src/features/applications/api/holdingDeposit.api.ts",
+            "src/features/auth/screens/LoginScreen.tsx",
+            "src/features/auth/screens/RegisterScreen.tsx",
+            "src/features/deposits/api/depositInterest.api.ts",
+            "src/features/deposits/api/depositRefund.api.ts",
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/documents/screens/DocumentsScreen.tsx"
+          ]
+        },
+        {
+          "name": "submitQuote",
+          "callers": 5,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/api/quotesApi.ts",
+            "src/features/maintenance/api/vendors/vendorMaintenance.api.ts",
+            "src/features/vendor/screens/VendorQuoteSubmitScreen.tsx"
+          ]
+        },
+        {
+          "name": "updateQuote",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/quotesApi.ts",
+            "src/features/vendor/screens/VendorQuoteDetailScreen.tsx",
+            "src/features/vendor/screens/VendorQuoteSubmitScreen.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/quotesApi.ts",
+      "methodCount": 18,
+      "methods": [
+        {
+          "name": "acceptQuote",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/quotes/quoteActions.api.ts",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+            "src/features/owner/screens/OwnerQuoteDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "acceptQuoteOld",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "async",
+          "callers": 181,
+          "callerFiles": [
+            "src/contexts/AuthContext.tsx",
+            "src/features/ai-chat/api/lalaChatApi.ts",
+            "src/features/ai-chat/screens/LalaChatScreen.tsx",
+            "src/features/applications/api/applicationCompetition.api.ts",
+            "src/features/applications/api/holdingDeposit.api.ts",
+            "src/features/auth/screens/LoginScreen.tsx",
+            "src/features/auth/screens/RegisterScreen.tsx",
+            "src/features/deposits/api/depositInterest.api.ts",
+            "src/features/deposits/api/depositRefund.api.ts",
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/documents/screens/DocumentsScreen.tsx",
+            "src/features/inspections/api/inspectionsApi.ts",
+            "src/features/inspections/screens/InspectionScreen.tsx",
+            "src/features/inspections/screens/OwnerInspectionDetailScreen.tsx",
+            "src/features/inspections/screens/OwnerInspectionRoute.tsx",
+            "src/features/inspections/screens/OwnerInspectionsListScreen.tsx",
+            "src/features/inspections/screens/OwnerScheduleInspectionScreen.tsx"
+          ]
+        },
+        {
+          "name": "await",
+          "callers": 181,
+          "callerFiles": [
+            "src/contexts/AuthContext.tsx",
+            "src/features/ai-chat/api/lalaChatApi.ts",
+            "src/features/ai-chat/screens/LalaChatScreen.tsx",
+            "src/features/applications/api/applicationCompetition.api.ts",
+            "src/features/applications/api/holdingDeposit.api.ts",
+            "src/features/auth/screens/LoginScreen.tsx",
+            "src/features/auth/screens/RegisterScreen.tsx",
+            "src/features/deposits/api/depositInterest.api.ts",
+            "src/features/deposits/api/depositRefund.api.ts",
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/documents/screens/DocumentsScreen.tsx",
+            "src/features/inspections/api/inspectionsApi.ts",
+            "src/features/inspections/screens/InspectionScreen.tsx",
+            "src/features/inspections/screens/OwnerInspectionDetailScreen.tsx",
+            "src/features/inspections/screens/OwnerInspectionRoute.tsx",
+            "src/features/inspections/screens/OwnerInspectionsListScreen.tsx",
+            "src/features/inspections/screens/OwnerScheduleInspectionScreen.tsx"
+          ]
+        },
+        {
+          "name": "callback",
+          "callers": 7,
+          "callerFiles": [
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/api/messages/messageSubscriptions.api.ts",
+            "src/features/maintenance/api/messagesApi.ts",
+            "src/features/maintenance/api/quotes/quoteSubscriptions.api.ts",
+            "src/features/maintenance/api/requests/maintenanceSubscriptions.api.ts",
+            "src/features/notifications/api/notificationsApi.ts",
+            "src/features/vendor/screens/VendorProfileScreen.tsx"
+          ]
+        },
+        {
+          "name": "generatePOFromQuote",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/quotes/quoteActions.api.ts"
+          ]
+        },
+        {
+          "name": "getApprovedQuote",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/quotes/quotes.api.ts"
+          ]
+        },
+        {
+          "name": "getQuoteById",
+          "callers": 6,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/quotes/quoteActions.api.ts",
+            "src/features/maintenance/api/quotes/quotes.api.ts",
+            "src/features/owner/screens/OwnerQuoteDetailScreen.tsx",
+            "src/features/vendor/screens/VendorQuoteDetailScreen.tsx",
+            "src/features/vendor/screens/VendorQuoteSubmitScreen.tsx"
+          ]
+        },
+        {
+          "name": "getQuoteRevisions",
+          "callers": 5,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/quotes/quoteRevisions.api.ts",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+            "src/features/owner/screens/OwnerQuoteDetailScreen.tsx",
+            "src/features/vendor/screens/VendorQuoteDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "getQuotesByRequest",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/quotes/quotes.api.ts",
+            "src/features/maintenance/hooks/useQuotes.ts",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "rejectQuote",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/quotes/quoteActions.api.ts",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+            "src/features/owner/screens/OwnerQuoteDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "rejectQuoteOld",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "requestQuoteRevision",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/quotes/quoteActions.api.ts",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+            "src/features/owner/screens/OwnerQuoteDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "requestRevision",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "submitQuote",
+          "callers": 5,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/api/quotes/quotes.api.ts",
+            "src/features/maintenance/api/vendors/vendorMaintenance.api.ts",
+            "src/features/vendor/screens/VendorQuoteSubmitScreen.tsx"
+          ]
+        },
+        {
+          "name": "subscribeToQuotes",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/quotes/quoteSubscriptions.api.ts",
+            "src/features/maintenance/hooks/useQuotes.ts"
+          ]
+        },
+        {
+          "name": "unsubscribe",
+          "callers": 11,
+          "callerFiles": [
+            "src/contexts/AuthContext.tsx",
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/api/messages/messageSubscriptions.api.ts",
+            "src/features/maintenance/api/messagesApi.ts",
+            "src/features/maintenance/api/quotes/quoteSubscriptions.api.ts",
+            "src/features/maintenance/api/requests/maintenanceSubscriptions.api.ts",
+            "src/features/maintenance/hooks/__tests__/useMaintenanceRequests.test.ts",
+            "src/features/messaging/api/messagesApi.ts",
+            "src/features/messaging/screens/MessageThreadScreen.tsx",
+            "src/features/messaging/screens/MessagesScreen.tsx"
+          ]
+        },
+        {
+          "name": "updateQuote",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/quotes/quotes.api.ts",
+            "src/features/vendor/screens/VendorQuoteDetailScreen.tsx",
+            "src/features/vendor/screens/VendorQuoteSubmitScreen.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/requests/maintenanceFilters.api.ts",
+      "methodCount": 3,
+      "methods": [
+        {
+          "name": "filterByPriority",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/hooks/__tests__/useMaintenanceRequests.test.ts",
+            "src/features/maintenance/hooks/useMaintenanceRequests.ts"
+          ]
+        },
+        {
+          "name": "filterByStatus",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/hooks/__tests__/useMaintenanceRequests.test.ts",
+            "src/features/maintenance/hooks/useMaintenanceRequests.ts"
+          ]
+        },
+        {
+          "name": "getServiceCategories",
+          "callers": 6,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/screens/ReportMaintenanceScreen.tsx",
+            "src/features/tenant/screens/TenantMaintenanceReportScreen.tsx",
+            "src/features/vendor/api/profileApi.ts",
+            "src/features/vendor/screens/VendorServicesManagementScreen.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/requests/maintenanceRequests.api.ts",
+      "methodCount": 8,
+      "methods": [
+        {
+          "name": "createMaintenanceRequest",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/screens/ReportMaintenanceScreen.tsx",
+            "src/features/tenant/screens/TenantMaintenanceReportScreen.tsx"
+          ]
+        },
+        {
+          "name": "deleteMaintenanceRequest",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "getMaintenanceRequestById",
+          "callers": 11,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/hooks/__tests__/useMaintenanceDetail.test.ts",
+            "src/features/maintenance/hooks/useMaintenanceDetail.ts",
+            "src/features/owner/screens/OwnerClosureApprovalScreen.tsx",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+            "src/features/owner/screens/OwnerProgressTimelineScreen.tsx",
+            "src/features/owner/screens/VendorSelectionScreen.tsx",
+            "src/features/tenant/screens/TenantMaintenanceDetailScreen.tsx",
+            "src/features/vendor/screens/VendorInvoiceSubmitScreen.tsx",
+            "src/features/vendor/screens/VendorJobDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "getMaintenanceRequests",
+          "callers": 5,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/hooks/__tests__/useMaintenanceRequests.test.ts",
+            "src/features/maintenance/hooks/useMaintenanceRequests.ts",
+            "src/features/owner/api/ownerDashboardApi.ts"
+          ]
+        },
+        {
+          "name": "getOwnerProperties",
+          "callers": 7,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/screens/ReportMaintenanceScreen.tsx",
+            "src/features/owner/api/ownerDashboardApi.ts",
+            "src/features/owner/screens/OwnerRentRollScreen.tsx",
+            "src/features/properties/api/propertiesApi.ts",
+            "src/features/properties/hooks/useProperties.ts"
+          ]
+        },
+        {
+          "name": "getPropertyOwner",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts"
+          ]
+        },
+        {
+          "name": "return",
+          "callers": 255,
+          "callerFiles": [
+            "src/components/ErrorBoundary.tsx",
+            "src/contexts/AuthContext.tsx",
+            "src/core/config/__tests__/env.test.ts",
+            "src/core/dev/disableDevToolsInterference.ts",
+            "src/core/navigation/roleRoutes.ts",
+            "src/core/query/QueryProvider.tsx",
+            "src/core/query/queryErrors.ts",
+            "src/features/ai-chat/api/lalaChatApi.ts",
+            "src/features/ai-chat/screens/LalaChatScreen.tsx",
+            "src/features/applications/api/applicationCompetition.api.ts",
+            "src/features/applications/api/holdingDeposit.api.ts",
+            "src/features/auth/screens/LoginScreen.tsx",
+            "src/features/auth/screens/RegisterScreen.tsx",
+            "src/features/deposits/api/depositInterest.api.ts",
+            "src/features/deposits/api/depositRefund.api.ts",
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/documents/screens/DocumentsScreen.tsx"
+          ]
+        },
+        {
+          "name": "updateMaintenanceRequest",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/screens/ReportMaintenanceScreen.tsx",
+            "src/features/tenant/screens/TenantMaintenanceReportScreen.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/requests/maintenanceSubscriptions.api.ts",
+      "methodCount": 2,
+      "methods": [
+        {
+          "name": "subscribeToMaintenanceRequests",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/hooks/__tests__/useMaintenanceRequests.test.ts",
+            "src/features/maintenance/hooks/useMaintenanceRequests.ts"
+          ]
+        },
+        {
+          "name": "unsubscribe",
+          "callers": 11,
+          "callerFiles": [
+            "src/contexts/AuthContext.tsx",
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/api/messages/messageSubscriptions.api.ts",
+            "src/features/maintenance/api/messagesApi.ts",
+            "src/features/maintenance/api/quotes/quoteSubscriptions.api.ts",
+            "src/features/maintenance/api/quotesApi.ts",
+            "src/features/maintenance/hooks/__tests__/useMaintenanceRequests.test.ts",
+            "src/features/messaging/api/messagesApi.ts",
+            "src/features/messaging/screens/MessageThreadScreen.tsx",
+            "src/features/messaging/screens/MessagesScreen.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/requests/maintenanceWorkflow.api.ts",
+      "methodCount": 6,
+      "methods": [
+        {
+          "name": "acknowledgeRequest",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "closeRequest",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "triggerWorkOrderReport",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/work/tenantVerification.api.ts",
+            "src/features/maintenance/api/work/workClosure.api.ts",
+            "src/features/maintenance/api/work/workOrderReport.api.ts"
+          ]
+        },
+        {
+          "name": "updateMmsStatus",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts"
+          ]
+        },
+        {
+          "name": "updatePriority",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts"
+          ]
+        },
+        {
+          "name": "updateStatus",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/vendors/vendorDiscovery.api.ts",
+      "methodCount": 6,
+      "methods": [
+        {
+          "name": "getDedicatedVendors",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/api/vendors/vendorRouting.api.ts",
+            "src/features/owner/screens/VendorSelectionScreen.tsx"
+          ]
+        },
+        {
+          "name": "getVendorCategories",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts"
+          ]
+        },
+        {
+          "name": "getVendorsByCategory",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/owner/screens/VendorSelectionScreen.tsx"
+          ]
+        },
+        {
+          "name": "getVendorsForRequest",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts"
+          ]
+        },
+        {
+          "name": "return",
+          "callers": 255,
+          "callerFiles": [
+            "src/components/ErrorBoundary.tsx",
+            "src/contexts/AuthContext.tsx",
+            "src/core/config/__tests__/env.test.ts",
+            "src/core/dev/disableDevToolsInterference.ts",
+            "src/core/navigation/roleRoutes.ts",
+            "src/core/query/QueryProvider.tsx",
+            "src/core/query/queryErrors.ts",
+            "src/features/ai-chat/api/lalaChatApi.ts",
+            "src/features/ai-chat/screens/LalaChatScreen.tsx",
+            "src/features/applications/api/applicationCompetition.api.ts",
+            "src/features/applications/api/holdingDeposit.api.ts",
+            "src/features/auth/screens/LoginScreen.tsx",
+            "src/features/auth/screens/RegisterScreen.tsx",
+            "src/features/deposits/api/depositInterest.api.ts",
+            "src/features/deposits/api/depositRefund.api.ts",
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/documents/screens/DocumentsScreen.tsx"
+          ]
+        },
+        {
+          "name": "searchVendorByEmail",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/owner/screens/VendorSelectionScreen.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/vendors/vendorMaintenance.api.ts",
+      "methodCount": 7,
+      "methods": [
+        {
+          "name": "await",
+          "callers": 181,
+          "callerFiles": [
+            "src/contexts/AuthContext.tsx",
+            "src/features/ai-chat/api/lalaChatApi.ts",
+            "src/features/ai-chat/screens/LalaChatScreen.tsx",
+            "src/features/applications/api/applicationCompetition.api.ts",
+            "src/features/applications/api/holdingDeposit.api.ts",
+            "src/features/auth/screens/LoginScreen.tsx",
+            "src/features/auth/screens/RegisterScreen.tsx",
+            "src/features/deposits/api/depositInterest.api.ts",
+            "src/features/deposits/api/depositRefund.api.ts",
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/documents/screens/DocumentsScreen.tsx",
+            "src/features/inspections/api/inspectionsApi.ts",
+            "src/features/inspections/screens/InspectionScreen.tsx",
+            "src/features/inspections/screens/OwnerInspectionDetailScreen.tsx",
+            "src/features/inspections/screens/OwnerInspectionRoute.tsx",
+            "src/features/inspections/screens/OwnerInspectionsListScreen.tsx",
+            "src/features/inspections/screens/OwnerScheduleInspectionScreen.tsx"
+          ]
+        },
+        {
+          "name": "declineQuoteRequest",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts"
+          ]
+        },
+        {
+          "name": "getAvailableRequests",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts"
+          ]
+        },
+        {
+          "name": "getMyJobs",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts"
+          ]
+        },
+        {
+          "name": "getRequestById",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts"
+          ]
+        },
+        {
+          "name": "submitQuote",
+          "callers": 5,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/api/quotes/quotes.api.ts",
+            "src/features/maintenance/api/quotesApi.ts",
+            "src/features/vendor/screens/VendorQuoteSubmitScreen.tsx"
+          ]
+        },
+        {
+          "name": "updateJobStatus",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/vendors/vendorQuoteRequests.api.ts",
+      "methodCount": 4,
+      "methods": [
+        {
+          "name": "createQuoteRequests",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getQuoteRequestsForVendor",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "return",
+          "callers": 255,
+          "callerFiles": [
+            "src/components/ErrorBoundary.tsx",
+            "src/contexts/AuthContext.tsx",
+            "src/core/config/__tests__/env.test.ts",
+            "src/core/dev/disableDevToolsInterference.ts",
+            "src/core/navigation/roleRoutes.ts",
+            "src/core/query/QueryProvider.tsx",
+            "src/core/query/queryErrors.ts",
+            "src/features/ai-chat/api/lalaChatApi.ts",
+            "src/features/ai-chat/screens/LalaChatScreen.tsx",
+            "src/features/applications/api/applicationCompetition.api.ts",
+            "src/features/applications/api/holdingDeposit.api.ts",
+            "src/features/auth/screens/LoginScreen.tsx",
+            "src/features/auth/screens/RegisterScreen.tsx",
+            "src/features/deposits/api/depositInterest.api.ts",
+            "src/features/deposits/api/depositRefund.api.ts",
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/documents/screens/DocumentsScreen.tsx"
+          ]
+        },
+        {
+          "name": "updateQuoteRequestStatus",
+          "callers": 0,
+          "callerFiles": []
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/vendors/vendorRouting.api.ts",
+      "methodCount": 4,
+      "methods": [
+        {
+          "name": "inviteVendorByEmail",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/owner/screens/VendorSelectionScreen.tsx"
+          ]
+        },
+        {
+          "name": "pushToDedicatedVendors",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "pushToOpenMarket",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+            "src/features/owner/screens/VendorSelectionScreen.tsx"
+          ]
+        },
+        {
+          "name": "pushToSelectedVendors",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/owner/screens/VendorSelectionScreen.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/work/tenantVerification.api.ts",
+      "methodCount": 12,
+      "methods": [
+        {
+          "name": "addMediationMessage",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "autoApproveExpiredClosures",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "await",
+          "callers": 181,
+          "callerFiles": [
+            "src/contexts/AuthContext.tsx",
+            "src/features/ai-chat/api/lalaChatApi.ts",
+            "src/features/ai-chat/screens/LalaChatScreen.tsx",
+            "src/features/applications/api/applicationCompetition.api.ts",
+            "src/features/applications/api/holdingDeposit.api.ts",
+            "src/features/auth/screens/LoginScreen.tsx",
+            "src/features/auth/screens/RegisterScreen.tsx",
+            "src/features/deposits/api/depositInterest.api.ts",
+            "src/features/deposits/api/depositRefund.api.ts",
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/documents/screens/DocumentsScreen.tsx",
+            "src/features/inspections/api/inspectionsApi.ts",
+            "src/features/inspections/screens/InspectionScreen.tsx",
+            "src/features/inspections/screens/OwnerInspectionDetailScreen.tsx",
+            "src/features/inspections/screens/OwnerInspectionRoute.tsx",
+            "src/features/inspections/screens/OwnerInspectionsListScreen.tsx",
+            "src/features/inspections/screens/OwnerScheduleInspectionScreen.tsx"
+          ]
+        },
+        {
+          "name": "flagForMediation",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "forwardClosureToTenant",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerClosureApprovalScreen.tsx"]
+        },
+        {
+          "name": "getMediationMessages",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "markAsEmergencyRepair",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "overrideTenantVerification",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "return",
+          "callers": 255,
+          "callerFiles": [
+            "src/components/ErrorBoundary.tsx",
+            "src/contexts/AuthContext.tsx",
+            "src/core/config/__tests__/env.test.ts",
+            "src/core/dev/disableDevToolsInterference.ts",
+            "src/core/navigation/roleRoutes.ts",
+            "src/core/query/QueryProvider.tsx",
+            "src/core/query/queryErrors.ts",
+            "src/features/ai-chat/api/lalaChatApi.ts",
+            "src/features/ai-chat/screens/LalaChatScreen.tsx",
+            "src/features/applications/api/applicationCompetition.api.ts",
+            "src/features/applications/api/holdingDeposit.api.ts",
+            "src/features/auth/screens/LoginScreen.tsx",
+            "src/features/auth/screens/RegisterScreen.tsx",
+            "src/features/deposits/api/depositInterest.api.ts",
+            "src/features/deposits/api/depositRefund.api.ts",
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/documents/screens/DocumentsScreen.tsx"
+          ]
+        },
+        {
+          "name": "tenantApproveCompletion",
+          "callers": 1,
+          "callerFiles": ["src/features/tenant/screens/TenantVerificationScreen.tsx"]
+        },
+        {
+          "name": "tenantRejectCompletion",
+          "callers": 1,
+          "callerFiles": ["src/features/tenant/screens/TenantVerificationScreen.tsx"]
+        },
+        {
+          "name": "triggerWorkOrderReport",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/requests/maintenanceWorkflow.api.ts",
+            "src/features/maintenance/api/work/workClosure.api.ts",
+            "src/features/maintenance/api/work/workOrderReport.api.ts"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/work/workClosure.api.ts",
+      "methodCount": 8,
+      "methods": [
+        {
+          "name": "approveClosureReport",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerClosureApprovalScreen.tsx"]
+        },
+        {
+          "name": "await",
+          "callers": 181,
+          "callerFiles": [
+            "src/contexts/AuthContext.tsx",
+            "src/features/ai-chat/api/lalaChatApi.ts",
+            "src/features/ai-chat/screens/LalaChatScreen.tsx",
+            "src/features/applications/api/applicationCompetition.api.ts",
+            "src/features/applications/api/holdingDeposit.api.ts",
+            "src/features/auth/screens/LoginScreen.tsx",
+            "src/features/auth/screens/RegisterScreen.tsx",
+            "src/features/deposits/api/depositInterest.api.ts",
+            "src/features/deposits/api/depositRefund.api.ts",
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/documents/screens/DocumentsScreen.tsx",
+            "src/features/inspections/api/inspectionsApi.ts",
+            "src/features/inspections/screens/InspectionScreen.tsx",
+            "src/features/inspections/screens/OwnerInspectionDetailScreen.tsx",
+            "src/features/inspections/screens/OwnerInspectionRoute.tsx",
+            "src/features/inspections/screens/OwnerInspectionsListScreen.tsx",
+            "src/features/inspections/screens/OwnerScheduleInspectionScreen.tsx"
+          ]
+        },
+        {
+          "name": "getClosureReport",
+          "callers": 7,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/owner/screens/OwnerClosureApprovalScreen.tsx",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+            "src/features/tenant/screens/TenantClosureConfirmScreen.tsx",
+            "src/features/tenant/screens/TenantMaintenanceDetailScreen.tsx",
+            "src/features/vendor/screens/VendorJobDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "rejectClosureReport",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerClosureApprovalScreen.tsx"]
+        },
+        {
+          "name": "requestClosure",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/vendor/screens/RequestClosureScreen.tsx"
+          ]
+        },
+        {
+          "name": "tenantConfirmClosureWithPhotos",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/tenant/screens/TenantClosureConfirmScreen.tsx"
+          ]
+        },
+        {
+          "name": "triggerWorkOrderReport",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/requests/maintenanceWorkflow.api.ts",
+            "src/features/maintenance/api/work/tenantVerification.api.ts",
+            "src/features/maintenance/api/work/workOrderReport.api.ts"
+          ]
+        },
+        {
+          "name": "vendorRequestClosureWithPhotos",
+          "callers": 1,
+          "callerFiles": ["src/features/maintenance/api/index.ts"]
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/work/workExecution.api.ts",
+      "methodCount": 4,
+      "methods": [
+        {
+          "name": "getProgressUpdates",
+          "callers": 8,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/owner/screens/OwnerClosureApprovalScreen.tsx",
+            "src/features/owner/screens/OwnerMaintenanceDetailScreen.tsx",
+            "src/features/owner/screens/OwnerProgressTimelineScreen.tsx",
+            "src/features/tenant/components/TenantProgressTracker.tsx",
+            "src/features/tenant/screens/TenantMaintenanceDetailScreen.tsx",
+            "src/features/vendor/screens/VendorJobDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "return",
+          "callers": 255,
+          "callerFiles": [
+            "src/components/ErrorBoundary.tsx",
+            "src/contexts/AuthContext.tsx",
+            "src/core/config/__tests__/env.test.ts",
+            "src/core/dev/disableDevToolsInterference.ts",
+            "src/core/navigation/roleRoutes.ts",
+            "src/core/query/QueryProvider.tsx",
+            "src/core/query/queryErrors.ts",
+            "src/features/ai-chat/api/lalaChatApi.ts",
+            "src/features/ai-chat/screens/LalaChatScreen.tsx",
+            "src/features/applications/api/applicationCompetition.api.ts",
+            "src/features/applications/api/holdingDeposit.api.ts",
+            "src/features/auth/screens/LoginScreen.tsx",
+            "src/features/auth/screens/RegisterScreen.tsx",
+            "src/features/deposits/api/depositInterest.api.ts",
+            "src/features/deposits/api/depositRefund.api.ts",
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/documents/screens/DocumentsScreen.tsx"
+          ]
+        },
+        {
+          "name": "startWork",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/vendor/screens/VendorJobDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "submitProgressUpdate",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/vendor/screens/SubmitProgressUpdateScreen.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/work/workOrderReport.api.ts",
+      "methodCount": 1,
+      "methods": [
+        {
+          "name": "triggerWorkOrderReport",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/requests/maintenanceWorkflow.api.ts",
+            "src/features/maintenance/api/work/tenantVerification.api.ts",
+            "src/features/maintenance/api/work/workClosure.api.ts"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/maintenance/api/work/workProgress.api.ts",
+      "methodCount": 2,
+      "methods": [
+        {
+          "name": "addProgressNote",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getProgressTimeline",
+          "callers": 0,
+          "callerFiles": []
+        }
+      ]
+    },
+    {
+      "file": "src/features/messaging/api/messagesApi.ts",
+      "methodCount": 18,
+      "methods": [
+        {
+          "name": "archiveThread",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "async",
+          "callers": 181,
+          "callerFiles": [
+            "src/contexts/AuthContext.tsx",
+            "src/features/ai-chat/api/lalaChatApi.ts",
+            "src/features/ai-chat/screens/LalaChatScreen.tsx",
+            "src/features/applications/api/applicationCompetition.api.ts",
+            "src/features/applications/api/holdingDeposit.api.ts",
+            "src/features/auth/screens/LoginScreen.tsx",
+            "src/features/auth/screens/RegisterScreen.tsx",
+            "src/features/deposits/api/depositInterest.api.ts",
+            "src/features/deposits/api/depositRefund.api.ts",
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/documents/screens/DocumentsScreen.tsx",
+            "src/features/inspections/api/inspectionsApi.ts",
+            "src/features/inspections/screens/InspectionScreen.tsx",
+            "src/features/inspections/screens/OwnerInspectionDetailScreen.tsx",
+            "src/features/inspections/screens/OwnerInspectionRoute.tsx",
+            "src/features/inspections/screens/OwnerInspectionsListScreen.tsx",
+            "src/features/inspections/screens/OwnerScheduleInspectionScreen.tsx"
+          ]
+        },
+        {
+          "name": "closeThread",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "createThread",
+          "callers": 1,
+          "callerFiles": ["src/features/messaging/screens/ComposeMessageScreen.tsx"]
+        },
+        {
+          "name": "getOrCreateThread",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/tenant/screens/TenantMaintenanceDetailScreen.tsx",
+            "src/features/tenant/screens/TenantMaintenanceListScreen.tsx"
+          ]
+        },
+        {
+          "name": "getThread",
+          "callers": 1,
+          "callerFiles": ["src/features/messaging/screens/MessageThreadScreen.tsx"]
+        },
+        {
+          "name": "getThreadMessages",
+          "callers": 1,
+          "callerFiles": ["src/features/messaging/screens/MessageThreadScreen.tsx"]
+        },
+        {
+          "name": "getThreadSummaries",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getUnreadCount",
+          "callers": 6,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/messages/messages.api.ts",
+            "src/features/maintenance/api/messagesApi.ts",
+            "src/features/messaging/screens/MessagesScreen.tsx",
+            "src/features/notifications/api/notificationsApi.ts",
+            "src/features/vendor/screens/VendorDashboardScreen.tsx"
+          ]
+        },
+        {
+          "name": "getUserThreads",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/messaging/screens/MessagesScreen.tsx",
+            "src/features/owner/screens/OwnerDashboardScreen.tsx",
+            "src/features/tenant/screens/TenantDashboardScreen.tsx",
+            "src/features/vendor/screens/VendorDashboardScreen.tsx"
+          ]
+        },
+        {
+          "name": "markAsRead",
+          "callers": 5,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/messages/messages.api.ts",
+            "src/features/maintenance/api/messagesApi.ts",
+            "src/features/messaging/screens/MessageThreadScreen.tsx",
+            "src/features/notifications/api/notificationsApi.ts"
+          ]
+        },
+        {
+          "name": "onMessage",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "onUpdate",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "reopenThread",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "return",
+          "callers": 255,
+          "callerFiles": [
+            "src/components/ErrorBoundary.tsx",
+            "src/contexts/AuthContext.tsx",
+            "src/core/config/__tests__/env.test.ts",
+            "src/core/dev/disableDevToolsInterference.ts",
+            "src/core/navigation/roleRoutes.ts",
+            "src/core/query/QueryProvider.tsx",
+            "src/core/query/queryErrors.ts",
+            "src/features/ai-chat/api/lalaChatApi.ts",
+            "src/features/ai-chat/screens/LalaChatScreen.tsx",
+            "src/features/applications/api/applicationCompetition.api.ts",
+            "src/features/applications/api/holdingDeposit.api.ts",
+            "src/features/auth/screens/LoginScreen.tsx",
+            "src/features/auth/screens/RegisterScreen.tsx",
+            "src/features/deposits/api/depositInterest.api.ts",
+            "src/features/deposits/api/depositRefund.api.ts",
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/documents/screens/DocumentsScreen.tsx"
+          ]
+        },
+        {
+          "name": "sendMessage",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/messages/messages.api.ts",
+            "src/features/maintenance/api/messagesApi.ts",
+            "src/features/messaging/screens/MessageThreadScreen.tsx"
+          ]
+        },
+        {
+          "name": "subscribeToThread",
+          "callers": 1,
+          "callerFiles": ["src/features/messaging/screens/MessageThreadScreen.tsx"]
+        },
+        {
+          "name": "subscribeToUserThreads",
+          "callers": 1,
+          "callerFiles": ["src/features/messaging/screens/MessagesScreen.tsx"]
+        }
+      ]
+    },
+    {
+      "file": "src/features/notifications/api/notificationsApi.ts",
+      "methodCount": 20,
+      "methods": [
+        {
+          "name": "callback",
+          "callers": 7,
+          "callerFiles": [
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/api/messages/messageSubscriptions.api.ts",
+            "src/features/maintenance/api/messagesApi.ts",
+            "src/features/maintenance/api/quotes/quoteSubscriptions.api.ts",
+            "src/features/maintenance/api/quotesApi.ts",
+            "src/features/maintenance/api/requests/maintenanceSubscriptions.api.ts",
+            "src/features/vendor/screens/VendorProfileScreen.tsx"
+          ]
+        },
+        {
+          "name": "deleteNotification",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "deleteReadNotifications",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getDefaultChannels",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getNotificationContent",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getNotificationStats",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getUnreadCount",
+          "callers": 6,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/messages/messages.api.ts",
+            "src/features/maintenance/api/messagesApi.ts",
+            "src/features/messaging/api/messagesApi.ts",
+            "src/features/messaging/screens/MessagesScreen.tsx",
+            "src/features/vendor/screens/VendorDashboardScreen.tsx"
+          ]
+        },
+        {
+          "name": "getUserNotifications",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getUserPreferences",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "markAllAsRead",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "markAsRead",
+          "callers": 5,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/messages/messages.api.ts",
+            "src/features/maintenance/api/messagesApi.ts",
+            "src/features/messaging/api/messagesApi.ts",
+            "src/features/messaging/screens/MessageThreadScreen.tsx"
+          ]
+        },
+        {
+          "name": "registerPushToken",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "removePushToken",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "return",
+          "callers": 255,
+          "callerFiles": [
+            "src/components/ErrorBoundary.tsx",
+            "src/contexts/AuthContext.tsx",
+            "src/core/config/__tests__/env.test.ts",
+            "src/core/dev/disableDevToolsInterference.ts",
+            "src/core/navigation/roleRoutes.ts",
+            "src/core/query/QueryProvider.tsx",
+            "src/core/query/queryErrors.ts",
+            "src/features/ai-chat/api/lalaChatApi.ts",
+            "src/features/ai-chat/screens/LalaChatScreen.tsx",
+            "src/features/applications/api/applicationCompetition.api.ts",
+            "src/features/applications/api/holdingDeposit.api.ts",
+            "src/features/auth/screens/LoginScreen.tsx",
+            "src/features/auth/screens/RegisterScreen.tsx",
+            "src/features/deposits/api/depositInterest.api.ts",
+            "src/features/deposits/api/depositRefund.api.ts",
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/documents/screens/DocumentsScreen.tsx"
+          ]
+        },
+        {
+          "name": "sendEmail",
+          "callers": 1,
+          "callerFiles": ["src/features/maintenance/api/work/workOrderReport.api.ts"]
+        },
+        {
+          "name": "sendNotification",
+          "callers": 13,
+          "callerFiles": [
+            "src/features/maintenance/api/invoices/invoices.api.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/api/purchase-orders/poActions.api.ts",
+            "src/features/maintenance/api/work/workClosure.api.ts",
+            "src/features/notifications/templates/smsTemplates.ts",
+            "src/features/owner/screens/OwnerLeaseDetailScreen.tsx",
+            "src/features/owner/screens/OwnerRentRollScreen.tsx",
+            "src/features/properties/api/applicationsApi.ts",
+            "src/features/properties/api/leasesApi.ts",
+            "src/features/properties/api/paymentsApi.ts",
+            "src/features/properties/api/viewingReminders.ts",
+            "src/features/properties/api/viewingsApi.ts",
+            "src/features/tenant/screens/TenantLeaseScreen.tsx"
+          ]
+        },
+        {
+          "name": "sendPushNotification",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "sendSms",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "subscribeToNotifications",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "updateUserPreferences",
+          "callers": 0,
+          "callerFiles": []
+        }
+      ]
+    },
+    {
+      "file": "src/features/owner/api/ownerDashboardApi.ts",
+      "methodCount": 16,
+      "methods": [
+        {
+          "name": "buildActivityFeed",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "calculateAnalytics",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "calculateDocumentStats",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "calculatePortfolioStats",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "fetchHoldingDepositsCount",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "fetchOpenDisputesCount",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "fetchPendingClosureCount",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "fetchPendingTerminationsCount",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "fetchProcessingPaymentsCount",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "fetchRecentViewings",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "fetchUserProfile",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "formatApplicants",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "formatMaintenanceItems",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "formatRelativeTime",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getMaintenanceRequests",
+          "callers": 5,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/api/requests/maintenanceRequests.api.ts",
+            "src/features/maintenance/hooks/__tests__/useMaintenanceRequests.test.ts",
+            "src/features/maintenance/hooks/useMaintenanceRequests.ts"
+          ]
+        },
+        {
+          "name": "getOwnerDashboardData",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/hooks/useOwnerDashboard.ts"]
+        }
+      ]
+    },
+    {
+      "file": "src/features/payments/api/arrearsEscalation.api.ts",
+      "methodCount": 9,
+      "methods": [
+        {
+          "name": "calculateDaysOverdue",
+          "callers": 1,
+          "callerFiles": ["src/features/payments/api/__tests__/arrearsEscalation.test.ts"]
+        },
+        {
+          "name": "determineEscalationStage",
+          "callers": 1,
+          "callerFiles": ["src/features/payments/api/__tests__/arrearsEscalation.test.ts"]
+        },
+        {
+          "name": "escalateToLegalAction",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerArrearsManagementScreen.tsx"]
+        },
+        {
+          "name": "evaluatePayment",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getOwnerEscalations",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerArrearsManagementScreen.tsx"]
+        },
+        {
+          "name": "getTenantEscalations",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "isDowngrade",
+          "callers": 1,
+          "callerFiles": ["src/features/payments/api/__tests__/arrearsEscalation.test.ts"]
+        },
+        {
+          "name": "resolveEscalation",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerArrearsManagementScreen.tsx"]
+        },
+        {
+          "name": "startCurePeriod",
+          "callers": 0,
+          "callerFiles": []
+        }
+      ]
+    },
+    {
+      "file": "src/features/payments/api/paymentDisputes.api.ts",
+      "methodCount": 10,
+      "methods": [
+        {
+          "name": "acceptArrangement",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerArrearsManagementScreen.tsx"]
+        },
+        {
+          "name": "getLeaseArrangements",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getOwnerArrangements",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerArrearsManagementScreen.tsx"]
+        },
+        {
+          "name": "getOwnerDisputes",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerPaymentDisputesScreen.tsx"]
+        },
+        {
+          "name": "getPaymentDisputes",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getUserDisputes",
+          "callers": 1,
+          "callerFiles": ["src/features/tenant/screens/TenantPaymentDisputeScreen.tsx"]
+        },
+        {
+          "name": "proposeArrangement",
+          "callers": 1,
+          "callerFiles": ["src/features/tenant/screens/TenantArrearsScreen.tsx"]
+        },
+        {
+          "name": "raiseDispute",
+          "callers": 1,
+          "callerFiles": ["src/features/tenant/screens/TenantPaymentDisputeScreen.tsx"]
+        },
+        {
+          "name": "rejectArrangement",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerArrearsManagementScreen.tsx"]
+        },
+        {
+          "name": "updateDisputeStatus",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerPaymentDisputesScreen.tsx"]
+        }
+      ]
+    },
+    {
+      "file": "src/features/payments/api/paymentProcessing.api.ts",
+      "methodCount": 5,
+      "methods": [
+        {
+          "name": "calculateInterestForLease",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getTenantPaymentSummary",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "processOverpayment",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "processPartialPayment",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "splitPayment",
+          "callers": 0,
+          "callerFiles": []
+        }
+      ]
+    },
+    {
+      "file": "src/features/privacy/api/consent.api.ts",
+      "methodCount": 7,
+      "methods": [
+        {
+          "name": "captureConsent",
+          "callers": 1,
+          "callerFiles": ["src/features/privacy/screens/ConsentManagementScreen.tsx"]
+        },
+        {
+          "name": "captureMultipleConsents",
+          "callers": 1,
+          "callerFiles": ["src/features/privacy/components/ConsentCaptureModal.tsx"]
+        },
+        {
+          "name": "getActiveConsents",
+          "callers": 1,
+          "callerFiles": ["src/features/privacy/screens/ConsentManagementScreen.tsx"]
+        },
+        {
+          "name": "getAllConsents",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "hasActiveConsent",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "logPrivacyAction",
+          "callers": 1,
+          "callerFiles": ["src/features/privacy/api/dataSubjectRights.api.ts"]
+        },
+        {
+          "name": "withdrawConsent",
+          "callers": 1,
+          "callerFiles": ["src/features/privacy/screens/ConsentManagementScreen.tsx"]
+        }
+      ]
+    },
+    {
+      "file": "src/features/privacy/api/dataSubjectRights.api.ts",
+      "methodCount": 9,
+      "methods": [
+        {
+          "name": "generateUserDataExport",
+          "callers": 1,
+          "callerFiles": ["src/features/privacy/screens/DataSubjectRightsScreen.tsx"]
+        },
+        {
+          "name": "getAccessRequests",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getAuditLog",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getCorrectionRequests",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getDSARSummary",
+          "callers": 1,
+          "callerFiles": ["src/features/privacy/screens/DataSubjectRightsScreen.tsx"]
+        },
+        {
+          "name": "getDeletionRequests",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "submitAccessRequest",
+          "callers": 1,
+          "callerFiles": ["src/features/privacy/screens/DataSubjectRightsScreen.tsx"]
+        },
+        {
+          "name": "submitCorrectionRequest",
+          "callers": 1,
+          "callerFiles": ["src/features/privacy/screens/DataSubjectRightsScreen.tsx"]
+        },
+        {
+          "name": "submitDeletionRequest",
+          "callers": 1,
+          "callerFiles": ["src/features/privacy/screens/DataSubjectRightsScreen.tsx"]
+        }
+      ]
+    },
+    {
+      "file": "src/features/properties/api/applicationsApi.ts",
+      "methodCount": 16,
+      "methods": [
+        {
+          "name": "approveApplication",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerApplicationDetailScreen.tsx"]
+        },
+        {
+          "name": "calculateAffordability",
+          "callers": 1,
+          "callerFiles": ["src/features/tenant/screens/TenantApplicationScreen.tsx"]
+        },
+        {
+          "name": "createApplication",
+          "callers": 1,
+          "callerFiles": ["src/features/tenant/screens/TenantApplicationScreen.tsx"]
+        },
+        {
+          "name": "getApplication",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/owner/screens/OwnerApplicationDetailScreen.tsx",
+            "src/features/tenant/screens/TenantApplicationDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "getApplicationStats",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getOwnerApplications",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/owner/api/ownerDashboardApi.ts",
+            "src/features/owner/screens/OwnerApplicationsScreen.tsx"
+          ]
+        },
+        {
+          "name": "getPropertyApplications",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getTenantApplications",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "initiateBackgroundCheck",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "initiateCreditCheck",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "isAffordable",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/applications/api/applicationCompetition.api.ts",
+            "src/features/owner/screens/OwnerApplicationDetailScreen.tsx",
+            "src/features/tenant/screens/TenantApplicationScreen.tsx"
+          ]
+        },
+        {
+          "name": "rejectApplication",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerApplicationDetailScreen.tsx"]
+        },
+        {
+          "name": "requestAdditionalDocuments",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "submitApplication",
+          "callers": 1,
+          "callerFiles": ["src/features/tenant/screens/TenantApplicationScreen.tsx"]
+        },
+        {
+          "name": "updateApplication",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/owner/screens/OwnerApplicationDetailScreen.tsx",
+            "src/features/tenant/screens/TenantApplicationDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "verifyIdentity",
+          "callers": 0,
+          "callerFiles": []
+        }
+      ]
+    },
+    {
+      "file": "src/features/properties/api/leasesApi.ts",
+      "methodCount": 15,
+      "methods": [
+        {
+          "name": "createLease",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "executeLease",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/leases/api/leaseExecutionService.ts",
+            "src/features/owner/screens/OwnerLeaseDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "generateLeaseDocument",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getActiveLease",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerPropertyDetailScreen.tsx"]
+        },
+        {
+          "name": "getExpiringLeases",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/leases/api/leaseExpiry.api.ts",
+            "src/features/owner/screens/OwnerLeaseRenewalScreen.tsx",
+            "src/features/owner/screens/OwnerRenewalsDashboardScreen.tsx"
+          ]
+        },
+        {
+          "name": "getLease",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getLeaseHistory",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getLeaseStats",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getOwnerLeases",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getTenantLeases",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "isExpired",
+          "callers": 4,
+          "callerFiles": [
+            "src/contexts/AuthContext.tsx",
+            "src/features/owner/screens/OwnerLeaseDetailScreen.tsx",
+            "src/features/owner/screens/TenantsScreen.tsx",
+            "src/features/tenant/screens/TenantLeaseScreen.tsx"
+          ]
+        },
+        {
+          "name": "isExpiringSoon",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/owner/screens/OwnerLeaseDetailScreen.tsx",
+            "src/features/owner/screens/TenantsScreen.tsx",
+            "src/features/tenant/screens/TenantLeaseScreen.tsx"
+          ]
+        },
+        {
+          "name": "signLease",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "terminateLease",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "updateLease",
+          "callers": 0,
+          "callerFiles": []
+        }
+      ]
+    },
+    {
+      "file": "src/features/properties/api/paymentsApi.ts",
+      "methodCount": 18,
+      "methods": [
+        {
+          "name": "calculateInterestOnArrears",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "completePayment",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "createPayment",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "failPayment",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "generateRecurringPayments",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getDaysOverdue",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getLeasePayments",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getOverduePayments",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getOwnerPayments",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/owner/api/ownerDashboardApi.ts",
+            "src/features/owner/screens/OwnerRentRollScreen.tsx"
+          ]
+        },
+        {
+          "name": "getPayment",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getPaymentStats",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerRentRollScreen.tsx"]
+        },
+        {
+          "name": "getPropertyPaymentHistory",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getTenantPayments",
+          "callers": 1,
+          "callerFiles": ["src/features/tenant/screens/TenantDashboardScreen.tsx"]
+        },
+        {
+          "name": "getUpcomingPayments",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "isOverdue",
+          "callers": 7,
+          "callerFiles": [
+            "src/features/deposits/api/depositRefund.api.ts",
+            "src/features/owner/api/ownerDashboardApi.ts",
+            "src/features/owner/screens/OwnerDepositManagementScreen.tsx",
+            "src/features/owner/screens/OwnerLeaseRenewalScreen.tsx",
+            "src/features/owner/screens/OwnerRenewalsDashboardScreen.tsx",
+            "src/features/tenant/screens/TenantDepositStatusScreen.tsx",
+            "src/features/tenant/utils/leaseJourneyHelpers.ts"
+          ]
+        },
+        {
+          "name": "processPayment",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "retryPayment",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "updateInterestAccrual",
+          "callers": 0,
+          "callerFiles": []
+        }
+      ]
+    },
+    {
+      "file": "src/features/properties/api/propertiesApi.ts",
+      "methodCount": 16,
+      "methods": [
+        {
+          "name": "createProperty",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/AddPropertyScreen.tsx"]
+        },
+        {
+          "name": "deleteProperty",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerPropertyDetailScreen.tsx"]
+        },
+        {
+          "name": "deletePropertyPhoto",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "generateThumbnailUrl",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getAvailableCities",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getAvailableProvinces",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getOwnerProperties",
+          "callers": 7,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/api/requests/maintenanceRequests.api.ts",
+            "src/features/maintenance/screens/ReportMaintenanceScreen.tsx",
+            "src/features/owner/api/ownerDashboardApi.ts",
+            "src/features/owner/screens/OwnerRentRollScreen.tsx",
+            "src/features/properties/hooks/useProperties.ts"
+          ]
+        },
+        {
+          "name": "getProperty",
+          "callers": 5,
+          "callerFiles": [
+            "src/features/owner/screens/EditPropertyScreen.tsx",
+            "src/features/owner/screens/OwnerPropertyDetailScreen.tsx",
+            "src/features/properties/screens/PropertyView3DScreen.tsx",
+            "src/features/tenant/screens/TenantApplicationScreen.tsx",
+            "src/features/tenant/screens/TenantPropertyDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "getPropertyStats",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getPropertyTypes",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getRentPriceRange",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "reorderPropertyPhotos",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "searchProperties",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "updateProperty",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/owner/screens/EditPropertyScreen.tsx",
+            "src/features/owner/screens/OwnerPropertyDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "updatePropertyStatus",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "uploadPropertyPhotos",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/owner/screens/AddPropertyScreen.tsx",
+            "src/features/owner/screens/EditPropertyScreen.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/properties/api/viewingsApi.ts",
+      "methodCount": 15,
+      "methods": [
+        {
+          "name": "approveViewing",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerViewingDetailScreen.tsx"]
+        },
+        {
+          "name": "cancelViewing",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/owner/screens/OwnerViewingDetailScreen.tsx",
+            "src/features/tenant/screens/TenantRequestViewingScreen.tsx",
+            "src/features/tenant/screens/TenantViewingDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "completeViewing",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerViewingDetailScreen.tsx"]
+        },
+        {
+          "name": "declineViewing",
+          "callers": 1,
+          "callerFiles": ["src/features/owner/screens/OwnerViewingDetailScreen.tsx"]
+        },
+        {
+          "name": "getOwnerViewings",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/owner/screens/OwnerDashboardScreen.tsx",
+            "src/features/owner/screens/OwnerViewingsScreen.tsx"
+          ]
+        },
+        {
+          "name": "getPropertyViewings",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getTenantViewings",
+          "callers": 1,
+          "callerFiles": ["src/features/tenant/screens/TenantViewingsScreen.tsx"]
+        },
+        {
+          "name": "getUpcomingViewings",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "getViewing",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/owner/screens/OwnerViewingDetailScreen.tsx",
+            "src/features/tenant/screens/TenantViewingDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "getViewingStats",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "isPast",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "isToday",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "requestViewing",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/tenant/screens/TenantRequestViewingScreen.tsx",
+            "src/features/tenant/screens/TenantViewingDetailScreen.tsx"
+          ]
+        },
+        {
+          "name": "rescheduleViewing",
+          "callers": 0,
+          "callerFiles": []
+        },
+        {
+          "name": "return",
+          "callers": 255,
+          "callerFiles": [
+            "src/components/ErrorBoundary.tsx",
+            "src/contexts/AuthContext.tsx",
+            "src/core/config/__tests__/env.test.ts",
+            "src/core/dev/disableDevToolsInterference.ts",
+            "src/core/navigation/roleRoutes.ts",
+            "src/core/query/QueryProvider.tsx",
+            "src/core/query/queryErrors.ts",
+            "src/features/ai-chat/api/lalaChatApi.ts",
+            "src/features/ai-chat/screens/LalaChatScreen.tsx",
+            "src/features/applications/api/applicationCompetition.api.ts",
+            "src/features/applications/api/holdingDeposit.api.ts",
+            "src/features/auth/screens/LoginScreen.tsx",
+            "src/features/auth/screens/RegisterScreen.tsx",
+            "src/features/deposits/api/depositInterest.api.ts",
+            "src/features/deposits/api/depositRefund.api.ts",
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/documents/screens/DocumentsScreen.tsx"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/features/vendor/api/profileApi.ts",
+      "methodCount": 10,
+      "methods": [
+        {
+          "name": "addService",
+          "callers": 1,
+          "callerFiles": ["src/features/vendor/screens/VendorServicesManagementScreen.tsx"]
+        },
+        {
+          "name": "addServiceArea",
+          "callers": 1,
+          "callerFiles": ["src/features/vendor/screens/VendorServicesManagementScreen.tsx"]
+        },
+        {
+          "name": "deleteDocument",
+          "callers": 5,
+          "callerFiles": [
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/owner/screens/OwnerComplianceScreen.tsx",
+            "src/features/vendor/screens/VendorDocumentsManagementScreen.tsx"
+          ]
+        },
+        {
+          "name": "getProfile",
+          "callers": 4,
+          "callerFiles": [
+            "src/features/vendor/screens/VendorDocumentsManagementScreen.tsx",
+            "src/features/vendor/screens/VendorEditProfileScreen.tsx",
+            "src/features/vendor/screens/VendorProfileScreen.tsx",
+            "src/features/vendor/screens/VendorServicesManagementScreen.tsx"
+          ]
+        },
+        {
+          "name": "getServiceCategories",
+          "callers": 6,
+          "callerFiles": [
+            "src/features/maintenance/api/index.ts",
+            "src/features/maintenance/api/maintenanceApi.ts",
+            "src/features/maintenance/api/requests/maintenanceFilters.api.ts",
+            "src/features/maintenance/screens/ReportMaintenanceScreen.tsx",
+            "src/features/tenant/screens/TenantMaintenanceReportScreen.tsx",
+            "src/features/vendor/screens/VendorServicesManagementScreen.tsx"
+          ]
+        },
+        {
+          "name": "removeService",
+          "callers": 3,
+          "callerFiles": [
+            "src/features/owner/screens/AddPropertyScreen.tsx",
+            "src/features/owner/screens/EditPropertyScreen.tsx",
+            "src/features/vendor/screens/VendorServicesManagementScreen.tsx"
+          ]
+        },
+        {
+          "name": "removeServiceArea",
+          "callers": 1,
+          "callerFiles": ["src/features/vendor/screens/VendorServicesManagementScreen.tsx"]
+        },
+        {
+          "name": "return",
+          "callers": 255,
+          "callerFiles": [
+            "src/components/ErrorBoundary.tsx",
+            "src/contexts/AuthContext.tsx",
+            "src/core/config/__tests__/env.test.ts",
+            "src/core/dev/disableDevToolsInterference.ts",
+            "src/core/navigation/roleRoutes.ts",
+            "src/core/query/QueryProvider.tsx",
+            "src/core/query/queryErrors.ts",
+            "src/features/ai-chat/api/lalaChatApi.ts",
+            "src/features/ai-chat/screens/LalaChatScreen.tsx",
+            "src/features/applications/api/applicationCompetition.api.ts",
+            "src/features/applications/api/holdingDeposit.api.ts",
+            "src/features/auth/screens/LoginScreen.tsx",
+            "src/features/auth/screens/RegisterScreen.tsx",
+            "src/features/deposits/api/depositInterest.api.ts",
+            "src/features/deposits/api/depositRefund.api.ts",
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/documents/screens/DocumentViewerScreen.tsx",
+            "src/features/documents/screens/DocumentsScreen.tsx"
+          ]
+        },
+        {
+          "name": "updateProfile",
+          "callers": 2,
+          "callerFiles": [
+            "src/features/tenant/screens/TenantApplicationScreen.tsx",
+            "src/features/vendor/screens/VendorEditProfileScreen.tsx"
+          ]
+        },
+        {
+          "name": "uploadDocument",
+          "callers": 7,
+          "callerFiles": [
+            "src/features/documents/__tests__/documentsApi.test.ts",
+            "src/features/documents/api/documentsApi.ts",
+            "src/features/documents/screens/DocumentUploadScreen.tsx",
+            "src/features/owner/screens/OwnerComplianceScreen.tsx",
+            "src/features/owner/utils/pdfReports.ts",
+            "src/features/tenant/screens/TenantDocumentsScreen.tsx",
+            "src/features/vendor/screens/VendorDocumentsManagementScreen.tsx"
+          ]
+        }
+      ]
+    }
+  ]
+}

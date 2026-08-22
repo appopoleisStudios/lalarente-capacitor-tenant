@@ -1,0 +1,1393 @@
+{
+  "summary": {
+    "routes": 140,
+    "maestroTouches": 55,
+    "noTestId": 75,
+    "unproven": 10,
+    "suiteFlowCount": 53,
+    "yamlFlowCount": 72
+  },
+  "rows": [
+    {
+      "role": "root",
+      "route": "/",
+      "file": "app/index.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/",
+      "file": "app/(owner)/index.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/add-property",
+      "file": "app/(owner)/add-property.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/ai-chat",
+      "file": "app/(owner)/ai-chat.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/application-competition",
+      "file": "app/(owner)/application-competition.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/applications",
+      "file": "app/(owner)/applications.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/applications/[id]",
+      "file": "app/(owner)/applications/[id].tsx",
+      "testIds": ["screening-row-background", "screening-row-credit", "screening-row-identity"],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "UNPROVEN"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/arrears",
+      "file": "app/(owner)/arrears.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/compliance",
+      "file": "app/(owner)/compliance.tsx",
+      "testIds": [
+        "owner-compliance-back",
+        "fica-check-identity",
+        "fica-check-credit",
+        "fica-check-background"
+      ],
+      "maestroTouchesIds": ["owner-compliance-back"],
+      "deepLinkInMaestro": false,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/dashboard",
+      "file": "app/(owner)/dashboard.tsx",
+      "testIds": ["owner-messages-button", "notification-bell", "owner-primary-action"],
+      "maestroTouchesIds": ["owner-messages-button", "notification-bell", "owner-primary-action"],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/deposits",
+      "file": "app/(owner)/deposits.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/documents",
+      "file": "app/(owner)/documents.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/documents/[id]",
+      "file": "app/(owner)/documents/[id].tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/early-termination",
+      "file": "app/(owner)/early-termination.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/holding-deposit",
+      "file": "app/(owner)/holding-deposit.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/inspections",
+      "file": "app/(owner)/inspections.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/inspections/[id]",
+      "file": "app/(owner)/inspections/[id].tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/inspections/new",
+      "file": "app/(owner)/inspections/new.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/insurance",
+      "file": "app/(owner)/insurance.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/insurance/[id]",
+      "file": "app/(owner)/insurance/[id].tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/insurance/new",
+      "file": "app/(owner)/insurance/new.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/invoices",
+      "file": "app/(owner)/invoices.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/leases/[id]",
+      "file": "app/(owner)/leases/[id].tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/leases/create",
+      "file": "app/(owner)/leases/create.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/maintenance",
+      "file": "app/(owner)/maintenance.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/maintenance/[id]",
+      "file": "app/(owner)/maintenance/[id].tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/maintenance/[id]/invoice",
+      "file": "app/(owner)/maintenance/[id]/invoice.tsx",
+      "testIds": ["invoice-reject-button", "invoice-approve-button", "invoice-reject-confirm"],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "UNPROVEN"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/maintenance/[id]/po/[poId]",
+      "file": "app/(owner)/maintenance/[id]/po/[poId].tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/maintenance/[id]/progress-timeline",
+      "file": "app/(owner)/maintenance/[id]/progress-timeline.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/maintenance/[id]/quote/[quoteId]",
+      "file": "app/(owner)/maintenance/[id]/quote/[quoteId].tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/maintenance/[id]/review-closure",
+      "file": "app/(owner)/maintenance/[id]/review-closure.tsx",
+      "testIds": [
+        "closure-review-title",
+        "closure-reject-button",
+        "closure-approve-button",
+        "closure-forward-button"
+      ],
+      "maestroTouchesIds": [
+        "closure-review-title",
+        "closure-reject-button",
+        "closure-approve-button",
+        "closure-forward-button"
+      ],
+      "deepLinkInMaestro": false,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/maintenance/history/[propertyId]",
+      "file": "app/(owner)/maintenance/history/[propertyId].tsx",
+      "testIds": ["owner-maintenance-history-title", "owner-maintenance-history-back"],
+      "maestroTouchesIds": ["owner-maintenance-history-title", "owner-maintenance-history-back"],
+      "deepLinkInMaestro": false,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/maintenance/new",
+      "file": "app/(owner)/maintenance/new.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/maintenance/select-vendors",
+      "file": "app/(owner)/maintenance/select-vendors.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/maintenance/send-po",
+      "file": "app/(owner)/maintenance/send-po.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/messages",
+      "file": "app/(owner)/messages.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/messages/[id]",
+      "file": "app/(owner)/messages/[id].tsx",
+      "testIds": ["thread-message-input", "thread-send-button"],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "UNPROVEN"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/messages/new",
+      "file": "app/(owner)/messages/new.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/notifications",
+      "file": "app/(owner)/notifications.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/payment-disputes",
+      "file": "app/(owner)/payment-disputes.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/privacy",
+      "file": "app/(owner)/privacy.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/privacy/data-rights",
+      "file": "app/(owner)/privacy/data-rights.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/profile",
+      "file": "app/(owner)/profile.tsx",
+      "testIds": ["owner-profile-email"],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/properties",
+      "file": "app/(owner)/properties.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/properties/[id]",
+      "file": "app/(owner)/properties/[id].tsx",
+      "testIds": [
+        "owner-property-photo",
+        "owner-view-3d",
+        "owner-maintenance-history",
+        "owner-photo-close"
+      ],
+      "maestroTouchesIds": ["owner-maintenance-history"],
+      "deepLinkInMaestro": false,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/properties/[id]/edit",
+      "file": "app/(owner)/properties/[id]/edit.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/properties/[id]/view3d",
+      "file": "app/(owner)/properties/[id]/view3d.tsx",
+      "testIds": ["view3d-close", "view3d-title", "view3d-error-back"],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "UNPROVEN"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/renewals",
+      "file": "app/(owner)/renewals.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/rent-roll",
+      "file": "app/(owner)/rent-roll.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/statements",
+      "file": "app/(owner)/statements.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/tax-reports",
+      "file": "app/(owner)/tax-reports.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/tenants",
+      "file": "app/(owner)/tenants.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/viewings",
+      "file": "app/(owner)/viewings.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "owner",
+      "route": "/(owner)/viewings/[id]",
+      "file": "app/(owner)/viewings/[id].tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/",
+      "file": "app/(tenant)/index.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/ai-chat",
+      "file": "app/(tenant)/ai-chat.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/application-status",
+      "file": "app/(tenant)/application-status.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/applications/[id]",
+      "file": "app/(tenant)/applications/[id].tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/apply/[propertyId]",
+      "file": "app/(tenant)/apply/[propertyId].tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/arrears",
+      "file": "app/(tenant)/arrears.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/dashboard",
+      "file": "app/(tenant)/dashboard.tsx",
+      "testIds": [
+        "notification-bell",
+        "tenant-dashboard-header",
+        "view-lease-details",
+        "qa-search",
+        "qa-payments",
+        "qa-maintenance",
+        "qa-messages"
+      ],
+      "maestroTouchesIds": ["notification-bell", "qa-payments", "qa-messages"],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/deposit",
+      "file": "app/(tenant)/deposit.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/documents",
+      "file": "app/(tenant)/documents.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/early-termination",
+      "file": "app/(tenant)/early-termination.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/holding-deposit",
+      "file": "app/(tenant)/holding-deposit.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/inspections/[id]",
+      "file": "app/(tenant)/inspections/[id].tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/lease",
+      "file": "app/(tenant)/lease.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/lease-journey",
+      "file": "app/(tenant)/lease-journey.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/lease-renewal",
+      "file": "app/(tenant)/lease-renewal.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/maintenance",
+      "file": "app/(tenant)/maintenance.tsx",
+      "testIds": ["maintenance-report-fab", "maintenance-report-cta"],
+      "maestroTouchesIds": ["maintenance-report-fab"],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/maintenance/[id]",
+      "file": "app/(tenant)/maintenance/[id].tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/maintenance/closure-confirm",
+      "file": "app/(tenant)/maintenance/closure-confirm.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/maintenance/report",
+      "file": "app/(tenant)/maintenance/report.tsx",
+      "testIds": [
+        "maintenance-title-input",
+        "maintenance-description-input",
+        "maintenance-add-camera",
+        "maintenance-submit"
+      ],
+      "maestroTouchesIds": [
+        "maintenance-title-input",
+        "maintenance-description-input",
+        "maintenance-add-camera",
+        "maintenance-submit"
+      ],
+      "deepLinkInMaestro": false,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/maintenance/verify",
+      "file": "app/(tenant)/maintenance/verify.tsx",
+      "testIds": ["tenant-verify-error", "tenant-verify-title"],
+      "maestroTouchesIds": ["tenant-verify-error"],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/messages",
+      "file": "app/(tenant)/messages.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/messages/[id]",
+      "file": "app/(tenant)/messages/[id].tsx",
+      "testIds": ["thread-message-input", "thread-send-button"],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "UNPROVEN"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/messages/new",
+      "file": "app/(tenant)/messages/new.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/notifications",
+      "file": "app/(tenant)/notifications.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/payment-disputes",
+      "file": "app/(tenant)/payment-disputes.tsx",
+      "testIds": ["payment-disputes-title"],
+      "maestroTouchesIds": ["payment-disputes-title"],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/payments",
+      "file": "app/(tenant)/payments.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/privacy",
+      "file": "app/(tenant)/privacy.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/privacy/data-rights",
+      "file": "app/(tenant)/privacy/data-rights.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/profile",
+      "file": "app/(tenant)/profile.tsx",
+      "testIds": ["tenant-profile-title", "tenant-profile-email"],
+      "maestroTouchesIds": ["tenant-profile-title"],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/properties/[id]",
+      "file": "app/(tenant)/properties/[id].tsx",
+      "testIds": ["tenant-view-3d"],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "UNPROVEN"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/properties/[id]/view3d",
+      "file": "app/(tenant)/properties/[id]/view3d.tsx",
+      "testIds": ["view3d-close", "view3d-title", "view3d-error-back"],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "UNPROVEN"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/reports",
+      "file": "app/(tenant)/reports.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/search",
+      "file": "app/(tenant)/search.tsx",
+      "testIds": ["tenant-search-results"],
+      "maestroTouchesIds": ["tenant-search-results"],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/vendor-payments/",
+      "file": "app/(tenant)/vendor-payments/index.tsx",
+      "testIds": ["vendor-payments-title", "invoice-number", "pay-now"],
+      "maestroTouchesIds": ["vendor-payments-title", "invoice-number", "pay-now"],
+      "deepLinkInMaestro": false,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/vendor-payments/[invoiceId]",
+      "file": "app/(tenant)/vendor-payments/[invoiceId].tsx",
+      "testIds": ["pay-vendor-title", "invoice-number-detail", "pay-via-payfast"],
+      "maestroTouchesIds": ["pay-vendor-title", "invoice-number-detail", "pay-via-payfast"],
+      "deepLinkInMaestro": false,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/vendor-payments/checkout",
+      "file": "app/(tenant)/vendor-payments/checkout.tsx",
+      "testIds": ["checkout-close", "checkout-title", "checkout-loading", "checkout-blocked"],
+      "maestroTouchesIds": ["checkout-close", "checkout-title"],
+      "deepLinkInMaestro": false,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/vendor-payments/result",
+      "file": "app/(tenant)/vendor-payments/result.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/viewings",
+      "file": "app/(tenant)/viewings.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/viewings/[id]",
+      "file": "app/(tenant)/viewings/[id].tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "tenant",
+      "route": "/(tenant)/viewings/request",
+      "file": "app/(tenant)/viewings/request.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/",
+      "file": "app/(vendor)/index.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/ai-chat",
+      "file": "app/(vendor)/ai-chat.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/contracts/",
+      "file": "app/(vendor)/contracts/index.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/contracts/[id]",
+      "file": "app/(vendor)/contracts/[id].tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/dashboard",
+      "file": "app/(vendor)/dashboard.tsx",
+      "testIds": [
+        "notification-bell",
+        "qa-messages",
+        "vendor-messages-button",
+        "vendor-stat-available",
+        "vendor-stat-quotes",
+        "vendor-stat-active",
+        "vendor-stat-completed",
+        "qa-lala-ai",
+        "qa-contracts"
+      ],
+      "maestroTouchesIds": [
+        "notification-bell",
+        "qa-messages",
+        "vendor-stat-quotes",
+        "vendor-stat-completed",
+        "qa-contracts"
+      ],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/earnings/",
+      "file": "app/(vendor)/earnings/index.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/earnings/banking",
+      "file": "app/(vendor)/earnings/banking.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/jobs/",
+      "file": "app/(vendor)/jobs/index.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/jobs/[id]",
+      "file": "app/(vendor)/jobs/[id].tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/jobs/[id]/progress-update",
+      "file": "app/(vendor)/jobs/[id]/progress-update.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/jobs/[id]/request-closure",
+      "file": "app/(vendor)/jobs/[id]/request-closure.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/jobs/[id]/submit-invoice",
+      "file": "app/(vendor)/jobs/[id]/submit-invoice.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/maintenance",
+      "file": "app/(vendor)/maintenance.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/maintenance/[id]",
+      "file": "app/(vendor)/maintenance/[id].tsx",
+      "testIds": ["vendor-submit-quote"],
+      "maestroTouchesIds": ["vendor-submit-quote"],
+      "deepLinkInMaestro": false,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/maintenance/[id]/po/[poId]",
+      "file": "app/(vendor)/maintenance/[id]/po/[poId].tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/maintenance/[id]/quote/[quoteId]",
+      "file": "app/(vendor)/maintenance/[id]/quote/[quoteId].tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/maintenance/[id]/quote/edit",
+      "file": "app/(vendor)/maintenance/[id]/quote/edit.tsx",
+      "testIds": [
+        "quote-back",
+        "quote-save-draft-header",
+        "quote-draft-restored-banner",
+        "quote-draft-discard",
+        "quote-item-name",
+        "quote-quantity",
+        "quote-unit-price",
+        "quote-duration-picker",
+        "quote-notes",
+        "quote-save-draft",
+        "quote-submit"
+      ],
+      "maestroTouchesIds": [
+        "quote-item-name",
+        "quote-unit-price",
+        "quote-duration-picker",
+        "quote-notes",
+        "quote-submit"
+      ],
+      "deepLinkInMaestro": false,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/maintenance/[id]/quote/new",
+      "file": "app/(vendor)/maintenance/[id]/quote/new.tsx",
+      "testIds": [
+        "quote-back",
+        "quote-save-draft-header",
+        "quote-draft-restored-banner",
+        "quote-draft-discard",
+        "quote-item-name",
+        "quote-quantity",
+        "quote-unit-price",
+        "quote-duration-picker",
+        "quote-notes",
+        "quote-save-draft",
+        "quote-submit"
+      ],
+      "maestroTouchesIds": [
+        "quote-item-name",
+        "quote-unit-price",
+        "quote-duration-picker",
+        "quote-notes",
+        "quote-submit"
+      ],
+      "deepLinkInMaestro": false,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/messages",
+      "file": "app/(vendor)/messages.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": true,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/messages/[id]",
+      "file": "app/(vendor)/messages/[id].tsx",
+      "testIds": ["thread-message-input", "thread-send-button"],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "UNPROVEN"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/messages/new",
+      "file": "app/(vendor)/messages/new.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/notifications",
+      "file": "app/(vendor)/notifications.tsx",
+      "testIds": ["notification-back"],
+      "maestroTouchesIds": ["notification-back"],
+      "deepLinkInMaestro": false,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/privacy",
+      "file": "app/(vendor)/privacy.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/privacy/data-rights",
+      "file": "app/(vendor)/privacy/data-rights.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/profile/",
+      "file": "app/(vendor)/profile/index.tsx",
+      "testIds": [
+        "vendor-profile-title",
+        "vendor-profile-documents",
+        "vendor-profile-contracts",
+        "vendor-profile-edit",
+        "vendor-profile-notifications",
+        "vendor-profile-privacy"
+      ],
+      "maestroTouchesIds": [
+        "vendor-profile-title",
+        "vendor-profile-documents",
+        "vendor-profile-edit",
+        "vendor-profile-notifications",
+        "vendor-profile-privacy"
+      ],
+      "deepLinkInMaestro": false,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/profile/documents",
+      "file": "app/(vendor)/profile/documents.tsx",
+      "testIds": ["vendor-docs-back", "vendor-docs-upload-button", "vendor-docs-choose-file"],
+      "maestroTouchesIds": [
+        "vendor-docs-back",
+        "vendor-docs-upload-button",
+        "vendor-docs-choose-file"
+      ],
+      "deepLinkInMaestro": false,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/profile/edit",
+      "file": "app/(vendor)/profile/edit.tsx",
+      "testIds": [
+        "edit-profile-back",
+        "edit-profile-title",
+        "edit-profile-save",
+        "edit-profile-avatar",
+        "edit-profile-name",
+        "edit-profile-phone"
+      ],
+      "maestroTouchesIds": ["edit-profile-back"],
+      "deepLinkInMaestro": false,
+      "proof": "MAESTRO_TOUCHES"
+    },
+    {
+      "role": "vendor",
+      "route": "/(vendor)/profile/services",
+      "file": "app/(vendor)/profile/services.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "admin",
+      "route": "/admin/DashboardPage",
+      "file": "admin/src/pages/DashboardPage.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "admin",
+      "route": "/admin/DevAuditPage",
+      "file": "admin/src/pages/DevAuditPage.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "admin",
+      "route": "/admin/DevEnvPage",
+      "file": "admin/src/pages/DevEnvPage.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "admin",
+      "route": "/admin/DevGithubPage",
+      "file": "admin/src/pages/DevGithubPage.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "admin",
+      "route": "/admin/DevLogsPage",
+      "file": "admin/src/pages/DevLogsPage.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "admin",
+      "route": "/admin/DevPlanePage",
+      "file": "admin/src/pages/DevPlanePage.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "admin",
+      "route": "/admin/DevSupabasePage",
+      "file": "admin/src/pages/DevSupabasePage.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "admin",
+      "route": "/admin/LeasesPage",
+      "file": "admin/src/pages/LeasesPage.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "admin",
+      "route": "/admin/LoginPage",
+      "file": "admin/src/pages/LoginPage.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "admin",
+      "route": "/admin/MaintenancePage",
+      "file": "admin/src/pages/MaintenancePage.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "admin",
+      "route": "/admin/PaymentsPage",
+      "file": "admin/src/pages/PaymentsPage.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "admin",
+      "route": "/admin/PropertiesPage",
+      "file": "admin/src/pages/PropertiesPage.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "admin",
+      "route": "/admin/UsersPage",
+      "file": "admin/src/pages/UsersPage.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "admin",
+      "route": "/admin/VendorPayoutsPage",
+      "file": "admin/src/pages/VendorPayoutsPage.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "auth",
+      "route": "/auth/login",
+      "file": "app/auth/login.tsx",
+      "testIds": ["email-input", "password-input", "sign-in-button", "create-account-link"],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "UNPROVEN"
+    },
+    {
+      "role": "auth",
+      "route": "/auth/register",
+      "file": "app/auth/register.tsx",
+      "testIds": [
+        "register-business-name",
+        "register-full-name",
+        "register-email",
+        "register-password",
+        "register-confirm-password",
+        "register-submit"
+      ],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "UNPROVEN"
+    },
+    {
+      "role": "auth",
+      "route": "/auth/signout",
+      "file": "app/auth/signout.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    },
+    {
+      "role": "root",
+      "route": "/test-components",
+      "file": "app/test-components.tsx",
+      "testIds": [],
+      "maestroTouchesIds": [],
+      "deepLinkInMaestro": false,
+      "proof": "NO_TESTID"
+    }
+  ]
+}

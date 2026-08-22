@@ -1,0 +1,250 @@
+{
+  "hitCount": 49,
+  "hits": [
+    {
+      "file": "src/features/applications/api/applicationCompetition.api.ts",
+      "signal": "credit-check",
+      "count": 2
+    },
+    {
+      "file": "src/features/owner/screens/OwnerApplicationCompetitionScreen.tsx",
+      "signal": "credit-check",
+      "count": 2
+    },
+    {
+      "file": "src/features/owner/screens/OwnerApplicationDetailScreen.tsx",
+      "signal": "background-check",
+      "count": 2
+    },
+    {
+      "file": "src/features/owner/screens/OwnerApplicationDetailScreen.tsx",
+      "signal": "credit-check",
+      "count": 2
+    },
+    {
+      "file": "src/features/owner/screens/OwnerApplicationDetailScreen.tsx",
+      "signal": "identity-verify",
+      "count": 1
+    },
+    {
+      "file": "src/features/owner/screens/OwnerComplianceScreen.tsx",
+      "signal": "background-check",
+      "count": 2
+    },
+    {
+      "file": "src/features/owner/screens/OwnerComplianceScreen.tsx",
+      "signal": "credit-check",
+      "count": 2
+    },
+    {
+      "file": "src/features/owner/screens/OwnerComplianceScreen.tsx",
+      "signal": "identity-verify",
+      "count": 4
+    },
+    {
+      "file": "src/features/properties/api/applicationsApi.ts",
+      "signal": "todo-integrate",
+      "count": 3
+    },
+    {
+      "file": "src/features/properties/api/applicationsApi.ts",
+      "signal": "transunion",
+      "count": 1
+    },
+    {
+      "file": "src/features/properties/api/applicationsApi.ts",
+      "signal": "onfido",
+      "count": 1
+    },
+    {
+      "file": "src/features/properties/api/applicationsApi.ts",
+      "signal": "smile-identity",
+      "count": 1
+    },
+    {
+      "file": "src/features/properties/api/applicationsApi.ts",
+      "signal": "background-check",
+      "count": 4
+    },
+    {
+      "file": "src/features/properties/api/applicationsApi.ts",
+      "signal": "credit-check",
+      "count": 4
+    },
+    {
+      "file": "src/features/properties/api/applicationsApi.ts",
+      "signal": "identity-verify",
+      "count": 3
+    },
+    {
+      "file": "src/features/properties/api/leasesApi.ts",
+      "signal": "todo-integrate",
+      "count": 1
+    },
+    {
+      "file": "src/features/tenant/screens/TenantApplicationStatusScreen.tsx",
+      "signal": "credit-check",
+      "count": 5
+    },
+    {
+      "file": "src/types/database.types.ts",
+      "signal": "background-check",
+      "count": 8
+    },
+    {
+      "file": "src/types/database.types.ts",
+      "signal": "credit-check",
+      "count": 11
+    },
+    {
+      "file": "src/types/database.types.ts",
+      "signal": "identity-verify",
+      "count": 4
+    },
+    {
+      "file": "docs/CLIENT_FEEDBACK_MATRIX.md",
+      "signal": "not-implemented",
+      "count": 1
+    },
+    {
+      "file": "docs/COMPLETE_FLOW_ANALYSIS_SUMMARY.md",
+      "signal": "tpn",
+      "count": 17
+    },
+    {
+      "file": "docs/COMPLETE_FLOW_ANALYSIS_SUMMARY.md",
+      "signal": "signiflow",
+      "count": 12
+    },
+    {
+      "file": "docs/COMPLETE_FLOW_ANALYSIS_SUMMARY.md",
+      "signal": "payprop",
+      "count": 15
+    },
+    {
+      "file": "docs/COMPLETE_FLOW_ANALYSIS_SUMMARY.md",
+      "signal": "entegral",
+      "count": 5
+    },
+    {
+      "file": "docs/inventory/HOW-WE-KNOW.md",
+      "signal": "tpn",
+      "count": 1
+    },
+    {
+      "file": "docs/inventory/METHOD.md",
+      "signal": "todo-integrate",
+      "count": 2
+    },
+    {
+      "file": "docs/inventory/SLEEPERS.md",
+      "signal": "todo-integrate",
+      "count": 1
+    },
+    {
+      "file": "docs/inventory/SLEEPERS.md",
+      "signal": "tpn",
+      "count": 3
+    },
+    {
+      "file": "docs/inventory/SLEEPERS.md",
+      "signal": "transunion",
+      "count": 3
+    },
+    {
+      "file": "docs/inventory/SLEEPERS.md",
+      "signal": "onfido",
+      "count": 3
+    },
+    {
+      "file": "docs/inventory/SLEEPERS.md",
+      "signal": "smile-identity",
+      "count": 1
+    },
+    {
+      "file": "docs/inventory/SLEEPERS.md",
+      "signal": "signiflow",
+      "count": 2
+    },
+    {
+      "file": "docs/inventory/SLEEPERS.md",
+      "signal": "payprop",
+      "count": 1
+    },
+    {
+      "file": "docs/inventory/SLEEPERS.md",
+      "signal": "entegral",
+      "count": 1
+    },
+    {
+      "file": "docs/inventory/SLEEPERS.md",
+      "signal": "background-check",
+      "count": 4
+    },
+    {
+      "file": "docs/inventory/SLEEPERS.md",
+      "signal": "credit-check",
+      "count": 4
+    },
+    {
+      "file": "docs/inventory/SLEEPERS.md",
+      "signal": "identity-verify",
+      "count": 3
+    },
+    {
+      "file": "docs/inventory/START-HERE.md",
+      "signal": "tpn",
+      "count": 2
+    },
+    {
+      "file": "docs/inventory/START-HERE.md",
+      "signal": "transunion",
+      "count": 1
+    },
+    {
+      "file": "docs/inventory/START-HERE.md",
+      "signal": "onfido",
+      "count": 1
+    },
+    {
+      "file": "docs/inventory/START-HERE.md",
+      "signal": "signiflow",
+      "count": 2
+    },
+    {
+      "file": "docs/inventory/START-HERE.md",
+      "signal": "payprop",
+      "count": 1
+    },
+    {
+      "file": "docs/inventory/TREES.md",
+      "signal": "tpn",
+      "count": 1
+    },
+    {
+      "file": "docs/inventory/generated/INDEX.md",
+      "signal": "transunion",
+      "count": 1
+    },
+    {
+      "file": "docs/inventory/generated/INDEX.md",
+      "signal": "onfido",
+      "count": 1
+    },
+    {
+      "file": "docs/inventory/generated/INDEX.md",
+      "signal": "signiflow",
+      "count": 1
+    },
+    {
+      "file": "docs/inventory/generated/INDEX.md",
+      "signal": "payprop",
+      "count": 1
+    },
+    {
+      "file": "docs/inventory/generated/INDEX.md",
+      "signal": "entegral",
+      "count": 1
+    }
+  ]
+}

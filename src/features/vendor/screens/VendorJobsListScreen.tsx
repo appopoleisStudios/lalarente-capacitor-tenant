@@ -2,12 +2,12 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import {
   getVendorAvailableRequests,
   getVendorMyJobs,
-  type VendorMaintenanceRequest
+  type VendorMaintenanceRequest,
 } from '@/src/features/maintenance/api';
 import { colors } from '@/src/shared/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -26,8 +26,26 @@ export default function VendorJobsListScreen() {
   const router = useRouter();
   const { profile } = useAuth();
   const params = useLocalSearchParams<{ tab?: string }>();
-  const initialTab: TabType = params.tab === 'completed' ? 'completed' : 'active';
-  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
+  const [activeTab, setActiveTab] = useState<TabType>('active');
+
+  // jobs/index is a TAB screen that stays mounted — a ?tab= param pushed from
+  // the dashboard (e.g. ?tab=completed) must be re-applied on EVERY focus, not
+  // just in the useState initializer (that's why the Completed card was landing
+  // on the Active tab after the first visit).
+  useFocusEffect(
+    useCallback(() => {
+      if (params.tab === 'completed' || params.tab === 'active') {
+        setActiveTab(params.tab);
+      }
+    }, [params.tab])
+  );
+
+  // Manual tab taps keep the URL param in sync so a later re-focus can't
+  // override the user's explicit choice.
+  const handleTabPress = (tab: TabType) => {
+    setActiveTab(tab);
+    router.setParams({ tab });
+  };
   const [jobs, setJobs] = useState<VendorMaintenanceRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -50,7 +68,9 @@ export default function VendorJobsListScreen() {
           status: 'completed',
         });
         // Filter to only show jobs where vendor was selected
-        const completedJobs = data.filter((job: VendorMaintenanceRequest) => job.selected_vendor_id === profile.id);
+        const completedJobs = data.filter(
+          (job: VendorMaintenanceRequest) => job.selected_vendor_id === profile.id
+        );
         setJobs(completedJobs);
       }
     } catch (error) {
@@ -77,7 +97,7 @@ export default function VendorJobsListScreen() {
     if (!searchQuery.trim()) return jobs;
 
     const query = searchQuery.toLowerCase();
-    return jobs.filter(job => {
+    return jobs.filter((job) => {
       // Search in title
       if (job.title.toLowerCase().includes(query)) return true;
 
@@ -103,11 +123,9 @@ export default function VendorJobsListScreen() {
     return (
       <TouchableOpacity
         style={[styles.tabButton, isActive && styles.tabButtonActive]}
-        onPress={() => setActiveTab(tab)}
+        onPress={() => handleTabPress(tab)}
       >
-        <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
-          {label}
-        </Text>
+        <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{label}</Text>
       </TouchableOpacity>
     );
   };
@@ -122,9 +140,7 @@ export default function VendorJobsListScreen() {
         <View style={styles.emptyState}>
           <Ionicons name="search-outline" size={64} color={colors.gray[300]} />
           <Text style={styles.emptyTitle}>No Results Found</Text>
-          <Text style={styles.emptySubtitle}>
-            Try adjusting your search terms
-          </Text>
+          <Text style={styles.emptySubtitle}>Try adjusting your search terms</Text>
         </View>
       );
     }
@@ -160,7 +176,8 @@ export default function VendorJobsListScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Jobs</Text>
         <Text style={styles.headerSubtitle}>
-          {filteredJobs.length} {activeTab === 'active' ? 'active' : 'completed'} job{filteredJobs.length !== 1 ? 's' : ''}
+          {filteredJobs.length} {activeTab === 'active' ? 'active' : 'completed'} job
+          {filteredJobs.length !== 1 ? 's' : ''}
         </Text>
       </View>
 
@@ -183,10 +200,7 @@ export default function VendorJobsListScreen() {
           autoCorrect={false}
         />
         {searchQuery.length > 0 && (
-          <TouchableOpacity
-            onPress={() => setSearchQuery('')}
-            style={styles.clearButton}
-          >
+          <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
             <Ionicons name="close-circle" size={20} color={colors.gray[400]} />
           </TouchableOpacity>
         )}

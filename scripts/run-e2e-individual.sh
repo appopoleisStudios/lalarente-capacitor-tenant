@@ -155,6 +155,8 @@ node scripts/seed-property-3d-tour.mjs >/dev/null 2>&1 || echo "⚠ 3D seed fail
 run_flow "property-3d-tour"                    "Property 3D Tour viewer (Plane #92)" "OWNER" "${O_ENV[@]}"
 run_flow "owner-property-maintenance-history"  "Property Maintenance History (Plane #85)" "OWNER" "${O_ENV[@]}"
 run_flow "owner-photo-viewer-close"           "Owner photo viewer close (user bug)" "OWNER" "${O_ENV[@]}"
+run_flow "owner-compliance-upload"            "Owner Compliance upload wired (Plane #69)" "OWNER" "${O_ENV[@]}"
+run_flow "owner-screening-unwired"            "FICA screening display-only (Plane #98)" "OWNER" "${O_ENV[@]}"
 run_flow "09-pr9-owner-inspection-conduct"       "Inspection Conduct (rooms)"       "OWNER" "${O_ENV[@]}"
 run_flow "10-pr9-owner-inspection-readonly"      "Inspection Read-only"             "OWNER" "${O_ENV[@]}"
 run_flow "15-pr7-owner-disputes-empty"           "Payment Disputes Empty State"     "OWNER" "${O_ENV[@]}"

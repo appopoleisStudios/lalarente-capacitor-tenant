@@ -1,0 +1,62 @@
+# Owner Compliance gate (Plane #69)
+# Proves the Property Compliance tab is FULLY WIRED — no more dead "Upload"
+# buttons / "coming soon" stub:
+#   Dashboard → Documents → Compliance → Property Compliance tab
+#   → checklist rows render with live upload testIDs (owner-compliance-upload-*)
+#   → NO "coming soon" banner (fail-closed: a re-introduced stub fails here)
+#   → back lands on the dashboard (not a dead-end screen)
+# The native iOS file picker cannot be driven by Maestro (same as
+# vendor-documents-upload.yaml) — the API path is covered by unit tests.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+
+- extendedWaitUntil:
+    visible: "Portfolio Dashboard"
+    timeout: 60000
+
+# The Compliance tile lives in the Documents grid — scroll it into view first
+# (same scrollUntilVisible pattern as open-tenant-messages / vendor docs).
+- scrollUntilVisible:
+    element:
+      text: "Compliance"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+
+- tapOn:
+    text: "Compliance"
+
+# Compliance screen renders — FICA tab is the default
+- extendedWaitUntil:
+    visible: "FICA / Tenant KYC"
+    timeout: 20000
+- assertVisible:
+    text: "Compliance"
+
+# Switch to the Property Compliance tab
+- tapOn:
+    text: "Property Compliance"
+
+# Checklist renders with a real (tappable) Upload button per item
+- extendedWaitUntil:
+    visible: "Electrical Certificate of Compliance (COC)"
+    timeout: 15000
+- assertVisible:
+    id: "owner-compliance-upload-eoc"
+- assertVisible:
+    id: "owner-compliance-upload-gas"
+
+# FAIL-CLOSED: the "coming soon" stub banner must be GONE. Regex is
+# REQUIRED — Maestro text: is exact-match by default, so a bare
+# "coming soon" would trivially pass even if the banner returned (same
+# assertion-that-can't-fail class hardened in vendor-dashboard.yaml).
+- assertNotVisible:
+    text: ".*coming soon.*"
+
+# Back lands on the dashboard (screen is not a dead end)
+- tapOn:
+    id: "owner-compliance-back"
+- extendedWaitUntil:
+    visible: "Portfolio Dashboard"
+    timeout: 20000

@@ -1,0 +1,210 @@
+{
+  "unique": 113,
+  "duplicates": [
+    {
+      "id": "notification-bell",
+      "files": [
+        "src/features/owner/screens/OwnerDashboardScreen.tsx",
+        "src/features/tenant/screens/TenantDashboardScreen.tsx",
+        "src/features/vendor/screens/VendorDashboardScreen.tsx"
+      ]
+    },
+    {
+      "id": "qa-messages",
+      "files": [
+        "src/features/tenant/screens/TenantDashboardScreen.tsx",
+        "src/features/vendor/screens/VendorDashboardScreen.tsx"
+      ]
+    },
+    {
+      "id": "payment-disputes-title",
+      "files": [
+        "src/features/tenant/screens/TenantPaymentDisputeScreen.tsx",
+        "src/features/tenant/screens/TenantPaymentDisputeScreen.tsx"
+      ]
+    },
+    {
+      "id": "screen-back",
+      "files": [
+        "src/features/tenant/screens/TenantViewingsScreen.tsx",
+        "src/features/tenant/screens/TenantViewingsScreen.tsx"
+      ]
+    },
+    {
+      "id": "vendor-docs-back",
+      "files": [
+        "src/features/vendor/screens/VendorDocumentsManagementScreen.tsx",
+        "src/features/vendor/screens/VendorDocumentsManagementScreen.tsx"
+      ]
+    },
+    {
+      "id": "edit-profile-back",
+      "files": [
+        "src/features/vendor/screens/VendorEditProfileScreen.tsx",
+        "src/features/vendor/screens/VendorEditProfileScreen.tsx"
+      ]
+    },
+    {
+      "id": "edit-profile-title",
+      "files": [
+        "src/features/vendor/screens/VendorEditProfileScreen.tsx",
+        "src/features/vendor/screens/VendorEditProfileScreen.tsx"
+      ]
+    },
+    {
+      "id": "vendor-profile-title",
+      "files": [
+        "src/features/vendor/screens/VendorProfileScreen.tsx",
+        "src/features/vendor/screens/VendorProfileScreen.tsx"
+      ]
+    }
+  ],
+  "index": {
+    "pay-vendor-title": ["app/(tenant)/vendor-payments/[invoiceId].tsx"],
+    "invoice-number-detail": ["app/(tenant)/vendor-payments/[invoiceId].tsx"],
+    "pay-via-payfast": ["app/(tenant)/vendor-payments/[invoiceId].tsx"],
+    "checkout-close": ["app/(tenant)/vendor-payments/checkout.tsx"],
+    "checkout-title": ["app/(tenant)/vendor-payments/checkout.tsx"],
+    "checkout-loading": ["app/(tenant)/vendor-payments/checkout.tsx"],
+    "checkout-blocked": ["app/(tenant)/vendor-payments/checkout.tsx"],
+    "vendor-payments-title": ["app/(tenant)/vendor-payments/index.tsx"],
+    "invoice-number": ["app/(tenant)/vendor-payments/index.tsx"],
+    "pay-now": ["app/(tenant)/vendor-payments/index.tsx"],
+    "vendor-submit-quote": ["app/(vendor)/maintenance/[id].tsx"],
+    "email-input": ["src/features/auth/screens/LoginScreen.tsx"],
+    "password-input": ["src/features/auth/screens/LoginScreen.tsx"],
+    "sign-in-button": ["src/features/auth/screens/LoginScreen.tsx"],
+    "create-account-link": ["src/features/auth/screens/LoginScreen.tsx"],
+    "register-business-name": ["src/features/auth/screens/RegisterScreen.tsx"],
+    "register-full-name": ["src/features/auth/screens/RegisterScreen.tsx"],
+    "register-email": ["src/features/auth/screens/RegisterScreen.tsx"],
+    "register-password": ["src/features/auth/screens/RegisterScreen.tsx"],
+    "register-confirm-password": ["src/features/auth/screens/RegisterScreen.tsx"],
+    "register-submit": ["src/features/auth/screens/RegisterScreen.tsx"],
+    "media-gallery-thumb": ["src/features/maintenance/components/MediaGallery.tsx"],
+    "media-gallery-close": ["src/features/maintenance/components/MediaGallery.tsx"],
+    "thread-message-input": ["src/features/messaging/screens/MessageThreadScreen.tsx"],
+    "thread-send-button": ["src/features/messaging/screens/MessageThreadScreen.tsx"],
+    "documents-see-all": ["src/features/owner/components/DocumentsSection.tsx"],
+    "property-card-view": ["src/features/owner/components/PropertyCard.tsx"],
+    "property-card-edit": ["src/features/owner/components/PropertyCard.tsx"],
+    "screening-row-background": ["src/features/owner/screens/OwnerApplicationDetailScreen.tsx"],
+    "screening-row-credit": ["src/features/owner/screens/OwnerApplicationDetailScreen.tsx"],
+    "screening-row-identity": ["src/features/owner/screens/OwnerApplicationDetailScreen.tsx"],
+    "closure-review-title": ["src/features/owner/screens/OwnerClosureApprovalScreen.tsx"],
+    "closure-reject-button": ["src/features/owner/screens/OwnerClosureApprovalScreen.tsx"],
+    "closure-approve-button": ["src/features/owner/screens/OwnerClosureApprovalScreen.tsx"],
+    "closure-forward-button": ["src/features/owner/screens/OwnerClosureApprovalScreen.tsx"],
+    "owner-compliance-back": ["src/features/owner/screens/OwnerComplianceScreen.tsx"],
+    "fica-check-identity": ["src/features/owner/screens/OwnerComplianceScreen.tsx"],
+    "fica-check-credit": ["src/features/owner/screens/OwnerComplianceScreen.tsx"],
+    "fica-check-background": ["src/features/owner/screens/OwnerComplianceScreen.tsx"],
+    "owner-messages-button": ["src/features/owner/screens/OwnerDashboardScreen.tsx"],
+    "notification-bell": [
+      "src/features/owner/screens/OwnerDashboardScreen.tsx",
+      "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "src/features/vendor/screens/VendorDashboardScreen.tsx"
+    ],
+    "owner-primary-action": ["src/features/owner/screens/OwnerDashboardScreen.tsx"],
+    "invoice-reject-button": ["src/features/owner/screens/OwnerInvoiceApprovalScreen.tsx"],
+    "invoice-approve-button": ["src/features/owner/screens/OwnerInvoiceApprovalScreen.tsx"],
+    "invoice-reject-confirm": ["src/features/owner/screens/OwnerInvoiceApprovalScreen.tsx"],
+    "owner-property-photo": ["src/features/owner/screens/OwnerPropertyDetailScreen.tsx"],
+    "owner-view-3d": ["src/features/owner/screens/OwnerPropertyDetailScreen.tsx"],
+    "owner-maintenance-history": ["src/features/owner/screens/OwnerPropertyDetailScreen.tsx"],
+    "owner-photo-close": ["src/features/owner/screens/OwnerPropertyDetailScreen.tsx"],
+    "owner-maintenance-history-title": [
+      "src/features/owner/screens/OwnerPropertyMaintenanceHistoryScreen.tsx"
+    ],
+    "owner-maintenance-history-back": [
+      "src/features/owner/screens/OwnerPropertyMaintenanceHistoryScreen.tsx"
+    ],
+    "owner-profile-email": ["src/features/owner/screens/ProfileScreen.tsx"],
+    "view3d-close": ["src/features/properties/screens/PropertyView3DScreen.tsx"],
+    "view3d-title": ["src/features/properties/screens/PropertyView3DScreen.tsx"],
+    "view3d-error-back": ["src/features/properties/screens/PropertyView3DScreen.tsx"],
+    "tenant-dashboard-header": ["src/features/tenant/screens/TenantDashboardScreen.tsx"],
+    "view-lease-details": ["src/features/tenant/screens/TenantDashboardScreen.tsx"],
+    "qa-search": ["src/features/tenant/screens/TenantDashboardScreen.tsx"],
+    "qa-payments": ["src/features/tenant/screens/TenantDashboardScreen.tsx"],
+    "qa-maintenance": ["src/features/tenant/screens/TenantDashboardScreen.tsx"],
+    "qa-messages": [
+      "src/features/tenant/screens/TenantDashboardScreen.tsx",
+      "src/features/vendor/screens/VendorDashboardScreen.tsx"
+    ],
+    "maintenance-report-fab": ["src/features/tenant/screens/TenantMaintenanceListScreen.tsx"],
+    "maintenance-report-cta": ["src/features/tenant/screens/TenantMaintenanceListScreen.tsx"],
+    "maintenance-title-input": ["src/features/tenant/screens/TenantMaintenanceReportScreen.tsx"],
+    "maintenance-description-input": [
+      "src/features/tenant/screens/TenantMaintenanceReportScreen.tsx"
+    ],
+    "maintenance-add-camera": ["src/features/tenant/screens/TenantMaintenanceReportScreen.tsx"],
+    "maintenance-submit": ["src/features/tenant/screens/TenantMaintenanceReportScreen.tsx"],
+    "payment-disputes-title": [
+      "src/features/tenant/screens/TenantPaymentDisputeScreen.tsx",
+      "src/features/tenant/screens/TenantPaymentDisputeScreen.tsx"
+    ],
+    "tenant-pay-now": ["src/features/tenant/screens/TenantPaymentScreen.tsx"],
+    "tenant-mini-pay": ["src/features/tenant/screens/TenantPaymentScreen.tsx"],
+    "tenant-confirm-payment": ["src/features/tenant/screens/TenantPaymentScreen.tsx"],
+    "tenant-profile-title": ["src/features/tenant/screens/TenantProfileScreen.tsx"],
+    "tenant-profile-email": ["src/features/tenant/screens/TenantProfileScreen.tsx"],
+    "tenant-view-3d": ["src/features/tenant/screens/TenantPropertyDetailScreen.tsx"],
+    "tenant-search-results": ["src/features/tenant/screens/TenantSearchScreen.tsx"],
+    "tenant-verify-error": ["src/features/tenant/screens/TenantVerificationScreen.tsx"],
+    "tenant-verify-title": ["src/features/tenant/screens/TenantVerificationScreen.tsx"],
+    "screen-back": [
+      "src/features/tenant/screens/TenantViewingsScreen.tsx",
+      "src/features/tenant/screens/TenantViewingsScreen.tsx"
+    ],
+    "vendor-messages-button": ["src/features/vendor/screens/VendorDashboardScreen.tsx"],
+    "vendor-stat-available": ["src/features/vendor/screens/VendorDashboardScreen.tsx"],
+    "vendor-stat-quotes": ["src/features/vendor/screens/VendorDashboardScreen.tsx"],
+    "vendor-stat-active": ["src/features/vendor/screens/VendorDashboardScreen.tsx"],
+    "vendor-stat-completed": ["src/features/vendor/screens/VendorDashboardScreen.tsx"],
+    "qa-lala-ai": ["src/features/vendor/screens/VendorDashboardScreen.tsx"],
+    "qa-contracts": ["src/features/vendor/screens/VendorDashboardScreen.tsx"],
+    "vendor-docs-back": [
+      "src/features/vendor/screens/VendorDocumentsManagementScreen.tsx",
+      "src/features/vendor/screens/VendorDocumentsManagementScreen.tsx"
+    ],
+    "vendor-docs-upload-button": [
+      "src/features/vendor/screens/VendorDocumentsManagementScreen.tsx"
+    ],
+    "vendor-docs-choose-file": ["src/features/vendor/screens/VendorDocumentsManagementScreen.tsx"],
+    "edit-profile-back": [
+      "src/features/vendor/screens/VendorEditProfileScreen.tsx",
+      "src/features/vendor/screens/VendorEditProfileScreen.tsx"
+    ],
+    "edit-profile-title": [
+      "src/features/vendor/screens/VendorEditProfileScreen.tsx",
+      "src/features/vendor/screens/VendorEditProfileScreen.tsx"
+    ],
+    "edit-profile-save": ["src/features/vendor/screens/VendorEditProfileScreen.tsx"],
+    "edit-profile-avatar": ["src/features/vendor/screens/VendorEditProfileScreen.tsx"],
+    "edit-profile-name": ["src/features/vendor/screens/VendorEditProfileScreen.tsx"],
+    "edit-profile-phone": ["src/features/vendor/screens/VendorEditProfileScreen.tsx"],
+    "vendor-filter-pending-quotes": ["src/features/vendor/screens/VendorMaintenanceListScreen.tsx"],
+    "notification-back": ["src/features/vendor/screens/VendorNotificationsScreen.tsx"],
+    "vendor-profile-title": [
+      "src/features/vendor/screens/VendorProfileScreen.tsx",
+      "src/features/vendor/screens/VendorProfileScreen.tsx"
+    ],
+    "vendor-profile-documents": ["src/features/vendor/screens/VendorProfileScreen.tsx"],
+    "vendor-profile-contracts": ["src/features/vendor/screens/VendorProfileScreen.tsx"],
+    "vendor-profile-edit": ["src/features/vendor/screens/VendorProfileScreen.tsx"],
+    "vendor-profile-notifications": ["src/features/vendor/screens/VendorProfileScreen.tsx"],
+    "vendor-profile-privacy": ["src/features/vendor/screens/VendorProfileScreen.tsx"],
+    "quote-back": ["src/features/vendor/screens/VendorQuoteSubmitScreen.tsx"],
+    "quote-save-draft-header": ["src/features/vendor/screens/VendorQuoteSubmitScreen.tsx"],
+    "quote-draft-restored-banner": ["src/features/vendor/screens/VendorQuoteSubmitScreen.tsx"],
+    "quote-draft-discard": ["src/features/vendor/screens/VendorQuoteSubmitScreen.tsx"],
+    "quote-item-name": ["src/features/vendor/screens/VendorQuoteSubmitScreen.tsx"],
+    "quote-quantity": ["src/features/vendor/screens/VendorQuoteSubmitScreen.tsx"],
+    "quote-unit-price": ["src/features/vendor/screens/VendorQuoteSubmitScreen.tsx"],
+    "quote-duration-picker": ["src/features/vendor/screens/VendorQuoteSubmitScreen.tsx"],
+    "quote-notes": ["src/features/vendor/screens/VendorQuoteSubmitScreen.tsx"],
+    "quote-save-draft": ["src/features/vendor/screens/VendorQuoteSubmitScreen.tsx"],
+    "quote-submit": ["src/features/vendor/screens/VendorQuoteSubmitScreen.tsx"]
+  }
+}

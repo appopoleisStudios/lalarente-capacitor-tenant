@@ -1,0 +1,202 @@
+{
+  "rows": [
+    {
+      "family": "dashboard",
+      "tenant": "yes",
+      "owner": "yes",
+      "vendor": "yes"
+    },
+    {
+      "family": "profile",
+      "tenant": "yes",
+      "owner": "yes",
+      "vendor": "yes"
+    },
+    {
+      "family": "ai-chat",
+      "tenant": "yes",
+      "owner": "yes",
+      "vendor": "yes"
+    },
+    {
+      "family": "messages",
+      "tenant": "yes",
+      "owner": "yes",
+      "vendor": "yes"
+    },
+    {
+      "family": "notifications",
+      "tenant": "yes",
+      "owner": "yes",
+      "vendor": "yes"
+    },
+    {
+      "family": "privacy",
+      "tenant": "yes",
+      "owner": "yes",
+      "vendor": "yes"
+    },
+    {
+      "family": "dsar",
+      "tenant": "yes",
+      "owner": "yes",
+      "vendor": "yes"
+    },
+    {
+      "family": "maintenance-list",
+      "tenant": "yes",
+      "owner": "yes",
+      "vendor": "yes"
+    },
+    {
+      "family": "maintenance-detail",
+      "tenant": "yes",
+      "owner": "yes",
+      "vendor": "yes"
+    },
+    {
+      "family": "quote-new",
+      "tenant": "—",
+      "owner": "—",
+      "vendor": "yes"
+    },
+    {
+      "family": "quote-detail",
+      "tenant": "—",
+      "owner": "yes",
+      "vendor": "yes"
+    },
+    {
+      "family": "po",
+      "tenant": "—",
+      "owner": "yes",
+      "vendor": "yes"
+    },
+    {
+      "family": "inspections",
+      "tenant": "yes",
+      "owner": "yes",
+      "vendor": "—"
+    },
+    {
+      "family": "reports",
+      "tenant": "yes",
+      "owner": "yes",
+      "vendor": "—"
+    },
+    {
+      "family": "documents",
+      "tenant": "yes",
+      "owner": "yes",
+      "vendor": "yes"
+    },
+    {
+      "family": "payments-rent",
+      "tenant": "yes",
+      "owner": "yes",
+      "vendor": "—"
+    },
+    {
+      "family": "vendor-pay-earnings",
+      "tenant": "yes",
+      "owner": "yes",
+      "vendor": "yes"
+    },
+    {
+      "family": "lease",
+      "tenant": "yes",
+      "owner": "yes",
+      "vendor": "—"
+    },
+    {
+      "family": "applications",
+      "tenant": "yes",
+      "owner": "yes",
+      "vendor": "—"
+    },
+    {
+      "family": "viewings",
+      "tenant": "yes",
+      "owner": "yes",
+      "vendor": "—"
+    },
+    {
+      "family": "arrears",
+      "tenant": "yes",
+      "owner": "yes",
+      "vendor": "—"
+    },
+    {
+      "family": "disputes",
+      "tenant": "yes",
+      "owner": "yes",
+      "vendor": "—"
+    },
+    {
+      "family": "early-termination",
+      "tenant": "yes",
+      "owner": "yes",
+      "vendor": "—"
+    },
+    {
+      "family": "holding-deposit",
+      "tenant": "yes",
+      "owner": "yes",
+      "vendor": "—"
+    },
+    {
+      "family": "deposit",
+      "tenant": "yes",
+      "owner": "yes",
+      "vendor": "—"
+    },
+    {
+      "family": "renewals",
+      "tenant": "yes",
+      "owner": "yes",
+      "vendor": "—"
+    },
+    {
+      "family": "compliance",
+      "tenant": "—",
+      "owner": "yes",
+      "vendor": "—"
+    },
+    {
+      "family": "insurance",
+      "tenant": "—",
+      "owner": "yes",
+      "vendor": "—"
+    },
+    {
+      "family": "contracts",
+      "tenant": "—",
+      "owner": "—",
+      "vendor": "yes"
+    },
+    {
+      "family": "jobs",
+      "tenant": "—",
+      "owner": "—",
+      "vendor": "yes"
+    },
+    {
+      "family": "search-listings",
+      "tenant": "yes",
+      "owner": "yes",
+      "vendor": "—"
+    },
+    {
+      "family": "3d-tour",
+      "tenant": "yes",
+      "owner": "yes",
+      "vendor": "—"
+    },
+    {
+      "family": "fica-kyc-display",
+      "tenant": "yes",
+      "owner": "yes",
+      "vendor": "—"
+    }
+  ]
+}
