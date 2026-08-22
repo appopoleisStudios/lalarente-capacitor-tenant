@@ -312,21 +312,37 @@ export default function OwnerApplicationDetailScreen() {
             {/* Screening Status */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Screening Status</Text>
+              <View style={styles.infoBannerSmall}>
+                <Ionicons name="information-circle-outline" size={14} color="#1E40AF" />
+                <Text style={styles.infoBannerSmallText}>
+                  Review the applicant's documents below, then tap each check to mark it as complete
+                  or failed.
+                </Text>
+              </View>
               <View style={styles.card}>
                 <ScreeningRow
                   testID="screening-row-background"
                   label="Background Check"
                   status={application.background_check_status || 'pending'}
+                  applicationId={id!}
+                  field="background_check_status"
+                  onComplete={loadApplication}
                 />
                 <ScreeningRow
                   testID="screening-row-credit"
                   label="Credit Check"
                   status={application.credit_check_status || 'pending'}
+                  applicationId={id!}
+                  field="credit_check_status"
+                  onComplete={loadApplication}
                 />
                 <ScreeningRow
                   testID="screening-row-identity"
                   label="Identity Verification"
                   status={application.identity_verification_status || 'pending'}
+                  applicationId={id!}
+                  field="identity_verification_status"
+                  onComplete={loadApplication}
                 />
               </View>
             </View>
@@ -674,11 +690,21 @@ const ScreeningRow = ({
   label,
   status,
   testID,
+  applicationId,
+  field,
+  onComplete,
 }: {
   label: string;
   status: string;
   testID?: string;
+  applicationId?: string;
+  field?: string;
+  onComplete?: () => void;
 }) => {
+  const [updating, setUpdating] = useState(false);
+  const isDone = status === 'completed' || status === 'verified';
+  const isFailed = status === 'failed';
+
   const getStatusColor = () => {
     switch (status) {
       case 'completed':
@@ -691,13 +717,65 @@ const ScreeningRow = ({
     }
   };
 
+  const handleTap = () => {
+    if (!applicationId || !field || isDone || isFailed) return;
+    Alert.alert(
+      `${label}`,
+      `Review the applicant's ${label.toLowerCase()} documents, then confirm.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Mark Complete',
+          onPress: async () => {
+            setUpdating(true);
+            try {
+              const newStatus = field === 'identity_verification_status' ? 'verified' : 'completed';
+              await applicationsApi.updateApplication(applicationId, { [field]: newStatus } as any);
+              onComplete?.();
+            } catch (err: any) {
+              Alert.alert('Error', err.message || 'Failed to update');
+            } finally {
+              setUpdating(false);
+            }
+          },
+        },
+        {
+          text: 'Mark Failed',
+          style: 'destructive',
+          onPress: async () => {
+            setUpdating(true);
+            try {
+              await applicationsApi.updateApplication(applicationId, { [field]: 'failed' } as any);
+              onComplete?.();
+            } catch (err: any) {
+              Alert.alert('Error', err.message || 'Failed to update');
+            } finally {
+              setUpdating(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
-    <View style={styles.screeningRow} testID={testID}>
+    <TouchableOpacity
+      style={styles.screeningRow}
+      testID={testID}
+      onPress={handleTap}
+      disabled={updating || isDone || isFailed}
+    >
       <Text style={styles.screeningLabel}>{label}</Text>
       <View style={[styles.screeningBadge, { backgroundColor: getStatusColor() }]}>
-        <Text style={styles.screeningStatus}>{status}</Text>
+        {updating ? (
+          <ActivityIndicator size="small" color="#FFF" />
+        ) : (
+          <Text style={styles.screeningStatus}>
+            {isDone ? 'Complete' : isFailed ? 'Failed' : 'Tap to verify'}
+          </Text>
+        )}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -865,6 +943,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     fontStyle: 'italic',
+  },
+  infoBannerSmall: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#EBF5FF',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  infoBannerSmallText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#1E40AF',
+    lineHeight: 16,
   },
   screeningRow: {
     flexDirection: 'row',

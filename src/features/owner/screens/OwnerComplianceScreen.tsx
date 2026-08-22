@@ -26,6 +26,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { colors } from '@/src/shared/theme/colors';
 import { supabase } from '@/src/lib/supabase';
 import { documentsApi } from '@/src/features/documents/api/documentsApi';
+import { applicationsApi } from '@/src/features/properties/api/applicationsApi';
 import type { Document } from '@/src/features/documents/types';
 
 type Tab = 'fica' | 'property';
@@ -40,6 +41,7 @@ interface TenantFica {
   riskLevel: string | null;
   idDocumentUrl: string | null;
   applicationStatus: string;
+  ownerId: string;
 }
 
 interface PropertyCompliance {
@@ -59,6 +61,7 @@ type ComplianceDoc = Pick<
 
 const STATUS_ICON: Record<string, { icon: string; color: string }> = {
   verified: { icon: 'checkmark-circle', color: colors.primary[500] },
+  completed: { icon: 'checkmark-circle', color: colors.primary[500] },
   passed: { icon: 'checkmark-circle', color: colors.primary[500] },
   approved: { icon: 'checkmark-circle', color: colors.primary[500] },
   clear: { icon: 'checkmark-circle', color: colors.primary[500] },
@@ -73,6 +76,98 @@ const STATUS_ICON: Record<string, { icon: string; color: string }> = {
 function getStatusConfig(status: string | null) {
   if (!status) return STATUS_ICON.not_started;
   return STATUS_ICON[status.toLowerCase()] || { icon: 'ellipse-outline', color: colors.gray[400] };
+}
+
+/**
+ * Interactive FICA check button — tap to mark complete or fail.
+ * Shows status badge when done, tappable prompt when not started.
+ */
+function FicaCheckButton({
+  testID,
+  label,
+  status,
+  applicationId,
+  field,
+  onComplete,
+}: {
+  testID: string;
+  label: string;
+  status: string | null;
+  applicationId: string;
+  field: string;
+  onComplete: () => void;
+}) {
+  const [localUpdating, setLocalUpdating] = useState(false);
+  const cfg = getStatusConfig(status);
+  const isDone = status === 'verified' || status === 'completed';
+  const isFailed = status === 'failed';
+
+  if (isDone || isFailed) {
+    return (
+      <View style={styles.ficaCheckItem} testID={testID}>
+        <Ionicons name={cfg.icon as any} size={16} color={cfg.color} />
+        <Text style={styles.ficaCheckLabel}>{label}</Text>
+        <Text style={[styles.ficaCheckStatus, { color: cfg.color }]}>
+          {status === 'verified' ? 'Verified' : status === 'completed' ? 'Complete' : 'Failed'}
+        </Text>
+      </View>
+    );
+  }
+
+  const handlePress = () => {
+    Alert.alert(label, `Review the tenant's ${label.toLowerCase()} documents, then confirm.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Mark Complete',
+        onPress: async () => {
+          setLocalUpdating(true);
+          try {
+            const newStatus = field === 'identity_verification_status' ? 'verified' : 'completed';
+            await applicationsApi.updateApplication(applicationId, { [field]: newStatus } as any);
+            onComplete();
+          } catch (err: any) {
+            Alert.alert('Error', err.message || 'Failed to update');
+          } finally {
+            setLocalUpdating(false);
+          }
+        },
+      },
+      {
+        text: 'Mark Failed',
+        style: 'destructive',
+        onPress: async () => {
+          setLocalUpdating(true);
+          try {
+            await applicationsApi.updateApplication(applicationId, { [field]: 'failed' } as any);
+            onComplete();
+          } catch (err: any) {
+            Alert.alert('Error', err.message || 'Failed to update');
+          } finally {
+            setLocalUpdating(false);
+          }
+        },
+      },
+    ]);
+  };
+
+  return (
+    <TouchableOpacity
+      style={[styles.ficaCheckItem, styles.ficaCheckItemTappable]}
+      testID={testID}
+      disabled={localUpdating}
+      onPress={handlePress}
+    >
+      {localUpdating ? (
+        <ActivityIndicator size="small" color={colors.warning[500]} />
+      ) : (
+        <Ionicons name={cfg.icon as any} size={16} color={cfg.color} />
+      )}
+      <Text style={styles.ficaCheckLabel}>{label}</Text>
+      <Text style={[styles.ficaCheckStatus, { color: cfg.color }]}>
+        {localUpdating ? 'Updating…' : 'Tap to verify'}
+      </Text>
+    </TouchableOpacity>
+  );
 }
 
 const RISK_COLORS: Record<string, string> = {
@@ -232,7 +327,7 @@ export default function OwnerComplianceScreen() {
       const { data: apps } = await supabase
         .from('rental_applications')
         .select(
-          'id, tenant_id, property_id, status, identity_verification_status, credit_check_status, background_check_status, risk_level, id_document_url'
+          'id, tenant_id, property_id, owner_id, status, identity_verification_status, credit_check_status, background_check_status, risk_level, id_document_url'
         )
         .eq('owner_id', uid)
         .in('status', ['approved', 'pending', 'shortlisted'])
@@ -268,6 +363,7 @@ export default function OwnerComplianceScreen() {
           riskLevel: a.risk_level,
           idDocumentUrl: a.id_document_url,
           applicationStatus: a.status,
+          ownerId: a.owner_id || uid,
         }))
       );
     } catch (err) {
@@ -369,7 +465,8 @@ export default function OwnerComplianceScreen() {
                 <Ionicons name="shield-checkmark-outline" size={18} color={colors.info[500]} />
                 <Text style={styles.infoText}>
                   FICA requires you to verify the identity of all tenants (Know Your Customer). As a
-                  property practitioner, non-compliance carries criminal penalties.
+                  property practitioner, non-compliance carries criminal penalties. Review the
+                  tenant's uploaded ID and documents, then tap each check to mark it as complete.
                 </Text>
               </View>
 
@@ -417,31 +514,30 @@ export default function OwnerComplianceScreen() {
                         )}
                       </View>
                       <View style={styles.ficaChecks}>
-                        <View style={styles.ficaCheckItem} testID="fica-check-identity">
-                          <Ionicons name={idCfg.icon as any} size={16} color={idCfg.color} />
-                          <Text style={styles.ficaCheckLabel}>Identity</Text>
-                          <Text style={[styles.ficaCheckStatus, { color: idCfg.color }]}>
-                            {tenant.identityStatus || 'Not started'}
-                          </Text>
-                        </View>
-                        <View style={styles.ficaCheckItem} testID="fica-check-credit">
-                          <Ionicons
-                            name={creditCfg.icon as any}
-                            size={16}
-                            color={creditCfg.color}
-                          />
-                          <Text style={styles.ficaCheckLabel}>Credit</Text>
-                          <Text style={[styles.ficaCheckStatus, { color: creditCfg.color }]}>
-                            {tenant.creditStatus || 'Not started'}
-                          </Text>
-                        </View>
-                        <View style={styles.ficaCheckItem} testID="fica-check-background">
-                          <Ionicons name={bgCfg.icon as any} size={16} color={bgCfg.color} />
-                          <Text style={styles.ficaCheckLabel}>Background</Text>
-                          <Text style={[styles.ficaCheckStatus, { color: bgCfg.color }]}>
-                            {tenant.backgroundStatus || 'Not started'}
-                          </Text>
-                        </View>
+                        <FicaCheckButton
+                          testID="fica-check-identity"
+                          label="Identity"
+                          status={tenant.identityStatus}
+                          applicationId={tenant.applicationId}
+                          field="identity_verification_status"
+                          onComplete={() => fetchFica(ownerId!)}
+                        />
+                        <FicaCheckButton
+                          testID="fica-check-credit"
+                          label="Credit"
+                          status={tenant.creditStatus}
+                          applicationId={tenant.applicationId}
+                          field="credit_check_status"
+                          onComplete={() => fetchFica(ownerId!)}
+                        />
+                        <FicaCheckButton
+                          testID="fica-check-background"
+                          label="Background"
+                          status={tenant.backgroundStatus}
+                          applicationId={tenant.applicationId}
+                          field="background_check_status"
+                          onComplete={() => fetchFica(ownerId!)}
+                        />
                       </View>
                       {tenant.idDocumentUrl && (
                         <View style={styles.ficaDocRow}>
@@ -685,6 +781,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.secondary,
     borderRadius: 8,
     padding: 8,
+  },
+  ficaCheckItemTappable: {
+    borderWidth: 1,
+    borderColor: colors.warning[500] + '40',
+    backgroundColor: colors.warning[50],
   },
   ficaCheckLabel: {
     fontSize: 10,
