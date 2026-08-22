@@ -615,7 +615,7 @@ export async function tenantApproveInvoice(
     }
   );
 
-  // Notify owner that tenant approved
+  // Notify BOTH owner and vendor — vendor needs the signal to close their loop
   notificationsApi
     .sendNotification({
       user_id: invoice.owner_id,
@@ -626,7 +626,19 @@ export async function tenantApproveInvoice(
         newStatus: 'approved',
       },
     })
-    .catch((e) => console.error('Failed to send tenant approve notification:', e));
+    .catch((e) => console.error('Failed to notify owner of tenant approval:', e));
+
+  notificationsApi
+    .sendNotification({
+      user_id: invoice.vendor_id,
+      type: 'maintenance_updated',
+      data: {
+        customTitle: 'Invoice Approved by Tenant',
+        customBody: `Invoice ${invoice.invoice_number} has been approved by the tenant.`,
+        newStatus: 'approved',
+      },
+    })
+    .catch((e) => console.error('Failed to notify vendor of tenant approval:', e));
 
   return data as unknown as MaintenanceInvoice;
 }
@@ -717,7 +729,7 @@ export async function tenantRejectInvoice(
     }
   );
 
-  // Notify owner that tenant rejected
+  // Notify BOTH owner and vendor — vendor needs reason + resubmit path
   notificationsApi
     .sendNotification({
       user_id: invoice.owner_id,
@@ -725,10 +737,24 @@ export async function tenantRejectInvoice(
       data: {
         customTitle: 'Invoice Rejected by Tenant',
         customBody: `Tenant rejected invoice ${invoice.invoice_number}: ${reason.trim()}`,
+        newStatus: 'rejected',
         rejectionReason: reason.trim(),
       },
     })
-    .catch((e) => console.error('Failed to send tenant reject notification:', e));
+    .catch((e) => console.error('Failed to notify owner of tenant rejection:', e));
+
+  notificationsApi
+    .sendNotification({
+      user_id: invoice.vendor_id,
+      type: 'maintenance_updated',
+      data: {
+        customTitle: 'Invoice Rejected by Tenant',
+        customBody: `Invoice ${invoice.invoice_number} was rejected by the tenant. Reason: ${reason.trim()}. You can edit and resubmit.`,
+        newStatus: 'rejected',
+        rejectionReason: reason.trim(),
+      },
+    })
+    .catch((e) => console.error('Failed to notify vendor of tenant rejection:', e));
 
   return data as unknown as MaintenanceInvoice;
 }
