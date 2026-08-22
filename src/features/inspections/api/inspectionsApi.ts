@@ -11,6 +11,8 @@ import type {
   RoomCondition,
 } from '../types';
 
+export type { InspectionComparison } from '../types';
+
 export const inspectionsApi = {
   /**
    * Create a new inspection
@@ -46,13 +48,15 @@ export const inspectionsApi = {
   async getInspection(id: string): Promise<InspectionWithRelations> {
     const { data, error } = await supabase
       .from('inspections')
-      .select(`
+      .select(
+        `
         *,
         property:properties!property_id(id, title, address, city),
         lease:leases!lease_id(id, start_date, end_date, monthly_rent, deposit_amount),
         tenant:profiles!tenant_id(id, full_name, email, phone),
         owner:profiles!owner_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('id', id)
       .single();
 
@@ -70,11 +74,13 @@ export const inspectionsApi = {
   async getPropertyInspections(propertyId: string): Promise<InspectionWithRelations[]> {
     const { data, error } = await supabase
       .from('inspections')
-      .select(`
+      .select(
+        `
         *,
         tenant:profiles!tenant_id(id, full_name, email, phone),
         owner:profiles!owner_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('property_id', propertyId)
       .order('scheduled_date', { ascending: false });
 
@@ -92,12 +98,14 @@ export const inspectionsApi = {
   async getLeaseInspections(leaseId: string): Promise<InspectionWithRelations[]> {
     const { data, error } = await supabase
       .from('inspections')
-      .select(`
+      .select(
+        `
         *,
         property:properties!property_id(id, title, address, city),
         tenant:profiles!tenant_id(id, full_name, email, phone),
         owner:profiles!owner_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('lease_id', leaseId)
       .order('scheduled_date', { ascending: true });
 
@@ -118,11 +126,13 @@ export const inspectionsApi = {
   ): Promise<InspectionWithRelations[]> {
     let query = supabase
       .from('inspections')
-      .select(`
+      .select(
+        `
         *,
         property:properties!property_id(id, title, address, city),
         tenant:profiles!tenant_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('owner_id', ownerId);
 
     if (status) {
@@ -148,11 +158,13 @@ export const inspectionsApi = {
   ): Promise<InspectionWithRelations[]> {
     let query = supabase
       .from('inspections')
-      .select(`
+      .select(
+        `
         *,
         property:properties!property_id(id, title, address, city),
         owner:profiles!owner_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('tenant_id', tenantId);
 
     if (status) {
@@ -191,10 +203,7 @@ export const inspectionsApi = {
   /**
    * Update inspection rooms data
    */
-  async updateInspectionRooms(
-    id: string,
-    rooms: InspectionRooms
-  ): Promise<Inspection> {
+  async updateInspectionRooms(id: string, rooms: InspectionRooms): Promise<Inspection> {
     const { data, error } = await supabase
       .from('inspections')
       .update({ rooms: rooms as any })
@@ -345,10 +354,7 @@ export const inspectionsApi = {
   /**
    * Reschedule inspection
    */
-  async rescheduleInspection(
-    id: string,
-    newDate: string
-  ): Promise<Inspection> {
+  async rescheduleInspection(id: string, newDate: string): Promise<Inspection> {
     const { data, error } = await supabase
       .from('inspections')
       .update({
@@ -373,12 +379,14 @@ export const inspectionsApi = {
   async getMoveInInspection(leaseId: string): Promise<InspectionWithRelations | null> {
     const { data, error } = await supabase
       .from('inspections')
-      .select(`
+      .select(
+        `
         *,
         property:properties!property_id(id, title, address, city),
         tenant:profiles!tenant_id(id, full_name, email, phone),
         owner:profiles!owner_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('lease_id', leaseId)
       .eq('type', 'move_in')
       .single();
@@ -395,12 +403,39 @@ export const inspectionsApi = {
   },
 
   /**
+   * Get completed move-out inspection for a lease
+   */
+  async getMoveOutInspection(leaseId: string): Promise<InspectionWithRelations | null> {
+    const { data, error } = await supabase
+      .from('inspections')
+      .select(
+        `
+        *,
+        property:properties!property_id(id, title, address, city),
+        tenant:profiles!tenant_id(id, full_name, email, phone),
+        owner:profiles!owner_id(id, full_name, email, phone)
+      `
+      )
+      .eq('lease_id', leaseId)
+      .eq('type', 'move_out')
+      .in('status', ['completed', 'pending_signatures'])
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return null;
+      }
+      console.error('Error fetching move-out inspection:', error);
+      throw new Error(`Failed to fetch move-out inspection: ${error.message}`);
+    }
+
+    return data as unknown as InspectionWithRelations;
+  },
+
+  /**
    * Compare move-out inspection with move-in
    */
-  async compareInspections(
-    moveInId: string,
-    moveOutId: string
-  ): Promise<InspectionComparison[]> {
+  async compareInspections(moveInId: string, moveOutId: string): Promise<InspectionComparison[]> {
     const [moveIn, moveOut] = await Promise.all([
       this.getInspection(moveInId),
       this.getInspection(moveOutId),
@@ -411,7 +446,7 @@ export const inspectionsApi = {
     const moveOutRooms = (moveOut.rooms as InspectionRooms)?.rooms || [];
 
     for (const moveOutRoom of moveOutRooms) {
-      const moveInRoom = moveInRooms.find(r => r.name === moveOutRoom.name);
+      const moveInRoom = moveInRooms.find((r) => r.name === moveOutRoom.name);
 
       const comparison: InspectionComparison = {
         roomName: moveOutRoom.name,
@@ -424,7 +459,7 @@ export const inspectionsApi = {
       // Find new damages (not in move-in)
       for (const item of moveOutRoom.items) {
         if (item.damages) {
-          const newDamages = item.damages.filter(d => !d.existingDamage);
+          const newDamages = item.damages.filter((d) => !d.existingDamage);
           comparison.newDamages.push(...newDamages);
           comparison.estimatedRepairCost += newDamages.reduce(
             (sum, d) => sum + (d.estimatedCost || 0),
@@ -467,10 +502,7 @@ export const inspectionsApi = {
 
     if (moveInInspection) {
       // Compare inspections to find new damages
-      const comparisons = await this.compareInspections(
-        moveInInspection.id,
-        moveOutInspectionId
-      );
+      const comparisons = await this.compareInspections(moveInInspection.id, moveOutInspectionId);
 
       for (const comparison of comparisons) {
         for (const damage of comparison.newDamages) {
@@ -495,19 +527,17 @@ export const inspectionsApi = {
       totalDeductions,
       refundAmount: originalDeposit - totalDeductions,
       deductions,
-      notes: deductions.length === 0
-        ? 'No damages found. Full deposit to be refunded.'
-        : `${deductions.length} deductions totalling R ${totalDeductions.toLocaleString()}`,
+      notes:
+        deductions.length === 0
+          ? 'No damages found. Full deposit to be refunded.'
+          : `${deductions.length} deductions totalling R ${totalDeductions.toLocaleString()}`,
     };
   },
 
   /**
    * Schedule move-in inspection for a new lease
    */
-  async scheduleMoveInInspection(
-    leaseId: string,
-    scheduledDate: string
-  ): Promise<Inspection> {
+  async scheduleMoveInInspection(leaseId: string, scheduledDate: string): Promise<Inspection> {
     // Get lease details
     const { data: lease, error: leaseError } = await supabase
       .from('leases')
@@ -532,10 +562,7 @@ export const inspectionsApi = {
   /**
    * Schedule move-out inspection for ending lease
    */
-  async scheduleMoveOutInspection(
-    leaseId: string,
-    scheduledDate: string
-  ): Promise<Inspection> {
+  async scheduleMoveOutInspection(leaseId: string, scheduledDate: string): Promise<Inspection> {
     // Get lease details
     const { data: lease, error: leaseError } = await supabase
       .from('leases')

@@ -23,8 +23,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/src/lib/supabase';
-import { depositInterestApi, DepositInterestSummary } from '@/src/features/deposits/api/depositInterest.api';
-import { depositRefundApi, DepositRefundStatus } from '@/src/features/deposits/api/depositRefund.api';
+import {
+  depositInterestApi,
+  DepositInterestSummary,
+} from '@/src/features/deposits/api/depositInterest.api';
+import {
+  depositRefundApi,
+  DepositRefundStatus,
+} from '@/src/features/deposits/api/depositRefund.api';
+import {
+  inspectionsApi,
+  InspectionComparison,
+} from '@/src/features/inspections/api/inspectionsApi';
 import { colors } from '@/src/shared/theme/colors';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 
@@ -46,7 +56,7 @@ interface DepositRecord {
 }
 
 const DEDUCTION_TYPES = ['cleaning', 'damages', 'unpaid_rent', 'key_replacement', 'other'] as const;
-type DeductionType = typeof DEDUCTION_TYPES[number];
+type DeductionType = (typeof DEDUCTION_TYPES)[number];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -75,6 +85,7 @@ export default function OwnerDepositManagementScreen() {
   const [deductionDesc, setDeductionDesc] = useState('');
   const [deductionAmount, setDeductionAmount] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [comparisons, setComparisons] = useState<Record<string, InspectionComparison[]>>({});
 
   useFocusEffect(
     useCallback(() => {
@@ -85,18 +96,22 @@ export default function OwnerDepositManagementScreen() {
   const loadDeposits = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
 
       const { data: leases, error } = await supabase
         .from('leases')
-        .select(`
+        .select(
+          `
           id, tenant_id, monthly_rent, deposit_amount, deposit_total_interest,
           deposit_refund_status, deposit_refund_deadline, status,
           property:properties!property_id(title, address),
           tenant:profiles!tenant_id(full_name)
-        `)
+        `
+        )
         .eq('owner_id', user.id)
         .gt('deposit_amount', 0)
         .order('status', { ascending: true });
@@ -138,10 +153,77 @@ export default function OwnerDepositManagementScreen() {
     if (summaries[leaseId]) return;
     try {
       const summary = await depositInterestApi.getInterestHistory(leaseId);
-      setSummaries(prev => ({ ...prev, [leaseId]: summary }));
+      setSummaries((prev) => ({ ...prev, [leaseId]: summary }));
     } catch (err) {
       console.error('Error loading interest summary:', err);
     }
+  };
+
+  /**
+   * Load inspection comparison (move-in vs move-out) for a lease.
+   * Shows damages found and estimated repair costs for deposit refund.
+   */
+  const loadInspectionComparison = async (leaseId: string) => {
+    if (comparisons[leaseId]) return;
+    try {
+      const [moveIn, moveOut] = await Promise.all([
+        inspectionsApi.getMoveInInspection(leaseId),
+        inspectionsApi.getMoveOutInspection(leaseId),
+      ]);
+      if (!moveIn || !moveOut) return;
+
+      const result = await inspectionsApi.compareInspections(moveIn.id, moveOut.id);
+      setComparisons((prev) => ({ ...prev, [leaseId]: result }));
+    } catch (err) {
+      console.error('Error loading inspection comparison:', err);
+      Alert.alert('Error', 'Failed to load inspection comparison. Please try again.');
+    }
+  };
+
+  /**
+   * Auto-propose deductions from inspection comparison damages.
+   */
+  const handleAutoDeductions = async (deposit: DepositRecord) => {
+    const comparison = comparisons[deposit.leaseId];
+    if (!comparison || !userId) return;
+
+    const damages = comparison.filter((c) => c.estimatedRepairCost > 0);
+    if (damages.length === 0) {
+      Alert.alert('No Deductions', 'No new damages found in the inspection comparison.');
+      return;
+    }
+
+    Alert.alert(
+      'Auto-Propose Deductions',
+      `${damages.length} room(s) with damage found. Total estimated: R ${damages.reduce((s, c) => s + c.estimatedRepairCost, 0).toLocaleString()}.\n\nThis will create individual deduction entries for each room.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Propose All',
+          onPress: async () => {
+            try {
+              for (const room of damages) {
+                await depositRefundApi.proposeDeduction({
+                  leaseId: deposit.leaseId,
+                  ownerId: userId,
+                  tenantId: deposit.tenantId,
+                  deductionType: 'damages',
+                  description: `${room.roomName}: ${room.newDamages.map((d) => d.description).join('; ')}`,
+                  amount: room.estimatedRepairCost,
+                });
+              }
+              Alert.alert(
+                'Done',
+                `${damages.length} deductions proposed. The tenant will be notified.`
+              );
+              loadDeposits();
+            } catch (err: any) {
+              Alert.alert('Error', err.message || 'Failed to propose deductions');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleExpand = (leaseId: string) => {
@@ -181,7 +263,10 @@ export default function OwnerDepositManagementScreen() {
         description: deductionDesc.trim(),
         amount,
       });
-      Alert.alert('Deduction Added', 'The tenant will be notified to respond to the proposed deduction.');
+      Alert.alert(
+        'Deduction Added',
+        'The tenant will be notified to respond to the proposed deduction.'
+      );
       setDeductionModal(null);
       loadDeposits();
     } catch (err: any) {
@@ -258,251 +343,354 @@ export default function OwnerDepositManagementScreen() {
 
   const totalDeposits = deposits.reduce((sum, d) => sum + d.depositAmount, 0);
   const totalInterest = deposits.reduce((sum, d) => sum + d.totalInterest, 0);
-  const overdueCount = deposits.filter(d => d.isOverdue).length;
+  const overdueCount = deposits.filter((d) => d.isOverdue).length;
 
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
-        </TouchableOpacity>
-        <Text style={styles.title}>Deposit Management</Text>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Summary Cards */}
-        <View style={styles.summaryRow}>
-          <View style={[styles.summaryCard, { flex: 1 }]}>
-            <Text style={styles.summaryLabel}>Total Held</Text>
-            <Text style={styles.summaryValue}>{formatZAR(totalDeposits)}</Text>
-          </View>
-          <View style={[styles.summaryCard, { flex: 1 }]}>
-            <Text style={styles.summaryLabel}>Interest Accrued</Text>
-            <Text style={[styles.summaryValue, { color: colors.role.owner.primary }]}>
-              {formatZAR(totalInterest)}
-            </Text>
-          </View>
-          {overdueCount > 0 && (
-            <View style={[styles.summaryCard, { flex: 1, borderColor: colors.rsa.red }]}>
-              <Text style={[styles.summaryLabel, { color: colors.rsa.red }]}>Overdue</Text>
-              <Text style={[styles.summaryValue, { color: colors.rsa.red }]}>{overdueCount}</Text>
-            </View>
-          )}
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+          </TouchableOpacity>
+          <Text style={styles.title}>Deposit Management</Text>
         </View>
 
-        {/* RHA Notice */}
-        <View style={styles.legalNotice}>
-          <Ionicons name="information-circle" size={16} color={colors.rsa.blue} />
-          <Text style={styles.legalText}>
-            RHA s5(3): All deposits must earn interest at the prescribed savings rate. Interest belongs to the tenant.
-          </Text>
-        </View>
-
-        {/* Deposit List */}
-        {deposits.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="wallet-outline" size={56} color={colors.gray[300]} />
-            <Text style={styles.emptyTitle}>No Deposits</Text>
-            <Text style={styles.emptySubtitle}>Deposits appear when leases are created with a deposit amount</Text>
-          </View>
-        ) : (
-          deposits.map((deposit) => {
-            const statusInfo = REFUND_STATUS_INFO[deposit.refundStatus] || REFUND_STATUS_INFO.not_applicable;
-            const isOpen = expanded === deposit.leaseId;
-            const summary = summaries[deposit.leaseId];
-
-            return (
-              <View key={deposit.leaseId} style={styles.depositCard}>
-                {/* Card Header */}
-                <TouchableOpacity
-                  style={styles.depositHeader}
-                  onPress={() => handleExpand(deposit.leaseId)}
-                >
-                  <View style={styles.depositHeaderLeft}>
-                    <Text style={styles.propertyName}>{deposit.propertyTitle}</Text>
-                    <Text style={styles.tenantName}>{deposit.tenantName}</Text>
-                    <View style={[styles.statusBadge, { backgroundColor: statusInfo.bg }]}>
-                      <Text style={[styles.statusText, { color: statusInfo.color }]}>
-                        {statusInfo.label}
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={styles.depositHeaderRight}>
-                    <Text style={styles.balanceLabel}>Balance</Text>
-                    <Text style={styles.balanceAmount}>{formatZAR(deposit.currentBalance)}</Text>
-                    <Ionicons
-                      name={isOpen ? 'chevron-up' : 'chevron-down'}
-                      size={20}
-                      color={colors.gray[400]}
-                    />
-                  </View>
-                </TouchableOpacity>
-
-                {/* Expanded Detail */}
-                {isOpen && (
-                  <View style={styles.depositDetail}>
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Principal Deposit</Text>
-                      <Text style={styles.detailValue}>{formatZAR(deposit.depositAmount)}</Text>
-                    </View>
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Interest Earned</Text>
-                      <Text style={[styles.detailValue, { color: colors.role.owner.primary }]}>
-                        + {formatZAR(deposit.totalInterest)}
-                      </Text>
-                    </View>
-                    <View style={[styles.detailRow, styles.detailRowTotal]}>
-                      <Text style={styles.detailLabelBold}>Total Balance</Text>
-                      <Text style={styles.detailValueBold}>{formatZAR(deposit.currentBalance)}</Text>
-                    </View>
-
-                    {deposit.refundDeadline && (
-                      <View style={styles.deadlineRow}>
-                        <Ionicons
-                          name={deposit.isOverdue ? 'alert-circle' : 'time'}
-                          size={16}
-                          color={deposit.isOverdue ? colors.rsa.red : '#D97706'}
-                        />
-                        <Text style={[styles.deadlineText, deposit.isOverdue && { color: colors.rsa.red }]}>
-                          Refund deadline: {new Date(deposit.refundDeadline).toLocaleDateString('en-ZA')}
-                          {deposit.isOverdue ? ' — OVERDUE!' : ''}
-                        </Text>
-                      </View>
-                    )}
-
-                    {/* Interest History */}
-                    {summary && summary.accruals.length > 0 && (
-                      <View style={styles.accrualSection}>
-                        <Text style={styles.accrualTitle}>
-                          Interest History ({(summary.annualRate * 100).toFixed(2)}% p.a.)
-                        </Text>
-                        {summary.accruals.slice(-3).map((a, i) => (
-                          <View key={i} style={styles.accrualRow}>
-                            <Text style={styles.accrualPeriod}>
-                              {new Date(a.periodStart).toLocaleDateString('en-ZA', { month: 'short', year: '2-digit' })}
-                            </Text>
-                            <Text style={styles.accrualAmount}>+ {formatZAR(a.interestEarned)}</Text>
-                          </View>
-                        ))}
-                      </View>
-                    )}
-
-                    {/* Actions */}
-                    {deposit.leaseStatus !== 'active' && deposit.refundStatus === 'not_applicable' && (
-                      <TouchableOpacity
-                        style={styles.actionButton}
-                        onPress={() => handleInitiateRefund(deposit.leaseId)}
-                      >
-                        <Ionicons name="arrow-undo-circle" size={18} color={colors.rsa.white} />
-                        <Text style={styles.actionButtonText}>Initiate Refund Process</Text>
-                      </TouchableOpacity>
-                    )}
-
-                    {(deposit.refundStatus === 'pending_inspection' || deposit.refundStatus === 'deductions_proposed') && (
-                      <View style={styles.refundActionsRow}>
-                        <TouchableOpacity
-                          style={styles.deductionButton}
-                          onPress={() => handleOpenDeductionModal(deposit)}
-                        >
-                          <Ionicons name="remove-circle-outline" size={16} color={colors.rsa.red} />
-                          <Text style={styles.deductionButtonText}>Add Deduction</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.finaliseButton}
-                          onPress={() => handleProcessRefund(deposit)}
-                        >
-                          <Ionicons name="checkmark-done" size={16} color={colors.rsa.white} />
-                          <Text style={styles.finaliseButtonText}>Finalise Refund</Text>
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                  </View>
-                )}
-              </View>
-            );
-          })
-        )}
-      </ScrollView>
-
-      {/* Add Deduction Modal */}
-      <Modal
-        visible={!!deductionModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setDeductionModal(null)}
-      >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setDeductionModal(null)}>
-              <Ionicons name="close" size={24} color={colors.text.primary} />
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>Add Deposit Deduction</Text>
-            <View style={{ width: 24 }} />
-          </View>
-          <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
-            <Text style={styles.modalSubtitle}>
-              {deductionModal?.tenantName} · {deductionModal?.propertyTitle}
-            </Text>
-            <Text style={styles.fieldLabel}>Deduction Type</Text>
-            <View style={styles.typeGrid}>
-              {DEDUCTION_TYPES.map((type) => (
-                <TouchableOpacity
-                  key={type}
-                  style={[styles.typeChip, deductionType === type && styles.typeChipActive]}
-                  onPress={() => setDeductionType(type)}
-                >
-                  <Text style={[styles.typeChipText, deductionType === type && styles.typeChipTextActive]}>
-                    {type.replace(/_/g, ' ')}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+        <ScrollView contentContainerStyle={styles.content}>
+          {/* Summary Cards */}
+          <View style={styles.summaryRow}>
+            <View style={[styles.summaryCard, { flex: 1 }]}>
+              <Text style={styles.summaryLabel}>Total Held</Text>
+              <Text style={styles.summaryValue}>{formatZAR(totalDeposits)}</Text>
             </View>
-            <Text style={styles.fieldLabel}>Description *</Text>
-            <TextInput
-              style={[styles.modalInput, styles.modalInputMulti]}
-              value={deductionDesc}
-              onChangeText={setDeductionDesc}
-              placeholder="e.g. Carpet damage in living room — replacement cost"
-              placeholderTextColor={colors.gray[400]}
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-            />
-            <Text style={styles.fieldLabel}>Amount (R) *</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={deductionAmount}
-              onChangeText={setDeductionAmount}
-              keyboardType="numeric"
-              placeholder="e.g. 2500"
-              placeholderTextColor={colors.gray[400]}
-            />
-            <View style={styles.legalNotice}>
-              <Ionicons name="information-circle" size={16} color={colors.rsa.blue} />
-              <Text style={styles.legalText}>
-                RHA s5(4): Deductions must be for actual damage beyond fair wear and tear.
-                Tenant has 14 days to respond.
+            <View style={[styles.summaryCard, { flex: 1 }]}>
+              <Text style={styles.summaryLabel}>Interest Accrued</Text>
+              <Text style={[styles.summaryValue, { color: colors.role.owner.primary }]}>
+                {formatZAR(totalInterest)}
               </Text>
             </View>
-            <TouchableOpacity
-              style={[styles.actionButton, submitting && { opacity: 0.5 }]}
-              onPress={handleSubmitDeduction}
-              disabled={submitting}
+            {overdueCount > 0 && (
+              <View style={[styles.summaryCard, { flex: 1, borderColor: colors.rsa.red }]}>
+                <Text style={[styles.summaryLabel, { color: colors.rsa.red }]}>Overdue</Text>
+                <Text style={[styles.summaryValue, { color: colors.rsa.red }]}>{overdueCount}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* RHA Notice */}
+          <View style={styles.legalNotice}>
+            <Ionicons name="information-circle" size={16} color={colors.rsa.blue} />
+            <Text style={styles.legalText}>
+              RHA s5(3): All deposits must earn interest at the prescribed savings rate. Interest
+              belongs to the tenant.
+            </Text>
+          </View>
+
+          {/* Deposit List */}
+          {deposits.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="wallet-outline" size={56} color={colors.gray[300]} />
+              <Text style={styles.emptyTitle}>No Deposits</Text>
+              <Text style={styles.emptySubtitle}>
+                Deposits appear when leases are created with a deposit amount
+              </Text>
+            </View>
+          ) : (
+            deposits.map((deposit) => {
+              const statusInfo =
+                REFUND_STATUS_INFO[deposit.refundStatus] || REFUND_STATUS_INFO.not_applicable;
+              const isOpen = expanded === deposit.leaseId;
+              const summary = summaries[deposit.leaseId];
+
+              return (
+                <View key={deposit.leaseId} style={styles.depositCard}>
+                  {/* Card Header */}
+                  <TouchableOpacity
+                    style={styles.depositHeader}
+                    onPress={() => handleExpand(deposit.leaseId)}
+                  >
+                    <View style={styles.depositHeaderLeft}>
+                      <Text style={styles.propertyName}>{deposit.propertyTitle}</Text>
+                      <Text style={styles.tenantName}>{deposit.tenantName}</Text>
+                      <View style={[styles.statusBadge, { backgroundColor: statusInfo.bg }]}>
+                        <Text style={[styles.statusText, { color: statusInfo.color }]}>
+                          {statusInfo.label}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.depositHeaderRight}>
+                      <Text style={styles.balanceLabel}>Balance</Text>
+                      <Text style={styles.balanceAmount}>{formatZAR(deposit.currentBalance)}</Text>
+                      <Ionicons
+                        name={isOpen ? 'chevron-up' : 'chevron-down'}
+                        size={20}
+                        color={colors.gray[400]}
+                      />
+                    </View>
+                  </TouchableOpacity>
+
+                  {/* Expanded Detail */}
+                  {isOpen && (
+                    <View style={styles.depositDetail}>
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>Principal Deposit</Text>
+                        <Text style={styles.detailValue}>{formatZAR(deposit.depositAmount)}</Text>
+                      </View>
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>Interest Earned</Text>
+                        <Text style={[styles.detailValue, { color: colors.role.owner.primary }]}>
+                          + {formatZAR(deposit.totalInterest)}
+                        </Text>
+                      </View>
+                      <View style={[styles.detailRow, styles.detailRowTotal]}>
+                        <Text style={styles.detailLabelBold}>Total Balance</Text>
+                        <Text style={styles.detailValueBold}>
+                          {formatZAR(deposit.currentBalance)}
+                        </Text>
+                      </View>
+
+                      {deposit.refundDeadline && (
+                        <View style={styles.deadlineRow}>
+                          <Ionicons
+                            name={deposit.isOverdue ? 'alert-circle' : 'time'}
+                            size={16}
+                            color={deposit.isOverdue ? colors.rsa.red : '#D97706'}
+                          />
+                          <Text
+                            style={[
+                              styles.deadlineText,
+                              deposit.isOverdue && { color: colors.rsa.red },
+                            ]}
+                          >
+                            Refund deadline:{' '}
+                            {new Date(deposit.refundDeadline).toLocaleDateString('en-ZA')}
+                            {deposit.isOverdue ? ' — OVERDUE!' : ''}
+                          </Text>
+                        </View>
+                      )}
+
+                      {/* Inspection Comparison — move-in vs move-out */}
+                      {(deposit.refundStatus === 'pending_inspection' ||
+                        deposit.refundStatus === 'deductions_proposed') && (
+                        <View style={styles.comparisonSection}>
+                          <View style={styles.comparisonHeader}>
+                            <Ionicons
+                              name="git-compare-outline"
+                              size={16}
+                              color={colors.rsa.blue}
+                            />
+                            <Text style={styles.comparisonTitle}>Inspection Comparison</Text>
+                          </View>
+                          {!comparisons[deposit.leaseId] ? (
+                            <TouchableOpacity
+                              style={styles.loadComparisonBtn}
+                              onPress={() => loadInspectionComparison(deposit.leaseId)}
+                            >
+                              <Text style={styles.loadComparisonText}>
+                                Load move-in vs move-out
+                              </Text>
+                            </TouchableOpacity>
+                          ) : comparisons[deposit.leaseId].length === 0 ? (
+                            <Text style={styles.noDamagesText}>
+                              No inspection data available for comparison
+                            </Text>
+                          ) : (
+                            <>
+                              {comparisons[deposit.leaseId].map((room, idx) => (
+                                <View key={idx} style={styles.roomComparison}>
+                                  <View style={styles.roomHeader}>
+                                    <Text style={styles.roomName}>{room.roomName}</Text>
+                                    {room.estimatedRepairCost > 0 && (
+                                      <View style={styles.costBadge}>
+                                        <Text style={styles.costBadgeText}>
+                                          R {room.estimatedRepairCost.toLocaleString()}
+                                        </Text>
+                                      </View>
+                                    )}
+                                  </View>
+                                  {room.newDamages.length > 0 && (
+                                    <View style={styles.damagesList}>
+                                      {room.newDamages.map((d, di) => (
+                                        <Text key={di} style={styles.damageItem}>
+                                          • {d.description}
+                                          {d.estimatedCost
+                                            ? ` (R ${d.estimatedCost.toLocaleString()})`
+                                            : ''}
+                                        </Text>
+                                      ))}
+                                    </View>
+                                  )}
+                                  {room.newDamages.length === 0 && (
+                                    <Text style={styles.noDamageItem}>No new damage</Text>
+                                  )}
+                                </View>
+                              ))}
+                              {comparisons[deposit.leaseId].some(
+                                (c) => c.estimatedRepairCost > 0
+                              ) && (
+                                <TouchableOpacity
+                                  style={styles.autoDeductBtn}
+                                  onPress={() => handleAutoDeductions(deposit)}
+                                >
+                                  <Ionicons name="flash" size={16} color={colors.rsa.white} />
+                                  <Text style={styles.autoDeductText}>Auto-Propose Deductions</Text>
+                                </TouchableOpacity>
+                              )}
+                            </>
+                          )}
+                        </View>
+                      )}
+
+                      {/* Interest History */}
+                      {summary && summary.accruals.length > 0 && (
+                        <View style={styles.accrualSection}>
+                          <Text style={styles.accrualTitle}>
+                            Interest History ({(summary.annualRate * 100).toFixed(2)}% p.a.)
+                          </Text>
+                          {summary.accruals.slice(-3).map((a, i) => (
+                            <View key={i} style={styles.accrualRow}>
+                              <Text style={styles.accrualPeriod}>
+                                {new Date(a.periodStart).toLocaleDateString('en-ZA', {
+                                  month: 'short',
+                                  year: '2-digit',
+                                })}
+                              </Text>
+                              <Text style={styles.accrualAmount}>
+                                + {formatZAR(a.interestEarned)}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+
+                      {/* Actions */}
+                      {deposit.leaseStatus !== 'active' &&
+                        deposit.refundStatus === 'not_applicable' && (
+                          <TouchableOpacity
+                            style={styles.actionButton}
+                            onPress={() => handleInitiateRefund(deposit.leaseId)}
+                          >
+                            <Ionicons name="arrow-undo-circle" size={18} color={colors.rsa.white} />
+                            <Text style={styles.actionButtonText}>Initiate Refund Process</Text>
+                          </TouchableOpacity>
+                        )}
+
+                      {(deposit.refundStatus === 'pending_inspection' ||
+                        deposit.refundStatus === 'deductions_proposed') && (
+                        <View style={styles.refundActionsRow}>
+                          <TouchableOpacity
+                            style={styles.deductionButton}
+                            onPress={() => handleOpenDeductionModal(deposit)}
+                          >
+                            <Ionicons
+                              name="remove-circle-outline"
+                              size={16}
+                              color={colors.rsa.red}
+                            />
+                            <Text style={styles.deductionButtonText}>Add Deduction</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.finaliseButton}
+                            onPress={() => handleProcessRefund(deposit)}
+                          >
+                            <Ionicons name="checkmark-done" size={16} color={colors.rsa.white} />
+                            <Text style={styles.finaliseButtonText}>Finalise Refund</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                </View>
+              );
+            })
+          )}
+        </ScrollView>
+
+        {/* Add Deduction Modal */}
+        <Modal
+          visible={!!deductionModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setDeductionModal(null)}
+        >
+          <SafeAreaView style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setDeductionModal(null)}>
+                <Ionicons name="close" size={24} color={colors.text.primary} />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Add Deposit Deduction</Text>
+              <View style={{ width: 24 }} />
+            </View>
+            <ScrollView
+              contentContainerStyle={styles.modalContent}
+              keyboardShouldPersistTaps="handled"
             >
-              {submitting ? (
-                <ActivityIndicator size="small" color={colors.rsa.white} />
-              ) : (
-                <>
-                  <Ionicons name="add-circle" size={18} color={colors.rsa.white} />
-                  <Text style={styles.actionButtonText}>Submit Deduction</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
+              <Text style={styles.modalSubtitle}>
+                {deductionModal?.tenantName} · {deductionModal?.propertyTitle}
+              </Text>
+              <Text style={styles.fieldLabel}>Deduction Type</Text>
+              <View style={styles.typeGrid}>
+                {DEDUCTION_TYPES.map((type) => (
+                  <TouchableOpacity
+                    key={type}
+                    style={[styles.typeChip, deductionType === type && styles.typeChipActive]}
+                    onPress={() => setDeductionType(type)}
+                  >
+                    <Text
+                      style={[
+                        styles.typeChipText,
+                        deductionType === type && styles.typeChipTextActive,
+                      ]}
+                    >
+                      {type.replace(/_/g, ' ')}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={styles.fieldLabel}>Description *</Text>
+              <TextInput
+                style={[styles.modalInput, styles.modalInputMulti]}
+                value={deductionDesc}
+                onChangeText={setDeductionDesc}
+                placeholder="e.g. Carpet damage in living room — replacement cost"
+                placeholderTextColor={colors.gray[400]}
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+              />
+              <Text style={styles.fieldLabel}>Amount (R) *</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={deductionAmount}
+                onChangeText={setDeductionAmount}
+                keyboardType="numeric"
+                placeholder="e.g. 2500"
+                placeholderTextColor={colors.gray[400]}
+              />
+              <View style={styles.legalNotice}>
+                <Ionicons name="information-circle" size={16} color={colors.rsa.blue} />
+                <Text style={styles.legalText}>
+                  RHA s5(4): Deductions must be for actual damage beyond fair wear and tear. Tenant
+                  has 14 days to respond.
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.actionButton, submitting && { opacity: 0.5 }]}
+                onPress={handleSubmitDeduction}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <ActivityIndicator size="small" color={colors.rsa.white} />
+                ) : (
+                  <>
+                    <Ionicons name="add-circle" size={18} color={colors.rsa.white} />
+                    <Text style={styles.actionButtonText}>Submit Deduction</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -732,6 +920,98 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.role.owner.primary,
     fontWeight: '600',
+  },
+  comparisonSection: {
+    marginTop: 8,
+    backgroundColor: colors.background.secondary,
+    borderRadius: 8,
+    padding: 12,
+  },
+  comparisonHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
+  comparisonTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.rsa.blue,
+  },
+  loadComparisonBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    backgroundColor: colors.rsa.blue + '10',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.rsa.blue + '30',
+    alignItems: 'center',
+  },
+  loadComparisonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.rsa.blue,
+  },
+  noDamagesText: {
+    fontSize: 13,
+    color: colors.text.secondary,
+    fontStyle: 'italic',
+  },
+  roomComparison: {
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.default,
+  },
+  roomHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  roomName: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.text.primary,
+  },
+  costBadge: {
+    backgroundColor: colors.rsa.red + '15',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  costBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.rsa.red,
+  },
+  damagesList: {
+    marginTop: 4,
+    paddingLeft: 8,
+  },
+  damageItem: {
+    fontSize: 12,
+    color: colors.text.secondary,
+    lineHeight: 18,
+  },
+  noDamageItem: {
+    fontSize: 12,
+    color: colors.text.tertiary,
+    fontStyle: 'italic',
+    marginTop: 2,
+  },
+  autoDeductBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: colors.rsa.blue,
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 10,
+  },
+  autoDeductText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.rsa.white,
   },
   actionButton: {
     flexDirection: 'row',
