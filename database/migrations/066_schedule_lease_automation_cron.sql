@@ -7,22 +7,20 @@
 -- Supabase secrets. vault.decrypt_secret reads them at cron execution
 -- time so they never appear in plain text in pg_cron.
 
-DO $$
+DO $block$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vault') THEN
     PERFORM cron.schedule(
       'process-lease-automation',
       '0 6 * * *',
-      format(
-        $$SELECT net.http_post(
+      $query$SELECT net.http_post(
           url    := vault.decrypt_secret('SUPABASE_URL') || '/functions/v1/process-lease-automation',
           headers := jsonb_build_object(
             'Content-Type', 'application/json',
             'Authorization', 'Bearer ' || vault.decrypt_secret('SUPABASE_SERVICE_ROLE_KEY')
           ),
           body := '{"trigger": "cron"}'::jsonb
-        );$$
-      )
+        );$query$
     );
     RAISE NOTICE '✅ process-lease-automation cron scheduled (daily 06:00 UTC)';
   ELSE
@@ -33,4 +31,4 @@ BEGIN
                    'Fix: enable vault extension (CREATE EXTENSION IF NOT EXISTS vault) '
                    'and set SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY secrets.';
   END IF;
-END $$;
+END $block$;
