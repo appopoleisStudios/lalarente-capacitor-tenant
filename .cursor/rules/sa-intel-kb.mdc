@@ -1,0 +1,34 @@
+---
+description: SA reviews must ground findings in Intel DB (books/articles) + SA rental skill
+alwaysApply: true
+---
+
+# SA reviews — consult Intel KB
+
+When acting as **SA** (PR review, security/architecture audit, merge go/no-go) for LalaRente:
+
+## Mandatory grounding (before APPROVE / REQUEST CHANGES)
+
+1. **SA rental skill** — `ai-router/lalarente/sa-rental-property-mgmt/` (CPA/RHA/FICA/deposit/lease rules). Use for legal/compliance claims on SA rental features.
+2. **Intel DB books/articles KB** — `intel.agent_intel` on project `zgtrjnmmylwsukdeokzk` (~31k rows; `source_type=book` ~1.4k). Prefer books + security/article domains over Twitter signal for engineering standards.
+
+## How to query (do not ask the user for keys)
+
+```bash
+# Service key: /Volumes/ExternalSD/Development/ai-router/.env → SUPABASE_SERVICE_KEY
+# Schema: intel  |  RPC: match_agent_intel  |  REST: Accept-Profile: intel
+```
+
+- Keyword/filter REST: `GET /rest/v1/agent_intel?source_type=eq.book&…` with `Accept-Profile: intel` + service key.
+- Semantic: `POST /rest/v1/rpc/match_agent_intel` (or Hermes `search_intel_semantic` / books path in `sme_academy.py`).
+- Memory map: `~/.claude/projects/-Volumes-ExternalSD-Development/memory/db-schema.md` (INTEL SCHEMA).
+
+## When reviewing, query for topics that match the PR
+
+Examples: cron/job auth, idempotency / exactly-once, service-role gates, RLS, deposit refunds, lease expiry notice, FICA/KYC, webhook verification.
+
+Cite KB topic/book (or skill section) in the SA comment when a finding rests on standard practice or SA law — not vibes alone.
+
+## Plane access (related)
+
+Plane: `https://plane.appopoleis.com` — token + workspace in `reference_plane.md` / research-agent `.env`. Do not claim “no Plane access.”
