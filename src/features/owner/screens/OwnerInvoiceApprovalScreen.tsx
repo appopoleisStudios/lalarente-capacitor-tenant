@@ -7,6 +7,7 @@ import {
 } from '@/src/features/maintenance/api';
 import { colors } from '@/src/shared/theme/colors';
 import { FeaturePin } from '@/src/shared/components';
+import { InvoiceTalkBar } from '@/src/features/maintenance/components';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -149,6 +150,7 @@ export default function OwnerInvoiceApprovalScreen() {
     rejected: { label: 'Rejected', color: colors.error[500], bg: colors.error[50] },
     paid: { label: 'Paid', color: colors.success[700], bg: colors.success[50] },
     cancelled: { label: 'Cancelled', color: colors.gray[500], bg: colors.gray[100] },
+    disputed: { label: 'With LalaRente', color: '#7C3AED', bg: '#F5F3FF' },
   };
 
   const renderInvoice = (invoice: MaintenanceInvoice) => {
@@ -216,6 +218,8 @@ export default function OwnerInvoiceApprovalScreen() {
             <Text style={styles.rejectionText}>{invoice.rejection_reason}</Text>
           </View>
         )}
+
+        <InvoiceTalkBar invoice={invoice} role="owner" accent={RSA.blue} onChanged={loadInvoices} />
 
         {/* Actions */}
         {invoice.status === 'submitted' && (

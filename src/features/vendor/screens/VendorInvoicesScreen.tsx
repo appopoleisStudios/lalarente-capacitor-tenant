@@ -97,6 +97,12 @@ export default function VendorInvoicesScreen() {
         bg: colors.success[50],
         icon: 'cash-outline',
       },
+      disputed: {
+        label: 'With LalaRente',
+        color: '#7C3AED',
+        bg: '#F5F3FF',
+        icon: 'shield-checkmark-outline',
+      },
       cancelled: {
         label: 'Cancelled',
         color: colors.gray[500],

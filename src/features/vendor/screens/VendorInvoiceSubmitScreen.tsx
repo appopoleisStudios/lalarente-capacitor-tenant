@@ -8,6 +8,7 @@ import {
   type MaintenanceInvoice,
 } from '@/src/features/maintenance/api';
 import { colors } from '@/src/shared/theme/colors';
+import { InvoiceTalkBar } from '@/src/features/maintenance/components';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -75,15 +76,13 @@ export default function VendorInvoiceSubmitScreen() {
       if (abortRef.current?.signal.aborted) return;
       setRequest(req);
 
-      // If editing a rejected invoice, load it and populate the form
+      const invoices = await getInvoicesByRequest(id);
       if (editParam) {
-        const invoices = await getInvoicesByRequest(id);
         const target = invoices.find((inv) => inv.id === editParam && inv.status === 'rejected');
         if (target) {
           setExistingInvoice(target);
           setNotes(target.notes || '');
           setPayerRole(target.payer_role || 'owner');
-          // Populate line items from the rejected invoice
           const items: LineItemEntry[] = (target.line_items || []).map((li: any, i: number) => ({
             key: `resubmit_${i}`,
             description: li.description || '',
@@ -94,9 +93,17 @@ export default function VendorInvoiceSubmitScreen() {
             setLineItems(items);
           }
         } else {
-          // Invoice was already approved/paid — fall back to fresh submit
           setIsResubmit(false);
+          const talkable = invoices.find((inv) =>
+            ['submitted', 'rejected', 'disputed'].includes(inv.status)
+          );
+          if (talkable) setExistingInvoice(talkable);
         }
+      } else {
+        const talkable = invoices.find((inv) =>
+          ['submitted', 'rejected', 'disputed'].includes(inv.status)
+        );
+        if (talkable) setExistingInvoice(talkable);
       }
     } catch (error: any) {
       console.error('Error loading request:', error);
@@ -352,6 +359,15 @@ export default function VendorInvoiceSubmitScreen() {
               <Text style={styles.totalValueFinal}>{formatCurrency(totals.total)}</Text>
             </View>
           </View>
+
+          {existingInvoice && (
+            <InvoiceTalkBar
+              invoice={existingInvoice}
+              role="vendor"
+              accent={RSA.blue}
+              onChanged={loadRequest}
+            />
+          )}
 
           {/* Rejection reason banner (resubmit mode) */}
           {isResubmit && existingInvoice?.rejection_reason && (
