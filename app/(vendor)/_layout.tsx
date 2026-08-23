@@ -158,6 +158,12 @@ export default function VendorLayout() {
         }}
       />
       <Tabs.Screen
+        name="jobs/mediation"
+        options={{
+          href: null, // Hidden from tabs — closure dispute thread (Plane #103)
+        }}
+      />
+      <Tabs.Screen
         name="jobs/[id]/progress-update"
         options={{
           href: null, // Hidden from tabs - progress update form

@@ -128,6 +128,12 @@ export default function OwnerLayout() {
         }}
       />
       <Tabs.Screen
+        name="maintenance/mediation"
+        options={{
+          href: null, // Hidden from tabs — closure dispute thread (Plane #103)
+        }}
+      />
+      <Tabs.Screen
         name="maintenance/[id]/po/[poId]"
         options={{
           href: null, // Hidden from tabs - PO detail screen

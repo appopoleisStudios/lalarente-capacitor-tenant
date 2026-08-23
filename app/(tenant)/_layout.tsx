@@ -163,6 +163,12 @@ export default function TenantLayout() {
         }}
       />
       <Tabs.Screen
+        name="maintenance/mediation"
+        options={{
+          href: null, // Hidden from tabs — closure dispute thread (Plane #103)
+        }}
+      />
+      <Tabs.Screen
         name="maintenance/closure-confirm"
         options={{
           href: null, // Hidden from tabs - tenant confirms completed work with photos

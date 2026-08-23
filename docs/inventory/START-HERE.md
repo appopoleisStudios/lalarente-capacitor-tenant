@@ -94,16 +94,18 @@ Renewals, early termination, move-out inspection, deposit refund (refund math ex
 
 These were planned. The screens still **look** like they work. They do not call a real company.
 
-| You thought you had                                          | What is really there                                                                                                                                |
-| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Background check + credit check before a lease**           | Badges on the application and FICA tab. Buttons/API only set status to “pending”. **No TPN / TransUnion / anyone.** Owner can still create a lease. |
-| **ID verification (Onfido / Smile)**                         | Same: status only.                                                                                                                                  |
-| **TPN RentCheck**                                            | Mentioned in an old 2026 write-up. Not in the app.                                                                                                  |
-| **SigniFlow e-sign**                                         | People sign in the app with a drawing pad. Not SigniFlow.                                                                                           |
-| **PayProp trust account**                                    | Not built.                                                                                                                                          |
-| **Put listings on Property24**                               | Not built.                                                                                                                                          |
-| **FICA “start identity / credit / background”**              | You can see “Not started”. You cannot start it.                                                                                                     |
-| **Compare move-in vs move-out inspection to refund deposit** | Code exists. No screen uses it.                                                                                                                     |
+| You thought you had                                          | What is really there                                                                                                                                                                                |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Background check + credit check before a lease**           | Owner can **mark** identity/credit/background complete or failed after reviewing documents offline (Plane #98/#101). **No TPN / TransUnion / Onfido call.** Create lease is still not bureau-gated. |
+| **Compare move-in vs move-out inspection to refund deposit** | Owner deposit screen can compare inspections and auto-propose deductions (Plane #100).                                                                                                              |
+| **Lease auto-renew / rent increase / expiry notice**         | Daily `process-lease-automation` cron (Plane #102).                                                                                                                                                 |
+| **ID verification (Onfido / Smile)**                         | Same: status only.                                                                                                                                                                                  |
+| **TPN RentCheck**                                            | Mentioned in an old 2026 write-up. Not in the app.                                                                                                                                                  |
+| **SigniFlow e-sign**                                         | People sign in the app with a drawing pad. Not SigniFlow.                                                                                                                                           |
+| **PayProp trust account**                                    | Not built.                                                                                                                                                                                          |
+| **Put listings on Property24**                               | Not built.                                                                                                                                                                                          |
+| **FICA “start identity / credit / background”**              | Start is still not a bureau. Owner **Mark complete / failed** is the product until TPN ships.                                                                                                       |
+| **SigniFlow e-sign**                                         | People sign in the app with a drawing pad. Not SigniFlow.                                                                                                                                           |
 
 PayFast **is** real now (rent and pay-vendor). An old document still says “no payment gateway” — that document is out of date.
 
@@ -119,7 +121,7 @@ The app is large on purpose: inspections alone are ~80 checklist items per visit
 - let Lala draft/remind, with you confirming money, or
 - **revive** a fake piece (screening) or **admit it is not a product yet**
 
-Lala today only **talks**. It cannot run checks, quotes, or inspections.
+Lala uses **lookup** (live rows) and **how_this_app_works** (where to tap). It still cannot pay money or run a credit bureau.
 
 ---
 

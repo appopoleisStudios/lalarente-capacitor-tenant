@@ -1,22 +1,22 @@
 import { useAuth } from '@/src/contexts/AuthContext';
 import {
-    getPOByRequestId,
-    getProgressUpdates,
-    startWork,
-    type PurchaseOrder,
+  getPOByRequestId,
+  getProgressUpdates,
+  startWork,
+  type PurchaseOrder,
 } from '@/src/features/maintenance/api';
 import { colors } from '@/src/shared/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -68,7 +68,9 @@ export default function VendorJobDetailScreen() {
 
       // Fetch PO details if available
       if (jobData?.po_id) {
-        const poData = await getPOByRequestId(id) || await (await import('@/src/features/maintenance/api')).getPOById(jobData.po_id);
+        const poData =
+          (await getPOByRequestId(id)) ||
+          (await (await import('@/src/features/maintenance/api')).getPOById(jobData.po_id));
         setPO(poData);
       }
 
@@ -78,12 +80,9 @@ export default function VendorJobDetailScreen() {
         setProgressUpdates(updates);
       }
 
-      // Fetch closure report if closure requested
-      if (jobData?.closure_requested_at) {
-        const { getClosureReport } = await import('@/src/features/maintenance/api');
-        const closure = await getClosureReport(id);
-        setClosureReport(closure);
-      }
+      const { getClosureReport } = await import('@/src/features/maintenance/api');
+      const closure = await getClosureReport(id);
+      setClosureReport(closure);
     } catch (error: any) {
       console.error('Error fetching job details:', error);
       Alert.alert('Error', 'Failed to load job details');
@@ -108,16 +107,16 @@ export default function VendorJobDetailScreen() {
     const updateTimers = () => {
       try {
         const now = new Date();
-        
+
         // Try to parse the date - handle different formats
         let startDateTime: Date;
-        
+
         if (po.scheduled_start_date?.includes('T')) {
           startDateTime = new Date(po.scheduled_start_date);
         } else {
           startDateTime = new Date(`${po.scheduled_start_date}T${po.scheduled_start_time}`);
         }
-        
+
         // Check if date is valid
         if (isNaN(startDateTime.getTime())) {
           console.warn('⚠️ Invalid date in timer, showing ready');
@@ -125,15 +124,15 @@ export default function VendorJobDetailScreen() {
           setTimeUntilEnd('TBD');
           return;
         }
-        
+
         const diffStart = startDateTime.getTime() - now.getTime();
-        
+
         if (diffStart > 0) {
           // Time is in the future
           const days = Math.floor(diffStart / (1000 * 60 * 60 * 24));
           const hours = Math.floor((diffStart % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
           const minutes = Math.floor((diffStart % (1000 * 60 * 60)) / (1000 * 60));
-          
+
           if (days > 0) {
             setTimeUntilStart(`in ${days}d ${hours}h`);
           } else if (hours > 0) {
@@ -176,38 +175,32 @@ export default function VendorJobDetailScreen() {
   };
 
   const handleStartWork = () => {
-    Alert.alert(
-      '🚀 Start Work',
-      'Ready to begin? Make sure you have everything you need!',
-      [
-        { text: 'Not Yet', style: 'cancel' },
-        {
-          text: 'Start Now',
-          onPress: async () => {
-            try {
-              if (!user?.id) {
-                throw new Error('User not authenticated');
-              }
-
-              console.log('🚀 Starting work on job:', id);
-              await startWork(id, user.id);
-              
-              // Refresh job details to show updated status
-              await fetchJobDetails();
-              
-              Alert.alert(
-                '✅ Success!',
-                'Work started! Remember to submit daily progress updates.',
-                [{ text: 'Got it!' }]
-              );
-            } catch (error: any) {
-              console.error('❌ Error starting work:', error);
-              Alert.alert('Error', error.message || 'Failed to start work');
+    Alert.alert('🚀 Start Work', 'Ready to begin? Make sure you have everything you need!', [
+      { text: 'Not Yet', style: 'cancel' },
+      {
+        text: 'Start Now',
+        onPress: async () => {
+          try {
+            if (!user?.id) {
+              throw new Error('User not authenticated');
             }
-          },
+
+            console.log('🚀 Starting work on job:', id);
+            await startWork(id, user.id);
+
+            // Refresh job details to show updated status
+            await fetchJobDetails();
+
+            Alert.alert('✅ Success!', 'Work started! Remember to submit daily progress updates.', [
+              { text: 'Got it!' },
+            ]);
+          } catch (error: any) {
+            console.error('❌ Error starting work:', error);
+            Alert.alert('Error', error.message || 'Failed to start work');
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleDailyUpdate = () => {
@@ -247,7 +240,7 @@ export default function VendorJobDetailScreen() {
   // Requirements: PO sent to vendor AND scheduled start time has arrived AND status is 'assigned'
   const now = new Date();
   let canStartWork = false;
-  
+
   console.log('🔍 Job Detail Debug:', {
     jobId: job.id,
     jobStatus: job.status,
@@ -257,13 +250,13 @@ export default function VendorJobDetailScreen() {
     scheduledTime: po?.scheduled_start_time,
     currentTime: now.toISOString(),
   });
-  
+
   if (po?.sent_to_vendor_at && job.status === 'assigned') {
     if (po.scheduled_start_date && po.scheduled_start_time) {
       try {
         // Try to parse the date - handle different formats
         let startDateTime: Date;
-        
+
         // Check if scheduled_start_date is already a full timestamp
         if (po.scheduled_start_date.includes('T')) {
           startDateTime = new Date(po.scheduled_start_date);
@@ -271,7 +264,7 @@ export default function VendorJobDetailScreen() {
           // Combine date and time
           startDateTime = new Date(`${po.scheduled_start_date}T${po.scheduled_start_time}`);
         }
-        
+
         // Check if date is valid
         if (isNaN(startDateTime.getTime())) {
           console.warn('⚠️ Invalid date format, allowing start:', {
@@ -308,10 +301,11 @@ export default function VendorJobDetailScreen() {
       statusIsAssigned: job.status === 'assigned',
     });
   }
-  
+
   const isWorkStarted = job.status === 'in_progress';
-  const isWaitingForScheduledTime = po?.sent_to_vendor_at && job.status === 'assigned' && !canStartWork;
-  
+  const isWaitingForScheduledTime =
+    po?.sent_to_vendor_at && job.status === 'assigned' && !canStartWork;
+
   console.log('📊 Final state:', {
     canStartWork,
     isWorkStarted,
@@ -322,10 +316,7 @@ export default function VendorJobDetailScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          onPress={() => router.back()} 
-          style={styles.headerButton}
-        >
+        <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
           <Ionicons name="arrow-back" size={24} color="#111827" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Job Details</Text>
@@ -333,6 +324,24 @@ export default function VendorJobDetailScreen() {
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {closureReport?.mediation_required ? (
+          <TouchableOpacity
+            style={{
+              marginHorizontal: 16,
+              marginTop: 12,
+              backgroundColor: '#FEF3C7',
+              borderRadius: 12,
+              padding: 14,
+            }}
+            onPress={() => router.push(`/(vendor)/jobs/mediation?requestId=${id}`)}
+            testID="vendor-open-mediation"
+          >
+            <Text style={{ fontWeight: '700', color: '#92400E' }}>Job in mediation</Text>
+            <Text style={{ color: '#92400E', marginTop: 4 }}>
+              The tenant rejected this job three times. Open the three-party thread.
+            </Text>
+          </TouchableOpacity>
+        ) : null}
         {/* Timeline */}
         <View style={styles.timelineContainer}>
           <Text style={styles.timelineTitle}>📍 Step 4 of 7: Ready to Work</Text>
@@ -406,14 +415,15 @@ export default function VendorJobDetailScreen() {
                       weekday: 'short',
                       day: 'numeric',
                       month: 'short',
-                    })} at {po.scheduled_start_time}
+                    })}{' '}
+                    at {po.scheduled_start_time}
                   </Text>
                   <Text style={styles.timingCountdown}>{timeUntilStart}</Text>
                 </View>
               </View>
-              
+
               <View style={styles.timingDivider} />
-              
+
               <View style={styles.timingRow}>
                 <View style={styles.timingIcon}>
                   <Ionicons name="stop-circle" size={24} color={RSA.red} />
@@ -432,9 +442,7 @@ export default function VendorJobDetailScreen() {
           <Ionicons name="cash" size={32} color={RSA.green} />
           <View style={styles.earningsInfo}>
             <Text style={styles.earningsLabel}>You'll earn</Text>
-            <Text style={styles.earningsAmount}>
-              R {po?.total_amount?.toLocaleString() || '0'}
-            </Text>
+            <Text style={styles.earningsAmount}>R {po?.total_amount?.toLocaleString() || '0'}</Text>
             <Text style={styles.earningsSubtext}>After platform fee</Text>
           </View>
         </View>
@@ -448,7 +456,9 @@ export default function VendorJobDetailScreen() {
             </View>
             <View style={styles.propertyInfo}>
               <Text style={styles.propertyTitle}>{job.property?.title || 'Property'}</Text>
-              <Text style={styles.propertyAddress}>{job.property?.address || 'Address not available'}</Text>
+              <Text style={styles.propertyAddress}>
+                {job.property?.address || 'Address not available'}
+              </Text>
               <Text style={styles.propertyCity}>{job.property?.city || ''}</Text>
             </View>
           </View>
@@ -483,7 +493,9 @@ export default function VendorJobDetailScreen() {
         {/* Progress Updates */}
         {isWorkStarted && progressUpdates.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>📊 Progress Updates (Day {progressUpdates.length})</Text>
+            <Text style={styles.sectionTitle}>
+              📊 Progress Updates (Day {progressUpdates.length})
+            </Text>
             {progressUpdates.map((update, index) => (
               <View key={update.id} style={styles.updateCard}>
                 <View style={styles.updateHeader}>
@@ -511,17 +523,29 @@ export default function VendorJobDetailScreen() {
             <Text style={styles.sectionTitle}>🏁 Job Closure</Text>
             <View style={styles.closureCard}>
               <View style={styles.closureHeader}>
-                <Ionicons 
-                  name={closureReport.status === 'approved' ? 'checkmark-circle' : closureReport.status === 'rejected' ? 'close-circle' : 'time'} 
-                  size={32} 
-                  color={closureReport.status === 'approved' ? RSA.green : closureReport.status === 'rejected' ? RSA.red : RSA.gold} 
+                <Ionicons
+                  name={
+                    closureReport.status === 'approved'
+                      ? 'checkmark-circle'
+                      : closureReport.status === 'rejected'
+                        ? 'close-circle'
+                        : 'time'
+                  }
+                  size={32}
+                  color={
+                    closureReport.status === 'approved'
+                      ? RSA.green
+                      : closureReport.status === 'rejected'
+                        ? RSA.red
+                        : RSA.gold
+                  }
                 />
                 <Text style={styles.closureStatus}>
-                  {closureReport.status === 'approved' 
-                    ? 'Approved' 
+                  {closureReport.status === 'approved'
+                    ? 'Approved'
                     : closureReport.status === 'rejected'
-                    ? 'Changes Requested'
-                    : 'Pending Approval'}
+                      ? 'Changes Requested'
+                      : 'Pending Approval'}
                 </Text>
               </View>
               <Text style={styles.closureNotes}>{closureReport.completion_notes}</Text>
@@ -551,17 +575,11 @@ export default function VendorJobDetailScreen() {
       {isWorkStarted && !closureReport && (
         <View style={styles.bottomBar}>
           <View style={styles.actionButtonsRow}>
-            <TouchableOpacity 
-              style={styles.updateButton} 
-              onPress={handleDailyUpdate}
-            >
+            <TouchableOpacity style={styles.updateButton} onPress={handleDailyUpdate}>
               <Ionicons name="camera" size={20} color={RSA.blue} />
               <Text style={styles.updateButtonText}>Daily Update</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.completeButton} 
-              onPress={handleRequestClosure}
-            >
+            <TouchableOpacity style={styles.completeButton} onPress={handleRequestClosure}>
               <Ionicons name="checkmark-done" size={20} color="#FFFFFF" />
               <Text style={styles.completeButtonText}>Request Closure</Text>
             </TouchableOpacity>
@@ -572,10 +590,10 @@ export default function VendorJobDetailScreen() {
       {closureReport && closureReport.status !== 'approved' && (
         <View style={styles.bottomBar}>
           <View style={styles.closureStatusCard}>
-            <Ionicons 
-              name={closureReport.status === 'rejected' ? 'close-circle' : 'time'} 
-              size={24} 
-              color={closureReport.status === 'rejected' ? RSA.red : RSA.gold} 
+            <Ionicons
+              name={closureReport.status === 'rejected' ? 'close-circle' : 'time'}
+              size={24}
+              color={closureReport.status === 'rejected' ? RSA.red : RSA.gold}
             />
             <Text style={styles.closureStatusText}>
               {closureReport.status === 'rejected'
@@ -588,7 +606,7 @@ export default function VendorJobDetailScreen() {
 
       {closureReport && closureReport.status === 'approved' && (
         <View style={styles.bottomBar}>
-          <TouchableOpacity 
+          <TouchableOpacity
             accessibilityLabel="Submit invoice for this job"
             accessibilityRole="button"
             style={styles.invoiceButton}
@@ -605,11 +623,11 @@ export default function VendorJobDetailScreen() {
           <View style={styles.disabledInfo}>
             <Ionicons name="information-circle" size={20} color={colors.warning[600]} />
             <Text style={styles.disabledText}>
-              {!po?.sent_to_vendor_at 
-                ? '⏳ Waiting for owner to send PO' 
+              {!po?.sent_to_vendor_at
+                ? '⏳ Waiting for owner to send PO'
                 : isWaitingForScheduledTime
-                ? `⏰ Come back ${timeUntilStart}`
-                : 'Not ready yet'}
+                  ? `⏰ Come back ${timeUntilStart}`
+                  : 'Not ready yet'}
             </Text>
           </View>
         </View>
@@ -624,7 +642,13 @@ const styles = StyleSheet.create({
   loadingText: { marginTop: 12, fontSize: 16, color: '#6b7280' },
   errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   errorText: { marginTop: 16, fontSize: 18, fontWeight: '600', color: '#111827' },
-  backButton: { marginTop: 24, paddingHorizontal: 24, paddingVertical: 12, backgroundColor: RSA.blue, borderRadius: 8 },
+  backButton: {
+    marginTop: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: RSA.blue,
+    borderRadius: 8,
+  },
   backButtonText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
 
   header: {
@@ -637,21 +661,33 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
-  headerButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
 
   scrollView: { flex: 1 },
 
-  timelineContainer: { 
-    backgroundColor: '#FFFFFF', 
-    padding: 20, 
-    marginHorizontal: 16, 
-    marginTop: 16, 
+  timelineContainer: {
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    marginHorizontal: 16,
+    marginTop: 16,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
-  timelineTitle: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 16, textAlign: 'center' },
+  timelineTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
   timelineBar: { flexDirection: 'row', gap: 4, marginBottom: 8 },
   timelineStep: { flex: 1, height: 6, backgroundColor: colors.gray[200], borderRadius: 3 },
   timelineStepComplete: { backgroundColor: RSA.green },
@@ -788,7 +824,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   startButtonText: { fontSize: 17, fontWeight: '700', color: '#FFFFFF' },
-  
+
   actionButtonsRow: {
     flexDirection: 'row',
     gap: 12,
@@ -817,7 +853,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   completeButtonText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
-  
+
   disabledInfo: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -846,7 +882,15 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   updateDate: { fontSize: 14, fontWeight: '600', color: '#111827' },
-  updateDay: { fontSize: 12, fontWeight: '600', color: RSA.blue, backgroundColor: '#dbeafe', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  updateDay: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: RSA.blue,
+    backgroundColor: '#dbeafe',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
   updateNotes: { fontSize: 14, color: '#4b5563', lineHeight: 20 },
   updatePhotos: { fontSize: 12, color: '#6b7280', marginTop: 8 },
 

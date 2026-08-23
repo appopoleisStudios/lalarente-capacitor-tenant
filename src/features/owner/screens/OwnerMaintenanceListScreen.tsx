@@ -141,6 +141,7 @@ export default function OwnerMaintenanceListScreen() {
             <TouchableOpacity
               accessibilityLabel="Find a vendor"
               accessibilityRole="button"
+              testID="owner-find-vendor"
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 router.push('/(owner)/maintenance/vendor-directory');

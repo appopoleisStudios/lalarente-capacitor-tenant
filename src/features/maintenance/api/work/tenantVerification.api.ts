@@ -15,7 +15,7 @@ import { triggerWorkOrderReport } from './workOrderReport.api';
 import type { ClosureReport, MaintenanceRequest } from '../types/maintenance.types';
 
 type TenantVerificationStatus = 'pending' | 'approved' | 'rejected' | 'timeout_approved';
-type SenderRole = 'owner' | 'tenant';
+type SenderRole = 'owner' | 'tenant' | 'vendor';
 interface MediationMessage {
   id: string;
   closure_report_id: string;

@@ -97,6 +97,7 @@ OWNER_FLOWS=(
   "client-feedback/s2-10-owner-lease-messages"
   "client-feedback/s2-11-owner-rent-roll"
   "client-feedback/s2-13-owner-maintenance"
+  "owner-vendor-directory"
   "client-feedback/s2-19-owner-messages"
   "client-feedback/s2-21-owner-property"
 )
