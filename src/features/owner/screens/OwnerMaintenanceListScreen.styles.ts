@@ -23,6 +23,22 @@ export const styles = StyleSheet.create({
   headerLeft: {
     flex: 1,
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  findVendorButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#e8eef8',
+  },
+  findVendorText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: RSA.blue,
+  },
   headerTitle: {
     fontSize: 24,
     fontWeight: '700',

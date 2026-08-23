@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  ActivityIndicator,
+  RefreshControl,
+  TouchableOpacity,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -130,11 +137,24 @@ export default function OwnerMaintenanceListScreen() {
               {counts.all} total request{counts.all !== 1 ? 's' : ''}
             </Text>
           </View>
-          <AnimatedButton onPress={handleNewRequest}>
-            <View style={styles.addButton}>
-              <Text style={styles.addIcon}>+</Text>
-            </View>
-          </AnimatedButton>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              accessibilityLabel="Find a vendor"
+              accessibilityRole="button"
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.push('/(owner)/maintenance/vendor-directory');
+              }}
+              style={styles.findVendorButton}
+            >
+              <Text style={styles.findVendorText}>Find vendor</Text>
+            </TouchableOpacity>
+            <AnimatedButton onPress={handleNewRequest}>
+              <View style={styles.addButton}>
+                <Text style={styles.addIcon}>+</Text>
+              </View>
+            </AnimatedButton>
+          </View>
         </View>
 
         {/* Filters */}

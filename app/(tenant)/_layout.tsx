@@ -151,6 +151,12 @@ export default function TenantLayout() {
         }}
       />
       <Tabs.Screen
+        name="maintenance/vendor-marketplace"
+        options={{
+          href: null, // Hidden from tabs — tenant browses vendors for maintenance
+        }}
+      />
+      <Tabs.Screen
         name="maintenance/verify"
         options={{
           href: null, // Hidden from tabs - tenant verifies maintenance closure

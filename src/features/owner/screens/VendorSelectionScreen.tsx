@@ -7,6 +7,7 @@ import {
   pushToOpenMarket,
   pushToSelectedVendors,
   searchVendorByEmail,
+  vendorMatchesDirectoryQuery,
 } from '@/src/features/maintenance/api';
 import type { MaintenanceRequestWithRelations } from '@/src/features/maintenance/api/types/maintenance.types';
 import type { VendorProfile } from '@/src/features/maintenance/api/types/vendor.types';
@@ -111,7 +112,7 @@ export default function VendorSelectionScreen() {
 
   const toggleVendor = useCallback((vendorId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSelectedIds(prev => {
+    setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(vendorId)) {
         next.delete(vendorId);
@@ -142,7 +143,7 @@ export default function VendorSelectionScreen() {
       if (vendor) {
         setInviteResult(vendor);
         // Auto-select the found vendor
-        setSelectedIds(prev => {
+        setSelectedIds((prev) => {
           const next = new Set(prev);
           next.add(vendor.id);
           return next;
@@ -281,21 +282,28 @@ export default function VendorSelectionScreen() {
               <Text style={styles.vendorContact}>{item.full_name}</Text>
             )}
             {item.email && <Text style={styles.vendorEmail}>{item.email}</Text>}
+            {item.service_areas?.length || item.trades?.length ? (
+              <Text style={styles.vendorEmail} numberOfLines={2}>
+                {[
+                  (item.trades ?? []).slice(0, 2).join(', '),
+                  (item.service_areas ?? [])
+                    .slice(0, 2)
+                    .map((a) => [a.city, a.province].filter(Boolean).join(', '))
+                    .filter(Boolean)
+                    .join(' · '),
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </Text>
+            ) : null}
             {item.rating != null && (
               <View style={styles.ratingRow}>
                 <Ionicons name="star" size={14} color="#f59e0b" />
-                <Text style={styles.ratingText}>
-                  {item.rating.toFixed(1)}
-                </Text>
+                <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
               </View>
             )}
           </View>
-          <View
-            style={[
-              styles.checkbox,
-              isSelected && styles.checkboxSelected,
-            ]}
-          >
+          <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
             {isSelected && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
           </View>
         </TouchableOpacity>
@@ -306,8 +314,8 @@ export default function VendorSelectionScreen() {
 
   // Merge dedicated and category vendors, mark dedicated ones
   const allVendors: VendorWithCategory[] = React.useMemo(() => {
-    const dedicatedIds = new Set(dedicatedVendors.map(v => v.id));
-    const merged = [...dedicatedVendors.map(v => ({ ...v, isDedicated: true }))];
+    const dedicatedIds = new Set(dedicatedVendors.map((v) => v.id));
+    const merged = [...dedicatedVendors.map((v) => ({ ...v, isDedicated: true }))];
 
     for (const v of categoryVendors) {
       if (!dedicatedIds.has(v.id)) {
@@ -317,13 +325,7 @@ export default function VendorSelectionScreen() {
 
     // Filter by search query
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      return merged.filter(
-        v =>
-          (v.business_name && v.business_name.toLowerCase().includes(q)) ||
-          (v.full_name && v.full_name.toLowerCase().includes(q)) ||
-          (v.email && v.email.toLowerCase().includes(q))
-      );
+      return merged.filter((v) => vendorMatchesDirectoryQuery(v, searchQuery));
     }
 
     return merged;
@@ -401,7 +403,7 @@ export default function VendorSelectionScreen() {
             <Ionicons name="search" size={18} color={colors.gray[400]} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search by name, business or email..."
+              placeholder="Search by name, trade or city..."
               placeholderTextColor={colors.gray[400]}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -419,7 +421,7 @@ export default function VendorSelectionScreen() {
           {allVendors.length > 0 ? (
             <FlatList
               data={allVendors}
-              keyExtractor={item => item.id}
+              keyExtractor={(item) => item.id}
               renderItem={renderVendorItem}
               contentContainerStyle={styles.listContent}
               showsVerticalScrollIndicator={false}
@@ -461,7 +463,7 @@ export default function VendorSelectionScreen() {
                 placeholder="vendor@example.com"
                 placeholderTextColor={colors.gray[400]}
                 value={inviteEmail}
-                onChangeText={text => {
+                onChangeText={(text) => {
                   setInviteEmail(text);
                   setInviteResult(null);
                 }}
@@ -567,7 +569,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
-  headerButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerTitleContainer: { flex: 1, marginLeft: 8 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
   headerSubtitle: { fontSize: 13, color: '#6b7280', marginTop: 2 },

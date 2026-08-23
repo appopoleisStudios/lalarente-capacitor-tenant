@@ -26,9 +26,16 @@ export const MaintenanceSection = ({ maintenance }: MaintenanceSectionProps) => 
     <View>
       <View style={styles.header}>
         <Text style={styles.title}>Active Maintenance</Text>
-        <AnimatedButton onPress={() => router.push('/(owner)/maintenance' as any)}>
-          <Text style={styles.seeAll}>See All</Text>
-        </AnimatedButton>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <AnimatedButton
+            onPress={() => router.push('/(owner)/maintenance/vendor-directory' as any)}
+          >
+            <Text style={styles.seeAll}>Find vendor</Text>
+          </AnimatedButton>
+          <AnimatedButton onPress={() => router.push('/(owner)/maintenance' as any)}>
+            <Text style={styles.seeAll}>See All</Text>
+          </AnimatedButton>
+        </View>
       </View>
       {maintenance.map((m, i) => (
         <AnimatedButton

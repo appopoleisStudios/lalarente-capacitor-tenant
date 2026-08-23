@@ -58,6 +58,7 @@ export {
 // VENDORS
 // ============================================
 export * from './vendors/vendorDiscovery.api';
+export * from './vendors/pendingVendorSelection';
 export * from './vendors/vendorQuoteRequests.api';
 export * from './vendors/vendorRouting.api';
 
@@ -157,6 +158,7 @@ export const maintenanceApi = {
 
   // Vendor Discovery
   getVendorsByCategory: VendorDiscoveryAPI.getVendorsByCategory,
+  getVendorDirectory: VendorDiscoveryAPI.getVendorDirectory,
   getDedicatedVendors: VendorDiscoveryAPI.getDedicatedVendors,
   getVendorsForRequest: VendorDiscoveryAPI.getVendorsForRequest,
   searchVendorByEmail: VendorDiscoveryAPI.searchVendorByEmail,
