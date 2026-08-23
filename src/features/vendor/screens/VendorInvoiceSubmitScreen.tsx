@@ -8,7 +8,7 @@ import {
   type MaintenanceInvoice,
 } from '@/src/features/maintenance/api';
 import { colors } from '@/src/shared/theme/colors';
-import { InvoiceTalkBar } from '@/src/features/maintenance/components';
+import { InvoiceTalkBar, InvoiceHistory } from '@/src/features/maintenance/components';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -361,12 +361,15 @@ export default function VendorInvoiceSubmitScreen() {
           </View>
 
           {existingInvoice && (
-            <InvoiceTalkBar
-              invoice={existingInvoice}
-              role="vendor"
-              accent={RSA.blue}
-              onChanged={loadRequest}
-            />
+            <>
+              <InvoiceTalkBar
+                invoice={existingInvoice}
+                role="vendor"
+                accent={RSA.blue}
+                onChanged={loadRequest}
+              />
+              <InvoiceHistory invoiceId={existingInvoice.id} />
+            </>
           )}
 
           {/* Rejection reason banner (resubmit mode) */}

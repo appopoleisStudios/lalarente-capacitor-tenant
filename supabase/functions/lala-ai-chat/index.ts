@@ -10,7 +10,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const GROQ_MODEL = Deno.env.get('GROQ_MODEL')?.trim() || 'llama-3.1-8b-instant';
+// Groq retired llama-3.1-8b-instant and llama-3.3-70b-versatile (2026-08-16).
+// Plane #95: planner must be tool-capable. Groq's documented 70B replacement:
+// openai/gpt-oss-120b (override with GROQ_MODEL).
+const GROQ_MODEL = Deno.env.get('GROQ_MODEL')?.trim() || 'openai/gpt-oss-120b';
 const MAX_HISTORY = 12;
 const MAX_TEXT_LEN = 2000;
 const MAX_GROQ_RETRIES = 4;
@@ -66,6 +69,7 @@ function fmtLease(l: Record<string, unknown>): string {
     `Deposit: ${deposit}`,
     `Escalation: ${escalation}`,
     `Early termination: notice ${l.early_termination_notice_period_days ?? '—'} day(s)${l.early_termination_penalty != null ? `, penalty R ${l.early_termination_penalty}` : ''}`,
+    `Interest on arrears (recorded): ${l.interest_on_arrears_rate != null ? `${l.interest_on_arrears_rate}% per year` : 'not recorded'}`,
   ];
   if (l.auto_converted_to_mtm) {
     lines.push(
@@ -121,7 +125,7 @@ async function buildTenantContext(
       'status, lease_type, start_date, end_date, monthly_rent, payment_due_day, renewal_count, auto_converted_to_mtm, ' +
         'deposit_amount, deposit_refund_status, deposit_refund_amount, deposit_refund_deadline, ' +
         'rent_escalation_type, rent_escalation_value, rent_escalation_frequency_months, ' +
-        'early_termination_notice_period_days, early_termination_penalty, ' +
+        'early_termination_notice_period_days, early_termination_penalty, interest_on_arrears_rate, ' +
         'property:properties(id, title, address, city, rent_amount, status)'
     )
     .eq('tenant_id', userId)
@@ -219,6 +223,51 @@ async function buildTenantContext(
     parts.push('MAINTENANCE YOU RAISED: none');
   }
 
+  const { data: arrears } = await supabase
+    .from('arrears_escalations')
+    .select('stage, amount_owed, interest_accrued, total_owed, escalated_at')
+    .eq('tenant_id', userId)
+    .is('resolved_at', null)
+    .order('escalated_at', { ascending: false })
+    .limit(8);
+  if (arrears?.length) {
+    parts.push(
+      'ARREARS:\n' +
+        arrears
+          .map(
+            (a: Record<string, unknown>) =>
+              `  [${a.stage}] owed R ${a.amount_owed} + interest R ${a.interest_accrued} = R ${a.total_owed}`
+          )
+          .join('\n')
+    );
+  } else {
+    parts.push('ARREARS: none open');
+  }
+
+  const propIds = (leases || [])
+    .map((l) => (l.property as { id?: string } | null)?.id)
+    .filter(Boolean) as string[];
+  if (propIds.length) {
+    const { data: invs } = await supabase
+      .from('maintenance_invoices')
+      .select('invoice_number, status, total_amount, payer_role')
+      .in('property_id', propIds)
+      .eq('payer_role', 'tenant')
+      .order('created_at', { ascending: false })
+      .limit(6);
+    parts.push(
+      invs?.length
+        ? 'MAINTENANCE INVOICES (you are payer):\n' +
+            invs
+              .map(
+                (inv: Record<string, unknown>) =>
+                  `  [${inv.status}] ${inv.invoice_number} R ${inv.total_amount}`
+              )
+              .join('\n')
+        : 'MAINTENANCE INVOICES: none'
+    );
+  }
+
   return parts.join('\n\n');
 }
 
@@ -308,6 +357,24 @@ async function buildVendorContext(
         : `  No earnings recorded yet.`)
   );
 
+  const { data: invs } = await supabase
+    .from('maintenance_invoices')
+    .select('invoice_number, status, total_amount, payer_role')
+    .eq('vendor_id', vendorId)
+    .order('created_at', { ascending: false })
+    .limit(8);
+  parts.push(
+    invs?.length
+      ? 'MAINTENANCE INVOICES:\n' +
+          invs
+            .map(
+              (inv: Record<string, unknown>) =>
+                `  [${inv.status}] ${inv.invoice_number} R ${inv.total_amount}`
+            )
+            .join('\n')
+      : 'MAINTENANCE INVOICES: none'
+  );
+
   return parts.join('\n\n');
 }
 
@@ -335,7 +402,7 @@ async function buildOwnerContext(
         'status, lease_type, start_date, end_date, monthly_rent, payment_due_day, renewal_count, auto_converted_to_mtm, ' +
           'deposit_amount, deposit_refund_status, deposit_refund_amount, deposit_refund_deadline, ' +
           'rent_escalation_type, rent_escalation_value, rent_escalation_frequency_months, ' +
-          'early_termination_notice_period_days, early_termination_penalty, ' +
+          'early_termination_notice_period_days, early_termination_penalty, interest_on_arrears_rate, ' +
           'tenant:profiles!tenant_id(full_name), property:properties(title)'
       )
       .eq('owner_id', ownerId)
@@ -438,6 +505,43 @@ async function buildOwnerContext(
       : 'PURCHASE ORDERS: none'
   );
 
+  const { data: arrears } = await supabase
+    .from('arrears_escalations')
+    .select('stage, amount_owed, interest_accrued, total_owed, tenant_id')
+    .eq('owner_id', ownerId)
+    .is('resolved_at', null)
+    .order('escalated_at', { ascending: false })
+    .limit(8);
+  parts.push(
+    arrears?.length
+      ? 'ARREARS:\n' +
+          arrears
+            .map(
+              (a: Record<string, unknown>) =>
+                `  [${a.stage}] R ${a.total_owed} (principal R ${a.amount_owed}, interest R ${a.interest_accrued})`
+            )
+            .join('\n')
+      : 'ARREARS: none open'
+  );
+
+  const { data: invs } = await supabase
+    .from('maintenance_invoices')
+    .select('invoice_number, status, total_amount, payer_role')
+    .eq('owner_id', ownerId)
+    .order('created_at', { ascending: false })
+    .limit(8);
+  parts.push(
+    invs?.length
+      ? 'MAINTENANCE INVOICES:\n' +
+          invs
+            .map(
+              (inv: Record<string, unknown>) =>
+                `  [${inv.status}] ${inv.invoice_number} R ${inv.total_amount} (payer ${inv.payer_role})`
+            )
+            .join('\n')
+      : 'MAINTENANCE INVOICES: none'
+  );
+
   return parts.join('\n\n');
 }
 
@@ -453,6 +557,7 @@ function systemPrompt(role: string): string {
     `You are speaking with a ${who}.\n` +
     'You have two tools: lookup (this user’s live rows) and how_this_app_works (where to tap).\n' +
     'For money, dates, statuses, lease terms, jobs, quotes, or earnings: call lookup with the smallest topic list that answers the question. Quote only tool results. Never invent amounts.\n' +
+    'For “what happens if I don’t pay rent?” call how_this_app_works topic late_rent AND lookup arrears/lease. Never invent interest rates.\n' +
     'For “how do I…” navigation: call how_this_app_works. Tenant bottom tabs are only Home, Search, Payments, Profile, Lala AI — never mention a Vendor Payments tab.\n' +
     'Do not give legal advice. Never invent bank details or payment references.\n' +
     'Screening/credit/FICA: owners mark checks after offline review; no bureau runs in-app — say so if asked.'

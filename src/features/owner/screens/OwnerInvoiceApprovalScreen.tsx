@@ -7,7 +7,7 @@ import {
 } from '@/src/features/maintenance/api';
 import { colors } from '@/src/shared/theme/colors';
 import { FeaturePin } from '@/src/shared/components';
-import { InvoiceTalkBar } from '@/src/features/maintenance/components';
+import { InvoiceTalkBar, InvoiceHistory } from '@/src/features/maintenance/components';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -220,6 +220,7 @@ export default function OwnerInvoiceApprovalScreen() {
         )}
 
         <InvoiceTalkBar invoice={invoice} role="owner" accent={RSA.blue} onChanged={loadInvoices} />
+        <InvoiceHistory invoiceId={invoice.id} />
 
         {/* Actions */}
         {invoice.status === 'submitted' && (
