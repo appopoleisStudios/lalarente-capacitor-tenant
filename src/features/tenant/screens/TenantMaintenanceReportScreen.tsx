@@ -10,13 +10,13 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useMediaUpload } from '@/src/features/maintenance/hooks';
-import { maintenanceApi } from '@/src/features/maintenance/api';
+import { maintenanceApi, consumePendingVendorSelection } from '@/src/features/maintenance/api';
 import { supabase } from '@/src/lib/supabase';
 import { colors } from '@/src/shared/theme/colors';
 import { StyleSheet } from 'react-native';
@@ -54,6 +54,18 @@ export default function TenantMaintenanceReportScreen() {
   const [activeLeases, setActiveLeases] = useState<any[]>([]);
   const [selectedLeaseId, setSelectedLeaseId] = useState<string | null>(null);
   const [loadingData, setLoadingData] = useState(true);
+  const [selectedVendor, setSelectedVendor] = useState<{
+    id: string;
+    full_name: string | null;
+    business_name: string | null;
+  } | null>(null);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const pending = consumePendingVendorSelection(user?.id);
+      if (pending) setSelectedVendor(pending);
+    }, [user?.id])
+  );
 
   // Fetch categories and active lease on mount
   useEffect(() => {
@@ -153,8 +165,12 @@ export default function TenantMaintenanceReportScreen() {
         priority,
         title: title.trim(),
         description: description.trim(),
-        visibility: 'public', // Tenant-direct: vendors can discover this request
+        visibility: selectedVendor ? 'invited' : 'public',
       });
+
+      if (selectedVendor) {
+        await maintenanceApi.pushToSelectedVendors(request.id, [selectedVendor.id]);
+      }
 
       // Step 2: Upload media files if any
       if (files.length > 0) {
@@ -171,7 +187,9 @@ export default function TenantMaintenanceReportScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert(
         'Success! 🎉',
-        'Your maintenance request is now visible to service providers in your area.',
+        selectedVendor
+          ? `Your request was sent to ${selectedVendor.business_name || selectedVendor.full_name}.`
+          : 'Your maintenance request is now visible to service providers in your area.',
         [{ text: 'OK', onPress: () => router.back() }]
       );
     } catch (error: any) {
@@ -460,6 +478,57 @@ export default function TenantMaintenanceReportScreen() {
           </View>
         </Animated.View>
 
+        {/* Choose a specific vendor (optional) */}
+        <Animated.View entering={FadeInDown.delay(550).duration(500)} style={styles.section}>
+          <Text style={styles.label}>Vendor (Optional)</Text>
+          <Text style={styles.helperText}>
+            Browse available vendors or let your landlord assign one
+          </Text>
+          <TouchableOpacity
+            style={styles.vendorPickerCard}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push({
+                pathname: '/(tenant)/maintenance/vendor-marketplace',
+                params: {
+                  categoryId: categoryId || undefined,
+                  categoryName: categories.find((c) => c.id === categoryId)?.name || undefined,
+                },
+              });
+            }}
+            testID="tenant-choose-vendor"
+          >
+            <View style={styles.vendorPickerIcon}>
+              <Ionicons name="people" size={24} color={RSA.green} />
+            </View>
+            <View style={styles.vendorPickerInfo}>
+              <Text style={styles.vendorPickerTitle}>
+                {selectedVendor
+                  ? selectedVendor.business_name || selectedVendor.full_name || 'Selected vendor'
+                  : 'Browse Vendors'}
+              </Text>
+              <Text style={styles.vendorPickerSubtitle}>
+                {selectedVendor
+                  ? 'Tap to choose a different vendor, or clear below'
+                  : 'See ratings, trades, and service areas'}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+          </TouchableOpacity>
+          {selectedVendor && (
+            <TouchableOpacity
+              onPress={() => setSelectedVendor(null)}
+              style={{ marginTop: 8, alignSelf: 'flex-start' }}
+              accessibilityRole="button"
+              accessibilityLabel="Clear selected vendor"
+            >
+              <Text style={{ fontSize: 13, fontWeight: '600', color: RSA.green }}>
+                Clear vendor — broadcast to the open market
+              </Text>
+            </TouchableOpacity>
+          )}
+        </Animated.View>
+
         {/* Photos & Videos */}
         <Animated.View entering={FadeInDown.delay(600).duration(500)} style={styles.section}>
           <Text style={styles.label}>Photos & Videos ({files.length}/10)</Text>
@@ -690,6 +759,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   addMediaText: { fontSize: 12, color: '#6b7280', marginTop: 4, fontWeight: '600' },
+  vendorPickerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    gap: 12,
+  },
+  vendorPickerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#e6f7f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  vendorPickerInfo: { flex: 1 },
+  vendorPickerTitle: { fontSize: 15, fontWeight: '700', color: '#111827' },
+  vendorPickerSubtitle: { fontSize: 12, color: '#6b7280', marginTop: 2 },
   footer: {
     position: 'absolute',
     bottom: 0,

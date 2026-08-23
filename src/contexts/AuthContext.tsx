@@ -3,6 +3,7 @@ import { Session, User } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
 import { Database } from '@/src/types/database.types';
 import { supabase } from '@/src/lib/supabase';
+import { clearPendingVendorSelection } from '@/src/features/maintenance/api/vendors/pendingVendorSelection';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
@@ -138,6 +139,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .then(setProfile)
           .catch(() => {});
       } else {
+        clearPendingVendorSelection();
         setProfile(null);
       }
 
@@ -164,19 +166,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-      const res = await fetch(
-        `${SUPABASE_URL}/functions/v1/register-user`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            apikey: SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({ email, password, fullName, role, businessName }),
-          signal: controller.signal,
-        }
-      );
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/register-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ email, password, fullName, role, businessName }),
+        signal: controller.signal,
+      });
 
       clearTimeout(timeoutId);
 
@@ -284,6 +283,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function signOut() {
     try {
       setLoading(true);
+      clearPendingVendorSelection();
       const { error } = await supabase.auth.signOut();
 
       if (error) {

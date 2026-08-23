@@ -296,6 +296,12 @@ export default function OwnerLayout() {
         }}
       />
       <Tabs.Screen
+        name="maintenance/vendor-directory"
+        options={{
+          href: null, // Hidden from tabs - Plane #106 owner vendor directory
+        }}
+      />
+      <Tabs.Screen
         name="maintenance/send-po"
         options={{
           href: null, // Hidden from tabs - send PO to vendor

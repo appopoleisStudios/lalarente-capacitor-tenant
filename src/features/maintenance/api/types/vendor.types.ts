@@ -5,6 +5,11 @@
 
 import type { MaintenanceRequest, MaintenanceStatus } from './maintenance.types';
 
+export interface VendorServiceArea {
+  city: string | null;
+  province: string | null;
+}
+
 export interface VendorProfile {
   id: string;
   full_name: string | null;
@@ -14,6 +19,10 @@ export interface VendorProfile {
   business_name: string | null;
   rating: number | null;
   role?: string;
+  /** Active trades (service category names). Loaded by directory queries. */
+  trades?: string[];
+  /** Cities / provinces the vendor covers. Loaded by directory queries. */
+  service_areas?: VendorServiceArea[];
 }
 
 export interface VendorMaintenanceRequest extends MaintenanceRequest {
@@ -90,11 +99,11 @@ export interface QuoteSubmission {
   notes?: string;
   estimated_duration?: string;
   warranty_period?: string;
-  line_items: Array<{
+  line_items: {
     name: string;
     quantity: number;
     unit_price: number;
-  }>;
+  }[];
 }
 
 export interface VendorService {
