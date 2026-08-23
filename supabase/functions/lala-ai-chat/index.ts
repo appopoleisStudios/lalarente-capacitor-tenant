@@ -3,6 +3,7 @@
 // POs, earnings) rather than generic app-process descriptions.
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
+import { filterContextByTopics, howThisAppWorks, LALA_TOOLS } from './tools.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -440,53 +441,41 @@ async function buildOwnerContext(
   return parts.join('\n\n');
 }
 
-function systemPrompt(role: string, context: string): string {
-  // DATA-FIRST: quote the actuals from CONTEXT; only explain app flows when the
-  // specific data is genuinely absent. The old playbook phrasing ("explain this
-  // app's flows") is what produced generic process-speak — keep it as a last
-  // resort, not the primary behavior.
-  const base =
-    'You are Lala, the LaLarente assistant for South African residential rentals. Be professional and concise (max 4 sentences unless listing).\n\n' +
-    'ANSWER FROM CONTEXT FIRST. The CONTEXT section below contains this user\u2019s ACTUAL data: lease terms, rent payments and statuses, maintenance requests, quotes, purchase orders, and earnings. ' +
-    'When the user asks about their money, their lease, their maintenance, or anything else in CONTEXT, QUOTE THE SPECIFIC VALUES (amounts, dates, statuses, due days, property names) from CONTEXT. ' +
-    'Never answer with generic app-process descriptions when the concrete data is present in CONTEXT.\n' +
-    'Only describe how to do something in the app if the specific data is NOT in CONTEXT (e.g. no payment rows exist). Then briefly point to the in-app screen where they can act.\n' +
-    'Never invent data not in CONTEXT. If a specific term is not recorded in CONTEXT, say it is not recorded rather than guessing.\n' +
-    'Do not give legal advice, and never invent bank account numbers, payment references, or contract terms — point users to the in-app screen where they can act (Payments, Pay Vendor, Maintenance, Earnings & Banking).\n\n' +
-    'Lease questions (rent, deposit, escalation, notice period, due date, renewal): quote the actual values from CONTEXT. If a term is absent, say it is not recorded.\n\n' +
-    `You speak with a ${
-      role === 'owner'
-        ? 'PROPERTY OWNER.'
-        : role === 'vendor'
-          ? 'SERVICE PROVIDER (vendor).'
-          : 'TENANT.'
-    }`;
-
-  // Role playbooks — vocabulary + where to act, used ONLY when CONTEXT lacks the data.
-  const playbooks: Record<string, string> = {
-    tenant:
-      'App navigation for the tenant: Pay rent in the Payments tab (rent invoice → PayFast secure checkout). ' +
-      'Pay a vendor invoice you owe from the Vendor Payments screen. ' +
-      'Confirm job closure after the owner approves. Raise maintenance from the Maintenance tab with photos. ' +
-      'View lease terms/expiry from tenancy shortcuts.',
-    owner:
-      'App navigation for the owner: approve/reject invoices and quotes on the invoice/quote screens; ' +
-      'review closure evidence and forward to the tenant; negotiate early termination in Lease Renewal. ' +
-      'Vendor payouts are vendor-side (Earnings & Banking).',
-    vendor:
-      'App navigation for the vendor: payouts and bank details live under Earnings & Banking; ' +
-      'contracts under Profile → Contracts; request closure from a job (with photos) after work is done; ' +
-      'submit quotes (price + duration) from job detail. Never invent money amounts.',
-  };
-
-  return `${base}\n\n${playbooks[role] ?? ''}\n\nCONTEXT:\n${context}`;
+function systemPrompt(role: string): string {
+  const who =
+    role === 'owner'
+      ? 'PROPERTY OWNER'
+      : role === 'vendor'
+        ? 'SERVICE PROVIDER (vendor)'
+        : 'TENANT';
+  return (
+    'You are Lala, the LaLarente assistant for South African residential rentals. Be professional and concise (max 4 sentences unless listing).\n' +
+    `You are speaking with a ${who}.\n` +
+    'You have two tools: lookup (this user’s live rows) and how_this_app_works (where to tap).\n' +
+    'For money, dates, statuses, lease terms, jobs, quotes, or earnings: call lookup with the smallest topic list that answers the question. Quote only tool results. Never invent amounts.\n' +
+    'For “how do I…” navigation: call how_this_app_works. Tenant bottom tabs are only Home, Search, Payments, Profile, Lala AI — never mention a Vendor Payments tab.\n' +
+    'Do not give legal advice. Never invent bank details or payment references.\n' +
+    'Screening/credit/FICA: owners mark checks after offline review; no bureau runs in-app — say so if asked.'
+  );
 }
 
 // ─── Groq call with retry/backoff for rate limits (429) and 5xx ───────────
+type GroqChatMessage = {
+  role: string;
+  content?: string | null;
+  tool_calls?: Array<{
+    id: string;
+    type?: string;
+    function?: { name?: string; arguments?: string };
+  }>;
+  tool_call_id?: string;
+};
+
 async function callGroq(
   groqKey: string,
-  messages: { role: string; content: string }[]
-): Promise<{ reply: string; error?: string }> {
+  messages: GroqChatMessage[],
+  withTools: boolean
+): Promise<{ message?: GroqChatMessage; error?: string }> {
   let lastErr = '';
   for (let attempt = 1; attempt <= MAX_GROQ_RETRIES; attempt++) {
     let groqRes: Response;
@@ -502,6 +491,7 @@ async function callGroq(
           messages,
           max_tokens: 512,
           temperature: 0.4,
+          ...(withTools ? { tools: LALA_TOOLS, tool_choice: 'auto' } : {}),
         }),
       });
     } catch (e) {
@@ -515,9 +505,9 @@ async function callGroq(
 
     if (groqRes.ok) {
       const groqJson = await groqRes.json();
-      const reply = groqJson?.choices?.[0]?.message?.content;
-      if (reply && typeof reply === 'string') {
-        return { reply: reply.trim() };
+      const message = groqJson?.choices?.[0]?.message as GroqChatMessage | undefined;
+      if (message && (message.content || message.tool_calls?.length)) {
+        return { message };
       }
       lastErr = 'empty AI response';
       if (attempt < MAX_GROQ_RETRIES) {
@@ -545,7 +535,7 @@ async function callGroq(
     if (!retryable || attempt >= MAX_GROQ_RETRIES) break;
     await new Promise((r) => setTimeout(r, GROQ_RETRY_DELAYS_MS[attempt - 1] ?? 3000));
   }
-  return { reply: '', error: lastErr || 'AI provider error' };
+  return { error: lastErr || 'AI provider error' };
 }
 
 serve(async (req) => {
@@ -622,16 +612,7 @@ serve(async (req) => {
       });
     }
 
-    const context =
-      role === 'owner'
-        ? await buildOwnerContext(admin, user.id)
-        : role === 'vendor'
-          ? await buildVendorContext(admin, user.id)
-          : await buildTenantContext(admin, user.id, body.property_id ?? null);
-
-    const messages: { role: string; content: string }[] = [
-      { role: 'system', content: systemPrompt(role, context) },
-    ];
+    const messages: GroqChatMessage[] = [{ role: 'system', content: systemPrompt(role) }];
 
     for (const turn of (body.history ?? []).slice(-MAX_HISTORY)) {
       if (turn?.role === 'user' || turn?.role === 'assistant') {
@@ -643,9 +624,77 @@ serve(async (req) => {
     }
     messages.push({ role: 'user', content: text });
 
-    const { reply, error } = await callGroq(groqKey, messages);
+    let fullContext: string | null = null;
+    async function loadFullContext(): Promise<string> {
+      if (fullContext) return fullContext;
+      fullContext =
+        role === 'owner'
+          ? await buildOwnerContext(admin, user.id)
+          : role === 'vendor'
+            ? await buildVendorContext(admin, user.id)
+            : await buildTenantContext(admin, user.id, body.property_id ?? null);
+      return fullContext;
+    }
+
+    let reply = '';
+    let lastError = '';
+    for (let round = 0; round < 4; round++) {
+      const { message, error } = await callGroq(groqKey, messages, true);
+      if (!message) {
+        lastError = error || 'AI provider error';
+        break;
+      }
+      const toolCalls = message.tool_calls || [];
+      if (!toolCalls.length) {
+        reply = String(message.content || '').trim();
+        break;
+      }
+      messages.push({
+        role: 'assistant',
+        content: message.content ?? null,
+        tool_calls: toolCalls,
+      });
+      for (const call of toolCalls) {
+        const name = call.function?.name || '';
+        let args: Record<string, unknown> = {};
+        try {
+          args = JSON.parse(call.function?.arguments || '{}');
+        } catch {
+          args = {};
+        }
+        let result = 'tool error';
+        if (name === 'lookup') {
+          const topics = Array.isArray(args.topics) ? args.topics.map(String) : [];
+          result = filterContextByTopics(await loadFullContext(), topics);
+        } else if (name === 'how_this_app_works') {
+          result = howThisAppWorks(role, String(args.topic || ''));
+        } else {
+          result = `unknown tool ${name}`;
+        }
+        messages.push({
+          role: 'tool',
+          tool_call_id: call.id,
+          content: result.slice(0, 8000),
+        });
+      }
+    }
+
     if (!reply) {
-      return new Response(JSON.stringify({ error: error || 'AI provider error' }), {
+      const ctx = await loadFullContext();
+      const fallback: GroqChatMessage[] = [
+        { role: 'system', content: systemPrompt(role) },
+        {
+          role: 'user',
+          content: `${text}\n\nLOOKUP RESULT:\n${ctx.slice(0, 6000)}`,
+        },
+      ];
+      const again = await callGroq(groqKey, fallback, false);
+      reply = String(again.message?.content || '').trim();
+      lastError = again.error || lastError;
+    }
+
+    if (!reply) {
+      return new Response(JSON.stringify({ error: lastError || 'AI provider error' }), {
         status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

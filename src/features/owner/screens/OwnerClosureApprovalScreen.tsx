@@ -224,6 +224,24 @@ export default function OwnerClosureApprovalScreen() {
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {closureReport?.mediation_required ? (
+          <TouchableOpacity
+            style={{
+              marginHorizontal: 16,
+              marginTop: 12,
+              backgroundColor: '#FEF3C7',
+              borderRadius: 12,
+              padding: 14,
+            }}
+            onPress={() => router.push(`/(owner)/maintenance/mediation?requestId=${id}`)}
+            testID="owner-open-mediation"
+          >
+            <Text style={{ fontWeight: '700', color: '#92400E' }}>Job in mediation</Text>
+            <Text style={{ color: '#92400E', marginTop: 4 }}>
+              Talk with tenant and vendor here after three closure rejections.
+            </Text>
+          </TouchableOpacity>
+        ) : null}
         {/* Status Banner */}
         <View style={styles.closureBanner}>
           <Ionicons name="checkmark-done-circle" size={28} color={colors.success[500]} />

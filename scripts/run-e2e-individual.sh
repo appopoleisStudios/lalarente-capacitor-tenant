@@ -171,6 +171,7 @@ run_flow "client-feedback/s2-08-owner-leases"    "S2-08: Active Leases"         
 run_flow "client-feedback/s2-10-owner-lease-messages" "S2-10: Lease Messages"      "OWNER" "${O_ENV[@]}"
 run_flow "client-feedback/s2-11-owner-rent-roll" "S2-11: Rent Roll"               "OWNER" "${O_ENV[@]}"
 run_flow "client-feedback/s2-13-owner-maintenance" "S2-13: Maintenance Routing"   "OWNER" "${O_ENV[@]}"
+run_flow "owner-vendor-directory"                 "Vendor directory (Plane #106/#104)" "OWNER" "${O_ENV[@]}"
 run_flow "client-feedback/s2-19-owner-messages"  "S2-19: Messages Thread"         "OWNER" "${O_ENV[@]}"
 run_flow "client-feedback/s2-21-owner-property"  "S2-21: Property Photos"         "OWNER" "${O_ENV[@]}"
 

@@ -294,7 +294,9 @@ export default function TenantVendorMarketplaceScreen() {
           <Ionicons name="arrow-back" size={24} color="#111827" />
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>Find a Vendor</Text>
+          <Text style={styles.headerTitle} testID="vendor-directory-title">
+            Find a Vendor
+          </Text>
           {categoryName && <Text style={styles.headerSubtitle}>{categoryName}</Text>}
         </View>
       </View>

@@ -204,15 +204,29 @@ export default function TenantVerificationScreen() {
         uploadedUrls.push(result.url);
       }
 
-      await tenantRejectCompletion(requestId, userId!, rejectionReason.trim(), uploadedUrls);
+      const report = await tenantRejectCompletion(
+        requestId,
+        userId!,
+        rejectionReason.trim(),
+        uploadedUrls
+      );
 
+      const inMediation = Boolean((report as { mediation_required?: boolean })?.mediation_required);
       Alert.alert(
-        'Work Rejected',
-        'Your feedback has been sent. The vendor will be notified to fix the issues.',
+        inMediation ? 'Mediation opened' : 'Work Rejected',
+        inMediation
+          ? 'This job was rejected three times. You, the owner, and the vendor can talk in the mediation thread.'
+          : 'Your feedback has been sent. The vendor will be notified to fix the issues.',
         [
           {
             text: 'OK',
-            onPress: () => router.back(),
+            onPress: () => {
+              if (inMediation) {
+                router.replace(`/(tenant)/maintenance/mediation?requestId=${requestId}`);
+              } else {
+                router.back();
+              }
+            },
           },
         ]
       );

@@ -156,6 +156,8 @@ export interface ClosureReport {
     | 'owner_override'
     | null;
   rejection_count?: number | null;
+  mediation_required?: boolean | null;
+  mediation_reason?: string | null;
   forwarded_to_tenant_at?: string | null;
   tenant_verified_at?: string | null;
   tenant_rejection_reason?: string | null;
