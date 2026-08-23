@@ -122,7 +122,10 @@ export interface MaintenanceInvoice {
   owner_id: string;
   property_id: string;
   invoice_number: string;
-  status: 'submitted' | 'approved' | 'rejected' | 'paid' | 'cancelled';
+  status: 'submitted' | 'approved' | 'rejected' | 'paid' | 'cancelled' | 'disputed';
+  escalated_at?: string | null;
+  admin_decision?: string | null;
+  admin_decision_notes?: string | null;
   payer_role: 'owner' | 'tenant';
   line_items: InvoiceLineItem[];
   subtotal: number;

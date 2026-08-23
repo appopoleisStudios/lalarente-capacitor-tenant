@@ -15,6 +15,7 @@ import {
 } from '@/src/features/maintenance/api';
 import { colors } from '@/src/shared/theme/colors';
 import { FeaturePin } from '@/src/shared/components';
+import { InvoiceTalkBar } from '@/src/features/maintenance/components';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -74,7 +75,8 @@ export default function TenantInvoiceApprovalScreen() {
               (inv.status === 'submitted' ||
                 inv.status === 'rejected' ||
                 inv.status === 'approved' ||
-                inv.status === 'paid')
+                inv.status === 'paid' ||
+                inv.status === 'disputed')
           )
         );
       }
@@ -169,6 +171,7 @@ export default function TenantInvoiceApprovalScreen() {
     approved: { label: 'Approved', color: colors.success[500], bg: colors.success[50] },
     rejected: { label: 'Rejected', color: colors.error[500], bg: colors.error[50] },
     paid: { label: 'Paid', color: colors.success[700], bg: colors.success[50] },
+    disputed: { label: 'With LalaRente', color: '#7C3AED', bg: '#F5F3FF' },
   };
 
   const renderInvoice = (invoice: MaintenanceInvoice) => {
@@ -237,6 +240,13 @@ export default function TenantInvoiceApprovalScreen() {
             <Text style={styles.rejectionText}>{invoice.rejection_reason}</Text>
           </View>
         )}
+
+        <InvoiceTalkBar
+          invoice={invoice}
+          role="tenant"
+          accent={RSA.green}
+          onChanged={loadInvoices}
+        />
 
         {/* Actions */}
         {canAct && (

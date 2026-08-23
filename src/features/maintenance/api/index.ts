@@ -105,6 +105,7 @@ export * from './purchase-orders/purchaseOrders.api';
 // INVOICES
 // ============================================
 export * from './invoices/invoices.api';
+export * from './invoices/invoiceTalk.api';
 
 // ============================================
 // MESSAGES

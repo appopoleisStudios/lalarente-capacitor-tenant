@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAdminData } from '../hooks/useAdminData';
 import RevenueChart from '../components/RevenueChart';
@@ -16,12 +16,13 @@ import type {
   VendorTransactionRow,
 } from '../types/admin';
 
-type Tab = 'rent' | 'vendor-revenue' | 'disputes';
+type Tab = 'rent' | 'vendor-revenue' | 'disputes' | 'invoice-cases';
 
 const TABS: { key: Tab; label: string; icon: string }[] = [
   { key: 'rent', label: 'Rent Payments', icon: '💰' },
   { key: 'vendor-revenue', label: 'Vendor Revenue', icon: '🛠️' },
   { key: 'disputes', label: 'Disputes', icon: '⚖️' },
+  { key: 'invoice-cases', label: 'Invoice cases', icon: '🧾' },
 ];
 
 function InfoTooltip({ text }: { text: string }) {
@@ -570,6 +571,114 @@ function DisputesTab() {
   );
 }
 
+function InvoiceCasesTab() {
+  const [rows, setRows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [amount, setAmount] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('maintenance_invoices')
+      .select('*')
+      .eq('status', 'disputed')
+      .order('escalated_at', { ascending: false });
+    if (!error) setRows(data || []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function decide(id: string, decision: 'uphold_vendor' | 'amend_amount' | 'reject') {
+    setBusy(id);
+    const { error } = await supabase.rpc('resolve_maintenance_invoice_dispute', {
+      p_invoice_id: id,
+      p_decision: decision,
+      p_notes: notes[id] || '',
+      p_amended_amount: decision === 'amend_amount' ? Number(amount[id]) : null,
+    });
+    setBusy(null);
+    if (error) {
+      window.alert(error.message);
+      return;
+    }
+    load();
+  }
+
+  if (loading) return <LoadingSpinner />;
+
+  return (
+    <div>
+      <p className="mb-4 text-sm text-slate-500">
+        Pre-pay invoice disagreements (Plane #110). Separate from rent payment disputes and from
+        PayFast after money has moved.
+      </p>
+      {rows.length === 0 ? (
+        <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+          No escalated invoices.
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {rows.map((inv) => (
+            <div key={inv.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="font-bold text-slate-900">{inv.invoice_number}</p>
+                  <p className="text-sm text-slate-500">
+                    Payer: {inv.payer_role} · R {Number(inv.total_amount).toLocaleString('en-ZA')}
+                  </p>
+                </div>
+                <span className="rounded-full bg-violet-50 px-2 py-1 text-xs font-semibold text-violet-700">
+                  disputed
+                </span>
+              </div>
+              <textarea
+                className="mt-3 w-full rounded-lg border border-slate-200 p-2 text-sm"
+                placeholder="Decision notes"
+                value={notes[inv.id] || ''}
+                onChange={(e) => setNotes((s) => ({ ...s, [inv.id]: e.target.value }))}
+              />
+              <input
+                className="mt-2 w-40 rounded-lg border border-slate-200 p-2 text-sm"
+                placeholder="Amend amount"
+                value={amount[inv.id] || ''}
+                onChange={(e) => setAmount((s) => ({ ...s, [inv.id]: e.target.value }))}
+              />
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  disabled={busy === inv.id}
+                  onClick={() => decide(inv.id, 'uphold_vendor')}
+                  className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white"
+                >
+                  Uphold vendor
+                </button>
+                <button
+                  disabled={busy === inv.id}
+                  onClick={() => decide(inv.id, 'amend_amount')}
+                  className="rounded-lg bg-amber-600 px-3 py-2 text-xs font-medium text-white"
+                >
+                  Amend amount
+                </button>
+                <button
+                  disabled={busy === inv.id}
+                  onClick={() => decide(inv.id, 'reject')}
+                  className="rounded-lg bg-red-600 px-3 py-2 text-xs font-medium text-white"
+                >
+                  Reject
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────
 
 export default function PaymentsPage() {
@@ -626,6 +735,14 @@ export default function PaymentsPage() {
         hidden={activeTab !== 'disputes'}
       >
         {activeTab === 'disputes' && <DisputesTab />}
+      </div>
+      <div
+        id="panel-invoice-cases"
+        role="tabpanel"
+        aria-labelledby="tab-invoice-cases"
+        hidden={activeTab !== 'invoice-cases'}
+      >
+        {activeTab === 'invoice-cases' && <InvoiceCasesTab />}
       </div>
     </div>
   );
