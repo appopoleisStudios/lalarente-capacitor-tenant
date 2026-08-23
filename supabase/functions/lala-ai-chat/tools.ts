@@ -17,7 +17,9 @@ export const LALA_TOOLS = [
               enum: [
                 'lease',
                 'payments',
+                'arrears',
                 'maintenance',
+                'invoices',
                 'quotes',
                 'purchase_orders',
                 'earnings',
@@ -43,6 +45,7 @@ export const LALA_TOOLS = [
           topic: {
             type: 'string',
             enum: [
+              'late_rent',
               'pay_rent',
               'pay_vendor',
               'maintenance',
@@ -64,7 +67,9 @@ export const LALA_TOOLS = [
 const SECTION_HEADINGS: Record<string, string[]> = {
   lease: ['LEASES:', 'ACTIVE LEASES:', 'Lease:'],
   payments: ['RENT PAYMENTS:', 'RENT COLLECTIONS:', 'VENDOR PAYMENTS'],
+  arrears: ['ARREARS:'],
   maintenance: ['MAINTENANCE'],
+  invoices: ['MAINTENANCE INVOICES'],
   quotes: ['QUOTES'],
   purchase_orders: ['PURCHASE ORDERS:'],
   earnings: ['EARNINGS:'],
@@ -74,7 +79,7 @@ const SECTION_HEADINGS: Record<string, string[]> = {
 export function filterContextByTopics(full: string, topics: string[]): string {
   const wanted = topics.filter((t) => t in SECTION_HEADINGS);
   if (!wanted.length) {
-    return 'lookup: pass topics from lease, payments, maintenance, quotes, purchase_orders, earnings, properties.';
+    return 'lookup: pass topics from lease, payments, arrears, maintenance, invoices, quotes, purchase_orders, earnings, properties.';
   }
   const blocks = full.split('\n\n');
   const kept = blocks.filter((block) => {
@@ -90,6 +95,13 @@ export function howThisAppWorks(role: string, topic: string): string {
   const tenantNav =
     'Tenant tabs are only Home, Search, Payments, Profile, Lala AI. There is no Vendor Payments tab — pay a vendor from Payments.';
   const guides: Record<string, Record<string, string>> = {
+    late_rent: {
+      tenant:
+        'This is how LalaRente behaves, not legal advice. Late rent ladder in-app: friendly reminder after 7 days overdue, formal demand at 14, breach notice at 21 plus a CPA cure window. Interest is only the rate recorded on YOUR lease (lookup lease/arrears) — never invent a rate. Pay from the Payments tab.',
+      owner:
+        'Same in-app ladder: 7-day friendly, 14-day demand, 21-day breach + cure. Open Arrears on the owner side. Quote recorded lease interest_on_arrears_rate from lookup; do not invent Prescribed Rate figures.',
+      vendor: 'Vendors do not run the late-rent process.',
+    },
     pay_rent: {
       tenant: `${tenantNav} Pay rent: Payments tab → rent invoice → PayFast checkout.`,
       owner:

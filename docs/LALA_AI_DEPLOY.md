@@ -4,10 +4,10 @@ After PR merge, configure **Supabase project** `vvepwaolnkzfzhzgxlwr`:
 
 ## Secrets (Dashboard → Edge Functions → Secrets)
 
-| Secret | Required |
-|--------|----------|
-| `GROQ_API_KEY` | Yes |
-| `GROQ_MODEL` | Optional (default `llama-3.1-8b-instant`) |
+| Secret         | Required                                                                                                |
+| -------------- | ------------------------------------------------------------------------------------------------------- |
+| `GROQ_API_KEY` | Yes                                                                                                     |
+| `GROQ_MODEL`   | Optional. Default **`openai/gpt-oss-120b`** (Groq planner; Llama 3.1 8B / 3.3 70B retired 16 Aug 2026). |
 
 `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically.
 

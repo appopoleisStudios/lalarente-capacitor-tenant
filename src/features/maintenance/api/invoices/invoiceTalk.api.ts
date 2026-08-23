@@ -102,4 +102,16 @@ export async function resolveInvoiceDispute(
   }
 }
 
+export async function getInvoiceAuditLog(
+  invoiceId: string
+): Promise<{ event: string; created_at: string; metadata: unknown }[]> {
+  const { data, error } = await supabase
+    .from('maintenance_invoice_audit_logs' as any)
+    .select('event, created_at, metadata')
+    .eq('invoice_id', invoiceId)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return (data || []) as unknown as { event: string; created_at: string; metadata: unknown }[];
+}
+
 export { logTalkEvent };
