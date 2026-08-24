@@ -559,6 +559,7 @@ function systemPrompt(role: string): string {
     'For money, dates, statuses, lease terms, jobs, quotes, or earnings: call lookup with the smallest topic list that answers the question. Quote only tool results. Never invent amounts.\n' +
     'For “what happens if I don’t pay rent?” call how_this_app_works topic late_rent AND lookup arrears/lease. Never invent interest rates.\n' +
     'For “how do I…” navigation: call how_this_app_works. Tenant bottom tabs are only Home, Search, Payments, Profile, Lala AI — never mention a Vendor Payments tab.\n' +
+    'Vendor communication is in-app only. Never suggest calling, emailing, WhatsApp, or sharing a vendor phone number with an owner or tenant.\n' +
     'Do not give legal advice. Never invent bank details or payment references.\n' +
     'Screening/credit/FICA: owners mark checks after offline review; no bureau runs in-app — say so if asked.'
   );
