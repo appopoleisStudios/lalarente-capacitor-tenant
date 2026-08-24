@@ -57,7 +57,7 @@ SET completed_jobs = (
   SELECT COUNT(*)::INTEGER
   FROM public.maintenance_requests AS request
   WHERE request.selected_vendor_id = profile.id
-    AND request.status = 'completed'
+    AND request.status IN ('completed', 'closed')
 )
 WHERE profile.role = 'vendor';
 
@@ -69,7 +69,8 @@ SET search_path = public, pg_temp
 AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
-    IF OLD.selected_vendor_id IS NOT NULL AND OLD.status = 'completed' THEN
+    IF OLD.selected_vendor_id IS NOT NULL
+       AND OLD.status IN ('completed', 'closed') THEN
       UPDATE public.profiles
       SET completed_jobs = GREATEST(completed_jobs - 1, 0)
       WHERE id = OLD.selected_vendor_id
@@ -79,7 +80,8 @@ BEGIN
   END IF;
 
   IF TG_OP = 'INSERT' THEN
-    IF NEW.selected_vendor_id IS NOT NULL AND NEW.status = 'completed' THEN
+    IF NEW.selected_vendor_id IS NOT NULL
+       AND NEW.status IN ('completed', 'closed') THEN
       UPDATE public.profiles
       SET completed_jobs = completed_jobs + 1
       WHERE id = NEW.selected_vendor_id
@@ -89,10 +91,10 @@ BEGIN
   END IF;
 
   IF OLD.selected_vendor_id IS NOT NULL
-    AND OLD.status = 'completed'
+    AND OLD.status IN ('completed', 'closed')
     AND (
       NEW.selected_vendor_id IS DISTINCT FROM OLD.selected_vendor_id
-      OR NEW.status IS DISTINCT FROM OLD.status
+      OR NEW.status NOT IN ('completed', 'closed')
     )
   THEN
     UPDATE public.profiles
@@ -102,10 +104,10 @@ BEGIN
   END IF;
 
   IF NEW.selected_vendor_id IS NOT NULL
-    AND NEW.status = 'completed'
+    AND NEW.status IN ('completed', 'closed')
     AND (
       OLD.selected_vendor_id IS DISTINCT FROM NEW.selected_vendor_id
-      OR OLD.status IS DISTINCT FROM NEW.status
+      OR OLD.status NOT IN ('completed', 'closed')
     )
   THEN
     UPDATE public.profiles
@@ -128,7 +130,7 @@ CREATE TRIGGER trg_sync_vendor_completed_jobs
   EXECUTE FUNCTION public.sync_vendor_completed_jobs();
 
 COMMENT ON COLUMN public.profiles.completed_jobs IS
-  'Count of maintenance requests whose selected vendor is this profile and whose status is completed.';
+  'Count of terminal maintenance requests whose selected vendor is this profile and whose status is completed or closed.';
 
 UPDATE public.profiles AS profile
 SET rating = sub.avg_rating
@@ -150,18 +152,31 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
-DECLARE
-  v_vendor uuid;
 BEGIN
-  v_vendor := COALESCE(NEW.vendor_id, OLD.vendor_id);
-  UPDATE public.profiles
-  SET rating = (
-    SELECT ROUND(AVG(overall_rating)::NUMERIC, 2)
-    FROM public.vendor_ratings
-    WHERE vendor_id = v_vendor
-      AND overall_rating IS NOT NULL
-  )
-  WHERE id = v_vendor;
+  IF TG_OP IN ('UPDATE', 'DELETE') THEN
+    UPDATE public.profiles
+    SET rating = (
+      SELECT ROUND(AVG(overall_rating)::NUMERIC, 2)
+      FROM public.vendor_ratings
+      WHERE vendor_id = OLD.vendor_id
+        AND overall_rating IS NOT NULL
+    )
+    WHERE id = OLD.vendor_id;
+  END IF;
+
+  IF TG_OP IN ('INSERT', 'UPDATE')
+     AND (TG_OP = 'INSERT' OR NEW.vendor_id IS DISTINCT FROM OLD.vendor_id OR NEW.overall_rating IS DISTINCT FROM OLD.overall_rating)
+  THEN
+    UPDATE public.profiles
+    SET rating = (
+      SELECT ROUND(AVG(overall_rating)::NUMERIC, 2)
+      FROM public.vendor_ratings
+      WHERE vendor_id = NEW.vendor_id
+        AND overall_rating IS NOT NULL
+    )
+    WHERE id = NEW.vendor_id;
+  END IF;
+
   RETURN COALESCE(NEW, OLD);
 END;
 $$;

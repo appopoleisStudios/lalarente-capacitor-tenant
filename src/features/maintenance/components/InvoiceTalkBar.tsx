@@ -8,6 +8,7 @@ import {
   type MaintenanceInvoice,
 } from '@/src/features/maintenance/api';
 import { messagesApi } from '@/src/features/messaging/api/messagesApi';
+import { bootstrapVendorMaintenanceThread } from '@/src/features/messaging/api/vendorThreadApi';
 import { colors } from '@/src/shared/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -56,30 +57,30 @@ export function InvoiceTalkBar({ invoice, role, accent, onChanged }: Props) {
         Alert.alert('Unavailable', 'This job is missing owner or tenant details for chat.');
         return;
       }
-      const thread = await messagesApi.getOrCreateThread(
-        request.owner_id,
-        request.tenant_id,
-        request.property_id ?? undefined,
-        `Invoice ${invoice.invoice_number}`,
-        'maintenance'
-      );
-      if (role === 'vendor') {
-        await messagesApi.sendMessage({
-          thread_id: thread.id,
-          content: `Discussing invoice ${invoice.invoice_number} before LalaRente review.`,
-          sender_id: user.id,
-          sender_role: 'vendor',
-        });
-      }
+      const threadId =
+        role === 'vendor'
+          ? await bootstrapVendorMaintenanceThread(
+              invoice.maintenance_request_id,
+              `Discussing invoice ${invoice.invoice_number} before LalaRente review.`
+            )
+          : (
+              await messagesApi.getOrCreateThread(
+                request.owner_id,
+                request.tenant_id,
+                request.property_id ?? undefined,
+                `Invoice ${invoice.invoice_number}`,
+                'maintenance'
+              )
+            ).id;
       await logTalkEvent('opened_chat', invoice, user.id, {
         invoice_number: invoice.invoice_number,
       });
       const path =
         role === 'vendor'
-          ? `/(vendor)/messages/${thread.id}`
+          ? `/(vendor)/messages/${threadId}`
           : role === 'tenant'
-            ? `/(tenant)/messages/${thread.id}`
-            : `/(owner)/messages/${thread.id}`;
+            ? `/(tenant)/messages/${threadId}`
+            : `/(owner)/messages/${threadId}`;
       router.push(path as any);
     } catch (error: any) {
       Alert.alert('Chat', error.message || 'Could not open the maintenance thread.');
