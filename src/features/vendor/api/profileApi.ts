@@ -54,6 +54,25 @@ export interface VendorProfile {
   documents: VendorDocument[];
 }
 
+export function summarizeVendorRatings(
+  rows: { overall_rating: number | null }[]
+): Pick<VendorProfile, 'rating' | 'total_reviews'> {
+  const ratings = rows
+    .filter((row) => row.overall_rating != null)
+    .map((row) => Number(row.overall_rating))
+    .filter((rating) => Number.isFinite(rating));
+
+  if (ratings.length === 0) {
+    return { rating: null, total_reviews: 0 };
+  }
+
+  const average = ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
+  return {
+    rating: Math.round(average * 100) / 100,
+    total_reviews: ratings.length,
+  };
+}
+
 export const vendorProfileApi = {
   /**
    * Get vendor's complete profile
@@ -101,10 +120,18 @@ export const vendorProfileApi = {
 
       if (docsError) throw docsError;
 
-      // TODO: Get rating and reviews from completed jobs
-      // For now, return mock data
-      const rating = 4.5;
-      const totalReviews = 12;
+      // Vendors may read their own rating rows under the table's RLS policy.
+      // Keep the profile honest when no owner has rated a completed job yet.
+      const { data: ratingRows, error: ratingsError } = await (supabase as any)
+        .from('vendor_ratings')
+        .select('overall_rating')
+        .eq('vendor_id', vendorId)
+        .not('overall_rating', 'is', null);
+
+      if (ratingsError) throw ratingsError;
+      const ratingSummary = summarizeVendorRatings(
+        (ratingRows || []) as { overall_rating: number | null }[]
+      );
 
       return {
         id: profile.id,
@@ -112,8 +139,8 @@ export const vendorProfileApi = {
         email: profile.email,
         phone: profile.phone,
         avatar_url: profile.avatar_url,
-        rating,
-        total_reviews: totalReviews,
+        rating: ratingSummary.rating,
+        total_reviews: ratingSummary.total_reviews,
         services: services || [],
         service_areas: serviceAreas || [],
         documents: documents || [],

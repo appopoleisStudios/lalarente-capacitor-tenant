@@ -128,14 +128,18 @@ export default function VendorProfileScreen() {
           {phone && <Text style={styles.phone}>📞 {phone}</Text>}
 
           {/* Rating */}
-          {rating > 0 && (
-            <View style={styles.ratingContainer}>
-              <Ionicons name="star" size={20} color={colors.rsa.gold} />
-              <Text style={styles.ratingText}>
-                {rating.toFixed(1)} ({totalReviews} reviews)
-              </Text>
-            </View>
-          )}
+          <View style={styles.ratingContainer}>
+            <Ionicons
+              name={rating > 0 ? 'star' : 'star-outline'}
+              size={20}
+              color={colors.rsa.gold}
+            />
+            <Text style={styles.ratingText}>
+              {rating > 0
+                ? `${rating.toFixed(1)} (${totalReviews} review${totalReviews === 1 ? '' : 's'})`
+                : 'No reviews yet'}
+            </Text>
+          </View>
 
           <View style={styles.badge}>
             <Text style={styles.badgeText}>Vendor Account</Text>
