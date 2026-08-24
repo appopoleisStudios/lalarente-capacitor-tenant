@@ -89,12 +89,12 @@ export interface OwnerDashboardData {
 /**
  * Fetches comprehensive dashboard data for an owner
  *
- * Uses parallel Promise.all for optimal performance. All data fetching is
- * delegated to existing domain-specific APIs to maintain DRY principles.
+ * Fetches sources in parallel via Promise.allSettled so a non-critical
+ * failure (e.g. maintenance RLS) does not blank the whole owner home.
  *
  * @param ownerId - The authenticated owner's user ID
  * @returns Complete dashboard data aggregated from multiple sources
- * @throws Error if any critical data fetch fails
+ * @throws Error if properties cannot be loaded
  *
  * @example
  * ```typescript
@@ -106,12 +106,12 @@ export async function getOwnerDashboardData(ownerId: string): Promise<OwnerDashb
     // Fetch all data in parallel using existing APIs
     // This is faster than sequential calls and maintains separation of concerns
     const [
-      userProfile,
-      properties,
-      payments,
-      maintenanceRequests,
-      applications,
-    ] = await Promise.all([
+      userProfileResult,
+      propertiesResult,
+      paymentsResult,
+      maintenanceResult,
+      applicationsResult,
+    ] = await Promise.allSettled([
       fetchUserProfile(ownerId),
       propertiesApi.getOwnerProperties(ownerId),
       paymentsApi.getOwnerPayments(ownerId),
@@ -119,9 +119,41 @@ export async function getOwnerDashboardData(ownerId: string): Promise<OwnerDashb
       applicationsApi.getOwnerApplications(ownerId),
     ]);
 
+    const userProfile = userProfileResult.status === 'fulfilled' ? userProfileResult.value : null;
+    const properties = propertiesResult.status === 'fulfilled' ? propertiesResult.value : [];
+    const payments = paymentsResult.status === 'fulfilled' ? paymentsResult.value : [];
+    const maintenanceRequests =
+      maintenanceResult.status === 'fulfilled' ? maintenanceResult.value : [];
+    const applications = applicationsResult.status === 'fulfilled' ? applicationsResult.value : [];
+
+    for (const [label, result] of [
+      ['profile', userProfileResult],
+      ['properties', propertiesResult],
+      ['payments', paymentsResult],
+      ['maintenance', maintenanceResult],
+      ['applications', applicationsResult],
+    ] as const) {
+      if (result.status === 'rejected') {
+        console.error(`[ownerDashboardApi] ${label} fetch failed:`, result.reason);
+      }
+    }
+
+    if (propertiesResult.status === 'rejected') {
+      throw propertiesResult.reason instanceof Error
+        ? propertiesResult.reason
+        : new Error('Failed to load properties');
+    }
+
     // Fetch holding deposits count for owner's properties (pending + paid = "active")
     const propertyIds = properties.map((p: any) => p.id);
-    const [holdingDepositsActive, pendingTerminations, processingPayments, openDisputes, recentViewings, pendingClosures] = await Promise.all([
+    const [
+      holdingDepositsActive,
+      pendingTerminations,
+      processingPayments,
+      openDisputes,
+      recentViewings,
+      pendingClosures,
+    ] = await Promise.all([
       fetchHoldingDepositsCount(propertyIds),
       fetchPendingTerminationsCount(ownerId),
       fetchProcessingPaymentsCount(propertyIds),
@@ -132,8 +164,8 @@ export async function getOwnerDashboardData(ownerId: string): Promise<OwnerDashb
 
     // Batch-fetch accepted quotes for active maintenance requests (single extra query)
     const activeIds = maintenanceRequests
-      .filter(r => ['open', 'quote_received', 'in_progress'].includes(r.status))
-      .map(r => r.id);
+      .filter((r) => ['open', 'quote_received', 'in_progress'].includes(r.status))
+      .map((r) => r.id);
 
     const quotesMap: Record<string, number> = {};
     if (activeIds.length > 0) {
@@ -143,7 +175,9 @@ export async function getOwnerDashboardData(ownerId: string): Promise<OwnerDashb
         .in('request_id', activeIds)
         .in('status', ['accepted', 'approved']);
       if (quotesData) {
-        quotesData.forEach((q: any) => { quotesMap[q.request_id] = q.total_amount; });
+        quotesData.forEach((q: any) => {
+          quotesMap[q.request_id] = q.total_amount;
+        });
       }
     }
 
@@ -152,8 +186,18 @@ export async function getOwnerDashboardData(ownerId: string): Promise<OwnerDashb
     const analytics = calculateAnalytics(properties, payments, maintenanceRequests);
     const maintenance = formatMaintenanceItems(maintenanceRequests, quotesMap);
     const applicants = formatApplicants(applications);
-    const recentActivity = buildActivityFeed(payments, maintenanceRequests, applications, recentViewings);
-    const documents = calculateDocumentStats(properties, payments, maintenanceRequests, holdingDepositsActive);
+    const recentActivity = buildActivityFeed(
+      payments,
+      maintenanceRequests,
+      applications,
+      recentViewings
+    );
+    const documents = calculateDocumentStats(
+      properties,
+      payments,
+      maintenanceRequests,
+      holdingDepositsActive
+    );
 
     return {
       userName: userProfile?.full_name || 'Owner',
@@ -237,7 +281,9 @@ async function fetchRecentViewings(ownerId: string): Promise<any[]> {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const { data } = await supabase
     .from('viewing_requests')
-    .select('id, status, requested_date, requested_time, alternative_times, created_at, updated_at, property:properties!property_id(title), tenant:profiles!tenant_id(full_name)')
+    .select(
+      'id, status, requested_date, requested_time, alternative_times, created_at, updated_at, property:properties!property_id(title), tenant:profiles!tenant_id(full_name)'
+    )
     .eq('owner_id', ownerId)
     .gte('created_at', sevenDaysAgo)
     .order('created_at', { ascending: false })
@@ -246,10 +292,7 @@ async function fetchRecentViewings(ownerId: string): Promise<any[]> {
 }
 
 async function fetchOpenDisputesCount(ownerId: string): Promise<number> {
-  const { data: leases } = await supabase
-    .from('leases')
-    .select('id')
-    .eq('owner_id', ownerId);
+  const { data: leases } = await supabase.from('leases').select('id').eq('owner_id', ownerId);
   const leaseIds = (leases || []).map((l: { id: string }) => l.id);
   if (leaseIds.length === 0) return 0;
   const { count } = await supabase
@@ -292,18 +335,18 @@ async function fetchUserProfile(ownerId: string) {
  */
 function calculatePortfolioStats(properties: any[], payments: any[]): PortfolioStats {
   const totalUnits = properties.length;
-  const occupied = properties.filter(p => p.status === 'rented').length;
-  const vacant = properties.filter(p => p.status === 'available').length;
+  const occupied = properties.filter((p) => p.status === 'rented').length;
+  const vacant = properties.filter((p) => p.status === 'available').length;
 
   // Sum monthly rent from all rented properties
   const monthIncome = properties
-    .filter(p => p.status === 'rented')
+    .filter((p) => p.status === 'rented')
     .reduce((sum, p) => sum + (p.rent_amount || 0), 0);
 
   // Calculate arrears from overdue/pending payments past due date
   const now = new Date();
   const arrears = payments
-    .filter(p => {
+    .filter((p) => {
       if (!p.due_date) return false;
       const dueDate = new Date(p.due_date);
       const isOverdue = dueDate < now;
@@ -329,7 +372,7 @@ function calculateAnalytics(
   maintenanceRequests: any[]
 ): AnalyticsData {
   const totalUnits = properties.length;
-  const occupied = properties.filter(p => p.status === 'rented').length;
+  const occupied = properties.filter((p) => p.status === 'rented').length;
 
   // Calculate current month's collected income
   const currentMonthStart = new Date();
@@ -337,7 +380,7 @@ function calculateAnalytics(
   currentMonthStart.setHours(0, 0, 0, 0);
 
   const monthIncome = payments
-    .filter(p => {
+    .filter((p) => {
       if (p.status !== 'completed' || !p.paid_date) return false;
       const paidDate = new Date(p.paid_date);
       return paidDate >= currentMonthStart;
@@ -345,26 +388,24 @@ function calculateAnalytics(
     .reduce((sum, p) => sum + (p.amount || 0), 0);
 
   // Calculate occupancy percentage
-  const currentOccupancy = totalUnits > 0
-    ? Math.round((occupied / totalUnits) * 100)
-    : 0;
+  const currentOccupancy = totalUnits > 0 ? Math.round((occupied / totalUnits) * 100) : 0;
 
   // Count unique tenants with overdue payments
   const now = new Date();
   const tenantsInArrears = new Set(
     payments
-      .filter(p => {
+      .filter((p) => {
         if (!p.due_date || !p.tenant_id) return false;
         const dueDate = new Date(p.due_date);
         const isOverdue = dueDate < now;
         const isPending = p.status === 'pending' || p.status === 'overdue';
         return isOverdue && isPending;
       })
-      .map(p => p.tenant_id)
+      .map((p) => p.tenant_id)
   ).size;
 
   // Count open maintenance requests
-  const openMaintenance = maintenanceRequests.filter(m =>
+  const openMaintenance = maintenanceRequests.filter((m) =>
     ['open', 'assigned', 'in_progress'].includes(m.status)
   ).length;
 
@@ -380,11 +421,14 @@ function calculateAnalytics(
  * Formats maintenance requests for dashboard display
  * Takes only the 5 most recent active requests
  */
-function formatMaintenanceItems(requests: any[], quotesMap: Record<string, number> = {}): MaintenanceItem[] {
+function formatMaintenanceItems(
+  requests: any[],
+  quotesMap: Record<string, number> = {}
+): MaintenanceItem[] {
   return requests
-    .filter(r => ['open', 'quote_received', 'in_progress'].includes(r.status))
+    .filter((r) => ['open', 'quote_received', 'in_progress'].includes(r.status))
     .slice(0, 5)
-    .map(r => {
+    .map((r) => {
       const property = r.property as any;
 
       const statusMap: Record<string, string> = {
@@ -411,9 +455,9 @@ function formatMaintenanceItems(requests: any[], quotesMap: Record<string, numbe
  */
 function formatApplicants(applications: any[]): ApplicantItem[] {
   return applications
-    .filter(a => ['pending', 'approved'].includes(a.status))
+    .filter((a) => ['pending', 'approved'].includes(a.status))
     .slice(0, 5)
-    .map(a => {
+    .map((a) => {
       const tenant = a.tenant as any;
       const property = a.property as any;
       const createdDate = new Date(a.created_at);
@@ -444,9 +488,11 @@ function buildActivityFeed(
 
   // Add completed payments (last 30 days only)
   payments
-    .filter(p => p.status === 'completed' && p.paid_date && new Date(p.paid_date) >= thirtyDaysAgo)
+    .filter(
+      (p) => p.status === 'completed' && p.paid_date && new Date(p.paid_date) >= thirtyDaysAgo
+    )
     .slice(0, 3)
-    .forEach(p => {
+    .forEach((p) => {
       activities.push({
         icon: '💰',
         label: 'Rent Received',
@@ -459,13 +505,17 @@ function buildActivityFeed(
   // Add arrears notices (last 30 days only)
   const now = new Date();
   payments
-    .filter(p => {
+    .filter((p) => {
       if (!p.due_date) return false;
       const dueDate = new Date(p.due_date);
-      return dueDate < now && dueDate >= thirtyDaysAgo && (p.status === 'pending' || p.status === 'overdue');
+      return (
+        dueDate < now &&
+        dueDate >= thirtyDaysAgo &&
+        (p.status === 'pending' || p.status === 'overdue')
+      );
     })
     .slice(0, 2)
-    .forEach(p => {
+    .forEach((p) => {
       activities.push({
         icon: '⚠️',
         label: 'Arrears Notice',
@@ -477,9 +527,9 @@ function buildActivityFeed(
 
   // Add new maintenance requests (last 30 days only)
   maintenanceRequests
-    .filter(m => m.status === 'open' && new Date(m.created_at) >= thirtyDaysAgo)
+    .filter((m) => m.status === 'open' && new Date(m.created_at) >= thirtyDaysAgo)
     .slice(0, 2)
-    .forEach(m => {
+    .forEach((m) => {
       const property = m.property as any;
       activities.push({
         icon: '🔧',
@@ -492,9 +542,9 @@ function buildActivityFeed(
 
   // Add new applications (last 30 days only)
   applications
-    .filter(a => new Date(a.created_at) >= thirtyDaysAgo)
+    .filter((a) => new Date(a.created_at) >= thirtyDaysAgo)
     .slice(0, 2)
-    .forEach(a => {
+    .forEach((a) => {
       const property = a.property as any;
       activities.push({
         icon: '📝',
@@ -506,7 +556,7 @@ function buildActivityFeed(
     });
 
   // Add viewing events
-  viewings.forEach(v => {
+  viewings.forEach((v) => {
     const property = v.property as any;
     const tenant = v.tenant as any;
     const propertyName = property?.title || 'Property';
@@ -552,13 +602,13 @@ function calculateDocumentStats(
   properties: any[],
   payments: any[],
   maintenanceRequests: any[],
-  holdingDepositsActive: number = 0,
+  holdingDepositsActive: number = 0
 ): DocumentStats {
-  const activeLeases = properties.filter(p => p.status === 'rented').length;
+  const activeLeases = properties.filter((p) => p.status === 'rented').length;
 
-  const recentInvoices = payments.filter(p => p.status === 'completed').length;
+  const recentInvoices = payments.filter((p) => p.status === 'completed').length;
 
-  const pendingQuotes = maintenanceRequests.filter(r => r.status === 'quote_received').length;
+  const pendingQuotes = maintenanceRequests.filter((r) => r.status === 'quote_received').length;
 
   return { activeLeases, pastLeases: 0, pendingQuotes, recentInvoices, holdingDepositsActive };
 }
