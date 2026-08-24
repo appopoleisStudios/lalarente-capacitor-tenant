@@ -76,7 +76,6 @@ export interface MaintenanceRequestWithRelations extends MaintenanceRequest {
   selected_vendor?: {
     id: string;
     full_name: string | null;
-    phone: string | null;
   };
   quotes?: {
     id: string;
@@ -86,7 +85,6 @@ export interface MaintenanceRequestWithRelations extends MaintenanceRequest {
     created_at: string;
     vendor?: {
       full_name: string | null;
-      phone: string | null;
     };
   }[];
 }

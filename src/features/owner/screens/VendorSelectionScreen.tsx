@@ -252,9 +252,12 @@ export default function VendorSelectionScreen() {
   const renderVendorItem = useCallback(
     ({ item }: { item: VendorWithCategory }) => {
       const isSelected = selectedIds.has(item.id);
+      const completedJobs = item.completed_jobs ?? 0;
+      const ratingLabel =
+        item.rating != null && item.rating > 0 ? `${item.rating.toFixed(1)} stars` : 'No rating';
       return (
         <TouchableOpacity
-          accessibilityLabel={`${item.business_name || item.full_name || 'Vendor'}${isSelected ? ', selected' : ', not selected'}`}
+          accessibilityLabel={`${item.business_name || item.full_name || 'Vendor'}, ${ratingLabel}, ${completedJobs} completed job${completedJobs === 1 ? '' : 's'}${isSelected ? ', selected' : ', not selected'}`}
           accessibilityRole="radio"
           style={[styles.vendorCard, isSelected && styles.vendorCardSelected]}
           onPress={() => toggleVendor(item.id)}
@@ -296,12 +299,21 @@ export default function VendorSelectionScreen() {
                   .join(' · ')}
               </Text>
             ) : null}
-            {item.rating != null && (
-              <View style={styles.ratingRow}>
-                <Ionicons name="star" size={14} color="#f59e0b" />
-                <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
-              </View>
-            )}
+            <View style={styles.ratingRow}>
+              <Ionicons
+                name={item.rating != null && item.rating > 0 ? 'star' : 'star-outline'}
+                size={14}
+                color={colors.rsa.gold}
+              />
+              <Text style={styles.ratingText}>
+                {item.rating != null && item.rating > 0 ? item.rating.toFixed(1) : 'No rating'}
+              </Text>
+              <View style={styles.statDivider} />
+              <Ionicons name="checkmark-circle-outline" size={14} color={RSA.blue} />
+              <Text style={styles.completedJobsText}>
+                {completedJobs} completed job{completedJobs === 1 ? '' : 's'}
+              </Text>
+            </View>
           </View>
           <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
             {isSelected && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
@@ -497,6 +509,28 @@ export default function VendorSelectionScreen() {
                     {inviteResult.business_name || inviteResult.full_name}
                   </Text>
                   <Text style={styles.inviteResultEmail}>{inviteResult.email}</Text>
+                  <View style={styles.ratingRow}>
+                    <Ionicons
+                      name={
+                        inviteResult.rating != null && inviteResult.rating > 0
+                          ? 'star'
+                          : 'star-outline'
+                      }
+                      size={14}
+                      color={colors.rsa.gold}
+                    />
+                    <Text style={styles.ratingText}>
+                      {inviteResult.rating != null && inviteResult.rating > 0
+                        ? inviteResult.rating.toFixed(1)
+                        : 'No rating'}
+                    </Text>
+                    <View style={styles.statDivider} />
+                    <Ionicons name="checkmark-circle-outline" size={14} color={RSA.blue} />
+                    <Text style={styles.completedJobsText}>
+                      {inviteResult.completed_jobs ?? 0} completed job
+                      {(inviteResult.completed_jobs ?? 0) === 1 ? '' : 's'}
+                    </Text>
+                  </View>
                 </View>
                 <Ionicons name="checkmark-done" size={20} color={colors.success[500]} />
               </View>
@@ -673,6 +707,8 @@ const styles = StyleSheet.create({
   vendorEmail: { fontSize: 12, color: colors.gray[400], marginTop: 1 },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   ratingText: { fontSize: 13, fontWeight: '600', color: '#111827' },
+  completedJobsText: { fontSize: 12, color: colors.gray[400] },
+  statDivider: { width: 1, height: 12, backgroundColor: colors.gray[200], marginHorizontal: 2 },
   checkbox: {
     width: 24,
     height: 24,

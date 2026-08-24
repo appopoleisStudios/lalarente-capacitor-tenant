@@ -14,10 +14,11 @@ export interface VendorProfile {
   id: string;
   full_name: string | null;
   email: string | null;
-  phone: string | null;
   avatar_url: string | null;
   business_name: string | null;
   rating: number | null;
+  /** Number of maintenance requests completed with this vendor selected. */
+  completed_jobs?: number;
   role?: string;
   /** Active trades (service category names). Loaded by directory queries. */
   trades?: string[];

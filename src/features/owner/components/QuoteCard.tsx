@@ -9,7 +9,11 @@ const QUOTE_STATUS_CONFIG = {
   submitted: { label: 'Submitted', color: colors.info[500], bgColor: colors.info[50] },
   approved: { label: 'Approved', color: colors.success[500], bgColor: colors.success[50] },
   rejected: { label: 'Rejected', color: colors.error[500], bgColor: colors.error[50] },
-  revision_requested: { label: 'Revision Requested', color: colors.warning[500], bgColor: colors.warning[50] },
+  revision_requested: {
+    label: 'Revision Requested',
+    color: colors.warning[500],
+    bgColor: colors.warning[50],
+  },
 };
 
 interface QuoteCardProps {
@@ -30,17 +34,17 @@ export function QuoteCard({
   onViewDetails,
 }: QuoteCardProps) {
   const [showRevisions, setShowRevisions] = useState(false);
-  
-  const statusConfig = QUOTE_STATUS_CONFIG[quote.status as keyof typeof QUOTE_STATUS_CONFIG] || QUOTE_STATUS_CONFIG.submitted;
+
+  const statusConfig =
+    QUOTE_STATUS_CONFIG[quote.status as keyof typeof QUOTE_STATUS_CONFIG] ||
+    QUOTE_STATUS_CONFIG.submitted;
   const hasRevisions = revisions.length > 0;
 
   return (
     <View style={styles.card}>
       {/* Status Badge */}
       <View style={[styles.statusBadge, { backgroundColor: statusConfig.bgColor }]}>
-        <Text style={[styles.statusText, { color: statusConfig.color }]}>
-          {statusConfig.label}
-        </Text>
+        <Text style={[styles.statusText, { color: statusConfig.color }]}>{statusConfig.label}</Text>
         {quote.revision_number > 0 && (
           <Text style={[styles.revisionNumber, { color: statusConfig.color }]}>
             • Rev {quote.revision_number}
@@ -62,7 +66,6 @@ export function QuoteCard({
                 </View>
               )}
             </View>
-            <Text style={styles.vendorPhone}>{quote.vendor?.phone}</Text>
           </View>
         </View>
         <View style={styles.amount}>
@@ -100,11 +103,7 @@ export function QuoteCard({
           style={styles.revisionToggle}
           onPress={() => setShowRevisions(!showRevisions)}
         >
-          <Ionicons
-            name="time-outline"
-            size={16}
-            color={RSA.blue}
-          />
+          <Ionicons name="time-outline" size={16} color={RSA.blue} />
           <Text style={styles.revisionToggleText}>
             {showRevisions ? 'Hide' : 'Show'} Revision History ({revisions.length})
           </Text>
@@ -137,15 +136,33 @@ export function QuoteCard({
                 {index < revisions.length - 1 && (
                   <View style={styles.revisionDiff}>
                     <Ionicons
-                      name={revision.total_amount > revisions[index + 1].total_amount ? 'arrow-up' : 'arrow-down'}
+                      name={
+                        revision.total_amount > revisions[index + 1].total_amount
+                          ? 'arrow-up'
+                          : 'arrow-down'
+                      }
                       size={12}
-                      color={revision.total_amount > revisions[index + 1].total_amount ? colors.error[500] : colors.success[500]}
+                      color={
+                        revision.total_amount > revisions[index + 1].total_amount
+                          ? colors.error[500]
+                          : colors.success[500]
+                      }
                     />
-                    <Text style={[
-                      styles.revisionDiffText,
-                      { color: revision.total_amount > revisions[index + 1].total_amount ? colors.error[500] : colors.success[500] }
-                    ]}>
-                      R {Math.abs(revision.total_amount - revisions[index + 1].total_amount).toLocaleString()}
+                    <Text
+                      style={[
+                        styles.revisionDiffText,
+                        {
+                          color:
+                            revision.total_amount > revisions[index + 1].total_amount
+                              ? colors.error[500]
+                              : colors.success[500],
+                        },
+                      ]}
+                    >
+                      R{' '}
+                      {Math.abs(
+                        revision.total_amount - revisions[index + 1].total_amount
+                      ).toLocaleString()}
                     </Text>
                   </View>
                 )}
@@ -161,10 +178,7 @@ export function QuoteCard({
       {/* Actions for submitted quotes */}
       {quote.status === 'submitted' && (
         <View style={styles.actions}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.rejectButton]}
-            onPress={onReject}
-          >
+          <TouchableOpacity style={[styles.actionButton, styles.rejectButton]} onPress={onReject}>
             <Ionicons name="close-circle-outline" size={18} color={colors.error[600]} />
             <Text style={styles.rejectText}>Reject</Text>
           </TouchableOpacity>
@@ -175,10 +189,7 @@ export function QuoteCard({
             <Ionicons name="create-outline" size={18} color={colors.warning[600]} />
             <Text style={styles.revisionText}>Request Changes</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.acceptButton]}
-            onPress={onAccept}
-          >
+          <TouchableOpacity style={[styles.actionButton, styles.acceptButton]} onPress={onAccept}>
             <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" />
             <Text style={styles.acceptText}>Accept</Text>
           </TouchableOpacity>
@@ -244,10 +255,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.text.primary,
-  },
-  vendorPhone: {
-    fontSize: 13,
-    color: colors.gray[600],
   },
   contractBadge: {
     flexDirection: 'row',

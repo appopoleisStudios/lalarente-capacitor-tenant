@@ -332,12 +332,6 @@ export default function TenantMaintenanceDetailScreen() {
                 <Text style={styles.vendorName}>
                   {request.assigned_vendor.company_name || request.assigned_vendor.full_name}
                 </Text>
-                {request.assigned_vendor.phone && (
-                  <View style={styles.vendorContact}>
-                    <Ionicons name="call-outline" size={14} color="#6b7280" />
-                    <Text style={styles.vendorPhone}>{request.assigned_vendor.phone}</Text>
-                  </View>
-                )}
                 {request.assigned_vendor.email && (
                   <View style={styles.vendorContact}>
                     <Ionicons name="mail-outline" size={14} color="#6b7280" />
@@ -543,7 +537,6 @@ const styles = StyleSheet.create({
   vendorInfo: { flex: 1, gap: 4 },
   vendorName: { fontSize: 16, fontWeight: '700', color: '#111827' },
   vendorContact: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  vendorPhone: { fontSize: 13, color: '#6b7280' },
   vendorEmail: { fontSize: 13, color: '#6b7280' },
   updateCard: { padding: 12, backgroundColor: '#f9fafb', borderRadius: 8 },
   updateCardMargin: { marginTop: 12 },

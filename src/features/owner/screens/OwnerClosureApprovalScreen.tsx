@@ -264,7 +264,6 @@ export default function OwnerClosureApprovalScreen() {
               <View style={styles.vendorInfo}>
                 <Text style={styles.vendorName}>{vendor.full_name || 'Vendor'}</Text>
                 {vendor.email && <Text style={styles.vendorContact}>{vendor.email}</Text>}
-                {vendor.phone && <Text style={styles.vendorContact}>{vendor.phone}</Text>}
               </View>
             </View>
           </View>

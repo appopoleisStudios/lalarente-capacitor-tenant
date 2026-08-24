@@ -199,10 +199,13 @@ export default function TenantVendorMarketplaceScreen() {
   const renderVendorCard = useCallback(
     ({ item }: { item: VendorProfile }) => {
       const isSelected = selectedId === item.id;
+      const completedJobs = item.completed_jobs ?? 0;
+      const ratingLabel =
+        item.rating != null && item.rating > 0 ? `${item.rating.toFixed(1)} stars` : 'No rating';
       return (
         <TouchableOpacity
           testID={TENANT_VENDOR_MARKETPLACE_TEST_IDS.vendorCard}
-          accessibilityLabel={`${item.business_name || item.full_name || 'Vendor'}${isSelected ? ', selected' : ''}`}
+          accessibilityLabel={`${item.business_name || item.full_name || 'Vendor'}, ${ratingLabel}, ${completedJobs} completed job${completedJobs === 1 ? '' : 's'}${isSelected ? ', selected' : ''}`}
           accessibilityRole="button"
           style={[styles.vendorCard, isSelected && styles.vendorCardSelected]}
           onPress={() => handleSelectVendor(item)}
@@ -232,16 +235,10 @@ export default function TenantVendorMarketplaceScreen() {
                 {item.email}
               </Text>
             )}
-            {item.phone && (
-              <View style={styles.phoneRow}>
-                <Ionicons name="call-outline" size={12} color={colors.gray[400]} />
-                <Text style={styles.vendorPhone}>{item.phone}</Text>
-              </View>
-            )}
             {formatServiceAreas(item) && (
-              <View style={styles.phoneRow}>
+              <View style={styles.locationRow}>
                 <Ionicons name="location-outline" size={12} color={colors.gray[400]} />
-                <Text style={styles.vendorPhone}>{formatServiceAreas(item)}</Text>
+                <Text style={styles.vendorLocation}>{formatServiceAreas(item)}</Text>
               </View>
             )}
             {item.trades && item.trades.length > 0 && (
@@ -249,14 +246,21 @@ export default function TenantVendorMarketplaceScreen() {
                 {item.trades.slice(0, 3).join(' · ')}
               </Text>
             )}
-            {/* Rating */}
-            {item.rating != null && item.rating > 0 && (
-              <View style={styles.ratingRow}>
-                <Ionicons name="star" size={14} color="#f59e0b" />
-                <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
-                <Text style={styles.ratingLabel}>rating</Text>
-              </View>
-            )}
+            <View style={styles.ratingRow}>
+              <Ionicons
+                name={item.rating != null && item.rating > 0 ? 'star' : 'star-outline'}
+                size={14}
+                color={colors.rsa.gold}
+              />
+              <Text style={styles.ratingText}>
+                {item.rating != null && item.rating > 0 ? item.rating.toFixed(1) : 'No rating'}
+              </Text>
+              <View style={styles.statDivider} />
+              <Ionicons name="checkmark-circle-outline" size={14} color={accent} />
+              <Text style={styles.ratingLabel}>
+                {completedJobs} completed job{completedJobs === 1 ? '' : 's'}
+              </Text>
+            </View>
           </View>
 
           {/* Arrow */}
@@ -453,8 +457,8 @@ const styles = StyleSheet.create({
   vendorName: { fontSize: 15, fontWeight: '700', color: '#111827' },
   vendorContact: { fontSize: 13, color: '#6b7280', marginTop: 1 },
   vendorEmail: { fontSize: 12, color: '#9ca3af', marginTop: 1 },
-  phoneRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  vendorPhone: { fontSize: 12, color: '#9ca3af' },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  vendorLocation: { fontSize: 12, color: '#9ca3af' },
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -463,6 +467,7 @@ const styles = StyleSheet.create({
   },
   ratingText: { fontSize: 13, fontWeight: '700', color: '#111827' },
   ratingLabel: { fontSize: 12, color: '#9ca3af' },
+  statDivider: { width: 1, height: 12, backgroundColor: colors.gray[200], marginHorizontal: 2 },
 
   // Empty state
   emptyContainer: {

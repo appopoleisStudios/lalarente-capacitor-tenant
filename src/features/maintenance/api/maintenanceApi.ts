@@ -1,15 +1,12 @@
 import { supabase } from '@/src/lib/supabase';
-import type {
-    MaintenanceRequest,
-    ServiceCategory
-} from '@/src/types/maintenance.types';
+import type { MaintenanceRequest, ServiceCategory } from '@/src/types/maintenance.types';
 
 // Feature flag for mock mode
 const USE_MOCK_DATA = false; // ✅ Changed to false - using real data now
 
 export interface CreateMaintenanceRequestInput {
   property_id: string;
-  owner_id: string;  // REQUIRED
+  owner_id: string; // REQUIRED
   tenant_id: string; // Who reported it
   category_id?: string;
   priority?: 'low' | 'medium' | 'high';
@@ -23,15 +20,13 @@ export const maintenanceApi = {
   // Fetch maintenance requests with role-based filtering
   async getMaintenanceRequests(userId: string, role?: 'owner' | 'tenant' | 'vendor') {
     // Build query based on role
-    let query = supabase
-      .from('maintenance_requests')
-      .select(`
+    let query = supabase.from('maintenance_requests').select(`
         *,
         property:properties(id, title, address, city),
         tenant:profiles!tenant_id(id, full_name, avatar_url, email, phone),
         owner:profiles!owner_id(id, full_name, email, phone),
         category:service_categories(id, name, description),
-        selected_vendor:profiles!selected_vendor_id(id, full_name, phone)
+        selected_vendor:profiles!selected_vendor_id(id, full_name)
       `);
 
     // Apply role-based filter
@@ -58,22 +53,24 @@ export const maintenanceApi = {
   async getMaintenanceRequestById(id: string) {
     const { data, error } = await supabase
       .from('maintenance_requests')
-      .select(`
+      .select(
+        `
         *,
         property:properties(id, title, address, city, owner_id),
         tenant:profiles!tenant_id(id, full_name, avatar_url, email, phone),
         owner:profiles!owner_id(id, full_name, email, phone),
         category:service_categories(id, name, description),
-        selected_vendor:profiles!selected_vendor_id(id, full_name, phone),
+        selected_vendor:profiles!selected_vendor_id(id, full_name),
         quotes!request_id(
           id, 
           vendor_id,
           total_amount,
           status,
           created_at,
-          vendor:profiles!vendor_id(full_name, phone)
+          vendor:profiles!vendor_id(full_name)
         )
-      `)
+      `
+      )
       .eq('id', id)
       .single();
 
@@ -134,7 +131,14 @@ export const maintenanceApi = {
   // Update MMS status (workflow tracking)
   async updateMmsStatus(
     id: string,
-    mmsStatus: 'notification' | 'acknowledged' | 'vendor_routed' | 'quote_received' | 'po_issued' | 'in_progress' | 'completed'
+    mmsStatus:
+      | 'notification'
+      | 'acknowledged'
+      | 'vendor_routed'
+      | 'quote_received'
+      | 'po_issued'
+      | 'in_progress'
+      | 'completed'
   ) {
     const updates: any = { mms_status: mmsStatus };
 
@@ -187,15 +191,17 @@ export const maintenanceApi = {
   // Filter by status
   async filterByStatus(
     ownerId: string,
-    statuses: Array<'open' | 'assigned' | 'in_progress' | 'completed' | 'closed'>
+    statuses: ('open' | 'assigned' | 'in_progress' | 'completed' | 'closed')[]
   ) {
     const { data, error } = await supabase
       .from('maintenance_requests')
-      .select(`
+      .select(
+        `
         *,
         property:properties(id, title, address),
         category:service_categories(id, name)
-      `)
+      `
+      )
       .eq('owner_id', ownerId)
       .in('status', statuses)
       .order('created_at', { ascending: false });
@@ -205,17 +211,16 @@ export const maintenanceApi = {
   },
 
   // Filter by priority
-  async filterByPriority(
-    ownerId: string,
-    priorities: Array<'low' | 'medium' | 'high'>
-  ) {
+  async filterByPriority(ownerId: string, priorities: ('low' | 'medium' | 'high')[]) {
     const { data, error } = await supabase
       .from('maintenance_requests')
-      .select(`
+      .select(
+        `
         *,
         property:properties(id, title, address),
         category:service_categories(id, name)
-      `)
+      `
+      )
       .eq('owner_id', ownerId)
       .in('priority', priorities)
       .order('created_at', { ascending: false });
@@ -284,10 +289,7 @@ export const maintenanceApi = {
 
   // Delete maintenance request
   async deleteMaintenanceRequest(id: string) {
-    const { error } = await supabase
-      .from('maintenance_requests')
-      .delete()
-      .eq('id', id);
+    const { error } = await supabase.from('maintenance_requests').delete().eq('id', id);
 
     if (error) throw error;
     return { success: true };
@@ -310,10 +312,7 @@ export const maintenanceApi = {
   },
 
   // Real-time subscription
-  subscribeToMaintenanceRequests(
-    ownerId: string,
-    callback: (payload: any) => void
-  ) {
+  subscribeToMaintenanceRequests(ownerId: string, callback: (payload: any) => void) {
     // Unique channel name prevents "cannot add postgres_changes callbacks after
     // subscribe()" crash on remount (StrictMode / navigation back / hot reload).
     const channelName = `maintenance_changes_${ownerId}_${Date.now()}_${Math.random()}`;
@@ -347,16 +346,17 @@ export const maintenanceApi = {
   async getVendorsByCategory(categoryId: string) {
     const { data, error } = await supabase
       .from('vendor_services')
-      .select(`
+      .select(
+        `
         vendor_id,
         vendor:profiles!vendor_id(
           id,
           full_name,
           email,
-          phone,
           avatar_url
         )
-      `)
+      `
+      )
       .eq('category_id', categoryId)
       .eq('is_active', true);
 
@@ -364,7 +364,7 @@ export const maintenanceApi = {
 
     // Extract unique vendors (a vendor might have multiple services in same category)
     const uniqueVendors = Array.from(
-      new Map(data?.map(item => [item.vendor_id, item.vendor]) || []).values()
+      new Map(data?.map((item) => [item.vendor_id, item.vendor]) || []).values()
     );
 
     return uniqueVendors;
@@ -374,7 +374,8 @@ export const maintenanceApi = {
   async getDedicatedVendors(propertyId: string, categoryId?: string) {
     let query = supabase
       .from('dedicated_vendors')
-      .select(`
+      .select(
+        `
         vendor_id,
         category_id,
         priority,
@@ -382,10 +383,10 @@ export const maintenanceApi = {
           id,
           full_name,
           email,
-          phone,
           avatar_url
         )
-      `)
+      `
+      )
       .eq('property_id', propertyId)
       .eq('is_active', true);
 
@@ -400,7 +401,7 @@ export const maintenanceApi = {
 
     if (error) throw error;
 
-    return data?.map(item => item.vendor) || [];
+    return data?.map((item) => item.vendor) || [];
   },
 
   // Get vendors for a maintenance request (based on visibility and category)
@@ -434,14 +435,15 @@ export const maintenanceApi = {
   async searchVendorByEmail(email: string) {
     const { data, error } = await supabase
       .from('profiles')
-      .select(`
+      .select(
+        `
         id,
         full_name,
         email,
-        phone,
         avatar_url,
         role
-      `)
+      `
+      )
       .eq('email', email.toLowerCase().trim())
       .eq('role', 'vendor')
       .single();
@@ -461,14 +463,16 @@ export const maintenanceApi = {
   async getVendorCategories(vendorId: string) {
     const { data, error } = await supabase
       .from('vendor_services')
-      .select(`
+      .select(
+        `
         category_id,
         category:service_categories!category_id(
           id,
           name,
           description
         )
-      `)
+      `
+      )
       .eq('vendor_id', vendorId)
       .eq('is_active', true);
 
@@ -476,7 +480,7 @@ export const maintenanceApi = {
 
     // Extract unique categories
     const uniqueCategories = Array.from(
-      new Map(data?.map(item => [item.category_id, item.category]) || []).values()
+      new Map(data?.map((item) => [item.category_id, item.category]) || []).values()
     );
 
     return uniqueCategories;
@@ -542,7 +546,7 @@ export const maintenanceApi = {
     }
 
     // Create vendor_quote_requests for each dedicated vendor
-    const quoteRequests = vendors.map(vendor => ({
+    const quoteRequests = vendors.map((vendor) => ({
       request_id: requestId,
       vendor_id: vendor.id,
       status: 'pending',
@@ -571,7 +575,8 @@ export const maintenanceApi = {
 
     // Send notifications to vendors
     try {
-      const { notificationsApi } = await import('@/src/features/notifications/api/notificationsApi');
+      const { notificationsApi } =
+        await import('@/src/features/notifications/api/notificationsApi');
       for (const vendor of vendors) {
         notificationsApi.sendNotification({
           user_id: vendor.id,
@@ -600,7 +605,7 @@ export const maintenanceApi = {
     }
 
     // Create vendor_quote_requests for selected vendors
-    const quoteRequests = vendorIds.map(vendorId => ({
+    const quoteRequests = vendorIds.map((vendorId) => ({
       request_id: requestId,
       vendor_id: vendorId,
       status: 'pending',
@@ -629,7 +634,8 @@ export const maintenanceApi = {
 
     // Send notifications to selected vendors
     try {
-      const { notificationsApi } = await import('@/src/features/notifications/api/notificationsApi');
+      const { notificationsApi } =
+        await import('@/src/features/notifications/api/notificationsApi');
       for (const vendorId of vendorIds) {
         notificationsApi.sendNotification({
           user_id: vendorId,
@@ -654,7 +660,7 @@ export const maintenanceApi = {
   /**
    * Start work on a maintenance request (Vendor action)
    * Updates status to 'in_progress' and records work start time
-   * 
+   *
    * @param requestId - The maintenance request ID
    * @param vendorId - The vendor's user ID
    * @returns Updated maintenance request
@@ -686,8 +692,7 @@ export const maintenanceApi = {
     }
 
     // Update maintenance request
-    const { data, error } = await (supabase
-      .from('maintenance_requests') as any)
+    const { data, error } = await (supabase.from('maintenance_requests') as any)
       .update({
         status: 'in_progress',
         work_started_at: new Date().toISOString(),
@@ -708,19 +713,14 @@ export const maintenanceApi = {
 
   /**
    * Submit daily progress update (Vendor action)
-   * 
+   *
    * @param requestId - The maintenance request ID
    * @param vendorId - The vendor's user ID
    * @param notes - Progress notes
    * @param photos - Array of photo URLs
    * @returns Created progress update
    */
-  async submitProgressUpdate(
-    requestId: string,
-    vendorId: string,
-    notes: string,
-    photos: string[]
-  ) {
+  async submitProgressUpdate(requestId: string, vendorId: string, notes: string, photos: string[]) {
     console.log('📸 Submitting progress update:', { requestId, vendorId });
 
     // Verify vendor is assigned and work is in progress
@@ -743,8 +743,7 @@ export const maintenanceApi = {
     }
 
     // Create progress update
-    const { data, error } = await (supabase
-      .from('job_progress_updates') as any)
+    const { data, error } = await (supabase.from('job_progress_updates') as any)
       .insert({
         maintenance_request_id: requestId,
         vendor_id: vendorId,
@@ -766,7 +765,7 @@ export const maintenanceApi = {
 
   /**
    * Get progress updates for a maintenance request
-   * 
+   *
    * @param requestId - The maintenance request ID
    * @returns Array of progress updates
    */
@@ -783,7 +782,7 @@ export const maintenanceApi = {
 
   /**
    * Request job closure (Vendor action)
-   * 
+   *
    * @param requestId - The maintenance request ID
    * @param vendorId - The vendor's user ID
    * @param completionNotes - Notes about the completed work
@@ -822,8 +821,9 @@ export const maintenanceApi = {
     }
 
     // Create closure report
-    const { data: closureReport, error: closureError } = await (supabase
-      .from('closure_reports') as any)
+    const { data: closureReport, error: closureError } = await (
+      supabase.from('closure_reports') as any
+    )
       .insert({
         maintenance_request_id: requestId,
         completion_notes: completionNotes,
@@ -839,8 +839,7 @@ export const maintenanceApi = {
     }
 
     // Update maintenance request
-    const { error: updateError } = await (supabase
-      .from('maintenance_requests') as any)
+    const { error: updateError } = await (supabase.from('maintenance_requests') as any)
       .update({
         closure_requested_at: new Date().toISOString(),
       })
@@ -857,7 +856,7 @@ export const maintenanceApi = {
 
   /**
    * Get closure report for a maintenance request
-   * 
+   *
    * @param requestId - The maintenance request ID
    * @returns Closure report or null
    */
@@ -872,7 +871,6 @@ export const maintenanceApi = {
     return data;
   },
 };
-
 
 // ============================================
 // VENDOR-SPECIFIC METHODS
@@ -946,7 +944,7 @@ export const vendorMaintenanceApi = {
    * - visibility = 'public' (Open Market) - ALL vendors can see
    * - vendor has a quote_request (Invited)
    * - vendor is a dedicated vendor for the property
-   * 
+   *
    * @param vendorId - The vendor's user ID
    * @param filters - Optional filters for status, category, quote status
    * @returns Array of maintenance requests accessible to the vendor
@@ -956,9 +954,7 @@ export const vendorMaintenanceApi = {
     filters?: VendorMaintenanceFilters
   ): Promise<VendorMaintenanceRequest[]> {
     // Build the base query
-    let query = supabase
-      .from('maintenance_requests')
-      .select(`
+    let query = supabase.from('maintenance_requests').select(`
         *,
         property:properties(id, title, address, city, province),
         category:service_categories(id, name),
@@ -1044,7 +1040,7 @@ export const vendorMaintenanceApi = {
     );
 
     // Filter requests based on access rules
-    const accessibleRequests = typedRequests.filter(request => {
+    const accessibleRequests = typedRequests.filter((request) => {
       // Check if vendor has a quote for this request
       const hasQuote = quotesByRequest.has(request.id);
 
@@ -1087,7 +1083,7 @@ export const vendorMaintenanceApi = {
     });
 
     // Enrich with vendor-specific data
-    const enrichedRequests: VendorMaintenanceRequest[] = accessibleRequests.map(request => {
+    const enrichedRequests: VendorMaintenanceRequest[] = accessibleRequests.map((request) => {
       const quote = quotesByRequest.get(request.id);
       const hasQuoteRequest = quoteRequestMap.has(request.id);
 
@@ -1100,12 +1096,14 @@ export const vendorMaintenanceApi = {
 
       return {
         ...request,
-        my_quote: quote ? {
-          id: quote.id,
-          status: quote.status,
-          total_amount: quote.total_amount,
-          created_at: quote.created_at,
-        } : undefined,
+        my_quote: quote
+          ? {
+              id: quote.id,
+              status: quote.status,
+              total_amount: quote.total_amount,
+              created_at: quote.created_at,
+            }
+          : undefined,
         has_quote_request: hasQuoteRequest,
         can_quote: canQuote,
       };
@@ -1117,24 +1115,23 @@ export const vendorMaintenanceApi = {
   /**
    * Get full details of a maintenance request
    * Includes all related data and vendor-specific context
-   * 
+   *
    * @param requestId - The maintenance request ID
    * @param vendorId - The vendor's user ID (for access check)
    * @returns Full maintenance request details
    */
-  async getRequestById(
-    requestId: string,
-    vendorId: string
-  ): Promise<VendorMaintenanceRequest> {
+  async getRequestById(requestId: string, vendorId: string): Promise<VendorMaintenanceRequest> {
     const { data: request, error } = await supabase
       .from('maintenance_requests')
-      .select(`
+      .select(
+        `
         *,
         property:properties(id, title, address, city, province),
         category:service_categories(id, name),
         owner:profiles!owner_id(id, full_name, email, phone),
         tenant:profiles!tenant_id(id, full_name, phone)
-      `)
+      `
+      )
       .eq('id', requestId)
       .single();
 
@@ -1187,13 +1184,15 @@ export const vendorMaintenanceApi = {
 
     return {
       ...typedRequest,
-      my_quote: typedQuote ? {
-        id: typedQuote.id,
-        status: typedQuote.status,
-        total_amount: typedQuote.total_amount,
-        created_at: typedQuote.created_at,
-        revision_reason: typedQuote.revision_reason,
-      } : undefined,
+      my_quote: typedQuote
+        ? {
+            id: typedQuote.id,
+            status: typedQuote.status,
+            total_amount: typedQuote.total_amount,
+            created_at: typedQuote.created_at,
+            revision_reason: typedQuote.revision_reason,
+          }
+        : undefined,
       has_quote_request: !!quoteRequest,
       can_quote: canQuote,
     };
@@ -1201,7 +1200,7 @@ export const vendorMaintenanceApi = {
 
   /**
    * Get vendor's active jobs (requests where their quote was accepted)
-   * 
+   *
    * @param vendorId - The vendor's user ID
    * @returns Array of active job requests
    */
@@ -1209,13 +1208,15 @@ export const vendorMaintenanceApi = {
     // Get requests where vendor is selected
     const { data: requests, error } = await supabase
       .from('maintenance_requests')
-      .select(`
+      .select(
+        `
         *,
         property:properties(id, title, address, city, province),
         category:service_categories(id, name),
         owner:profiles!owner_id(id, full_name, email, phone),
         tenant:profiles!tenant_id(id, full_name, phone)
-      `)
+      `
+      )
       .eq('selected_vendor_id', vendorId)
       .in('status', ['assigned', 'in_progress'])
       .order('created_at', { ascending: false });
@@ -1236,9 +1237,7 @@ export const vendorMaintenanceApi = {
 
     const typedQuotes = quotes as any[];
 
-    const quotesByRequest = new Map(
-      typedQuotes?.map((q: any) => [q.request_id, q]) || []
-    );
+    const quotesByRequest = new Map(typedQuotes?.map((q: any) => [q.request_id, q]) || []);
 
     // Enrich with vendor-specific data
     const enrichedRequests: VendorMaintenanceRequest[] = typedRequests.map((request: any) => {
@@ -1246,12 +1245,14 @@ export const vendorMaintenanceApi = {
 
       return {
         ...request,
-        my_quote: quote ? {
-          id: quote.id,
-          status: quote.status,
-          total_amount: quote.total_amount,
-          created_at: quote.created_at,
-        } : undefined,
+        my_quote: quote
+          ? {
+              id: quote.id,
+              status: quote.status,
+              total_amount: quote.total_amount,
+              created_at: quote.created_at,
+            }
+          : undefined,
         can_quote: true, // Selected vendors can always quote
       };
     });
@@ -1262,7 +1263,7 @@ export const vendorMaintenanceApi = {
   /**
    * Update job status (vendor action)
    * Allows vendor to start work or mark as completed
-   * 
+   *
    * @param requestId - The maintenance request ID
    * @param vendorId - The vendor's user ID (for access check)
    * @param update - Status update data
@@ -1313,8 +1314,7 @@ export const vendorMaintenanceApi = {
     }
 
     // Update the request
-    const { data, error } = await (supabase
-      .from('maintenance_requests') as any)
+    const { data, error } = await (supabase.from('maintenance_requests') as any)
       .update(updateData)
       .eq('id', requestId)
       .select()
@@ -1328,15 +1328,12 @@ export const vendorMaintenanceApi = {
   /**
    * Submit a quote for a maintenance request
    * Creates a quote and updates the vendor_quote_request status
-   * 
+   *
    * @param vendorId - The vendor's user ID
    * @param quoteData - Quote submission data
    * @returns Created quote
    */
-  async submitQuote(
-    vendorId: string,
-    quoteData: QuoteSubmission
-  ) {
+  async submitQuote(vendorId: string, quoteData: QuoteSubmission) {
     // Validate that vendor has access to this request
     const request = await this.getRequestById(quoteData.request_id, vendorId);
 
@@ -1367,8 +1364,7 @@ export const vendorMaintenanceApi = {
     const propertyId = request.property_id;
 
     // Create the quote
-    const { data: quote, error: quoteError } = await (supabase
-      .from('quotes') as any)
+    const { data: quote, error: quoteError } = await (supabase.from('quotes') as any)
       .insert({
         vendor_id: vendorId,
         owner_id: ownerId,
@@ -1390,8 +1386,7 @@ export const vendorMaintenanceApi = {
 
     // Update vendor_quote_request if it exists
     if (request.has_quote_request) {
-      const { error: updateError } = await (supabase
-        .from('vendor_quote_requests') as any)
+      const { error: updateError } = await (supabase.from('vendor_quote_requests') as any)
         .update({
           status: 'responded',
           responded_at: new Date().toISOString(),
@@ -1407,8 +1402,7 @@ export const vendorMaintenanceApi = {
     }
 
     // Update maintenance request status to 'quoting' if still 'open'
-    const { error: requestUpdateError } = await (supabase
-      .from('maintenance_requests') as any)
+    const { error: requestUpdateError } = await (supabase.from('maintenance_requests') as any)
       .update({
         mms_status: 'quoting',
       })
@@ -1426,16 +1420,12 @@ export const vendorMaintenanceApi = {
   /**
    * Decline a quote request
    * Updates the vendor_quote_request status to declined
-   * 
+   *
    * @param vendorId - The vendor's user ID
    * @param requestId - The maintenance request ID
    * @param reason - Optional reason for declining
    */
-  async declineQuoteRequest(
-    vendorId: string,
-    requestId: string,
-    reason?: string
-  ) {
+  async declineQuoteRequest(vendorId: string, requestId: string, reason?: string) {
     // Verify vendor has a quote request for this
     const { data: quoteRequest, error: fetchError } = await supabase
       .from('vendor_quote_requests')
@@ -1457,8 +1447,7 @@ export const vendorMaintenanceApi = {
     }
 
     // Update the quote request status
-    const { error: updateError } = await (supabase
-      .from('vendor_quote_requests') as any)
+    const { error: updateError } = await (supabase.from('vendor_quote_requests') as any)
       .update({
         status: 'declined',
         responded_at: new Date().toISOString(),
@@ -1470,4 +1459,3 @@ export const vendorMaintenanceApi = {
     return { success: true, message: 'Quote request declined' };
   },
 };
-
