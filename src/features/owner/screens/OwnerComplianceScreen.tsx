@@ -115,39 +115,43 @@ function FicaCheckButton({
   }
 
   const handlePress = () => {
-    Alert.alert(label, `Review the tenant's ${label.toLowerCase()} documents, then confirm.`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Mark Complete',
-        onPress: async () => {
-          setLocalUpdating(true);
-          try {
-            const newStatus = field === 'identity_verification_status' ? 'verified' : 'completed';
-            await applicationsApi.updateApplication(applicationId, { [field]: newStatus } as any);
-            onComplete();
-          } catch (err: any) {
-            Alert.alert('Error', err.message || 'Failed to update');
-          } finally {
-            setLocalUpdating(false);
-          }
+    Alert.alert(
+      label,
+      `No bureau is connected. After you review the tenant's documents, mark ${label.toLowerCase()} complete or failed.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Mark Complete',
+          onPress: async () => {
+            setLocalUpdating(true);
+            try {
+              const newStatus = field === 'identity_verification_status' ? 'verified' : 'completed';
+              await applicationsApi.updateApplication(applicationId, { [field]: newStatus } as any);
+              onComplete();
+            } catch (err: any) {
+              Alert.alert('Error', err.message || 'Failed to update');
+            } finally {
+              setLocalUpdating(false);
+            }
+          },
         },
-      },
-      {
-        text: 'Mark Failed',
-        style: 'destructive',
-        onPress: async () => {
-          setLocalUpdating(true);
-          try {
-            await applicationsApi.updateApplication(applicationId, { [field]: 'failed' } as any);
-            onComplete();
-          } catch (err: any) {
-            Alert.alert('Error', err.message || 'Failed to update');
-          } finally {
-            setLocalUpdating(false);
-          }
+        {
+          text: 'Mark Failed',
+          style: 'destructive',
+          onPress: async () => {
+            setLocalUpdating(true);
+            try {
+              await applicationsApi.updateApplication(applicationId, { [field]: 'failed' } as any);
+              onComplete();
+            } catch (err: any) {
+              Alert.alert('Error', err.message || 'Failed to update');
+            } finally {
+              setLocalUpdating(false);
+            }
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
   return (
@@ -464,9 +468,9 @@ export default function OwnerComplianceScreen() {
               <View style={styles.infoBanner}>
                 <Ionicons name="shield-checkmark-outline" size={18} color={colors.info[500]} />
                 <Text style={styles.infoText}>
-                  FICA requires you to verify the identity of all tenants (Know Your Customer). As a
-                  property practitioner, non-compliance carries criminal penalties. Review the
-                  tenant's uploaded ID and documents, then tap each check to mark it as complete.
+                  FICA requires you to verify tenant identity (KYC). This screen records your review
+                  of uploaded documents. It does not call a credit bureau or identity provider.
+                  Non-compliance still carries FICA penalties — do the review yourself.
                 </Text>
               </View>
 
