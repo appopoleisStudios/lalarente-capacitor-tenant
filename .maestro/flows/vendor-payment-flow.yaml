@@ -102,6 +102,9 @@ appId: com.lalarente.app
     text: "Secure Checkout"
 - assertVisible:
     id: "checkout-close"
+- assertVisible:
+    id: "payfast-sandbox-banner"
+    optional: true
 
 # Close checkout without completing payment — record completion + success
 # verification is handled deterministically by
