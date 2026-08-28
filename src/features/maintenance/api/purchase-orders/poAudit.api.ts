@@ -11,10 +11,10 @@ import type { Quote } from '../types/quote.types';
 /**
  * Get complete audit trail for dispute resolution
  * Returns both quote and PO revision history
- * 
+ *
  * @param requestId - The maintenance request ID
  * @returns Complete history for transparency
- * 
+ *
  * @example
  * ```typescript
  * const audit = await getDisputeAuditTrail(requestId);
@@ -65,10 +65,10 @@ export async function getDisputeAuditTrail(requestId: string): Promise<AuditTrai
 /**
  * Get complete history for a maintenance request
  * Includes request, quotes, PO, and all revisions
- * 
+ *
  * @param requestId - The maintenance request ID
  * @returns Complete history object
- * 
+ *
  * @example
  * ```typescript
  * const history = await getCompleteHistory(requestId);
@@ -95,10 +95,12 @@ export async function getCompleteHistory(requestId: string): Promise<{
   // Get all quotes for this request
   const { data: quotes } = await supabase
     .from('quotes')
-    .select(`
+    .select(
+      `
       *,
-      vendor:profiles!vendor_id(id, full_name, phone, email, avatar_url)
-    `)
+      vendor:profiles!vendor_id(id, full_name, email, avatar_url)
+    `
+    )
     .eq('request_id', requestId)
     .order('created_at', { ascending: false });
 

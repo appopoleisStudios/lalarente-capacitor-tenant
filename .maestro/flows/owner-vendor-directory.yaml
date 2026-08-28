@@ -16,3 +16,17 @@ appId: com.lalarente.app
 
 - assertVisible:
     id: 'tenant-vendor-search'
+
+- tapOn:
+    id: 'tenant-vendor-card'
+
+- extendedWaitUntil:
+    visible:
+      id: 'vendor-detail-title'
+    timeout: 15000
+
+- assertVisible:
+    id: 'vendor-detail-invite'
+
+- assertNotVisible:
+    text: 'Call'

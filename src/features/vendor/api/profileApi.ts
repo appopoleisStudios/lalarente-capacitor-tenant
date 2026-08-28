@@ -63,12 +63,20 @@ export const vendorProfileApi = {
       // Get basic profile
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('id, full_name, email, phone, avatar_url')
+        .select('id, full_name, email, avatar_url')
         .eq('id', vendorId)
         .single();
 
       if (profileError) throw profileError;
       if (!profile) return null;
+
+      const { data: privateContact, error: contactError } = await (supabase as any)
+        .from('vendor_private_contacts')
+        .select('phone')
+        .eq('vendor_id', vendorId)
+        .maybeSingle();
+
+      if (contactError) throw contactError;
 
       // Get services with categories
       const { data: services, error: servicesError } = await supabase
@@ -110,7 +118,7 @@ export const vendorProfileApi = {
         id: profile.id,
         full_name: profile.full_name,
         email: profile.email,
-        phone: profile.phone,
+        phone: privateContact?.phone ?? null,
         avatar_url: profile.avatar_url,
         rating,
         total_reviews: totalReviews,
@@ -136,9 +144,23 @@ export const vendorProfileApi = {
     }
   ): Promise<void> {
     try {
-      const { error } = await supabase.from('profiles').update(updates).eq('id', vendorId);
+      const { phone, ...publicUpdates } = updates;
 
-      if (error) throw error;
+      if (Object.keys(publicUpdates).length > 0) {
+        const { error } = await supabase.from('profiles').update(publicUpdates).eq('id', vendorId);
+
+        if (error) throw error;
+      }
+
+      if (phone !== undefined) {
+        const { error } = await (supabase as any).from('vendor_private_contacts').upsert({
+          vendor_id: vendorId,
+          phone,
+          updated_at: new Date().toISOString(),
+        });
+
+        if (error) throw error;
+      }
     } catch (error) {
       console.error('Error updating vendor profile:', error);
       throw error;

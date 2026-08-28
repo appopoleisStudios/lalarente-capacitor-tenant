@@ -14,7 +14,7 @@ export interface ServiceContract {
 
 /**
  * Purchase Order interface
- * 
+ *
  * @property contract_id - NULLABLE. Only populated for long-term contracted vendors.
  *                         For ad-hoc/short-term maintenance, this will be null.
  */
@@ -72,14 +72,15 @@ export const purchaseOrdersApi = {
   /**
    * Fetch PO by its ID (primary method)
    * Includes optional contract join when contract_id is present
-   * 
+   *
    * @param poId - The purchase order ID
    * @returns Purchase order with optional contract details
    */
   async getPOById(poId: string): Promise<PurchaseOrder> {
-    const { data, error} = await supabase
+    const { data, error } = await supabase
       .from('purchase_orders')
-      .select(`
+      .select(
+        `
         *,
         contract:service_contracts(
           id,
@@ -88,7 +89,8 @@ export const purchaseOrdersApi = {
           start_date,
           end_date
         )
-      `)
+      `
+      )
       .eq('id', poId)
       .maybeSingle();
 
@@ -97,18 +99,18 @@ export const purchaseOrdersApi = {
       console.error('PO ID:', poId);
       throw error;
     }
-    
+
     if (!data) {
       throw new Error('Purchase Order not found');
     }
-    
+
     return data as PurchaseOrder;
   },
 
   /**
    * Fetch PO by maintenance request ID
    * Uses the direct po_id reference from maintenance_requests table
-   * 
+   *
    * @param requestId - The maintenance request ID
    * @returns Purchase order if found, null if request has no PO yet
    */
@@ -132,7 +134,7 @@ export const purchaseOrdersApi = {
    * @deprecated Use getPOById or getPOByRequestId instead.
    * This method assumes all POs have a contract_id, which is incorrect.
    * Only kept for backward compatibility.
-   * 
+   *
    * Get PO by contract ID
    */
   async getPOByContract(contractId: string): Promise<PurchaseOrder | null> {
@@ -152,7 +154,8 @@ export const purchaseOrdersApi = {
   async getPOWithDetails(poId: string) {
     const { data, error } = await supabase
       .from('purchase_orders')
-      .select(`
+      .select(
+        `
         *,
         contract:contracts!contract_id(
           id,
@@ -162,13 +165,13 @@ export const purchaseOrdersApi = {
             vendor:profiles!vendor_id(
               id,
               full_name,
-              phone,
               email,
               business_name
             )
           )
         )
-      `)
+      `
+      )
       .eq('id', poId)
       .single();
 
@@ -179,10 +182,9 @@ export const purchaseOrdersApi = {
   // Update PO status
   async updatePOStatus(poId: string, status: string) {
     console.log('🔄 Updating PO status:', { poId, status });
-    
-    const { data, error } = await (supabase
-      .from('purchase_orders') as any)
-      .update({ 
+
+    const { data, error } = await (supabase.from('purchase_orders') as any)
+      .update({
         status,
         updated_at: new Date().toISOString(),
       })
@@ -200,7 +202,7 @@ export const purchaseOrdersApi = {
     // If PO is accepted, update the maintenance request status to 'assigned'
     if (status === 'accepted') {
       console.log('🔍 Looking for maintenance request with po_id:', poId);
-      
+
       // Find the maintenance request that references this PO
       const { data: request, error: reqError } = await supabase
         .from('maintenance_requests')
@@ -212,10 +214,10 @@ export const purchaseOrdersApi = {
         console.error('❌ Error finding maintenance request:', reqError);
       } else if (request) {
         console.log('✅ Found maintenance request:', request);
-        
+
         // Get the vendor_id from the selected quote
         let vendorId = (request as any).selected_vendor_id;
-        
+
         if (!vendorId && (request as any).selected_quote_id) {
           console.log('🔍 Getting vendor_id from quote:', (request as any).selected_quote_id);
           const { data: quote } = await supabase
@@ -223,24 +225,25 @@ export const purchaseOrdersApi = {
             .select('vendor_id')
             .eq('id', (request as any).selected_quote_id)
             .single();
-          
+
           vendorId = (quote as any)?.vendor_id;
           console.log('✅ Found vendor_id from quote:', vendorId);
         }
-        
+
         // Update maintenance request status to 'assigned' and set selected_vendor_id
         const updateData: any = {
           status: 'assigned',
           mms_status: 'po_issued',
         };
-        
+
         // Set selected_vendor_id if we found it
         if (vendorId) {
           updateData.selected_vendor_id = vendorId;
         }
-        
-        const { data: updatedRequest, error: updateError } = await (supabase
-          .from('maintenance_requests') as any)
+
+        const { data: updatedRequest, error: updateError } = await (
+          supabase.from('maintenance_requests') as any
+        )
           .update(updateData)
           .eq('id', (request as any).id)
           .select()
@@ -262,7 +265,7 @@ export const purchaseOrdersApi = {
   /**
    * Update PO with revision tracking (owner only)
    * Creates a revision record before updating the PO
-   * 
+   *
    * @param poId - The PO ID to update
    * @param updateData - The fields to update
    * @param userId - The owner making the update
@@ -271,29 +274,26 @@ export const purchaseOrdersApi = {
   async updatePO(poId: string, updateData: POUpdateData, userId: string): Promise<PurchaseOrder> {
     // First, get the current PO to create revision
     const currentPO = await purchaseOrdersApi.getPOById(poId);
-    
+
     const currentRevision = currentPO.revision_number || 1;
     const newRevision = currentRevision + 1;
 
     // Create revision record
-    const { error: revisionError } = await (supabase
-      .from('po_revisions') as any)
-      .insert({
-        po_id: poId,
-        revision_number: currentRevision,
-        subtotal: currentPO.subtotal,
-        vat_amount: currentPO.vat_amount,
-        platform_fee_amount: currentPO.platform_fee_amount,
-        total_amount: currentPO.total_amount,
-        revised_by: userId,
-        revision_reason: updateData.revision_reason,
-      });
+    const { error: revisionError } = await (supabase.from('po_revisions') as any).insert({
+      po_id: poId,
+      revision_number: currentRevision,
+      subtotal: currentPO.subtotal,
+      vat_amount: currentPO.vat_amount,
+      platform_fee_amount: currentPO.platform_fee_amount,
+      total_amount: currentPO.total_amount,
+      revised_by: userId,
+      revision_reason: updateData.revision_reason,
+    });
 
     if (revisionError) throw revisionError;
 
     // Update the PO with new data
-    const { data, error } = await (supabase
-      .from('purchase_orders') as any)
+    const { data, error } = await (supabase.from('purchase_orders') as any)
       .update({
         ...updateData,
         revision_number: newRevision,
@@ -309,7 +309,7 @@ export const purchaseOrdersApi = {
 
   /**
    * Get revision history for a PO
-   * 
+   *
    * @param poId - The PO ID
    * @returns Array of revisions ordered by revision number
    */
@@ -327,7 +327,7 @@ export const purchaseOrdersApi = {
   /**
    * Get complete audit trail for dispute resolution
    * Returns both quote and PO revision history
-   * 
+   *
    * @param requestId - The maintenance request ID
    * @returns Complete history for transparency
    */
@@ -376,7 +376,7 @@ export const purchaseOrdersApi = {
   /**
    * Send PO to vendor with scheduling information
    * Updates PO with scheduled start date/time, work instructions, and sent timestamp
-   * 
+   *
    * @param poId - The PO ID to send
    * @param scheduledStartDate - When the work should start (ISO date string)
    * @param scheduledStartTime - Time of day for work start (HH:MM format)
@@ -391,8 +391,7 @@ export const purchaseOrdersApi = {
     workInstructions: string | null,
     sentBy: string
   ): Promise<PurchaseOrder> {
-    const { data, error } = await (supabase
-      .from('purchase_orders') as any)
+    const { data, error } = await (supabase.from('purchase_orders') as any)
       .update({
         scheduled_start_date: scheduledStartDate,
         scheduled_start_time: scheduledStartTime,
@@ -406,10 +405,10 @@ export const purchaseOrdersApi = {
       .single();
 
     if (error) throw error;
-    
+
     // TODO: Send notification to vendor
     // This would typically trigger a notification through your notification system
-    
+
     return data as PurchaseOrder;
   },
 };

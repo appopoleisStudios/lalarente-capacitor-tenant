@@ -10,19 +10,19 @@ import { createQuoteRevision } from './quoteRevisions.api';
 /**
  * Get quotes for a maintenance request
  * Includes optional contract information when contract_id is present
- * 
+ *
  * @param requestId - The maintenance request ID
  * @returns Array of quotes with vendor and optional contract information
  */
 export async function getQuotesByRequest(requestId: string): Promise<Quote[]> {
   const { data, error } = await supabase
     .from('quotes')
-    .select(`
+    .select(
+      `
       *,
       vendor:profiles!vendor_id(
         id,
         full_name,
-        phone,
         email,
         avatar_url
       ),
@@ -30,7 +30,8 @@ export async function getQuotesByRequest(requestId: string): Promise<Quote[]> {
         id,
         status
       )
-    `)
+    `
+    )
     .eq('request_id', requestId)
     .order('created_at', { ascending: false });
 
@@ -40,23 +41,24 @@ export async function getQuotesByRequest(requestId: string): Promise<Quote[]> {
 
 /**
  * Get single quote by ID
- * 
+ *
  * @param quoteId - The quote ID
  * @returns Quote with vendor information
  */
 export async function getQuoteById(quoteId: string): Promise<Quote> {
   const { data, error } = await supabase
     .from('quotes')
-    .select(`
+    .select(
+      `
       *,
       vendor:profiles!vendor_id(
         id,
         full_name,
-        phone,
         email,
         avatar_url
       )
-    `)
+    `
+    )
     .eq('id', quoteId)
     .single();
 
@@ -66,23 +68,24 @@ export async function getQuoteById(quoteId: string): Promise<Quote> {
 
 /**
  * Get approved quote for a request
- * 
+ *
  * @param requestId - The maintenance request ID
  * @returns Approved quote or null if none found
  */
 export async function getApprovedQuote(requestId: string): Promise<Quote | null> {
   const { data, error } = await supabase
     .from('quotes')
-    .select(`
+    .select(
+      `
       *,
       vendor:profiles!vendor_id(
         id,
         full_name,
-        phone,
         email,
         avatar_url
       )
-    `)
+    `
+    )
     .eq('request_id', requestId)
     .eq('status', 'approved')
     .order('updated_at', { ascending: false })
@@ -95,15 +98,14 @@ export async function getApprovedQuote(requestId: string): Promise<Quote | null>
 
 /**
  * Submit a new quote with line items (vendor action)
- * 
+ *
  * @param quoteData - Quote submission data including line items
  * @returns Created quote
  */
 export async function submitQuote(quoteData: QuoteSubmissionData): Promise<Quote> {
   try {
     // Create the quote
-    const { data: quote, error: quoteError } = await (supabase
-      .from('quotes') as any)
+    const { data: quote, error: quoteError } = await (supabase.from('quotes') as any)
       .insert({
         request_id: quoteData.request_id,
         vendor_id: quoteData.vendor_id,
@@ -124,7 +126,7 @@ export async function submitQuote(quoteData: QuoteSubmissionData): Promise<Quote
     if (quoteError) throw quoteError;
 
     // Create quote line items
-    const lineItemsToInsert = quoteData.line_items.map(item => ({
+    const lineItemsToInsert = quoteData.line_items.map((item) => ({
       quote_id: quote.id,
       description: item.name,
       qty: item.quantity,
@@ -133,15 +135,14 @@ export async function submitQuote(quoteData: QuoteSubmissionData): Promise<Quote
       tax_rate: 0.15,
     }));
 
-    const { error: linesError } = await (supabase
-      .from('quote_lines') as any)
-      .insert(lineItemsToInsert);
+    const { error: linesError } = await (supabase.from('quote_lines') as any).insert(
+      lineItemsToInsert
+    );
 
     if (linesError) throw linesError;
 
     // Update vendor_quote_requests if it exists
-    await (supabase
-      .from('vendor_quote_requests') as any)
+    await (supabase.from('vendor_quote_requests') as any)
       .update({
         quote_id: quote.id,
         status: 'submitted',
@@ -160,7 +161,7 @@ export async function submitQuote(quoteData: QuoteSubmissionData): Promise<Quote
 /**
  * Update quote with revision tracking
  * Creates a revision record before updating the quote
- * 
+ *
  * @param quoteId - The quote ID to update
  * @param updateData - The fields to update
  * @param userId - The user making the update (vendor_id or owner_id)
@@ -173,7 +174,7 @@ export async function updateQuote(
 ): Promise<Quote> {
   // First, get the current quote to create revision
   const currentQuote = await getQuoteById(quoteId);
-  
+
   const currentRevision = currentQuote.revision_number || 0;
   const newRevision = currentRevision + 1;
 
@@ -193,8 +194,7 @@ export async function updateQuote(
   );
 
   // Update the quote with new data
-  const { data, error } = await (supabase
-    .from('quotes') as any)
+  const { data, error } = await (supabase.from('quotes') as any)
     .update({
       ...updateData,
       revision_number: newRevision,

@@ -6,11 +6,12 @@
 import { supabase } from '@/src/lib/supabase';
 import type { MaintenanceRequest } from '../types/maintenance.types';
 import { getDedicatedVendors } from './vendorDiscovery.api';
+import { createQuoteRequests } from './vendorQuoteRequests.api';
 
 /**
  * Push request to open market (public visibility)
  * Makes the request visible to all vendors
- * 
+ *
  * @param requestId - The maintenance request ID
  * @returns Updated maintenance request
  */
@@ -33,7 +34,7 @@ export async function pushToOpenMarket(requestId: string): Promise<MaintenanceRe
 /**
  * Push request to dedicated vendors (invited visibility)
  * Creates quote requests for property's dedicated vendors
- * 
+ *
  * @param requestId - The maintenance request ID
  * @returns Object with updated request and vendor count
  */
@@ -66,19 +67,10 @@ export async function pushToDedicatedVendors(requestId: string): Promise<{
     throw new Error('No dedicated vendors found for this property');
   }
 
-  // Create vendor_quote_requests for each dedicated vendor
-  const quoteRequests = vendors.map(vendor => ({
-    request_id: requestId,
-    vendor_id: vendor.id,
-    status: 'pending',
-    response_deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
-  }));
-
-  const { error: insertError } = await supabase
-    .from('vendor_quote_requests')
-    .insert(quoteRequests);
-
-  if (insertError) throw insertError;
+  await createQuoteRequests(
+    requestId,
+    vendors.map((vendor) => vendor.id)
+  );
 
   // Update request visibility and routing timestamp
   const { data, error } = await supabase
@@ -105,7 +97,7 @@ export async function pushToDedicatedVendors(requestId: string): Promise<{
 /**
  * Push request to specific vendors (custom selection)
  * Creates quote requests for selected vendors
- * 
+ *
  * @param requestId - The maintenance request ID
  * @param vendorIds - Array of vendor IDs to invite
  * @returns Object with updated request and vendor count
@@ -121,19 +113,8 @@ export async function pushToSelectedVendors(
     throw new Error('No vendors selected');
   }
 
-  // Create vendor_quote_requests for selected vendors
-  const quoteRequests = vendorIds.map(vendorId => ({
-    request_id: requestId,
-    vendor_id: vendorId,
-    status: 'pending',
-    response_deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
-  }));
-
-  const { error: insertError } = await supabase
-    .from('vendor_quote_requests')
-    .insert(quoteRequests);
-
-  if (insertError) throw insertError;
+  const uniqueVendorIds = [...new Set(vendorIds)];
+  await createQuoteRequests(requestId, uniqueVendorIds);
 
   // Update request visibility and routing timestamp
   const { data, error } = await supabase
@@ -153,14 +134,14 @@ export async function pushToSelectedVendors(
 
   return {
     request: data as unknown as MaintenanceRequest,
-    vendorsNotified: vendorIds.length,
+    vendorsNotified: uniqueVendorIds.length,
   };
 }
 
 /**
  * Invite vendor by email (if not registered yet)
  * Sends an invitation to join the platform
- * 
+ *
  * @param email - The vendor's email address
  * @param requestId - The maintenance request ID
  * @param ownerName - The owner's name

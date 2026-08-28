@@ -9,17 +9,17 @@ import type { Quote } from '../types/quote.types';
 
 /**
  * Subscribe to quote changes for a maintenance request
- * 
+ *
  * @param requestId - The maintenance request ID
  * @param callback - Callback function to handle quote updates
  * @returns Supabase realtime channel subscription
- * 
+ *
  * @example
  * ```typescript
  * const subscription = subscribeToQuotes(requestId, (quote) => {
  *   console.log('Quote updated:', quote);
  * });
- * 
+ *
  * // Later, unsubscribe
  * unsubscribe(subscription);
  * ```
@@ -43,16 +43,17 @@ export function subscribeToQuotes(
         const newRecord = payload.new as { id: string };
         const { data } = await supabase
           .from('quotes')
-          .select(`
+          .select(
+            `
             *,
             vendor:profiles!vendor_id(
               id,
               full_name,
-              phone,
               email,
               avatar_url
             )
-          `)
+          `
+          )
           .eq('id', newRecord.id)
           .single();
 
@@ -68,9 +69,9 @@ export function subscribeToQuotes(
 
 /**
  * Unsubscribe from a realtime channel
- * 
+ *
  * @param subscription - The subscription to unsubscribe from
- * 
+ *
  * @example
  * ```typescript
  * unsubscribe(subscription);

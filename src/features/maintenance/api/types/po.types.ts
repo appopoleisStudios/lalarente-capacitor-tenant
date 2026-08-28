@@ -46,7 +46,6 @@ export interface PurchaseOrderWithDetails extends Omit<PurchaseOrder, 'contract'
       vendor?: {
         id: string;
         full_name: string;
-        phone: string;
         email: string;
         business_name: string | null;
       };

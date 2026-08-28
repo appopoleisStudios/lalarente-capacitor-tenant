@@ -1073,7 +1073,6 @@ const styles = StyleSheet.create({
   quoteVendorInfo: { justifyContent: 'center', flex: 1 },
   quoteVendorNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   quoteVendorName: { fontSize: 16, fontWeight: '600', color: '#111827' },
-  quoteVendorPhone: { fontSize: 13, color: '#6b7280', marginTop: 2 },
   contractBadge: {
     flexDirection: 'row',
     alignItems: 'center',

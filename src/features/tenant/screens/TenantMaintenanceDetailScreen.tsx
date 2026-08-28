@@ -259,6 +259,29 @@ export default function TenantMaintenanceDetailScreen() {
           />
         </Animated.View>
 
+        {['open', 'assigned', 'in_progress'].includes(String(request.status)) ? (
+          <Animated.View entering={FadeInDown.delay(420).duration(500)}>
+            <TouchableOpacity
+              testID="tenant-find-vendor"
+              style={styles.findVendorButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push({
+                  pathname: '/(tenant)/maintenance/vendor-marketplace',
+                  params: { requestId: id },
+                });
+              }}
+            >
+              <Ionicons name="people-outline" size={22} color={RSA.green} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.findVendorTitle}>Find a vendor</Text>
+                <Text style={styles.findVendorSubtitle}>Invite a vendor to quote on this job</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.gray[400]} />
+            </TouchableOpacity>
+          </Animated.View>
+        ) : null}
+
         {/* Verify Work Button - Show when tenant verification pending */}
         {closureReport?.tenant_verification_status === 'pending_tenant' && (
           <Animated.View entering={FadeInDown.delay(450).duration(500)}>
@@ -332,12 +355,6 @@ export default function TenantMaintenanceDetailScreen() {
                 <Text style={styles.vendorName}>
                   {request.assigned_vendor.company_name || request.assigned_vendor.full_name}
                 </Text>
-                {request.assigned_vendor.phone && (
-                  <View style={styles.vendorContact}>
-                    <Ionicons name="call-outline" size={14} color="#6b7280" />
-                    <Text style={styles.vendorPhone}>{request.assigned_vendor.phone}</Text>
-                  </View>
-                )}
                 {request.assigned_vendor.email && (
                   <View style={styles.vendorContact}>
                     <Ionicons name="mail-outline" size={14} color="#6b7280" />
@@ -525,6 +542,20 @@ const styles = StyleSheet.create({
   timelineLabel: { fontSize: 14, color: '#9ca3af', fontWeight: '600' },
   timelineLabelActive: { color: '#111827' },
   currentStepHint: { fontSize: 12, color: RSA.green, fontWeight: '700', marginTop: 2 },
+  findVendorButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  findVendorTitle: { fontSize: 15, fontWeight: '700', color: '#111827' },
+  findVendorSubtitle: { fontSize: 12, color: '#6b7280', marginTop: 2 },
   vendorCard: {
     flexDirection: 'row',
     gap: 12,
@@ -543,7 +574,6 @@ const styles = StyleSheet.create({
   vendorInfo: { flex: 1, gap: 4 },
   vendorName: { fontSize: 16, fontWeight: '700', color: '#111827' },
   vendorContact: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  vendorPhone: { fontSize: 13, color: '#6b7280' },
   vendorEmail: { fontSize: 13, color: '#6b7280' },
   updateCard: { padding: 12, backgroundColor: '#f9fafb', borderRadius: 8 },
   updateCardMargin: { marginTop: 12 },

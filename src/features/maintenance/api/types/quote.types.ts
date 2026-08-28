@@ -3,7 +3,12 @@
  * Type definitions for quote operations
  */
 
-export type QuoteStatus = 'requested' | 'submitted' | 'approved' | 'rejected' | 'revision_requested';
+export type QuoteStatus =
+  | 'requested'
+  | 'submitted'
+  | 'approved'
+  | 'rejected'
+  | 'revision_requested';
 
 export interface Quote {
   id: string;
@@ -25,7 +30,6 @@ export interface Quote {
   vendor?: {
     id: string;
     full_name: string;
-    phone: string;
     email: string;
     avatar_url?: string;
   };
@@ -71,11 +75,11 @@ export interface QuoteSubmissionData {
   notes?: string;
   estimated_duration?: string;
   warranty_period?: string;
-  line_items: Array<{
+  line_items: {
     name: string;
     quantity: number;
     unit_price: number;
-  }>;
+  }[];
 }
 
 export interface QuoteRevisionData {

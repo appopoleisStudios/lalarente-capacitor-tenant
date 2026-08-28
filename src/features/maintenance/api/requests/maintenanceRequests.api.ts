@@ -5,20 +5,20 @@
 
 import { supabase } from '@/src/lib/supabase';
 import type {
-    CreateMaintenanceRequestInput,
-    MaintenanceRequest,
-    MaintenanceRequestUpdate,
-    MaintenanceRequestWithRelations,
-    Property,
+  CreateMaintenanceRequestInput,
+  MaintenanceRequest,
+  MaintenanceRequestUpdate,
+  MaintenanceRequestWithRelations,
+  Property,
 } from '../types/maintenance.types';
 
 /**
  * Fetch maintenance requests with role-based filtering
- * 
+ *
  * @param userId - The user's ID
  * @param role - The user's role (owner, tenant, or vendor)
  * @returns Array of maintenance requests
- * 
+ *
  * @example
  * ```typescript
  * const requests = await getMaintenanceRequests(userId, 'owner');
@@ -29,15 +29,13 @@ export async function getMaintenanceRequests(
   role?: 'owner' | 'tenant' | 'vendor'
 ): Promise<MaintenanceRequestWithRelations[]> {
   // Build query based on role
-  let query = supabase
-    .from('maintenance_requests')
-    .select(`
+  let query = supabase.from('maintenance_requests').select(`
       *,
       property:properties(id, title, address, city),
       tenant:profiles!tenant_id(id, full_name, avatar_url, email, phone),
       owner:profiles!owner_id(id, full_name, email, phone),
       category:service_categories(id, name, description),
-      selected_vendor:profiles!selected_vendor_id(id, full_name, phone)
+      selected_vendor:profiles!selected_vendor_id(id, full_name)
     `);
 
   // Apply role-based filter
@@ -62,10 +60,10 @@ export async function getMaintenanceRequests(
 
 /**
  * Fetch single maintenance request with all relations
- * 
+ *
  * @param id - The maintenance request ID
  * @returns Maintenance request with all related data
- * 
+ *
  * @example
  * ```typescript
  * const request = await getMaintenanceRequestById(requestId);
@@ -76,22 +74,24 @@ export async function getMaintenanceRequestById(
 ): Promise<MaintenanceRequestWithRelations> {
   const { data, error } = await supabase
     .from('maintenance_requests')
-    .select(`
+    .select(
+      `
       *,
       property:properties(id, title, address, city, owner_id),
       tenant:profiles!tenant_id(id, full_name, avatar_url, email, phone),
       owner:profiles!owner_id(id, full_name, email, phone),
       category:service_categories(id, name, description),
-      selected_vendor:profiles!selected_vendor_id(id, full_name, phone),
+      selected_vendor:profiles!selected_vendor_id(id, full_name),
       quotes!request_id(
         id, 
         vendor_id,
         total_amount,
         status,
         created_at,
-        vendor:profiles!vendor_id(full_name, phone)
+        vendor:profiles!vendor_id(full_name)
       )
-    `)
+    `
+    )
     .eq('id', id)
     .single();
 
@@ -101,10 +101,10 @@ export async function getMaintenanceRequestById(
 
 /**
  * Create a new maintenance request
- * 
+ *
  * @param input - The maintenance request data
  * @returns Created maintenance request
- * 
+ *
  * @example
  * ```typescript
  * const request = await createMaintenanceRequest({
@@ -154,11 +154,11 @@ export async function createMaintenanceRequest(
 
 /**
  * Update a maintenance request
- * 
+ *
  * @param id - The maintenance request ID
  * @param updates - The fields to update
  * @returns Updated maintenance request
- * 
+ *
  * @example
  * ```typescript
  * const updated = await updateMaintenanceRequest(requestId, {
@@ -184,20 +184,17 @@ export async function updateMaintenanceRequest(
 
 /**
  * Delete a maintenance request
- * 
+ *
  * @param id - The maintenance request ID
  * @returns Success indicator
- * 
+ *
  * @example
  * ```typescript
  * await deleteMaintenanceRequest(requestId);
  * ```
  */
 export async function deleteMaintenanceRequest(id: string): Promise<{ success: boolean }> {
-  const { error } = await supabase
-    .from('maintenance_requests')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('maintenance_requests').delete().eq('id', id);
 
   if (error) throw error;
   return { success: true };
@@ -206,10 +203,10 @@ export async function deleteMaintenanceRequest(id: string): Promise<{ success: b
 /**
  * Get owner's properties
  * Used for property selection when creating requests
- * 
+ *
  * @param ownerId - The owner's user ID
  * @returns Array of properties
- * 
+ *
  * @example
  * ```typescript
  * const properties = await getOwnerProperties(ownerId);
@@ -229,10 +226,10 @@ export async function getOwnerProperties(ownerId: string): Promise<Property[]> {
 /**
  * Get property owner ID
  * Used when tenant creates a request to find the owner
- * 
+ *
  * @param propertyId - The property ID
  * @returns Owner's user ID
- * 
+ *
  * @example
  * ```typescript
  * const ownerId = await getPropertyOwner(propertyId);

@@ -8,21 +8,13 @@ import {
   type MaintenanceInvoice,
 } from '@/src/features/maintenance/api';
 import { messagesApi } from '@/src/features/messaging/api/messagesApi';
+import { bootstrapVendorMaintenanceThread } from '@/src/features/messaging/api/vendorThreadApi';
 import { colors } from '@/src/shared/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Linking,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { supabase } from '@/src/lib/supabase';
+import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type PartyRole = 'owner' | 'tenant' | 'vendor';
 
@@ -37,7 +29,6 @@ export function InvoiceTalkBar({ invoice, role, accent, onChanged }: Props) {
   const { user } = useAuth();
   const [busy, setBusy] = useState(false);
   const [talk, setTalk] = useState<{ confirmedByMe: boolean; bothConfirmed: boolean } | null>(null);
-  const [otherPhone, setOtherPhone] = useState<string | null>(null);
 
   const canTalk = invoice.status === 'submitted' || invoice.status === 'rejected';
   const disputed = invoice.status === 'disputed';
@@ -48,28 +39,10 @@ export function InvoiceTalkBar({ invoice, role, accent, onChanged }: Props) {
       const request = await getMaintenanceRequestById(invoice.maintenance_request_id);
       const state = await getInvoiceTalkState(invoice, user.id, request.tenant_id);
       setTalk({ confirmedByMe: state.confirmedByMe, bothConfirmed: state.bothConfirmed });
-      const otherId =
-        role === 'vendor'
-          ? invoice.payer_role === 'tenant'
-            ? request.tenant_id
-            : invoice.owner_id
-          : invoice.vendor_id;
-      if (otherId) {
-        const { data } = await supabase.from('profiles').select('phone').eq('id', otherId).single();
-        setOtherPhone((data as { phone?: string | null } | null)?.phone || null);
-      }
     } catch (err) {
       console.error('Invoice talk load failed:', err);
     }
-  }, [
-    invoice.id,
-    invoice.maintenance_request_id,
-    invoice.owner_id,
-    invoice.payer_role,
-    invoice.vendor_id,
-    role,
-    user?.id,
-  ]);
+  }, [invoice, user?.id]);
 
   useEffect(() => {
     load();
@@ -84,54 +57,36 @@ export function InvoiceTalkBar({ invoice, role, accent, onChanged }: Props) {
         Alert.alert('Unavailable', 'This job is missing owner or tenant details for chat.');
         return;
       }
-      const thread = await messagesApi.getOrCreateThread(
-        request.owner_id,
-        request.tenant_id,
-        request.property_id ?? undefined,
-        `Invoice ${invoice.invoice_number}`,
-        'maintenance'
-      );
-      if (role === 'vendor') {
-        await messagesApi.sendMessage({
-          thread_id: thread.id,
-          content: `Discussing invoice ${invoice.invoice_number} before LalaRente review.`,
-          sender_id: user.id,
-          sender_role: 'vendor',
-        });
-      }
+      const threadId =
+        role === 'vendor'
+          ? await bootstrapVendorMaintenanceThread(
+              invoice.maintenance_request_id,
+              `Discussing invoice ${invoice.invoice_number} before LalaRente review.`
+            )
+          : (
+              await messagesApi.getOrCreateThread(
+                request.owner_id,
+                request.tenant_id,
+                request.property_id ?? undefined,
+                `Invoice ${invoice.invoice_number}`,
+                'maintenance'
+              )
+            ).id;
       await logTalkEvent('opened_chat', invoice, user.id, {
         invoice_number: invoice.invoice_number,
       });
       const path =
         role === 'vendor'
-          ? `/(vendor)/messages/${thread.id}`
+          ? `/(vendor)/messages/${threadId}`
           : role === 'tenant'
-            ? `/(tenant)/messages/${thread.id}`
-            : `/(owner)/messages/${thread.id}`;
+            ? `/(tenant)/messages/${threadId}`
+            : `/(owner)/messages/${threadId}`;
       router.push(path as any);
     } catch (error: any) {
       Alert.alert('Chat', error.message || 'Could not open the maintenance thread.');
     } finally {
       setBusy(false);
     }
-  };
-
-  const tapCall = async () => {
-    if (!user?.id) return;
-    if (!otherPhone) {
-      Alert.alert('No phone on file', 'The other party has not added a phone number.');
-      return;
-    }
-    await logTalkEvent('tapped_call', invoice, user.id, {
-      invoice_number: invoice.invoice_number,
-    });
-    const url = `tel:${otherPhone.replace(/\s+/g, '')}`;
-    const supported = await Linking.canOpenURL(url);
-    if (!supported) {
-      Alert.alert('Call', otherPhone);
-      return;
-    }
-    await Linking.openURL(url);
   };
 
   const confirmTalk = async () => {
@@ -191,33 +146,22 @@ export function InvoiceTalkBar({ invoice, role, accent, onChanged }: Props) {
     <View style={styles.wrap} testID="invoice-talk-bar">
       <Text style={styles.title}>Talk it out before LalaRente</Text>
       <Text style={styles.sub}>
-        Chat or call first. Both sides confirm they tried. Then either can ask LalaRente to decide.
-        This is not a rent or PayFast dispute.
+        Chat in the app first. Both sides confirm they tried. Then either can ask LalaRente to
+        decide. This is not a rent or PayFast dispute.
       </Text>
       {disputed ? (
         <Text style={styles.disputed}>Escalated — waiting for a LalaRente decision.</Text>
       ) : (
         <>
-          <View style={styles.row}>
-            <TouchableOpacity
-              style={[styles.btn, { borderColor: accent }]}
-              onPress={openChat}
-              disabled={busy}
-              testID="invoice-chat-button"
-            >
-              <Ionicons name="chatbubbles-outline" size={16} color={accent} />
-              <Text style={[styles.btnText, { color: accent }]}>Chat</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.btn, { borderColor: accent }]}
-              onPress={tapCall}
-              disabled={busy}
-              testID="invoice-call-button"
-            >
-              <Ionicons name="call-outline" size={16} color={accent} />
-              <Text style={[styles.btnText, { color: accent }]}>Call</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={[styles.btn, { borderColor: accent }]}
+            onPress={openChat}
+            disabled={busy}
+            testID="invoice-chat-button"
+          >
+            <Ionicons name="chatbubbles-outline" size={16} color={accent} />
+            <Text style={[styles.btnText, { color: accent }]}>Chat in app</Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={[styles.fullBtn, talk?.confirmedByMe && styles.fullBtnDone]}
             onPress={confirmTalk}
@@ -264,9 +208,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 14, fontWeight: '700', color: '#111827' },
   sub: { fontSize: 12, color: '#6B7280', lineHeight: 16 },
   disputed: { fontSize: 13, fontWeight: '600', color: colors.warning[700] },
-  row: { flexDirection: 'row', gap: 8 },
   btn: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

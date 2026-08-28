@@ -26,7 +26,6 @@ export interface Quote {
   vendor?: {
     id: string;
     full_name: string;
-    phone: string;
     email: string;
     avatar_url?: string;
   };
@@ -67,19 +66,19 @@ export const quotesApi = {
   /**
    * Get quotes for a maintenance request.
    * Includes optional contract information when contract_id is present.
-   * 
+   *
    * @param requestId - The maintenance request ID
    * @returns Array of quotes with vendor and optional contract information
    */
   async getQuotesByRequest(requestId: string) {
     const { data, error } = await supabase
       .from('quotes')
-      .select(`
+      .select(
+        `
         *,
         vendor:profiles!vendor_id(
           id,
           full_name,
-          phone,
           email,
           avatar_url
         ),
@@ -87,7 +86,8 @@ export const quotesApi = {
           id,
           status
         )
-      `)
+      `
+      )
       .eq('request_id', requestId)
       .order('created_at', { ascending: false });
 
@@ -99,16 +99,17 @@ export const quotesApi = {
   async getQuoteById(quoteId: string) {
     const { data, error } = await supabase
       .from('quotes')
-      .select(`
+      .select(
+        `
         *,
         vendor:profiles!vendor_id(
           id,
           full_name,
-          phone,
           email,
           avatar_url
         )
-      `)
+      `
+      )
       .eq('id', quoteId)
       .single();
 
@@ -123,12 +124,13 @@ export const quotesApi = {
    * This version is kept for backward compatibility
    */
   async acceptQuoteOld(quoteId: string) {
-    console.log('⚠️ Using deprecated acceptQuoteOld - please use acceptQuote(quoteId, ownerId) instead');
+    console.log(
+      '⚠️ Using deprecated acceptQuoteOld - please use acceptQuote(quoteId, ownerId) instead'
+    );
     console.log('📝 Accepting quote:', quoteId);
-    
+
     // Update the quote status
-    const { data, error } = await (supabase
-      .from('quotes') as any)
+    const { data, error } = await (supabase.from('quotes') as any)
       .update({
         status: 'approved',
         updated_at: new Date().toISOString(),
@@ -150,10 +152,11 @@ export const quotesApi = {
    * Use the new rejectQuote(quoteId, ownerId, reason) instead
    */
   async rejectQuoteOld(quoteId: string) {
-    console.log('⚠️ Using deprecated rejectQuoteOld - please use rejectQuote(quoteId, ownerId, reason) instead');
-    
-    const { error } = await (supabase
-      .from('quotes') as any)
+    console.log(
+      '⚠️ Using deprecated rejectQuoteOld - please use rejectQuote(quoteId, ownerId, reason) instead'
+    );
+
+    const { error } = await (supabase.from('quotes') as any)
       .update({
         status: 'rejected',
         updated_at: new Date().toISOString(),
@@ -173,16 +176,17 @@ export const quotesApi = {
   async getApprovedQuote(requestId: string) {
     const { data, error } = await supabase
       .from('quotes')
-      .select(`
+      .select(
+        `
         *,
         vendor:profiles!vendor_id(
           id,
           full_name,
-          phone,
           email,
           avatar_url
         )
-      `)
+      `
+      )
       .eq('request_id', requestId)
       .eq('status', 'approved')
       .order('updated_at', { ascending: false })
@@ -210,16 +214,17 @@ export const quotesApi = {
           const newRecord = payload.new as { id: string };
           const { data } = await supabase
             .from('quotes')
-            .select(`
+            .select(
+              `
               *,
               vendor:profiles!vendor_id(
                 id,
                 full_name,
-                phone,
                 email,
                 avatar_url
               )
-            `)
+            `
+            )
             .eq('id', newRecord.id)
             .single();
 
@@ -241,7 +246,7 @@ export const quotesApi = {
   /**
    * Update quote with revision tracking
    * Creates a revision record before updating the quote
-   * 
+   *
    * @param quoteId - The quote ID to update
    * @param updateData - The fields to update
    * @param userId - The user making the update (vendor_id or owner_id)
@@ -250,30 +255,27 @@ export const quotesApi = {
   async updateQuote(quoteId: string, updateData: QuoteUpdateData, userId: string) {
     // First, get the current quote to create revision
     const currentQuote = await quotesApi.getQuoteById(quoteId);
-    
+
     const currentRevision = currentQuote.revision_number || 0;
     const newRevision = currentRevision + 1;
 
     // Create revision record
-    const { error: revisionError } = await (supabase
-      .from('quote_revisions') as any)
-      .insert({
-        quote_id: quoteId,
-        revision_number: currentRevision,
-        subtotal: currentQuote.subtotal,
-        vat_amount: currentQuote.vat_amount,
-        discount_amount: currentQuote.discount_amount,
-        total_amount: currentQuote.total_amount,
-        notes: currentQuote.notes,
-        revised_by: userId,
-        revision_reason: updateData.revision_reason,
-      });
+    const { error: revisionError } = await (supabase.from('quote_revisions') as any).insert({
+      quote_id: quoteId,
+      revision_number: currentRevision,
+      subtotal: currentQuote.subtotal,
+      vat_amount: currentQuote.vat_amount,
+      discount_amount: currentQuote.discount_amount,
+      total_amount: currentQuote.total_amount,
+      notes: currentQuote.notes,
+      revised_by: userId,
+      revision_reason: updateData.revision_reason,
+    });
 
     if (revisionError) throw revisionError;
 
     // Update the quote with new data
-    const { data, error } = await (supabase
-      .from('quotes') as any)
+    const { data, error } = await (supabase.from('quotes') as any)
       .update({
         ...updateData,
         revision_number: newRevision,
@@ -290,14 +292,13 @@ export const quotesApi = {
 
   /**
    * Request revision from vendor (owner action)
-   * 
+   *
    * @param quoteId - The quote ID
    * @param reason - Reason for requesting revision
    * @returns Updated quote
    */
   async requestRevision(quoteId: string, reason: string) {
-    const { error } = await (supabase
-      .from('quotes') as any)
+    const { error } = await (supabase.from('quotes') as any)
       .update({
         status: 'revision_requested',
         revision_reason: reason,
@@ -317,7 +318,7 @@ export const quotesApi = {
 
   /**
    * Get revision history for a quote
-   * 
+   *
    * @param quoteId - The quote ID
    * @returns Array of revisions ordered by revision number
    */
@@ -335,14 +336,14 @@ export const quotesApi = {
   /**
    * Auto-generate PO from approved quote
    * Creates a PO with all quote details
-   * 
+   *
    * @param quoteId - The approved quote ID
    * @param approvedQuote - Optional pre-fetched quote object to avoid refetching
    * @returns Created purchase order
    */
   async generatePOFromQuote(quoteId: string, approvedQuote?: Quote) {
     // Use provided quote or fetch it
-    const quote = approvedQuote || await quotesApi.getQuoteById(quoteId);
+    const quote = approvedQuote || (await quotesApi.getQuoteById(quoteId));
 
     // Check if PO already exists for this request
     if (quote.request_id) {
@@ -359,34 +360,43 @@ export const quotesApi = {
 
     // Generate PO number (format: PO-YYYYMMDD-XXXX)
     const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
-    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    const random = Math.floor(Math.random() * 10000)
+      .toString()
+      .padStart(4, '0');
     const poNumber = `PO-${date}-${random}`;
 
     // Create PO
-    const { data, error } = await (supabase
-      .from('purchase_orders') as any)
-      .insert([{
-        contract_id: quote.contract_id,
-        po_number: poNumber,
-        currency: 'ZAR', // South African Rand
-        subtotal: quote.subtotal,
-        vat_amount: quote.vat_amount,
-        platform_fee_amount: 0, // Calculate based on business logic
-        total_amount: quote.total_amount,
-        status: 'issued',
-        revision_number: 1,
-      }])
+    const { data, error } = await (supabase.from('purchase_orders') as any)
+      .insert([
+        {
+          contract_id: quote.contract_id,
+          po_number: poNumber,
+          currency: 'ZAR', // South African Rand
+          subtotal: quote.subtotal,
+          vat_amount: quote.vat_amount,
+          platform_fee_amount: 0, // Calculate based on business logic
+          total_amount: quote.total_amount,
+          status: 'issued',
+          revision_number: 1,
+        },
+      ])
       .select();
 
     if (error) {
       console.error('Error creating PO:', error);
-      console.error('Quote data:', { quoteId, contract_id: quote.contract_id, request_id: quote.request_id });
-      
+      console.error('Quote data:', {
+        quoteId,
+        contract_id: quote.contract_id,
+        request_id: quote.request_id,
+      });
+
       // Provide user-friendly error for RLS policy violations
       if (error.code === '42501') {
-        throw new Error('Permission denied: Unable to create Purchase Order. Please contact support if this issue persists.');
+        throw new Error(
+          'Permission denied: Unable to create Purchase Order. Please contact support if this issue persists.'
+        );
       }
-      
+
       throw error;
     }
 
@@ -402,10 +412,11 @@ export const quotesApi = {
       console.log('Request ID:', quote.request_id);
       console.log('PO ID:', po.id);
       console.log('Quote ID:', quoteId);
-      
-      const { data: updateData, error: updateError } = await (supabase
-        .from('maintenance_requests') as any)
-        .update({ 
+
+      const { data: updateData, error: updateError } = await (
+        supabase.from('maintenance_requests') as any
+      )
+        .update({
           po_id: po.id,
           selected_quote_id: quoteId,
         })
@@ -419,9 +430,11 @@ export const quotesApi = {
         console.error('Error hint:', updateError.hint);
         console.error('Error details:', updateError.details);
         console.error('Full error:', updateError);
-        
+
         // This is critical - throw the error so we know what's wrong
-        throw new Error(`Failed to link PO to maintenance request: ${updateError.message || 'Unknown error'}`);
+        throw new Error(
+          `Failed to link PO to maintenance request: ${updateError.message || 'Unknown error'}`
+        );
       } else {
         console.log('✅ Successfully updated maintenance request');
         console.log('Updated data:', updateData);
@@ -433,7 +446,7 @@ export const quotesApi = {
 
   /**
    * Submit a new quote with line items (vendor action)
-   * 
+   *
    * @param quoteData - Quote data including line items
    * @returns Created quote with line items
    */
@@ -450,16 +463,15 @@ export const quotesApi = {
     notes?: string;
     estimated_duration?: string;
     warranty_period?: string;
-    line_items: Array<{
+    line_items: {
       name: string;
       quantity: number;
       unit_price: number;
-    }>;
+    }[];
   }) {
     try {
       // Create the quote
-      const { data: quote, error: quoteError } = await (supabase
-        .from('quotes') as any)
+      const { data: quote, error: quoteError } = await (supabase.from('quotes') as any)
         .insert({
           request_id: quoteData.request_id,
           vendor_id: quoteData.vendor_id,
@@ -480,7 +492,7 @@ export const quotesApi = {
       if (quoteError) throw quoteError;
 
       // Create quote line items
-      const lineItemsToInsert = quoteData.line_items.map(item => ({
+      const lineItemsToInsert = quoteData.line_items.map((item) => ({
         quote_id: quote.id,
         description: item.name,
         qty: item.quantity,
@@ -489,15 +501,14 @@ export const quotesApi = {
         tax_rate: 0.15, // 15% VAT
       }));
 
-      const { error: linesError } = await (supabase
-        .from('quote_lines') as any)
-        .insert(lineItemsToInsert);
+      const { error: linesError } = await (supabase.from('quote_lines') as any).insert(
+        lineItemsToInsert
+      );
 
       if (linesError) throw linesError;
 
       // Update vendor_quote_requests if it exists
-      await (supabase
-        .from('vendor_quote_requests') as any)
+      await (supabase.from('vendor_quote_requests') as any)
         .update({
           quote_id: quote.id,
           status: 'submitted',
@@ -523,7 +534,7 @@ export const quotesApi = {
    * 2. Update maintenance request with selected_vendor_id and selected_quote_id
    * 3. Change maintenance request status to 'assigned'
    * 4. Generate a Purchase Order
-   * 
+   *
    * @param quoteId - The quote ID to accept
    * @param ownerId - The owner's user ID (for verification)
    * @returns Object with updated quote and generated PO
@@ -563,8 +574,7 @@ export const quotesApi = {
     console.log('✅ Quote found and authorized:', typedQuote);
 
     // 2. Update quote status to 'approved'
-    const { data: updatedQuote, error: updateQuoteError } = await (supabase
-      .from('quotes') as any)
+    const { data: updatedQuote, error: updateQuoteError } = await (supabase.from('quotes') as any)
       .update({
         status: 'approved',
         updated_at: new Date().toISOString(),
@@ -582,8 +592,9 @@ export const quotesApi = {
 
     // 3. Update maintenance request
     if (typedQuote.request_id) {
-      const { data: updatedRequest, error: updateRequestError } = await (supabase
-        .from('maintenance_requests') as any)
+      const { data: updatedRequest, error: updateRequestError } = await (
+        supabase.from('maintenance_requests') as any
+      )
         .update({
           selected_quote_id: quoteId,
           selected_vendor_id: typedQuote.vendor_id,
@@ -604,39 +615,48 @@ export const quotesApi = {
 
     // 4. Generate Purchase Order (using same format as generatePOFromQuote)
     const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
-    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    const random = Math.floor(Math.random() * 10000)
+      .toString()
+      .padStart(4, '0');
     const poNumber = `PO-${date}-${random}`;
-    
+
     console.log('📝 Creating PO with quote data:', {
       subtotal: typedQuote.subtotal,
       vat_amount: typedQuote.vat_amount,
       total_amount: typedQuote.total_amount,
       contract_id: typedQuote.contract_id,
     });
-    
-    const { data: newPO, error: poError } = await (supabase
-      .from('purchase_orders') as any)
-      .insert([{
-        contract_id: typedQuote.contract_id,
-        po_number: poNumber,
-        currency: 'ZAR',
-        subtotal: typedQuote.subtotal,
-        vat_amount: typedQuote.vat_amount,
-        platform_fee_amount: 0,
-        total_amount: typedQuote.total_amount,
-        status: 'issued',
-        revision_number: 1,
-      }])
+
+    const { data: newPO, error: poError } = await (supabase.from('purchase_orders') as any)
+      .insert([
+        {
+          contract_id: typedQuote.contract_id,
+          po_number: poNumber,
+          currency: 'ZAR',
+          subtotal: typedQuote.subtotal,
+          vat_amount: typedQuote.vat_amount,
+          platform_fee_amount: 0,
+          total_amount: typedQuote.total_amount,
+          status: 'issued',
+          revision_number: 1,
+        },
+      ])
       .select();
 
     if (poError) {
       console.error('❌ Error creating PO:', poError);
-      console.error('Quote data:', { quoteId, contract_id: typedQuote.contract_id, request_id: typedQuote.request_id });
-      
+      console.error('Quote data:', {
+        quoteId,
+        contract_id: typedQuote.contract_id,
+        request_id: typedQuote.request_id,
+      });
+
       if (poError.code === '42501') {
-        throw new Error('Permission denied: Unable to create Purchase Order. Please contact support if this issue persists.');
+        throw new Error(
+          'Permission denied: Unable to create Purchase Order. Please contact support if this issue persists.'
+        );
       }
-      
+
       throw poError;
     }
 
@@ -652,9 +672,8 @@ export const quotesApi = {
       console.log('🔄 Linking PO to maintenance request...');
       console.log('Request ID:', typedQuote.request_id);
       console.log('PO ID:', po.id);
-      
-      const { error: linkError } = await (supabase
-        .from('maintenance_requests') as any)
+
+      const { error: linkError } = await (supabase.from('maintenance_requests') as any)
         .update({
           po_id: po.id,
         })
@@ -677,7 +696,7 @@ export const quotesApi = {
 
   /**
    * Reject a quote (Owner action)
-   * 
+   *
    * @param quoteId - The quote ID to reject
    * @param ownerId - The owner's user ID (for verification)
    * @param rejectionReason - Optional reason for rejection
@@ -701,8 +720,7 @@ export const quotesApi = {
     }
 
     // Update quote status
-    const { data, error } = await (supabase
-      .from('quotes') as any)
+    const { data, error } = await (supabase.from('quotes') as any)
       .update({
         status: 'rejected',
         updated_at: new Date().toISOString(),
@@ -721,7 +739,7 @@ export const quotesApi = {
 
   /**
    * Request revision on a quote (Owner action)
-   * 
+   *
    * @param quoteId - The quote ID
    * @param ownerId - The owner's user ID (for verification)
    * @param revisionReason - Reason for requesting revision
@@ -745,8 +763,7 @@ export const quotesApi = {
     }
 
     // Update quote status
-    const { data, error } = await (supabase
-      .from('quotes') as any)
+    const { data, error } = await (supabase.from('quotes') as any)
       .update({
         status: 'revision_requested',
         revision_reason: revisionReason,
@@ -759,7 +776,6 @@ export const quotesApi = {
     if (error) throw error;
 
     console.log('✅ Revision requested');
-
 
     return data;
   },

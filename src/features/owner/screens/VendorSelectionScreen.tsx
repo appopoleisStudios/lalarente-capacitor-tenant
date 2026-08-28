@@ -1,6 +1,7 @@
 import { useAuth } from '@/src/contexts/AuthContext';
 import {
   getDedicatedVendors,
+  getInvitedVendorIds,
   getMaintenanceRequestById,
   getVendorsByCategory,
   inviteVendorByEmail,
@@ -9,6 +10,7 @@ import {
   searchVendorByEmail,
   vendorMatchesDirectoryQuery,
 } from '@/src/features/maintenance/api';
+import { VendorDirectoryCard } from '@/src/features/maintenance/components/VendorDirectoryCard';
 import type { MaintenanceRequestWithRelations } from '@/src/features/maintenance/api/types/maintenance.types';
 import type { VendorProfile } from '@/src/features/maintenance/api/types/vendor.types';
 import { colors } from '@/src/shared/theme/colors';
@@ -50,6 +52,7 @@ export default function VendorSelectionScreen() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteResult, setInviteResult] = useState<VendorProfile | null>(null);
   const [inviting, setInviting] = useState(false);
+  const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (id) {
@@ -76,6 +79,16 @@ export default function VendorSelectionScreen() {
 
       const propertyId = req.property_id;
       const categoryId = req.category_id;
+      let invited = new Set<string>();
+
+      try {
+        invited = await getInvitedVendorIds(id);
+        if (abortRef.current?.signal.aborted) return;
+        setInvitedIds(invited);
+      } catch (e) {
+        console.error('Failed to fetch invited vendors:', e);
+        setInvitedIds(new Set());
+      }
 
       // 2. Fetch dedicated vendors for the property
       if (propertyId) {
@@ -83,8 +96,11 @@ export default function VendorSelectionScreen() {
           const dedicated = await getDedicatedVendors(propertyId, categoryId || undefined);
           if (abortRef.current?.signal.aborted) return;
           setDedicatedVendors(dedicated);
-          // Pre-select dedicated vendors
-          setSelectedIds(new Set(dedicated.map((v: VendorProfile) => v.id)));
+          setSelectedIds(
+            new Set(
+              dedicated.map((v: VendorProfile) => v.id).filter((vendorId) => !invited.has(vendorId))
+            )
+          );
         } catch (e) {
           console.error('Failed to fetch dedicated vendors:', e);
           setDedicatedVendors([]);
@@ -110,18 +126,22 @@ export default function VendorSelectionScreen() {
     }
   };
 
-  const toggleVendor = useCallback((vendorId: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(vendorId)) {
-        next.delete(vendorId);
-      } else {
-        next.add(vendorId);
-      }
-      return next;
-    });
-  }, []);
+  const toggleVendor = useCallback(
+    (vendorId: string) => {
+      if (invitedIds.has(vendorId)) return;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(vendorId)) {
+          next.delete(vendorId);
+        } else {
+          next.add(vendorId);
+        }
+        return next;
+      });
+    },
+    [invitedIds]
+  );
 
   const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -199,7 +219,16 @@ export default function VendorSelectionScreen() {
               setSubmitting(true);
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-              const vendorIds = Array.from(selectedIds);
+              const vendorIds = Array.from(selectedIds).filter(
+                (vendorId) => !invitedIds.has(vendorId)
+              );
+              if (vendorIds.length === 0) {
+                Alert.alert(
+                  'Already invited',
+                  'Every selected vendor has already been invited to this job.'
+                );
+                return;
+              }
               const result = await pushToSelectedVendors(id, vendorIds);
 
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -251,65 +280,30 @@ export default function VendorSelectionScreen() {
 
   const renderVendorItem = useCallback(
     ({ item }: { item: VendorWithCategory }) => {
-      const isSelected = selectedIds.has(item.id);
+      const invited = invitedIds.has(item.id);
       return (
-        <TouchableOpacity
-          accessibilityLabel={`${item.business_name || item.full_name || 'Vendor'}${isSelected ? ', selected' : ', not selected'}`}
-          accessibilityRole="radio"
-          style={[styles.vendorCard, isSelected && styles.vendorCardSelected]}
-          onPress={() => toggleVendor(item.id)}
-          activeOpacity={0.7}
-        >
-          <View style={styles.vendorAvatar}>
-            <Ionicons
-              name={item.business_name ? 'business' : 'person'}
-              size={22}
-              color={isSelected ? '#FFFFFF' : RSA.blue}
-            />
-          </View>
-          <View style={styles.vendorInfo}>
-            <View style={styles.vendorNameRow}>
-              <Text style={styles.vendorName}>
-                {item.business_name || item.full_name || 'Unknown Vendor'}
-              </Text>
-              {item.isDedicated && (
-                <View style={styles.dedicatedBadge}>
-                  <Text style={styles.dedicatedBadgeText}>Dedicated</Text>
-                </View>
-              )}
-            </View>
-            {item.full_name && item.business_name && (
-              <Text style={styles.vendorContact}>{item.full_name}</Text>
-            )}
-            {item.email && <Text style={styles.vendorEmail}>{item.email}</Text>}
-            {item.service_areas?.length || item.trades?.length ? (
-              <Text style={styles.vendorEmail} numberOfLines={2}>
-                {[
-                  (item.trades ?? []).slice(0, 2).join(', '),
-                  (item.service_areas ?? [])
-                    .slice(0, 2)
-                    .map((a) => [a.city, a.province].filter(Boolean).join(', '))
-                    .filter(Boolean)
-                    .join(' · '),
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </Text>
-            ) : null}
-            {item.rating != null && (
-              <View style={styles.ratingRow}>
-                <Ionicons name="star" size={14} color="#f59e0b" />
-                <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
-              </View>
-            )}
-          </View>
-          <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-            {isSelected && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
-          </View>
-        </TouchableOpacity>
+        <View>
+          <VendorDirectoryCard
+            vendor={item}
+            accent={RSA.blue}
+            invited={invited}
+            selected={selectedIds.has(item.id)}
+            dedicated={item.isDedicated}
+            onPress={() => {
+              if (invited) {
+                router.push({
+                  pathname: '/(owner)/maintenance/vendor/[id]',
+                  params: { id: item.id, requestId: id },
+                } as any);
+                return;
+              }
+              toggleVendor(item.id);
+            }}
+          />
+        </View>
       );
     },
-    [selectedIds, toggleVendor]
+    [id, invitedIds, selectedIds, toggleVendor]
   );
 
   // Merge dedicated and category vendors, mark dedicated ones
@@ -497,6 +491,28 @@ export default function VendorSelectionScreen() {
                     {inviteResult.business_name || inviteResult.full_name}
                   </Text>
                   <Text style={styles.inviteResultEmail}>{inviteResult.email}</Text>
+                  <View style={styles.ratingRow}>
+                    <Ionicons
+                      name={
+                        inviteResult.rating != null && inviteResult.rating > 0
+                          ? 'star'
+                          : 'star-outline'
+                      }
+                      size={14}
+                      color={colors.rsa.gold}
+                    />
+                    <Text style={styles.ratingText}>
+                      {inviteResult.rating != null && inviteResult.rating > 0
+                        ? inviteResult.rating.toFixed(1)
+                        : 'No rating'}
+                    </Text>
+                    <View style={styles.statDivider} />
+                    <Ionicons name="checkmark-circle-outline" size={14} color={RSA.blue} />
+                    <Text style={styles.completedJobsText}>
+                      {inviteResult.completed_jobs ?? 0} completed job
+                      {(inviteResult.completed_jobs ?? 0) === 1 ? '' : 's'}
+                    </Text>
+                  </View>
                 </View>
                 <Ionicons name="checkmark-done" size={20} color={colors.success[500]} />
               </View>
@@ -673,6 +689,8 @@ const styles = StyleSheet.create({
   vendorEmail: { fontSize: 12, color: colors.gray[400], marginTop: 1 },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   ratingText: { fontSize: 13, fontWeight: '600', color: '#111827' },
+  completedJobsText: { fontSize: 12, color: colors.gray[400] },
+  statDivider: { width: 1, height: 12, backgroundColor: colors.gray[200], marginHorizontal: 2 },
   checkbox: {
     width: 24,
     height: 24,

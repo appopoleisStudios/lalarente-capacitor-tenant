@@ -7,7 +7,8 @@ import { supabase } from '@/src/lib/supabase';
 import type { ServiceCategory } from '../types/maintenance.types';
 import type { VendorProfile, VendorServiceArea } from '../types/vendor.types';
 
-const VENDOR_PROFILE_COLUMNS = 'id, full_name, email, phone, avatar_url, business_name, role';
+const VENDOR_PROFILE_COLUMNS =
+  'id, full_name, email, avatar_url, business_name, rating, completed_jobs, role';
 
 function asVendor(row: unknown): VendorProfile | null {
   if (!row || typeof row !== 'object') return null;
@@ -54,6 +55,7 @@ async function attachDirectoryMeta(vendors: VendorProfile[]): Promise<VendorProf
     ...vendor,
     service_areas: areasByVendor.get(vendor.id) ?? [],
     trades: tradesByVendor.get(vendor.id) ?? [],
+    completed_jobs: vendor.completed_jobs ?? 0,
   }));
 }
 
@@ -91,9 +93,10 @@ export async function getVendorsByCategory(categoryId: string): Promise<VendorPr
         id,
         full_name,
         email,
-        phone,
         avatar_url,
-        business_name
+        business_name,
+        rating,
+        completed_jobs
       )
     `
     )
@@ -131,6 +134,21 @@ export async function getVendorDirectory(options?: {
   return attachDirectoryMeta((data || []) as unknown as VendorProfile[]);
 }
 
+export async function getVendorById(vendorId: string): Promise<VendorProfile | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select(VENDOR_PROFILE_COLUMNS)
+    .eq('id', vendorId)
+    .eq('role', 'vendor')
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  const [vendor] = await attachDirectoryMeta([data as unknown as VendorProfile]);
+  return vendor;
+}
+
 /**
  * Get dedicated vendors for a property (for Invite Only requests)
  *
@@ -158,9 +176,10 @@ export async function getDedicatedVendors(
         id,
         full_name,
         email,
-        phone,
         avatar_url,
-        business_name
+        business_name,
+        rating,
+        completed_jobs
       )
     `
     )
@@ -178,7 +197,10 @@ export async function getDedicatedVendors(
 
   if (error) throw error;
 
-  return (data?.map((item) => item.vendor) || []) as unknown as VendorProfile[];
+  const vendors = (data?.map((item) => item.vendor) || [])
+    .map(asVendor)
+    .filter((vendor): vendor is VendorProfile => Boolean(vendor));
+  return attachDirectoryMeta(vendors);
 }
 
 /**
@@ -241,9 +263,10 @@ export async function searchVendorByEmail(email: string): Promise<VendorProfile 
       id,
       full_name,
       email,
-      phone,
       avatar_url,
       business_name,
+      rating,
+      completed_jobs,
       role
     `
     )
@@ -259,7 +282,8 @@ export async function searchVendorByEmail(email: string): Promise<VendorProfile 
     throw error;
   }
 
-  return data as unknown as VendorProfile;
+  const [vendor] = await attachDirectoryMeta([data as unknown as VendorProfile]);
+  return vendor;
 }
 
 /**

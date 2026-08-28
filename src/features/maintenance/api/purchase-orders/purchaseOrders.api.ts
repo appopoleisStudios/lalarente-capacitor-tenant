@@ -4,20 +4,26 @@
  */
 
 import { supabase } from '@/src/lib/supabase';
-import type { POCreateData, POUpdateData, PurchaseOrder, PurchaseOrderWithDetails } from '../types/po.types';
+import type {
+  POCreateData,
+  POUpdateData,
+  PurchaseOrder,
+  PurchaseOrderWithDetails,
+} from '../types/po.types';
 import { createPORevision } from './poRevisions.api';
 
 /**
  * Fetch PO by its ID (primary method)
  * Includes optional contract join when contract_id is present
- * 
+ *
  * @param poId - The purchase order ID
  * @returns Purchase order with optional contract details
  */
 export async function getPOById(poId: string): Promise<PurchaseOrder> {
   const { data, error } = await supabase
     .from('purchase_orders')
-    .select(`
+    .select(
+      `
       *,
       contract:service_contracts(
         id,
@@ -26,7 +32,8 @@ export async function getPOById(poId: string): Promise<PurchaseOrder> {
         start_date,
         end_date
       )
-    `)
+    `
+    )
     .eq('id', poId)
     .maybeSingle();
 
@@ -34,18 +41,18 @@ export async function getPOById(poId: string): Promise<PurchaseOrder> {
     console.error('Error fetching PO by ID:', error);
     throw error;
   }
-  
+
   if (!data) {
     throw new Error('Purchase Order not found');
   }
-  
+
   return data as PurchaseOrder;
 }
 
 /**
  * Fetch PO by maintenance request ID
  * Uses the direct po_id reference from maintenance_requests table
- * 
+ *
  * @param requestId - The maintenance request ID
  * @returns Purchase order if found, null if request has no PO yet
  */
@@ -67,14 +74,15 @@ export async function getPOByRequestId(requestId: string): Promise<PurchaseOrder
 
 /**
  * Get PO with full details (including quote and vendor)
- * 
+ *
  * @param poId - The purchase order ID
  * @returns PO with detailed relations
  */
 export async function getPOWithDetails(poId: string): Promise<PurchaseOrderWithDetails> {
   const { data, error } = await supabase
     .from('purchase_orders')
-    .select(`
+    .select(
+      `
       *,
       contract:contracts!contract_id(
         id,
@@ -84,13 +92,13 @@ export async function getPOWithDetails(poId: string): Promise<PurchaseOrderWithD
           vendor:profiles!vendor_id(
             id,
             full_name,
-            phone,
             email,
             business_name
           )
         )
       )
-    `)
+    `
+    )
     .eq('id', poId)
     .single();
 
@@ -100,13 +108,12 @@ export async function getPOWithDetails(poId: string): Promise<PurchaseOrderWithD
 
 /**
  * Create a new purchase order
- * 
+ *
  * @param poData - PO creation data
  * @returns Created purchase order
  */
 export async function createPO(poData: POCreateData): Promise<PurchaseOrder> {
-  const { data, error } = await (supabase
-    .from('purchase_orders') as any)
+  const { data, error } = await (supabase.from('purchase_orders') as any)
     .insert(poData)
     .select()
     .single();
@@ -118,7 +125,7 @@ export async function createPO(poData: POCreateData): Promise<PurchaseOrder> {
 /**
  * Update PO with revision tracking (owner only)
  * Creates a revision record before updating the PO
- * 
+ *
  * @param poId - The PO ID to update
  * @param updateData - The fields to update
  * @param userId - The owner making the update
@@ -131,7 +138,7 @@ export async function updatePO(
 ): Promise<PurchaseOrder> {
   // First, get the current PO to create revision
   const currentPO = await getPOById(poId);
-  
+
   const currentRevision = currentPO.revision_number || 1;
   const newRevision = currentRevision + 1;
 
@@ -150,8 +157,7 @@ export async function updatePO(
   );
 
   // Update the PO with new data
-  const { data, error } = await (supabase
-    .from('purchase_orders') as any)
+  const { data, error } = await (supabase.from('purchase_orders') as any)
     .update({
       ...updateData,
       revision_number: newRevision,

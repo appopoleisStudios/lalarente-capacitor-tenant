@@ -256,7 +256,6 @@ export default function OwnerQuoteDetailScreen() {
                   </View>
                 )}
               </View>
-              <Text style={styles.vendorContact}>{quote.vendor?.phone}</Text>
               <Text style={styles.vendorContact}>{quote.vendor?.email}</Text>
             </View>
           </View>
