@@ -129,7 +129,7 @@ Lala uses **lookup** (live rows) and **how_this_app_works** (where to tap). It s
 
 Code can lie. We now overlay three things: files → wiring → **Maestro on the iPhone simulator**.
 
-- **Ran just now:** `owner-screening-unwired` **passed**. Owner Compliance → FICA shows Identity, Credit, Background. There is **no** “Start check” / “Run check” on that screen. That is phone proof, not a comment in code.
+- **Ran just now:** `owner-screening-unwired` — Owner Compliance → FICA → **Run screening** (LAL-121). Identity / Credit / Background still show; the run writes RSA ID / affordability / reference results.
 - **Also ran:** owner Applications **list** passed. It does **not** open one application, so the screening badges on the application detail screen are still **unproven on the phone**.
 - Coverage math (yaml vs routes): **55** screens Maestro even _mentions_, **75** screens have **no testID** so Maestro cannot aim at them, **10** have testIDs nobody uses. See `docs/inventory/generated/MAESTRO-COVERAGE.md`.
 - Full suite is ~50 flows. That is **not** every screen. Missing screens between steps is exactly this gap.

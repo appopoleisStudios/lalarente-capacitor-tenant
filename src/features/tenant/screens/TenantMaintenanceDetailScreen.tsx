@@ -18,7 +18,7 @@ import {
   getProgressUpdates,
   getInvoicesByRequest,
   getQuotesByRequest,
-  requestOwnerToAcceptQuote,
+  acceptQuote,
 } from '@/src/features/maintenance/api';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { messagesApi } from '@/src/features/messaging/api/messagesApi';
@@ -71,7 +71,7 @@ export default function TenantMaintenanceDetailScreen() {
   const [closureReport, setClosureReport] = useState<any>(null);
   const [tenantInvoices, setTenantInvoices] = useState<any[]>([]);
   const [quotes, setQuotes] = useState<any[]>([]);
-  const [askingQuoteId, setAskingQuoteId] = useState<string | null>(null);
+  const [acceptingQuoteId, setAcceptingQuoteId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [openingMessages, setOpeningMessages] = useState(false);
 
@@ -301,8 +301,8 @@ export default function TenantMaintenanceDetailScreen() {
               Quotes
             </Text>
             <Text style={styles.quoteHint}>
-              The owner must accept a quote and issue the purchase order. You can ask them to
-              accept.
+              Accept a quote to issue the purchase order. The owner can accept too. The vendor can
+              start work as soon as the PO is issued.
             </Text>
             {quotes.map((q) => {
               const vendorName = q.vendor?.full_name || 'Vendor';
@@ -317,27 +317,28 @@ export default function TenantMaintenanceDetailScreen() {
                   </View>
                   {q.status === 'submitted' && user?.id ? (
                     <TouchableOpacity
-                      testID="tenant-ask-owner-accept-quote"
+                      testID="tenant-accept-quote"
                       style={styles.askOwnerButton}
-                      disabled={askingQuoteId === q.id}
+                      disabled={acceptingQuoteId === q.id}
                       onPress={async () => {
                         try {
-                          setAskingQuoteId(q.id);
-                          await requestOwnerToAcceptQuote(q.id, user.id);
+                          setAcceptingQuoteId(q.id);
+                          const result = await acceptQuote(q.id, user.id);
                           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                           Alert.alert(
-                            'Owner notified',
-                            'The owner must accept this quote and issue the PO. You cannot authorise vendor spend.'
+                            'Quote accepted',
+                            result.message || 'Purchase order issued. The vendor can start work.'
                           );
+                          await fetchRequest();
                         } catch (err: any) {
-                          Alert.alert('Could not notify owner', err?.message || 'Try again.');
+                          Alert.alert('Could not accept quote', err?.message || 'Try again.');
                         } finally {
-                          setAskingQuoteId(null);
+                          setAcceptingQuoteId(null);
                         }
                       }}
                     >
                       <Text style={styles.askOwnerButtonText}>
-                        {askingQuoteId === q.id ? '…' : 'Ask owner'}
+                        {acceptingQuoteId === q.id ? '…' : 'Accept quote'}
                       </Text>
                     </TouchableOpacity>
                   ) : null}

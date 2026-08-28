@@ -9,140 +9,49 @@ import type { Quote } from '../types/quote.types';
 import { getQuoteById } from './quotes.api';
 
 /**
- * Accept a quote (Owner action)
- * This will:
- * 1. Update quote status to 'approved'
- * 2. Update maintenance request with selected_vendor_id and selected_quote_id
- * 3. Change maintenance request status to 'assigned'
- * 4. Generate a Purchase Order
+ * Accept a quote (job owner or job tenant).
+ * Edge `accept-maintenance-quote` issues the PO with sent_to_vendor_at and
+ * work_can_start so the vendor can start immediately.
  *
  * @param quoteId - The quote ID to accept
- * @param ownerId - The owner's user ID (for verification)
- * @returns Object with updated quote and generated PO
+ * @param _actorId - Caller user id (JWT is the authority; kept for call-site compat)
  */
 export async function acceptQuote(
   quoteId: string,
-  ownerId: string
+  _actorId: string
 ): Promise<{
   quote: Quote;
   po: PurchaseOrder;
   message: string;
 }> {
-  console.log('🎯 Accepting quote:', { quoteId, ownerId });
+  const { data, error } = await supabase.functions.invoke('accept-maintenance-quote', {
+    body: { quote_id: quoteId },
+  });
 
-  // 1. Get the quote details
-  const { data: quote, error: quoteError } = await supabase
-    .from('quotes')
-    .select('*')
-    .eq('id', quoteId)
-    .single();
-
-  if (quoteError) {
-    console.error('❌ Error fetching quote:', quoteError);
-    throw quoteError;
-  }
-
-  const typedQuote = quote as any;
-
-  // Verify owner
-  if (typedQuote.owner_id !== ownerId) {
-    throw new Error('Unauthorized: You are not the owner of this quote');
-  }
-
-  console.log('✅ Quote found and authorized');
-
-  // 2. Update quote status to 'approved'
-  const { data: updatedQuote, error: updateQuoteError } = await (supabase.from('quotes') as any)
-    .update({
-      status: 'approved',
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', quoteId)
-    .select()
-    .single();
-
-  if (updateQuoteError) {
-    console.error('❌ Error updating quote:', updateQuoteError);
-    throw updateQuoteError;
-  }
-
-  console.log('✅ Quote updated to approved');
-
-  // 3. Update maintenance request
-  if (typedQuote.request_id) {
-    const { error: updateRequestError } = await (supabase.from('maintenance_requests') as any)
-      .update({
-        selected_quote_id: quoteId,
-        selected_vendor_id: typedQuote.vendor_id,
-        status: 'assigned',
-        mms_status: 'po_issued',
-      })
-      .eq('id', typedQuote.request_id);
-
-    if (updateRequestError) {
-      console.error('❌ Error updating maintenance request:', updateRequestError);
-      throw updateRequestError;
+  if (error) {
+    let message = error.message || 'Failed to accept quote';
+    try {
+      const ctx = (error as { context?: { json?: () => Promise<{ error?: string }> } }).context;
+      const body = await ctx?.json?.();
+      if (body?.error) message = body.error;
+    } catch {
+      /* keep message */
     }
-
-    console.log('✅ Maintenance request updated');
+    throw new Error(message);
   }
 
-  // 4. Generate Purchase Order
-  const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
-  const random = Math.floor(Math.random() * 10000)
-    .toString()
-    .padStart(4, '0');
-  const poNumber = `PO-${date}-${random}`;
-
-  const { data: newPO, error: poError } = await (supabase.from('purchase_orders') as any)
-    .insert([
-      {
-        contract_id: typedQuote.contract_id,
-        po_number: poNumber,
-        currency: 'ZAR',
-        subtotal: typedQuote.subtotal,
-        vat_amount: typedQuote.vat_amount,
-        platform_fee_amount: 0,
-        total_amount: typedQuote.total_amount,
-        status: 'issued',
-        revision_number: 1,
-      },
-    ])
-    .select();
-
-  if (poError) {
-    console.error('❌ Error creating PO:', poError);
-    if (poError.code === '42501') {
-      throw new Error('Permission denied: Unable to create Purchase Order');
-    }
-    throw poError;
+  if (data?.error) {
+    throw new Error(String(data.error));
   }
 
-  if (!newPO || newPO.length === 0) {
-    throw new Error('Failed to create PO - no data returned');
-  }
-
-  const po = newPO[0];
-  console.log('✅ PO created');
-
-  // 5. Link PO to maintenance request
-  if (typedQuote.request_id) {
-    const { error: linkError } = await (supabase.from('maintenance_requests') as any)
-      .update({ po_id: po.id })
-      .eq('id', typedQuote.request_id);
-
-    if (linkError) {
-      console.error('❌ Error linking PO to request:', linkError);
-      throw linkError;
-    }
-
-    console.log('✅ PO linked to maintenance request');
+  if (!data?.quote || !data?.po) {
+    throw new Error('Quote accept did not return a PO');
   }
 
   return {
-    quote: updatedQuote as Quote,
-    po: po as PurchaseOrder,
-    message: 'Quote accepted and PO generated successfully',
+    quote: data.quote as Quote,
+    po: data.po as PurchaseOrder,
+    message: data.message || 'Quote accepted and PO issued',
   };
 }
 
@@ -326,8 +235,8 @@ export async function generatePOFromQuote(
 }
 
 /**
- * Tenant asks the owner to accept a submitted quote (LAL-114).
- * Tenant cannot issue a PO — owner remains spend authority.
+ * Tenant asks the owner to accept a submitted quote (optional; tenant can also
+ * accept via acceptQuote / accept-maintenance-quote).
  */
 export async function requestOwnerToAcceptQuote(
   quoteId: string,

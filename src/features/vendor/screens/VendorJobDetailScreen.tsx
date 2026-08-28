@@ -565,7 +565,11 @@ export default function VendorJobDetailScreen() {
       {/* Bottom Action Buttons */}
       {canStartWork && (
         <View style={styles.bottomBar}>
-          <TouchableOpacity style={styles.startButton} onPress={handleStartWork}>
+          <TouchableOpacity
+            style={styles.startButton}
+            testID="vendor-start-work"
+            onPress={handleStartWork}
+          >
             <Ionicons name="play-circle" size={24} color="#FFFFFF" />
             <Text style={styles.startButtonText}>Start Work</Text>
           </TouchableOpacity>
@@ -575,11 +579,19 @@ export default function VendorJobDetailScreen() {
       {isWorkStarted && !closureReport && (
         <View style={styles.bottomBar}>
           <View style={styles.actionButtonsRow}>
-            <TouchableOpacity style={styles.updateButton} onPress={handleDailyUpdate}>
+            <TouchableOpacity
+              style={styles.updateButton}
+              testID="vendor-daily-update"
+              onPress={handleDailyUpdate}
+            >
               <Ionicons name="camera" size={20} color={RSA.blue} />
               <Text style={styles.updateButtonText}>Daily Update</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.completeButton} onPress={handleRequestClosure}>
+            <TouchableOpacity
+              style={styles.completeButton}
+              testID="vendor-request-closure"
+              onPress={handleRequestClosure}
+            >
               <Ionicons name="checkmark-done" size={20} color="#FFFFFF" />
               <Text style={styles.completeButtonText}>Request Closure</Text>
             </TouchableOpacity>
@@ -610,6 +622,7 @@ export default function VendorJobDetailScreen() {
             accessibilityLabel="Submit invoice for this job"
             accessibilityRole="button"
             style={styles.invoiceButton}
+            testID="vendor-submit-invoice"
             onPress={() => router.push(`/(vendor)/jobs/${id}/submit-invoice`)}
           >
             <Ionicons name="receipt" size={20} color="#FFFFFF" />

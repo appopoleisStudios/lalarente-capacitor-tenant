@@ -30,8 +30,8 @@ After `node scripts/generate-proof-coverage.mjs`:
 
 Mention ≠ last run passed. You still have to run Maestro.
 
-## Screening (#98)
+## Screening (LAL-121)
 
-Code said fake. Phone must say fake:
+Owner Compliance → FICA → **Run screening** writes RSA ID / affordability / reference results.
 
-`.maestro/flows/owner-screening-unwired.yaml` — open Compliance → FICA → see Identity / Credit / Background → **must not** see Start/Run check.
+`.maestro/flows/owner-screening-unwired.yaml` — open Compliance → FICA → tap Run screening when a tenant card exists.

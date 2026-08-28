@@ -117,7 +117,7 @@ function FicaCheckButton({
   const handlePress = () => {
     Alert.alert(
       label,
-      `No bureau is connected. After you review the tenant's documents, mark ${label.toLowerCase()} complete or failed.`,
+      `No bureau score is implied. After Run screening (or after you read the documents), mark ${label.toLowerCase()} complete or failed.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -207,6 +207,8 @@ export default function OwnerComplianceScreen() {
   const [complianceDocs, setComplianceDocs] = useState<Record<string, ComplianceDoc>>({});
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [screeningRunningId, setScreeningRunningId] = useState<string | null>(null);
+  const [screeningResults, setScreeningResults] = useState<Record<string, string>>({});
 
   useEffect(() => {
     initOwner();
@@ -468,9 +470,9 @@ export default function OwnerComplianceScreen() {
               <View style={styles.infoBanner}>
                 <Ionicons name="shield-checkmark-outline" size={18} color={colors.info[500]} />
                 <Text style={styles.infoText}>
-                  FICA requires you to verify tenant identity (KYC). This screen records your review
-                  of uploaded documents. It does not call a credit bureau or identity provider.
-                  Non-compliance still carries FICA penalties — do the review yourself.
+                  FICA: tap Run screening to check RSA ID, uploaded ID document, rent vs 30% of
+                  declared income, and references. Onfido runs only when an API token is configured.
+                  You can still mark a check complete or failed after reading the documents.
                 </Text>
               </View>
 
@@ -543,6 +545,39 @@ export default function OwnerComplianceScreen() {
                           onComplete={() => fetchFica(ownerId!)}
                         />
                       </View>
+                      <TouchableOpacity
+                        testID="screening-run-button"
+                        style={styles.runScreeningButton}
+                        disabled={screeningRunningId === tenant.applicationId}
+                        onPress={async () => {
+                          setScreeningRunningId(tenant.applicationId);
+                          try {
+                            const result = await applicationsApi.runApplicationScreening(
+                              tenant.applicationId
+                            );
+                            setScreeningResults((prev) => ({
+                              ...prev,
+                              [tenant.applicationId]: result.summary,
+                            }));
+                            await fetchFica(ownerId!);
+                          } catch (err: any) {
+                            Alert.alert('Screening failed', err?.message || 'Try again.');
+                          } finally {
+                            setScreeningRunningId(null);
+                          }
+                        }}
+                      >
+                        <Text style={styles.runScreeningButtonText}>
+                          {screeningRunningId === tenant.applicationId
+                            ? 'Running…'
+                            : 'Run screening'}
+                        </Text>
+                      </TouchableOpacity>
+                      {screeningResults[tenant.applicationId] ? (
+                        <Text style={styles.screeningResult} testID="screening-run-result">
+                          {screeningResults[tenant.applicationId]}
+                        </Text>
+                      ) : null}
                       {tenant.idDocumentUrl && (
                         <View style={styles.ficaDocRow}>
                           <Ionicons name="document-outline" size={14} color={colors.primary[500]} />
@@ -810,7 +845,25 @@ const styles = StyleSheet.create({
   ficaDocText: {
     fontSize: 12,
     color: colors.primary[500],
-    fontWeight: '600',
+    marginLeft: 6,
+  },
+  runScreeningButton: {
+    marginTop: 10,
+    backgroundColor: colors.rsa?.blue || '#002395',
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  runScreeningButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  screeningResult: {
+    marginTop: 8,
+    fontSize: 11,
+    color: colors.text.secondary,
+    lineHeight: 16,
   },
   propCard: {
     backgroundColor: colors.background.default,
