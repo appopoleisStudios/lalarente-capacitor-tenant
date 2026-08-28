@@ -180,9 +180,17 @@ export default function VendorSelectionScreen() {
               text: 'Send Invitation',
               onPress: async () => {
                 try {
-                  await inviteVendorByEmail(email, id, profile?.full_name || 'Owner');
+                  const result = await inviteVendorByEmail(
+                    email,
+                    id,
+                    profile?.full_name || 'Owner'
+                  );
+                  if (result.vendor_exists) {
+                    Alert.alert('Already a vendor', result.message);
+                    return;
+                  }
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                  Alert.alert('Invitation Sent', `An invitation has been sent to ${email}.`);
+                  Alert.alert('Invitation Sent', result.message);
                   setInviteEmail('');
                 } catch (err: any) {
                   console.error('Error sending invitation:', err);
