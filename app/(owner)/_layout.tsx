@@ -331,6 +331,29 @@ export default function OwnerLayout() {
           href: null, // Hidden from tabs - invoice approval screen
         }}
       />
+      {/* Hidden owner PayFast checkout. NOT a tab — same pattern as tenant
+          vendor-payments. Do not add title/tabBarIcon here. The name MUST
+          match the route file. Do not declare name="vendor-payments" (there
+          is no vendor-payments.tsx / index) or expo-router will auto-show a
+          tab labelled with the raw route name. */}
+      <Tabs.Screen
+        name="vendor-payments/[invoiceId]"
+        options={{
+          href: null, // Hidden from tabs - owner pay invoice screen
+        }}
+      />
+      <Tabs.Screen
+        name="vendor-payments/checkout"
+        options={{
+          href: null, // Hidden from tabs - in-app WebView checkout
+        }}
+      />
+      <Tabs.Screen
+        name="vendor-payments/result"
+        options={{
+          href: null, // Hidden from tabs - payment result after PayFast
+        }}
+      />
       <Tabs.Screen
         name="documents"
         options={{
