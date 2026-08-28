@@ -403,9 +403,19 @@ async function sendVendorPaymentNotification(
   try {
     const amountFormatted = `R ${(vendorPayment.total_amount || 0).toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`;
     const paymentId = vendorPayment.id;
-    // Data carries the receipt link so in-app deep links AND the email
-    // template's "View Receipt" button (emailTemplates payment_received) resolve.
-    const baseData: Record<string, unknown> = { vendor_payment_id: paymentId };
+    let payerRole = 'tenant';
+    if (vendorPayment.invoice_id) {
+      const { data: inv } = await supabase
+        .from('maintenance_invoices')
+        .select('payer_role')
+        .eq('id', vendorPayment.invoice_id)
+        .maybeSingle();
+      payerRole = (inv as { payer_role?: string } | null)?.payer_role || 'tenant';
+    }
+    const baseData: Record<string, unknown> = {
+      vendor_payment_id: paymentId,
+      payer_role: payerRole,
+    };
     if (receiptUrl) {
       // In-app download link only. NOTE (SA #118): NotificationType has NO
       // 'payment_confirmed' / 'vendor_payment_*' email templates, so the
@@ -420,7 +430,7 @@ async function sendVendorPaymentNotification(
         user_id: vendorPayment.vendor_id,
         type: 'vendor_payment_received',
         title: 'Payment Received for Maintenance Job',
-        body: `Payment of ${amountFormatted} received. Payout will be processed according to your schedule.`,
+        body: `Payment of ${amountFormatted} was collected. LalaRente pays you by EFT after admin confirmation — not an instant PayFast payout.`,
         data: baseData,
       } as any);
     }
@@ -438,11 +448,14 @@ async function sendVendorPaymentNotification(
 
     // Notify tenant
     if (vendorPayment.tenant_id) {
+      const tenantPaid = payerRole === 'tenant';
       await supabase.from('notifications').insert({
         user_id: vendorPayment.tenant_id,
         type: 'payment_confirmed',
-        title: 'Payment Successful',
-        body: `Your payment of ${amountFormatted} has been processed successfully.`,
+        title: tenantPaid ? 'Payment Successful' : 'Vendor invoice paid',
+        body: tenantPaid
+          ? `Your payment of ${amountFormatted} has been processed successfully.`
+          : `The owner paid ${amountFormatted} to the vendor for this job. You were not charged.`,
         data: baseData,
       } as any);
     }

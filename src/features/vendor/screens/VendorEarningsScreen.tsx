@@ -201,7 +201,7 @@ export default function VendorEarningsScreen() {
           <FeaturePin
             pinId="vendor-earnings"
             title="Your earnings"
-            message="Total Earned is what tenants have paid; Net Earnings is your take after platform and payout fees. Pending shows money queued for payout. Set up Banking to receive payouts — until then earnings stay on hold."
+            message="PayFast collects from the tenant or owner. LalaRente then pays your bank by EFT after an admin marks the payout sent — not an instant PayFast payout. Pending is money waiting for that EFT. Add Banking details or payouts stay on hold."
             aiRoute="/(vendor)/ai-chat"
             aiPrompt="How do payouts work for vendors?"
           />
@@ -273,9 +273,9 @@ export default function VendorEarningsScreen() {
         {/* Platform fees info */}
         <View style={styles.feesBanner} testID={VENDOR_EARNINGS_TEST_IDS.feesBanner}>
           <Ionicons name="information-circle-outline" size={18} color={colors.gray[400]} />
-          <Text style={styles.feesBannerText}>
-            Platform fees: {formatCurrency(data?.summary.total_platform_fees || 0)} | Payout fees:{' '}
-            {formatCurrency(data?.summary.total_payout_fees || 0)}
+          <Text style={styles.feesBannerText} testID="vendor-payout-honest-copy">
+            Collect ≠ payout: PayFast takes the customer payment; LalaRente pays you by EFT
+            (manual). Platform fees: {formatCurrency(data?.summary.total_platform_fees || 0)}.
           </Text>
         </View>
 
