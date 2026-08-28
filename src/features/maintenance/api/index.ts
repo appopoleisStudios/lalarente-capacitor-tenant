@@ -160,6 +160,7 @@ export const maintenanceApi = {
   // Vendor Discovery
   getVendorsByCategory: VendorDiscoveryAPI.getVendorsByCategory,
   getVendorDirectory: VendorDiscoveryAPI.getVendorDirectory,
+  getVendorById: VendorDiscoveryAPI.getVendorById,
   getDedicatedVendors: VendorDiscoveryAPI.getDedicatedVendors,
   getVendorsForRequest: VendorDiscoveryAPI.getVendorsForRequest,
   searchVendorByEmail: VendorDiscoveryAPI.searchVendorByEmail,

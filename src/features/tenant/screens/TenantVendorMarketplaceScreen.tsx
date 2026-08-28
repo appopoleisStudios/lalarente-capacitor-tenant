@@ -8,6 +8,8 @@
  * Reuses getVendorsByCategory() from vendorDiscovery.api.ts.
  */
 
+import { Ionicons } from '@expo/vector-icons';
+import { router, useLocalSearchParams, useSegments } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -21,30 +23,17 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams, useSegments } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '@/src/contexts/AuthContext';
-import * as Haptics from 'expo-haptics';
 import {
-  getMaintenanceRequests,
+  getInvitedVendorIds,
   getVendorDirectory,
-  pushToSelectedVendors,
-  setPendingVendorSelection,
   vendorMatchesDirectoryQuery,
 } from '@/src/features/maintenance/api';
+import { VendorDirectoryCard } from '@/src/features/maintenance/components/VendorDirectoryCard';
 import type { VendorProfile } from '@/src/features/maintenance/api/types/vendor.types';
 import { colors } from '@/src/shared/theme/colors';
 
 const GREEN = colors.role.tenant.primary; // RSA Green
 const OWNER_BLUE = colors.role.owner.primary;
-
-function formatServiceAreas(vendor: VendorProfile): string | null {
-  const labels = (vendor.service_areas ?? [])
-    .map((area) => [area.city, area.province].filter(Boolean).join(', '))
-    .filter(Boolean);
-  if (labels.length === 0) return null;
-  return labels.slice(0, 3).join(' · ');
-}
 
 // TestIDs for Maestro E2E
 export const TENANT_VENDOR_MARKETPLACE_TEST_IDS = {
@@ -54,7 +43,6 @@ export const TENANT_VENDOR_MARKETPLACE_TEST_IDS = {
 } as const;
 
 export default function TenantVendorMarketplaceScreen() {
-  const { user } = useAuth();
   const segments = useSegments();
   const isOwner = (segments as string[]).includes('(owner)');
   const accent = isOwner ? OWNER_BLUE : GREEN;
@@ -66,9 +54,9 @@ export default function TenantVendorMarketplaceScreen() {
 
   const abortRef = useRef<AbortController | null>(null);
   const [vendors, setVendors] = useState<VendorProfile[]>([]);
+  const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
     abortRef.current = new AbortController();
@@ -76,7 +64,7 @@ export default function TenantVendorMarketplaceScreen() {
     return () => {
       abortRef.current?.abort();
     };
-  }, [categoryId]);
+  }, [categoryId, requestId]);
 
   const loadVendors = async () => {
     try {
@@ -87,6 +75,18 @@ export default function TenantVendorMarketplaceScreen() {
       });
       if (abortRef.current?.signal.aborted) return;
       setVendors(data);
+      if (typeof requestId === 'string' && requestId.length > 0) {
+        try {
+          const invited = await getInvitedVendorIds(requestId);
+          if (abortRef.current?.signal.aborted) return;
+          setInvitedIds(invited);
+        } catch (inviteError) {
+          console.error('Failed to load invited vendors:', inviteError);
+          setInvitedIds(new Set());
+        }
+      } else {
+        setInvitedIds(new Set());
+      }
     } catch (error: any) {
       console.error('Failed to load vendors:', error);
       Alert.alert('Error', 'Failed to load vendors. Please try again.');
@@ -100,175 +100,32 @@ export default function TenantVendorMarketplaceScreen() {
     [vendors, searchQuery]
   );
 
-  const handleSelectVendor = useCallback(
+  const openVendorDetail = useCallback(
     (vendor: VendorProfile) => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      setSelectedId(vendor.id);
-      const label = vendor.business_name || vendor.full_name || 'this vendor';
-
-      if (isOwner) {
-        void (async () => {
-          if (!user?.id) {
-            Alert.alert('Sign in required', 'Sign in again to invite a vendor.');
-            setSelectedId(null);
-            return;
-          }
-          try {
-            const requests = await getMaintenanceRequests(user.id, 'owner');
-            const openJobs = requests.filter((job) =>
-              ['open', 'assigned', 'in_progress'].includes(String(job.status))
-            );
-            if (openJobs.length === 0) {
-              Alert.alert(
-                'No open jobs',
-                `${label} is in the directory. Create or open a maintenance job, then invite them.`,
-                [
-                  { text: 'Cancel', style: 'cancel', onPress: () => setSelectedId(null) },
-                  {
-                    text: 'Open jobs',
-                    onPress: () => router.push('/(owner)/maintenance'),
-                  },
-                ]
-              );
-              return;
-            }
-
-            const inviteTo = (jobId: string, title: string) => async () => {
-              try {
-                await pushToSelectedVendors(jobId, [vendor.id]);
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                Alert.alert('Vendor invited', `${label} was invited to quote on "${title}".`);
-              } catch (error: any) {
-                Alert.alert('Error', error.message || 'Could not invite this vendor.');
-              } finally {
-                setSelectedId(null);
-              }
-            };
-
-            const buttons: {
-              text: string;
-              style?: 'cancel' | 'default' | 'destructive';
-              onPress?: () => void;
-            }[] = [
-              {
-                text:
-                  openJobs[0].title.length > 28
-                    ? `${openJobs[0].title.slice(0, 28)}…`
-                    : openJobs[0].title,
-                onPress: inviteTo(openJobs[0].id, openJobs[0].title),
-              },
-            ];
-            if (openJobs.length > 1) {
-              buttons.push({
-                text: 'Choose another job',
-                onPress: () => router.push('/(owner)/maintenance'),
-              });
-            }
-            buttons.push({
-              text: 'Cancel',
-              style: 'cancel',
-              onPress: () => setSelectedId(null),
-            });
-            Alert.alert(`Invite ${label}`, 'Send a quote request on an open job:', buttons);
-          } catch (error: any) {
-            Alert.alert('Error', error.message || 'Could not load jobs.');
-            setSelectedId(null);
-          }
-        })();
-        return;
-      }
-
-      Alert.alert('Request This Vendor', `Send your maintenance request to ${label}?`, [
-        { text: 'Cancel', style: 'cancel', onPress: () => setSelectedId(null) },
-        {
-          text: 'Continue',
-          onPress: () => {
-            if (!user?.id) {
-              Alert.alert('Sign in required', 'Sign in again to pick a vendor.');
-              return;
-            }
-            setPendingVendorSelection(user.id, vendor);
-            router.replace('/(tenant)/maintenance/report');
-          },
+      const pathname = isOwner
+        ? '/(owner)/maintenance/vendor/[id]'
+        : '/(tenant)/maintenance/vendor/[id]';
+      router.push({
+        pathname: pathname as any,
+        params: {
+          id: vendor.id,
+          ...(typeof requestId === 'string' && requestId.length > 0 ? { requestId } : {}),
         },
-      ]);
+      });
     },
-    [isOwner, user?.id]
+    [isOwner, requestId]
   );
 
   const renderVendorCard = useCallback(
-    ({ item }: { item: VendorProfile }) => {
-      const isSelected = selectedId === item.id;
-      const completedJobs = item.completed_jobs ?? 0;
-      const ratingLabel =
-        item.rating != null && item.rating > 0 ? `${item.rating.toFixed(1)} stars` : 'No rating';
-      return (
-        <TouchableOpacity
-          testID={TENANT_VENDOR_MARKETPLACE_TEST_IDS.vendorCard}
-          accessibilityLabel={`${item.business_name || item.full_name || 'Vendor'}, ${ratingLabel}, ${completedJobs} completed job${completedJobs === 1 ? '' : 's'}${isSelected ? ', selected' : ''}`}
-          accessibilityRole="button"
-          style={[styles.vendorCard, isSelected && styles.vendorCardSelected]}
-          onPress={() => handleSelectVendor(item)}
-          activeOpacity={0.7}
-        >
-          {/* Avatar */}
-          <View style={styles.vendorAvatar}>
-            <Ionicons
-              name={item.business_name ? 'business' : 'person'}
-              size={24}
-              color={isSelected ? '#FFFFFF' : accent}
-            />
-          </View>
-
-          {/* Info */}
-          <View style={styles.vendorInfo}>
-            <Text style={styles.vendorName} numberOfLines={1}>
-              {item.business_name || item.full_name || 'Unknown Vendor'}
-            </Text>
-            {item.business_name && item.full_name && (
-              <Text style={styles.vendorContact} numberOfLines={1}>
-                {item.full_name}
-              </Text>
-            )}
-            {item.email && (
-              <Text style={styles.vendorEmail} numberOfLines={1}>
-                {item.email}
-              </Text>
-            )}
-            {formatServiceAreas(item) && (
-              <View style={styles.locationRow}>
-                <Ionicons name="location-outline" size={12} color={colors.gray[400]} />
-                <Text style={styles.vendorLocation}>{formatServiceAreas(item)}</Text>
-              </View>
-            )}
-            {item.trades && item.trades.length > 0 && (
-              <Text style={styles.vendorEmail} numberOfLines={1}>
-                {item.trades.slice(0, 3).join(' · ')}
-              </Text>
-            )}
-            <View style={styles.ratingRow}>
-              <Ionicons
-                name={item.rating != null && item.rating > 0 ? 'star' : 'star-outline'}
-                size={14}
-                color={colors.rsa.gold}
-              />
-              <Text style={styles.ratingText}>
-                {item.rating != null && item.rating > 0 ? item.rating.toFixed(1) : 'No rating'}
-              </Text>
-              <View style={styles.statDivider} />
-              <Ionicons name="checkmark-circle-outline" size={14} color={accent} />
-              <Text style={styles.ratingLabel}>
-                {completedJobs} completed job{completedJobs === 1 ? '' : 's'}
-              </Text>
-            </View>
-          </View>
-
-          {/* Arrow */}
-          <Ionicons name="chevron-forward" size={20} color={colors.gray[300]} />
-        </TouchableOpacity>
-      );
-    },
-    [selectedId, handleSelectVendor]
+    ({ item }: { item: VendorProfile }) => (
+      <VendorDirectoryCard
+        vendor={item}
+        accent={accent}
+        invited={invitedIds.has(item.id)}
+        onPress={() => openVendorDetail(item)}
+      />
+    ),
+    [accent, invitedIds, openVendorDetail]
   );
 
   const renderEmpty = () => (
@@ -330,8 +187,8 @@ export default function TenantVendorMarketplaceScreen() {
         <View style={styles.infoBanner}>
           <Ionicons name="information-circle" size={16} color={accent} />
           <Text style={styles.infoBannerText}>
-            {filteredVendors.length} vendor{filteredVendors.length !== 1 ? 's' : ''} available. Tap
-            a vendor to request them for your maintenance issue.
+            {filteredVendors.length} vendor{filteredVendors.length !== 1 ? 's' : ''} available. Open
+            a vendor to see ratings and invite them to quote.
           </Text>
         </View>
       )}

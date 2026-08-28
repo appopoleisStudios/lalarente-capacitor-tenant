@@ -134,6 +134,21 @@ export async function getVendorDirectory(options?: {
   return attachDirectoryMeta((data || []) as unknown as VendorProfile[]);
 }
 
+export async function getVendorById(vendorId: string): Promise<VendorProfile | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select(VENDOR_PROFILE_COLUMNS)
+    .eq('id', vendorId)
+    .eq('role', 'vendor')
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  const [vendor] = await attachDirectoryMeta([data as unknown as VendorProfile]);
+  return vendor;
+}
+
 /**
  * Get dedicated vendors for a property (for Invite Only requests)
  *

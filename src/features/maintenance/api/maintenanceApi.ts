@@ -1,5 +1,6 @@
 import { supabase } from '@/src/lib/supabase';
 import type { MaintenanceRequest, ServiceCategory } from '@/src/types/maintenance.types';
+import { createQuoteRequests } from './vendors/vendorQuoteRequests.api';
 
 // Feature flag for mock mode
 const USE_MOCK_DATA = false; // ✅ Changed to false - using real data now
@@ -545,19 +546,10 @@ export const maintenanceApi = {
       throw new Error('No dedicated vendors found for this property');
     }
 
-    // Create vendor_quote_requests for each dedicated vendor
-    const quoteRequests = vendors.map((vendor) => ({
-      request_id: requestId,
-      vendor_id: vendor.id,
-      status: 'pending',
-      response_deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
-    }));
-
-    const { error: insertError } = await supabase
-      .from('vendor_quote_requests')
-      .insert(quoteRequests);
-
-    if (insertError) throw insertError;
+    await createQuoteRequests(
+      requestId,
+      vendors.map((vendor) => vendor.id)
+    );
 
     // Update request visibility and routing timestamp
     const { data, error } = await supabase
@@ -604,19 +596,7 @@ export const maintenanceApi = {
       throw new Error('No vendors selected');
     }
 
-    // Create vendor_quote_requests for selected vendors
-    const quoteRequests = vendorIds.map((vendorId) => ({
-      request_id: requestId,
-      vendor_id: vendorId,
-      status: 'pending',
-      response_deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
-    }));
-
-    const { error: insertError } = await supabase
-      .from('vendor_quote_requests')
-      .insert(quoteRequests);
-
-    if (insertError) throw insertError;
+    await createQuoteRequests(requestId, vendorIds);
 
     // Update request visibility and routing timestamp
     const { data, error } = await supabase

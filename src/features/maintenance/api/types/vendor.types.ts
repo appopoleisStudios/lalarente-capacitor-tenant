@@ -20,6 +20,8 @@ export interface VendorProfile {
   /** Number of maintenance requests completed with this vendor selected. */
   completed_jobs?: number;
   role?: string;
+  /** Optional public vendor introduction when the profile schema provides one. */
+  bio?: string | null;
   /** Active trades (service category names). Loaded by directory queries. */
   trades?: string[];
   /** Cities / provinces the vendor covers. Loaded by directory queries. */
@@ -77,6 +79,9 @@ export interface VendorQuoteRequest {
   responded_at?: string | null;
   quote_id?: string | null;
   created_at: string;
+  invited_by?: string | null;
+  invited_by_role?: 'owner' | 'tenant' | null;
+  inviter_name?: string | null;
 }
 
 export type QuoteRequestStatus = 'pending' | 'responded' | 'declined' | 'submitted';
