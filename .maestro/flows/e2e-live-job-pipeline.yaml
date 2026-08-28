@@ -1,0 +1,90 @@
+# LAL-122 — Device path: tenant raise → vendor quote → tenant accept/PO → vendor start
+#
+# Continues .maestro/flows/e2e-tenant-create-vendor-quote.yaml on the SAME
+# REQUEST_TITLE. Closure photos + PayFast card are not Maestro-fillable;
+# scripts/walk-maintenance-pipeline.mjs finishes close → invoice → ITN pay.
+appId: com.lalarente.app
+---
+- runFlow: e2e-tenant-create-vendor-quote.yaml
+
+- runFlow: ../subflows/sign-out-vendor.yaml
+- runFlow: ../subflows/login-tenant.yaml
+- runFlow: ../subflows/tap-tenant-maintenance.yaml
+
+- extendedWaitUntil:
+    visible:
+      id: "maintenance-report-fab"
+    timeout: 20000
+    optional: true
+
+- swipe:
+    start: 50%, 25%
+    end: 50%, 75%
+    duration: 600
+
+- scrollUntilVisible:
+    element:
+      text: ".*${REQUEST_TITLE}.*"
+    direction: DOWN
+    timeout: 25000
+    centerElement: true
+
+- tapOn:
+    text: ".*${REQUEST_TITLE}.*"
+    index: 0
+
+- scrollUntilVisible:
+    element:
+      id: "tenant-accept-quote"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+
+- tapOn:
+    id: "tenant-accept-quote"
+
+- extendedWaitUntil:
+    visible: ".*Quote accepted.*"
+    timeout: 20000
+
+- tapOn:
+    text: "OK"
+
+- runFlow: ../subflows/sign-out-tenant.yaml
+- runFlow: ../subflows/login-vendor.yaml
+
+- tapOn:
+    id: "tab-vendor-jobs"
+
+- extendedWaitUntil:
+    visible: ".*${REQUEST_TITLE}.*"
+    timeout: 30000
+
+- tapOn:
+    text: ".*${REQUEST_TITLE}.*"
+    index: 0
+
+- extendedWaitUntil:
+    visible:
+      id: "vendor-start-work"
+    timeout: 25000
+
+- tapOn:
+    id: "vendor-start-work"
+
+- extendedWaitUntil:
+    visible: "Start Now"
+    timeout: 10000
+
+- tapOn:
+    text: "Start Now"
+
+- extendedWaitUntil:
+    visible: ".*Success.*"
+    timeout: 20000
+
+- tapOn:
+    text: "Got it!"
+
+- assertVisible:
+    id: "vendor-daily-update"

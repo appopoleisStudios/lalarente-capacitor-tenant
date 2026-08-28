@@ -432,30 +432,54 @@ export const applicationsApi = {
   },
 
   /**
-   * Initiate background check
+   * Run screening (RSA ID, documents, affordability; Onfido if keyed).
    */
-  async initiateBackgroundCheck(_id: string): Promise<void> {
-    throw new Error(
-      'No background-check bureau is connected. Record your own review on the application (mark complete or failed).'
-    );
+  async runApplicationScreening(applicationId: string): Promise<{
+    success: boolean;
+    summary: string;
+    identity_status: string;
+    credit_status: string;
+    background_status: string;
+  }> {
+    const { data, error } = await supabase.functions.invoke('run-application-screening', {
+      body: { application_id: applicationId },
+    });
+    if (error) {
+      let message = error.message || 'Screening failed';
+      try {
+        const ctx = (error as { context?: { json?: () => Promise<{ error?: string }> } }).context;
+        const body = await ctx?.json?.();
+        if (body?.error) message = body.error;
+      } catch {
+        /* keep */
+      }
+      throw new Error(message);
+    }
+    if (data?.error) {
+      throw new Error(String(data.error));
+    }
+    return data;
   },
 
   /**
-   * Initiate credit check
+   * @deprecated Use runApplicationScreening
    */
-  async initiateCreditCheck(_id: string): Promise<void> {
-    throw new Error(
-      'No credit bureau (e.g. TransUnion) is connected. Record your own review on the application (mark complete or failed).'
-    );
+  async initiateBackgroundCheck(id: string): Promise<void> {
+    await this.runApplicationScreening(id);
   },
 
   /**
-   * Verify identity
+   * @deprecated Use runApplicationScreening
    */
-  async verifyIdentity(_id: string): Promise<void> {
-    throw new Error(
-      'No identity provider (Onfido / Smile Identity) is connected. Record your own review on the application (mark complete or failed).'
-    );
+  async initiateCreditCheck(id: string): Promise<void> {
+    await this.runApplicationScreening(id);
+  },
+
+  /**
+   * @deprecated Use runApplicationScreening
+   */
+  async verifyIdentity(id: string): Promise<void> {
+    await this.runApplicationScreening(id);
   },
 
   /**

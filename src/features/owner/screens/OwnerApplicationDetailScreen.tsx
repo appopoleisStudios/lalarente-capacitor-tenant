@@ -32,6 +32,8 @@ export default function OwnerApplicationDetailScreen() {
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [depositAmount, setDepositAmount] = useState('');
+  const [screeningRunning, setScreeningRunning] = useState(false);
+  const [screeningSummary, setScreeningSummary] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -315,11 +317,39 @@ export default function OwnerApplicationDetailScreen() {
               <View style={styles.infoBannerSmall}>
                 <Ionicons name="information-circle-outline" size={14} color="#1E40AF" />
                 <Text style={styles.infoBannerSmallText} testID="screening-honest-copy">
-                  These checks are your record after reviewing uploaded documents. LalaRente is not
-                  connected to TransUnion, Onfido, or a background bureau — tapping complete does
-                  not run an automated check.
+                  Run screening checks RSA ID checksum, ID document, rent vs 30% of declared income,
+                  and references. Onfido runs only when an Onfido API token is configured. You can
+                  still override a row after reading the documents.
                 </Text>
               </View>
+              <TouchableOpacity
+                testID="screening-run-button"
+                style={styles.runScreeningButton}
+                disabled={screeningRunning}
+                onPress={async () => {
+                  if (!id) return;
+                  setScreeningRunning(true);
+                  try {
+                    const result = await applicationsApi.runApplicationScreening(id);
+                    setScreeningSummary(result.summary);
+                    await loadApplication();
+                    Alert.alert('Screening complete', result.summary);
+                  } catch (err: any) {
+                    Alert.alert('Screening failed', err?.message || 'Try again.');
+                  } finally {
+                    setScreeningRunning(false);
+                  }
+                }}
+              >
+                <Text style={styles.runScreeningButtonText}>
+                  {screeningRunning ? 'Running…' : 'Run screening'}
+                </Text>
+              </TouchableOpacity>
+              {screeningSummary ? (
+                <Text style={styles.screeningSummary} testID="screening-run-result">
+                  {screeningSummary}
+                </Text>
+              ) : null}
               <View style={styles.card}>
                 <ScreeningRow
                   testID="screening-row-background"
@@ -980,6 +1010,24 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFF',
     textTransform: 'capitalize',
+  },
+  runScreeningButton: {
+    backgroundColor: '#002395',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  runScreeningButtonText: {
+    color: '#FFF',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  screeningSummary: {
+    fontSize: 12,
+    color: '#1E40AF',
+    marginBottom: 12,
+    lineHeight: 18,
   },
   documentRow: {
     flexDirection: 'row',

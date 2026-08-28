@@ -149,9 +149,9 @@ export function howThisAppWorks(role: string, topic: string): string {
     },
     screening: {
       tenant:
-        'Credit/background/ID badges are owner-side. LalaRente does not run TPN/TransUnion/Onfido from the app yet. Owners can mark checks complete after reviewing documents offline.',
+        'Owners run screening on applications: RSA ID checksum, ID document, rent vs 30% of declared income, and references. Onfido runs only if configured. This is not a TransUnion credit bureau score.',
       owner:
-        'FICA / application screening: mark identity, credit, and background complete or failed after you review documents yourself. No bureau is connected. Do not tell tenants a credit check ran in-app.',
+        'FICA / application screening: tap Run screening. It checks RSA ID, uploaded ID, affordability (30% rule), and references. Onfido is used only when ONFIDO_API_TOKEN is set. You can still override a row after reading documents.',
       vendor: 'Not applicable.',
     },
     lala: {
