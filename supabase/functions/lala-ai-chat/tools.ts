@@ -124,11 +124,11 @@ export function howThisAppWorks(role: string, topic: string): string {
     },
     invoices: {
       tenant:
-        'Approve or reject a vendor invoice from the job’s invoice screen. If you disagree, use Chat/Call, confirm you talked, then escalate to LalaRente — admin decides. This is not a rent payment dispute.',
+        'Approve or reject a vendor invoice from the job’s invoice screen. If you disagree, use the in-app maintenance chat, confirm you tried to resolve it there, then escalate to LalaRente — admin decides. Vendor communication stays in the app; do not call, email, or use WhatsApp. This is not a rent payment dispute.',
       owner:
-        'Same invoice talk/escalate path on owner invoice approval. Admin Invoice cases on the web panel resolve disputed invoices.',
+        'Use the in-app maintenance chat from owner invoice approval, confirm both sides tried to resolve it there, then escalate if needed. Vendor communication stays in the app; do not call, email, or use WhatsApp. Admin Invoice cases on the web panel resolve disputed invoices.',
       vendor:
-        'Submit invoice from the job. Chat/Call the payer; both must confirm talk before escalate.',
+        'Submit the invoice from the job. Use the in-app maintenance chat with the payer; both must confirm they tried to resolve it there before escalation.',
     },
     quotes: {
       tenant:
