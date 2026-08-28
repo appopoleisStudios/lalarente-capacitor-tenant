@@ -17,7 +17,10 @@ import {
   getMaintenanceRequestById,
   getProgressUpdates,
   getInvoicesByRequest,
+  getQuotesByRequest,
+  requestOwnerToAcceptQuote,
 } from '@/src/features/maintenance/api';
+import { useAuth } from '@/src/contexts/AuthContext';
 import { messagesApi } from '@/src/features/messaging/api/messagesApi';
 import { getClosureReport } from '@/src/features/maintenance/api/work/workClosure.api';
 import { MediaGallery } from '@/src/features/maintenance/components/MediaGallery';
@@ -62,10 +65,13 @@ export const TENANT_MAINTENANCE_DETAIL_TEST_IDS = {
 
 export default function TenantMaintenanceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { user } = useAuth();
   const [request, setRequest] = useState<any>(null);
   const [progressUpdates, setProgressUpdates] = useState<any[]>([]);
   const [closureReport, setClosureReport] = useState<any>(null);
   const [tenantInvoices, setTenantInvoices] = useState<any[]>([]);
+  const [quotes, setQuotes] = useState<any[]>([]);
+  const [askingQuoteId, setAskingQuoteId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [openingMessages, setOpeningMessages] = useState(false);
 
@@ -106,6 +112,13 @@ export default function TenantMaintenanceDetailScreen() {
         );
       } catch (_) {
         // Non-critical — invoice section just won't render
+      }
+
+      try {
+        const q = await getQuotesByRequest(id);
+        setQuotes(q || []);
+      } catch (_) {
+        setQuotes([]);
       }
     } catch (error: any) {
       console.error('Error fetching request:', error);
@@ -279,6 +292,58 @@ export default function TenantMaintenanceDetailScreen() {
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.gray[400]} />
             </TouchableOpacity>
+          </Animated.View>
+        ) : null}
+
+        {quotes.length > 0 ? (
+          <Animated.View entering={FadeInDown.delay(430).duration(500)} style={styles.card}>
+            <Text style={styles.cardTitle} testID="tenant-quotes-title">
+              Quotes
+            </Text>
+            <Text style={styles.quoteHint}>
+              The owner must accept a quote and issue the purchase order. You can ask them to
+              accept.
+            </Text>
+            {quotes.map((q) => {
+              const vendorName = q.vendor?.full_name || 'Vendor';
+              const amount = Number(q.total_amount || 0);
+              return (
+                <View key={q.id} style={styles.quoteRow} testID="tenant-quote-row">
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.quoteVendor}>{vendorName}</Text>
+                    <Text style={styles.quoteMeta}>
+                      {q.status} · R {amount.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
+                    </Text>
+                  </View>
+                  {q.status === 'submitted' && user?.id ? (
+                    <TouchableOpacity
+                      testID="tenant-ask-owner-accept-quote"
+                      style={styles.askOwnerButton}
+                      disabled={askingQuoteId === q.id}
+                      onPress={async () => {
+                        try {
+                          setAskingQuoteId(q.id);
+                          await requestOwnerToAcceptQuote(q.id, user.id);
+                          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                          Alert.alert(
+                            'Owner notified',
+                            'The owner must accept this quote and issue the PO. You cannot authorise vendor spend.'
+                          );
+                        } catch (err: any) {
+                          Alert.alert('Could not notify owner', err?.message || 'Try again.');
+                        } finally {
+                          setAskingQuoteId(null);
+                        }
+                      }}
+                    >
+                      <Text style={styles.askOwnerButtonText}>
+                        {askingQuoteId === q.id ? '…' : 'Ask owner'}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+              );
+            })}
           </Animated.View>
         ) : null}
 
@@ -655,4 +720,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  quoteHint: { fontSize: 13, color: '#6b7280', lineHeight: 18, marginBottom: 12 },
+  quoteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#e5e7eb',
+  },
+  quoteVendor: { fontSize: 15, fontWeight: '600', color: '#111827' },
+  quoteMeta: { fontSize: 13, color: '#6b7280', marginTop: 2 },
+  askOwnerButton: {
+    backgroundColor: RSA.green,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  askOwnerButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
 });

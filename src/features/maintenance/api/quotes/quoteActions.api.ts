@@ -15,7 +15,7 @@ import { getQuoteById } from './quotes.api';
  * 2. Update maintenance request with selected_vendor_id and selected_quote_id
  * 3. Change maintenance request status to 'assigned'
  * 4. Generate a Purchase Order
- * 
+ *
  * @param quoteId - The quote ID to accept
  * @param ownerId - The owner's user ID (for verification)
  * @returns Object with updated quote and generated PO
@@ -52,8 +52,7 @@ export async function acceptQuote(
   console.log('✅ Quote found and authorized');
 
   // 2. Update quote status to 'approved'
-  const { data: updatedQuote, error: updateQuoteError } = await (supabase
-    .from('quotes') as any)
+  const { data: updatedQuote, error: updateQuoteError } = await (supabase.from('quotes') as any)
     .update({
       status: 'approved',
       updated_at: new Date().toISOString(),
@@ -71,8 +70,7 @@ export async function acceptQuote(
 
   // 3. Update maintenance request
   if (typedQuote.request_id) {
-    const { error: updateRequestError } = await (supabase
-      .from('maintenance_requests') as any)
+    const { error: updateRequestError } = await (supabase.from('maintenance_requests') as any)
       .update({
         selected_quote_id: quoteId,
         selected_vendor_id: typedQuote.vendor_id,
@@ -91,22 +89,25 @@ export async function acceptQuote(
 
   // 4. Generate Purchase Order
   const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
-  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  const random = Math.floor(Math.random() * 10000)
+    .toString()
+    .padStart(4, '0');
   const poNumber = `PO-${date}-${random}`;
-  
-  const { data: newPO, error: poError } = await (supabase
-    .from('purchase_orders') as any)
-    .insert([{
-      contract_id: typedQuote.contract_id,
-      po_number: poNumber,
-      currency: 'ZAR',
-      subtotal: typedQuote.subtotal,
-      vat_amount: typedQuote.vat_amount,
-      platform_fee_amount: 0,
-      total_amount: typedQuote.total_amount,
-      status: 'issued',
-      revision_number: 1,
-    }])
+
+  const { data: newPO, error: poError } = await (supabase.from('purchase_orders') as any)
+    .insert([
+      {
+        contract_id: typedQuote.contract_id,
+        po_number: poNumber,
+        currency: 'ZAR',
+        subtotal: typedQuote.subtotal,
+        vat_amount: typedQuote.vat_amount,
+        platform_fee_amount: 0,
+        total_amount: typedQuote.total_amount,
+        status: 'issued',
+        revision_number: 1,
+      },
+    ])
     .select();
 
   if (poError) {
@@ -126,8 +127,7 @@ export async function acceptQuote(
 
   // 5. Link PO to maintenance request
   if (typedQuote.request_id) {
-    const { error: linkError } = await (supabase
-      .from('maintenance_requests') as any)
+    const { error: linkError } = await (supabase.from('maintenance_requests') as any)
       .update({ po_id: po.id })
       .eq('id', typedQuote.request_id);
 
@@ -148,7 +148,7 @@ export async function acceptQuote(
 
 /**
  * Reject a quote (Owner action)
- * 
+ *
  * @param quoteId - The quote ID to reject
  * @param ownerId - The owner's user ID (for verification)
  * @param rejectionReason - Optional reason for rejection
@@ -177,8 +177,7 @@ export async function rejectQuote(
   }
 
   // Update quote status
-  const { data, error } = await (supabase
-    .from('quotes') as any)
+  const { data, error } = await (supabase.from('quotes') as any)
     .update({
       status: 'rejected',
       updated_at: new Date().toISOString(),
@@ -197,7 +196,7 @@ export async function rejectQuote(
 
 /**
  * Request revision on a quote (Owner action)
- * 
+ *
  * @param quoteId - The quote ID
  * @param ownerId - The owner's user ID (for verification)
  * @param revisionReason - Reason for requesting revision
@@ -226,8 +225,7 @@ export async function requestQuoteRevision(
   }
 
   // Update quote status
-  const { data, error } = await (supabase
-    .from('quotes') as any)
+  const { data, error } = await (supabase.from('quotes') as any)
     .update({
       status: 'revision_requested',
       revision_reason: revisionReason,
@@ -247,7 +245,7 @@ export async function requestQuoteRevision(
 /**
  * Generate PO from approved quote
  * Creates a PO with all quote details
- * 
+ *
  * @param quoteId - The approved quote ID
  * @param approvedQuote - Optional pre-fetched quote object to avoid refetching
  * @returns Created purchase order
@@ -257,7 +255,7 @@ export async function generatePOFromQuote(
   approvedQuote?: Quote
 ): Promise<PurchaseOrder> {
   // Use provided quote or fetch it
-  const quote = approvedQuote || await getQuoteById(quoteId);
+  const quote = approvedQuote || (await getQuoteById(quoteId));
 
   // Check if PO already exists for this request
   if (quote.request_id) {
@@ -274,23 +272,26 @@ export async function generatePOFromQuote(
 
   // Generate PO number
   const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
-  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  const random = Math.floor(Math.random() * 10000)
+    .toString()
+    .padStart(4, '0');
   const poNumber = `PO-${date}-${random}`;
 
   // Create PO
-  const { data, error } = await (supabase
-    .from('purchase_orders') as any)
-    .insert([{
-      contract_id: quote.contract_id,
-      po_number: poNumber,
-      currency: 'ZAR',
-      subtotal: quote.subtotal,
-      vat_amount: quote.vat_amount,
-      platform_fee_amount: 0,
-      total_amount: quote.total_amount,
-      status: 'issued',
-      revision_number: 1,
-    }])
+  const { data, error } = await (supabase.from('purchase_orders') as any)
+    .insert([
+      {
+        contract_id: quote.contract_id,
+        po_number: poNumber,
+        currency: 'ZAR',
+        subtotal: quote.subtotal,
+        vat_amount: quote.vat_amount,
+        platform_fee_amount: 0,
+        total_amount: quote.total_amount,
+        status: 'issued',
+        revision_number: 1,
+      },
+    ])
     .select();
 
   if (error) {
@@ -309,9 +310,8 @@ export async function generatePOFromQuote(
 
   // Update maintenance request with po_id and selected_quote_id
   if (quote.request_id) {
-    const { error: updateError } = await (supabase
-      .from('maintenance_requests') as any)
-      .update({ 
+    const { error: updateError } = await (supabase.from('maintenance_requests') as any)
+      .update({
         po_id: po.id,
         selected_quote_id: quoteId,
       })
@@ -323,4 +323,67 @@ export async function generatePOFromQuote(
   }
 
   return po as PurchaseOrder;
+}
+
+/**
+ * Tenant asks the owner to accept a submitted quote (LAL-114).
+ * Tenant cannot issue a PO — owner remains spend authority.
+ */
+export async function requestOwnerToAcceptQuote(
+  quoteId: string,
+  tenantId: string
+): Promise<{ success: true }> {
+  const { data: quote, error: quoteError } = await supabase
+    .from('quotes')
+    .select('id, status, owner_id, request_id, total_amount, vendor_id')
+    .eq('id', quoteId)
+    .single();
+  if (quoteError || !quote) {
+    throw new Error('Quote not found');
+  }
+  const row = quote as {
+    id: string;
+    status: string;
+    owner_id: string;
+    request_id: string | null;
+    total_amount?: number;
+  };
+  if (!row.request_id) {
+    throw new Error('Quote is not linked to a maintenance job');
+  }
+  const { data: request, error: reqError } = await supabase
+    .from('maintenance_requests')
+    .select('id, title, tenant_id, owner_id')
+    .eq('id', row.request_id)
+    .single();
+  if (reqError || !request) {
+    throw new Error('Job not found');
+  }
+  const job = request as { tenant_id: string; owner_id: string; title: string };
+  if (job.tenant_id !== tenantId) {
+    throw new Error('Only the tenant on this job can ask the owner to accept a quote');
+  }
+  if (row.status !== 'submitted') {
+    throw new Error(`This quote is ${row.status}, not waiting for acceptance`);
+  }
+
+  const amount = Number(row.total_amount || 0);
+  const amountLabel = `R ${amount.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`;
+  const { error: nErr } = await (supabase as any).from('notifications').insert({
+    user_id: job.owner_id,
+    type: 'maintenance_updated',
+    title: 'Tenant asked you to accept a quote',
+    body: `Your tenant asked you to accept a ${amountLabel} quote on "${job.title}". Only you can issue the purchase order.`,
+    data: {
+      request_id: row.request_id,
+      quote_id: quoteId,
+    },
+    channels: ['in_app'],
+    priority: 'high',
+    status: 'pending',
+  } as any);
+  if (nErr) {
+    throw new Error(nErr.message || 'Could not notify the owner');
+  }
+  return { success: true };
 }
