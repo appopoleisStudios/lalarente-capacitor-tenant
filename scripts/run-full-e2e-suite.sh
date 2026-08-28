@@ -205,6 +205,25 @@ else
 fi
 
 # ════════════════════════════════════════════════════
+#  PHASE 1B2: OWNER → VENDOR PAYMENT (LAL-116)
+# ════════════════════════════════════════════════════
+print_header "OWNER → VENDOR PAYMENT (LAL-116)"
+START=$(date +%s)
+set +e
+bash "$SCRIPT_DIR/run-owner-payment-e2e.sh" 2>&1
+EC=$?
+set -e
+END=$(date +%s)
+DURATION=$((END - START))
+if [ "$EC" -eq 0 ]; then
+  echo "    ✓ Owner→Vendor Payment (${DURATION}s)" >> "$RESULTS_FILE"
+  PASSED=$((PASSED + 1))
+else
+  echo "    ✗ Owner→Vendor Payment FAILED (${DURATION}s) — exit $EC" >> "$RESULTS_FILE"
+  FAILED=$((FAILED + 1))
+fi
+
+# ════════════════════════════════════════════════════
 #  PHASE 1C: VENDOR PAYMENT FULL SUITE (Plane #64)
 #  seed tenant invoice → seed owner-role invoice → Maestro UI flow
 #  (vendor-payment-full-suite: happy path + payer exclusivity) →

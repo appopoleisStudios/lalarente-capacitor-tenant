@@ -85,9 +85,40 @@ async function main() {
   if (!mrs || mrs.length === 0) {
     throw new Error('Tenant has no maintenance requests — run e2e-tenant-create-vendor-quote first.');
   }
-  const mr = mrs[0];
+  let mr = mrs[0];
   const requestOwnerId = mr.owner_id || ownerId;
   console.log(`✓ Using maintenance request: ${mr.title} (${mr.id})`);
+
+  // Owner-pay Maestro path: assign vendor, set in_progress, retitle so the
+  // list card + invoice CTA are deterministic (invoice card only mounts when
+  // status is in_progress or completed).
+  const ownerPayE2e = process.env.OWNER_PAY_E2E === '1';
+  const SEED_TITLE = 'E2E Owner Invoice Pay';
+  if (ownerPayE2e) {
+    const assignRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/maintenance_requests?id=eq.${mr.id}`,
+      {
+        method: 'PATCH',
+        headers: { ...headers(owner.access_token), Prefer: 'return=representation' },
+        body: JSON.stringify({
+          selected_vendor_id: vendorId,
+          status: 'in_progress',
+          title: SEED_TITLE,
+        }),
+      }
+    );
+    const assignRows = await assignRes.json().catch(() => []);
+    const assignRow = (Array.isArray(assignRows) ? assignRows : [assignRows]).find(
+      (r) => r?.id === mr.id && r?.title === SEED_TITLE
+    );
+    if (!assignRow) {
+      throw new Error(
+        'OWNER_PAY_E2E request PATCH returned no row — owner token cannot update this request (owner_id mismatch or RLS).'
+      );
+    }
+    mr = { ...mr, ...assignRow };
+    console.log(`✓ Retitled request "${SEED_TITLE}" + in_progress (owner pay Maestro)`);
+  }
 
   // Distinctive owner-role invoice number so the full suite can assert it is
   // NOT visible to the tenant (payer exclusivity).

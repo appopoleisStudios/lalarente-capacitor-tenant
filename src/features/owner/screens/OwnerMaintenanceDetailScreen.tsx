@@ -778,6 +778,7 @@ export default function OwnerMaintenanceDetailScreen() {
             <TouchableOpacity
               accessibilityLabel="View invoice details"
               accessibilityRole="button"
+              testID="owner-view-invoice"
               style={styles.invoiceCard}
               onPress={() => {
                 router.push(`/(owner)/maintenance/${id}/invoice` as any);
