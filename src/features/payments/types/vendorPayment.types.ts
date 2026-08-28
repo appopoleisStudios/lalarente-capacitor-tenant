@@ -24,21 +24,11 @@ export type VendorPayoutStatus =
   | 'cancelled'
   | 'on_hold';
 
-export type VendorPayoutMethod =
-  | 'payfast_payout'
-  | 'manual_eft'
-  | 'instant';
+export type VendorPayoutMethod = 'payfast_payout' | 'manual_eft' | 'instant';
 
-export type VendorPaymentGateway =
-  | 'payfast'
-  | 'yoco'
-  | 'manual';
+export type VendorPaymentGateway = 'payfast' | 'yoco' | 'manual';
 
-export type VendorDisputeStatus =
-  | 'none'
-  | 'opened'
-  | 'resolved'
-  | 'escalated';
+export type VendorDisputeStatus = 'none' | 'opened' | 'resolved' | 'escalated';
 
 export type VendorLedgerEntryType =
   | 'payment_received'
@@ -50,14 +40,9 @@ export type VendorLedgerEntryType =
   | 'dispute_hold'
   | 'dispute_release';
 
-export type VendorPayoutSchedule =
-  | 'instant'
-  | 'daily'
-  | 'weekly';
+export type VendorPayoutSchedule = 'instant' | 'daily' | 'weekly';
 
-export type PayerRole =
-  | 'tenant'
-  | 'owner';
+export type PayerRole = 'tenant' | 'owner';
 
 // ─── Core Types ─────────────────────────────────────────────────────
 
@@ -171,12 +156,12 @@ export interface VendorPaymentWithRelations extends VendorPayment {
   invoice?: {
     id: string;
     invoice_number: string;
-    line_items: Array<{
+    line_items: {
       description: string;
       quantity: number;
       unit_price: number;
       total: number;
-    }>;
+    }[];
     subtotal: number;
     vat_amount: number;
     total_amount: number;
@@ -223,12 +208,12 @@ export interface VendorEarningsSummary {
 /** Fee breakdown for a single payment (displayed to tenant before they pay) */
 export interface PaymentBreakdown {
   total_amount: number;
-  line_items: Array<{
+  line_items: {
     description: string;
     quantity: number;
     unit_price: number;
     total: number;
-  }>;
+  }[];
   subtotal: number;
   vat_amount: number;
 }
@@ -247,6 +232,8 @@ export interface CreateCheckoutResponse {
   payment_id: string;
   payfast_form_action: string;
   payfast_fields: Record<string, string>;
+  payfast_redirect_url?: string;
+  sandbox?: boolean;
   expires_at: string;
 }
 
@@ -272,12 +259,12 @@ export interface MaintenanceInvoiceWithPayerRole {
   total_amount: number;
   subtotal: number;
   vat_amount: number;
-  line_items: Array<{
+  line_items: {
     description: string;
     quantity: number;
     unit_price: number;
     total: number;
-  }>;
+  }[];
   maintenance_request_id: string;
   vendor_id: string;
   owner_id: string;

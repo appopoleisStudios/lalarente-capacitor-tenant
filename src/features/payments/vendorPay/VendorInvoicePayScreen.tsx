@@ -134,6 +134,7 @@ export function VendorInvoicePayScreen({ config }: { config: VendorPayConfig }) 
         params: {
           payment_id: data.payment_id,
           url: data.payfast_redirect_url,
+          sandbox: data.sandbox ? '1' : '0',
         },
       });
     } catch (err: any) {
@@ -313,8 +314,8 @@ export function VendorInvoicePayScreen({ config }: { config: VendorPayConfig }) 
                 Secure Payment via PayFast
               </Text>
               <Text style={{ fontSize: 13, color: '#666', lineHeight: 18 }}>
-                Your payment is processed securely through PayFast, South Africa's leading payment
-                gateway. You can pay via credit/debit card or EFT.
+                This release uses PayFast sandbox. Test cards only — no live money until the live
+                merchant is switched after client testing.
               </Text>
             </View>
           </View>

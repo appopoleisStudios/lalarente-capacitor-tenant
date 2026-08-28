@@ -6,27 +6,17 @@ import { WebView, WebViewNavigation } from 'react-native-webview';
 import { PaymentStepsIndicator } from '@/src/shared/components/ui/PaymentStepsIndicator';
 import { ErrorState, FeaturePin, LoadingSpinner } from '@/src/shared/components';
 import type { VendorPayConfig } from './vendorPayConfig';
+import { isPayFastHost, isPayFastSandboxHost } from './payfastHost';
 
 const REDIRECT_BASE =
   'https://vvepwaolnkzfzhzgxlwr.supabase.co/functions/v1/vendor-payment-redirect';
 
-const isPayFastUrl = (rawUrl: string | undefined | null): boolean => {
-  if (!rawUrl) return false;
-  try {
-    const parsed = new URL(rawUrl);
-    if (parsed.protocol !== 'https:') return false;
-    const host = parsed.hostname.toLowerCase();
-    return host === 'payfast.co.za' || host.endsWith('.payfast.co.za');
-  } catch {
-    return false;
-  }
-};
-
 export function VendorPaymentCheckoutScreen({ config }: { config: VendorPayConfig }) {
   const router = useRouter();
-  const { payment_id, url } = useLocalSearchParams<{
+  const { payment_id, url, sandbox } = useLocalSearchParams<{
     payment_id: string;
     url: string;
+    sandbox?: string;
   }>();
   const handledRef = useRef(false);
 
@@ -96,7 +86,24 @@ export function VendorPaymentCheckoutScreen({ config }: { config: VendorPayConfi
 
       <PaymentStepsIndicator current={1} />
 
-      {isPayFastUrl(url) ? (
+      {isPayFastSandboxHost(url) || sandbox === '1' ? (
+        <View
+          testID="payfast-sandbox-banner"
+          style={{
+            backgroundColor: '#FEF3C7',
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            borderBottomWidth: 1,
+            borderBottomColor: '#F59E0B',
+          }}
+        >
+          <Text style={{ fontSize: 13, fontWeight: '600', color: '#92400E' }}>
+            Sandbox payments — test cards only. No live money. Live merchant after client sign-off.
+          </Text>
+        </View>
+      ) : null}
+
+      {isPayFastHost(url) ? (
         <WebView
           source={{ uri: url }}
           style={{ flex: 1, backgroundColor: '#F5F5F5' }}

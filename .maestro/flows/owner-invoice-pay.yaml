@@ -73,6 +73,8 @@ appId: com.lalarente.app
     text: "Secure Checkout"
 - assertVisible:
     id: "checkout-close"
+- assertVisible:
+    id: "payfast-sandbox-banner"
 
 - tapOn:
     id: "checkout-close"
