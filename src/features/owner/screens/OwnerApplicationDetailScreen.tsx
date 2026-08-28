@@ -314,9 +314,10 @@ export default function OwnerApplicationDetailScreen() {
               <Text style={styles.sectionTitle}>Screening Status</Text>
               <View style={styles.infoBannerSmall}>
                 <Ionicons name="information-circle-outline" size={14} color="#1E40AF" />
-                <Text style={styles.infoBannerSmallText}>
-                  Review the applicant's documents below, then tap each check to mark it as complete
-                  or failed.
+                <Text style={styles.infoBannerSmallText} testID="screening-honest-copy">
+                  These checks are your record after reviewing uploaded documents. LalaRente is not
+                  connected to TransUnion, Onfido, or a background bureau — tapping complete does
+                  not run an automated check.
                 </Text>
               </View>
               <View style={styles.card}>

@@ -34,21 +34,21 @@ export interface CreateApplicationInput {
   property_id: string;
   tenant_id: string;
   owner_id: string;
-  
+
   // Personal Information
   full_name: string;
   email: string;
   phone: string;
   id_number: string;
   date_of_birth: string;
-  
+
   // Employment Information
   employer?: string;
   position?: string;
   monthly_income?: number;
   employment_start_date?: string;
   employer_contact?: string;
-  
+
   // Documents
   id_document_url?: string;
   proof_of_income_urls?: string[];
@@ -62,19 +62,19 @@ export interface UpdateApplicationInput {
   phone?: string;
   id_number?: string;
   date_of_birth?: string;
-  
+
   // Employment Information
   employer?: string;
   position?: string;
   monthly_income?: number;
   employment_start_date?: string;
   employer_contact?: string;
-  
+
   // Documents
   id_document_url?: string;
   proof_of_income_urls?: string[];
   reference_urls?: string[];
-  
+
   // Screening
   background_check_status?: 'pending' | 'completed' | 'failed';
   background_check_result?: any;
@@ -98,7 +98,7 @@ export const applicationsApi = {
         .select('rent_amount')
         .eq('id', input.property_id)
         .single();
-      
+
       if (property) {
         affordabilityRatio = property.rent_amount / input.monthly_income;
       }
@@ -111,26 +111,26 @@ export const applicationsApi = {
         tenant_id: input.tenant_id,
         owner_id: input.owner_id,
         status: 'draft',
-        
+
         // Personal info
         full_name: input.full_name,
         email: input.email,
         phone: input.phone,
         id_number: input.id_number,
         date_of_birth: input.date_of_birth,
-        
+
         // Employment
         employer: input.employer || null,
         position: input.position || null,
         monthly_income: input.monthly_income || null,
         employment_start_date: input.employment_start_date || null,
         employer_contact: input.employer_contact || null,
-        
+
         // Documents
         id_document_url: input.id_document_url || null,
         proof_of_income_urls: input.proof_of_income_urls || null,
         reference_urls: input.reference_urls || null,
-        
+
         // Screening
         affordability_ratio: affordabilityRatio,
       })
@@ -148,10 +148,7 @@ export const applicationsApi = {
   /**
    * Update an existing application
    */
-  async updateApplication(
-    id: string,
-    input: UpdateApplicationInput
-  ): Promise<RentalApplication> {
+  async updateApplication(id: string, input: UpdateApplicationInput): Promise<RentalApplication> {
     const { data, error } = await supabase
       .from('rental_applications')
       .update(input)
@@ -188,7 +185,8 @@ export const applicationsApi = {
 
     // Send notification to owner about new application
     try {
-      const { notificationsApi } = await import('@/src/features/notifications/api/notificationsApi');
+      const { notificationsApi } =
+        await import('@/src/features/notifications/api/notificationsApi');
       const app = data as any;
       notificationsApi.sendNotification({
         user_id: app.owner_id,
@@ -213,12 +211,14 @@ export const applicationsApi = {
   async getApplication(id: string): Promise<ApplicationWithRelations> {
     const { data, error } = await supabase
       .from('rental_applications')
-      .select(`
+      .select(
+        `
         *,
         property:properties!property_id(id, title, address, city, rent_amount),
         tenant:profiles!tenant_id(id, full_name, email, phone),
         owner:profiles!owner_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('id', id)
       .single();
 
@@ -236,11 +236,13 @@ export const applicationsApi = {
   async getTenantApplications(tenantId: string): Promise<ApplicationWithRelations[]> {
     const { data, error } = await supabase
       .from('rental_applications')
-      .select(`
+      .select(
+        `
         *,
         property:properties!property_id(id, title, address, city, rent_amount),
         owner:profiles!owner_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false });
 
@@ -258,11 +260,13 @@ export const applicationsApi = {
   async getOwnerApplications(ownerId: string): Promise<ApplicationWithRelations[]> {
     const { data, error } = await supabase
       .from('rental_applications')
-      .select(`
+      .select(
+        `
         *,
         property:properties!property_id(id, title, address, city, rent_amount),
         tenant:profiles!tenant_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('owner_id', ownerId)
       .order('created_at', { ascending: false });
 
@@ -280,14 +284,16 @@ export const applicationsApi = {
   async getPropertyApplications(propertyId: string): Promise<ApplicationWithRelations[]> {
     const { data, error } = await supabase
       .from('rental_applications')
-      .select(`
+      .select(
+        `
         *,
         property:properties!property_id(id, title, address, city, rent_amount),
         tenant:profiles!tenant_id(id, full_name, email, phone),
         owner:profiles!owner_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('property_id', propertyId)
-      .order('created_at', { ascending: false});
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching property applications:', error);
@@ -318,7 +324,8 @@ export const applicationsApi = {
 
     // Send notification to tenant that application was approved
     try {
-      const { notificationsApi } = await import('@/src/features/notifications/api/notificationsApi');
+      const { notificationsApi } =
+        await import('@/src/features/notifications/api/notificationsApi');
       const app = data as any;
       notificationsApi.sendNotification({
         user_id: app.tenant_id,
@@ -326,7 +333,8 @@ export const applicationsApi = {
         data: {
           propertyTitle: '',
           customTitle: 'Application Approved!',
-          customBody: 'Your rental application has been approved! The owner will be in touch to finalize the lease.',
+          customBody:
+            'Your rental application has been approved! The owner will be in touch to finalize the lease.',
         },
       });
     } catch (e) {
@@ -343,13 +351,13 @@ export const applicationsApi = {
    */
   async rejectApplication(id: string, reason?: string): Promise<RentalApplication> {
     console.log('❌ Rejecting application:', id, 'with reason:', reason);
-    
+
     const updateData: any = {
       status: 'rejected',
       reviewed_at: new Date().toISOString(),
       rejected_at: new Date().toISOString(),
     };
-    
+
     // Add rejection reason if provided
     if (reason) {
       updateData.rejection_reason = reason;
@@ -357,9 +365,9 @@ export const applicationsApi = {
     } else {
       console.log('⚠️ No rejection reason provided');
     }
-    
+
     console.log('📝 Update data:', updateData);
-    
+
     const { data, error } = await supabase
       .from('rental_applications')
       .update(updateData)
@@ -374,7 +382,8 @@ export const applicationsApi = {
 
     // Send notification to tenant about rejection
     try {
-      const { notificationsApi } = await import('@/src/features/notifications/api/notificationsApi');
+      const { notificationsApi } =
+        await import('@/src/features/notifications/api/notificationsApi');
       const app = data as any;
       notificationsApi.sendNotification({
         user_id: app.tenant_id,
@@ -398,18 +407,13 @@ export const applicationsApi = {
   /**
    * Request additional documents from applicant
    */
-  async requestAdditionalDocuments(
-    id: string,
-    documents: string[]
-  ): Promise<void> {
-    await supabase
-      .from('rental_applications')
-      .update({ status: 'under_review' })
-      .eq('id', id);
+  async requestAdditionalDocuments(id: string, documents: string[]): Promise<void> {
+    await supabase.from('rental_applications').update({ status: 'under_review' }).eq('id', id);
 
     // Notify tenant about required documents
     try {
-      const { notificationsApi } = await import('@/src/features/notifications/api/notificationsApi');
+      const { notificationsApi } =
+        await import('@/src/features/notifications/api/notificationsApi');
       const app = await this.getApplication(id);
       notificationsApi.sendNotification({
         user_id: app.tenant_id,
@@ -430,61 +434,28 @@ export const applicationsApi = {
   /**
    * Initiate background check
    */
-  async initiateBackgroundCheck(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('rental_applications')
-      .update({
-        background_check_status: 'pending',
-      })
-      .eq('id', id);
-
-    if (error) {
-      console.error('Error initiating background check:', error);
-      throw new Error(`Failed to initiate background check: ${error.message}`);
-    }
-
-    // TODO: Integrate with background check service
-    console.log(`Background check initiated for application ${id}`);
+  async initiateBackgroundCheck(_id: string): Promise<void> {
+    throw new Error(
+      'No background-check bureau is connected. Record your own review on the application (mark complete or failed).'
+    );
   },
 
   /**
    * Initiate credit check
    */
-  async initiateCreditCheck(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('rental_applications')
-      .update({
-        credit_check_status: 'pending',
-      })
-      .eq('id', id);
-
-    if (error) {
-      console.error('Error initiating credit check:', error);
-      throw new Error(`Failed to initiate credit check: ${error.message}`);
-    }
-
-    // TODO: Integrate with TransUnion or other credit check service
-    console.log(`Credit check initiated for application ${id}`);
+  async initiateCreditCheck(_id: string): Promise<void> {
+    throw new Error(
+      'No credit bureau (e.g. TransUnion) is connected. Record your own review on the application (mark complete or failed).'
+    );
   },
 
   /**
    * Verify identity
    */
-  async verifyIdentity(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('rental_applications')
-      .update({
-        identity_verification_status: 'pending',
-      })
-      .eq('id', id);
-
-    if (error) {
-      console.error('Error initiating identity verification:', error);
-      throw new Error(`Failed to initiate identity verification: ${error.message}`);
-    }
-
-    // TODO: Integrate with Onfido or Smile Identity
-    console.log(`Identity verification initiated for application ${id}`);
+  async verifyIdentity(_id: string): Promise<void> {
+    throw new Error(
+      'No identity provider (Onfido / Smile Identity) is connected. Record your own review on the application (mark complete or failed).'
+    );
   },
 
   /**
@@ -499,7 +470,7 @@ export const applicationsApi = {
   /**
    * Check if applicant is affordable
    */
-  isAffordable(income: number, rent: number, threshold: number = 0.30): boolean {
+  isAffordable(income: number, rent: number, threshold: number = 0.3): boolean {
     const ratio = this.calculateAffordability(income, rent);
     return ratio <= threshold;
   },
@@ -519,9 +490,11 @@ export const applicationsApi = {
     }
 
     const total = applications?.length || 0;
-    const pending = applications?.filter(a => a.status === 'submitted' || a.status === 'under_review').length || 0;
-    const approved = applications?.filter(a => a.status === 'approved').length || 0;
-    const rejected = applications?.filter(a => a.status === 'rejected').length || 0;
+    const pending =
+      applications?.filter((a) => a.status === 'submitted' || a.status === 'under_review').length ||
+      0;
+    const approved = applications?.filter((a) => a.status === 'approved').length || 0;
+    const rejected = applications?.filter((a) => a.status === 'rejected').length || 0;
 
     return {
       total,
