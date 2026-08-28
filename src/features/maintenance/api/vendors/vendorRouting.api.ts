@@ -150,25 +150,52 @@ export async function pushToSelectedVendors(
 export async function inviteVendorByEmail(
   email: string,
   requestId: string,
-  ownerName: string
+  _ownerName: string
 ): Promise<{
   success: boolean;
   message: string;
   email: string;
+  vendor_exists?: boolean;
 }> {
-  // This would typically send an email/SMS invitation
-  // For now, we'll just create a pending invitation record
+  const trimmed = email.trim().toLowerCase();
+  const { data, error } = await supabase.functions.invoke('send-vendor-invite-email', {
+    body: { email: trimmed, request_id: requestId },
+  });
 
-  // TODO: Implement invitation system
-  // - Send email with registration link
-  // - Include request details
-  // - Track invitation status
+  if (error) {
+    const ctx = (error as { context?: { json?: () => Promise<{ error?: string }> } }).context;
+    let message = error.message || 'Failed to send invitation';
+    try {
+      const body = await ctx?.json?.();
+      if (body?.error) message = body.error;
+    } catch {
+      /* keep message */
+    }
+    throw new Error(message);
+  }
 
-  console.log(`Invitation sent to ${email} for request ${requestId} by ${ownerName}`);
+  if (data?.error) {
+    throw new Error(String(data.error));
+  }
+
+  if (data?.vendor_exists) {
+    return {
+      success: false,
+      vendor_exists: true,
+      email: trimmed,
+      message:
+        data.message ||
+        'This email is already a LalaRente vendor. Invite them to quote from the directory.',
+    };
+  }
+
+  if (!data?.success) {
+    throw new Error('Invitation was not sent.');
+  }
 
   return {
     success: true,
-    message: 'Invitation sent',
-    email,
+    email: trimmed,
+    message: `Invitation email sent to ${trimmed}.`,
   };
 }
