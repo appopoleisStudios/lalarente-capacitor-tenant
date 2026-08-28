@@ -89,6 +89,28 @@ run_payment_e2e() {
 }
 run_payment_e2e
 
+run_owner_payment_e2e() {
+  echo ""
+  echo "━━ OWNER › Owner→Vendor Payment (LAL-116)"
+  local output
+  output=$(bash scripts/run-owner-payment-e2e.sh 2>&1)
+  local ec=$?
+  local slug="owner-vendor-payment"
+  xcrun simctl io "$UDID" screenshot "/tmp/lalarente-ss-OWNER-${slug}.png" 2>/dev/null
+  if [ $ec -eq 0 ]; then
+    echo "  ✅ PASS — Owner→Vendor Payment (LAL-116)"
+    echo "PASS | OWNER | Owner→Vendor Payment (LAL-116)" >> "$REPORT_FILE"
+    PASS=$((PASS+1))
+  else
+    echo "  ❌ FAIL — Owner→Vendor Payment (LAL-116)"
+    local err=$(echo "$output" | grep -E "FAILED|✗|Error|error" | tail -3)
+    echo "  ↳ $err"
+    echo "FAIL | OWNER | Owner→Vendor Payment (LAL-116) | $err" >> "$REPORT_FILE"
+    FAIL=$((FAIL+1))
+  fi
+}
+run_owner_payment_e2e
+
 # ── TENANT CLOSURE CONFIRM + TIMELINE PHOTO (Plane #61/#62) ──
 # Orchestrated end-to-end: seed closure state → Maestro UI flow
 # (closure-confirm screen + timeline progress photo card).

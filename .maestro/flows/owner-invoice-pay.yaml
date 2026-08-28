@@ -1,0 +1,83 @@
+# Owner PayFast checkout for owner-billed invoices (PR #166 / LAL-112)
+# Seed: OWNER_PAY_E2E=1 node scripts/seed-owner-role-invoice.mjs
+#   — approved payer_role=owner invoice on tenant's latest request,
+#     retitled "E2E Owner Invoice Pay", status in_progress.
+#
+# UI path (no deep links): owner login → Maintenance → seeded job →
+# Invoice → Pay via PayFast → in-app Secure Checkout.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app-warm.yaml
+- runFlow: ../subflows/login-owner.yaml
+- runFlow: ../subflows/tap-owner-maintenance.yaml
+
+- extendedWaitUntil:
+    visible: "Maintenance"
+    timeout: 20000
+
+- scrollUntilVisible:
+    element:
+      text: ".*E2E Owner Invoice Pay.*"
+    direction: DOWN
+    timeout: 25000
+    centerElement: true
+
+- tapOn:
+    text: ".*E2E Owner Invoice Pay.*"
+
+- extendedWaitUntil:
+    visible: "Request Details"
+    timeout: 20000
+
+- scrollUntilVisible:
+    element:
+      id: "owner-view-invoice"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+
+- tapOn:
+    id: "owner-view-invoice"
+
+- extendedWaitUntil:
+    visible:
+      id: "owner-pay-via-payfast"
+    timeout: 20000
+
+- assertVisible:
+    id: "invoice-approved-copy"
+- assertVisible:
+    id: "invoice-payer-label"
+
+- tapOn:
+    id: "owner-pay-via-payfast"
+
+- extendedWaitUntil:
+    visible:
+      id: "pay-vendor-title"
+    timeout: 15000
+
+- assertVisible:
+    id: "invoice-number-detail"
+- assertVisible:
+    id: "pay-via-payfast"
+
+- tapOn:
+    id: "pay-via-payfast"
+
+- extendedWaitUntil:
+    visible:
+      id: "checkout-title"
+    timeout: 15000
+- assertVisible:
+    text: "Secure Checkout"
+- assertVisible:
+    id: "checkout-close"
+
+- tapOn:
+    id: "checkout-close"
+
+- extendedWaitUntil:
+    visible:
+      id: "tab-owner-maintenance"
+    timeout: 10000
