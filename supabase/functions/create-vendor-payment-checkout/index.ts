@@ -145,17 +145,24 @@ serve(async (req) => {
     // ── Validate ─────────────────────────────────────────────────────────
     const inv = invoice as any;
 
-    // Only tenant-pay invoices
-    if (inv.payer_role !== 'tenant') {
-      return new Response(
-        JSON.stringify({ error: 'This invoice is set to owner-pay. Use the owner payment flow.' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Only the assigned tenant can pay
-    if (inv.maintenance_requests.tenant_id !== user.id) {
-      return new Response(JSON.stringify({ error: 'Only the tenant for this job can pay.' }), {
+    // Payer must match invoice.payer_role. Tenant-billed invoices stay
+    // tenant-only; owner-billed invoices are paid by the job owner.
+    if (inv.payer_role === 'tenant') {
+      if (inv.maintenance_requests.tenant_id !== user.id) {
+        return new Response(JSON.stringify({ error: 'Only the tenant for this job can pay.' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    } else if (inv.payer_role === 'owner') {
+      if (inv.owner_id !== user.id) {
+        return new Response(
+          JSON.stringify({ error: 'Only the owner billed for this invoice can pay.' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } else {
+      return new Response(JSON.stringify({ error: 'This invoice has no valid payer.' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

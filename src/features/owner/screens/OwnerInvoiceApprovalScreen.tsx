@@ -5,6 +5,11 @@ import {
   rejectInvoice,
   type MaintenanceInvoice,
 } from '@/src/features/maintenance/api';
+import {
+  approvedInvoiceBannerCopy,
+  billedToLabel,
+  ownerInvoiceFeaturePinMessage,
+} from '@/src/features/payments/utils/vendorCheckoutAuth';
 import { colors } from '@/src/shared/theme/colors';
 import { FeaturePin } from '@/src/shared/components';
 import { InvoiceTalkBar, InvoiceHistory } from '@/src/features/maintenance/components';
@@ -162,6 +167,9 @@ export default function OwnerInvoiceApprovalScreen() {
           <View>
             <Text style={styles.invoiceNumber}>{invoice.invoice_number}</Text>
             <Text style={styles.invoiceDate}>Submitted {formatDate(invoice.created_at)}</Text>
+            <Text style={styles.payerLabel} testID="invoice-payer-label">
+              {billedToLabel(invoice.payer_role)}
+            </Text>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: cfg.bg }]}>
             <Text style={[styles.statusText, { color: cfg.color }]}>{cfg.label}</Text>
@@ -254,13 +262,34 @@ export default function OwnerInvoiceApprovalScreen() {
 
         {/* Approved actions */}
         {invoice.status === 'approved' && (
-          <View style={styles.approvedBanner}>
-            <Ionicons name="checkmark-circle" size={18} color={colors.success[500]} />
-            <Text style={styles.approvedText}>
-              Approved {formatDate(invoice.approved_at)}. The tenant can now pay this invoice in the
-              app.
-            </Text>
-          </View>
+          <>
+            <View style={styles.approvedBanner}>
+              <Ionicons name="checkmark-circle" size={18} color={colors.success[500]} />
+              <Text style={styles.approvedText} testID="invoice-approved-copy">
+                {approvedInvoiceBannerCopy({
+                  payerRole: invoice.payer_role,
+                  approvedAtLabel: formatDate(invoice.approved_at),
+                })}
+              </Text>
+            </View>
+            {invoice.payer_role === 'owner' && (
+              <View style={styles.actions}>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.payButton]}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/(owner)/vendor-payments/[invoiceId]',
+                      params: { invoiceId: invoice.id },
+                    } as any)
+                  }
+                  testID="owner-pay-via-payfast"
+                >
+                  <Ionicons name="lock-closed" size={18} color="#FFFFFF" />
+                  <Text style={styles.payButtonText}>Pay via PayFast</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </>
         )}
       </View>
     );
@@ -285,7 +314,7 @@ export default function OwnerInvoiceApprovalScreen() {
           <FeaturePin
             pinId="owner-invoice-approve"
             title="Approving an invoice"
-            message="Approve sends the invoice to your tenant to pay in the app. Reject asks the vendor to fix it — add a reason so they know what to change. Approved invoices show a green banner here."
+            message={ownerInvoiceFeaturePinMessage()}
             aiRoute="/(owner)/ai-chat"
             aiPrompt="How do I approve a vendor invoice?"
           />
@@ -407,6 +436,7 @@ const styles = StyleSheet.create({
   },
   invoiceNumber: { fontSize: 16, fontWeight: '700', color: '#111827' },
   invoiceDate: { fontSize: 12, color: '#6b7280', marginTop: 2 },
+  payerLabel: { fontSize: 12, fontWeight: '600', color: RSA.blue, marginTop: 4 },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
   statusText: { fontSize: 12, fontWeight: '700' },
 
@@ -466,6 +496,8 @@ const styles = StyleSheet.create({
   rejectButtonText: { fontSize: 14, fontWeight: '700', color: colors.error[600] },
   approveButton: { backgroundColor: colors.success[500], borderColor: colors.success[500] },
   approveButtonText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
+  payButton: { backgroundColor: RSA.blue, borderColor: RSA.blue },
+  payButtonText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
 
   approvedBanner: {
     flexDirection: 'row',
