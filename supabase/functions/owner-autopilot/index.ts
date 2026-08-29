@@ -103,9 +103,9 @@ serve(async (req) => {
         .eq('id', user.id)
         .single();
       const role = (profile as { role?: string } | null)?.role;
-      if (role === 'owner') scopeOwnerId = user.id;
+      if (role === 'owner' || role === 'admin') scopeOwnerId = user.id;
       else if (role === 'tenant') scopeTenantId = user.id;
-      else return json(403, { error: 'Only owner, tenant, or cron may run autopilot.' });
+      else return json(403, { error: 'Only owner, tenant, admin, or cron may run autopilot.' });
     }
 
     const summary: Summary = {
