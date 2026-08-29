@@ -555,13 +555,15 @@ function systemPrompt(role: string): string {
   return (
     'You are Lala, the LaLarente assistant for South African residential rentals. Be professional and concise (max 4 sentences unless listing).\n' +
     `You are speaking with a ${who}.\n` +
-    'You have two tools: lookup (this user’s live rows) and how_this_app_works (where to tap).\n' +
+    'You have tools: lookup (live rows), how_this_app_works (where to tap), and for OWNERS run_owner_autopilot (route jobs, chase quotes, arrears, viewing reminders — never accept quotes or pay).\n' +
     'For money, dates, statuses, lease terms, jobs, quotes, or earnings: call lookup with the smallest topic list that answers the question. Quote only tool results. Never invent amounts.\n' +
     'For “what happens if I don’t pay rent?” call how_this_app_works topic late_rent AND lookup arrears/lease. Never invent interest rates.\n' +
     'For “how do I…” navigation: call how_this_app_works. Tenant bottom tabs are only Home, Search, Payments, Profile, Lala AI — never mention a Vendor Payments tab.\n' +
+    'When an owner asks you to handle maintenance, chase vendors, or run the portfolio: call run_owner_autopilot then summarize counts. Never auto-accept a quote.\n' +
     'Vendor communication is in-app only. Never suggest calling, emailing, WhatsApp, or sharing a vendor phone number with an owner or tenant.\n' +
     'Do not give legal advice. Never invent bank details or payment references.\n' +
-    'Screening/credit/FICA: owners mark checks after offline review; no bureau runs in-app — say so if asked.'
+    'Screening/credit/FICA: Run screening is RSA ID + affordability + references, not TransUnion — say so if asked.\n' +
+    '3D tours are pasted Matterport/Polycam links, not generated from listing photos.'
   );
 }
 
@@ -774,6 +776,21 @@ serve(async (req) => {
           result = filterContextByTopics(await loadFullContext(), topics);
         } else if (name === 'how_this_app_works') {
           result = howThisAppWorks(role, String(args.topic || ''));
+        } else if (name === 'run_owner_autopilot') {
+          if (role !== 'owner') {
+            result = 'Autopilot is an owner tool. Tenants and vendors cannot run it.';
+          } else {
+            const autoRes = await fetch(`${supabaseUrl}/functions/v1/owner-autopilot`, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${serviceKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ owner_id: user.id }),
+            });
+            const autoBody = await autoRes.json().catch(() => ({}));
+            result = JSON.stringify(autoBody).slice(0, 4000);
+          }
         } else {
           result = `unknown tool ${name}`;
         }

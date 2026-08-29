@@ -1,0 +1,29 @@
+# Tenant 3D tour CTA (LAL-133) — only when a listing has media_3d_url
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/launch-app-warm.yaml
+- runFlow: ../subflows/login-tenant.yaml
+
+- tapOn:
+    id: "tab-search"
+
+- extendedWaitUntil:
+    visible: "Search"
+    timeout: 30000
+    optional: true
+
+- runFlow:
+    when:
+      visible:
+        id: "tenant-view-3d"
+    commands:
+      - tapOn:
+          id: "tenant-view-3d"
+      - extendedWaitUntil:
+          visible:
+            id: "view3d-title"
+          timeout: 15000
+      - tapOn:
+          id: "view3d-close"
+      - assertNotVisible:
+          id: "view3d-close"

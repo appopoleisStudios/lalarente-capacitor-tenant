@@ -383,8 +383,8 @@ export default function EditPropertyScreen() {
             <View style={styles.section}>
               <Text style={styles.label}>3D Tour Link (optional)</Text>
               <Text style={styles.helperText}>
-                Paste a Matterport / Polycam / 3D tour URL to let prospects walk the property
-                in-app.
+                Paste a Matterport / Polycam / 3D tour HTTPS URL. Listing photos are not a 3D walk —
+                this opens the external tour in-app.
               </Text>
               <TextInput
                 style={styles.input}

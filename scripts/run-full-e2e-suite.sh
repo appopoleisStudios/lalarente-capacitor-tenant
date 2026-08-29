@@ -78,6 +78,7 @@ OWNER_FLOWS=(
   "owner-property-edit"
   # Prereq seed for the 3D tour gate (media_3d_url must be set or CTA won't render)
   "property-3d-tour"
+  "property-3d-tour-tenant"
   "owner-property-maintenance-history"
   "owner-photo-viewer-close"
   "owner-compliance-upload"

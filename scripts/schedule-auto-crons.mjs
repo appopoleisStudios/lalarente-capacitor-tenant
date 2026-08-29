@@ -56,6 +56,7 @@ const JOBS = [
   { name: 'auto-approve-closures', schedule: '0 * * * *', fn: 'auto-approve-closures' },
   { name: 'payment-retry-nudges', schedule: '0 9 * * *', fn: 'payment-retry-nudges' },
   { name: 'reconcile-stuck-payments', schedule: '*/15 * * * *', fn: 'reconcile-stuck-payments' },
+  { name: 'owner-autopilot', schedule: '*/15 * * * *', fn: 'owner-autopilot' },
 ];
 
 const serviceKey = await getServiceRoleKey();

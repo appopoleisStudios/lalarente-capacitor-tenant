@@ -7,6 +7,16 @@ type PropertyInsert = Database['public']['Tables']['properties']['Insert'];
 type PropertyUpdate = Database['public']['Tables']['properties']['Update'];
 type PropertyStatus = Database['public']['Enums']['property_status'];
 
+function httpsOrNull(raw?: string | null): string | null {
+  const u = String(raw || '').trim();
+  if (!u) return null;
+  try {
+    return new URL(u).protocol === 'https:' ? u : null;
+  } catch {
+    return null;
+  }
+}
+
 // Extended property with relations
 export interface PropertyWithRelations extends Property {
   owner?: {
@@ -164,6 +174,7 @@ export const propertiesApi = {
         longitude: input.longitude || null,
         images: input.images || null,
         lease_terms: input.lease_terms || null,
+        media_3d_url: httpsOrNull(input.media_3d_url),
         status: 'available',
       })
       .select()
@@ -185,6 +196,9 @@ export const propertiesApi = {
       ...input,
       updated_at: new Date().toISOString(),
     };
+    if ('media_3d_url' in updateData) {
+      updateData.media_3d_url = httpsOrNull(updateData.media_3d_url as string | null);
+    }
 
     const { data, error } = await supabase
       .from('properties')

@@ -175,6 +175,7 @@ run_flow "owner-property-edit"                 "Property Edit nav (Plane #74)"  
 # Prereq seed for the 3D tour gate: media_3d_url must be set or the CTA won't render.
 node scripts/seed-property-3d-tour.mjs >/dev/null 2>&1 || echo "⚠ 3D seed failed — property-3d-tour may skip the CTA"
 run_flow "property-3d-tour"                    "Property 3D Tour viewer (Plane #92)" "OWNER" "${O_ENV[@]}"
+run_flow "property-3d-tour-tenant"             "Tenant 3D tour if URL set (LAL-133)" "TENANT" "${T_ENV[@]}"
 run_flow "owner-property-maintenance-history"  "Property Maintenance History (Plane #85)" "OWNER" "${O_ENV[@]}"
 run_flow "owner-photo-viewer-close"           "Owner photo viewer close (user bug)" "OWNER" "${O_ENV[@]}"
 run_flow "owner-compliance-upload"            "Owner Compliance upload wired (Plane #69)" "OWNER" "${O_ENV[@]}"

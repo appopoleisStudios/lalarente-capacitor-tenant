@@ -1289,7 +1289,7 @@ export default function TenantDashboardScreen() {
                   style={styles.payButton}
                   onPress={() => router.push('/(tenant)/payments' as any)}
                 >
-                  <Text style={styles.payButtonText}>Pay Now</Text>
+                  <Text style={styles.payButtonText}>Record EFT</Text>
                 </TouchableOpacity>
               </View>
             </View>

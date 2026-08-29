@@ -55,11 +55,21 @@ export const LALA_TOOLS = [
               'lease',
               'screening',
               'lala',
+              'autopilot',
             ],
           },
         },
         required: ['topic'],
       },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'run_owner_autopilot',
+      description:
+        'OWNER ONLY. Run landlord ops now: auto-route unquoted jobs, chase silent vendors, escalate overdue rent, send viewing reminders. Never accepts quotes or pays money. Call when the owner asks you to handle jobs, chase vendors, or run the portfolio.',
+      parameters: { type: 'object', properties: {} },
     },
   },
 ];
@@ -103,9 +113,9 @@ export function howThisAppWorks(role: string, topic: string): string {
       vendor: 'Vendors do not run the late-rent process.',
     },
     pay_rent: {
-      tenant: `${tenantNav} Pay rent: Payments tab → rent invoice → PayFast checkout.`,
+      tenant: `${tenantNav} Rent is Record EFT on the Payments tab — not PayFast. You confirm after the transfer; the owner verifies. Vendor invoices on the same hub use PayFast sandbox.`,
       owner:
-        'Rent collection: Rent roll / invoices on the owner dashboard. Tenants pay in their Payments tab.',
+        'Rent collection is still EFT verification on the rent roll. Vendor invoices use PayFast sandbox. Autopilot escalates overdue rent into Arrears.',
       vendor: 'Vendors do not collect rent.',
     },
     pay_vendor: {
@@ -132,8 +142,9 @@ export function howThisAppWorks(role: string, topic: string): string {
     },
     quotes: {
       tenant:
-        'Tenants do not accept quotes; the owner does. You can browse vendors when reporting maintenance.',
-      owner: 'Review quotes on the job; accept to issue a purchase order.',
+        'On the job detail, tap Accept quote to issue the PO. The owner can accept too. Autopilot will invite vendors; it will not accept a quote for you.',
+      owner:
+        'Review quotes on the job and accept to issue a PO. Autopilot routes and chases vendors; you still accept the quote (money).',
       vendor: 'Submit price + duration from the open request / job detail.',
     },
     earnings: {
@@ -158,8 +169,15 @@ export function howThisAppWorks(role: string, topic: string): string {
       tenant:
         'Lala AI tab: ask about YOUR lease, rent, jobs. Lala looks up live rows; it cannot pay money or run credit checks.',
       owner:
-        'Lala AI tab: ask about properties, rent, maintenance. Confirm any money action yourself in the app.',
+        'Ask Lala to run Autopilot: it routes jobs, chases quotes, escalates arrears, and reminds viewings. You still accept quotes and pay invoices.',
       vendor: 'Lala AI tab: jobs, quotes, earnings. It cannot change payouts.',
+    },
+    autopilot: {
+      tenant:
+        'When you report a repair, Autopilot invites vendors. You or the owner still accept the quote.',
+      owner:
+        'Autopilot runs every 15 minutes and when you ask Lala: route unquoted jobs, chase silent vendors, CPA arrears ladder, viewing reminders. It never accepts a quote or pays.',
+      vendor: 'You will get in-app invites and quote reminders when Autopilot routes a job.',
     },
   };
   const byTopic = guides[topic];

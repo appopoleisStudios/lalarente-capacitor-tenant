@@ -149,7 +149,11 @@ export async function createMaintenanceRequest(
     .single();
 
   if (error) throw error;
-  return data as unknown as MaintenanceRequest;
+  const created = data as unknown as MaintenanceRequest;
+  supabase.functions.invoke('owner-autopilot', { body: {} }).catch((e) => {
+    console.warn('owner-autopilot after create:', e);
+  });
+  return created;
 }
 
 /**
