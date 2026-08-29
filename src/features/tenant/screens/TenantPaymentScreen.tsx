@@ -193,8 +193,8 @@ export default function TenantPaymentScreen() {
 
       setShowPayModal(false);
       Alert.alert(
-        'Payment Confirmed',
-        'Your payment has been recorded as confirmed. Your landlord will verify receipt and mark it as paid.'
+        'EFT recorded',
+        'Your landlord will verify the deposit and mark the rent as paid. This is not a card payment.'
       );
       loadData();
     } catch {
@@ -264,7 +264,7 @@ export default function TenantPaymentScreen() {
               <FeaturePin
                 pinId="tenant-payments-hub"
                 title="Payments hub"
-                message="Pay your rent, raise a dispute, or pay approved vendor invoices — everything money-related lives here. Tap Pay Now, then confirm once the money has left your bank."
+                message="Pay your rent, raise a dispute, or pay approved vendor invoices. Rent uses Record EFT — you confirm after the money left your bank; the landlord verifies. Vendor invoices use PayFast sandbox."
                 aiRoute="/(tenant)/ai-chat"
                 aiPrompt="How do I pay rent in this app?"
               />
@@ -324,7 +324,7 @@ export default function TenantPaymentScreen() {
             <FeaturePin
               pinId="tenant-payments-hub"
               title="Payments hub"
-              message="Pay your rent, raise a dispute, or pay approved vendor invoices — everything money-related lives here. Tap Pay Now, then confirm once the money has left your bank."
+              message="Pay your rent, raise a dispute, or pay approved vendor invoices. Rent uses Record EFT — you confirm after the money left your bank; the landlord verifies. Vendor invoices use PayFast sandbox."
               aiRoute="/(tenant)/ai-chat"
               aiPrompt="How do I pay rent in this app?"
             />
@@ -379,7 +379,7 @@ export default function TenantPaymentScreen() {
                   testID="tenant-pay-now"
                 >
                   <Ionicons name="card-outline" size={20} color="#FFF" />
-                  <Text style={styles.payButtonText}>Pay Now</Text>
+                  <Text style={styles.payButtonText}>Record EFT</Text>
                 </TouchableOpacity>
               </View>
             </View>

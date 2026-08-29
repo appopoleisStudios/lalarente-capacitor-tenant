@@ -4,9 +4,28 @@
  */
 
 import { supabase } from '@/src/lib/supabase';
+import { notificationsApi } from '@/src/features/notifications/api/notificationsApi';
 import type { MaintenanceRequest } from '../types/maintenance.types';
 import { getDedicatedVendors } from './vendorDiscovery.api';
 import { createQuoteRequests } from './vendorQuoteRequests.api';
+
+async function notifyVendorsOfJob(requestId: string, vendorIds: string[], title: string) {
+  await Promise.all(
+    vendorIds.map((vendorId) =>
+      notificationsApi
+        .sendNotification({
+          user_id: vendorId,
+          type: 'maintenance_updated',
+          data: {
+            request_id: requestId,
+            customTitle: 'New job to quote',
+            customBody: `You have been invited to quote on "${title}".`,
+          },
+        })
+        .catch(() => null)
+    )
+  );
+}
 
 /**
  * Push request to open market (public visibility)
@@ -28,7 +47,23 @@ export async function pushToOpenMarket(requestId: string): Promise<MaintenanceRe
     .single();
 
   if (error) throw error;
-  return data as unknown as MaintenanceRequest;
+  const row = data as unknown as MaintenanceRequest & { title?: string; category_id?: string };
+  try {
+    let ids: string[] = [];
+    if (row.category_id) {
+      const { data: vendors } = await supabase
+        .from('vendor_services')
+        .select('vendor_id')
+        .eq('category_id', row.category_id)
+        .eq('is_active', true)
+        .limit(20);
+      ids = [...new Set((vendors || []).map((v: { vendor_id: string }) => v.vendor_id))];
+    }
+    await notifyVendorsOfJob(requestId, ids, row.title || 'a maintenance job');
+  } catch {
+    /* non-fatal */
+  }
+  return row;
 }
 
 /**
@@ -45,7 +80,7 @@ export async function pushToDedicatedVendors(requestId: string): Promise<{
   // Get the request details
   const { data: request, error: requestError } = await supabase
     .from('maintenance_requests')
-    .select('id, property_id, category_id')
+    .select('id, property_id, category_id, title')
     .eq('id', requestId)
     .single();
 
@@ -86,7 +121,11 @@ export async function pushToDedicatedVendors(requestId: string): Promise<{
 
   if (error) throw error;
 
-  // TODO: Send notifications to vendors
+  await notifyVendorsOfJob(
+    requestId,
+    vendors.map((vendor) => vendor.id),
+    typedRequest.title || 'a maintenance job'
+  );
 
   return {
     request: data as unknown as MaintenanceRequest,
@@ -130,7 +169,9 @@ export async function pushToSelectedVendors(
 
   if (error) throw error;
 
-  // TODO: Send notifications to selected vendors
+  const title =
+    ((data as { title?: string } | null)?.title as string | undefined) || 'a maintenance job';
+  await notifyVendorsOfJob(requestId, uniqueVendorIds, title);
 
   return {
     request: data as unknown as MaintenanceRequest,

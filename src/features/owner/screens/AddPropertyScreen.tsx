@@ -33,6 +33,7 @@ interface PropertyForm {
   photos: string[];
   latitude: number | null;
   longitude: number | null;
+  media_3d_url: string;
 }
 
 const AMENITY_OPTIONS = [
@@ -77,6 +78,7 @@ export default function AddPropertyScreen() {
     photos: [],
     latitude: null,
     longitude: null,
+    media_3d_url: '',
   });
   const [newAmenity, setNewAmenity] = useState('');
   const [newService, setNewService] = useState('');
@@ -207,6 +209,7 @@ export default function AddPropertyScreen() {
         smoking_allowed: form.smoking_allowed,
         latitude: form.latitude,
         longitude: form.longitude,
+        media_3d_url: form.media_3d_url.trim() || null,
       });
 
       // Upload picked photos to Supabase Storage (property-images bucket).
@@ -298,6 +301,24 @@ export default function AddPropertyScreen() {
                   ))}
                 </ScrollView>
               )}
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.label}>3D Tour Link (optional)</Text>
+              <Text style={styles.helperText}>
+                Paste a Matterport / Polycam HTTPS URL. Listing photos are not converted into a 3D
+                walk — this is an external tour player.
+              </Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://my.matterport.com/show/?m=…"
+                placeholderTextColor="#9ca3af"
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+                value={form.media_3d_url}
+                onChangeText={(text) => setForm({ ...form, media_3d_url: text })}
+              />
             </View>
 
             {/* Amenities */}

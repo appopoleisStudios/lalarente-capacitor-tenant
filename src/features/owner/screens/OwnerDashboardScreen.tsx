@@ -493,6 +493,10 @@ export default function OwnerDashboardScreen() {
             <View>
               <Text style={styles.headerTitle}>Portfolio Dashboard</Text>
               <Text style={styles.headerSubtitle}>Welcome back, {dashboardData.userName}</Text>
+              <Text style={styles.headerSubtitle} testID="owner-autopilot-copy">
+                Autopilot routes jobs, chases quotes, escalates overdue rent, and reminds viewings.
+                Ask Lala to run it now. You still accept quotes and pay.
+              </Text>
             </View>
             <FeaturePin
               pinId="owner-dashboard-priority"

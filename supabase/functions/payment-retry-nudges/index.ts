@@ -56,6 +56,23 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     if (!supabaseUrl || !supabaseServiceKey) throw new Error('Missing env vars');
+    const cronToken = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim();
+    if (cronToken.length !== supabaseServiceKey.length) {
+      return new Response(JSON.stringify({ error: 'Unauthorized: service-role access required' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    let cronDiff = 0;
+    for (let i = 0; i < cronToken.length; i++) {
+      cronDiff |= cronToken.charCodeAt(i) ^ supabaseServiceKey.charCodeAt(i);
+    }
+    if (cronDiff !== 0) {
+      return new Response(JSON.stringify({ error: 'Unauthorized: service-role access required' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const nowIso = new Date().toISOString();

@@ -29,6 +29,9 @@ appId: com.lalarente.app
     text: "Payment History"
     optional: true
 - assertVisible:
+    text: "Record EFT"
+    optional: true
+- assertVisible:
     text: "Pay Now"
     optional: true
 - assertVisible:
