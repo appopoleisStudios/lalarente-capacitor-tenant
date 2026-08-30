@@ -46,6 +46,19 @@ export const styles = StyleSheet.create({
   badgeText: { color: '#ffffff', fontSize: 10, fontWeight: '700' },
   scrollView: { flex: 1 },
   scrollContent: { padding: 16, paddingBottom: 120 },
+  autopilotBanner: {
+    backgroundColor: '#EEF2FF',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 12,
+  },
+  autopilotBannerText: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: RSA.blue,
+    fontWeight: '500',
+  },
 
   // Loading, Error, and Empty States
   centerContent: {

@@ -777,7 +777,7 @@ serve(async (req) => {
         } else if (name === 'how_this_app_works') {
           result = howThisAppWorks(role, String(args.topic || ''));
         } else if (name === 'run_owner_autopilot') {
-          if (role !== 'owner') {
+          if (role !== 'owner' && role !== 'admin') {
             result = 'Autopilot is an owner tool. Tenants and vendors cannot run it.';
           } else {
             const autoRes = await fetch(`${supabaseUrl}/functions/v1/owner-autopilot`, {

@@ -12,7 +12,12 @@ import type {
 import { DEFAULT_NOTIFICATION_PREFERENCES } from '../types';
 
 import { emailTemplates } from '../templates/emailTemplates';
-import { smsTemplates, smsService, formatSAPhoneNumber, isValidSAPhoneNumber } from '../templates/smsTemplates';
+import {
+  smsTemplates,
+  smsService,
+  formatSAPhoneNumber,
+  isValidSAPhoneNumber,
+} from '../templates/smsTemplates';
 
 // notifications table does not yet have a migration — cast via any until 033 is applied
 const notifTable = () => (supabase as any).from('notifications');
@@ -39,7 +44,8 @@ export const notificationsApi = {
       const preferences = await this.getUserPreferences(input.user_id);
 
       // Determine which channels to use
-      const channels = input.channels || this.getDefaultChannels(input.type, preferences ?? undefined);
+      const channels =
+        input.channels || this.getDefaultChannels(input.type, preferences ?? undefined);
 
       // Get notification content
       const content = this.getNotificationContent(input.type, input.data);
@@ -48,17 +54,16 @@ export const notificationsApi = {
       // NOTE: Do NOT chain .select() — the SELECT RLS policy requires
       // auth.uid() = user_id, but the inserter (e.g. owner) differs from
       // the recipient (e.g. tenant). Postgres generates the UUID via default.
-      const { error: notifError } = await notifTable()
-        .insert({
-          user_id: input.user_id,
-          type: input.type,
-          title: content.title,
-          body: content.body,
-          data: input.data,
-          channels,
-          priority: input.priority || 'normal',
-          status: 'sent',
-        });
+      const { error: notifError } = await notifTable().insert({
+        user_id: input.user_id,
+        type: input.type,
+        title: content.title,
+        body: content.body,
+        data: input.data,
+        channels,
+        priority: input.priority || 'normal',
+        status: 'sent',
+      });
 
       if (notifError) {
         console.error('Error creating notification:', notifError);
@@ -69,23 +74,29 @@ export const notificationsApi = {
       const sendPromises: Promise<void>[] = [];
 
       if (channels.includes('email') && user.email) {
-        sendPromises.push(this.sendEmail(input.type, {
-          recipientName: user.full_name || 'User',
-          recipientEmail: user.email,
-          ...input.data,
-        }));
+        sendPromises.push(
+          this.sendEmail(input.type, {
+            recipientName: user.full_name || 'User',
+            recipientEmail: user.email,
+            ...input.data,
+          })
+        );
       }
 
       if (channels.includes('sms') && user.phone && isValidSAPhoneNumber(user.phone)) {
-        sendPromises.push(this.sendSms(input.type, {
-          recipientPhone: user.phone,
-          recipientName: user.full_name || undefined,
-          ...input.data,
-        }));
+        sendPromises.push(
+          this.sendSms(input.type, {
+            recipientPhone: user.phone,
+            recipientName: user.full_name || undefined,
+            ...input.data,
+          })
+        );
       }
 
       if (channels.includes('push')) {
-        sendPromises.push(this.sendPushNotification(input.user_id, content.title, content.body, input.data));
+        sendPromises.push(
+          this.sendPushNotification(input.user_id, content.title, content.body, input.data)
+        );
       }
 
       await Promise.allSettled(sendPromises);
@@ -105,7 +116,10 @@ export const notificationsApi = {
   /**
    * Get notification content based on type
    */
-  getNotificationContent(type: NotificationType, data?: Record<string, any>): { title: string; body: string } {
+  getNotificationContent(
+    type: NotificationType,
+    data?: Record<string, any>
+  ): { title: string; body: string } {
     // Allow callers to override title/body via data.customTitle / data.customBody
     if (data?.customTitle) {
       return { title: data.customTitle, body: data.customBody || data.customTitle };
@@ -348,27 +362,33 @@ export const notificationsApi = {
         return;
       }
 
-      // In production, this would use Expo Push Notifications or Firebase
-      console.log('Push notification would be sent:', {
-        tokens: tokens.map((t: any) => t.token),
-        title,
-        body,
-        data,
-      });
+      const messages = tokens
+        .filter(
+          (t: { token?: string }) =>
+            typeof t.token === 'string' && t.token.startsWith('ExponentPushToken')
+        )
+        .map((t: { token: string }) => ({
+          to: t.token,
+          title,
+          body,
+          data: data ?? {},
+          sound: 'default',
+        }));
 
-      // Example with Expo Push:
-      // for (const { token } of tokens) {
-      //   await fetch('https://exp.host/--/api/v2/push/send', {
-      //     method: 'POST',
-      //     headers: { 'Content-Type': 'application/json' },
-      //     body: JSON.stringify({
-      //       to: token,
-      //       title,
-      //       body,
-      //       data,
-      //     }),
-      //   });
-      // }
+      if (messages.length === 0) return;
+
+      const res = await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Accept-Encoding': 'gzip, deflate',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(messages),
+      });
+      if (!res.ok) {
+        console.warn('Expo push send failed:', res.status, (await res.text()).slice(0, 200));
+      }
     } catch (error) {
       console.error('Error sending push notification:', error);
     }
@@ -383,9 +403,7 @@ export const notificationsApi = {
     limit: number = 50,
     offset: number = 0
   ): Promise<Notification[]> {
-    let query = notifTable()
-      .select('*')
-      .eq('user_id', userId);
+    let query = notifTable().select('*').eq('user_id', userId);
 
     if (filter?.type) {
       query = query.eq('type', filter.type);
@@ -473,9 +491,7 @@ export const notificationsApi = {
    * Delete a notification
    */
   async deleteNotification(notificationId: string): Promise<void> {
-    const { error } = await notifTable()
-      .delete()
-      .eq('id', notificationId);
+    const { error } = await notifTable().delete().eq('id', notificationId);
 
     if (error) {
       console.error('Error deleting notification:', error);
@@ -487,10 +503,7 @@ export const notificationsApi = {
    * Delete all read notifications
    */
   async deleteReadNotifications(userId: string): Promise<void> {
-    const { error } = await notifTable()
-      .delete()
-      .eq('user_id', userId)
-      .not('read_at', 'is', null);
+    const { error } = await notifTable().delete().eq('user_id', userId).not('read_at', 'is', null);
 
     if (error) {
       console.error('Error deleting read notifications:', error);
@@ -506,12 +519,12 @@ export const notificationsApi = {
 
     const stats: NotificationStats = {
       total: notifications.length,
-      unread: notifications.filter(n => !n.read_at).length,
+      unread: notifications.filter((n) => !n.read_at).length,
       byType: {},
       byStatus: {},
     };
 
-    notifications.forEach(n => {
+    notifications.forEach((n) => {
       stats.byType[n.type] = (stats.byType[n.type] || 0) + 1;
       stats.byStatus[n.status] = (stats.byStatus[n.status] || 0) + 1;
     });
@@ -570,14 +583,15 @@ export const notificationsApi = {
     token: string,
     platform: 'ios' | 'android' | 'web'
   ): Promise<void> {
-    const { error } = await (supabase as any)
-      .from('push_tokens')
-      .upsert({
+    const { error } = await (supabase as any).from('push_tokens').upsert(
+      {
         user_id: userId,
         token,
         platform,
         updated_at: new Date().toISOString(),
-      });
+      },
+      { onConflict: 'token' }
+    );
 
     if (error) {
       console.warn('Failed to register push token:', error.message);
@@ -588,10 +602,7 @@ export const notificationsApi = {
    * Remove push token
    */
   async removePushToken(token: string): Promise<void> {
-    const { error } = await (supabase as any)
-      .from('push_tokens')
-      .delete()
-      .eq('token', token);
+    const { error } = await (supabase as any).from('push_tokens').delete().eq('token', token);
 
     if (error) {
       console.warn('Failed to remove push token:', error.message);

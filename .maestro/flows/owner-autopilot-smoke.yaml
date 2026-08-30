@@ -1,0 +1,53 @@
+# Smoke: Autopilot copy, rent EFT, screening Run, 3D chrome (LAL-120–133)
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+
+- extendedWaitUntil:
+    visible: "Portfolio Dashboard"
+    timeout: 60000
+
+- scrollUntilVisible:
+    element:
+      id: "owner-autopilot-copy"
+    direction: DOWN
+    timeout: 15000
+    centerElement: true
+
+- assertVisible:
+    id: "owner-autopilot-copy"
+
+- scrollUntilVisible:
+    element:
+      text: "Compliance"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+
+- tapOn:
+    text: "Compliance"
+
+- extendedWaitUntil:
+    visible: "FICA / Tenant KYC"
+    timeout: 20000
+
+- assertVisible:
+    text: "Identity"
+    optional: true
+- assertVisible:
+    id: "fica-check-identity"
+    optional: true
+
+- runFlow:
+    when:
+      visible:
+        id: "screening-run-button"
+    commands:
+      - tapOn:
+          id: "screening-run-button"
+      - extendedWaitUntil:
+          visible:
+            id: "screening-run-result"
+          timeout: 25000
+
+- runFlow: ../subflows/tap-owner-profile.yaml
