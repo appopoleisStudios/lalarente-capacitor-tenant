@@ -555,14 +555,15 @@ function systemPrompt(role: string): string {
   return (
     'You are Lala, the LaLarente assistant for South African residential rentals. Be professional and concise (max 4 sentences unless listing).\n' +
     `You are speaking with a ${who}.\n` +
-    'You have tools: lookup (live rows), how_this_app_works (where to tap), and for OWNERS run_owner_autopilot (route jobs, chase quotes, arrears, viewing reminders — never accept quotes or pay).\n' +
+    'You have tools: lookup, how_this_app_works, run_owner_autopilot, and compare_quotes (owner). compare_quotes ranks submitted quotes; it NEVER accepts. The app shows a confirm card for PO.\n' +
     'For money, dates, statuses, lease terms, jobs, quotes, or earnings: call lookup with the smallest topic list that answers the question. Quote only tool results. Never invent amounts.\n' +
     'For “what happens if I don’t pay rent?” call how_this_app_works topic late_rent AND lookup arrears/lease. Never invent interest rates.\n' +
     'For “how do I…” navigation: call how_this_app_works. Tenant bottom tabs are only Home, Search, Payments, Profile, Lala AI — never mention a Vendor Payments tab.\n' +
+    'When an owner asks to compare quotes or pick a vendor: call compare_quotes. Never auto-accept a quote.\n' +
     'When an owner asks you to handle maintenance, chase vendors, or run the portfolio: call run_owner_autopilot then summarize counts. Never auto-accept a quote.\n' +
     'Vendor communication is in-app only. Never suggest calling, emailing, WhatsApp, or sharing a vendor phone number with an owner or tenant.\n' +
     'Do not give legal advice. Never invent bank details or payment references.\n' +
-    'Screening/credit/FICA: Run screening is RSA ID + affordability + references, not TransUnion — say so if asked.\n' +
+    'Screening/credit/FICA: Run screening is RSA ID + affordability + references. Onfido and TransUnion run only when product keys are set — say so if asked.\n' +
     '3D tours are pasted Matterport/Polycam links, not generated from listing photos.'
   );
 }
@@ -746,6 +747,7 @@ serve(async (req) => {
 
     let reply = '';
     let lastError = '';
+    const pendingActions: Array<Record<string, unknown>> = [];
     for (let round = 0; round < 4; round++) {
       const { message, error } = await callGroq(groqKey, messages, true);
       if (!message) {
@@ -791,6 +793,41 @@ serve(async (req) => {
             const autoBody = await autoRes.json().catch(() => ({}));
             result = JSON.stringify(autoBody).slice(0, 4000);
           }
+        } else if (name === 'compare_quotes') {
+          if (role !== 'owner' && role !== 'admin') {
+            result = 'Quote compare is an owner tool.';
+          } else {
+            const requestId = String(args.request_id || '').trim();
+            let q = admin
+              .from('quotes')
+              .select('id, request_id, vendor_id, total_amount, status, created_at')
+              .eq('owner_id', user.id)
+              .eq('status', 'submitted')
+              .order('total_amount', { ascending: true })
+              .limit(12);
+            if (requestId) q = q.eq('request_id', requestId);
+            const { data: ranked, error: qErr } = await q;
+            if (qErr) {
+              result = `compare_quotes error: ${qErr.message}`;
+            } else {
+              const list = ranked || [];
+              const cheapest = list[0];
+              if (cheapest) {
+                pendingActions.push({
+                  type: 'accept_quote',
+                  quote_id: cheapest.id,
+                  request_id: cheapest.request_id,
+                  amount: cheapest.total_amount,
+                  label: `Accept quote R ${Number(cheapest.total_amount || 0).toLocaleString('en-ZA')} and issue PO`,
+                });
+              }
+              result = JSON.stringify({
+                quotes: list,
+                recommended_quote_id: cheapest?.id || null,
+                note: 'Do not accept in this tool. Owner must confirm in the app card.',
+              });
+            }
+          }
         } else {
           result = `unknown tool ${name}`;
         }
@@ -823,7 +860,7 @@ serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ reply }), {
+    return new Response(JSON.stringify({ reply, pending_actions: pendingActions }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {

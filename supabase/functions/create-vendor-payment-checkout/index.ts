@@ -393,6 +393,7 @@ serve(async (req) => {
         payfast_fields: payfastFields,
         payfast_redirect_url: payfastRedirectUrl,
         sandbox,
+        live: !sandbox,
         expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 min expiry
         breakdown: {
           total_amount: totalAmount,

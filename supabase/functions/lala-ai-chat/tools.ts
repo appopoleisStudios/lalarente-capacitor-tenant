@@ -72,6 +72,23 @@ export const LALA_TOOLS = [
       parameters: { type: 'object', properties: {} },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'compare_quotes',
+      description:
+        'OWNER ONLY. Rank submitted vendor quotes for a job (or all open jobs). Does not accept or pay. After this tool the app may show a confirm card to issue a PO.',
+      parameters: {
+        type: 'object',
+        properties: {
+          request_id: {
+            type: 'string',
+            description: 'Optional maintenance request UUID. Omit to compare across recent jobs.',
+          },
+        },
+      },
+    },
+  },
 ];
 
 const SECTION_HEADINGS: Record<string, string[]> = {
@@ -160,9 +177,9 @@ export function howThisAppWorks(role: string, topic: string): string {
     },
     screening: {
       tenant:
-        'Owners run screening on applications: RSA ID checksum, ID document, rent vs 30% of declared income, and references. Onfido runs only if configured. This is not a TransUnion credit bureau score.',
+        'Owners run screening on applications: RSA ID checksum, ID document, rent vs 30% of declared income, and references. Onfido and TransUnion run only if product keys are configured.',
       owner:
-        'FICA / application screening: tap Run screening. It checks RSA ID, uploaded ID, affordability (30% rule), and references. Onfido is used only when ONFIDO_API_TOKEN is set. You can still override a row after reading documents.',
+        'FICA / application screening: tap Run screening. RSA ID, uploaded ID, affordability (30% rule), references. Onfido when ONFIDO_API_TOKEN is set. TransUnion when TRANSUNION_API_KEY and TRANSUNION_SCREEN_URL are set. Otherwise it is not a bureau score.',
       vendor: 'Not applicable.',
     },
     lala: {

@@ -102,6 +102,9 @@ serve(async (req) => {
     const hasReferences = Array.isArray(app.reference_urls) && app.reference_urls.length > 0;
 
     const onfidoToken = Deno.env.get('ONFIDO_API_TOKEN') || '';
+    const transunionKey = Deno.env.get('TRANSUNION_API_KEY') || '';
+    const transunionUrl = Deno.env.get('TRANSUNION_SCREEN_URL') || '';
+    let transunion: Record<string, unknown> | null = null;
     let onfido: Record<string, unknown> | null = null;
     if (onfidoToken) {
       try {
@@ -132,6 +135,35 @@ serve(async (req) => {
         onfido = {
           attempted: true,
           error: e instanceof Error ? e.message : 'Onfido request failed',
+        };
+      }
+    }
+
+    if (transunionKey && transunionUrl) {
+      try {
+        const tuRes = await fetch(transunionUrl, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${transunionKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id_number: app.id_number,
+            full_name: app.full_name,
+            application_id: applicationId,
+          }),
+        });
+        const tuBody = await tuRes.json().catch(() => ({}));
+        transunion = {
+          attempted: true,
+          http_status: tuRes.status,
+          score: tuBody.score ?? tuBody.credit_score ?? null,
+          error: tuRes.ok ? null : tuBody.error || tuBody.message || 'TransUnion rejected',
+        };
+      } catch (e) {
+        transunion = {
+          attempted: true,
+          error: e instanceof Error ? e.message : 'TransUnion request failed',
         };
       }
     }
@@ -171,7 +203,8 @@ serve(async (req) => {
       threshold: 0.3,
       pass: creditPass,
       reasons: creditReasons,
-      bureau: 'none',
+      bureau: transunion?.attempted ? 'transunion' : 'none',
+      transunion,
     };
     const backgroundResult = {
       source: 'lalarente_screening',
@@ -215,6 +248,11 @@ serve(async (req) => {
           ? 'Onfido: error'
           : 'Onfido: applicant created'
         : 'Onfido: not configured',
+      transunionKey && transunionUrl
+        ? transunion?.error
+          ? 'TransUnion: error'
+          : 'TransUnion: queried'
+        : 'TransUnion: not configured',
     ].join(' · ');
 
     return json(200, {
@@ -227,6 +265,7 @@ serve(async (req) => {
       credit_reasons: creditReasons,
       background_reasons: backgroundReasons,
       onfido,
+      transunion,
       summary,
     });
   } catch (e) {
