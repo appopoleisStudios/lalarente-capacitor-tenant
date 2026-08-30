@@ -7,6 +7,13 @@ appId: com.lalarente.app
     visible: "Portfolio Dashboard"
     timeout: 60000
 
+- scrollUntilVisible:
+    element:
+      id: "owner-autopilot-copy"
+    direction: DOWN
+    timeout: 15000
+    centerElement: true
+
 - assertVisible:
     id: "owner-autopilot-copy"
 

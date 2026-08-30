@@ -46,15 +46,17 @@ export default function TenantSearchScreen() {
       // Fetch all available properties
       const { data, error: fetchError } = await supabase
         .from('properties')
-        .select(`
+        .select(
+          `
           *,
           owner:profiles!owner_id(id, full_name, email, phone)
-        `)
+        `
+        )
         .eq('status', 'available')
         .order('created_at', { ascending: false });
 
       if (fetchError) throw fetchError;
-      
+
       setProperties((data as PropertyWithRelations[]) || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load properties');
@@ -99,6 +101,7 @@ export default function TenantSearchScreen() {
       filtered = filtered.filter((p) => p.property_type === propertyType);
     }
 
+    filtered.sort((a, b) => Number(Boolean(b.media_3d_url)) - Number(Boolean(a.media_3d_url)));
     setFilteredProperties(filtered);
   };
 
@@ -121,6 +124,7 @@ export default function TenantSearchScreen() {
     return (
       <TouchableOpacity
         style={styles.propertyCard}
+        testID="tenant-property-card"
         onPress={() => router.push(`/(tenant)/properties/${item.id}` as any)}
       >
         {mainImage ? (
@@ -130,6 +134,12 @@ export default function TenantSearchScreen() {
             <Ionicons name="home-outline" size={48} color="#CCC" />
           </View>
         )}
+        {item.media_3d_url ? (
+          <View style={styles.tourBadge} testID="tenant-search-3d-badge">
+            <Ionicons name="cube-outline" size={12} color="#FFF" />
+            <Text style={styles.tourBadgeText}>3D</Text>
+          </View>
+        ) : null}
 
         <View style={styles.propertyInfo}>
           <Text style={styles.propertyTitle} numberOfLines={1}>
@@ -204,6 +214,7 @@ export default function TenantSearchScreen() {
               placeholderTextColor="#999"
               value={searchQuery}
               onChangeText={setSearchQuery}
+              testID="tenant-search-input"
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
@@ -301,7 +312,8 @@ export default function TenantSearchScreen() {
         {/* Results Count */}
         <View style={styles.resultsHeader}>
           <Text testID="tenant-search-results" style={styles.resultsText}>
-            {filteredProperties.length} {filteredProperties.length === 1 ? 'property' : 'properties'} found
+            {filteredProperties.length}{' '}
+            {filteredProperties.length === 1 ? 'property' : 'properties'} found
           </Text>
         </View>
 
@@ -485,6 +497,24 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    position: 'relative',
+  },
+  tourBadge: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#002395',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  tourBadgeText: {
+    color: '#FFF',
+    fontSize: 11,
+    fontWeight: '700',
   },
   propertyImage: {
     width: '100%',

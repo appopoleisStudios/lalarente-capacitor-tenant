@@ -39,33 +39,35 @@ async function main() {
     process.exit(1);
   }
 
-  // 2. Fetch the owner's first (most recent) property
-  const props = await fetch(`${SUPABASE_URL}/rest/v1/properties?owner_id=eq.${auth.user?.id}&order=created_at.desc&limit=1&select=id,title`, {
-    headers: { apikey: ANON_KEY, Authorization: `Bearer ${auth.access_token}` },
-  }).then((r) => r.json());
+  // 2. Fetch the owner's properties (seed every listing so search + lease both show 3D)
+  const props = await fetch(
+    `${SUPABASE_URL}/rest/v1/properties?owner_id=eq.${auth.user?.id}&order=created_at.desc&select=id,title,status`,
+    {
+      headers: { apikey: ANON_KEY, Authorization: `Bearer ${auth.access_token}` },
+    }
+  ).then((r) => r.json());
   if (!Array.isArray(props) || props.length === 0) {
     console.error('❌ No property found for the owner — cannot seed 3D tour URL');
     process.exit(1);
   }
-  const property = props[0];
 
-  // 3. Set media_3d_url
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/properties?id=eq.${property.id}`, {
-    method: 'PATCH',
-    headers: {
-      apikey: ANON_KEY,
-      Authorization: `Bearer ${auth.access_token}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation',
-    },
-    body: JSON.stringify({ media_3d_url: TOUR_URL }),
-  });
-  if (!res.ok) {
-    console.error(`❌ Failed to seed media_3d_url (HTTP ${res.status}): ${(await res.text()).slice(0, 300)}`);
-    process.exit(1);
+  for (const property of props) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/properties?id=eq.${property.id}`, {
+      method: 'PATCH',
+      headers: {
+        apikey: ANON_KEY,
+        Authorization: `Bearer ${auth.access_token}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation',
+      },
+      body: JSON.stringify({ media_3d_url: TOUR_URL }),
+    });
+    if (!res.ok) {
+      console.error(`❌ Failed to seed media_3d_url on ${property.id} (HTTP ${res.status}): ${(await res.text()).slice(0, 300)}`);
+      process.exit(1);
+    }
+    console.log(`✅ 3D tour URL seeded on "${property.title}" (${property.id}, ${property.status})`);
   }
-
-  console.log(`✅ 3D tour URL seeded on "${property.title}" (${property.id})`);
 }
 
 main().catch((e) => {

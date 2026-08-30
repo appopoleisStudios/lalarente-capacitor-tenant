@@ -198,7 +198,7 @@ export default function TenantDashboardScreen() {
         .select(
           `
           *,
-          property:properties!property_id(id, title, address, city, rent_amount),
+          property:properties!property_id(id, title, address, city, rent_amount, media_3d_url),
           owner:profiles!owner_id(id, full_name, phone, email)
         `
         )
@@ -717,6 +717,27 @@ export default function TenantDashboardScreen() {
                   <Text style={styles.viewJourneyButtonText}>View Journey</Text>
                 </TouchableOpacity>
               </View>
+              {(activeLease.property as { media_3d_url?: string | null } | undefined)
+                ?.media_3d_url && (activeLease.property as { id?: string } | undefined)?.id ? (
+                <TouchableOpacity
+                  style={styles.home3dButton}
+                  testID="tenant-view-3d"
+                  accessibilityRole="button"
+                  accessibilityLabel="View this property in 3D"
+                  onPress={() =>
+                    router.push({
+                      pathname: '/(tenant)/properties/[id]/view3d',
+                      params: {
+                        id: (activeLease.property as { id: string }).id,
+                        backTo: '/(tenant)',
+                      },
+                    } as never)
+                  }
+                >
+                  <Ionicons name="cube-outline" size={16} color="#FFF" />
+                  <Text style={styles.home3dButtonText}>View home in 3D</Text>
+                </TouchableOpacity>
+              ) : null}
             </LinearGradient>
           ) : (
             <View style={styles.noLeaseCard}>
@@ -1482,6 +1503,21 @@ const styles = StyleSheet.create({
   leaseActions: {
     flexDirection: 'row',
     gap: 8,
+  },
+  home3dButton: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  home3dButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFF',
   },
   viewJourneyButton: {
     flexDirection: 'row',
