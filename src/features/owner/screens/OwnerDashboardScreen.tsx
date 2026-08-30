@@ -593,7 +593,9 @@ export default function OwnerDashboardScreen() {
                 <Ionicons name={primaryAction.icon} size={24} color="#002395" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.primaryCtaEyebrow}>YOUR NEXT STEP</Text>
+                <Text style={styles.primaryCtaEyebrow} accessibilityLabel="YOUR NEXT STEP">
+                  YOUR NEXT STEP
+                </Text>
                 <Text style={styles.primaryCtaTitle}>{primaryAction.label}</Text>
                 <Text style={styles.primaryCtaSub}>{primaryAction.sub}</Text>
               </View>

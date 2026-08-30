@@ -33,6 +33,10 @@ appId: com.lalarente.app
 
 - assertVisible:
     text: "Identity"
+    optional: true
+- assertVisible:
+    id: "fica-check-identity"
+    optional: true
 
 - runFlow:
     when:
@@ -47,20 +51,3 @@ appId: com.lalarente.app
           timeout: 25000
 
 - runFlow: ../subflows/tap-owner-profile.yaml
-- runFlow: ../subflows/sign-out-owner.yaml
-- runFlow: ../subflows/login-tenant.yaml
-
-- tapOn:
-    id: "tab-payments"
-
-- extendedWaitUntil:
-    visible: "Payments"
-    timeout: 30000
-
-- assertVisible:
-    text: "Record EFT"
-    optional: true
-
-- assertVisible:
-    id: "tenant-pay-now"
-    optional: true

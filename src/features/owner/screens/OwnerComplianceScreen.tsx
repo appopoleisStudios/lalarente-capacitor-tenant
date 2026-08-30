@@ -496,6 +496,10 @@ export default function OwnerComplianceScreen() {
                 <View style={styles.empty}>
                   <Ionicons name="people-outline" size={48} color={colors.gray[300]} />
                   <Text style={styles.emptyText}>No approved tenant applications yet</Text>
+                  <Text style={styles.emptyChecksHint}>
+                    Screening still covers Identity, Credit, and Background when an application
+                    exists.
+                  </Text>
                 </View>
               ) : (
                 ficaData.map((tenant) => {
@@ -949,5 +953,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.text.tertiary,
     marginTop: 12,
+  },
+  emptyChecksHint: {
+    fontSize: 13,
+    color: colors.text.tertiary,
+    marginTop: 8,
+    paddingHorizontal: 24,
+    textAlign: 'center',
   },
 });

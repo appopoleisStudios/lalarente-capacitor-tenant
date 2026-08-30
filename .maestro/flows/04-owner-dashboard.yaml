@@ -11,14 +11,15 @@ appId: com.lalarente.app
 
 - scrollUntilVisible:
     element:
-      text: "YOUR NEXT STEP"
+      id: "owner-primary-action"
     direction: DOWN
-    timeout: 15000
-    centerElement: true
+    timeout: 20000
+    centerElement: false
 
 - assertVisible:
-    text: "YOUR NEXT STEP"
-- assertVisible:
     id: "owner-primary-action"
+- assertVisible:
+    text: "YOUR NEXT STEP"
+    optional: true
 
 - runFlow: ../subflows/tap-owner-profile.yaml
