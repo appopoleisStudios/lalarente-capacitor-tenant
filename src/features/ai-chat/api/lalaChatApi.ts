@@ -13,14 +13,26 @@ export type LalaChatRequest = {
   history?: ChatHistoryTurn[];
 };
 
+export type LalaPendingAction = {
+  type: string;
+  quote_id?: string;
+  request_id?: string;
+  amount?: number;
+  label?: string;
+};
+
 export type LalaChatResponse = {
   reply: string;
+  pending_actions?: LalaPendingAction[];
 };
 
 const MAX_HISTORY = 12;
 
 async function getAccessToken(): Promise<string> {
-  const { data: { session }, error } = await supabase.auth.getSession();
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
   if (error) {
     throw new Error('Could not load your session. Please sign in again.');
   }

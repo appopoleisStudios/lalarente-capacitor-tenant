@@ -10,6 +10,8 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
+import { calculateExpiryNoticeDate, toDateString } from '../_shared/saBusinessDays.ts';
+import { sendExpoPushToUser } from '../_shared/expoPush.ts';
 
 // ─── Service-role auth helper ─────────────────────────────────────────────
 // Matches the pattern in process-vendor-payouts. The pg_cron scheduler
@@ -56,7 +58,12 @@ serve(async (req) => {
     }
 
     const today = new Date().toISOString().split('T')[0];
-    const results = { autoConverted: 0, escalated: 0, errors: [] as string[] };
+    const results = {
+      autoConverted: 0,
+      escalated: 0,
+      expiryNotices: 0,
+      errors: [] as string[],
+    };
 
     // ── 1. Auto-convert expired fixed-term leases to MTM ──────────────────
     // CPA s14(2)(d): Fixed-term auto-converts to MTM on same terms
@@ -201,56 +208,96 @@ serve(async (req) => {
       }
     }
 
-    // ── 3. Send lease expiry notifications (40-80 day window) ──────────────
-    // CPA s14(2)(c): Landlord must notify tenant 40-80 business days before expiry
-    const expiryWarningDate = new Date();
-    expiryWarningDate.setDate(expiryWarningDate.getDate() + 60); // ~60 days from now
+    // ── 3. CPA s14(2)(c) 80 / 60 / 40 business-day expiry notices ───────────
+    const horizon = new Date();
+    horizon.setDate(horizon.getDate() + 200);
+    const horizonStr = horizon.toISOString().split('T')[0];
 
     const { data: expiringLeases } = await supabase
       .from('leases')
-      .select('id, tenant_id, owner_id, end_date, property:properties!property_id(title)')
+      .select(
+        'id, tenant_id, owner_id, end_date, notice_80_sent_at, notice_60_sent_at, notice_40_sent_at, property:properties!property_id(title, address)'
+      )
       .eq('status', 'active')
       .eq('lease_type', 'fixed')
       .gte('end_date', today)
-      .lte('end_date', expiryWarningDate.toISOString().split('T')[0]);
+      .lte('end_date', horizonStr);
 
     if (expiringLeases?.length) {
+      const todayDate = new Date(`${today}T12:00:00`);
       for (const lease of expiringLeases) {
-        // Idempotency: once per lease — skip if ANY prior lease_expiry notification
-        // exists for this lease_id (regardless of when it was sent). CPA s14(2)(c)
-        // requires notification in the 40-80 day window; we send once and stop.
-        const { data: existingNotification } = await supabase
-          .from('notifications')
-          .select('id')
-          .eq('type', 'lease_expiry')
-          .contains('data', { lease_id: lease.id })
-          .limit(1)
-          .maybeSingle();
+        try {
+          const end = new Date(`${lease.end_date}T12:00:00`);
+          const due = {
+            '80': calculateExpiryNoticeDate(end, 80),
+            '60': calculateExpiryNoticeDate(end, 60),
+            '40': calculateExpiryNoticeDate(end, 40),
+          } as const;
+          const sent = {
+            '80': Boolean(lease.notice_80_sent_at),
+            '60': Boolean(lease.notice_60_sent_at),
+            '40': Boolean(lease.notice_40_sent_at),
+          } as const;
+          const propertyTitle =
+            (lease.property as { title?: string } | null)?.title || 'the property';
 
-        if (existingNotification) continue; // Already notified for this lease
+          for (const kind of ['80', '60', '40'] as const) {
+            if (sent[kind]) continue;
+            if (todayDate < due[kind]) continue;
 
-        const daysUntilExpiry = Math.ceil(
-          (new Date(lease.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-        );
-        const propertyTitle = (lease.property as any)?.title || 'your property';
+            const title = `CPA ${kind}-business-day lease notice`;
+            const body = `The lease for ${propertyTitle} ends on ${lease.end_date}. This is the ${kind} business-day CPA s14 notice (due ${toDateString(due[kind])}). This in-app + PDF notice is not a substitute for formal legal service.`;
 
-        // Notify owner (they need to take action)
-        await supabase.from('notifications').insert({
-          user_id: lease.owner_id,
-          type: 'lease_expiry',
-          title: 'Lease Expiry Warning',
-          body: `The lease for ${propertyTitle} expires in ${daysUntilExpiry} days. Please initiate renewal discussions or issue a CPA notice.`,
-          data: { lease_id: lease.id },
-        });
+            await supabase.from('notifications').insert([
+              {
+                user_id: lease.owner_id,
+                type: 'lease_expiry',
+                title,
+                body,
+                data: { lease_id: lease.id, notice_kind: kind },
+              },
+              {
+                user_id: lease.tenant_id,
+                type: 'lease_expiry',
+                title,
+                body,
+                data: { lease_id: lease.id, notice_kind: kind },
+              },
+            ]);
 
-        // CPA s14(2)(c): Landlord must notify the tenant before expiry
-        await supabase.from('notifications').insert({
-          user_id: lease.tenant_id,
-          type: 'lease_expiry',
-          title: 'Lease Expiry Notice',
-          body: `Your lease for ${propertyTitle} expires in ${daysUntilExpiry} days. Please contact your landlord to discuss renewal options.`,
-          data: { lease_id: lease.id },
-        });
+            await sendExpoPushToUser(supabase, lease.owner_id, title, body, {
+              lease_id: lease.id,
+              notice_kind: kind,
+            });
+            await sendExpoPushToUser(supabase, lease.tenant_id, title, body, {
+              lease_id: lease.id,
+              notice_kind: kind,
+            });
+
+            await fetch(`${supabaseUrl}/functions/v1/generate-cpa-notice`, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${serviceKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                lease_id: lease.id,
+                kind,
+                notice_type: 'expiry',
+              }),
+            }).catch(() => undefined);
+
+            const field = `notice_${kind}_sent_at`;
+            await supabase
+              .from('leases')
+              .update({ [field]: new Date().toISOString() })
+              .eq('id', lease.id);
+
+            results.expiryNotices++;
+          }
+        } catch (err) {
+          results.errors.push(`Expiry notice failed for lease ${lease.id}: ${err}`);
+        }
       }
     }
 
@@ -262,7 +309,7 @@ serve(async (req) => {
         timestamp: new Date().toISOString(),
         autoConverted: results.autoConverted,
         escalated: results.escalated,
-        expiryWarnings: expiringLeases?.length || 0,
+        expiryNotices: results.expiryNotices,
         errors: results.errors.length > 0 ? results.errors : undefined,
       }),
       {

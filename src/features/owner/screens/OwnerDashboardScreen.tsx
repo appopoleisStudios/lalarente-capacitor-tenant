@@ -497,7 +497,7 @@ export default function OwnerDashboardScreen() {
             <FeaturePin
               pinId="owner-dashboard-priority"
               title="Your dashboard, at a glance"
-              message="The highlighted action card is what needs you most right now (approve closures, review viewings, confirm payments). 'Needs Attention' lists everything waiting on you. Tap any row to jump straight to it."
+              message="The highlighted action card is what needs you most right now (approve closures, review viewings, confirm payments). Vendor invoices use PayFast sandbox until PAYFAST_SANDBOX=false with live merchant keys. 'Needs Attention' lists everything waiting on you."
               aiRoute="/(owner)/ai-chat"
               aiPrompt="What needs my attention on my dashboard?"
             />

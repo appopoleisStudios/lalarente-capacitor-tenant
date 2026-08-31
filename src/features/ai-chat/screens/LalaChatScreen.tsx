@@ -14,7 +14,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/src/lib/supabase';
-import { sendLalaChatMessage, type ChatHistoryTurn } from '../api/lalaChatApi';
+import {
+  sendLalaChatMessage,
+  type ChatHistoryTurn,
+  type LalaPendingAction,
+} from '../api/lalaChatApi';
+import { acceptQuote } from '@/src/features/maintenance/api/quotes/quoteActions.api';
+import { useAuth } from '@/src/contexts/AuthContext';
 
 type Message = {
   id: string;
@@ -36,6 +42,7 @@ const PROMPT_CHIPS: Record<'tenant' | 'owner' | 'vendor', string[]> = {
     'How do I approve an invoice?',
     'Explain early termination',
     'How do I forward a closure?',
+    'Compare my quotes',
   ],
   vendor: [
     'How do payouts work?',
@@ -58,6 +65,9 @@ export default function LalaChatScreen() {
   const [chatRole, setChatRole] = useState<'tenant' | 'owner' | 'vendor'>('tenant');
   const [propertyId, setPropertyId] = useState<string | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
+  const { user } = useAuth();
+  const [pendingActions, setPendingActions] = useState<LalaPendingAction[]>([]);
+  const [confirming, setConfirming] = useState(false);
   const flatListRef = useRef<FlatList<Message>>(null);
   const messageIdRef = useRef(0);
   const nextMessageId = () => `lala-${++messageIdRef.current}`;
@@ -144,13 +154,14 @@ export default function LalaChatScreen() {
     setIsLoading(true);
     setError(null);
     try {
-      const { reply } = await sendLalaChatMessage({
+      const { reply, pending_actions } = await sendLalaChatMessage({
         text: userText,
         role: chatRole,
         property_id: propertyId,
         history: buildHistory(historySource),
       });
       setMessages((prev) => [...prev, { id: nextMessageId(), text: reply, role: 'ai' }]);
+      setPendingActions(pending_actions ?? []);
     } catch (err) {
       console.error('Chat error:', err);
       setError(err instanceof Error ? err.message : 'Network error. Please try again later.');
@@ -266,6 +277,55 @@ export default function LalaChatScreen() {
             </View>
           )}
         />
+
+        {pendingActions.map((action) =>
+          action.type === 'accept_quote' && action.quote_id ? (
+            <View
+              key={String(action.quote_id)}
+              style={styles.confirmCard}
+              testID="lala-confirm-accept-quote"
+            >
+              <Text style={styles.confirmTitle}>Confirm money step</Text>
+              <Text style={styles.confirmBody}>
+                {action.label ||
+                  `Accept this quote (R ${Number(action.amount || 0).toLocaleString('en-ZA')}) and issue a PO. Lala will not do this without you.`}
+              </Text>
+              <Pressable
+                style={styles.confirmBtn}
+                testID="lala-confirm-accept-quote-button"
+                disabled={confirming || !user?.id}
+                onPress={async () => {
+                  if (!user?.id || !action.quote_id) return;
+                  setConfirming(true);
+                  setError(null);
+                  try {
+                    const result = await acceptQuote(action.quote_id, user.id);
+                    setPendingActions([]);
+                    setMessages((prev) => [
+                      ...prev,
+                      {
+                        id: nextMessageId(),
+                        text: result.message || 'Quote accepted and PO issued.',
+                        role: 'ai',
+                      },
+                    ]);
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : 'Could not accept quote');
+                  } finally {
+                    setConfirming(false);
+                  }
+                }}
+              >
+                <Text style={styles.confirmBtnText}>
+                  {confirming ? 'Issuing PO…' : 'I approve — issue PO'}
+                </Text>
+              </Pressable>
+              <Pressable onPress={() => setPendingActions([])} disabled={confirming}>
+                <Text style={styles.confirmCancel}>Not now</Text>
+              </Pressable>
+            </View>
+          ) : null
+        )}
 
         {isLoading && (
           <View style={styles.loadingRow}>
@@ -410,6 +470,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sendBtnDisabled: { opacity: 0.5 },
+  confirmCard: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1,
+    borderColor: '#FDBA74',
+  },
+  confirmTitle: { fontSize: 14, fontWeight: '700', color: '#9A3412', marginBottom: 6 },
+  confirmBody: { fontSize: 13, color: '#7C2D12', marginBottom: 10 },
+  confirmBtn: {
+    backgroundColor: '#002395',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  confirmBtnText: { color: '#FFF', fontWeight: '700', fontSize: 14 },
+  confirmCancel: {
+    textAlign: 'center',
+    marginTop: 8,
+    fontSize: 13,
+    color: '#9A3412',
+    fontWeight: '600',
+  },
   messageRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
