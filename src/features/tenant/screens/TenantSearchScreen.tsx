@@ -180,7 +180,7 @@ export default function TenantSearchScreen() {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color="#002395" />
           <Text style={styles.loadingText}>Loading properties...</Text>
         </View>
       </SafeAreaView>
@@ -226,7 +226,7 @@ export default function TenantSearchScreen() {
             style={styles.filterButton}
             onPress={() => setShowFilters(!showFilters)}
           >
-            <Ionicons name="options-outline" size={24} color="#007AFF" />
+            <Ionicons name="options-outline" size={24} color="#002395" />
           </TouchableOpacity>
         </View>
 
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#002395',
     borderRadius: 8,
   },
   retryButtonText: {
@@ -454,8 +454,8 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
   },
   optionButtonActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: '#002395',
+    borderColor: '#002395',
   },
   optionButtonText: {
     fontSize: 14,
@@ -473,7 +473,7 @@ const styles = StyleSheet.create({
   clearButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#002395',
   },
   resultsHeader: {
     paddingHorizontal: 16,

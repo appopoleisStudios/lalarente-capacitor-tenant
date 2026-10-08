@@ -177,7 +177,7 @@ export default function OwnerApplicationDetailScreen() {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color="#002395" />
           <Text style={styles.loadingText}>Loading application...</Text>
         </View>
       </SafeAreaView>
@@ -812,9 +812,9 @@ const ScreeningRow = ({
 
 const DocumentRow = ({ label, onPress }: { label: string; onPress: () => void }) => (
   <TouchableOpacity style={styles.documentRow} onPress={onPress}>
-    <Ionicons name="document-text" size={20} color="#007AFF" />
+    <Ionicons name="document-text" size={20} color="#002395" />
     <Text style={styles.documentLabel}>{label}</Text>
-    <Ionicons name="open-outline" size={20} color="#007AFF" />
+    <Ionicons name="open-outline" size={20} color="#002395" />
   </TouchableOpacity>
 );
 
@@ -881,7 +881,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#002395',
     borderRadius: 8,
   },
   retryButtonText: {
@@ -929,7 +929,7 @@ const styles = StyleSheet.create({
   propertyRent: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#007AFF',
+    color: '#002395',
   },
   infoRow: {
     flexDirection: 'row',
@@ -1040,7 +1040,7 @@ const styles = StyleSheet.create({
   documentLabel: {
     flex: 1,
     fontSize: 16,
-    color: '#007AFF',
+    color: '#002395',
   },
   noDocuments: {
     fontSize: 14,
@@ -1077,7 +1077,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F44336',
   },
   createLeaseButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#002395',
   },
   viewLeaseButton: {
     backgroundColor: '#4CAF50',
