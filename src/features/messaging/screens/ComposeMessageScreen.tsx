@@ -37,7 +37,7 @@ interface LeaseSummary {
 }
 
 interface Props {
-  role?: 'owner' | 'tenant';
+  role?: 'owner' | 'tenant' | 'vendor';
 }
 
 const CATEGORIES: { value: ThreadCategory; label: string; icon: string }[] = [
@@ -73,7 +73,9 @@ export default function ComposeMessageScreen({ role = 'tenant' }: Props) {
 
   const init = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
 
@@ -81,12 +83,14 @@ export default function ComposeMessageScreen({ role = 'tenant' }: Props) {
         // Tenant: find active lease to get owner
         const { data: activeLease } = await supabase
           .from('leases')
-          .select(`
+          .select(
+            `
             id, owner_id, tenant_id, property_id,
             owner:profiles!owner_id(id, full_name),
             tenant:profiles!tenant_id(id, full_name),
             property:properties!property_id(id, title)
-          `)
+          `
+          )
           .eq('tenant_id', user.id)
           .eq('status', 'active')
           .order('created_at', { ascending: false })
@@ -102,12 +106,14 @@ export default function ComposeMessageScreen({ role = 'tenant' }: Props) {
         // Owner: find all active leases to pick a tenant
         const { data: activeLeases } = await supabase
           .from('leases')
-          .select(`
+          .select(
+            `
             id, owner_id, tenant_id, property_id,
             owner:profiles!owner_id(id, full_name),
             tenant:profiles!tenant_id(id, full_name),
             property:properties!property_id(id, title)
-          `)
+          `
+          )
           .eq('owner_id', user.id)
           .eq('status', 'active')
           .order('created_at', { ascending: false });
@@ -155,9 +161,8 @@ export default function ComposeMessageScreen({ role = 'tenant' }: Props) {
         sender_role: role,
       });
 
-      const dest = role === 'tenant'
-        ? `/(tenant)/messages/${thread.id}`
-        : `/(owner)/messages/${thread.id}`;
+      const dest =
+        role === 'tenant' ? `/(tenant)/messages/${thread.id}` : `/(owner)/messages/${thread.id}`;
       router.replace(dest as any);
     } catch (err: any) {
       console.error('Error sending message:', err);
@@ -173,7 +178,37 @@ export default function ComposeMessageScreen({ role = 'tenant' }: Props) {
       : selectedLease.tenant?.full_name
     : null;
 
-  const canSend = subject.trim().length > 0 && message.trim().length > 0 && !sending && !!selectedLease;
+  const canSend =
+    subject.trim().length > 0 && message.trim().length > 0 && !sending && !!selectedLease;
+
+  // ── Vendor: messages flow through job threads, not compose ───────────────────
+  if (role === 'vendor') {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="close" size={24} color={colors.text.primary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>New Message</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.centerContainer}>
+          <Ionicons name="construct-outline" size={64} color={colors.gray[300]} />
+          <Text style={styles.noLeaseTitle}>Use Job Threads</Text>
+          <Text style={styles.noLeaseText}>
+            As a vendor, messages are sent through the job assigned to you. Open a job from My Jobs
+            to chat with the owner and tenant.
+          </Text>
+          <TouchableOpacity
+            style={[styles.actionBtn, { backgroundColor: colors.rsa.gold }]}
+            onPress={() => router.replace('/(vendor)/jobs/index')}
+          >
+            <Text style={styles.actionBtnText}>View My Jobs</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   // ── Loading ──────────────────────────────────────────────────────────────────
   if (loading) {
@@ -196,9 +231,10 @@ export default function ComposeMessageScreen({ role = 'tenant' }: Props) {
   // ── No active lease ──────────────────────────────────────────────────────────
   if (leases.length === 0) {
     const emptyTitle = role === 'tenant' ? 'No Active Lease' : 'No Active Tenants';
-    const emptyText = role === 'tenant'
-      ? 'You need an active lease to message your landlord. Search for properties and apply to get started.'
-      : 'You have no active tenants. Once a tenant signs a lease, you can message them here.';
+    const emptyText =
+      role === 'tenant'
+        ? 'You need an active lease to message your landlord. Search for properties and apply to get started.'
+        : 'You have no active tenants. Once a tenant signs a lease, you can message them here.';
 
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -239,7 +275,7 @@ export default function ComposeMessageScreen({ role = 'tenant' }: Props) {
         </View>
         <ScrollView style={styles.pickerList}>
           <Text style={styles.pickerHint}>Choose a tenant to message:</Text>
-          {leases.map(lease => (
+          {leases.map((lease) => (
             <TouchableOpacity
               key={lease.id}
               style={styles.pickerRow}
@@ -255,9 +291,7 @@ export default function ComposeMessageScreen({ role = 'tenant' }: Props) {
               </View>
               <View style={styles.pickerInfo}>
                 <Text style={styles.pickerName}>{lease.tenant?.full_name ?? 'Unknown'}</Text>
-                {lease.property && (
-                  <Text style={styles.pickerProp}>{lease.property.title}</Text>
-                )}
+                {lease.property && <Text style={styles.pickerProp}>{lease.property.title}</Text>}
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
             </TouchableOpacity>
@@ -276,7 +310,11 @@ export default function ComposeMessageScreen({ role = 'tenant' }: Props) {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>New Message</Text>
         <TouchableOpacity
-          style={[styles.sendHeaderBtn, { backgroundColor: primaryColor }, !canSend && styles.sendHeaderBtnDisabled]}
+          style={[
+            styles.sendHeaderBtn,
+            { backgroundColor: primaryColor },
+            !canSend && styles.sendHeaderBtnDisabled,
+          ]}
           onPress={handleSend}
           disabled={!canSend}
         >
@@ -313,7 +351,12 @@ export default function ComposeMessageScreen({ role = 'tenant' }: Props) {
                 <Text style={styles.recipientProp}> · {selectedLease.property.title}</Text>
               )}
               {leases.length > 1 && (
-                <Ionicons name="chevron-down" size={14} color={colors.text.secondary} style={{ marginLeft: 4 }} />
+                <Ionicons
+                  name="chevron-down"
+                  size={14}
+                  color={colors.text.secondary}
+                  style={{ marginLeft: 4 }}
+                />
               )}
             </TouchableOpacity>
           </View>
@@ -339,9 +382,13 @@ export default function ComposeMessageScreen({ role = 'tenant' }: Props) {
           {/* Category */}
           <View style={styles.categorySection}>
             <Text style={styles.categoryLabel}>Category</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.categoryScroll}
+            >
               <View style={styles.categoryRow}>
-                {CATEGORIES.map(cat => (
+                {CATEGORIES.map((cat) => (
                   <TouchableOpacity
                     key={cat.value}
                     style={[
@@ -355,10 +402,12 @@ export default function ComposeMessageScreen({ role = 'tenant' }: Props) {
                       size={14}
                       color={category === cat.value ? colors.text.inverse : colors.text.secondary}
                     />
-                    <Text style={[
-                      styles.categoryChipText,
-                      category === cat.value && { color: colors.text.inverse },
-                    ]}>
+                    <Text
+                      style={[
+                        styles.categoryChipText,
+                        category === cat.value && { color: colors.text.inverse },
+                      ]}
+                    >
                       {cat.label}
                     </Text>
                   </TouchableOpacity>
@@ -413,29 +462,44 @@ const styles = StyleSheet.create({
   centerContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   noLeaseTitle: { fontSize: 20, fontWeight: '700', color: colors.text.primary, marginTop: 16 },
   noLeaseText: {
-    fontSize: 14, color: colors.text.secondary, textAlign: 'center',
-    marginTop: 8, marginBottom: 24, lineHeight: 20,
+    fontSize: 14,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 24,
+    lineHeight: 20,
   },
   actionBtn: {
-    paddingHorizontal: 24, paddingVertical: 12, borderRadius: 10,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 10,
   },
   actionBtnText: { color: colors.text.inverse, fontSize: 14, fontWeight: '600' },
   // Picker
   pickerList: { flex: 1 },
   pickerHint: {
-    fontSize: 14, color: colors.text.secondary,
-    paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8,
+    fontSize: 14,
+    color: colors.text.secondary,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
   pickerRow: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     backgroundColor: colors.background.default,
-    borderBottomWidth: 1, borderBottomColor: colors.border.default,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.default,
     gap: 12,
   },
   pickerAvatar: {
-    width: 44, height: 44, borderRadius: 22,
-    alignItems: 'center', justifyContent: 'center',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   pickerAvatarText: { fontSize: 18, fontWeight: '600', color: colors.text.inverse },
   pickerInfo: { flex: 1 },
@@ -451,34 +515,52 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   fieldLabel: {
-    fontSize: 14, fontWeight: '600', color: colors.text.secondary, width: 60,
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.secondary,
+    width: 60,
   },
   recipientChip: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
   recipientName: { fontSize: 15, fontWeight: '600', color: colors.text.primary },
   recipientProp: { fontSize: 13, color: colors.text.secondary },
   subjectInput: {
-    flex: 1, fontSize: 15, color: colors.text.primary, padding: 0,
+    flex: 1,
+    fontSize: 15,
+    color: colors.text.primary,
+    padding: 0,
   },
   divider: { height: 1, backgroundColor: colors.border.default, marginHorizontal: 16 },
   categorySection: { paddingTop: 14, paddingBottom: 10 },
   categoryLabel: {
-    fontSize: 14, fontWeight: '600', color: colors.text.secondary,
-    paddingHorizontal: 16, marginBottom: 10,
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.secondary,
+    paddingHorizontal: 16,
+    marginBottom: 10,
   },
   categoryScroll: { paddingLeft: 16 },
   categoryRow: { flexDirection: 'row', gap: 8, paddingRight: 16 },
   categoryChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     backgroundColor: colors.background.tertiary,
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
   categoryChipText: { fontSize: 13, fontWeight: '500', color: colors.text.secondary },
   messageSection: { padding: 16, minHeight: 200 },
   messageInput: {
-    fontSize: 15, color: colors.text.primary, minHeight: 200,
+    fontSize: 15,
+    color: colors.text.primary,
+    minHeight: 200,
     lineHeight: 22,
   },
   charCount: {
-    fontSize: 12, color: colors.text.tertiary, textAlign: 'right', marginTop: 8,
+    fontSize: 12,
+    color: colors.text.tertiary,
+    textAlign: 'right',
+    marginTop: 8,
   },
 });
