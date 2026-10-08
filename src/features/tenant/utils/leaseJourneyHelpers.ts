@@ -82,7 +82,10 @@ export function formatTimeAgo(date: Date): string {
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return 'Yesterday';
   if (diffDays < 30) return `${diffDays} days ago`;
-  if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+  if (diffDays < 365) {
+    const m = Math.floor(diffDays / 30);
+    return `${m} ${m === 1 ? 'month' : 'months'} ago`;
+  }
   return `${Math.floor(diffDays / 365)} years ago`;
 }
 
@@ -91,15 +94,20 @@ export function formatTimeAgo(date: Date): string {
 export async function fetchActiveLease(userId: string): Promise<LeaseWithJoins | null> {
   const { data, error } = await supabase
     .from('leases')
-    .select(`
+    .select(
+      `
       *,
       property:properties!property_id(id, title, address, city),
       owner:profiles!owner_id(full_name, email, phone)
-    `)
+    `
+    )
     .eq('tenant_id', userId)
     .in('status', [
-      'active', 'month_to_month', 'pending_tenant_signature',
-      'pending_owner_signature', 'renewal_pending',
+      'active',
+      'month_to_month',
+      'pending_tenant_signature',
+      'pending_owner_signature',
+      'renewal_pending',
     ])
     .order('created_at', { ascending: false })
     .limit(1)
@@ -112,7 +120,8 @@ export async function fetchActiveLease(userId: string): Promise<LeaseWithJoins |
 }
 
 export async function fetchApplications(
-  userId: string, propertyId: string
+  userId: string,
+  propertyId: string
 ): Promise<ApplicationRow[]> {
   const { data } = await supabase
     .from('rental_applications')
@@ -125,7 +134,8 @@ export async function fetchApplications(
 }
 
 export async function fetchHoldingDeposits(
-  userId: string, propertyId: string
+  userId: string,
+  propertyId: string
 ): Promise<DepositRow[]> {
   const { data } = await supabase
     .from('holding_deposits')
@@ -157,7 +167,8 @@ export async function fetchInspections(leaseId: string): Promise<InspectionRow[]
 }
 
 export async function fetchMaintenance(
-  userId: string, propertyId: string
+  userId: string,
+  propertyId: string
 ): Promise<MaintenanceSummary[]> {
   const { data } = await supabase
     .from('maintenance_requests')
@@ -179,9 +190,7 @@ export async function fetchRenewals(leaseId: string): Promise<RenewalRow[]> {
 
 // ─── Timeline Builders ──────────────────────────────────────────────────────
 
-export function buildApplicationEvents(
-  apps: ApplicationRow[]
-): TimelineEvent[] {
+export function buildApplicationEvents(apps: ApplicationRow[]): TimelineEvent[] {
   const events: TimelineEvent[] = [];
   if (apps.length === 0) return events;
 
@@ -209,9 +218,7 @@ export function buildApplicationEvents(
   return events;
 }
 
-export function buildDepositEvents(
-  deposits: DepositRow[]
-): TimelineEvent[] {
+export function buildDepositEvents(deposits: DepositRow[]): TimelineEvent[] {
   const events: TimelineEvent[] = [];
   if (deposits.length === 0) return events;
 
@@ -221,9 +228,8 @@ export function buildDepositEvents(
     id: `holding-deposit-${dep.id}`,
     type: 'holding_deposit_paid',
     title: 'Holding Deposit Paid',
-    subtitle: dep.status === 'paid'
-      ? 'Holding deposit secured your spot'
-      : 'Holding deposit recorded',
+    subtitle:
+      dep.status === 'paid' ? 'Holding deposit secured your spot' : 'Holding deposit recorded',
     date: safeDate(paidDate),
     status: dep.status === 'paid' ? 'completed' : 'pending',
   });
@@ -231,9 +237,7 @@ export function buildDepositEvents(
   return events;
 }
 
-export function buildLeaseSigningEvents(
-  lease: LeaseWithJoins
-): TimelineEvent[] {
+export function buildLeaseSigningEvents(lease: LeaseWithJoins): TimelineEvent[] {
   const events: TimelineEvent[] = [];
 
   if (lease.owner_signed_at) {
@@ -281,9 +285,7 @@ export function buildLeaseSigningEvents(
   return events;
 }
 
-export function buildPaymentEvents(
-  payments: PaymentRow[]
-): TimelineEvent[] {
+export function buildPaymentEvents(payments: PaymentRow[]): TimelineEvent[] {
   const events: TimelineEvent[] = [];
   const now = new Date();
 
@@ -326,15 +328,13 @@ export function buildPaymentEvents(
   return events;
 }
 
-export function buildInspectionEvents(
-  inspections: InspectionRow[]
-): TimelineEvent[] {
+export function buildInspectionEvents(inspections: InspectionRow[]): TimelineEvent[] {
   const events: TimelineEvent[] = [];
 
   for (const insp of inspections) {
     const isCompleted = insp.status === 'completed' || !!insp.completed_date;
-    const typeLabel = insp.type === 'move_in' ? 'Move-In'
-      : insp.type === 'move_out' ? 'Move-Out' : 'Periodic';
+    const typeLabel =
+      insp.type === 'move_in' ? 'Move-In' : insp.type === 'move_out' ? 'Move-Out' : 'Periodic';
 
     events.push({
       id: `inspection-${insp.id}`,
@@ -351,9 +351,7 @@ export function buildInspectionEvents(
   return events;
 }
 
-export function buildMaintenanceEvents(
-  maintenance: MaintenanceSummary[]
-): TimelineEvent[] {
+export function buildMaintenanceEvents(maintenance: MaintenanceSummary[]): TimelineEvent[] {
   const events: TimelineEvent[] = [];
 
   for (const req of maintenance) {
@@ -365,7 +363,7 @@ export function buildMaintenanceEvents(
       subtitle: isResolved
         ? `Resolved ${formatDate(safeDate(req.updated_at || req.created_at))}`
         : `Opened ${formatDate(safeDate(req.created_at))}`,
-      date: safeDate(isResolved ? (req.updated_at || req.created_at) : req.created_at),
+      date: safeDate(isResolved ? req.updated_at || req.created_at : req.created_at),
       status: isResolved ? 'completed' : 'pending',
     });
   }
@@ -373,9 +371,7 @@ export function buildMaintenanceEvents(
   return events;
 }
 
-export function buildCpaNoticeEvents(
-  lease: LeaseWithJoins
-): TimelineEvent[] {
+export function buildCpaNoticeEvents(lease: LeaseWithJoins): TimelineEvent[] {
   const events: TimelineEvent[] = [];
   const now = new Date();
   const endDate = safeDate(lease.end_date);
@@ -397,7 +393,7 @@ export function buildCpaNoticeEvents(
         ? `Sent ${formatDate(safeDate(lease.notice_80_sent_at!))}`
         : `Due ${formatDate(notice80Date)} — CPA renewal notice`,
       date: notice80Date,
-      status: sent ? 'completed' : (notice80Date <= now ? 'overdue' : 'warning'),
+      status: sent ? 'completed' : notice80Date <= now ? 'overdue' : 'warning',
     });
   }
 
@@ -411,7 +407,7 @@ export function buildCpaNoticeEvents(
         ? `Sent ${formatDate(safeDate(lease.notice_60_sent_at!))}`
         : `Due ${formatDate(notice60Date)} — CPA renewal notice`,
       date: notice60Date,
-      status: sent ? 'completed' : (notice60Date <= now ? 'overdue' : 'warning'),
+      status: sent ? 'completed' : notice60Date <= now ? 'overdue' : 'warning',
     });
   }
 
@@ -425,16 +421,14 @@ export function buildCpaNoticeEvents(
         ? `Sent ${formatDate(safeDate(lease.notice_40_sent_at!))}`
         : `Due ${formatDate(notice40Date)} — CPA renewal deadline approaching`,
       date: notice40Date,
-      status: sent ? 'completed' : (notice40Date <= now ? 'overdue' : 'warning'),
+      status: sent ? 'completed' : notice40Date <= now ? 'overdue' : 'warning',
     });
   }
 
   return events;
 }
 
-export function buildRenewalEvents(
-  renewals: RenewalRow[]
-): TimelineEvent[] {
+export function buildRenewalEvents(renewals: RenewalRow[]): TimelineEvent[] {
   const events: TimelineEvent[] = [];
 
   for (const renewal of renewals) {
@@ -442,9 +436,10 @@ export function buildRenewalEvents(
       id: `renewal-${renewal.id}`,
       type: renewal.status === 'accepted' ? 'renewal_accepted' : 'renewal_pending',
       title: renewal.status === 'accepted' ? 'Renewal Accepted' : 'Renewal Proposed',
-      subtitle: renewal.status === 'accepted'
-        ? `Renewed ${formatDate(safeDate(renewal.response_at || renewal.created_at))}`
-        : `Proposed ${formatDate(safeDate(renewal.created_at))}`,
+      subtitle:
+        renewal.status === 'accepted'
+          ? `Renewed ${formatDate(safeDate(renewal.response_at || renewal.created_at))}`
+          : `Proposed ${formatDate(safeDate(renewal.created_at))}`,
       date: safeDate(renewal.response_at || renewal.created_at),
       status: renewal.status === 'accepted' ? 'completed' : 'pending',
     });
@@ -453,9 +448,7 @@ export function buildRenewalEvents(
   return events;
 }
 
-export function buildLeaseEndEvents(
-  lease: LeaseWithJoins
-): TimelineEvent[] {
+export function buildLeaseEndEvents(lease: LeaseWithJoins): TimelineEvent[] {
   const events: TimelineEvent[] = [];
   const now = new Date();
   const endDate = safeDate(lease.end_date);
@@ -500,9 +493,7 @@ export function buildLeaseEndEvents(
   return events;
 }
 
-export function buildLeaseStartEvent(
-  lease: LeaseWithJoins
-): TimelineEvent {
+export function buildLeaseStartEvent(lease: LeaseWithJoins): TimelineEvent {
   const now = new Date();
   const startDate = safeDate(lease.start_date);
   return {

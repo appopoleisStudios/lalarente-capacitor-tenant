@@ -117,7 +117,9 @@ export default function TenantLeaseJourneyScreen() {
   const loadTimeline = useCallback(async () => {
     try {
       setError(null);
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
       const lease = await fetchActiveLease(user.id);
@@ -133,14 +135,7 @@ export default function TenantLeaseJourneyScreen() {
       const allEvents: TimelineEvent[] = [];
 
       // Fetch all data in parallel
-      const [
-        apps,
-        deposits,
-        payments,
-        inspections,
-        maintenance,
-        renewals,
-      ] = await Promise.all([
+      const [apps, deposits, payments, inspections, maintenance, renewals] = await Promise.all([
         fetchApplications(user.id, lease.property_id!),
         fetchHoldingDeposits(user.id, lease.property_id!),
         fetchPayments(lease.id),
@@ -172,7 +167,9 @@ export default function TenantLeaseJourneyScreen() {
     }
   }, []);
 
-  useEffect(() => { loadTimeline(); }, [loadTimeline]);
+  useEffect(() => {
+    loadTimeline();
+  }, [loadTimeline]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -184,7 +181,7 @@ export default function TenantLeaseJourneyScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#16A34A" />
         </View>
@@ -194,7 +191,7 @@ export default function TenantLeaseJourneyScreen() {
 
   if (!leaseStatus) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.centerContainer}>
           <Ionicons name="map-outline" size={64} color="#CCC" />
           <Text style={styles.emptyTitle}>No Active Lease</Text>
@@ -214,7 +211,7 @@ export default function TenantLeaseJourneyScreen() {
 
   if (error) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.centerContainer}>
           <Ionicons name="alert-circle-outline" size={64} color="#DC2626" />
           <Text style={styles.errorText}>{error}</Text>
@@ -227,7 +224,7 @@ export default function TenantLeaseJourneyScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>

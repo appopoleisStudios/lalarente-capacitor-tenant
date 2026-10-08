@@ -307,7 +307,7 @@ export default function VendorNotificationsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Notifications</Text>
           <View style={styles.placeholder} />
@@ -320,7 +320,7 @@ export default function VendorNotificationsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity
           onPress={handleBack}

@@ -80,7 +80,9 @@ export default function TenantDocumentsScreen() {
   const loadAll = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
 
@@ -124,11 +126,13 @@ export default function TenantDocumentsScreen() {
   const loadInspections = async (uid: string) => {
     const { data, error } = await supabase
       .from('inspections')
-      .select(`
+      .select(
+        `
         id, type, status, overall_condition, completed_date,
         scheduled_date, report_url, tenant_signed_at, owner_signed_at,
         property:properties!property_id(id, title)
-      `)
+      `
+      )
       .eq('tenant_id', uid)
       .in('status', ['completed', 'signed'])
       .order('completed_date', { ascending: false });
@@ -171,7 +175,10 @@ export default function TenantDocumentsScreen() {
           onPress: async () => {
             const mediaPerm = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (!mediaPerm.granted) {
-              Alert.alert('Permission Required', 'Please allow photo library access to upload documents.');
+              Alert.alert(
+                'Permission Required',
+                'Please allow photo library access to upload documents.'
+              );
               resolve(null);
               return;
             }
@@ -179,7 +186,10 @@ export default function TenantDocumentsScreen() {
               mediaTypes: ['images'],
               quality: 0.8,
             });
-            if (result.canceled || !result.assets[0]) { resolve(null); return; }
+            if (result.canceled || !result.assets[0]) {
+              resolve(null);
+              return;
+            }
             const asset = result.assets[0];
             resolve({
               uri: asset.uri,
@@ -202,7 +212,10 @@ export default function TenantDocumentsScreen() {
               mediaTypes: ['images'],
               quality: 0.8,
             });
-            if (result.canceled || !result.assets[0]) { resolve(null); return; }
+            if (result.canceled || !result.assets[0]) {
+              resolve(null);
+              return;
+            }
             const asset = result.assets[0];
             resolve({
               uri: asset.uri,
@@ -220,7 +233,10 @@ export default function TenantDocumentsScreen() {
                 type: ['image/*', 'application/pdf'],
                 copyToCacheDirectory: true,
               });
-              if (result.canceled || !result.assets?.[0]) { resolve(null); return; }
+              if (result.canceled || !result.assets?.[0]) {
+                resolve(null);
+                return;
+              }
               const asset = result.assets[0];
               resolve({
                 uri: asset.uri,
@@ -244,12 +260,16 @@ export default function TenantDocumentsScreen() {
 
     setUploading(type);
     try {
-      await documentsApi.uploadDocument(file, {
-        type,
-        title: DOCUMENT_CATEGORIES[type].label,
-        access_level: 'tenant_only',
-        tenant_id: userId,
-      }, userId);
+      await documentsApi.uploadDocument(
+        file,
+        {
+          type,
+          title: DOCUMENT_CATEGORIES[type].label,
+          access_level: 'tenant_only',
+          tenant_id: userId,
+        },
+        userId
+      );
       await loadVerificationDocs(userId);
     } catch (err: any) {
       Alert.alert('Upload Failed', err.message || 'Could not upload document');
@@ -274,7 +294,9 @@ export default function TenantDocumentsScreen() {
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '';
     return new Date(dateStr).toLocaleDateString('en-ZA', {
-      day: 'numeric', month: 'short', year: 'numeric',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
     });
   };
 
@@ -339,17 +361,27 @@ export default function TenantDocumentsScreen() {
         return (
           <View key={item.type} style={styles.docCard}>
             <View style={styles.docCardLeft}>
-              <View style={[styles.docIconWrap, {
-                backgroundColor: item.doc
-                  ? (isRejected ? colors.error[50] : colors.primary[50])
-                  : colors.gray[100],
-              }]}>
+              <View
+                style={[
+                  styles.docIconWrap,
+                  {
+                    backgroundColor: item.doc
+                      ? isRejected
+                        ? colors.error[50]
+                        : colors.primary[50]
+                      : colors.gray[100],
+                  },
+                ]}
+              >
                 <Ionicons
                   name={item.icon as any}
                   size={20}
-                  color={item.doc
-                    ? (isRejected ? colors.error[500] : colors.primary[500])
-                    : colors.gray[400]
+                  color={
+                    item.doc
+                      ? isRejected
+                        ? colors.error[500]
+                        : colors.primary[500]
+                      : colors.gray[400]
                   }
                 />
               </View>
@@ -358,17 +390,27 @@ export default function TenantDocumentsScreen() {
                 {item.doc ? (
                   <>
                     <View style={styles.statusRow}>
-                      <View style={[styles.statusBadge, {
-                        backgroundColor: isRejected ? colors.error[50] : colors.primary[50],
-                      }]}>
+                      <View
+                        style={[
+                          styles.statusBadge,
+                          {
+                            backgroundColor: isRejected ? colors.error[50] : colors.primary[50],
+                          },
+                        ]}
+                      >
                         <Ionicons
                           name={isRejected ? 'close-circle' : 'checkmark-circle'}
                           size={12}
                           color={isRejected ? colors.error[500] : colors.primary[500]}
                         />
-                        <Text style={[styles.statusBadgeText, {
-                          color: isRejected ? colors.error[500] : colors.primary[500],
-                        }]}>
+                        <Text
+                          style={[
+                            styles.statusBadgeText,
+                            {
+                              color: isRejected ? colors.error[500] : colors.primary[500],
+                            },
+                          ]}
+                        >
                           {isVerified ? 'Verified' : isRejected ? 'Rejected' : status}
                         </Text>
                       </View>
@@ -428,11 +470,15 @@ export default function TenantDocumentsScreen() {
         {inspections.map((insp) => (
           <View key={insp.id} style={styles.inspectionCard}>
             <View style={styles.inspectionTop}>
-              <View style={[styles.inspTypeBadge, { backgroundColor: inspectionTypeBg(insp.type) }]}>
+              <View
+                style={[styles.inspTypeBadge, { backgroundColor: inspectionTypeBg(insp.type) }]}
+              >
                 <Text style={styles.inspTypeBadgeText}>{inspectionTypeLabel(insp.type)}</Text>
               </View>
               {insp.overall_condition && (
-                <Text style={[styles.conditionText, { color: conditionColor(insp.overall_condition) }]}>
+                <Text
+                  style={[styles.conditionText, { color: conditionColor(insp.overall_condition) }]}
+                >
                   {insp.overall_condition}
                 </Text>
               )}
@@ -461,10 +507,7 @@ export default function TenantDocumentsScreen() {
               </View>
 
               {insp.report_url && (
-                <TouchableOpacity
-                  style={styles.viewBtn}
-                  onPress={() => openUrl(insp.report_url!)}
-                >
+                <TouchableOpacity style={styles.viewBtn} onPress={() => openUrl(insp.report_url!)}>
                   <Text style={styles.viewBtnText}>View Report</Text>
                 </TouchableOpacity>
               )}
@@ -488,13 +531,11 @@ export default function TenantDocumentsScreen() {
         {rentalDocs.map((doc) => (
           <View key={doc.id} style={styles.rentalDocRow}>
             <View style={styles.rentalDocLeft}>
-              <Ionicons
-                name={docTypeIcon(doc.type) as any}
-                size={18}
-                color={colors.gray[500]}
-              />
+              <Ionicons name={docTypeIcon(doc.type) as any} size={18} color={colors.gray[500]} />
               <View style={styles.rentalDocInfo}>
-                <Text style={styles.rentalDocTitle} numberOfLines={1}>{doc.title}</Text>
+                <Text style={styles.rentalDocTitle} numberOfLines={1}>
+                  {doc.title}
+                </Text>
                 <View style={styles.rentalDocMeta}>
                   <Text style={styles.rentalDocType}>{docTypeLabel(doc.type)}</Text>
                   {doc.created_at && (
@@ -503,10 +544,7 @@ export default function TenantDocumentsScreen() {
                 </View>
               </View>
             </View>
-            <TouchableOpacity
-              style={styles.viewBtn}
-              onPress={() => openUrl(doc.file_url)}
-            >
+            <TouchableOpacity style={styles.viewBtn} onPress={() => openUrl(doc.file_url)}>
               <Text style={styles.viewBtnText}>View</Text>
             </TouchableOpacity>
           </View>
@@ -516,7 +554,7 @@ export default function TenantDocumentsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
@@ -533,8 +571,8 @@ export default function TenantDocumentsScreen() {
           <View style={styles.infoBanner}>
             <Ionicons name="shield-checkmark-outline" size={18} color={colors.info[500]} />
             <Text style={styles.infoText}>
-              FICA requires identity verification before renting. Upload your documents once —
-              they apply to all your applications and rentals.
+              FICA requires identity verification before renting. Upload your documents once — they
+              apply to all your applications and rentals.
             </Text>
           </View>
 

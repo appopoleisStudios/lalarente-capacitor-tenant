@@ -178,7 +178,7 @@ export default function TenantSearchScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#007AFF" />
           <Text style={styles.loadingText}>Loading properties...</Text>
@@ -189,7 +189,7 @@ export default function TenantSearchScreen() {
 
   if (error) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.centerContainer}>
           <Ionicons name="alert-circle-outline" size={64} color="#F44336" />
           <Text style={styles.errorText}>{error}</Text>
@@ -202,7 +202,7 @@ export default function TenantSearchScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.container}>
         {/* Search Bar */}
         <View style={styles.searchContainer}>
@@ -566,7 +566,7 @@ const styles = StyleSheet.create({
   priceText: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#007AFF',
+    color: '#007A4D',
   },
   priceLabel: {
     fontSize: 14,

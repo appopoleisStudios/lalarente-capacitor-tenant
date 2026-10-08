@@ -138,7 +138,7 @@ export function VendorPaymentResultScreen({ config }: { config: VendorPayConfig 
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
         <ErrorState
-          title="Checking Status"
+          title="Payment Status"
           message={error}
           retryLabel={config.listLabel}
           onRetry={() => router.push(config.listPath as any)}

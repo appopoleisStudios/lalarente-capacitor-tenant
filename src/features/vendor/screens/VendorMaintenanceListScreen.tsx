@@ -7,6 +7,7 @@ import { supabase } from '@/src/lib/supabase';
 import { colors } from '@/src/shared/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -24,6 +25,7 @@ type StatusFilter = 'all' | 'open' | 'assigned' | 'in_progress' | 'completed';
 
 export const VendorMaintenanceListScreen: React.FC = () => {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ tab?: string }>();
   const [requests, setRequests] = useState<VendorMaintenanceRequest[]>([]);
   const [filteredRequests, setFilteredRequests] = useState<VendorMaintenanceRequest[]>([]);
@@ -359,7 +361,7 @@ export const VendorMaintenanceListScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <Text style={styles.headerTitle}>Maintenance Requests</Text>
         <TouchableOpacity onPress={handleRefresh}>
           <Ionicons name="refresh" size={24} color={colors.text.primary} />

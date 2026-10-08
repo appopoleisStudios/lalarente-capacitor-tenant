@@ -20,8 +20,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/src/lib/supabase';
-import { depositInterestApi, DepositInterestSummary } from '@/src/features/deposits/api/depositInterest.api';
-import { depositRefundApi, DepositRefundStatus } from '@/src/features/deposits/api/depositRefund.api';
+import {
+  depositInterestApi,
+  DepositInterestSummary,
+} from '@/src/features/deposits/api/depositInterest.api';
+import {
+  depositRefundApi,
+  DepositRefundStatus,
+} from '@/src/features/deposits/api/depositRefund.api';
 import { colors } from '@/src/shared/theme/colors';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -29,13 +35,34 @@ import { colors } from '@/src/shared/theme/colors';
 const formatZAR = (amount: number) =>
   `R ${amount.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-const REFUND_STATUSES: Record<string, { label: string; color: string; bg: string; icon: string }> = {
-  not_applicable: { label: 'Lease Active', color: colors.rsa.green, bg: '#E6F7F0', icon: 'checkmark-circle' },
-  pending_inspection: { label: 'Awaiting Inspection', color: '#D97706', bg: '#FEF3C7', icon: 'search' },
-  deductions_proposed: { label: 'Deductions Proposed', color: colors.rsa.blue, bg: '#E6EBF5', icon: 'document-text' },
-  refunded: { label: 'Refunded', color: '#6B7280', bg: '#F3F4F6', icon: 'checkmark-done-circle' },
-  overdue: { label: 'OVERDUE — Contact Landlord', color: colors.rsa.red, bg: '#FEF2F2', icon: 'alert-circle' },
-};
+const REFUND_STATUSES: Record<string, { label: string; color: string; bg: string; icon: string }> =
+  {
+    not_applicable: {
+      label: 'Lease Active',
+      color: colors.rsa.green,
+      bg: '#E6F7F0',
+      icon: 'checkmark-circle',
+    },
+    pending_inspection: {
+      label: 'Awaiting Inspection',
+      color: '#D97706',
+      bg: '#FEF3C7',
+      icon: 'search',
+    },
+    deductions_proposed: {
+      label: 'Deductions Proposed',
+      color: colors.rsa.blue,
+      bg: '#E6EBF5',
+      icon: 'document-text',
+    },
+    refunded: { label: 'Refunded', color: '#6B7280', bg: '#F3F4F6', icon: 'checkmark-done-circle' },
+    overdue: {
+      label: 'OVERDUE — Contact Landlord',
+      color: colors.rsa.red,
+      bg: '#FEF2F2',
+      icon: 'alert-circle',
+    },
+  };
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -56,16 +83,20 @@ export default function TenantDepositStatusScreen() {
   const loadDepositStatus = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       // Get most recent lease with a deposit
       const { data: lease, error } = await supabase
         .from('leases')
-        .select(`
+        .select(
+          `
           id,
           property:properties!property_id(title)
-        `)
+        `
+        )
         .eq('tenant_id', user.id)
         .gt('deposit_amount', 0)
         .in('status', ['active', 'renewal_pending', 'terminated', 'expired'])
@@ -114,7 +145,10 @@ export default function TenantDepositStatusScreen() {
                 false,
                 'I dispute this deduction'
               );
-              Alert.alert('Disputed', 'Your dispute has been recorded. The landlord will be notified.');
+              Alert.alert(
+                'Disputed',
+                'Your dispute has been recorded. The landlord will be notified.'
+              );
               loadDepositStatus();
             } catch (err: any) {
               Alert.alert('Error', err.message || 'Failed to dispute deduction');
@@ -129,7 +163,7 @@ export default function TenantDepositStatusScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
@@ -145,7 +179,7 @@ export default function TenantDepositStatusScreen() {
 
   if (!interest || !refund) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
@@ -163,16 +197,18 @@ export default function TenantDepositStatusScreen() {
     );
   }
 
-  const refundStatusKey = refund.isOverdue && refund.status !== 'refunded'
-    ? 'overdue'
-    : (refund.status || 'not_applicable');
+  const refundStatusKey =
+    refund.isOverdue && refund.status !== 'refunded'
+      ? 'overdue'
+      : refund.status || 'not_applicable';
   const statusInfo = REFUND_STATUSES[refundStatusKey] || REFUND_STATUSES.not_applicable;
-  const interestPercent = interest.depositAmount > 0
-    ? ((interest.totalInterest / interest.depositAmount) * 100).toFixed(2)
-    : '0.00';
+  const interestPercent =
+    interest.depositAmount > 0
+      ? ((interest.totalInterest / interest.depositAmount) * 100).toFixed(2)
+      : '0.00';
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -213,7 +249,8 @@ export default function TenantDepositStatusScreen() {
             <Text style={styles.totalAmount}>{formatZAR(interest.currentBalance)}</Text>
           </View>
           <Text style={styles.rateInfo}>
-            Interest rate: {(interest.annualRate * 100).toFixed(2)}% p.a. ({interestPercent}% earned to date)
+            Interest rate: {(interest.annualRate * 100).toFixed(2)}% p.a. ({interestPercent}% earned
+            to date)
           </Text>
         </View>
 
@@ -240,7 +277,8 @@ export default function TenantDepositStatusScreen() {
               <View style={styles.overdueWarning}>
                 <Ionicons name="alert-circle" size={16} color={colors.rsa.red} />
                 <Text style={styles.overdueText}>
-                  Your refund is overdue. Contact your landlord immediately. You may escalate to the Rental Housing Tribunal (RHT) if unresolved.
+                  Your refund is overdue. Contact your landlord immediately. You may escalate to the
+                  Rental Housing Tribunal (RHT) if unresolved.
                 </Text>
               </View>
             )}
@@ -269,14 +307,18 @@ export default function TenantDepositStatusScreen() {
                       <Text style={styles.disputeButtonText}>Dispute</Text>
                     </TouchableOpacity>
                   ) : (
-                    <View style={[
-                      styles.deductionStatusBadge,
-                      { backgroundColor: d.status === 'agreed' ? '#E6F7F0' : '#FEF2F2' }
-                    ]}>
-                      <Text style={[
-                        styles.deductionStatusText,
-                        { color: d.status === 'agreed' ? colors.rsa.green : colors.rsa.red }
-                      ]}>
+                    <View
+                      style={[
+                        styles.deductionStatusBadge,
+                        { backgroundColor: d.status === 'agreed' ? '#E6F7F0' : '#FEF2F2' },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.deductionStatusText,
+                          { color: d.status === 'agreed' ? colors.rsa.green : colors.rsa.red },
+                        ]}
+                      >
                         {d.status}
                       </Text>
                     </View>
@@ -302,7 +344,10 @@ export default function TenantDepositStatusScreen() {
               {interest.accruals.map((a, i) => (
                 <View key={i} style={styles.accrualRow}>
                   <Text style={styles.accrualPeriod}>
-                    {new Date(a.periodStart).toLocaleDateString('en-ZA', { month: 'short', year: '2-digit' })}
+                    {new Date(a.periodStart).toLocaleDateString('en-ZA', {
+                      month: 'short',
+                      year: '2-digit',
+                    })}
                   </Text>
                   <Text style={[styles.accrualAmount, { color: colors.rsa.green }]}>
                     +{formatZAR(a.interestEarned)}
@@ -318,9 +363,13 @@ export default function TenantDepositStatusScreen() {
         <View style={styles.legalCard}>
           <Text style={styles.legalTitle}>Your Deposit Rights (RHA)</Text>
           <Text style={styles.legalItem}>• All interest earned belongs to you</Text>
-          <Text style={styles.legalItem}>• Refund within 7 days if no damage (14 with inspection)</Text>
+          <Text style={styles.legalItem}>
+            • Refund within 7 days if no damage (14 with inspection)
+          </Text>
           <Text style={styles.legalItem}>• Landlord must justify all deductions in writing</Text>
-          <Text style={styles.legalItem}>• Escalate overdue refunds to the Rental Housing Tribunal</Text>
+          <Text style={styles.legalItem}>
+            • Escalate overdue refunds to the Rental Housing Tribunal
+          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -376,7 +425,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 100,
     gap: 16,
   },
   statusBanner: {

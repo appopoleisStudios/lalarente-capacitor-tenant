@@ -256,7 +256,7 @@ export default function TenantPaymentScreen() {
     // No active lease — the money hub sub-routes must still be reachable
     // (Plane #82: single Payments entry with sub-routes; nothing dropped).
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.container}>
           <View style={styles.header}>
             <View style={styles.headerRow}>
@@ -315,7 +315,7 @@ export default function TenantPaymentScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -430,7 +430,12 @@ export default function TenantPaymentScreen() {
             ))}
             <TouchableOpacity
               style={styles.terminationButton}
-              onPress={() => router.push('/(tenant)/early-termination')}
+              onPress={() =>
+                router.push({
+                  pathname: '/(tenant)/early-termination' as any,
+                  params: lease?.id ? { leaseId: lease.id } : {},
+                })
+              }
             >
               <Ionicons name="exit-outline" size={20} color="#4B5563" />
               <View style={styles.disputeContent}>

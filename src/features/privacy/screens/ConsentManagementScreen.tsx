@@ -170,7 +170,9 @@ export default function ConsentManagementScreen() {
         {/* Optional Consents */}
         <Text style={styles.sectionTitle}>Optional</Text>
         <View style={styles.card}>
-          {OPTIONAL_CONSENTS.map((consent, index) => {
+          {OPTIONAL_CONSENTS.filter((c) =>
+            roleGroup === '(vendor)' ? c.type !== 'data_sharing_credit' : true
+          ).map((consent, index) => {
             const active = isConsentActive(consent.type);
             return (
               <View
@@ -182,7 +184,14 @@ export default function ConsentManagementScreen() {
               >
                 <View style={styles.consentInfo}>
                   <Text style={styles.consentLabel}>
-                    {consent.type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                    {(
+                      {
+                        marketing_sms: 'Marketing SMS',
+                        analytics: 'Analytics',
+                        marketing_email: 'Marketing Email',
+                      } as Record<string, string>
+                    )[consent.type] ??
+                      consent.type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
                   </Text>
                   <Text style={styles.consentDesc}>{consent.description}</Text>
                 </View>
