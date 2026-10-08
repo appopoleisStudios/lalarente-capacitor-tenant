@@ -32,7 +32,7 @@ export default function VendorLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: 'Home',
+          title: 'Dashboard',
           tabBarButtonTestID: 'tab-vendor-home',
           tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
         }}
