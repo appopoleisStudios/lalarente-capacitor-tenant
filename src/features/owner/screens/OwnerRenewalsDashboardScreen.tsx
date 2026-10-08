@@ -20,7 +20,11 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/src/shared/theme/colors';
 import { supabase } from '@/src/lib/supabase';
-import { leaseExpiryApi, type ExpiringLease, type LeaseExpiryInfo } from '@/src/features/leases/api/leaseExpiry.api';
+import {
+  leaseExpiryApi,
+  type ExpiringLease,
+  type LeaseExpiryInfo,
+} from '@/src/features/leases/api/leaseExpiry.api';
 
 interface LeaseWithExpiry extends ExpiringLease {
   expiryInfo?: LeaseExpiryInfo;
@@ -43,7 +47,9 @@ export default function OwnerRenewalsDashboardScreen() {
   );
 
   const initOwner = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (user) {
       setOwnerId(user.id);
       fetchData(user.id);
@@ -106,26 +112,33 @@ export default function OwnerRenewalsDashboardScreen() {
 
   const getResponseLabel = (response: string | null) => {
     switch (response) {
-      case 'renew': return { label: 'Wants to Renew', color: colors.success[500] };
-      case 'terminate': return { label: 'Will Terminate', color: colors.error[500] };
-      case 'negotiate': return { label: 'Wants to Negotiate', color: colors.warning[500] };
-      default: return { label: 'No Response', color: colors.gray[400] };
+      case 'renew':
+        return { label: 'Wants to Renew', color: colors.success[500] };
+      case 'terminate':
+        return { label: 'Will Terminate', color: colors.error[500] };
+      case 'negotiate':
+        return { label: 'Wants to Negotiate', color: colors.warning[500] };
+      default:
+        return { label: 'No Response', color: colors.gray[400] };
     }
   };
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <ActivityIndicator size="large" color={colors.primary[500]} style={{ marginTop: 40 }} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.navigate('/(owner)/dashboard')} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.navigate('/(owner)/dashboard')}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Lease Renewals</Text>
@@ -137,8 +150,8 @@ export default function OwnerRenewalsDashboardScreen() {
         <View style={styles.cpaBanner}>
           <Ionicons name="alert-circle" size={20} color={colors.info[500]} />
           <Text style={styles.cpaText}>
-            CPA s14(2)(c) requires 80/60/40 business day notices before lease expiry.
-            Missing notices may result in automatic month-to-month conversion.
+            CPA s14(2)(c) requires 80/60/40 business day notices before lease expiry. Missing
+            notices may result in automatic month-to-month conversion.
           </Text>
         </View>
 
@@ -161,8 +174,12 @@ export default function OwnerRenewalsDashboardScreen() {
                 {/* Property & Tenant */}
                 <View style={styles.leaseHeader}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.propertyTitle}>{(lease.property as any)?.title || 'Property'}</Text>
-                    <Text style={styles.tenantName}>{(lease.tenant as any)?.full_name || 'Tenant'}</Text>
+                    <Text style={styles.propertyTitle}>
+                      {(lease.property as any)?.title || 'Property'}
+                    </Text>
+                    <Text style={styles.tenantName}>
+                      {(lease.tenant as any)?.full_name || 'Tenant'}
+                    </Text>
                   </View>
                   <View style={[styles.daysChip, { backgroundColor: urgencyColor + '15' }]}>
                     <Text style={[styles.daysChipText, { color: urgencyColor }]}>
@@ -174,14 +191,18 @@ export default function OwnerRenewalsDashboardScreen() {
                 {/* Expiry Date & Rent */}
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>Expires: {lease.end_date}</Text>
-                  <Text style={styles.infoLabel}>R{lease.monthly_rent?.toLocaleString('en-ZA')}/mo</Text>
+                  <Text style={styles.infoLabel}>
+                    R{lease.monthly_rent?.toLocaleString('en-ZA')}/mo
+                  </Text>
                 </View>
 
                 {/* Tenant Response */}
                 <View style={styles.responseRow}>
                   <View style={[styles.responseBadge, { backgroundColor: response.color + '15' }]}>
                     <View style={[styles.responseDot, { backgroundColor: response.color }]} />
-                    <Text style={[styles.responseText, { color: response.color }]}>{response.label}</Text>
+                    <Text style={[styles.responseText, { color: response.color }]}>
+                      {response.label}
+                    </Text>
                   </View>
                 </View>
 
@@ -191,8 +212,18 @@ export default function OwnerRenewalsDashboardScreen() {
                     <Text style={styles.noticeSectionTitle}>CPA Notices</Text>
                     <View style={styles.noticeRow}>
                       {(['80', '60', '40'] as const).map((days) => {
-                        const sent = days === '80' ? info.notice80Sent : days === '60' ? info.notice60Sent : info.notice40Sent;
-                        const due = days === '80' ? info.notice80Due : days === '60' ? info.notice60Due : info.notice40Due;
+                        const sent =
+                          days === '80'
+                            ? info.notice80Sent
+                            : days === '60'
+                              ? info.notice60Sent
+                              : info.notice40Sent;
+                        const due =
+                          days === '80'
+                            ? info.notice80Due
+                            : days === '60'
+                              ? info.notice60Due
+                              : info.notice40Due;
                         const isOverdue = !sent && new Date() >= new Date(due);
 
                         return (
@@ -207,15 +238,25 @@ export default function OwnerRenewalsDashboardScreen() {
                             disabled={sent}
                           >
                             <Ionicons
-                              name={sent ? 'checkmark-circle' : isOverdue ? 'warning' : 'time-outline'}
+                              name={
+                                sent ? 'checkmark-circle' : isOverdue ? 'warning' : 'time-outline'
+                              }
                               size={14}
-                              color={sent ? colors.success[500] : isOverdue ? colors.error[500] : colors.gray[500]}
+                              color={
+                                sent
+                                  ? colors.success[500]
+                                  : isOverdue
+                                    ? colors.error[500]
+                                    : colors.gray[500]
+                              }
                             />
-                            <Text style={[
-                              styles.noticeChipText,
-                              sent && { color: colors.success[500] },
-                              isOverdue && { color: colors.error[500] },
-                            ]}>
+                            <Text
+                              style={[
+                                styles.noticeChipText,
+                                sent && { color: colors.success[500] },
+                                isOverdue && { color: colors.error[500] },
+                              ]}
+                            >
                               {days}d
                             </Text>
                           </TouchableOpacity>
@@ -248,24 +289,36 @@ export default function OwnerRenewalsDashboardScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.secondary },
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: colors.background.default,
-    borderBottomWidth: 1, borderBottomColor: colors.border.default,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.default,
   },
   backButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 18, fontWeight: '700', color: colors.text.primary },
   content: { flex: 1, padding: 16 },
   cpaBanner: {
-    flexDirection: 'row', alignItems: 'flex-start',
-    backgroundColor: colors.info[50], padding: 14, borderRadius: 12, gap: 10, marginBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: colors.info[50],
+    padding: 14,
+    borderRadius: 12,
+    gap: 10,
+    marginBottom: 20,
   },
   cpaText: { flex: 1, fontSize: 12, color: colors.info[700], lineHeight: 17 },
   emptyState: { alignItems: 'center', paddingVertical: 60 },
   emptyTitle: { fontSize: 20, fontWeight: '700', color: colors.text.primary, marginTop: 16 },
   emptyText: { fontSize: 14, color: colors.text.tertiary, marginTop: 4 },
   leaseCard: {
-    backgroundColor: colors.background.default, borderRadius: 12, padding: 16, marginBottom: 12,
+    backgroundColor: colors.background.default,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
   },
   leaseHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
   propertyTitle: { fontSize: 16, fontWeight: '700', color: colors.text.primary },
@@ -273,33 +326,55 @@ const styles = StyleSheet.create({
   daysChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   daysChipText: { fontSize: 13, fontWeight: '700' },
   infoRow: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    marginBottom: 10, paddingBottom: 10,
-    borderBottomWidth: 1, borderBottomColor: colors.border.default,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.default,
   },
   infoLabel: { fontSize: 13, color: colors.text.secondary },
   responseRow: { marginBottom: 12 },
   responseBadge: {
-    flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start',
-    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, gap: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 6,
   },
   responseDot: { width: 8, height: 8, borderRadius: 4 },
   responseText: { fontSize: 12, fontWeight: '600' },
   noticeSection: { marginBottom: 12 },
-  noticeSectionTitle: { fontSize: 11, fontWeight: '700', color: colors.text.tertiary, marginBottom: 6, textTransform: 'uppercase' },
+  noticeSectionTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.text.tertiary,
+    marginBottom: 6,
+    textTransform: 'uppercase',
+  },
   noticeRow: { flexDirection: 'row', gap: 8 },
   noticeChip: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8,
-    borderWidth: 1, borderColor: colors.border.default, gap: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    gap: 4,
   },
   noticeChipSent: { borderColor: colors.success[500], backgroundColor: colors.success[50] },
   noticeChipOverdue: { borderColor: colors.error[500], backgroundColor: colors.error[50] },
   noticeChipText: { fontSize: 12, fontWeight: '600', color: colors.text.secondary },
   actions: { flexDirection: 'row', gap: 8 },
   actionButton: {
-    flex: 1, paddingVertical: 10, borderRadius: 8,
-    backgroundColor: colors.primary[500], alignItems: 'center',
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: colors.primary[500],
+    alignItems: 'center',
   },
   actionButtonText: { fontSize: 14, fontWeight: '600', color: colors.text.inverse },
 });

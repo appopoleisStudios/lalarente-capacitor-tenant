@@ -8,10 +8,10 @@ import {
   StyleSheet,
   Alert,
   Linking,
-  SafeAreaView,
   TextInput,
   Modal,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
@@ -175,7 +175,7 @@ export default function OwnerApplicationDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#002395" />
           <Text style={styles.loadingText}>Loading application...</Text>
@@ -186,7 +186,7 @@ export default function OwnerApplicationDetailScreen() {
 
   if (error || !application) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.centerContainer}>
           <Ionicons name="alert-circle-outline" size={64} color="#F44336" />
           <Text style={styles.errorText}>{error || 'Application not found'}</Text>
@@ -206,7 +206,7 @@ export default function OwnerApplicationDetailScreen() {
     : null;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <KeyboardAvoidingView>
         <View style={styles.container}>
           {/* Header */}

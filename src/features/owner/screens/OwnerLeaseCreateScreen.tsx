@@ -6,10 +6,10 @@ import {
   TouchableOpacity,
   TextInput,
   StyleSheet,
-  SafeAreaView,
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
@@ -50,7 +50,9 @@ export default function OwnerLeaseCreateScreen() {
   const [paymentDueDay, setPaymentDueDay] = useState('1');
   const [lateFeeAmount, setLateFeeAmount] = useState('');
   const [lateFeeGraceDays, setLateFeeGraceDays] = useState('3');
-  const [rentEscalationType, setRentEscalationType] = useState<'percentage' | 'fixed_amount'>('percentage');
+  const [rentEscalationType, setRentEscalationType] = useState<'percentage' | 'fixed_amount'>(
+    'percentage'
+  );
   const [rentEscalationValue, setRentEscalationValue] = useState('');
   const [rentEscalationFrequency, setRentEscalationFrequency] = useState('12');
 
@@ -63,7 +65,9 @@ export default function OwnerLeaseCreateScreen() {
 
   const loadApplication = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       const appId = Array.isArray(applicationId) ? applicationId[0] : applicationId;
@@ -71,11 +75,13 @@ export default function OwnerLeaseCreateScreen() {
 
       const { data, error } = await supabase
         .from('rental_applications')
-        .select(`
+        .select(
+          `
           *,
           property:properties!property_id(title, rent_amount, deposit_amount),
           tenant:profiles!tenant_id(full_name, email, phone)
-        `)
+        `
+        )
         .eq('id', appId)
         .eq('owner_id', user.id)
         .eq('status', 'approved')
@@ -84,7 +90,7 @@ export default function OwnerLeaseCreateScreen() {
       if (error) throw error;
 
       setApplication(data as Application);
-      
+
       // Pre-populate form with property data
       if (data.property) {
         setMonthlyRent(data.property.rent_amount.toString());
@@ -95,7 +101,7 @@ export default function OwnerLeaseCreateScreen() {
       const today = new Date();
       const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
       const oneYearLater = new Date(nextMonth.getFullYear() + 1, nextMonth.getMonth(), 0);
-      
+
       setStartDate(nextMonth.toISOString().split('T')[0]);
       setEndDate(oneYearLater.toISOString().split('T')[0]);
     } catch (error) {
@@ -144,7 +150,9 @@ export default function OwnerLeaseCreateScreen() {
           onPress: async () => {
             setSubmitting(true);
             try {
-              const { data: { user } } = await supabase.auth.getUser();
+              const {
+                data: { user },
+              } = await supabase.auth.getUser();
               if (!user) throw new Error('Not authenticated');
 
               const { data: lease, error: leaseError } = await (supabase as any)
@@ -163,8 +171,12 @@ export default function OwnerLeaseCreateScreen() {
                   late_fee_amount: lateFeeAmount ? parseFloat(lateFeeAmount) : null,
                   late_fee_grace_days: lateFeeGraceDays ? parseInt(lateFeeGraceDays) : null,
                   rent_escalation_type: rentEscalationValue ? rentEscalationType : null,
-                  rent_escalation_value: rentEscalationValue ? parseFloat(rentEscalationValue) : null,
-                  rent_escalation_frequency_months: rentEscalationValue ? parseInt(rentEscalationFrequency) : null,
+                  rent_escalation_value: rentEscalationValue
+                    ? parseFloat(rentEscalationValue)
+                    : null,
+                  rent_escalation_frequency_months: rentEscalationValue
+                    ? parseInt(rentEscalationFrequency)
+                    : null,
                   status: 'pending_tenant_signature',
                 })
                 .select()
@@ -202,7 +214,7 @@ export default function OwnerLeaseCreateScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={RSA.blue} />
         </View>
@@ -212,7 +224,7 @@ export default function OwnerLeaseCreateScreen() {
 
   if (!application) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.centerContainer}>
           <Ionicons name="alert-circle-outline" size={64} color="#F44336" />
           <Text style={styles.errorText}>Application not found</Text>
@@ -225,239 +237,251 @@ export default function OwnerLeaseCreateScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <KeyboardAvoidingView>
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.headerBackButton}>
-            <Ionicons name="arrow-back" size={24} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Create Lease</Text>
-          <View style={{ width: 24 }} />
-        </View>
-
-        <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
-          {/* Application Info */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Application Details</Text>
-            <View style={styles.card}>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Tenant</Text>
-                <Text style={styles.infoValue}>{application.tenant?.full_name}</Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Property</Text>
-                <Text style={styles.infoValue}>{application.property?.title}</Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Monthly Income</Text>
-                <Text style={styles.infoValue}>R {application.monthly_income.toLocaleString()}</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Lease Period */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Lease Period</Text>
-            <View style={styles.card}>
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Lease Type</Text>
-                <View style={styles.radioGroup}>
-                  <TouchableOpacity
-                    style={styles.radioOption}
-                    onPress={() => setLeaseType('fixed')}
-                  >
-                    <Ionicons
-                      name={leaseType === 'fixed' ? 'radio-button-on' : 'radio-button-off'}
-                      size={24}
-                      color={RSA.blue}
-                    />
-                    <Text style={styles.radioLabel}>Fixed Term</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.radioOption}
-                    onPress={() => setLeaseType('month_to_month')}
-                  >
-                    <Ionicons
-                      name={leaseType === 'month_to_month' ? 'radio-button-on' : 'radio-button-off'}
-                      size={24}
-                      color={RSA.blue}
-                    />
-                    <Text style={styles.radioLabel}>Month-to-Month</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Start Date *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={startDate}
-                  onChangeText={setStartDate}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor="#999"
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>End Date *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={endDate}
-                  onChangeText={setEndDate}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor="#999"
-                />
-              </View>
-            </View>
-          </View>
-
-          {/* Financial Terms */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Financial Terms</Text>
-            <View style={styles.card}>
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Monthly Rent (R) *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={monthlyRent}
-                  onChangeText={setMonthlyRent}
-                  placeholder="15000"
-                  keyboardType="numeric"
-                  placeholderTextColor="#999"
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Deposit Amount (R)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={depositAmount}
-                  onChangeText={setDepositAmount}
-                  placeholder="15000"
-                  keyboardType="numeric"
-                  placeholderTextColor="#999"
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Payment Due Day (1-31) *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={paymentDueDay}
-                  onChangeText={setPaymentDueDay}
-                  placeholder="1"
-                  keyboardType="numeric"
-                  placeholderTextColor="#999"
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Late Fee Amount (R)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={lateFeeAmount}
-                  onChangeText={setLateFeeAmount}
-                  placeholder="500"
-                  keyboardType="numeric"
-                  placeholderTextColor="#999"
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Late Fee Grace Days</Text>
-                <TextInput
-                  style={styles.input}
-                  value={lateFeeGraceDays}
-                  onChangeText={setLateFeeGraceDays}
-                  placeholder="3"
-                  keyboardType="numeric"
-                  placeholderTextColor="#999"
-                />
-              </View>
-            </View>
-          </View>
-
-          {/* Rent Escalation */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Rent Escalation (Optional)</Text>
-            <View style={styles.card}>
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Escalation Type</Text>
-                <View style={styles.radioGroup}>
-                  <TouchableOpacity
-                    style={styles.radioOption}
-                    onPress={() => setRentEscalationType('percentage')}
-                  >
-                    <Ionicons
-                      name={rentEscalationType === 'percentage' ? 'radio-button-on' : 'radio-button-off'}
-                      size={24}
-                      color={RSA.blue}
-                    />
-                    <Text style={styles.radioLabel}>Percentage</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.radioOption}
-                    onPress={() => setRentEscalationType('fixed_amount')}
-                  >
-                    <Ionicons
-                      name={rentEscalationType === 'fixed_amount' ? 'radio-button-on' : 'radio-button-off'}
-                      size={24}
-                      color={RSA.blue}
-                    />
-                    <Text style={styles.radioLabel}>Fixed Amount</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>
-                  Escalation Value ({rentEscalationType === 'percentage' ? '%' : 'R'})
-                </Text>
-                <TextInput
-                  style={styles.input}
-                  value={rentEscalationValue}
-                  onChangeText={setRentEscalationValue}
-                  placeholder={rentEscalationType === 'percentage' ? '7' : '1000'}
-                  keyboardType="numeric"
-                  placeholderTextColor="#999"
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Escalation Frequency (months)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={rentEscalationFrequency}
-                  onChangeText={setRentEscalationFrequency}
-                  placeholder="12"
-                  keyboardType="numeric"
-                  placeholderTextColor="#999"
-                />
-              </View>
-            </View>
-          </View>
-
-          {/* Create Button */}
-          <View style={styles.section}>
-            <TouchableOpacity
-              style={[styles.createButton, submitting && styles.createButtonDisabled]}
-              onPress={handleCreateLease}
-              disabled={submitting}
-            >
-              {submitting ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <>
-                  <Ionicons name="document-text" size={20} color="#FFF" />
-                  <Text style={styles.createButtonText}>Create Lease Agreement</Text>
-                </>
-              )}
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.headerBackButton}>
+              <Ionicons name="arrow-back" size={24} color="#333" />
             </TouchableOpacity>
+            <Text style={styles.headerTitle}>Create Lease</Text>
+            <View style={{ width: 24 }} />
           </View>
-        </ScrollView>
-      </View>
+
+          <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
+            {/* Application Info */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Application Details</Text>
+              <View style={styles.card}>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Tenant</Text>
+                  <Text style={styles.infoValue}>{application.tenant?.full_name}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Property</Text>
+                  <Text style={styles.infoValue}>{application.property?.title}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Monthly Income</Text>
+                  <Text style={styles.infoValue}>
+                    R {application.monthly_income.toLocaleString()}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Lease Period */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Lease Period</Text>
+              <View style={styles.card}>
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Lease Type</Text>
+                  <View style={styles.radioGroup}>
+                    <TouchableOpacity
+                      style={styles.radioOption}
+                      onPress={() => setLeaseType('fixed')}
+                    >
+                      <Ionicons
+                        name={leaseType === 'fixed' ? 'radio-button-on' : 'radio-button-off'}
+                        size={24}
+                        color={RSA.blue}
+                      />
+                      <Text style={styles.radioLabel}>Fixed Term</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.radioOption}
+                      onPress={() => setLeaseType('month_to_month')}
+                    >
+                      <Ionicons
+                        name={
+                          leaseType === 'month_to_month' ? 'radio-button-on' : 'radio-button-off'
+                        }
+                        size={24}
+                        color={RSA.blue}
+                      />
+                      <Text style={styles.radioLabel}>Month-to-Month</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Start Date *</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={startDate}
+                    onChangeText={setStartDate}
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor="#999"
+                  />
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>End Date *</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={endDate}
+                    onChangeText={setEndDate}
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor="#999"
+                  />
+                </View>
+              </View>
+            </View>
+
+            {/* Financial Terms */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Financial Terms</Text>
+              <View style={styles.card}>
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Monthly Rent (R) *</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={monthlyRent}
+                    onChangeText={setMonthlyRent}
+                    placeholder="15000"
+                    keyboardType="numeric"
+                    placeholderTextColor="#999"
+                  />
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Deposit Amount (R)</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={depositAmount}
+                    onChangeText={setDepositAmount}
+                    placeholder="15000"
+                    keyboardType="numeric"
+                    placeholderTextColor="#999"
+                  />
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Payment Due Day (1-31) *</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={paymentDueDay}
+                    onChangeText={setPaymentDueDay}
+                    placeholder="1"
+                    keyboardType="numeric"
+                    placeholderTextColor="#999"
+                  />
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Late Fee Amount (R)</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={lateFeeAmount}
+                    onChangeText={setLateFeeAmount}
+                    placeholder="500"
+                    keyboardType="numeric"
+                    placeholderTextColor="#999"
+                  />
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Late Fee Grace Days</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={lateFeeGraceDays}
+                    onChangeText={setLateFeeGraceDays}
+                    placeholder="3"
+                    keyboardType="numeric"
+                    placeholderTextColor="#999"
+                  />
+                </View>
+              </View>
+            </View>
+
+            {/* Rent Escalation */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Rent Escalation (Optional)</Text>
+              <View style={styles.card}>
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Escalation Type</Text>
+                  <View style={styles.radioGroup}>
+                    <TouchableOpacity
+                      style={styles.radioOption}
+                      onPress={() => setRentEscalationType('percentage')}
+                    >
+                      <Ionicons
+                        name={
+                          rentEscalationType === 'percentage'
+                            ? 'radio-button-on'
+                            : 'radio-button-off'
+                        }
+                        size={24}
+                        color={RSA.blue}
+                      />
+                      <Text style={styles.radioLabel}>Percentage</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.radioOption}
+                      onPress={() => setRentEscalationType('fixed_amount')}
+                    >
+                      <Ionicons
+                        name={
+                          rentEscalationType === 'fixed_amount'
+                            ? 'radio-button-on'
+                            : 'radio-button-off'
+                        }
+                        size={24}
+                        color={RSA.blue}
+                      />
+                      <Text style={styles.radioLabel}>Fixed Amount</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>
+                    Escalation Value ({rentEscalationType === 'percentage' ? '%' : 'R'})
+                  </Text>
+                  <TextInput
+                    style={styles.input}
+                    value={rentEscalationValue}
+                    onChangeText={setRentEscalationValue}
+                    placeholder={rentEscalationType === 'percentage' ? '7' : '1000'}
+                    keyboardType="numeric"
+                    placeholderTextColor="#999"
+                  />
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Escalation Frequency (months)</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={rentEscalationFrequency}
+                    onChangeText={setRentEscalationFrequency}
+                    placeholder="12"
+                    keyboardType="numeric"
+                    placeholderTextColor="#999"
+                  />
+                </View>
+              </View>
+            </View>
+
+            {/* Create Button */}
+            <View style={styles.section}>
+              <TouchableOpacity
+                style={[styles.createButton, submitting && styles.createButtonDisabled]}
+                onPress={handleCreateLease}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <>
+                    <Ionicons name="document-text" size={20} color="#FFF" />
+                    <Text style={styles.createButtonText}>Create Lease Agreement</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

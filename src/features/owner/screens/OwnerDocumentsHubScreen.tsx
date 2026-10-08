@@ -99,7 +99,10 @@ function relativeDate(iso: string): string {
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return 'Yesterday';
   if (diffDays < 7) return `${diffDays} days ago`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+  if (diffDays < 30) {
+    const w = Math.floor(diffDays / 7);
+    return `${w} ${w === 1 ? 'week' : 'weeks'} ago`;
+  }
   return d.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
@@ -108,15 +111,15 @@ function handleDocumentPress(router: ReturnType<typeof useRouter>, docType: stri
     'active-leases': '/(owner)/tenants',
     'recent-invoices': '/(owner)/invoices',
     'pending-quotes': '/(owner)/maintenance',
-    'tax': '/(owner)/tax-reports',
-    'compliance': '/(owner)/compliance',
-    'deposits': '/(owner)/deposits',
+    tax: '/(owner)/tax-reports',
+    compliance: '/(owner)/compliance',
+    deposits: '/(owner)/deposits',
     'holding-deposit': '/(owner)/holding-deposit',
-    'renewals': '/(owner)/renewals',
-    'insurance': '/(owner)/insurance',
+    renewals: '/(owner)/renewals',
+    insurance: '/(owner)/insurance',
     'payment-disputes': '/(owner)/payment-disputes',
-    'inspections': '/(owner)/inspections',
-    'statements': '/(owner)/statements',
+    inspections: '/(owner)/inspections',
+    statements: '/(owner)/statements',
   };
   const route = routes[docType];
   if (route) router.push(route as any);
@@ -145,7 +148,9 @@ export default function OwnerDocumentsHubScreen() {
   );
 
   const initOwner = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (user) {
       setOwnerId(user.id);
       fetchRecentDocuments(user.id);
@@ -157,53 +162,58 @@ export default function OwnerDocumentsHubScreen() {
       const results: RecentDocument[] = [];
 
       // Run all queries in parallel
-      const [leaseRes, inspectionRes, poData, claimDocRes, deductionRes, statementRes] = await Promise.all([
-        // 1. Signed leases with PDFs
-        supabase
-          .from('leases')
-          .select('id, lease_document_url, executed_at, property:properties!property_id(title)')
-          .eq('owner_id', uid)
-          .not('lease_document_url', 'is', null)
-          .order('executed_at', { ascending: false })
-          .limit(10),
+      const [leaseRes, inspectionRes, poData, claimDocRes, deductionRes, statementRes] =
+        await Promise.all([
+          // 1. Signed leases with PDFs
+          supabase
+            .from('leases')
+            .select('id, lease_document_url, executed_at, property:properties!property_id(title)')
+            .eq('owner_id', uid)
+            .not('lease_document_url', 'is', null)
+            .order('executed_at', { ascending: false })
+            .limit(10),
 
-        // 2. Inspection reports
-        supabase
-          .from('inspections')
-          .select('id, report_url, completed_date, type, property:properties!property_id(title)')
-          .eq('owner_id', uid)
-          .not('report_url', 'is', null)
-          .order('completed_date', { ascending: false })
-          .limit(10),
+          // 2. Inspection reports
+          supabase
+            .from('inspections')
+            .select('id, report_url, completed_date, type, property:properties!property_id(title)')
+            .eq('owner_id', uid)
+            .not('report_url', 'is', null)
+            .order('completed_date', { ascending: false })
+            .limit(10),
 
-        // 3. Purchase orders — need multi-step query
-        fetchPurchaseOrderDocs(uid),
+          // 3. Purchase orders — need multi-step query
+          fetchPurchaseOrderDocs(uid),
 
-        // 4. Insurance claim documents
-        supabase
-          .from('insurance_claim_documents')
-          .select('id, file_url, title, document_type, created_at, claim:insurance_claims!claim_id(owner_id, property:properties!property_id(title))')
-          .order('created_at', { ascending: false })
-          .limit(20),
+          // 4. Insurance claim documents
+          supabase
+            .from('insurance_claim_documents')
+            .select(
+              'id, file_url, title, document_type, created_at, claim:insurance_claims!claim_id(owner_id, property:properties!property_id(title))'
+            )
+            .order('created_at', { ascending: false })
+            .limit(20),
 
-        // 5. Deposit deduction evidence
-        supabase
-          .from('deposit_deductions')
-          .select('id, evidence_urls, deduction_type, created_at, lease:leases!lease_id(property:properties!property_id(title))')
-          .eq('owner_id', uid)
-          .not('evidence_urls', 'is', null)
-          .order('created_at', { ascending: false })
-          .limit(10),
+          // 5. Deposit deduction evidence
+          supabase
+            .from('deposit_deductions')
+            .select(
+              'id, evidence_urls, deduction_type, created_at, lease:leases!lease_id(property:properties!property_id(title))'
+            )
+            .eq('owner_id', uid)
+            .not('evidence_urls', 'is', null)
+            .order('created_at', { ascending: false })
+            .limit(10),
 
-        // 6. All saved PDF reports: statements, tax, invoices, inspection reports
-        supabase
-          .from('documents')
-          .select('id, title, file_url, type, created_at')
-          .eq('owner_id', uid)
-          .in('type', ['owner_statement', 'tax_statement', 'invoice', 'inspection_report'])
-          .order('created_at', { ascending: false })
-          .limit(20),
-      ]);
+          // 6. All saved PDF reports: statements, tax, invoices, inspection reports
+          supabase
+            .from('documents')
+            .select('id, title, file_url, type, created_at')
+            .eq('owner_id', uid)
+            .in('type', ['owner_statement', 'tax_statement', 'invoice', 'inspection_report'])
+            .order('created_at', { ascending: false })
+            .limit(20),
+        ]);
 
       // Process leases
       if (leaseRes.data) {
@@ -296,9 +306,13 @@ export default function OwnerDocumentsHubScreen() {
       if (statementRes.data) {
         for (const s of statementRes.data) {
           const iconName =
-            s.type === 'tax_statement' ? 'calculator' :
-            s.type === 'invoice' ? 'receipt' :
-            s.type === 'inspection_report' ? 'clipboard' : 'bar-chart';
+            s.type === 'tax_statement'
+              ? 'calculator'
+              : s.type === 'invoice'
+                ? 'receipt'
+                : s.type === 'inspection_report'
+                  ? 'clipboard'
+                  : 'bar-chart';
           results.push({
             id: `stmt-${s.id}`,
             type: 'statement',
@@ -336,7 +350,7 @@ export default function OwnerDocumentsHubScreen() {
         .eq('owner_id', uid);
       if (!requests?.length) return results;
 
-      const requestIds = requests.map(r => r.id);
+      const requestIds = requests.map((r) => r.id);
 
       // Step 2: quotes for those requests
       const { data: quotes } = await supabase
@@ -345,12 +359,16 @@ export default function OwnerDocumentsHubScreen() {
         .in('request_id', requestIds);
       if (!quotes?.length) return results;
 
-      const quoteIds = quotes.map(q => q.id);
+      const quoteIds = quotes.map((q) => q.id);
       const quoteToRequest: Record<string, string> = {};
-      quotes.forEach(q => { quoteToRequest[q.id] = q.request_id ?? ''; });
+      quotes.forEach((q) => {
+        quoteToRequest[q.id] = q.request_id ?? '';
+      });
 
       const requestToProperty: Record<string, string> = {};
-      requests.forEach(r => { requestToProperty[r.id] = r.property_id ?? ''; });
+      requests.forEach((r) => {
+        requestToProperty[r.id] = r.property_id ?? '';
+      });
 
       // Step 3: POs with PDFs
       const { data: pos } = await supabase
@@ -363,18 +381,24 @@ export default function OwnerDocumentsHubScreen() {
       if (!pos?.length) return results;
 
       // Step 4: property names
-      const propertyIds = [...new Set(
-        pos.map(po => {
-          const reqId = quoteToRequest[po.contract_id ?? ''];
-          return requestToProperty[reqId];
-        }).filter(Boolean)
-      )];
+      const propertyIds = [
+        ...new Set(
+          pos
+            .map((po) => {
+              const reqId = quoteToRequest[po.contract_id ?? ''];
+              return requestToProperty[reqId];
+            })
+            .filter(Boolean)
+        ),
+      ];
       const { data: propData } = await supabase
         .from('properties')
         .select('id, title')
         .in('id', propertyIds);
       const propertyMap: Record<string, string> = {};
-      propData?.forEach(p => { propertyMap[p.id] = p.title; });
+      propData?.forEach((p) => {
+        propertyMap[p.id] = p.title;
+      });
 
       for (const po of pos) {
         if (!po.pdf_url) continue;
@@ -418,16 +442,16 @@ export default function OwnerDocumentsHubScreen() {
   };
 
   // Filtered data
-  const filteredTiles = activeFilter === 'all'
-    ? CATEGORY_TILES
-    : CATEGORY_TILES.filter(t => t.filter.includes(activeFilter));
+  const filteredTiles =
+    activeFilter === 'all'
+      ? CATEGORY_TILES
+      : CATEGORY_TILES.filter((t) => t.filter.includes(activeFilter));
 
-  const filteredDocs = activeFilter === 'all'
-    ? recentDocs
-    : recentDocs.filter(d => d.filter === activeFilter);
+  const filteredDocs =
+    activeFilter === 'all' ? recentDocs : recentDocs.filter((d) => d.filter === activeFilter);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -444,7 +468,7 @@ export default function OwnerDocumentsHubScreen() {
         style={styles.chipBar}
         contentContainerStyle={styles.chipBarContent}
       >
-        {FILTERS.map(f => {
+        {FILTERS.map((f) => {
           const active = activeFilter === f.key;
           return (
             <TouchableOpacity
@@ -465,13 +489,17 @@ export default function OwnerDocumentsHubScreen() {
           style={styles.content}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handlePullToRefresh} tintColor={colors.rsa.green} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handlePullToRefresh}
+              tintColor={colors.rsa.green}
+            />
           }
         >
           {/* Category Tiles Grid */}
           <Text style={styles.sectionTitle}>Quick Access</Text>
           <View style={styles.grid}>
-            {filteredTiles.map(tile => (
+            {filteredTiles.map((tile) => (
               <TouchableOpacity
                 key={tile.type}
                 style={styles.tile}
@@ -479,7 +507,9 @@ export default function OwnerDocumentsHubScreen() {
                 activeOpacity={0.7}
               >
                 <Text style={styles.tileIcon}>{tile.icon}</Text>
-                <Text style={styles.tileName} numberOfLines={2}>{tile.name}</Text>
+                <Text style={styles.tileName} numberOfLines={2}>
+                  {tile.name}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -493,18 +523,22 @@ export default function OwnerDocumentsHubScreen() {
               <Text style={styles.emptyText}>
                 {activeFilter === 'all'
                   ? 'No documents yet. Documents will appear here as you use the platform.'
-                  : `No ${FILTERS.find(f => f.key === activeFilter)?.label.toLowerCase()} documents found.`}
+                  : `No ${FILTERS.find((f) => f.key === activeFilter)?.label.toLowerCase()} documents found.`}
               </Text>
             </View>
           ) : (
-            filteredDocs.map(doc => (
+            filteredDocs.map((doc) => (
               <View key={doc.id} style={styles.docRow}>
                 <View style={[styles.docIconCircle, { backgroundColor: doc.iconColor + '18' }]}>
                   <Ionicons name={doc.iconName as any} size={20} color={doc.iconColor} />
                 </View>
                 <View style={styles.docInfo}>
-                  <Text style={styles.docTitle} numberOfLines={1}>{doc.title}</Text>
-                  <Text style={styles.docProperty} numberOfLines={1}>{doc.propertyName}</Text>
+                  <Text style={styles.docTitle} numberOfLines={1}>
+                    {doc.title}
+                  </Text>
+                  <Text style={styles.docProperty} numberOfLines={1}>
+                    {doc.propertyName}
+                  </Text>
                   <Text style={styles.docDate}>{doc.date ? relativeDate(doc.date) : ''}</Text>
                 </View>
                 <TouchableOpacity
@@ -574,7 +608,13 @@ const styles = StyleSheet.create({
   content: { flex: 1, padding: 16 },
 
   // Section titles
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: colors.text.primary, marginBottom: 12, marginTop: 4 },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text.primary,
+    marginBottom: 12,
+    marginTop: 4,
+  },
 
   // Category tiles
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 24 },
@@ -636,5 +676,12 @@ const styles = StyleSheet.create({
 
   // Empty state
   emptyFeed: { alignItems: 'center', paddingVertical: 32 },
-  emptyText: { fontSize: 13, color: colors.text.secondary, textAlign: 'center', marginTop: 12, lineHeight: 18, paddingHorizontal: 20 },
+  emptyText: {
+    fontSize: 13,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginTop: 12,
+    lineHeight: 18,
+    paddingHorizontal: 20,
+  },
 });

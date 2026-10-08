@@ -238,7 +238,7 @@ export default function AddPropertyScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <KeyboardAvoidingView>
         <View style={styles.container}>
           {/* Header */}

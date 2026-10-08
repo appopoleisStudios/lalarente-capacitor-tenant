@@ -65,12 +65,20 @@ export default function OwnerInvoicesScreen() {
   );
 
   const initOwner = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (user) {
       setOwnerId(user.id);
       fetchAll(user.id);
-      supabase.from('profiles').select('full_name').eq('id', user.id).single()
-        .then(({ data }) => { if (data?.full_name) setOwnerName(data.full_name); });
+      supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single()
+        .then(({ data }) => {
+          if (data?.full_name) setOwnerName(data.full_name);
+        });
     }
   };
 
@@ -79,7 +87,11 @@ export default function OwnerInvoicesScreen() {
     setExporting(true);
     try {
       const documentId = await exportInvoicesPdf(
-        ownerName, ownerId, activeTab, rentInvoices, vendorInvoices,
+        ownerName,
+        ownerId,
+        activeTab,
+        rentInvoices,
+        vendorInvoices
       );
       Alert.alert(
         'Invoice Saved',
@@ -87,7 +99,7 @@ export default function OwnerInvoicesScreen() {
         [
           { text: 'View', onPress: () => router.push(`/(owner)/documents/${documentId}` as any) },
           { text: 'OK' },
-        ],
+        ]
       );
     } catch (err: any) {
       Alert.alert('Export Failed', err?.message || 'Unable to generate PDF.');
@@ -101,10 +113,14 @@ export default function OwnerInvoicesScreen() {
     setRowExporting(invoice.id);
     try {
       const documentId = await exportSingleRentInvoicePdf(ownerName, ownerId, invoice);
-      Alert.alert('Invoice Saved', `INV-${invoice.id.slice(0, 8).toUpperCase()} saved to Documents.`, [
-        { text: 'View', onPress: () => router.push(`/(owner)/documents/${documentId}` as any) },
-        { text: 'OK' },
-      ]);
+      Alert.alert(
+        'Invoice Saved',
+        `INV-${invoice.id.slice(0, 8).toUpperCase()} saved to Documents.`,
+        [
+          { text: 'View', onPress: () => router.push(`/(owner)/documents/${documentId}` as any) },
+          { text: 'OK' },
+        ]
+      );
     } catch (err: any) {
       Alert.alert('Export Failed', err?.message || 'Unable to generate PDF.');
     } finally {
@@ -144,9 +160,11 @@ export default function OwnerInvoicesScreen() {
 
       if (!properties?.length) return;
 
-      const propertyIds = properties.map(p => p.id);
+      const propertyIds = properties.map((p) => p.id);
       const propertyMap: Record<string, string> = {};
-      properties.forEach(p => { propertyMap[p.id] = p.title; });
+      properties.forEach((p) => {
+        propertyMap[p.id] = p.title;
+      });
 
       // Get payments for these properties
       const { data: payments } = await supabase
@@ -159,24 +177,28 @@ export default function OwnerInvoicesScreen() {
       if (!payments?.length) return;
 
       // Get tenant names
-      const tenantIds = [...new Set(payments.map(p => p.tenant_id).filter(Boolean))];
+      const tenantIds = [...new Set(payments.map((p) => p.tenant_id).filter(Boolean))];
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, full_name')
         .in('id', tenantIds);
 
       const tenantMap: Record<string, string> = {};
-      profiles?.forEach(p => { tenantMap[p.id] = p.full_name; });
+      profiles?.forEach((p) => {
+        tenantMap[p.id] = p.full_name;
+      });
 
-      setRentInvoices(payments.map(p => ({
-        id: p.id,
-        amount: p.amount,
-        paid_date: p.paid_date,
-        due_date: p.due_date,
-        status: p.status,
-        tenant_name: tenantMap[p.tenant_id] || 'Tenant',
-        property_title: propertyMap[p.property_id] || 'Property',
-      })));
+      setRentInvoices(
+        payments.map((p) => ({
+          id: p.id,
+          amount: p.amount,
+          paid_date: p.paid_date,
+          due_date: p.due_date,
+          status: p.status,
+          tenant_name: tenantMap[p.tenant_id] || 'Tenant',
+          property_title: propertyMap[p.property_id] || 'Property',
+        }))
+      );
     } catch (err) {
       console.error('Error fetching rent invoices:', err);
     }
@@ -192,9 +214,11 @@ export default function OwnerInvoicesScreen() {
 
       if (!requests?.length) return;
 
-      const requestIds = requests.map(r => r.id);
+      const requestIds = requests.map((r) => r.id);
       const requestMap: Record<string, { title: string; property_id: string }> = {};
-      requests.forEach(r => { requestMap[r.id] = { title: r.title ?? '', property_id: r.property_id ?? '' }; });
+      requests.forEach((r) => {
+        requestMap[r.id] = { title: r.title ?? '', property_id: r.property_id ?? '' };
+      });
 
       // Get quotes for these requests
       const { data: quotes } = await supabase
@@ -204,14 +228,18 @@ export default function OwnerInvoicesScreen() {
 
       if (!quotes?.length) return;
 
-      const quoteIds = quotes.map(q => q.id);
+      const quoteIds = quotes.map((q) => q.id);
       const quoteMap: Record<string, { request_id: string; vendor_id: string }> = {};
-      quotes.forEach(q => { quoteMap[q.id] = { request_id: q.request_id ?? '', vendor_id: q.vendor_id ?? '' }; });
+      quotes.forEach((q) => {
+        quoteMap[q.id] = { request_id: q.request_id ?? '', vendor_id: q.vendor_id ?? '' };
+      });
 
       // Get purchase orders for these quotes
       const { data: pos } = await supabase
         .from('purchase_orders')
-        .select('id, po_number, subtotal, vat_amount, total_amount, status, created_at, contract_id')
+        .select(
+          'id, po_number, subtotal, vat_amount, total_amount, status, created_at, contract_id'
+        )
         .in('contract_id', quoteIds)
         .order('created_at', { ascending: false })
         .limit(50);
@@ -219,41 +247,49 @@ export default function OwnerInvoicesScreen() {
       if (!pos?.length) return;
 
       // Get property titles
-      const propertyIds = [...new Set(
-        quotes.map(q => requestMap[q.request_id ?? '']?.property_id).filter(Boolean) as string[]
-      )];
+      const propertyIds = [
+        ...new Set(
+          quotes.map((q) => requestMap[q.request_id ?? '']?.property_id).filter(Boolean) as string[]
+        ),
+      ];
       const { data: propData } = await supabase
         .from('properties')
         .select('id, title')
         .in('id', propertyIds);
       const propertyMap: Record<string, string> = {};
-      propData?.forEach(p => { propertyMap[p.id] = p.title; });
+      propData?.forEach((p) => {
+        propertyMap[p.id] = p.title;
+      });
 
       // Get vendor names
-      const vendorIds = [...new Set(quotes.map(q => q.vendor_id).filter(Boolean))];
+      const vendorIds = [...new Set(quotes.map((q) => q.vendor_id).filter(Boolean))];
       const { data: vendors } = await supabase
         .from('profiles')
         .select('id, full_name')
         .in('id', vendorIds);
       const vendorMap: Record<string, string> = {};
-      vendors?.forEach(v => { vendorMap[v.id] = v.full_name; });
+      vendors?.forEach((v) => {
+        vendorMap[v.id] = v.full_name;
+      });
 
-      setVendorInvoices(pos.map(po => {
-        const quote = quoteMap[po.contract_id || ''];
-        const reqInfo = quote ? requestMap[quote.request_id] : null;
-        return {
-          id: po.id,
-          po_number: po.po_number,
-          subtotal: po.subtotal,
-          vat_amount: po.vat_amount,
-          total_amount: po.total_amount,
-          status: po.status,
-          created_at: po.created_at,
-          vendor_name: quote ? (vendorMap[quote.vendor_id] || 'Vendor') : 'Vendor',
-          property_title: reqInfo ? (propertyMap[reqInfo.property_id] || 'Property') : 'Property',
-          request_title: reqInfo?.title || 'Maintenance',
-        };
-      }));
+      setVendorInvoices(
+        pos.map((po) => {
+          const quote = quoteMap[po.contract_id || ''];
+          const reqInfo = quote ? requestMap[quote.request_id] : null;
+          return {
+            id: po.id,
+            po_number: po.po_number,
+            subtotal: po.subtotal,
+            vat_amount: po.vat_amount,
+            total_amount: po.total_amount,
+            status: po.status,
+            created_at: po.created_at,
+            vendor_name: quote ? vendorMap[quote.vendor_id] || 'Vendor' : 'Vendor',
+            property_title: reqInfo ? propertyMap[reqInfo.property_id] || 'Property' : 'Property',
+            request_title: reqInfo?.title || 'Maintenance',
+          };
+        })
+      );
     } catch (err) {
       console.error('Error fetching vendor invoices:', err);
     }
@@ -265,20 +301,22 @@ export default function OwnerInvoicesScreen() {
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '—';
     return new Date(dateStr).toLocaleDateString('en-ZA', {
-      day: 'numeric', month: 'short', year: 'numeric',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
     });
   };
 
   const rentTotal = rentInvoices
-    .filter(i => i.status === 'completed')
+    .filter((i) => i.status === 'completed')
     .reduce((sum, i) => sum + i.amount, 0);
 
   const vendorTotal = vendorInvoices
-    .filter(i => ['approved', 'paid', 'sent'].includes(i.status))
+    .filter((i) => ['approved', 'paid', 'sent'].includes(i.status))
     .reduce((sum, i) => sum + (i.total_amount || 0), 0);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -290,10 +328,11 @@ export default function OwnerInvoicesScreen() {
           disabled={exporting || loading}
           style={{ width: 40, alignItems: 'center', justifyContent: 'center' }}
         >
-          {exporting
-            ? <ActivityIndicator size="small" color={colors.rsa.blue} />
-            : <Ionicons name="download-outline" size={22} color={colors.rsa.blue} />
-          }
+          {exporting ? (
+            <ActivityIndicator size="small" color={colors.rsa.blue} />
+          ) : (
+            <Ionicons name="download-outline" size={22} color={colors.rsa.blue} />
+          )}
         </TouchableOpacity>
       </View>
 
@@ -335,7 +374,7 @@ export default function OwnerInvoicesScreen() {
                   <Text style={styles.emptyText}>No rent invoices yet</Text>
                 </View>
               ) : (
-                rentInvoices.map(invoice => (
+                rentInvoices.map((invoice) => (
                   <View key={invoice.id} style={styles.card}>
                     <View style={styles.cardRow}>
                       <View style={styles.cardLeft}>
@@ -349,14 +388,21 @@ export default function OwnerInvoicesScreen() {
                       <View style={styles.cardRight}>
                         <Text style={styles.cardAmount}>{formatCurrency(invoice.amount)}</Text>
                         <View style={styles.cardRightBottom}>
-                          <View style={[
-                            styles.statusBadge,
-                            { backgroundColor: (STATUS_COLORS[invoice.status] || colors.gray[400]) + '20' },
-                          ]}>
-                            <Text style={[
-                              styles.statusText,
-                              { color: STATUS_COLORS[invoice.status] || colors.gray[400] },
-                            ]}>
+                          <View
+                            style={[
+                              styles.statusBadge,
+                              {
+                                backgroundColor:
+                                  (STATUS_COLORS[invoice.status] || colors.gray[400]) + '20',
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.statusText,
+                                { color: STATUS_COLORS[invoice.status] || colors.gray[400] },
+                              ]}
+                            >
                               {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
                             </Text>
                           </View>
@@ -365,10 +411,11 @@ export default function OwnerInvoicesScreen() {
                             disabled={!!rowExporting}
                             style={styles.rowDownload}
                           >
-                            {rowExporting === invoice.id
-                              ? <ActivityIndicator size="small" color={colors.rsa.blue} />
-                              : <Ionicons name="download-outline" size={16} color={colors.rsa.blue} />
-                            }
+                            {rowExporting === invoice.id ? (
+                              <ActivityIndicator size="small" color={colors.rsa.blue} />
+                            ) : (
+                              <Ionicons name="download-outline" size={16} color={colors.rsa.blue} />
+                            )}
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -391,30 +438,44 @@ export default function OwnerInvoicesScreen() {
                   <Text style={styles.emptyText}>No vendor invoices yet</Text>
                 </View>
               ) : (
-                vendorInvoices.map(po => (
+                vendorInvoices.map((po) => (
                   <View key={po.id} style={styles.card}>
                     <View style={styles.cardRow}>
                       <View style={styles.cardLeft}>
                         <Text style={styles.cardTitle}>{po.vendor_name}</Text>
-                        <Text style={styles.cardSub}>{po.request_title} · {po.property_title}</Text>
-                        <Text style={styles.cardDate}>PO {po.po_number} · {formatDate(po.created_at)}</Text>
+                        <Text style={styles.cardSub}>
+                          {po.request_title} · {po.property_title}
+                        </Text>
+                        <Text style={styles.cardDate}>
+                          PO {po.po_number} · {formatDate(po.created_at)}
+                        </Text>
                         {po.vat_amount ? (
                           <Text style={styles.cardVat}>
-                            Subtotal {formatCurrency(po.subtotal || 0)} + VAT {formatCurrency(po.vat_amount)}
+                            Subtotal {formatCurrency(po.subtotal || 0)} + VAT{' '}
+                            {formatCurrency(po.vat_amount)}
                           </Text>
                         ) : null}
                       </View>
                       <View style={styles.cardRight}>
-                        <Text style={styles.cardAmount}>{formatCurrency(po.total_amount || 0)}</Text>
+                        <Text style={styles.cardAmount}>
+                          {formatCurrency(po.total_amount || 0)}
+                        </Text>
                         <View style={styles.cardRightBottom}>
-                          <View style={[
-                            styles.statusBadge,
-                            { backgroundColor: (STATUS_COLORS[po.status] || colors.gray[400]) + '20' },
-                          ]}>
-                            <Text style={[
-                              styles.statusText,
-                              { color: STATUS_COLORS[po.status] || colors.gray[400] },
-                            ]}>
+                          <View
+                            style={[
+                              styles.statusBadge,
+                              {
+                                backgroundColor:
+                                  (STATUS_COLORS[po.status] || colors.gray[400]) + '20',
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.statusText,
+                                { color: STATUS_COLORS[po.status] || colors.gray[400] },
+                              ]}
+                            >
                               {po.status.charAt(0).toUpperCase() + po.status.slice(1)}
                             </Text>
                           </View>
@@ -423,10 +484,11 @@ export default function OwnerInvoicesScreen() {
                             disabled={!!rowExporting}
                             style={styles.rowDownload}
                           >
-                            {rowExporting === po.id
-                              ? <ActivityIndicator size="small" color={colors.rsa.blue} />
-                              : <Ionicons name="download-outline" size={16} color={colors.rsa.blue} />
-                            }
+                            {rowExporting === po.id ? (
+                              <ActivityIndicator size="small" color={colors.rsa.blue} />
+                            ) : (
+                              <Ionicons name="download-outline" size={16} color={colors.rsa.blue} />
+                            )}
                           </TouchableOpacity>
                         </View>
                       </View>

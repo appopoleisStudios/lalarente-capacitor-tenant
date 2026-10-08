@@ -59,16 +59,20 @@ export default function TenantsScreen() {
 
   const loadLeases = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       let query = supabase
         .from('leases')
-        .select(`
+        .select(
+          `
           *,
           property:properties!property_id(title, address),
           tenant:profiles!tenant_id(full_name, email, phone, avatar_url, verification_status)
-        `)
+        `
+        )
         .eq('owner_id', user.id)
         .order('start_date', { ascending: false });
 
@@ -125,11 +129,11 @@ export default function TenantsScreen() {
 
   const getPaymentStatus = (nextPayment: Lease['next_payment']) => {
     if (!nextPayment) return null;
-    
+
     const dueDate = new Date(nextPayment.due_date);
     const today = new Date();
     const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays < 0) {
       return { text: `${Math.abs(diffDays)}d overdue`, color: '#F44336', icon: 'alert-circle' };
     } else if (diffDays === 0) {
@@ -169,10 +173,7 @@ export default function TenantsScreen() {
         <View style={styles.cardHeader}>
           <View style={styles.tenantInfo}>
             {item.tenant?.avatar_url ? (
-              <Image
-                source={{ uri: item.tenant.avatar_url }}
-                style={styles.avatar}
-              />
+              <Image source={{ uri: item.tenant.avatar_url }} style={styles.avatar} />
             ) : (
               <View style={styles.avatarPlaceholder}>
                 <Text style={styles.avatarText}>
@@ -227,9 +228,7 @@ export default function TenantsScreen() {
             </View>
             <View style={styles.infoItem}>
               <Ionicons name="calendar-outline" size={16} color="#666" />
-              <Text style={styles.infoLabel}>
-                {isExpired ? 'Expired' : 'Lease Ends'}
-              </Text>
+              <Text style={styles.infoLabel}>{isExpired ? 'Expired' : 'Lease Ends'}</Text>
               <Text style={[styles.infoValue, isExpiringSoon && styles.infoValueWarning]}>
                 {isExpired ? new Date(item.end_date).toLocaleDateString() : `${daysRemaining} days`}
               </Text>
@@ -238,7 +237,8 @@ export default function TenantsScreen() {
 
           <View style={styles.dateRange}>
             <Text style={styles.dateText}>
-              {new Date(item.start_date).toLocaleDateString()} → {new Date(item.end_date).toLocaleDateString()}
+              {new Date(item.start_date).toLocaleDateString()} →{' '}
+              {new Date(item.end_date).toLocaleDateString()}
             </Text>
           </View>
         </View>
@@ -251,7 +251,7 @@ export default function TenantsScreen() {
             <Ionicons name="chatbubble-outline" size={16} color={RSA.blue} />
             <Text style={styles.actionButtonText}>Contact</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={styles.actionButton}
             onPress={(e) => {
@@ -262,7 +262,7 @@ export default function TenantsScreen() {
             <Ionicons name="document-text-outline" size={16} color={RSA.blue} />
             <Text style={styles.actionButtonText}>View Lease</Text>
           </TouchableOpacity>
-          
+
           <Ionicons name="chevron-forward" size={20} color="#CCC" />
         </View>
       </TouchableOpacity>
@@ -271,7 +271,7 @@ export default function TenantsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Tenants & Leases</Text>
         </View>
@@ -283,7 +283,7 @@ export default function TenantsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Tenants & Leases</Text>
       </View>
@@ -302,9 +302,7 @@ export default function TenantsScreen() {
           style={[styles.filterTab, filter === 'all' && styles.filterTabActive]}
           onPress={() => setFilter('all')}
         >
-          <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>
-            All
-          </Text>
+          <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>All</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.filterTab, filter === 'expired' && styles.filterTabActive]}
@@ -322,10 +320,10 @@ export default function TenantsScreen() {
           <Text style={styles.emptyTitle}>No Tenants Yet</Text>
           <Text style={styles.emptyText}>
             {filter === 'active'
-              ? 'You don\'t have any active leases yet.'
+              ? "You don't have any active leases yet."
               : filter === 'expired'
-              ? 'No expired leases found.'
-              : 'Start by approving rental applications.'}
+                ? 'No expired leases found.'
+                : 'Start by approving rental applications.'}
           </Text>
         </View>
       ) : (

@@ -16,7 +16,15 @@ import { colors } from '@/src/shared/theme/colors';
 
 type AlertItem = {
   id: string;
-  kind: 'viewing' | 'maintenance' | 'payment' | 'lease' | 'message' | 'application' | 'termination' | 'dispute';
+  kind:
+    | 'viewing'
+    | 'maintenance'
+    | 'payment'
+    | 'lease'
+    | 'message'
+    | 'application'
+    | 'termination'
+    | 'dispute';
   title: string;
   body: string;
   icon: string;
@@ -42,7 +50,9 @@ export default function OwnerNotificationsScreen() {
     await loadAlerts();
     // Mark all DB notifications as read so bell count drops on dashboard return
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
       await (supabase as any)
         .from('notifications')
@@ -56,7 +66,9 @@ export default function OwnerNotificationsScreen() {
 
   const loadAlerts = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       const items: AlertItem[] = [];
@@ -64,12 +76,14 @@ export default function OwnerNotificationsScreen() {
       // 1. Pending viewing requests
       const { data: pendingViewings } = await supabase
         .from('viewing_requests')
-        .select('id, requested_date, requested_time, created_at, tenant:profiles!tenant_id(full_name), property:properties!property_id(title)')
+        .select(
+          'id, requested_date, requested_time, created_at, tenant:profiles!tenant_id(full_name), property:properties!property_id(title)'
+        )
         .eq('owner_id', user.id)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
-      (pendingViewings ?? []).forEach(v => {
+      (pendingViewings ?? []).forEach((v) => {
         items.push({
           id: `viewing-${v.id}`,
           kind: 'viewing',
@@ -86,12 +100,14 @@ export default function OwnerNotificationsScreen() {
       // 2. Pending applications
       const { data: pendingApps } = await supabase
         .from('rental_applications')
-        .select('id, created_at, tenant:profiles!tenant_id(full_name), property:properties!property_id(title)')
+        .select(
+          'id, created_at, tenant:profiles!tenant_id(full_name), property:properties!property_id(title)'
+        )
         .eq('owner_id', user.id)
         .in('status', ['submitted', 'under_review'])
         .order('created_at', { ascending: false });
 
-      (pendingApps ?? []).forEach(a => {
+      (pendingApps ?? []).forEach((a) => {
         items.push({
           id: `app-${a.id}`,
           kind: 'application',
@@ -114,7 +130,7 @@ export default function OwnerNotificationsScreen() {
         .order('created_at', { ascending: false })
         .limit(10);
 
-      (maintenance ?? []).forEach(m => {
+      (maintenance ?? []).forEach((m) => {
         const isUrgent = m.priority === 'urgent' || m.priority === 'emergency';
         items.push({
           id: `maint-${m.id}`,
@@ -132,12 +148,14 @@ export default function OwnerNotificationsScreen() {
       // 4. Pending early termination requests
       const { data: terminations } = await supabase
         .from('leases')
-        .select('id, created_at, tenant:profiles!tenant_id(full_name), property:properties!property_id(title)')
+        .select(
+          'id, created_at, tenant:profiles!tenant_id(full_name), property:properties!property_id(title)'
+        )
         .eq('owner_id', user.id)
         .eq('status', 'termination_requested')
         .order('created_at', { ascending: false });
 
-      (terminations ?? []).forEach(t => {
+      (terminations ?? []).forEach((t) => {
         items.push({
           id: `term-${t.id}`,
           kind: 'termination',
@@ -160,7 +178,7 @@ export default function OwnerNotificationsScreen() {
         .limit(5);
 
       // Filter to only this owner's disputes via lease join
-      (disputes ?? []).forEach(d => {
+      (disputes ?? []).forEach((d) => {
         items.push({
           id: `dispute-${d.id}`,
           kind: 'dispute',
@@ -182,7 +200,7 @@ export default function OwnerNotificationsScreen() {
         .order('created_at', { ascending: false })
         .limit(5);
 
-      (pendingPayments ?? []).forEach(p => {
+      (pendingPayments ?? []).forEach((p) => {
         items.push({
           id: `pmt-${p.id}`,
           kind: 'payment',
@@ -207,10 +225,13 @@ export default function OwnerNotificationsScreen() {
 
       (dbNotifs ?? []).forEach((n: any) => {
         // Avoid duplicates: skip if we already have a matching item
-        const isDuplicate = items.some(item => {
-          if (n.type === 'viewing_requested' && n.data?.viewingId) return items.some(i => i.id === `viewing-${n.data.viewingId}`);
-          if (n.type === 'maintenance_created' && n.data?.requestId) return items.some(i => i.id === `maint-${n.data.requestId}`);
-          if (n.type === 'application_received' && n.data?.applicationId) return items.some(i => i.id === `app-${n.data.applicationId}`);
+        const isDuplicate = items.some((item) => {
+          if (n.type === 'viewing_requested' && n.data?.viewingId)
+            return items.some((i) => i.id === `viewing-${n.data.viewingId}`);
+          if (n.type === 'maintenance_created' && n.data?.requestId)
+            return items.some((i) => i.id === `maint-${n.data.requestId}`);
+          if (n.type === 'application_received' && n.data?.applicationId)
+            return items.some((i) => i.id === `app-${n.data.applicationId}`);
           return false;
         });
         if (!isDuplicate) {
@@ -272,7 +293,9 @@ export default function OwnerNotificationsScreen() {
       </View>
       <View style={styles.alertContent}>
         <Text style={styles.alertTitle}>{item.title}</Text>
-        <Text style={styles.alertBody} numberOfLines={2}>{item.body}</Text>
+        <Text style={styles.alertBody} numberOfLines={2}>
+          {item.body}
+        </Text>
         <Text style={styles.alertTime}>{formatTimeAgo(item.timestamp)}</Text>
       </View>
       <Ionicons name="chevron-forward" size={18} color="#999" />
@@ -281,7 +304,7 @@ export default function OwnerNotificationsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#333" />
@@ -297,7 +320,7 @@ export default function OwnerNotificationsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#333" />
@@ -319,7 +342,11 @@ export default function OwnerNotificationsScreen() {
           renderItem={renderItem}
           contentContainerStyle={styles.list}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.rsa.blue} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={colors.rsa.blue}
+            />
           }
         />
       )}
