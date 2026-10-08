@@ -64,10 +64,9 @@ export const depositInterestApi = {
       return 0;
     }
 
-    // Use the lease-specific rate, or default prescribed rate.
-    // Normalize: DB may store 7.25 (percent) or 0.0725 (decimal). Treat >1 as percent.
-    const rawRate = lease.deposit_interest_rate || 0.0525;
-    const annualRate = rawRate > 1 ? rawRate / 100 : rawRate;
+    // DB stores deposit_interest_rate as a percentage (e.g. 7.25 = 7.25% p.a.).
+    // Default: SA prescribed rate 5.25% (stored as 5.25, not 0.0525).
+    const annualRate = (lease.deposit_interest_rate ?? 5.25) / 100;
     // Get the current balance (deposit + accumulated interest)
     const currentBalance = lease.deposit_amount + (lease.deposit_total_interest || 0);
     const monthlyInterest = calculateMonthlyInterest(currentBalance, annualRate);
@@ -130,10 +129,7 @@ export const depositInterestApi = {
     return {
       leaseId,
       depositAmount: lease.deposit_amount || 0,
-      annualRate: (() => {
-        const r = lease.deposit_interest_rate || 0.0525;
-        return r > 1 ? r / 100 : r;
-      })(),
+      annualRate: (lease.deposit_interest_rate ?? 5.25) / 100,
       totalInterest: lease.deposit_total_interest || 0,
       currentBalance: (lease.deposit_amount || 0) + (lease.deposit_total_interest || 0),
       accruals: (accruals || []).map((a) => ({
