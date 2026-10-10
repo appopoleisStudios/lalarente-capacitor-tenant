@@ -72,6 +72,10 @@ export default function ComposeMessageScreen({ role = 'tenant' }: Props) {
   }, []);
 
   const init = async () => {
+    if (role === 'vendor') {
+      setLoading(false);
+      return;
+    }
     try {
       const {
         data: { user },
@@ -162,7 +166,11 @@ export default function ComposeMessageScreen({ role = 'tenant' }: Props) {
       });
 
       const dest =
-        role === 'tenant' ? `/(tenant)/messages/${thread.id}` : `/(owner)/messages/${thread.id}`;
+        role === 'tenant'
+          ? `/(tenant)/messages/${thread.id}`
+          : role === 'owner'
+            ? `/(owner)/messages/${thread.id}`
+            : `/(vendor)/jobs/index`;
       router.replace(dest as any);
     } catch (err: any) {
       console.error('Error sending message:', err);
