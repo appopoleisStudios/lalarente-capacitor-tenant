@@ -117,6 +117,26 @@ describe('Deposit Interest Calculation', () => {
   });
 });
 
+// ─── Write-path contract ──────────────────────────────────────────────────────
+//
+// OwnerLeaseCreateScreen explicitly sets deposit_interest_rate: 5.25 on insert.
+// This test documents that contract so readers can trace the full data flow:
+// write path (5.25) → read path (normalizeDepositRate → 0.0525).
+
+describe('write-path contract — lease creation sets rate as percentage', () => {
+  it('5.25 written at creation / 100 = 0.0525 decimal rate used in calculations', () => {
+    // The value written by OwnerLeaseCreateScreen on lease insert
+    const writtenValue = 5.25;
+    // normalizeDepositRate reads it back as a decimal
+    expect(normalizeDepositRate(writtenValue)).toBeCloseTo(0.0525, 6);
+  });
+
+  it('a custom rate of 7.25% written as percentage produces correct decimal', () => {
+    const writtenValue = 7.25;
+    expect(normalizeDepositRate(writtenValue)).toBeCloseTo(0.0725, 6);
+  });
+});
+
 // ─── Mocked API integration — DB unit contract at entry points ───────────────
 //
 // These tests prove that both accrual (calculateMonthlyInterest) and summary

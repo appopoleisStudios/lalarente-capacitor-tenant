@@ -177,6 +177,9 @@ export default function OwnerLeaseCreateScreen() {
                   rent_escalation_frequency_months: rentEscalationValue
                     ? parseInt(rentEscalationFrequency)
                     : null,
+                  // SA prescribed rate 5.25% p.a. stored as percentage (not decimal).
+                  // normalizeDepositRate() divides by 100 at read time.
+                  deposit_interest_rate: 5.25,
                   status: 'pending_tenant_signature',
                 })
                 .select()
