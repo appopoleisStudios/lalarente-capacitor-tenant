@@ -76,17 +76,21 @@ export default function TenantLeaseScreen() {
   const loadActiveLease = async () => {
     try {
       setError(null);
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
       // Get active or pending lease for tenant
       const { data, error: leaseError } = await supabase
         .from('leases')
-        .select(`
+        .select(
+          `
           *,
           property:properties!property_id(title, address, city),
           owner:profiles!owner_id(full_name, email, phone)
-        `)
+        `
+        )
         .eq('tenant_id', user.id)
         .in('status', ['active', 'pending_tenant_signature', 'pending_owner_signature'])
         .order('created_at', { ascending: false })
@@ -101,7 +105,10 @@ export default function TenantLeaseScreen() {
           throw leaseError;
         }
       } else {
-        const row = data as unknown as Lease & { property: Lease['property'] | Lease['property'][]; owner: Lease['owner'] | Lease['owner'][] };
+        const row = data as unknown as Lease & {
+          property: Lease['property'] | Lease['property'][];
+          owner: Lease['owner'] | Lease['owner'][];
+        };
         setLease({
           ...(row as unknown as Lease),
           property: unpackRelation(row.property as Lease['property']),
@@ -189,7 +196,10 @@ export default function TenantLeaseScreen() {
         `${lease.owner.full_name}\n${lease.owner.phone || ''}\n${lease.owner.email || ''}`,
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Call', onPress: () => lease.owner?.phone && Linking.openURL(`tel:${lease.owner.phone}`) },
+          {
+            text: 'Call',
+            onPress: () => lease.owner?.phone && Linking.openURL(`tel:${lease.owner.phone}`),
+          },
           { text: 'Message', onPress: () => router.push('/(tenant)/messages' as any) },
         ]
       );
@@ -213,7 +223,7 @@ export default function TenantLeaseScreen() {
       let updateSuccess = false;
       let lastError: any;
       const maxRetries = 3;
-      
+
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
           const { error: updateError } = await supabase
@@ -228,7 +238,7 @@ export default function TenantLeaseScreen() {
           if (updateError) {
             // Check if it's a network error
             const errorMessage = updateError.message?.toLowerCase() || '';
-            const isNetworkError = 
+            const isNetworkError =
               errorMessage.includes('network') ||
               errorMessage.includes('timeout') ||
               errorMessage.includes('fetch failed') ||
@@ -237,7 +247,7 @@ export default function TenantLeaseScreen() {
             if (isNetworkError && attempt < maxRetries - 1) {
               console.warn(`Database update attempt ${attempt + 1} failed, retrying...`);
               lastError = updateError;
-              await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+              await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
               continue;
             }
             throw updateError;
@@ -258,20 +268,20 @@ export default function TenantLeaseScreen() {
       }
 
       // Notify owner that tenant has signed
-      await notificationsApi.sendNotification({
-        user_id: lease.owner_id,
-        type: 'lease_signed' as any,
-        data: { lease_id: lease.id, property_id: lease.property_id },
-      }).catch(() => {}); // Non-blocking
+      await notificationsApi
+        .sendNotification({
+          user_id: lease.owner_id,
+          type: 'lease_signed' as any,
+          data: { lease_id: lease.id, property_id: lease.property_id },
+        })
+        .catch(() => {}); // Non-blocking
 
-      Alert.alert(
-        'Success',
-        'Lease agreement signed! Waiting for owner to sign.',
-        [{ text: 'OK', onPress: () => loadActiveLease() }]
-      );
+      Alert.alert('Success', 'Lease agreement signed! Waiting for owner to sign.', [
+        { text: 'OK', onPress: () => loadActiveLease() },
+      ]);
     } catch (err: any) {
       console.error('Error signing lease:', err);
-      
+
       // Provide user-friendly error messages based on error type
       let errorTitle = 'Signing Failed';
       let errorMessage = 'Failed to sign lease agreement. Please try again.';
@@ -286,14 +296,13 @@ export default function TenantLeaseScreen() {
         err?.name === 'NetworkError'
       ) {
         errorTitle = 'Connection Error';
-        errorMessage = 'Network connection failed. Please check your internet connection and try again.';
+        errorMessage =
+          'Network connection failed. Please check your internet connection and try again.';
       } else if (err?.message) {
         errorMessage = err.message;
       }
 
-      Alert.alert(errorTitle, errorMessage, [
-        { text: 'OK', style: 'default' }
-      ]);
+      Alert.alert(errorTitle, errorMessage, [{ text: 'OK', style: 'default' }]);
     } finally {
       setActionLoading(false);
       setShowSignatureModal(false);
@@ -321,7 +330,7 @@ export default function TenantLeaseScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={RSA.green} />
         </View>
@@ -331,7 +340,7 @@ export default function TenantLeaseScreen() {
 
   if (error === 'no_lease') {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.centerContainer}>
           <Ionicons name="document-text-outline" size={64} color="#CCC" />
           <Text style={styles.noLeaseTitle}>No Active Lease</Text>
@@ -351,7 +360,7 @@ export default function TenantLeaseScreen() {
 
   if (error || !lease) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.centerContainer}>
           <Ionicons name="alert-circle-outline" size={64} color="#F44336" />
           <Text style={styles.errorText}>{error || 'Failed to load lease'}</Text>
@@ -369,7 +378,7 @@ export default function TenantLeaseScreen() {
   const isExpired = daysRemaining <= 0;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -381,18 +390,14 @@ export default function TenantLeaseScreen() {
           {isExpiringSoon && (
             <View style={styles.warningBanner}>
               <Ionicons name="warning" size={20} color="#FF9800" />
-              <Text style={styles.warningText}>
-                Your lease expires in {daysRemaining} days
-              </Text>
+              <Text style={styles.warningText}>Your lease expires in {daysRemaining} days</Text>
             </View>
           )}
 
           {isExpired && (
             <View style={[styles.warningBanner, { backgroundColor: '#FFEBEE' }]}>
               <Ionicons name="alert-circle" size={20} color="#F44336" />
-              <Text style={[styles.warningText, { color: '#F44336' }]}>
-                Your lease has expired
-              </Text>
+              <Text style={[styles.warningText, { color: '#F44336' }]}>Your lease has expired</Text>
             </View>
           )}
 
@@ -410,9 +415,7 @@ export default function TenantLeaseScreen() {
               {lease.owner?.full_name && (
                 <View style={styles.ownerRow}>
                   <Ionicons name="person" size={16} color="#666" />
-                  <Text style={styles.ownerText}>
-                    Owner: {lease.owner.full_name}
-                  </Text>
+                  <Text style={styles.ownerText}>Owner: {lease.owner.full_name}</Text>
                 </View>
               )}
             </View>
@@ -484,7 +487,9 @@ export default function TenantLeaseScreen() {
                 <DetailRow
                   icon="document-text"
                   label="Lease Type"
-                  value={lease.lease_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  value={lease.lease_type
+                    .replace('_', ' ')
+                    .replace(/\b\w/g, (l) => l.toUpperCase())}
                 />
               )}
               {lease.executed_at && (
@@ -546,14 +551,19 @@ export default function TenantLeaseScreen() {
               </View>
             ) : (
               <View>
-                <TouchableOpacity style={[styles.documentCard, actionLoading && styles.buttonDisabled]} disabled={actionLoading}>
+                <TouchableOpacity
+                  style={[styles.documentCard, actionLoading && styles.buttonDisabled]}
+                  disabled={actionLoading}
+                >
                   <View style={styles.documentIcon}>
                     <Ionicons name="document-text" size={32} color="#CCC" />
                   </View>
                   <View style={styles.documentInfo}>
                     <Text style={[styles.documentTitle, { color: '#999' }]}>Lease Agreement</Text>
                     <Text style={styles.documentSubtitle}>
-                      {lease.status === 'active' ? 'PDF not yet generated' : 'Available after both parties sign'}
+                      {lease.status === 'active'
+                        ? 'PDF not yet generated'
+                        : 'Available after both parties sign'}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -640,7 +650,12 @@ export default function TenantLeaseScreen() {
             <View style={styles.section}>
               <TouchableOpacity
                 style={styles.terminationButton}
-                onPress={() => router.push({ pathname: '/(tenant)/early-termination', params: { leaseId: lease.id } })}
+                onPress={() =>
+                  router.push({
+                    pathname: '/(tenant)/early-termination',
+                    params: { leaseId: lease.id },
+                  })
+                }
               >
                 <Ionicons name="exit-outline" size={20} color="#DC2626" />
                 <Text style={styles.terminationButtonText}>Request Early Termination</Text>

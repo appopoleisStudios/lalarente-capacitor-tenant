@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,7 +33,9 @@ export default function ProfileScreen() {
 
   const loadProfile = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data: profile } = await supabase
@@ -46,7 +57,9 @@ export default function ProfileScreen() {
   const handleSave = async () => {
     try {
       setSaving(true);
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
       const { error } = await supabase
@@ -81,16 +94,17 @@ export default function ProfileScreen() {
     ]);
   };
 
-  const initials = fullName
-    .split(' ')
-    .map(n => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2) || '?';
+  const initials =
+    fullName
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2) || '?';
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.center}>
           <ActivityIndicator size="large" color={RSA.blue} />
         </View>
@@ -99,10 +113,13 @@ export default function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Profile</Text>
-        <TouchableOpacity onPress={() => (editing ? handleSave() : setEditing(true))} disabled={saving}>
+        <TouchableOpacity
+          onPress={() => (editing ? handleSave() : setEditing(true))}
+          disabled={saving}
+        >
           {saving ? (
             <ActivityIndicator color={RSA.blue} />
           ) : (
@@ -128,7 +145,9 @@ export default function ProfileScreen() {
           ) : (
             <Text style={styles.name}>{fullName || 'No name set'}</Text>
           )}
-          <Text testID="owner-profile-email" style={styles.email}>{email}</Text>
+          <Text testID="owner-profile-email" style={styles.email}>
+            {email}
+          </Text>
           <View style={styles.badge}>
             <Text style={styles.badgeText}>Owner Account</Text>
           </View>
@@ -155,8 +174,16 @@ export default function ProfileScreen() {
         {/* Account Settings */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account Settings</Text>
-          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/(owner)/notifications' as any)}>
-            <Ionicons name="notifications-outline" size={20} color={RSA.blue} style={styles.menuIcon} />
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push('/(owner)/notifications' as any)}
+          >
+            <Ionicons
+              name="notifications-outline"
+              size={20}
+              color={RSA.blue}
+              style={styles.menuIcon}
+            />
             <Text style={styles.menuText}>Notifications</Text>
             <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
           </TouchableOpacity>
@@ -165,17 +192,31 @@ export default function ProfileScreen() {
         {/* Legal & Compliance */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Legal & Compliance</Text>
-          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/(owner)/privacy' as any)}>
-            <Ionicons name="shield-checkmark-outline" size={20} color={RSA.blue} style={styles.menuIcon} />
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push('/(owner)/privacy' as any)}
+          >
+            <Ionicons
+              name="shield-checkmark-outline"
+              size={20}
+              color={RSA.blue}
+              style={styles.menuIcon}
+            />
             <Text style={styles.menuText}>Privacy & POPIA</Text>
             <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/(owner)/arrears' as any)}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push('/(owner)/arrears' as any)}
+          >
             <Ionicons name="card-outline" size={20} color={RSA.blue} style={styles.menuIcon} />
             <Text style={styles.menuText}>Arrears Management</Text>
             <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/(owner)/renewals' as any)}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push('/(owner)/renewals' as any)}
+          >
             <Ionicons name="refresh-outline" size={20} color={RSA.blue} style={styles.menuIcon} />
             <Text style={styles.menuText}>Lease Renewals</Text>
             <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
@@ -242,7 +283,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   email: { fontSize: 14, color: '#6b7280', marginBottom: 12 },
-  badge: { backgroundColor: '#dbeafe', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
+  badge: {
+    backgroundColor: '#dbeafe',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
   badgeText: { fontSize: 12, fontWeight: '600', color: '#1e40af' },
   section: { marginBottom: 24 },
   sectionTitle: {

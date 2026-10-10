@@ -50,13 +50,16 @@ const getCountdown = (deadline: string | null): string => {
   return `${days} day${days !== 1 ? 's' : ''} remaining`;
 };
 
-const STATUS_CONFIG: Record<HoldingDepositStatus, {
-  label: string;
-  color: string;
-  bg: string;
-  icon: string;
-  description: string;
-}> = {
+const STATUS_CONFIG: Record<
+  HoldingDepositStatus,
+  {
+    label: string;
+    color: string;
+    bg: string;
+    icon: string;
+    description: string;
+  }
+> = {
   pending: {
     label: 'Payment Required',
     color: '#D97706',
@@ -90,7 +93,8 @@ const STATUS_CONFIG: Record<HoldingDepositStatus, {
     color: colors.rsa.red,
     bg: '#FEF2F2',
     icon: 'close-circle',
-    description: 'The holding deposit was forfeited. Contact your landlord if you believe this is incorrect.',
+    description:
+      'The holding deposit was forfeited. Contact your landlord if you believe this is incorrect.',
   },
   expired: {
     label: 'Expired',
@@ -127,7 +131,9 @@ export default function TenantHoldingDepositScreen() {
   const loadDeposits = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       const data = await holdingDepositApi.getTenantDeposits(user.id);
@@ -169,7 +175,7 @@ export default function TenantHoldingDepositScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
@@ -183,11 +189,11 @@ export default function TenantHoldingDepositScreen() {
     );
   }
 
-  const activeDeposits = deposits.filter(d => d.status === 'pending' || d.status === 'paid');
-  const pastDeposits = deposits.filter(d => !['pending', 'paid'].includes(d.status));
+  const activeDeposits = deposits.filter((d) => d.status === 'pending' || d.status === 'paid');
+  const pastDeposits = deposits.filter((d) => !['pending', 'paid'].includes(d.status));
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -214,7 +220,7 @@ export default function TenantHoldingDepositScreen() {
             {activeDeposits.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Active</Text>
-                {activeDeposits.map(deposit => (
+                {activeDeposits.map((deposit) => (
                   <DepositCard
                     key={deposit.id}
                     deposit={deposit}
@@ -228,7 +234,7 @@ export default function TenantHoldingDepositScreen() {
             {pastDeposits.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>History</Text>
-                {pastDeposits.map(deposit => (
+                {pastDeposits.map((deposit) => (
                   <DepositCard key={deposit.id} deposit={deposit} />
                 ))}
               </View>
@@ -239,10 +245,18 @@ export default function TenantHoldingDepositScreen() {
         {/* Rights Notice */}
         <View style={styles.legalCard}>
           <Text style={styles.legalTitle}>Your Rights (RHA s5A)</Text>
-          <Text style={styles.legalItem}>• Holding deposit MUST be refunded if your application is rejected</Text>
-          <Text style={styles.legalItem}>• It can only be forfeited if you withdraw after paying</Text>
-          <Text style={styles.legalItem}>• If approved, it applies to your first month / security deposit</Text>
-          <Text style={styles.legalItem}>• Escalate non-refunds to the Rental Housing Tribunal</Text>
+          <Text style={styles.legalItem}>
+            • Holding deposit MUST be refunded if your application is rejected
+          </Text>
+          <Text style={styles.legalItem}>
+            • It can only be forfeited if you withdraw after paying
+          </Text>
+          <Text style={styles.legalItem}>
+            • If approved, it applies to your first month / security deposit
+          </Text>
+          <Text style={styles.legalItem}>
+            • Escalate non-refunds to the Rental Housing Tribunal
+          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -281,9 +295,7 @@ function DepositCard({
             <Text style={styles.propertyTitle}>
               {(deposit as any).property?.title || 'Property'}
             </Text>
-            <Text style={styles.propertyAddress}>
-              {(deposit as any).property?.address || ''}
-            </Text>
+            <Text style={styles.propertyAddress}>{(deposit as any).property?.address || ''}</Text>
           </View>
         </View>
 
@@ -295,19 +307,9 @@ function DepositCard({
 
         {/* Payment deadline (pending only) */}
         {deposit.status === 'pending' && deposit.payment_deadline && (
-          <View style={[
-            styles.deadlineRow,
-            isDeadlineSoon && { backgroundColor: '#FEF2F2' },
-          ]}>
-            <Ionicons
-              name="time"
-              size={14}
-              color={isDeadlineSoon ? colors.rsa.red : '#D97706'}
-            />
-            <Text style={[
-              styles.deadlineText,
-              isDeadlineSoon && { color: colors.rsa.red },
-            ]}>
+          <View style={[styles.deadlineRow, isDeadlineSoon && { backgroundColor: '#FEF2F2' }]}>
+            <Ionicons name="time" size={14} color={isDeadlineSoon ? colors.rsa.red : '#D97706'} />
+            <Text style={[styles.deadlineText, isDeadlineSoon && { color: colors.rsa.red }]}>
               Pay by {formatDate(deposit.payment_deadline)} · {countdown}
             </Text>
           </View>
@@ -328,17 +330,12 @@ function DepositCard({
 
         {/* Paid at / Refunded at */}
         {deposit.paid_at && (
-          <Text style={styles.metaText}>
-            Paid: {formatDate(deposit.paid_at)}
-          </Text>
+          <Text style={styles.metaText}>Paid: {formatDate(deposit.paid_at)}</Text>
         )}
 
         {/* Action: Confirm payment if pending */}
         {deposit.status === 'pending' && onConfirmPayment && (
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => onConfirmPayment(deposit)}
-          >
+          <TouchableOpacity style={styles.actionButton} onPress={() => onConfirmPayment(deposit)}>
             <Ionicons name="checkmark-circle" size={18} color={colors.rsa.white} />
             <Text style={styles.actionButtonText}>I Have Paid</Text>
           </TouchableOpacity>

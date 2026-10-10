@@ -382,7 +382,7 @@ export default function TenantDashboardScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={colors.rsa.green} />
         </View>
@@ -694,7 +694,7 @@ export default function TenantDashboardScreen() {
                 <View style={styles.leaseDetailItem}>
                   <Text style={styles.leaseDetailLabel}>Lease Ends</Text>
                   <Text style={styles.leaseDetailValue}>
-                    {new Date(activeLease.end_date).toLocaleDateString()}
+                    {new Date(activeLease.end_date).toLocaleDateString('en-ZA')}
                   </Text>
                 </View>
               </View>
@@ -713,7 +713,7 @@ export default function TenantDashboardScreen() {
                   style={[styles.viewJourneyButton, { flex: 1 }]}
                   onPress={() => router.push('/(tenant)/lease-journey' as any)}
                 >
-                  <Ionicons name="map-outline" size={16} color="#2563EB" />
+                  <Ionicons name="map-outline" size={16} color="#FFFFFF" />
                   <Text style={styles.viewJourneyButtonText}>View Journey</Text>
                 </TouchableOpacity>
               </View>
@@ -939,7 +939,16 @@ export default function TenantDashboardScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={item.title}
                   testID={tenancyShortcutTestId(item.title)}
-                  onPress={() => router.push(item.href)}
+                  onPress={() => {
+                    if (item.href === '/(tenant)/early-termination' && activeLease?.id) {
+                      router.push({
+                        pathname: '/(tenant)/early-termination' as any,
+                        params: { leaseId: activeLease.id },
+                      });
+                    } else {
+                      router.push(item.href);
+                    }
+                  }}
                   activeOpacity={0.8}
                 >
                   <View style={styles.depositLeft}>
@@ -1137,7 +1146,7 @@ export default function TenantDashboardScreen() {
                       {request.title || 'Maintenance Request'}
                     </Text>
                     <Text style={styles.maintenanceDate}>
-                      {new Date(request.created_at).toLocaleDateString()}
+                      {new Date(request.created_at).toLocaleDateString('en-ZA')}
                     </Text>
                   </View>
                   <View
@@ -1241,7 +1250,7 @@ export default function TenantDashboardScreen() {
                   <View style={styles.activityContent}>
                     <Text style={styles.activityText}>Payment due</Text>
                     <Text style={styles.activityTime}>
-                      {new Date(nextPayment.due_date).toLocaleDateString()}
+                      {new Date(nextPayment.due_date).toLocaleDateString('en-ZA')}
                     </Text>
                   </View>
                   <Ionicons name="chevron-forward" size={16} color={colors.text.tertiary} />
@@ -1257,7 +1266,7 @@ export default function TenantDashboardScreen() {
                   <View style={styles.activityContent}>
                     <Text style={styles.activityText}>Payment received</Text>
                     <Text style={styles.activityTime}>
-                      {new Date(recentPayments[0].paid_date!).toLocaleDateString()}
+                      {new Date(recentPayments[0].paid_date!).toLocaleDateString('en-ZA')}
                     </Text>
                   </View>
                   <Ionicons name="chevron-forward" size={16} color={colors.text.tertiary} />
@@ -1275,7 +1284,7 @@ export default function TenantDashboardScreen() {
                   <View style={styles.activityContent}>
                     <Text style={styles.activityText}>Maintenance request active</Text>
                     <Text style={styles.activityTime}>
-                      {new Date(maintenanceRequests[0].created_at).toLocaleDateString()}
+                      {new Date(maintenanceRequests[0].created_at).toLocaleDateString('en-ZA')}
                     </Text>
                   </View>
                   <Ionicons name="chevron-forward" size={16} color={colors.text.tertiary} />
@@ -1301,7 +1310,7 @@ export default function TenantDashboardScreen() {
                   <View style={styles.paymentInfo}>
                     <Text style={styles.paymentType}>Rent Payment</Text>
                     <Text style={styles.paymentDate}>
-                      Due: {new Date(nextPayment.due_date).toLocaleDateString()}
+                      Due: {new Date(nextPayment.due_date).toLocaleDateString('en-ZA')}
                     </Text>
                   </View>
                   <Text style={styles.paymentAmount}>R {nextPayment.amount.toLocaleString()}</Text>
@@ -1338,7 +1347,7 @@ export default function TenantDashboardScreen() {
                   <View style={styles.paymentHistoryInfo}>
                     <Text style={styles.paymentHistoryType}>{payment.type}</Text>
                     <Text style={styles.paymentHistoryDate}>
-                      {new Date(payment.paid_date!).toLocaleDateString()}
+                      {new Date(payment.paid_date!).toLocaleDateString('en-ZA')}
                     </Text>
                   </View>
                   <Text style={styles.paymentHistoryAmount}>
@@ -1531,7 +1540,7 @@ const styles = StyleSheet.create({
   viewJourneyButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#93C5FD',
+    color: '#FFFFFF',
   },
   noLeaseCard: {
     margin: 16,

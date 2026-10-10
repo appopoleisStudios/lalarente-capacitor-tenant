@@ -24,7 +24,7 @@ import { supabase } from '@/src/lib/supabase';
 import { exportTaxStatementPdf } from '../utils/pdfReports';
 
 interface TaxYear {
-  label: string;      // e.g. "2024/2025"
+  label: string; // e.g. "2024/2025"
   startDate: Date;
   endDate: Date;
 }
@@ -88,13 +88,21 @@ export default function OwnerTaxReportScreen() {
   );
 
   const initOwner = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (user) {
       setOwnerId(user.id);
       fetchTaxData(user.id, taxYears[0]);
       // Fetch owner name for PDF
-      supabase.from('profiles').select('full_name').eq('id', user.id).single()
-        .then(({ data }) => { if (data?.full_name) setOwnerName(data.full_name); });
+      supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single()
+        .then(({ data }) => {
+          if (data?.full_name) setOwnerName(data.full_name);
+        });
     }
   };
 
@@ -108,14 +116,23 @@ export default function OwnerTaxReportScreen() {
         .eq('owner_id', uid);
 
       if (!properties?.length) {
-        setSummary({ grossRentalIncome: 0, maintenanceDeductions: 0, netTaxableEstimate: 0, propertyBreakdown: [], paymentCount: 0, deductionCount: 0 });
+        setSummary({
+          grossRentalIncome: 0,
+          maintenanceDeductions: 0,
+          netTaxableEstimate: 0,
+          propertyBreakdown: [],
+          paymentCount: 0,
+          deductionCount: 0,
+        });
         setLoading(false);
         return;
       }
 
-      const propertyIds = properties.map(p => p.id);
+      const propertyIds = properties.map((p) => p.id);
       const propertyMap: Record<string, string> = {};
-      properties.forEach(p => { propertyMap[p.id] = p.title; });
+      properties.forEach((p) => {
+        propertyMap[p.id] = p.title;
+      });
 
       // 2. Completed rent payments within tax year
       const { data: payments } = await supabase
@@ -138,9 +155,11 @@ export default function OwnerTaxReportScreen() {
       let deductionCount = 0;
 
       if (requests?.length) {
-        const requestIds = requests.map(r => r.id);
+        const requestIds = requests.map((r) => r.id);
         const reqPropertyMap: Record<string, string> = {};
-        requests.forEach(r => { reqPropertyMap[r.id] = r.property_id ?? ''; });
+        requests.forEach((r) => {
+          reqPropertyMap[r.id] = r.property_id ?? '';
+        });
 
         // service_contracts link maintenance_requests to purchase_orders
         const { data: contracts } = await supabase
@@ -149,9 +168,11 @@ export default function OwnerTaxReportScreen() {
           .in('maintenance_request_id', requestIds);
 
         if (contracts?.length) {
-          const contractIds = contracts.map(c => c.id);
+          const contractIds = contracts.map((c) => c.id);
           const contractRequestMap: Record<string, string> = {};
-          contracts.forEach(c => { contractRequestMap[c.id] = c.maintenance_request_id ?? ''; });
+          contracts.forEach((c) => {
+            contractRequestMap[c.id] = c.maintenance_request_id ?? '';
+          });
 
           const { data: pos } = await supabase
             .from('purchase_orders')
@@ -162,11 +183,12 @@ export default function OwnerTaxReportScreen() {
             .lte('created_at', taxYear.endDate.toISOString());
 
           deductionCount = pos?.length || 0;
-          pos?.forEach(po => {
+          pos?.forEach((po) => {
             const requestId = contractRequestMap[po.contract_id || ''];
             const propId = requestId ? reqPropertyMap[requestId] : null;
             if (propId && po.total_amount) {
-              deductionsPerProperty[propId] = (deductionsPerProperty[propId] || 0) + po.total_amount;
+              deductionsPerProperty[propId] =
+                (deductionsPerProperty[propId] || 0) + po.total_amount;
             }
           });
         }
@@ -174,7 +196,7 @@ export default function OwnerTaxReportScreen() {
 
       // 4. Build per-property breakdown
       const incomePerProperty: Record<string, number> = {};
-      payments?.forEach(p => {
+      payments?.forEach((p) => {
         if (p.property_id && p.amount) {
           incomePerProperty[p.property_id] = (incomePerProperty[p.property_id] || 0) + p.amount;
         }
@@ -185,16 +207,18 @@ export default function OwnerTaxReportScreen() {
         ...Object.keys(deductionsPerProperty),
       ]);
 
-      const propertyBreakdown: PropertyTax[] = Array.from(allPropertyIds).map(pid => {
-        const gross = incomePerProperty[pid] || 0;
-        const deductions = deductionsPerProperty[pid] || 0;
-        return {
-          propertyTitle: propertyMap[pid] || 'Property',
-          grossIncome: gross,
-          deductions,
-          net: gross - deductions,
-        };
-      }).sort((a, b) => b.grossIncome - a.grossIncome);
+      const propertyBreakdown: PropertyTax[] = Array.from(allPropertyIds)
+        .map((pid) => {
+          const gross = incomePerProperty[pid] || 0;
+          const deductions = deductionsPerProperty[pid] || 0;
+          return {
+            propertyTitle: propertyMap[pid] || 'Property',
+            grossIncome: gross,
+            deductions,
+            net: gross - deductions,
+          };
+        })
+        .sort((a, b) => b.grossIncome - a.grossIncome);
 
       const grossRentalIncome = propertyBreakdown.reduce((s, p) => s + p.grossIncome, 0);
       const maintenanceDeductions = propertyBreakdown.reduce((s, p) => s + p.deductions, 0);
@@ -231,23 +255,19 @@ export default function OwnerTaxReportScreen() {
           netTaxableEstimate: summary.netTaxableEstimate,
           paymentCount: summary.paymentCount,
           deductionCount: summary.deductionCount,
-          propertyBreakdown: summary.propertyBreakdown.map(pb => ({
+          propertyBreakdown: summary.propertyBreakdown.map((pb) => ({
             propertyTitle: pb.propertyTitle,
             grossIncome: pb.grossIncome,
             deductions: pb.deductions,
             net: pb.net,
           })),
         },
-        ownerId,
+        ownerId
       );
-      Alert.alert(
-        'Statement Saved',
-        'Your tax statement has been saved to Documents.',
-        [
-          { text: 'View', onPress: () => router.push(`/(owner)/documents/${documentId}` as any) },
-          { text: 'OK' },
-        ],
-      );
+      Alert.alert('Statement Saved', 'Your tax statement has been saved to Documents.', [
+        { text: 'View', onPress: () => router.push(`/(owner)/documents/${documentId}` as any) },
+        { text: 'OK' },
+      ]);
     } catch (err: any) {
       Alert.alert('Export Failed', err?.message || 'Unable to generate PDF. Please try again.');
     } finally {
@@ -258,7 +278,7 @@ export default function OwnerTaxReportScreen() {
   const isFuture = selectedYear.endDate > new Date();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
@@ -269,16 +289,17 @@ export default function OwnerTaxReportScreen() {
           disabled={exporting || loading || !summary}
           style={{ width: 40, alignItems: 'center', justifyContent: 'center' }}
         >
-          {exporting
-            ? <ActivityIndicator size="small" color={colors.primary[500]} />
-            : <Ionicons name="download-outline" size={22} color={colors.primary[500]} />
-          }
+          {exporting ? (
+            <ActivityIndicator size="small" color={colors.primary[500]} />
+          ) : (
+            <Ionicons name="download-outline" size={22} color={colors.primary[500]} />
+          )}
         </TouchableOpacity>
       </View>
 
       {/* Tax year selector */}
       <View style={styles.yearSelector}>
-        {taxYears.map(ty => (
+        {taxYears.map((ty) => (
           <TouchableOpacity
             key={ty.label}
             style={[styles.yearChip, selectedYear.label === ty.label && styles.yearChipActive]}
@@ -287,7 +308,12 @@ export default function OwnerTaxReportScreen() {
               if (ownerId) fetchTaxData(ownerId, ty);
             }}
           >
-            <Text style={[styles.yearChipText, selectedYear.label === ty.label && styles.yearChipTextActive]}>
+            <Text
+              style={[
+                styles.yearChipText,
+                selectedYear.label === ty.label && styles.yearChipTextActive,
+              ]}
+            >
               {ty.label}
             </Text>
           </TouchableOpacity>
@@ -298,7 +324,6 @@ export default function OwnerTaxReportScreen() {
         <ActivityIndicator size="large" color={colors.primary[500]} style={{ marginTop: 40 }} />
       ) : (
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-
           {isFuture && (
             <View style={styles.notice}>
               <Ionicons name="time-outline" size={16} color={colors.warning[500]} />
@@ -317,7 +342,9 @@ export default function OwnerTaxReportScreen() {
             </View>
             <View style={[styles.summaryCard, { backgroundColor: colors.error[500] }]}>
               <Text style={styles.summaryCardLabel}>Maintenance Deductions</Text>
-              <Text style={styles.summaryCardValue}>{fmt(summary?.maintenanceDeductions || 0)}</Text>
+              <Text style={styles.summaryCardValue}>
+                {fmt(summary?.maintenanceDeductions || 0)}
+              </Text>
               <Text style={styles.summaryCardSub}>{summary?.deductionCount || 0} POs</Text>
             </View>
           </View>
@@ -335,9 +362,9 @@ export default function OwnerTaxReportScreen() {
           <View style={styles.disclaimer}>
             <Ionicons name="information-circle-outline" size={16} color={colors.info[500]} />
             <Text style={styles.disclaimerText}>
-              This is an estimate only. Bond interest, municipal rates, insurance premiums,
-              and levies are not included — add these manually. Consult a tax practitioner for
-              your SARS ITR12 submission. SA tax year: 1 March – 28 February.
+              This is an estimate only. Bond interest, municipal rates, insurance premiums, and
+              levies are not included — add these manually. Consult a tax practitioner for your SARS
+              ITR12 submission. SA tax year: 1 March – 28 February.
             </Text>
           </View>
 
@@ -362,9 +389,7 @@ export default function OwnerTaxReportScreen() {
                   </View>
                   <View style={[styles.propertyRow, styles.propertyRowBorder]}>
                     <Text style={[styles.propertyLabel, { fontWeight: '700' }]}>Net</Text>
-                    <Text style={[styles.propertyValue, { fontWeight: '700' }]}>
-                      {fmt(pb.net)}
-                    </Text>
+                    <Text style={[styles.propertyValue, { fontWeight: '700' }]}>{fmt(pb.net)}</Text>
                   </View>
                 </View>
               ))}

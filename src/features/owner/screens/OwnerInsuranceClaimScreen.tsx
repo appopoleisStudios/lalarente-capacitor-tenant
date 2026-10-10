@@ -53,8 +53,14 @@ const CLAIM_TYPES: { value: ClaimType; label: string; icon: string }[] = [
 ];
 
 const STATUS_FLOW: ClaimStatus[] = [
-  'draft', 'submitted', 'acknowledged', 'assessment',
-  'approved', 'partially_approved', 'paid_out', 'closed',
+  'draft',
+  'submitted',
+  'acknowledged',
+  'assessment',
+  'approved',
+  'partially_approved',
+  'paid_out',
+  'closed',
 ];
 
 const STATUS_INFO: Record<ClaimStatus, { label: string; color: string; bg: string }> = {
@@ -95,9 +101,7 @@ export default function OwnerInsuranceClaimScreen() {
   const [selectedPolicy, setSelectedPolicy] = useState<InsurancePolicy | null>(null);
   const [claimType, setClaimType] = useState<ClaimType>('fire_damage');
   const [description, setDescription] = useState('');
-  const [incidentDate, setIncidentDate] = useState(
-    new Date().toISOString().split('T')[0]
-  );
+  const [incidentDate, setIncidentDate] = useState(new Date().toISOString().split('T')[0]);
   const [estimatedCost, setEstimatedCost] = useState('');
   const [claimedAmount, setClaimedAmount] = useState('');
 
@@ -110,7 +114,9 @@ export default function OwnerInsuranceClaimScreen() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
 
@@ -121,11 +127,13 @@ export default function OwnerInsuranceClaimScreen() {
         const [claimResult, docs] = await Promise.all([
           supabase
             .from('insurance_claims')
-            .select(`
+            .select(
+              `
               *,
               policy:insurance_policies!policy_id(policy_number, insurer_name),
               property:properties!property_id(title, address)
-            `)
+            `
+            )
             .eq('id', claimId)
             .single(),
           insuranceClaimsApi.getClaimDocuments(claimId),
@@ -257,35 +265,34 @@ export default function OwnerInsuranceClaimScreen() {
       return;
     }
 
-    Alert.alert(
-      'Submit Claim',
-      `Submit claim for ${formatZAR(amount)} to your insurer?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Submit',
-          onPress: async () => {
-            setSubmitting(true);
-            try {
-              await insuranceClaimsApi.submitClaim(claim.id, amount);
-              Alert.alert('Claim Submitted', 'Your insurer has been notified. Claim number will be provided once acknowledged.');
-              loadData();
-            } catch (err: any) {
-              Alert.alert('Error', err.message || 'Failed to submit claim');
-            } finally {
-              setSubmitting(false);
-            }
-          },
+    Alert.alert('Submit Claim', `Submit claim for ${formatZAR(amount)} to your insurer?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Submit',
+        onPress: async () => {
+          setSubmitting(true);
+          try {
+            await insuranceClaimsApi.submitClaim(claim.id, amount);
+            Alert.alert(
+              'Claim Submitted',
+              'Your insurer has been notified. Claim number will be provided once acknowledged.'
+            );
+            loadData();
+          } catch (err: any) {
+            Alert.alert('Error', err.message || 'Failed to submit claim');
+          } finally {
+            setSubmitting(false);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
@@ -307,244 +314,258 @@ export default function OwnerInsuranceClaimScreen() {
     const property = (claim as any).property;
 
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <KeyboardAvoidingView>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
-          </TouchableOpacity>
-          <Text style={styles.title}>Claim Details</Text>
-          <View style={[styles.statusChip, { backgroundColor: statusInfo.bg }]}>
-            <Text style={[styles.statusChipText, { color: statusInfo.color }]}>
-              {statusInfo.label}
-            </Text>
-          </View>
-        </View>
-
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          {/* Claim Number (if assigned) */}
-          {claim.claim_number && (
-            <View style={styles.claimNumberCard}>
-              <Text style={styles.claimNumberLabel}>Claim Reference</Text>
-              <Text style={styles.claimNumber}>{claim.claim_number}</Text>
-            </View>
-          )}
-
-          {/* Core Info */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Claim Information</Text>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Type</Text>
-              <Text style={styles.detailValue}>
-                {claim.claim_type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-              </Text>
-            </View>
-            {property && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Property</Text>
-                <Text style={styles.detailValue}>{property.title}</Text>
-              </View>
-            )}
-            {policy && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Insurer</Text>
-                <Text style={styles.detailValue}>{policy.insurer_name}</Text>
-              </View>
-            )}
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Incident Date</Text>
-              <Text style={styles.detailValue}>
-                {new Date(claim.incident_date).toLocaleDateString('en-ZA')}
-              </Text>
-            </View>
-            <View style={[styles.detailRow, { alignItems: 'flex-start' }]}>
-              <Text style={styles.detailLabel}>Description</Text>
-              <Text style={[styles.detailValue, { flex: 1, textAlign: 'right' }]}>
-                {claim.description}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+            </TouchableOpacity>
+            <Text style={styles.title}>Claim Details</Text>
+            <View style={[styles.statusChip, { backgroundColor: statusInfo.bg }]}>
+              <Text style={[styles.statusChipText, { color: statusInfo.color }]}>
+                {statusInfo.label}
               </Text>
             </View>
           </View>
 
-          {/* Amounts */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Financial Summary</Text>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Estimated Cost</Text>
-              <Text style={styles.detailValue}>{formatZAR(claim.estimated_cost)}</Text>
-            </View>
-            {claim.claimed_amount != null && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Amount Claimed</Text>
-                <Text style={styles.detailValue}>{formatZAR(claim.claimed_amount)}</Text>
+          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+            {/* Claim Number (if assigned) */}
+            {claim.claim_number && (
+              <View style={styles.claimNumberCard}>
+                <Text style={styles.claimNumberLabel}>Claim Reference</Text>
+                <Text style={styles.claimNumber}>{claim.claim_number}</Text>
               </View>
             )}
-            {claim.approved_amount != null && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Approved Amount</Text>
-                <Text style={[styles.detailValue, { color: colors.role.owner.primary, fontWeight: '700' }]}>
-                  {formatZAR(claim.approved_amount)}
-                </Text>
-              </View>
-            )}
-            {claim.payout_received != null && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Payout Received</Text>
-                <Text style={[styles.detailValue, { color: colors.role.owner.primary, fontWeight: '800' }]}>
-                  {formatZAR(claim.payout_received)}
-                </Text>
-              </View>
-            )}
-          </View>
 
-          {/* Documents Section */}
-          <View style={styles.section}>
-            <View style={styles.sectionRow}>
-              <Text style={styles.sectionTitle}>Supporting Documents</Text>
-              <TouchableOpacity
-                style={styles.addDocBtn}
-                onPress={() => setAddDocModal(true)}
-                disabled={uploadingDoc}
-              >
-                {uploadingDoc ? (
-                  <ActivityIndicator size="small" color={colors.rsa.white} />
-                ) : (
-                  <>
-                    <Ionicons name="add" size={16} color={colors.rsa.white} />
-                    <Text style={styles.addDocBtnText}>Add Photo</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-            {claimDocuments.length === 0 ? (
-              <Text style={styles.noDocsText}>
-                No documents attached. Add photos of damage, police reports, or repair quotes.
-              </Text>
-            ) : (
-              claimDocuments.map((doc) => (
-                <View key={doc.id} style={styles.docRow}>
-                  <Ionicons name="document-attach-outline" size={18} color={colors.rsa.blue} />
-                  <View style={styles.docInfo}>
-                    <Text style={styles.docTitle}>{doc.title}</Text>
-                    <Text style={styles.docType}>
-                      {doc.document_type} · {new Date(doc.created_at).toLocaleDateString('en-ZA')}
-                    </Text>
-                  </View>
-                </View>
-              ))
-            )}
-          </View>
-
-          {/* Submit Action (if draft) */}
-          {claim.status === 'draft' && (
+            {/* Core Info */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Submit Claim</Text>
-              <Text style={styles.fieldLabel}>Amount to Claim (R)</Text>
-              <TextInput
-                style={styles.input}
-                value={claimedAmount}
-                onChangeText={setClaimedAmount}
-                placeholder={claim.estimated_cost.toString()}
-                placeholderTextColor={colors.gray[400]}
-                keyboardType="numeric"
-              />
-              <TouchableOpacity
-                style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
-                onPress={handleSubmitClaim}
-                disabled={submitting}
-              >
-                {submitting ? (
-                  <ActivityIndicator size="small" color={colors.rsa.white} />
-                ) : (
-                  <>
-                    <Ionicons name="send" size={18} color={colors.rsa.white} />
-                    <Text style={styles.submitButtonText}>Submit to Insurer</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* Status Progress */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Claim Progress</Text>
-            <View style={styles.progressTrack}>
-              {STATUS_FLOW.map((s, i) => {
-                const currentIdx = STATUS_FLOW.indexOf(claim.status);
-                const isActive = s === claim.status;
-                const isDone = i < currentIdx;
-                return (
-                  <View key={s} style={styles.progressStep}>
-                    <View style={[
-                      styles.progressDot,
-                      isActive && styles.progressDotActive,
-                      isDone && styles.progressDotDone,
-                    ]}>
-                      {isDone && <Ionicons name="checkmark" size={10} color={colors.rsa.white} />}
-                    </View>
-                    <Text style={[
-                      styles.progressLabel,
-                      isActive && styles.progressLabelActive,
-                    ]}>
-                      {STATUS_INFO[s].label}
-                    </Text>
-                    {i < STATUS_FLOW.length - 1 && (
-                      <View style={[styles.progressLine, isDone && styles.progressLineDone]} />
-                    )}
-                  </View>
-                );
-              })}
-            </View>
-          </View>
-        </ScrollView>
-
-        {/* Add Document Modal */}
-        <Modal
-          visible={addDocModal}
-          animationType="slide"
-          presentationStyle="pageSheet"
-          onRequestClose={() => setAddDocModal(false)}
-        >
-          <SafeAreaView style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={() => setAddDocModal(false)}>
-                <Ionicons name="close" size={24} color={colors.text.primary} />
-              </TouchableOpacity>
-              <Text style={styles.modalTitle}>Add Document</Text>
-              <View style={{ width: 24 }} />
-            </View>
-            <ScrollView contentContainerStyle={styles.modalContent}>
-              <Text style={styles.fieldLabel}>Document Type</Text>
-              <View style={styles.docTypeRow}>
-                {['photo', 'quote', 'report', 'receipt', 'other'].map((type) => (
-                  <TouchableOpacity
-                    key={type}
-                    style={[styles.docTypeChip, docType === type && styles.docTypeChipActive]}
-                    onPress={() => setDocType(type)}
-                  >
-                    <Text style={[styles.docTypeChipText, docType === type && styles.docTypeChipTextActive]}>
-                      {type}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+              <Text style={styles.sectionTitle}>Claim Information</Text>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Type</Text>
+                <Text style={styles.detailValue}>
+                  {claim.claim_type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                </Text>
               </View>
-              <Text style={styles.fieldLabel}>Document Title *</Text>
-              <TextInput
-                style={styles.modalInput}
-                value={docTitle}
-                onChangeText={setDocTitle}
-                placeholder="e.g. Fire damage photo — kitchen"
-                placeholderTextColor={colors.gray[400]}
-              />
-              <TouchableOpacity
-                style={[styles.submitButton, { marginTop: 24 }]}
-                onPress={handlePickAndUpload}
-              >
-                <Ionicons name="image-outline" size={18} color={colors.rsa.white} />
-                <Text style={styles.submitButtonText}>Pick Photo & Upload</Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </SafeAreaView>
-        </Modal>
+              {property && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Property</Text>
+                  <Text style={styles.detailValue}>{property.title}</Text>
+                </View>
+              )}
+              {policy && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Insurer</Text>
+                  <Text style={styles.detailValue}>{policy.insurer_name}</Text>
+                </View>
+              )}
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Incident Date</Text>
+                <Text style={styles.detailValue}>
+                  {new Date(claim.incident_date).toLocaleDateString('en-ZA')}
+                </Text>
+              </View>
+              <View style={[styles.detailRow, { alignItems: 'flex-start' }]}>
+                <Text style={styles.detailLabel}>Description</Text>
+                <Text style={[styles.detailValue, { flex: 1, textAlign: 'right' }]}>
+                  {claim.description}
+                </Text>
+              </View>
+            </View>
+
+            {/* Amounts */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Financial Summary</Text>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Estimated Cost</Text>
+                <Text style={styles.detailValue}>{formatZAR(claim.estimated_cost)}</Text>
+              </View>
+              {claim.claimed_amount != null && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Amount Claimed</Text>
+                  <Text style={styles.detailValue}>{formatZAR(claim.claimed_amount)}</Text>
+                </View>
+              )}
+              {claim.approved_amount != null && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Approved Amount</Text>
+                  <Text
+                    style={[
+                      styles.detailValue,
+                      { color: colors.role.owner.primary, fontWeight: '700' },
+                    ]}
+                  >
+                    {formatZAR(claim.approved_amount)}
+                  </Text>
+                </View>
+              )}
+              {claim.payout_received != null && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Payout Received</Text>
+                  <Text
+                    style={[
+                      styles.detailValue,
+                      { color: colors.role.owner.primary, fontWeight: '800' },
+                    ]}
+                  >
+                    {formatZAR(claim.payout_received)}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Documents Section */}
+            <View style={styles.section}>
+              <View style={styles.sectionRow}>
+                <Text style={styles.sectionTitle}>Supporting Documents</Text>
+                <TouchableOpacity
+                  style={styles.addDocBtn}
+                  onPress={() => setAddDocModal(true)}
+                  disabled={uploadingDoc}
+                >
+                  {uploadingDoc ? (
+                    <ActivityIndicator size="small" color={colors.rsa.white} />
+                  ) : (
+                    <>
+                      <Ionicons name="add" size={16} color={colors.rsa.white} />
+                      <Text style={styles.addDocBtnText}>Add Photo</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+              {claimDocuments.length === 0 ? (
+                <Text style={styles.noDocsText}>
+                  No documents attached. Add photos of damage, police reports, or repair quotes.
+                </Text>
+              ) : (
+                claimDocuments.map((doc) => (
+                  <View key={doc.id} style={styles.docRow}>
+                    <Ionicons name="document-attach-outline" size={18} color={colors.rsa.blue} />
+                    <View style={styles.docInfo}>
+                      <Text style={styles.docTitle}>{doc.title}</Text>
+                      <Text style={styles.docType}>
+                        {doc.document_type} · {new Date(doc.created_at).toLocaleDateString('en-ZA')}
+                      </Text>
+                    </View>
+                  </View>
+                ))
+              )}
+            </View>
+
+            {/* Submit Action (if draft) */}
+            {claim.status === 'draft' && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Submit Claim</Text>
+                <Text style={styles.fieldLabel}>Amount to Claim (R)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={claimedAmount}
+                  onChangeText={setClaimedAmount}
+                  placeholder={claim.estimated_cost.toString()}
+                  placeholderTextColor={colors.gray[400]}
+                  keyboardType="numeric"
+                />
+                <TouchableOpacity
+                  style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+                  onPress={handleSubmitClaim}
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <ActivityIndicator size="small" color={colors.rsa.white} />
+                  ) : (
+                    <>
+                      <Ionicons name="send" size={18} color={colors.rsa.white} />
+                      <Text style={styles.submitButtonText}>Submit to Insurer</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Status Progress */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Claim Progress</Text>
+              <View style={styles.progressTrack}>
+                {STATUS_FLOW.map((s, i) => {
+                  const currentIdx = STATUS_FLOW.indexOf(claim.status);
+                  const isActive = s === claim.status;
+                  const isDone = i < currentIdx;
+                  return (
+                    <View key={s} style={styles.progressStep}>
+                      <View
+                        style={[
+                          styles.progressDot,
+                          isActive && styles.progressDotActive,
+                          isDone && styles.progressDotDone,
+                        ]}
+                      >
+                        {isDone && <Ionicons name="checkmark" size={10} color={colors.rsa.white} />}
+                      </View>
+                      <Text style={[styles.progressLabel, isActive && styles.progressLabelActive]}>
+                        {STATUS_INFO[s].label}
+                      </Text>
+                      {i < STATUS_FLOW.length - 1 && (
+                        <View style={[styles.progressLine, isDone && styles.progressLineDone]} />
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          </ScrollView>
+
+          {/* Add Document Modal */}
+          <Modal
+            visible={addDocModal}
+            animationType="slide"
+            presentationStyle="pageSheet"
+            onRequestClose={() => setAddDocModal(false)}
+          >
+            <SafeAreaView style={styles.modalContainer} edges={['top']}>
+              <View style={styles.modalHeader}>
+                <TouchableOpacity onPress={() => setAddDocModal(false)}>
+                  <Ionicons name="close" size={24} color={colors.text.primary} />
+                </TouchableOpacity>
+                <Text style={styles.modalTitle}>Add Document</Text>
+                <View style={{ width: 24 }} />
+              </View>
+              <ScrollView contentContainerStyle={styles.modalContent}>
+                <Text style={styles.fieldLabel}>Document Type</Text>
+                <View style={styles.docTypeRow}>
+                  {['photo', 'quote', 'report', 'receipt', 'other'].map((type) => (
+                    <TouchableOpacity
+                      key={type}
+                      style={[styles.docTypeChip, docType === type && styles.docTypeChipActive]}
+                      onPress={() => setDocType(type)}
+                    >
+                      <Text
+                        style={[
+                          styles.docTypeChipText,
+                          docType === type && styles.docTypeChipTextActive,
+                        ]}
+                      >
+                        {type}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <Text style={styles.fieldLabel}>Document Title *</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={docTitle}
+                  onChangeText={setDocTitle}
+                  placeholder="e.g. Fire damage photo — kitchen"
+                  placeholderTextColor={colors.gray[400]}
+                />
+                <TouchableOpacity
+                  style={[styles.submitButton, { marginTop: 24 }]}
+                  onPress={handlePickAndUpload}
+                >
+                  <Ionicons name="image-outline" size={18} color={colors.rsa.white} />
+                  <Text style={styles.submitButtonText}>Pick Photo & Upload</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            </SafeAreaView>
+          </Modal>
         </KeyboardAvoidingView>
       </SafeAreaView>
     );
@@ -553,164 +574,174 @@ export default function OwnerInsuranceClaimScreen() {
   // ── Create new claim ───────────────────────────────────────────────────────
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <KeyboardAvoidingView>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
-        </TouchableOpacity>
-        <Text style={styles.title}>New Insurance Claim</Text>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {/* Policy Selection */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Select Policy</Text>
-          {policies.length === 0 ? (
-            <View style={styles.noPoliciesCard}>
-              <Ionicons name="shield-outline" size={32} color={colors.gray[400]} />
-              <Text style={styles.noPoliciesText}>
-                No active insurance policies found. Add a policy before creating a claim.
-              </Text>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={styles.policySelector}
-              onPress={() => setShowPolicyPicker(true)}
-            >
-              {selectedPolicy ? (
-                <View style={styles.selectedPolicy}>
-                  <Text style={styles.selectedPolicyName}>{selectedPolicy.insurer_name}</Text>
-                  <Text style={styles.selectedPolicyNumber}>Policy: {selectedPolicy.policy_number}</Text>
-                </View>
-              ) : (
-                <Text style={styles.policySelectorPlaceholder}>Select a policy…</Text>
-              )}
-              <Ionicons name="chevron-down" size={20} color={colors.gray[400]} />
-            </TouchableOpacity>
-          )}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+          </TouchableOpacity>
+          <Text style={styles.title}>New Insurance Claim</Text>
         </View>
 
-        {/* Claim Type */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Claim Type *</Text>
-          <View style={styles.typeGrid}>
-            {CLAIM_TYPES.map(ct => (
-              <TouchableOpacity
-                key={ct.value}
-                style={[styles.typeChip, claimType === ct.value && styles.typeChipSelected]}
-                onPress={() => setClaimType(ct.value)}
-              >
-                <Ionicons
-                  name={ct.icon as any}
-                  size={18}
-                  color={claimType === ct.value ? colors.rsa.white : colors.text.secondary}
-                />
-                <Text style={[styles.typeChipText, claimType === ct.value && styles.typeChipTextSelected]}>
-                  {ct.label}
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          {/* Policy Selection */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Select Policy</Text>
+            {policies.length === 0 ? (
+              <View style={styles.noPoliciesCard}>
+                <Ionicons name="shield-outline" size={32} color={colors.gray[400]} />
+                <Text style={styles.noPoliciesText}>
+                  No active insurance policies found. Add a policy before creating a claim.
                 </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Incident Details */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Incident Details</Text>
-
-          <Text style={styles.fieldLabel}>Incident Date *</Text>
-          <TextInput
-            style={styles.input}
-            value={incidentDate}
-            onChangeText={setIncidentDate}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={colors.gray[400]}
-          />
-
-          <Text style={styles.fieldLabel}>Description * (min 20 characters)</Text>
-          <TextInput
-            style={[styles.input, styles.inputMulti]}
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Describe the incident, damage extent, and circumstances..."
-            placeholderTextColor={colors.gray[400]}
-            multiline
-            numberOfLines={5}
-            textAlignVertical="top"
-          />
-          <Text style={[styles.charCount, description.length < 20 && { color: colors.rsa.red }]}>
-            {description.length}/20 minimum
-          </Text>
-
-          <Text style={styles.fieldLabel}>Estimated Repair Cost (R) *</Text>
-          <TextInput
-            style={styles.input}
-            value={estimatedCost}
-            onChangeText={setEstimatedCost}
-            placeholder="e.g. 25000"
-            placeholderTextColor={colors.gray[400]}
-            keyboardType="numeric"
-          />
-        </View>
-
-        {/* Submit */}
-        <TouchableOpacity
-          style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
-          onPress={handleCreateClaim}
-          disabled={submitting || !selectedPolicy}
-        >
-          {submitting ? (
-            <ActivityIndicator size="small" color={colors.rsa.white} />
-          ) : (
-            <>
-              <Ionicons name="save" size={18} color={colors.rsa.white} />
-              <Text style={styles.submitButtonText}>Save as Draft</Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </ScrollView>
-
-      {/* Policy Picker Modal */}
-      <Modal
-        visible={showPolicyPicker}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowPolicyPicker(false)}
-      >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setShowPolicyPicker(false)}>
-              <Ionicons name="close" size={24} color={colors.text.primary} />
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>Select Policy</Text>
-            <View style={{ width: 24 }} />
-          </View>
-          <ScrollView>
-            {policies.map(p => (
+              </View>
+            ) : (
               <TouchableOpacity
-                key={p.id}
-                style={[styles.policyOption, selectedPolicy?.id === p.id && styles.policyOptionSelected]}
-                onPress={() => {
-                  setSelectedPolicy(p);
-                  setShowPolicyPicker(false);
-                }}
+                style={styles.policySelector}
+                onPress={() => setShowPolicyPicker(true)}
               >
-                <View style={styles.policyOptionLeft}>
-                  <Text style={styles.policyOptionName}>{p.insurer_name}</Text>
-                  <Text style={styles.policyOptionNumber}>{p.policy_number}</Text>
-                  <Text style={styles.policyOptionType}>{p.policy_type}</Text>
-                </View>
-                {p.cover_amount && (
-                  <Text style={styles.policyOptionCover}>{formatZAR(p.cover_amount)}</Text>
+                {selectedPolicy ? (
+                  <View style={styles.selectedPolicy}>
+                    <Text style={styles.selectedPolicyName}>{selectedPolicy.insurer_name}</Text>
+                    <Text style={styles.selectedPolicyNumber}>
+                      Policy: {selectedPolicy.policy_number}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={styles.policySelectorPlaceholder}>Select a policy…</Text>
                 )}
-                {selectedPolicy?.id === p.id && (
-                  <Ionicons name="checkmark-circle" size={20} color={colors.rsa.blue} />
-                )}
+                <Ionicons name="chevron-down" size={20} color={colors.gray[400]} />
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
+            )}
+          </View>
+
+          {/* Claim Type */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Claim Type *</Text>
+            <View style={styles.typeGrid}>
+              {CLAIM_TYPES.map((ct) => (
+                <TouchableOpacity
+                  key={ct.value}
+                  style={[styles.typeChip, claimType === ct.value && styles.typeChipSelected]}
+                  onPress={() => setClaimType(ct.value)}
+                >
+                  <Ionicons
+                    name={ct.icon as any}
+                    size={18}
+                    color={claimType === ct.value ? colors.rsa.white : colors.text.secondary}
+                  />
+                  <Text
+                    style={[
+                      styles.typeChipText,
+                      claimType === ct.value && styles.typeChipTextSelected,
+                    ]}
+                  >
+                    {ct.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Incident Details */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Incident Details</Text>
+
+            <Text style={styles.fieldLabel}>Incident Date *</Text>
+            <TextInput
+              style={styles.input}
+              value={incidentDate}
+              onChangeText={setIncidentDate}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor={colors.gray[400]}
+            />
+
+            <Text style={styles.fieldLabel}>Description * (min 20 characters)</Text>
+            <TextInput
+              style={[styles.input, styles.inputMulti]}
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Describe the incident, damage extent, and circumstances..."
+              placeholderTextColor={colors.gray[400]}
+              multiline
+              numberOfLines={5}
+              textAlignVertical="top"
+            />
+            <Text style={[styles.charCount, description.length < 20 && { color: colors.rsa.red }]}>
+              {description.length}/20 minimum
+            </Text>
+
+            <Text style={styles.fieldLabel}>Estimated Repair Cost (R) *</Text>
+            <TextInput
+              style={styles.input}
+              value={estimatedCost}
+              onChangeText={setEstimatedCost}
+              placeholder="e.g. 25000"
+              placeholderTextColor={colors.gray[400]}
+              keyboardType="numeric"
+            />
+          </View>
+
+          {/* Submit */}
+          <TouchableOpacity
+            style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+            onPress={handleCreateClaim}
+            disabled={submitting || !selectedPolicy}
+          >
+            {submitting ? (
+              <ActivityIndicator size="small" color={colors.rsa.white} />
+            ) : (
+              <>
+                <Ionicons name="save" size={18} color={colors.rsa.white} />
+                <Text style={styles.submitButtonText}>Save as Draft</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
+
+        {/* Policy Picker Modal */}
+        <Modal
+          visible={showPolicyPicker}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowPolicyPicker(false)}
+        >
+          <SafeAreaView style={styles.modalContainer} edges={['top']}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setShowPolicyPicker(false)}>
+                <Ionicons name="close" size={24} color={colors.text.primary} />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Select Policy</Text>
+              <View style={{ width: 24 }} />
+            </View>
+            <ScrollView>
+              {policies.map((p) => (
+                <TouchableOpacity
+                  key={p.id}
+                  style={[
+                    styles.policyOption,
+                    selectedPolicy?.id === p.id && styles.policyOptionSelected,
+                  ]}
+                  onPress={() => {
+                    setSelectedPolicy(p);
+                    setShowPolicyPicker(false);
+                  }}
+                >
+                  <View style={styles.policyOptionLeft}>
+                    <Text style={styles.policyOptionName}>{p.insurer_name}</Text>
+                    <Text style={styles.policyOptionNumber}>{p.policy_number}</Text>
+                    <Text style={styles.policyOptionType}>{p.policy_type}</Text>
+                  </View>
+                  {p.cover_amount && (
+                    <Text style={styles.policyOptionCover}>{formatZAR(p.cover_amount)}</Text>
+                  )}
+                  {selectedPolicy?.id === p.id && (
+                    <Ionicons name="checkmark-circle" size={20} color={colors.rsa.blue} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -758,7 +789,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    paddingBottom: 40,
+    paddingBottom: 100,
     gap: 16,
   },
   claimNumberCard: {

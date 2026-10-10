@@ -233,7 +233,7 @@ export default function OwnerLeaseRenewalScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
@@ -255,7 +255,7 @@ export default function OwnerLeaseRenewalScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <KeyboardAvoidingView>
         {/* Header */}
         <View style={styles.header}>
@@ -516,7 +516,7 @@ export default function OwnerLeaseRenewalScreen() {
           presentationStyle="pageSheet"
           onRequestClose={() => setOfferModal(null)}
         >
-          <SafeAreaView style={styles.modalContainer}>
+          <SafeAreaView style={styles.modalContainer} edges={['top']}>
             <View style={styles.modalHeader}>
               <TouchableOpacity onPress={() => setOfferModal(null)}>
                 <Ionicons name="close" size={24} color={colors.text.primary} />
@@ -681,7 +681,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 100,
     gap: 12,
   },
   warningCard: {

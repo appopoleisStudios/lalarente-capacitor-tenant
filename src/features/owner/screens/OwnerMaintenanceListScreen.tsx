@@ -83,7 +83,7 @@ export default function OwnerMaintenanceListScreen() {
   // Loading state
   if (loading && !refreshing) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.container}>
           <View style={styles.header}>
             <View style={styles.headerLeft}>
@@ -103,7 +103,7 @@ export default function OwnerMaintenanceListScreen() {
   // Error state
   if (error) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.container}>
           <View style={styles.header}>
             <View style={styles.headerLeft}>
@@ -127,7 +127,7 @@ export default function OwnerMaintenanceListScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>

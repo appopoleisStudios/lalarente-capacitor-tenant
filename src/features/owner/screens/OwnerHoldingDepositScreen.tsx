@@ -44,11 +44,14 @@ const formatDate = (iso: string | null) => {
   });
 };
 
-const STATUS_CONFIG: Record<HoldingDepositStatus, {
-  label: string;
-  color: string;
-  bg: string;
-}> = {
+const STATUS_CONFIG: Record<
+  HoldingDepositStatus,
+  {
+    label: string;
+    color: string;
+    bg: string;
+  }
+> = {
   pending: { label: 'Awaiting Payment', color: '#D97706', bg: '#FEF3C7' },
   paid: { label: 'Paid – Secured', color: colors.role.owner.primary, bg: '#E6F7F0' },
   applied: { label: 'Applied to Lease', color: colors.rsa.blue, bg: '#E6EBF5' },
@@ -88,17 +91,21 @@ export default function OwnerHoldingDepositScreen() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       // Load all holding deposits for owner's properties in one query
       const { data, error } = await supabase
         .from('holding_deposits')
-        .select(`
+        .select(
+          `
           *,
           property:properties!property_id(id, title, address),
           tenant:profiles!tenant_id(id, full_name, email, phone)
-        `)
+        `
+        )
         .eq('properties.owner_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -167,23 +174,22 @@ export default function OwnerHoldingDepositScreen() {
 
   // ── Filter ─────────────────────────────────────────────────────────────────
 
-  const filtered = filterStatus === 'all'
-    ? deposits
-    : deposits.filter(d => d.status === filterStatus);
+  const filtered =
+    filterStatus === 'all' ? deposits : deposits.filter((d) => d.status === filterStatus);
 
   // ── Stats ──────────────────────────────────────────────────────────────────
 
   const totalPaid = deposits
-    .filter(d => d.status === 'paid')
+    .filter((d) => d.status === 'paid')
     .reduce((sum, d) => sum + d.amount, 0);
-  const pendingCount = deposits.filter(d => d.status === 'pending').length;
-  const paidCount = deposits.filter(d => d.status === 'paid').length;
+  const pendingCount = deposits.filter((d) => d.status === 'pending').length;
+  const paidCount = deposits.filter((d) => d.status === 'paid').length;
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
@@ -197,109 +203,118 @@ export default function OwnerHoldingDepositScreen() {
     );
   }
 
-  const FILTER_OPTIONS: Array<HoldingDepositStatus | 'all'> = [
-    'all', 'pending', 'paid', 'applied', 'refunded',
+  const FILTER_OPTIONS: (HoldingDepositStatus | 'all')[] = [
+    'all',
+    'pending',
+    'paid',
+    'applied',
+    'refunded',
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <KeyboardAvoidingView>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
-        </TouchableOpacity>
-        <View style={styles.headerText}>
-          <Text style={styles.title}>Holding Deposits</Text>
-          <Text style={styles.subtitle}>{deposits.length} total</Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+          </TouchableOpacity>
+          <View style={styles.headerText}>
+            <Text style={styles.title}>Holding Deposits</Text>
+            <Text style={styles.subtitle}>{deposits.length} total</Text>
+          </View>
+          <TouchableOpacity style={styles.createBtn} onPress={() => setShowCreateModal(true)}>
+            <Ionicons name="add" size={22} color={colors.rsa.white} />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={styles.createBtn}
-          onPress={() => setShowCreateModal(true)}
-        >
-          <Ionicons name="add" size={22} color={colors.rsa.white} />
-        </TouchableOpacity>
-      </View>
 
-      <FlatList
-        data={filtered}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContent}
-        ListHeaderComponent={
-          <>
-            {/* Stats */}
-            <View style={styles.statsRow}>
-              <View style={styles.statBox}>
-                <Text style={[styles.statNumber, { color: colors.rsa.blue }]}>
-                  {formatZAR(totalPaid)}
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          ListHeaderComponent={
+            <>
+              {/* Stats */}
+              <View style={styles.statsRow}>
+                <View style={styles.statBox}>
+                  <Text style={[styles.statNumber, { color: colors.rsa.blue }]}>
+                    {formatZAR(totalPaid)}
+                  </Text>
+                  <Text style={styles.statLabel}>Secured Funds</Text>
+                </View>
+                <View style={styles.statBox}>
+                  <Text style={[styles.statNumber, { color: '#D97706' }]}>{pendingCount}</Text>
+                  <Text style={styles.statLabel}>Awaiting Payment</Text>
+                </View>
+                <View style={styles.statBox}>
+                  <Text style={[styles.statNumber, { color: colors.role.owner.primary }]}>
+                    {paidCount}
+                  </Text>
+                  <Text style={styles.statLabel}>Paid & Active</Text>
+                </View>
+              </View>
+
+              {/* Legal Notice */}
+              <View style={styles.legalNotice}>
+                <Ionicons name="information-circle" size={16} color={colors.rsa.blue} />
+                <Text style={styles.legalText}>
+                  RHA s5A: Holding deposits MUST be refunded if the application is rejected. They
+                  can only be forfeited if the approved tenant withdraws.
                 </Text>
-                <Text style={styles.statLabel}>Secured Funds</Text>
               </View>
-              <View style={styles.statBox}>
-                <Text style={[styles.statNumber, { color: '#D97706' }]}>{pendingCount}</Text>
-                <Text style={styles.statLabel}>Awaiting Payment</Text>
-              </View>
-              <View style={styles.statBox}>
-                <Text style={[styles.statNumber, { color: colors.role.owner.primary }]}>{paidCount}</Text>
-                <Text style={styles.statLabel}>Paid & Active</Text>
-              </View>
-            </View>
 
-            {/* Legal Notice */}
-            <View style={styles.legalNotice}>
-              <Ionicons name="information-circle" size={16} color={colors.rsa.blue} />
-              <Text style={styles.legalText}>
-                RHA s5A: Holding deposits MUST be refunded if the application is rejected. They can only be forfeited if the approved tenant withdraws.
+              {/* Filter Chips */}
+              <View style={styles.filterRow}>
+                {FILTER_OPTIONS.map((f) => (
+                  <TouchableOpacity
+                    key={f}
+                    style={[
+                      styles.filterChip,
+                      filterStatus === f && { backgroundColor: colors.rsa.blue },
+                    ]}
+                    onPress={() => setFilterStatus(f)}
+                  >
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        filterStatus === f && { color: colors.rsa.white },
+                      ]}
+                    >
+                      {f === 'all' ? 'All' : STATUS_CONFIG[f]?.label || f}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          }
+          renderItem={({ item }) => (
+            <DepositCard
+              deposit={item}
+              onRefund={handleRefund}
+              onApplyToLease={handleApplyToLease}
+            />
+          )}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Ionicons name="lock-open-outline" size={56} color={colors.gray[300]} />
+              <Text style={styles.emptyTitle}>No Holding Deposits</Text>
+              <Text style={styles.emptySubtitle}>
+                Create a holding deposit request to secure a property during application review
               </Text>
             </View>
+          }
+        />
 
-            {/* Filter Chips */}
-            <View style={styles.filterRow}>
-              {FILTER_OPTIONS.map(f => (
-                <TouchableOpacity
-                  key={f}
-                  style={[
-                    styles.filterChip,
-                    filterStatus === f && { backgroundColor: colors.rsa.blue },
-                  ]}
-                  onPress={() => setFilterStatus(f)}
-                >
-                  <Text style={[
-                    styles.filterChipText,
-                    filterStatus === f && { color: colors.rsa.white },
-                  ]}>
-                    {f === 'all' ? 'All' : STATUS_CONFIG[f]?.label || f}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </>
-        }
-        renderItem={({ item }) => (
-          <DepositCard
-            deposit={item}
-            onRefund={handleRefund}
-            onApplyToLease={handleApplyToLease}
-          />
-        )}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="lock-open-outline" size={56} color={colors.gray[300]} />
-            <Text style={styles.emptyTitle}>No Holding Deposits</Text>
-            <Text style={styles.emptySubtitle}>
-              Create a holding deposit request to secure a property during application review
-            </Text>
-          </View>
-        }
-      />
-
-      {/* Create Deposit Modal */}
-      <CreateDepositModal
-        visible={showCreateModal}
-        properties={properties}
-        onClose={() => setShowCreateModal(false)}
-        onCreated={() => { setShowCreateModal(false); loadData(); }}
-      />
+        {/* Create Deposit Modal */}
+        <CreateDepositModal
+          visible={showCreateModal}
+          properties={properties}
+          onClose={() => setShowCreateModal(false)}
+          onCreated={() => {
+            setShowCreateModal(false);
+            loadData();
+          }}
+        />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -337,7 +352,8 @@ function DepositCard({
         <View style={styles.cardRow}>
           <Ionicons name="person-outline" size={14} color={colors.text.secondary} />
           <Text style={styles.cardSecondary}>
-            {deposit.tenant?.full_name || 'Tenant'} · {deposit.tenant?.phone || deposit.tenant?.email || ''}
+            {deposit.tenant?.full_name || 'Tenant'} ·{' '}
+            {deposit.tenant?.phone || deposit.tenant?.email || ''}
           </Text>
         </View>
 
@@ -380,9 +396,7 @@ function DepositCard({
               style={[styles.cardActionBtn, { borderColor: colors.rsa.red }]}
               onPress={() => onRefund(deposit)}
             >
-              <Text style={[styles.cardActionText, { color: colors.rsa.red }]}>
-                Refund
-              </Text>
+              <Text style={[styles.cardActionText, { color: colors.rsa.red }]}>Refund</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -411,7 +425,10 @@ function CreateDepositModal({
 
   const handleCreate = async () => {
     if (!selectedPropertyId || !tenantEmail.trim() || !amount) {
-      Alert.alert('Missing Fields', 'Please select a property, enter tenant email, and set the amount.');
+      Alert.alert(
+        'Missing Fields',
+        'Please select a property, enter tenant email, and set the amount.'
+      );
       return;
     }
 
@@ -432,7 +449,10 @@ function CreateDepositModal({
 
       if (tenantError) throw tenantError;
       if (!tenant) {
-        Alert.alert('Tenant Not Found', 'No user found with that email address. The tenant must have a Lalarente account.');
+        Alert.alert(
+          'Tenant Not Found',
+          'No user found with that email address. The tenant must have a Lalarente account.'
+        );
         return;
       }
 
@@ -441,7 +461,10 @@ function CreateDepositModal({
         amount: amountNum,
       });
 
-      Alert.alert('Created', 'Holding deposit request created. The tenant will see it in their app.');
+      Alert.alert(
+        'Created',
+        'Holding deposit request created. The tenant will see it in their app.'
+      );
       setSelectedPropertyId('');
       setTenantEmail('');
       setAmount('');
@@ -455,7 +478,7 @@ function CreateDepositModal({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <SafeAreaView style={styles.modalContainer}>
+      <SafeAreaView style={styles.modalContainer} edges={['top']}>
         <View style={styles.modalHeader}>
           <Text style={styles.modalTitle}>Request Holding Deposit</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
@@ -470,19 +493,24 @@ function CreateDepositModal({
             {properties.length === 0 ? (
               <Text style={styles.noPropertiesText}>No listed properties available</Text>
             ) : (
-              properties.map(p => (
+              properties.map((p) => (
                 <TouchableOpacity
                   key={p.id}
                   style={[
                     styles.propertyOption,
-                    selectedPropertyId === p.id && { borderColor: colors.rsa.blue, backgroundColor: '#E6EBF5' },
+                    selectedPropertyId === p.id && {
+                      borderColor: colors.rsa.blue,
+                      backgroundColor: '#E6EBF5',
+                    },
                   ]}
                   onPress={() => setSelectedPropertyId(p.id)}
                 >
-                  <Text style={[
-                    styles.propertyOptionText,
-                    selectedPropertyId === p.id && { color: colors.rsa.blue, fontWeight: '700' },
-                  ]}>
+                  <Text
+                    style={[
+                      styles.propertyOptionText,
+                      selectedPropertyId === p.id && { color: colors.rsa.blue, fontWeight: '700' },
+                    ]}
+                  >
                     {p.title}
                   </Text>
                   {selectedPropertyId === p.id && (
@@ -517,7 +545,8 @@ function CreateDepositModal({
           <View style={styles.modalNotice}>
             <Ionicons name="information-circle" size={14} color={colors.rsa.blue} />
             <Text style={styles.modalNoticeText}>
-              Typically 1 month's rent. Must be refunded if the application is unsuccessful (RHA s5A).
+              Typically 1 month's rent. Must be refunded if the application is unsuccessful (RHA
+              s5A).
             </Text>
           </View>
 
@@ -526,10 +555,11 @@ function CreateDepositModal({
             onPress={handleCreate}
             disabled={loading}
           >
-            {loading
-              ? <ActivityIndicator color={colors.rsa.white} />
-              : <Text style={styles.createButtonText}>Create Deposit Request</Text>
-            }
+            {loading ? (
+              <ActivityIndicator color={colors.rsa.white} />
+            ) : (
+              <Text style={styles.createButtonText}>Create Deposit Request</Text>
+            )}
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -581,7 +611,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 100,
     gap: 12,
   },
   statsRow: {

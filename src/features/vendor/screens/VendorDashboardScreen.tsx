@@ -274,7 +274,7 @@ export default function VendorDashboardScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary[500]} />
         </View>
@@ -664,7 +664,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 100,
   },
   header: {
     flexDirection: 'row',
