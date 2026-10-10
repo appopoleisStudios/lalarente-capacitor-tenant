@@ -11,6 +11,15 @@ import { toDateString } from '../../../shared/utils/businessDayCalculator';
 // ─── Pure Calculation Helpers ────────────────────────────────────────────────
 
 /**
+ * Convert a DB-stored deposit_interest_rate (percentage, e.g. 7.25 = 7.25% p.a.)
+ * to a decimal rate for calculation (e.g. 0.0725).
+ * DB contract: values are always stored as percentages. Default is SA prescribed rate 5.25%.
+ */
+export function normalizeDepositRate(storedRate: number | null | undefined): number {
+  return (storedRate ?? 5.25) / 100;
+}
+
+/**
  * Calculate monthly interest on a deposit balance.
  * Per-month simple interest: P × r/12
  */
@@ -64,9 +73,7 @@ export const depositInterestApi = {
       return 0;
     }
 
-    // DB stores deposit_interest_rate as a percentage (e.g. 7.25 = 7.25% p.a.).
-    // Default: SA prescribed rate 5.25% (stored as 5.25, not 0.0525).
-    const annualRate = (lease.deposit_interest_rate ?? 5.25) / 100;
+    const annualRate = normalizeDepositRate(lease.deposit_interest_rate);
     // Get the current balance (deposit + accumulated interest)
     const currentBalance = lease.deposit_amount + (lease.deposit_total_interest || 0);
     const monthlyInterest = calculateMonthlyInterest(currentBalance, annualRate);
@@ -129,7 +136,7 @@ export const depositInterestApi = {
     return {
       leaseId,
       depositAmount: lease.deposit_amount || 0,
-      annualRate: (lease.deposit_interest_rate ?? 5.25) / 100,
+      annualRate: normalizeDepositRate(lease.deposit_interest_rate),
       totalInterest: lease.deposit_total_interest || 0,
       currentBalance: (lease.deposit_amount || 0) + (lease.deposit_total_interest || 0),
       accruals: (accruals || []).map((a) => ({

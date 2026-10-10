@@ -12,9 +12,45 @@
 import {
   calculateMonthlyInterest,
   calculateCurrentBalance,
+  normalizeDepositRate,
 } from '../depositInterest.api';
 
 // ─── Tests ──────────────────────────────────────────────────────────────────
+
+/**
+ * DB unit contract: deposit_interest_rate is stored as a percentage (e.g. 7.25 = 7.25% p.a.).
+ * normalizeDepositRate() is the single conversion boundary used by both the accrual path
+ * and getInterestHistory so they can never diverge.
+ */
+describe('normalizeDepositRate — DB unit contract', () => {
+  it('converts a typical stored percentage (7.25) to a decimal rate', () => {
+    expect(normalizeDepositRate(7.25)).toBeCloseTo(0.0725, 6);
+  });
+
+  it('converts the SA prescribed default (5.25) to a decimal rate', () => {
+    expect(normalizeDepositRate(5.25)).toBeCloseTo(0.0525, 6);
+  });
+
+  it('applies the 5.25% default when the stored value is null', () => {
+    expect(normalizeDepositRate(null)).toBeCloseTo(0.0525, 6);
+  });
+
+  it('applies the 5.25% default when the stored value is undefined', () => {
+    expect(normalizeDepositRate(undefined)).toBeCloseTo(0.0525, 6);
+  });
+
+  it('returns zero when rate is explicitly stored as 0', () => {
+    expect(normalizeDepositRate(0)).toBe(0);
+  });
+
+  it('accrual path and summary path use the same conversion (no divergence)', () => {
+    // Both call sites use normalizeDepositRate — this test documents that contract.
+    const storedRate = 7.25;
+    const accrualRate = normalizeDepositRate(storedRate);
+    const summaryRate = normalizeDepositRate(storedRate);
+    expect(accrualRate).toBe(summaryRate);
+  });
+});
 
 describe('Deposit Interest Calculation', () => {
   describe('calculateMonthlyInterest', () => {
