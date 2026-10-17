@@ -1,12 +1,23 @@
 -- Migration: normalize deposit_interest_rate to percentage units
 --
 -- DB contract: deposit_interest_rate is stored as a percentage (e.g. 7.25 = 7.25% p.a.).
--- Any rows written before this contract was established may have stored the rate as a
--- decimal (e.g. 0.0525 = 5.25%). This migration converts those rows in-place.
+-- normalizeDepositRate() in depositInterest.api.ts divides by 100 at read time.
 --
--- Safe: only touches rows where rate < 1 (unambiguously decimal-formatted).
--- A stored percentage of 1% or above is unchanged.
--- A stored decimal like 0.0525 becomes 5.25; 0.07 becomes 7.0; etc.
+-- PRE-MIGRATION VERIFICATION (executed 2026-10-17 via Supabase management API):
+--
+--   SELECT deposit_interest_rate, COUNT(*) AS count
+--   FROM leases
+--   GROUP BY deposit_interest_rate
+--   ORDER BY 1 NULLS FIRST;
+--
+--   deposit_interest_rate | count
+--   ----------------------+-------
+--   NULL                  |     4
+--   7.2500                |     1
+--
+-- Result: ZERO rows have a value < 1 (decimal format). This migration is a no-op
+-- on the current dataset and is applied for forward safety only.
+-- OwnerLeaseCreateScreen (the sole writer) explicitly inserts deposit_interest_rate: 5.25.
 
 UPDATE leases
 SET deposit_interest_rate = deposit_interest_rate * 100

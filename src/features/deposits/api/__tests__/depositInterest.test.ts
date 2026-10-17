@@ -45,12 +45,10 @@ describe('normalizeDepositRate — DB unit contract', () => {
     expect(normalizeDepositRate(0)).toBe(0);
   });
 
-  it('accrual path and summary path use the same conversion (no divergence)', () => {
-    // Both call sites use normalizeDepositRate — this test documents that contract.
-    const storedRate = 7.25;
-    const accrualRate = normalizeDepositRate(storedRate);
-    const summaryRate = normalizeDepositRate(storedRate);
-    expect(accrualRate).toBe(summaryRate);
+  it('7.25 — the only non-null production value (DB snapshot 2026-10-17) — converts correctly', () => {
+    // Live DB: SELECT deposit_interest_rate, COUNT(*) FROM leases GROUP BY 1
+    // → {null: 4, 7.2500: 1}. This test pins the conversion for that real value.
+    expect(normalizeDepositRate(7.25)).toBeCloseTo(0.0725, 6);
   });
 });
 
