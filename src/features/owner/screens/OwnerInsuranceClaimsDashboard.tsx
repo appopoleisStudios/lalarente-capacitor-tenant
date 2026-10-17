@@ -19,7 +19,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/src/lib/supabase';
-import { insuranceClaimsApi, InsuranceClaim, ClaimStatus, ClaimType } from '@/src/features/insurance/api/insuranceClaims.api';
+import {
+  insuranceClaimsApi,
+  InsuranceClaim,
+  ClaimStatus,
+  ClaimType,
+} from '@/src/features/insurance/api/insuranceClaims.api';
 import { colors } from '@/src/shared/theme/colors';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -76,7 +81,9 @@ export default function OwnerInsuranceClaimsDashboard() {
   const loadClaims = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       const [allClaims, claimSummary] = await Promise.all([
@@ -94,7 +101,7 @@ export default function OwnerInsuranceClaimsDashboard() {
     }
   };
 
-  const filteredClaims = claims.filter(c => {
+  const filteredClaims = claims.filter((c) => {
     if (filterStatus === 'active') return !['closed', 'rejected', 'paid_out'].includes(c.status);
     if (filterStatus === 'closed') return ['closed', 'rejected', 'paid_out'].includes(c.status);
     return true;
@@ -104,7 +111,7 @@ export default function OwnerInsuranceClaimsDashboard() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
@@ -119,7 +126,7 @@ export default function OwnerInsuranceClaimsDashboard() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -161,13 +168,15 @@ export default function OwnerInsuranceClaimsDashboard() {
 
         {/* Filter Tabs */}
         <View style={styles.filterRow}>
-          {(['all', 'active', 'closed'] as const).map(f => (
+          {(['all', 'active', 'closed'] as const).map((f) => (
             <TouchableOpacity
               key={f}
               style={[styles.filterTab, filterStatus === f && styles.filterTabActive]}
               onPress={() => setFilterStatus(f)}
             >
-              <Text style={[styles.filterTabText, filterStatus === f && styles.filterTabTextActive]}>
+              <Text
+                style={[styles.filterTabText, filterStatus === f && styles.filterTabTextActive]}
+              >
                 {f === 'all' ? 'All' : f === 'active' ? 'Active' : 'Resolved'}
               </Text>
             </TouchableOpacity>
@@ -179,7 +188,9 @@ export default function OwnerInsuranceClaimsDashboard() {
           <View style={styles.emptyState}>
             <Ionicons name="shield-checkmark-outline" size={64} color={colors.gray[300]} />
             <Text style={styles.emptyTitle}>
-              {filterStatus === 'all' ? 'No Claims Yet' : `No ${filterStatus === 'active' ? 'Active' : 'Resolved'} Claims`}
+              {filterStatus === 'all'
+                ? 'No Claims Yet'
+                : `No ${filterStatus === 'active' ? 'Active' : 'Resolved'} Claims`}
             </Text>
             <Text style={styles.emptySubtitle}>
               {filterStatus === 'all'
@@ -216,7 +227,7 @@ export default function OwnerInsuranceClaimsDashboard() {
                 <View style={styles.claimInfo}>
                   <View style={styles.claimTop}>
                     <Text style={styles.claimType}>
-                      {claim.claim_type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                      {claim.claim_type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
                     </Text>
                     <View style={[styles.statusBadge, { backgroundColor: statusInfo.bg }]}>
                       <Text style={[styles.statusText, { color: statusInfo.color }]}>
@@ -225,9 +236,7 @@ export default function OwnerInsuranceClaimsDashboard() {
                     </View>
                   </View>
 
-                  {property && (
-                    <Text style={styles.propertyName}>{property.title}</Text>
-                  )}
+                  {property && <Text style={styles.propertyName}>{property.title}</Text>}
 
                   <Text style={styles.claimDescription} numberOfLines={2}>
                     {claim.description}
@@ -239,13 +248,13 @@ export default function OwnerInsuranceClaimsDashboard() {
                     </Text>
                     <View style={styles.claimAmounts}>
                       <Text style={styles.estimatedLabel}>Est: </Text>
-                      <Text style={styles.estimatedAmount}>
-                        {formatZAR(claim.estimated_cost)}
-                      </Text>
+                      <Text style={styles.estimatedAmount}>{formatZAR(claim.estimated_cost)}</Text>
                       {claim.approved_amount != null && (
                         <>
                           <Text style={styles.approvedSeparator}> → </Text>
-                          <Text style={[styles.approvedAmount, { color: colors.role.owner.primary }]}>
+                          <Text
+                            style={[styles.approvedAmount, { color: colors.role.owner.primary }]}
+                          >
                             {formatZAR(claim.approved_amount)}
                           </Text>
                         </>
@@ -303,7 +312,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 100,
     gap: 12,
   },
   statsGrid: {

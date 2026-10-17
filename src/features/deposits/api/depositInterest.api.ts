@@ -11,13 +11,19 @@ import { toDateString } from '../../../shared/utils/businessDayCalculator';
 // ─── Pure Calculation Helpers ────────────────────────────────────────────────
 
 /**
+ * Convert a DB-stored deposit_interest_rate (percentage, e.g. 7.25 = 7.25% p.a.)
+ * to a decimal rate for calculation (e.g. 0.0725).
+ * DB contract: values are always stored as percentages. Default is SA prescribed rate 5.25%.
+ */
+export function normalizeDepositRate(storedRate: number | null | undefined): number {
+  return (storedRate ?? 5.25) / 100;
+}
+
+/**
  * Calculate monthly interest on a deposit balance.
  * Per-month simple interest: P × r/12
  */
-export function calculateMonthlyInterest(
-  currentBalance: number,
-  annualRate: number
-): number {
+export function calculateMonthlyInterest(currentBalance: number, annualRate: number): number {
   const monthlyRate = annualRate / 12;
   return Math.round(currentBalance * monthlyRate * 100) / 100;
 }
@@ -25,10 +31,7 @@ export function calculateMonthlyInterest(
 /**
  * Calculate current balance = deposit + accumulated interest.
  */
-export function calculateCurrentBalance(
-  depositAmount: number,
-  totalInterest: number
-): number {
+export function calculateCurrentBalance(depositAmount: number, totalInterest: number): number {
   return depositAmount + totalInterest;
 }
 
@@ -40,12 +43,12 @@ export interface DepositInterestSummary {
   annualRate: number;
   totalInterest: number;
   currentBalance: number;
-  accruals: Array<{
+  accruals: {
     periodStart: string;
     periodEnd: string;
     interestEarned: number;
     cumulativeInterest: number;
-  }>;
+  }[];
 }
 
 // ─── API ─────────────────────────────────────────────────────────────────────
@@ -70,8 +73,7 @@ export const depositInterestApi = {
       return 0;
     }
 
-    // Use the lease-specific rate, or default prescribed rate
-    const annualRate = lease.deposit_interest_rate || 0.0525; // 5.25% default
+    const annualRate = normalizeDepositRate(lease.deposit_interest_rate);
     // Get the current balance (deposit + accumulated interest)
     const currentBalance = lease.deposit_amount + (lease.deposit_total_interest || 0);
     const monthlyInterest = calculateMonthlyInterest(currentBalance, annualRate);
@@ -83,19 +85,17 @@ export const depositInterestApi = {
     const newTotalInterest = (lease.deposit_total_interest || 0) + monthlyInterest;
 
     // Record the accrual
-    const { error: insertErr } = await supabase
-      .from('deposit_interest_accruals')
-      .insert({
-        lease_id: leaseId,
-        tenant_id: lease.tenant_id!,
-        deposit_amount: lease.deposit_amount,
-        interest_rate: annualRate,
-        accrual_period_start: toDateString(periodStart),
-        accrual_period_end: toDateString(periodEnd),
-        interest_earned: monthlyInterest,
-        cumulative_interest: newTotalInterest,
-        balance_after_interest: lease.deposit_amount + newTotalInterest,
-      });
+    const { error: insertErr } = await supabase.from('deposit_interest_accruals').insert({
+      lease_id: leaseId,
+      tenant_id: lease.tenant_id!,
+      deposit_amount: lease.deposit_amount,
+      interest_rate: annualRate,
+      accrual_period_start: toDateString(periodStart),
+      accrual_period_end: toDateString(periodEnd),
+      interest_earned: monthlyInterest,
+      cumulative_interest: newTotalInterest,
+      balance_after_interest: lease.deposit_amount + newTotalInterest,
+    });
 
     if (insertErr) {
       console.error('Error recording interest accrual:', insertErr);
@@ -136,7 +136,7 @@ export const depositInterestApi = {
     return {
       leaseId,
       depositAmount: lease.deposit_amount || 0,
-      annualRate: lease.deposit_interest_rate || 0.0525,
+      annualRate: normalizeDepositRate(lease.deposit_interest_rate),
       totalInterest: lease.deposit_total_interest || 0,
       currentBalance: (lease.deposit_amount || 0) + (lease.deposit_total_interest || 0),
       accruals: (accruals || []).map((a) => ({

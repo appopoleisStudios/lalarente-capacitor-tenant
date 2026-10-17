@@ -17,8 +17,18 @@ import { exportMonthlyStatementPdf } from '../utils/pdfReports';
 const RSA = { blue: '#002395', gold: '#FFB81C', green: '#007A4D' };
 
 const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 function formatZAR(amount: number): string {
@@ -62,7 +72,9 @@ export default function OwnerMonthlyStatementScreen() {
   const loadStatement = async () => {
     try {
       setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
       setOwnerId(user.id);
 
@@ -72,14 +84,16 @@ export default function OwnerMonthlyStatementScreen() {
       // Fetch payments for this month from owner's leases
       const { data: payments } = await supabase
         .from('payments')
-        .select(`
+        .select(
+          `
           amount, status, paid_date,
           leases!inner(
             id, monthly_rent, owner_id,
             properties!property_id(id, title),
             profiles!tenant_id(full_name)
           )
-        `)
+        `
+        )
         .eq('leases.owner_id', user.id)
         .gte('paid_date', monthStart)
         .lte('paid_date', monthEnd);
@@ -87,24 +101,28 @@ export default function OwnerMonthlyStatementScreen() {
       // Fetch active leases to compute billed amounts
       const { data: activeLeases } = await supabase
         .from('leases')
-        .select(`
+        .select(
+          `
           id, monthly_rent,
           properties!property_id(id, title),
           profiles!tenant_id(full_name)
-        `)
+        `
+        )
         .eq('owner_id', user.id)
         .eq('status', 'active');
 
       // Fetch maintenance/PO costs for this month
       const { data: pos } = await supabase
         .from('purchase_orders')
-        .select(`
+        .select(
+          `
           total_amount,
           maintenance_requests!inner(
             property_id,
             properties!property_id(id, title, owner_id)
           )
-        `)
+        `
+        )
         .eq('maintenance_requests.properties.owner_id', user.id)
         .gte('created_at', monthStart)
         .lte('created_at', monthEnd)
@@ -183,15 +201,19 @@ export default function OwnerMonthlyStatementScreen() {
   };
 
   const prevMonth = () => {
-    if (month === 0) { setMonth(11); setYear(y => y - 1); }
-    else setMonth(m => m - 1);
+    if (month === 0) {
+      setMonth(11);
+      setYear((y) => y - 1);
+    } else setMonth((m) => m - 1);
   };
 
   const nextMonth = () => {
     const now = new Date();
     if (year === now.getFullYear() && month === now.getMonth()) return; // Don't go future
-    if (month === 11) { setMonth(0); setYear(y => y + 1); }
-    else setMonth(m => m + 1);
+    if (month === 11) {
+      setMonth(0);
+      setYear((y) => y + 1);
+    } else setMonth((m) => m + 1);
   };
 
   const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
@@ -201,14 +223,10 @@ export default function OwnerMonthlyStatementScreen() {
     setExporting(true);
     try {
       const documentId = await exportMonthlyStatementPdf(ownerId, month, year);
-      Alert.alert(
-        'Statement Saved',
-        'Your monthly statement has been saved to Documents.',
-        [
-          { text: 'View', onPress: () => router.push(`/(owner)/documents/${documentId}` as any) },
-          { text: 'OK' },
-        ],
-      );
+      Alert.alert('Statement Saved', 'Your monthly statement has been saved to Documents.', [
+        { text: 'View', onPress: () => router.push(`/(owner)/documents/${documentId}` as any) },
+        { text: 'OK' },
+      ]);
     } catch (err: any) {
       Alert.alert('Export Failed', err?.message || 'Unable to generate PDF. Please try again.');
     } finally {
@@ -217,7 +235,7 @@ export default function OwnerMonthlyStatementScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
@@ -229,10 +247,11 @@ export default function OwnerMonthlyStatementScreen() {
           disabled={exporting || loading || !ownerId}
           style={styles.exportBtn}
         >
-          {exporting
-            ? <ActivityIndicator size="small" color={RSA.blue} />
-            : <Ionicons name="download-outline" size={22} color={RSA.blue} />
-          }
+          {exporting ? (
+            <ActivityIndicator size="small" color={RSA.blue} />
+          ) : (
+            <Ionicons name="download-outline" size={22} color={RSA.blue} />
+          )}
         </TouchableOpacity>
       </View>
 
@@ -241,13 +260,19 @@ export default function OwnerMonthlyStatementScreen() {
         <TouchableOpacity style={styles.monthArrow} onPress={prevMonth}>
           <Ionicons name="chevron-back" size={22} color={RSA.blue} />
         </TouchableOpacity>
-        <Text style={styles.monthLabel}>{MONTHS[month]} {year}</Text>
+        <Text style={styles.monthLabel}>
+          {MONTHS[month]} {year}
+        </Text>
         <TouchableOpacity
           style={[styles.monthArrow, isCurrentMonth && styles.monthArrowDisabled]}
           onPress={nextMonth}
           disabled={isCurrentMonth}
         >
-          <Ionicons name="chevron-forward" size={22} color={isCurrentMonth ? '#D1D5DB' : RSA.blue} />
+          <Ionicons
+            name="chevron-forward"
+            size={22}
+            color={isCurrentMonth ? '#D1D5DB' : RSA.blue}
+          />
         </TouchableOpacity>
       </View>
 
@@ -290,10 +315,12 @@ export default function OwnerMonthlyStatementScreen() {
           </View>
 
           {/* Net Income Banner */}
-          <View style={[
-            styles.netBanner,
-            (data?.netIncome || 0) >= 0 ? styles.netBannerPositive : styles.netBannerNegative,
-          ]}>
+          <View
+            style={[
+              styles.netBanner,
+              (data?.netIncome || 0) >= 0 ? styles.netBannerPositive : styles.netBannerNegative,
+            ]}
+          >
             <Ionicons
               name={(data?.netIncome || 0) >= 0 ? 'trending-up' : 'trending-down'}
               size={24}
@@ -301,10 +328,12 @@ export default function OwnerMonthlyStatementScreen() {
             />
             <View>
               <Text style={styles.netLabel}>Net Income</Text>
-              <Text style={[
-                styles.netValue,
-                { color: (data?.netIncome || 0) >= 0 ? RSA.green : '#DC2626' },
-              ]}>
+              <Text
+                style={[
+                  styles.netValue,
+                  { color: (data?.netIncome || 0) >= 0 ? RSA.green : '#DC2626' },
+                ]}
+              >
                 {formatZAR(data?.netIncome || 0)}
               </Text>
             </View>
@@ -319,27 +348,29 @@ export default function OwnerMonthlyStatementScreen() {
               <Text style={styles.emptyText}>No active leases in {MONTHS[month]}</Text>
             </View>
           ) : (
-            (data?.properties || []).map(prop => (
+            (data?.properties || []).map((prop) => (
               <View key={prop.propertyId} style={styles.propCard}>
                 <View style={styles.propHeader}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.propTitle}>{prop.propertyTitle}</Text>
                     <Text style={styles.propTenant}>{prop.tenantName}</Text>
                   </View>
-                  <View style={[
-                    styles.propStatusBadge,
-                    prop.rentCollected >= prop.rentBilled && prop.rentBilled > 0
-                      ? styles.propStatusPaid
-                      : prop.rentCollected > 0
-                      ? styles.propStatusPartial
-                      : styles.propStatusUnpaid,
-                  ]}>
+                  <View
+                    style={[
+                      styles.propStatusBadge,
+                      prop.rentCollected >= prop.rentBilled && prop.rentBilled > 0
+                        ? styles.propStatusPaid
+                        : prop.rentCollected > 0
+                          ? styles.propStatusPartial
+                          : styles.propStatusUnpaid,
+                    ]}
+                  >
                     <Text style={styles.propStatusText}>
                       {prop.rentCollected >= prop.rentBilled && prop.rentBilled > 0
                         ? 'Paid'
                         : prop.rentCollected > 0
-                        ? 'Partial'
-                        : 'Unpaid'}
+                          ? 'Partial'
+                          : 'Unpaid'}
                     </Text>
                   </View>
                 </View>
@@ -350,20 +381,29 @@ export default function OwnerMonthlyStatementScreen() {
                   </View>
                   <View style={styles.propRow}>
                     <Text style={styles.propRowLabel}>Collected</Text>
-                    <Text style={[styles.propRowValue, { color: RSA.green }]}>{formatZAR(prop.rentCollected)}</Text>
+                    <Text style={[styles.propRowValue, { color: RSA.green }]}>
+                      {formatZAR(prop.rentCollected)}
+                    </Text>
                   </View>
                   {prop.maintenanceCost > 0 && (
                     <View style={styles.propRow}>
                       <Text style={styles.propRowLabel}>Maintenance</Text>
-                      <Text style={[styles.propRowValue, { color: '#6B7280' }]}>-{formatZAR(prop.maintenanceCost)}</Text>
+                      <Text style={[styles.propRowValue, { color: '#6B7280' }]}>
+                        -{formatZAR(prop.maintenanceCost)}
+                      </Text>
                     </View>
                   )}
                   <View style={[styles.propRow, styles.propRowTotal]}>
                     <Text style={styles.propRowTotalLabel}>Net</Text>
-                    <Text style={[
-                      styles.propRowTotalValue,
-                      { color: (prop.rentCollected - prop.maintenanceCost) >= 0 ? RSA.green : '#DC2626' },
-                    ]}>
+                    <Text
+                      style={[
+                        styles.propRowTotalValue,
+                        {
+                          color:
+                            prop.rentCollected - prop.maintenanceCost >= 0 ? RSA.green : '#DC2626',
+                        },
+                      ]}
+                    >
                       {formatZAR(prop.rentCollected - prop.maintenanceCost)}
                     </Text>
                   </View>
@@ -405,7 +445,13 @@ const styles = StyleSheet.create({
   },
   monthArrow: { padding: 8 },
   monthArrowDisabled: { opacity: 0.3 },
-  monthLabel: { fontSize: 18, fontWeight: '700', color: '#111827', minWidth: 160, textAlign: 'center' },
+  monthLabel: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+    minWidth: 160,
+    textAlign: 'center',
+  },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { flex: 1 },
   scrollContent: { padding: 16, gap: 12 },

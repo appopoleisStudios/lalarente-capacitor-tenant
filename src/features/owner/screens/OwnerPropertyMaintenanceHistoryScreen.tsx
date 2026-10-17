@@ -89,7 +89,7 @@ export default function OwnerPropertyMaintenanceHistoryScreen() {
 
   if (loading && !refreshing) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.container}>
           {header}
           <View style={styles.loadingContainer}>
@@ -103,7 +103,7 @@ export default function OwnerPropertyMaintenanceHistoryScreen() {
 
   if (error) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.container}>
           {header}
           <View style={styles.errorContainer}>
@@ -122,7 +122,7 @@ export default function OwnerPropertyMaintenanceHistoryScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.container}>
         {header}
 

@@ -143,7 +143,7 @@ export default function OwnerPropertyDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#002395" />
           <Text style={styles.loadingText}>Loading property...</Text>
@@ -154,7 +154,7 @@ export default function OwnerPropertyDetailScreen() {
 
   if (error || !property) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.errorContainer}>
           <Text style={styles.errorTitle}>Error</Text>
           <Text style={styles.errorText}>{error || 'Property not found'}</Text>
@@ -179,7 +179,7 @@ export default function OwnerPropertyDetailScreen() {
     statusColors[property.status as keyof typeof statusColors] || statusColors.draft;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>

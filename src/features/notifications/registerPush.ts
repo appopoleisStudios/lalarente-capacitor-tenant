@@ -1,9 +1,12 @@
-import { Platform } from 'react-native';
+import { NativeModules, Platform } from 'react-native';
 import notificationsApi from './api/notificationsApi';
 
 /** Register an Expo push token. Safe no-op if the native module is not in this binary. */
 export async function registerDevicePush(userId: string): Promise<void> {
   if (!userId || Platform.OS === 'web') return;
+  // ExpoPushTokenManager is not linked in the dev-client build — skip entirely
+  // to prevent the native bridge from surfacing an unhandled LogBox error.
+  if (!NativeModules.ExpoPushTokenManager) return;
   try {
     const Notifications = await import('expo-notifications');
     const { status: existing } = await Notifications.getPermissionsAsync();

@@ -68,16 +68,20 @@ export default function TenantLeaseRenewalScreen() {
   const loadLeaseRenewal = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
 
       const { data: lease, error } = await supabase
         .from('leases')
-        .select(`
+        .select(
+          `
           id, monthly_rent, end_date, lease_type,
           property:properties!property_id(title)
-        `)
+        `
+        )
         .eq('tenant_id', user.id)
         .in('status', ['active', 'renewal_pending'])
         .order('start_date', { ascending: false })
@@ -112,9 +116,9 @@ export default function TenantLeaseRenewalScreen() {
         setCounterRent(latest.proposed_monthly_rent.toString());
         setCounterLeaseType((latest.proposed_lease_type as 'fixed' | 'month_to_month') || 'fixed');
         setCounterDuration(latest.proposed_duration_months?.toString() || '12');
-        setCounterEscalationRate(latest.proposed_escalation_rate
-          ? (latest.proposed_escalation_rate * 100).toString()
-          : '');
+        setCounterEscalationRate(
+          latest.proposed_escalation_rate ? (latest.proposed_escalation_rate * 100).toString() : ''
+        );
       }
     } catch (err: any) {
       console.error('Error loading lease renewal:', err);
@@ -138,33 +142,29 @@ export default function TenantLeaseRenewalScreen() {
       return;
     }
 
-    Alert.alert(
-      response === 'renew' ? 'Renew Lease' : 'Decline Renewal',
-      messages[response]!,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Confirm',
-          onPress: async () => {
-            setSubmitting(true);
-            try {
-              await leaseExpiryApi.recordTenantResponse(leaseId, response);
-              Alert.alert(
-                'Response Recorded',
-                response === 'renew'
-                  ? 'Your landlord has been notified you wish to renew.'
-                  : 'Your landlord has been notified you will not be renewing.'
-              );
-              loadLeaseRenewal();
-            } catch (err: any) {
-              Alert.alert('Error', err.message || 'Failed to record response');
-            } finally {
-              setSubmitting(false);
-            }
-          },
+    Alert.alert(response === 'renew' ? 'Renew Lease' : 'Decline Renewal', messages[response]!, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Confirm',
+        onPress: async () => {
+          setSubmitting(true);
+          try {
+            await leaseExpiryApi.recordTenantResponse(leaseId, response);
+            Alert.alert(
+              'Response Recorded',
+              response === 'renew'
+                ? 'Your landlord has been notified you wish to renew.'
+                : 'Your landlord has been notified you will not be renewing.'
+            );
+            loadLeaseRenewal();
+          } catch (err: any) {
+            Alert.alert('Error', err.message || 'Failed to record response');
+          } finally {
+            setSubmitting(false);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleAcceptOffer = async () => {
@@ -208,19 +208,15 @@ export default function TenantLeaseRenewalScreen() {
 
     setSubmitting(true);
     try {
-      await leaseRenewalApi.counterOffer(
-        latestNegotiation.id,
-        userId,
-        {
-          leaseId,
-          proposedRent: rentNum,
-          leaseType: counterLeaseType,
-          durationMonths: counterLeaseType === 'fixed' ? (parseInt(counterDuration) || 12) : undefined,
-          startDate: latestNegotiation.proposed_start_date,
-          escalationRate: counterEscalationRate ? parseFloat(counterEscalationRate) / 100 : undefined,
-          notes: counterNotes.trim() || undefined,
-        }
-      );
+      await leaseRenewalApi.counterOffer(latestNegotiation.id, userId, {
+        leaseId,
+        proposedRent: rentNum,
+        leaseType: counterLeaseType,
+        durationMonths: counterLeaseType === 'fixed' ? parseInt(counterDuration) || 12 : undefined,
+        startDate: latestNegotiation.proposed_start_date,
+        escalationRate: counterEscalationRate ? parseFloat(counterEscalationRate) / 100 : undefined,
+        notes: counterNotes.trim() || undefined,
+      });
       Alert.alert('Counter-Offer Sent', 'Your landlord will review your proposal.');
       setResponseMode('none');
       loadLeaseRenewal();
@@ -235,7 +231,7 @@ export default function TenantLeaseRenewalScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
@@ -251,7 +247,7 @@ export default function TenantLeaseRenewalScreen() {
 
   if (!expiryInfo) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
@@ -261,18 +257,21 @@ export default function TenantLeaseRenewalScreen() {
         <View style={styles.centered}>
           <Ionicons name="document-text-outline" size={64} color={colors.gray[300]} />
           <Text style={styles.emptyTitle}>No Active Lease</Text>
-          <Text style={styles.emptySubtitle}>Renewal options will appear when you have an active lease</Text>
+          <Text style={styles.emptySubtitle}>
+            Renewal options will appear when you have an active lease
+          </Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  const pendingOwnerOffer = latestNegotiation &&
+  const pendingOwnerOffer =
+    latestNegotiation &&
     latestNegotiation.status === 'pending' &&
     latestNegotiation.initiated_by !== userId;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -286,11 +285,14 @@ export default function TenantLeaseRenewalScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Expiry Countdown */}
-        <View style={[
-          styles.expiryCard,
-          expiryInfo.daysUntilExpiry <= 40 && { borderColor: colors.rsa.red, borderWidth: 2 },
-          expiryInfo.daysUntilExpiry <= 60 && expiryInfo.daysUntilExpiry > 40 && { borderColor: '#F59E0B', borderWidth: 2 },
-        ]}>
+        <View
+          style={[
+            styles.expiryCard,
+            expiryInfo.daysUntilExpiry <= 40 && { borderColor: colors.rsa.red, borderWidth: 2 },
+            expiryInfo.daysUntilExpiry <= 60 &&
+              expiryInfo.daysUntilExpiry > 40 && { borderColor: '#F59E0B', borderWidth: 2 },
+          ]}
+        >
           <View style={styles.expiryTop}>
             <Ionicons
               name="calendar"
@@ -299,9 +301,7 @@ export default function TenantLeaseRenewalScreen() {
             />
             <View style={styles.expiryText}>
               <Text style={styles.expiryDays}>
-                {expiryInfo.daysUntilExpiry > 0
-                  ? `${expiryInfo.daysUntilExpiry} days`
-                  : 'EXPIRED'}
+                {expiryInfo.daysUntilExpiry > 0 ? `${expiryInfo.daysUntilExpiry} days` : 'EXPIRED'}
               </Text>
               <Text style={styles.expiryLabel}>
                 until lease expires on {new Date(leaseEndDate).toLocaleDateString('en-ZA')}
@@ -321,9 +321,21 @@ export default function TenantLeaseRenewalScreen() {
             Your landlord is legally required to notify you at these milestones (CPA s14(2)(c))
           </Text>
           {[
-            { label: '80 business days', date: expiryInfo.notice80Due, sent: expiryInfo.notice80Sent },
-            { label: '60 business days', date: expiryInfo.notice60Due, sent: expiryInfo.notice60Sent },
-            { label: '40 business days', date: expiryInfo.notice40Due, sent: expiryInfo.notice40Sent },
+            {
+              label: '80 business days',
+              date: expiryInfo.notice80Due,
+              sent: expiryInfo.notice80Sent,
+            },
+            {
+              label: '60 business days',
+              date: expiryInfo.notice60Due,
+              sent: expiryInfo.notice60Sent,
+            },
+            {
+              label: '40 business days',
+              date: expiryInfo.notice40Due,
+              sent: expiryInfo.notice40Sent,
+            },
           ].map((notice, i) => (
             <View key={i} style={styles.noticeRow}>
               <Ionicons
@@ -380,7 +392,8 @@ export default function TenantLeaseRenewalScreen() {
             </View>
             {latestNegotiation!.response_deadline && (
               <Text style={styles.deadlineText}>
-                Respond by: {new Date(latestNegotiation!.response_deadline).toLocaleDateString('en-ZA')}
+                Respond by:{' '}
+                {new Date(latestNegotiation!.response_deadline).toLocaleDateString('en-ZA')}
               </Text>
             )}
             <View style={styles.offerActions}>
@@ -423,15 +436,28 @@ export default function TenantLeaseRenewalScreen() {
                 style={[styles.segment, counterLeaseType === 'fixed' && styles.segmentActive]}
                 onPress={() => setCounterLeaseType('fixed')}
               >
-                <Text style={[styles.segmentText, counterLeaseType === 'fixed' && styles.segmentTextActive]}>
+                <Text
+                  style={[
+                    styles.segmentText,
+                    counterLeaseType === 'fixed' && styles.segmentTextActive,
+                  ]}
+                >
                   Fixed-Term
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.segment, counterLeaseType === 'month_to_month' && styles.segmentActive]}
+                style={[
+                  styles.segment,
+                  counterLeaseType === 'month_to_month' && styles.segmentActive,
+                ]}
                 onPress={() => setCounterLeaseType('month_to_month')}
               >
-                <Text style={[styles.segmentText, counterLeaseType === 'month_to_month' && styles.segmentTextActive]}>
+                <Text
+                  style={[
+                    styles.segmentText,
+                    counterLeaseType === 'month_to_month' && styles.segmentTextActive,
+                  ]}
+                >
                   Month-to-Month
                 </Text>
               </TouchableOpacity>
@@ -518,7 +544,9 @@ export default function TenantLeaseRenewalScreen() {
                 disabled={submitting}
               >
                 <Ionicons name="refresh-circle" size={28} color={colors.rsa.green} />
-                <Text style={[styles.responseOptionTitle, { color: colors.rsa.green }]}>Renew Lease</Text>
+                <Text style={[styles.responseOptionTitle, { color: colors.rsa.green }]}>
+                  Renew Lease
+                </Text>
                 <Text style={styles.responseOptionDesc}>I want to stay</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -536,7 +564,9 @@ export default function TenantLeaseRenewalScreen() {
                 disabled={submitting}
               >
                 <Ionicons name="exit" size={28} color={colors.rsa.red} />
-                <Text style={[styles.responseOptionTitle, { color: colors.rsa.red }]}>Not Renewing</Text>
+                <Text style={[styles.responseOptionTitle, { color: colors.rsa.red }]}>
+                  Not Renewing
+                </Text>
                 <Text style={styles.responseOptionDesc}>I will be leaving</Text>
               </TouchableOpacity>
             </View>
@@ -548,9 +578,12 @@ export default function TenantLeaseRenewalScreen() {
           <View style={[styles.section, { borderLeftWidth: 4, borderLeftColor: colors.rsa.green }]}>
             <Text style={styles.sectionTitle}>Your Recorded Response</Text>
             <Text style={styles.recordedResponse}>
-              {expiryInfo.tenantResponse === 'renew' && 'You have indicated you wish to renew your lease.'}
-              {expiryInfo.tenantResponse === 'terminate' && 'You have indicated you will not be renewing.'}
-              {expiryInfo.tenantResponse === 'negotiate' && 'You have indicated you wish to negotiate new terms.'}
+              {expiryInfo.tenantResponse === 'renew' &&
+                'You have indicated you wish to renew your lease.'}
+              {expiryInfo.tenantResponse === 'terminate' &&
+                'You have indicated you will not be renewing.'}
+              {expiryInfo.tenantResponse === 'negotiate' &&
+                'You have indicated you wish to negotiate new terms.'}
             </Text>
           </View>
         )}
@@ -560,7 +593,8 @@ export default function TenantLeaseRenewalScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Negotiation History</Text>
             {negotiations.map((n) => {
-              const statusInfo = NEGOTIATION_STATUS_INFO[n.status] || NEGOTIATION_STATUS_INFO.expired;
+              const statusInfo =
+                NEGOTIATION_STATUS_INFO[n.status] || NEGOTIATION_STATUS_INFO.expired;
               const isMyProposal = n.initiated_by === userId;
               return (
                 <View key={n.id} style={styles.negotiationItem}>
@@ -576,7 +610,8 @@ export default function TenantLeaseRenewalScreen() {
                     </View>
                   </View>
                   <Text style={styles.negotiationRent}>
-                    {formatZAR(n.proposed_monthly_rent)}/mo · {n.proposed_lease_type === 'fixed'
+                    {formatZAR(n.proposed_monthly_rent)}/mo ·{' '}
+                    {n.proposed_lease_type === 'fixed'
                       ? `${n.proposed_duration_months}mo fixed`
                       : 'Month-to-month'}
                   </Text>
@@ -892,16 +927,16 @@ const styles = StyleSheet.create({
   },
   responseOptions: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
   },
   responseOption: {
     flex: 1,
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
     backgroundColor: colors.background.default,
     borderWidth: 2,
     borderRadius: 12,
-    padding: 14,
+    padding: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
@@ -909,7 +944,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   responseOptionTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     textAlign: 'center',
   },

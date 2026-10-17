@@ -40,7 +40,10 @@ export default function ClosureMediationScreen() {
   >([]);
 
   const load = useCallback(async () => {
-    if (!requestId) return;
+    if (!requestId) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const report = await getClosureReport(requestId);
@@ -88,6 +91,29 @@ export default function ClosureMediationScreen() {
       setSending(false);
     }
   };
+
+  if (!loading && !requestId) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} accessibilityRole="button">
+            <Ionicons name="arrow-back" size={24} color="#111827" />
+          </TouchableOpacity>
+          <Text style={styles.title}>Job mediation</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <Ionicons name="warning-outline" size={48} color="#9CA3AF" />
+          <Text style={[styles.lede, { textAlign: 'center', marginTop: 16 }]}>
+            Open mediation from the maintenance job screen.
+          </Text>
+          <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 16 }}>
+            <Text style={{ color: colors.primary[600], fontWeight: '700' }}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>

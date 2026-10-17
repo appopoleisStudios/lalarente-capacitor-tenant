@@ -42,7 +42,9 @@ export default function TenantEarlyTerminationScreen() {
   }, []);
 
   const init = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (user) setUserId(user.id);
 
     if (leaseId) {
@@ -105,7 +107,7 @@ export default function TenantEarlyTerminationScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <ActivityIndicator size="large" color={colors.primary[500]} style={{ marginTop: 40 }} />
       </SafeAreaView>
     );
@@ -113,9 +115,12 @@ export default function TenantEarlyTerminationScreen() {
 
   if (!estimate) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.navigate('/(tenant)/lease')} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => router.navigate('/(tenant)/lease')}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Early Termination</Text>
@@ -129,9 +134,12 @@ export default function TenantEarlyTerminationScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.navigate('/(tenant)/lease')} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.navigate('/(tenant)/lease')}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Early Termination</Text>
@@ -153,7 +161,9 @@ export default function TenantEarlyTerminationScreen() {
 
           <View style={styles.estimateRow}>
             <Text style={styles.estimateLabel}>Monthly Rent</Text>
-            <Text style={styles.estimateValue}>R{estimate.monthlyRent.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}</Text>
+            <Text style={styles.estimateValue}>
+              R{estimate.monthlyRent.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
+            </Text>
           </View>
 
           <View style={styles.estimateRow}>
@@ -187,7 +197,8 @@ export default function TenantEarlyTerminationScreen() {
           <View style={styles.estimateRow}>
             <Text style={styles.estimateLabel}>Deposit Refund Estimate</Text>
             <Text style={[styles.estimateValue, { color: colors.success[500] }]}>
-              R{estimate.depositRefundEstimate.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
+              R
+              {estimate.depositRefundEstimate.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
             </Text>
           </View>
         </View>
@@ -210,7 +221,9 @@ export default function TenantEarlyTerminationScreen() {
             <Ionicons name="checkmark-circle" size={22} color={colors.success[500]} />
             <View style={{ flex: 1 }}>
               <Text style={styles.submittedTitle}>Request Pending</Text>
-              <Text style={styles.submittedDesc}>Your landlord has been notified and will respond soon.</Text>
+              <Text style={styles.submittedDesc}>
+                Your landlord has been notified and will respond soon.
+              </Text>
             </View>
           </View>
         ) : (
@@ -236,55 +249,88 @@ export default function TenantEarlyTerminationScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.secondary },
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: colors.background.default,
-    borderBottomWidth: 1, borderBottomColor: colors.border.default,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.default,
   },
   backButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 18, fontWeight: '700', color: colors.text.primary },
   content: { flex: 1, padding: 16 },
   warningBanner: {
-    flexDirection: 'row', alignItems: 'flex-start',
-    backgroundColor: colors.warning[50], padding: 16, borderRadius: 12, gap: 12, marginBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: colors.warning[50],
+    padding: 16,
+    borderRadius: 12,
+    gap: 12,
+    marginBottom: 20,
   },
   warningText: { flex: 1, fontSize: 14, color: colors.warning[700], lineHeight: 20 },
   estimateCard: {
-    backgroundColor: colors.background.default, borderRadius: 12, padding: 20, marginBottom: 20,
+    backgroundColor: colors.background.default,
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 20,
   },
   estimateTitle: { fontSize: 17, fontWeight: '700', color: colors.text.primary, marginBottom: 16 },
   estimateRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingVertical: 8,
   },
   estimateLabel: { fontSize: 14, color: colors.text.secondary },
   estimateValue: { fontSize: 14, fontWeight: '600', color: colors.text.primary },
   divider: {
-    height: 1, backgroundColor: colors.border.default, marginVertical: 8,
+    height: 1,
+    backgroundColor: colors.border.default,
+    marginVertical: 8,
   },
   penaltyLabel: { fontWeight: '700', color: colors.error[500] },
   penaltyValue: { fontSize: 20, fontWeight: '700', color: colors.error[500] },
   penaltyNote: { fontSize: 11, color: colors.text.tertiary, marginBottom: 8 },
   formLabel: {
-    fontSize: 13, fontWeight: '600', color: colors.text.secondary, marginBottom: 6,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text.secondary,
+    marginBottom: 6,
   },
   input: {
-    borderWidth: 1, borderColor: colors.border.default, borderRadius: 12,
-    padding: 14, fontSize: 14, color: colors.text.primary,
-    backgroundColor: colors.background.default, minHeight: 80, textAlignVertical: 'top',
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 14,
+    color: colors.text.primary,
+    backgroundColor: colors.background.default,
+    minHeight: 80,
+    textAlignVertical: 'top',
     marginBottom: 20,
   },
   submitButton: {
-    backgroundColor: colors.error[500], paddingVertical: 16, borderRadius: 12, alignItems: 'center',
+    backgroundColor: colors.error[500],
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
   },
   submitButtonDisabled: {
     backgroundColor: colors.gray[300],
   },
   submitButtonText: { fontSize: 16, fontWeight: '700', color: colors.text.inverse },
   submittedBanner: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: colors.success[50], borderRadius: 12, padding: 16,
-    borderWidth: 1, borderColor: colors.success[600],
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.success[50],
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.success[600],
   },
   submittedTitle: { fontSize: 15, fontWeight: '700', color: colors.success[700] },
   submittedDesc: { fontSize: 13, color: colors.success[600], marginTop: 2 },

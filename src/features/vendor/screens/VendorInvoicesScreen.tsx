@@ -145,7 +145,12 @@ export default function VendorInvoicesScreen() {
       </View>
 
       {/* Filter Tabs */}
-      <View style={styles.filterRow}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filterRowScroll}
+        contentContainerStyle={styles.filterRow}
+      >
         {FILTERS.map((f) => (
           <TouchableOpacity
             key={f.key}
@@ -157,7 +162,7 @@ export default function VendorInvoicesScreen() {
             </Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
 
       {/* Invoice List */}
       {loading ? (
@@ -267,14 +272,16 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827', flex: 1, textAlign: 'center' },
 
+  filterRowScroll: {
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
   filterRow: {
     flexDirection: 'row',
     paddingHorizontal: 12,
     paddingVertical: 10,
     gap: 6,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
   },
   filterTab: {
     paddingHorizontal: 12,

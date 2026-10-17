@@ -59,7 +59,10 @@ export default function TenantClosureConfirmScreen() {
 
   // Load the closure report to surface the vendor's after-photos + notes
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      setLoading(false);
+      return;
+    }
     (async () => {
       try {
         const report = await getClosureReport(id);
@@ -125,6 +128,29 @@ export default function TenantClosureConfirmScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={RSA.green} />
           <Text style={styles.loadingText}>Loading closure details...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!id) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
+            <Ionicons name="arrow-back" size={24} color="#111827" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Confirm Closure</Text>
+          <View style={styles.headerButton} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <Ionicons name="warning-outline" size={48} color="#9CA3AF" />
+          <Text style={[styles.loadingText, { textAlign: 'center', marginTop: 16 }]}>
+            Verification link incomplete — open this from the maintenance screen.
+          </Text>
+          <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 24 }}>
+            <Text style={{ color: RSA.blue, fontWeight: '600', fontSize: 15 }}>Go Back</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );

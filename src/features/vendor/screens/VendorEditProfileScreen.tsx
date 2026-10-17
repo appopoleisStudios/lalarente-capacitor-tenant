@@ -115,7 +115,7 @@ export default function VendorEditProfileScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity
             onPress={goBackToProfile}
@@ -138,7 +138,7 @@ export default function VendorEditProfileScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <KeyboardAvoidingView style={styles.flex}>
         <View style={styles.header}>
           <TouchableOpacity

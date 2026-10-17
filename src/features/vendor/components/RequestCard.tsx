@@ -93,7 +93,8 @@ export const RequestCard: React.FC<RequestCardProps> = ({ request, onPress }) =>
     if (diffDays === 1) return '1 day ago';
     if (diffDays < 7) return `${diffDays} days ago`;
     if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-    return `${Math.floor(diffDays / 30)} months ago`;
+    const m = Math.floor(diffDays / 30);
+    return `${m} ${m === 1 ? 'month' : 'months'} ago`;
   };
 
   return (
@@ -108,9 +109,7 @@ export const RequestCard: React.FC<RequestCardProps> = ({ request, onPress }) =>
             </Text>
           </View>
           <View style={[styles.badge, { backgroundColor: `${statusBadge.color}15` }]}>
-            <Text style={[styles.badgeText, { color: statusBadge.color }]}>
-              {statusBadge.text}
-            </Text>
+            <Text style={[styles.badgeText, { color: statusBadge.color }]}>{statusBadge.text}</Text>
           </View>
         </View>
       </View>

@@ -92,7 +92,7 @@ export default function OwnerApplicationCompetitionScreen() {
   };
 
   const handleSetBackup = async (app: RankedApplication) => {
-    const nextRank = applications.filter(a => a.status === 'backup').length + 1;
+    const nextRank = applications.filter((a) => a.status === 'backup').length + 1;
     setActionLoading(app.id);
     try {
       await applicationCompetitionApi.setBackupRank(app.id, nextRank);
@@ -122,7 +122,8 @@ export default function OwnerApplicationCompetitionScreen() {
                 [
                   {
                     text: 'Create Lease',
-                    onPress: () => router.push(`/(owner)/leases/create?applicationId=${app.id}` as any),
+                    onPress: () =>
+                      router.push(`/(owner)/leases/create?applicationId=${app.id}` as any),
                   },
                   { text: 'Later', style: 'cancel' },
                 ]
@@ -167,19 +168,15 @@ export default function OwnerApplicationCompetitionScreen() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
-  const hasApproved = applications.some(a => a.status === 'approved');
-  const hasBackup = applications.some(a => a.status === 'backup');
-  const shortlisted = applications.filter(a => a.status === 'shortlisted');
-  const reviewing = applications.filter(a =>
-    ['submitted', 'under_review'].includes(a.status)
-  );
-  const backup = applications.filter(a => a.status === 'backup');
+  const hasApproved = applications.some((a) => a.status === 'approved');
+  const hasBackup = applications.some((a) => a.status === 'backup');
+  const shortlisted = applications.filter((a) => a.status === 'shortlisted');
+  const reviewing = applications.filter((a) => ['submitted', 'under_review'].includes(a.status));
+  const backup = applications.filter((a) => a.status === 'backup');
 
   const renderApp = ({ item }: { item: RankedApplication }) => {
     const statusInfo = STATUS_INFO[item.status] || STATUS_INFO.submitted;
-    const creditInfo = item.credit_check_status
-      ? CREDIT_LABEL[item.credit_check_status]
-      : null;
+    const creditInfo = item.credit_check_status ? CREDIT_LABEL[item.credit_check_status] : null;
     const isLoading = actionLoading === item.id;
     const canShortlist = ['submitted', 'under_review'].includes(item.status);
     const canSetBackup = item.status === 'shortlisted';
@@ -235,10 +232,12 @@ export default function OwnerApplicationCompetitionScreen() {
                 size={14}
                 color={affordabilityOk ? colors.rsa.green : '#D97706'}
               />
-              <Text style={[
-                styles.metricChipText,
-                { color: affordabilityOk ? colors.rsa.green : '#D97706' },
-              ]}>
+              <Text
+                style={[
+                  styles.metricChipText,
+                  { color: affordabilityOk ? colors.rsa.green : '#D97706' },
+                ]}
+              >
                 {item.affordability_ratio.toFixed(0)}% of income
               </Text>
             </View>
@@ -266,10 +265,11 @@ export default function OwnerApplicationCompetitionScreen() {
                 onPress={() => handleShortlist(item)}
                 disabled={isLoading}
               >
-                {isLoading
-                  ? <ActivityIndicator size="small" color={colors.rsa.blue} />
-                  : <Text style={styles.actionBtnSecondaryText}>Shortlist</Text>
-                }
+                {isLoading ? (
+                  <ActivityIndicator size="small" color={colors.rsa.blue} />
+                ) : (
+                  <Text style={styles.actionBtnSecondaryText}>Shortlist</Text>
+                )}
               </TouchableOpacity>
             )}
             {canSetBackup && (
@@ -278,10 +278,11 @@ export default function OwnerApplicationCompetitionScreen() {
                 onPress={() => handleSetBackup(item)}
                 disabled={isLoading}
               >
-                {isLoading
-                  ? <ActivityIndicator size="small" color={colors.rsa.blue} />
-                  : <Text style={styles.actionBtnSecondaryText}>Mark Backup</Text>
-                }
+                {isLoading ? (
+                  <ActivityIndicator size="small" color={colors.rsa.blue} />
+                ) : (
+                  <Text style={styles.actionBtnSecondaryText}>Mark Backup</Text>
+                )}
               </TouchableOpacity>
             )}
             {canSelect && (
@@ -290,10 +291,11 @@ export default function OwnerApplicationCompetitionScreen() {
                 onPress={() => handleSelectWinner(item)}
                 disabled={isLoading}
               >
-                {isLoading
-                  ? <ActivityIndicator size="small" color="#FFF" />
-                  : <Text style={styles.actionBtnPrimaryText}>Select Tenant</Text>
-                }
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <Text style={styles.actionBtnPrimaryText}>Select Tenant</Text>
+                )}
               </TouchableOpacity>
             )}
           </View>
@@ -304,7 +306,7 @@ export default function OwnerApplicationCompetitionScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
@@ -319,7 +321,7 @@ export default function OwnerApplicationCompetitionScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -328,7 +330,8 @@ export default function OwnerApplicationCompetitionScreen() {
         <View style={styles.headerText}>
           <Text style={styles.title}>Applications</Text>
           <Text style={styles.subtitle} numberOfLines={1}>
-            {propertyTitle || 'Property'} · {applications.length} applicant{applications.length !== 1 ? 's' : ''}
+            {propertyTitle || 'Property'} · {applications.length} applicant
+            {applications.length !== 1 ? 's' : ''}
           </Text>
         </View>
       </View>
@@ -337,10 +340,10 @@ export default function OwnerApplicationCompetitionScreen() {
         data={[
           ...shortlisted,
           ...reviewing,
-          ...(hasApproved ? applications.filter(a => a.status === 'approved') : []),
+          ...(hasApproved ? applications.filter((a) => a.status === 'approved') : []),
           ...backup,
         ]}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => item.id}
         renderItem={renderApp}
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
@@ -358,9 +361,7 @@ export default function OwnerApplicationCompetitionScreen() {
                 <Text style={styles.statLabel}>Shortlisted</Text>
               </View>
               <View style={styles.statBox}>
-                <Text style={[styles.statNumber, { color: '#7C3AED' }]}>
-                  {backup.length}
-                </Text>
+                <Text style={[styles.statNumber, { color: '#7C3AED' }]}>{backup.length}</Text>
                 <Text style={styles.statLabel}>Backup</Text>
               </View>
             </View>
@@ -429,7 +430,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 100,
     gap: 12,
   },
   statsRow: {

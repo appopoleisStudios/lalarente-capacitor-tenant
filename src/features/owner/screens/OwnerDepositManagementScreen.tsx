@@ -327,7 +327,7 @@ export default function OwnerDepositManagementScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
@@ -346,7 +346,7 @@ export default function OwnerDepositManagementScreen() {
   const overdueCount = deposits.filter((d) => d.isOverdue).length;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <KeyboardAvoidingView>
         {/* Header */}
         <View style={styles.header}>
@@ -613,7 +613,7 @@ export default function OwnerDepositManagementScreen() {
           presentationStyle="pageSheet"
           onRequestClose={() => setDeductionModal(null)}
         >
-          <SafeAreaView style={styles.modalContainer}>
+          <SafeAreaView style={styles.modalContainer} edges={['top']}>
             <View style={styles.modalHeader}>
               <TouchableOpacity onPress={() => setDeductionModal(null)}>
                 <Ionicons name="close" size={24} color={colors.text.primary} />
@@ -728,7 +728,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 100,
   },
   summaryRow: {
     flexDirection: 'row',

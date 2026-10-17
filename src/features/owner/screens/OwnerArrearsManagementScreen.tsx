@@ -28,7 +28,11 @@ import {
 import { paymentDisputesApi } from '@/src/features/payments/api/paymentDisputes.api';
 
 const STAGE_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
-  friendly_reminder: { label: 'Reminder', color: colors.warning[500], icon: 'notifications-outline' },
+  friendly_reminder: {
+    label: 'Reminder',
+    color: colors.warning[500],
+    icon: 'notifications-outline',
+  },
   formal_demand: { label: 'Demand', color: '#E67E22', icon: 'mail-outline' },
   breach_notice: { label: 'Breach Notice', color: colors.error[500], icon: 'alert-circle-outline' },
   cure_period: { label: 'Cure Period', color: colors.error[600], icon: 'time-outline' },
@@ -55,7 +59,9 @@ export default function OwnerArrearsManagementScreen() {
   );
 
   const initOwner = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (user) {
       setOwnerId(user.id);
       fetchDataForOwner(user.id);
@@ -171,17 +177,20 @@ export default function OwnerArrearsManagementScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <ActivityIndicator size="large" color={colors.primary[500]} style={{ marginTop: 40 }} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.navigate('/(owner)/dashboard')} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.navigate('/(owner)/dashboard')}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Arrears Management</Text>
@@ -213,8 +222,8 @@ export default function OwnerArrearsManagementScreen() {
         <View style={styles.legalNotice}>
           <Ionicons name="information-circle" size={18} color={colors.info[500]} />
           <Text style={styles.legalText}>
-            Interest capped at 2% p.a. per Prescribed Rate of Interest Act.
-            CPA s14 requires 20 business day cure period before legal action.
+            Interest capped at 2% p.a. per Prescribed Rate of Interest Act. CPA s14 requires 20
+            business day cure period before legal action.
           </Text>
         </View>
 
@@ -231,8 +240,8 @@ export default function OwnerArrearsManagementScreen() {
               <Ionicons name="calendar-outline" size={32} color={colors.gray[300]} />
               <Text style={styles.emptyArrangementsTitle}>No proposed payment plans</Text>
               <Text style={styles.emptyArrangementsText}>
-                When a tenant falls into arrears, they can propose a payment plan from the
-                arrears screen. Plans appear here for you to accept or decline.
+                When a tenant falls into arrears, they can propose a payment plan from the arrears
+                screen. Plans appear here for you to accept or decline.
               </Text>
             </View>
           ) : (
@@ -240,7 +249,9 @@ export default function OwnerArrearsManagementScreen() {
               <View key={arr.id} style={styles.arrangementCard}>
                 <View style={styles.arrangementHeader}>
                   <View>
-                    <Text style={styles.arrangementTenant}>{arr.tenant?.full_name || 'Tenant'}</Text>
+                    <Text style={styles.arrangementTenant}>
+                      {arr.tenant?.full_name || 'Tenant'}
+                    </Text>
                     <Text style={styles.arrangementProperty}>
                       {arr.lease?.property?.title || 'Property'}
                     </Text>
@@ -278,7 +289,7 @@ export default function OwnerArrearsManagementScreen() {
         </>
 
         {/* Escalation List */}
-        {(!summary?.escalations || summary.escalations.length === 0) ? (
+        {!summary?.escalations || summary.escalations.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="checkmark-circle-outline" size={64} color={colors.success[500]} />
             <Text style={styles.emptyTitle}>No Arrears</Text>
@@ -301,11 +312,13 @@ export default function OwnerArrearsManagementScreen() {
 
                 <View style={styles.escalationDetails}>
                   <Text style={styles.detailText}>
-                    Principal: R{escalation.amount_owed.toFixed(2)} | Interest: R{escalation.interest_accrued.toFixed(2)}
+                    Principal: R{escalation.amount_owed.toFixed(2)} | Interest: R
+                    {escalation.interest_accrued.toFixed(2)}
                   </Text>
                   {escalation.cure_period_ends_at && (
                     <Text style={styles.detailText}>
-                      Cure deadline: {new Date(escalation.cure_period_ends_at).toLocaleDateString('en-ZA')}
+                      Cure deadline:{' '}
+                      {new Date(escalation.cure_period_ends_at).toLocaleDateString('en-ZA')}
                     </Text>
                   )}
                 </View>

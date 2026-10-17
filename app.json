@@ -18,9 +18,6 @@
       "bundleIdentifier": "com.lalarente.app",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "This app needs access to your location to help you find properties nearby."
-      },
-      "config": {
-        "googleMapsApiKey": "AIzaSyDbwTaFT7cQJIEPKQpvr160QoBXkqVyM9U"
       }
     },
     "android": {
@@ -31,12 +28,7 @@
       "package": "com.lalarente.app",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"],
-      "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyDbwTaFT7cQJIEPKQpvr160QoBXkqVyM9U"
-        }
-      }
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
     },
     "web": {
       "bundler": "metro",

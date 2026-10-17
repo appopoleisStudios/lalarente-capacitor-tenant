@@ -46,7 +46,9 @@ export default function TenantNotificationsScreen() {
     // will show a reduced bell count.
     await loadAlerts();
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
       await (supabase as any)
         .from('notifications')
@@ -60,7 +62,9 @@ export default function TenantNotificationsScreen() {
 
   const loadAlerts = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       const items: AlertItem[] = [];
@@ -77,8 +81,8 @@ export default function TenantNotificationsScreen() {
 
       // Helper: find matching notification DB row for a viewing
       const findNotifForViewing = (viewingId: string, types: string[]) => {
-        return unreadNotifs.find((n: any) =>
-          types.includes(n.type) && n.data?.viewingId === viewingId
+        return unreadNotifs.find(
+          (n: any) => types.includes(n.type) && n.data?.viewingId === viewingId
         );
       };
 
@@ -87,15 +91,17 @@ export default function TenantNotificationsScreen() {
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const { data: viewingResponses } = await supabase
         .from('viewing_requests')
-        .select('id, status, requested_date, requested_time, owner_response, alternative_times, updated_at, property_id, property:properties!property_id(title)')
+        .select(
+          'id, status, requested_date, requested_time, owner_response, alternative_times, updated_at, property_id, property:properties!property_id(title)'
+        )
         .eq('tenant_id', user.id)
         .in('status', ['declined', 'approved'])
         .gte('updated_at', thirtyDaysAgo.toISOString())
         .order('updated_at', { ascending: false });
 
       // Filter out declined viewings where tenant already re-requested
-      const declinedResponses = (viewingResponses ?? []).filter(v => v.status !== 'declined');
-      const declinedOnly = (viewingResponses ?? []).filter(v => v.status === 'declined');
+      const declinedResponses = (viewingResponses ?? []).filter((v) => v.status !== 'declined');
+      const declinedOnly = (viewingResponses ?? []).filter((v) => v.status === 'declined');
       if (declinedOnly.length > 0) {
         const propIds = [...new Set(declinedOnly.map((v: any) => v.property_id))];
         const { data: activeForProps } = await supabase
@@ -105,17 +111,20 @@ export default function TenantNotificationsScreen() {
           .in('status', ['pending', 'approved'])
           .in('property_id', propIds);
         const activeProps = new Set((activeForProps ?? []).map((v: any) => v.property_id));
-        declinedOnly.forEach(v => {
+        declinedOnly.forEach((v) => {
           if (!activeProps.has((v as any).property_id)) {
             declinedResponses.push(v);
           }
         });
       }
 
-      declinedResponses.forEach(v => {
+      declinedResponses.forEach((v) => {
         const isApproved = v.status === 'approved';
         const altCount = (v.alternative_times as string[] | null)?.length ?? 0;
-        const matchedNotif = findNotifForViewing(v.id, isApproved ? ['viewing_approved'] : ['viewing_declined']);
+        const matchedNotif = findNotifForViewing(
+          v.id,
+          isApproved ? ['viewing_approved'] : ['viewing_declined']
+        );
         items.push({
           id: `viewing-${v.id}`,
           kind: 'viewing',
@@ -135,12 +144,14 @@ export default function TenantNotificationsScreen() {
       // 2. Pending viewings (awaiting owner response)
       const { data: pendingViewings } = await supabase
         .from('viewing_requests')
-        .select('id, requested_date, requested_time, created_at, property:properties!property_id(title)')
+        .select(
+          'id, requested_date, requested_time, created_at, property:properties!property_id(title)'
+        )
         .eq('tenant_id', user.id)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
-      (pendingViewings ?? []).forEach(v => {
+      (pendingViewings ?? []).forEach((v) => {
         items.push({
           id: `viewing-pending-${v.id}`,
           kind: 'viewing',
@@ -162,7 +173,7 @@ export default function TenantNotificationsScreen() {
         .in('status', ['open', 'assigned', 'in_progress'])
         .order('created_at', { ascending: false });
 
-      (maintenance ?? []).forEach(m => {
+      (maintenance ?? []).forEach((m) => {
         items.push({
           id: `maint-${m.id}`,
           kind: 'maintenance',
@@ -274,7 +285,9 @@ export default function TenantNotificationsScreen() {
       </View>
       <View style={styles.alertContent}>
         <Text style={styles.alertTitle}>{item.title}</Text>
-        <Text style={styles.alertBody} numberOfLines={2}>{item.body}</Text>
+        <Text style={styles.alertBody} numberOfLines={2}>
+          {item.body}
+        </Text>
         <Text style={styles.alertTime}>{formatTimeAgo(item.timestamp)}</Text>
       </View>
       <Ionicons name="chevron-forward" size={18} color="#999" />
@@ -283,7 +296,7 @@ export default function TenantNotificationsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#333" />
@@ -299,7 +312,7 @@ export default function TenantNotificationsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#333" />
@@ -321,7 +334,11 @@ export default function TenantNotificationsScreen() {
           renderItem={renderItem}
           contentContainerStyle={styles.list}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.rsa.green} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={colors.rsa.green}
+            />
           }
         />
       )}

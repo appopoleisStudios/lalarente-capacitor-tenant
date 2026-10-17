@@ -1,1 +1,5 @@
-export { default } from '@/src/features/messaging/screens/ComposeMessageScreen';
+import ComposeMessageScreen from '@/src/features/messaging/screens/ComposeMessageScreen';
+
+export default function VendorComposeMessageScreen() {
+  return <ComposeMessageScreen role="vendor" />;
+}

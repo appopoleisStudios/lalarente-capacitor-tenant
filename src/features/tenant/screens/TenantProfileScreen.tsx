@@ -56,7 +56,9 @@ export default function TenantProfileScreen() {
 
   const loadProfile = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data: profile } = await supabase
@@ -74,33 +76,33 @@ export default function TenantProfileScreen() {
         setEmail(user.email || profileData.email || '');
         const rawPhone = profileData.phone || '';
         const knownCodes = ['+27', '+263', '+267', '+44', '+1', '+91'];
-        const matched = knownCodes.find(c => rawPhone.startsWith(c));
+        const matched = knownCodes.find((c) => rawPhone.startsWith(c));
         setCountryCode(matched || '+27');
         setLocalPhone(matched ? rawPhone.slice(matched.length).trim() : rawPhone);
-        
+
         // ID number: Check new column first, then JSONB field
         const idFromColumn = profileData.id_number;
         const idFromJson = profileData.fica_documents?.id_number;
         setIdNumber(idFromColumn || idFromJson || '');
-        
+
         // Date of birth: Check new column first, then JSONB field
         const dobFromColumn = profileData.date_of_birth;
         const dobFromJson = profileData.fica_documents?.date_of_birth;
         setDateOfBirth(dobFromColumn || dobFromJson || '');
-        
+
         // Employment Information
         const employerFromColumn = profileData.employer;
         const employerFromJson = profileData.fica_documents?.employer;
         setEmployer(employerFromColumn || employerFromJson || '');
-        
+
         const positionFromColumn = profileData.position;
         const positionFromJson = profileData.fica_documents?.employment_status;
         setPosition(positionFromColumn || positionFromJson || '');
-        
+
         const incomeFromColumn = profileData.monthly_income;
         const incomeFromJson = profileData.fica_documents?.monthly_income;
         setMonthlyIncome((incomeFromColumn || incomeFromJson)?.toString() || '');
-        
+
         setEmployerContact(profileData.employer_contact || '');
 
         // Proof of Address
@@ -117,7 +119,9 @@ export default function TenantProfileScreen() {
     try {
       setSaving(true);
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
       // Get current profile to preserve existing JSONB data
@@ -153,10 +157,7 @@ export default function TenantProfileScreen() {
       updateData.employer_contact = employerContact || null;
       updateData.proof_of_address_url = proofOfAddressUrl || null;
 
-      const { error } = await supabase
-        .from('profiles')
-        .update(updateData)
-        .eq('id', user.id);
+      const { error } = await supabase.from('profiles').update(updateData).eq('id', user.id);
 
       if (error) throw error;
 
@@ -178,12 +179,15 @@ export default function TenantProfileScreen() {
   };
 
   const uploadProofOfAddress = async (uri: string, mimeType: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
 
-    const ext = mimeType === 'application/pdf'
-      ? 'pdf'
-      : mimeType.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
+    const ext =
+      mimeType === 'application/pdf'
+        ? 'pdf'
+        : mimeType.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
     const path = `proof-of-address/${user.id}/poa_${Date.now()}.${ext}`;
 
     const response = await fetch(uri);
@@ -253,10 +257,7 @@ export default function TenantProfileScreen() {
             });
             if (result.canceled || !result.assets?.[0]) return;
             const asset = result.assets[0];
-            await uploadProofOfAddress(
-              asset.uri,
-              asset.mimeType || 'application/octet-stream'
-            );
+            await uploadProofOfAddress(asset.uri, asset.mimeType || 'application/octet-stream');
           }),
       },
       { text: 'Cancel', style: 'cancel' },
@@ -272,26 +273,22 @@ export default function TenantProfileScreen() {
   const isProfileComplete = missingFields.length === 0;
 
   const handleSignOut = async () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            await supabase.auth.signOut();
-            router.replace('/auth/login');
-          },
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          await supabase.auth.signOut();
+          router.replace('/auth/login');
         },
-      ]
-    );
+      },
+    ]);
   };
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={RSA.green} />
         </View>
@@ -300,11 +297,13 @@ export default function TenantProfileScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <Text testID="tenant-profile-title" style={styles.headerTitle}>My Profile</Text>
+          <Text testID="tenant-profile-title" style={styles.headerTitle}>
+            My Profile
+          </Text>
           <TouchableOpacity
             onPress={() => (editing ? handleSave() : setEditing(true))}
             disabled={saving}
@@ -317,10 +316,16 @@ export default function TenantProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Profile Completion Banner */}
-          {!editing && !loading && (
-            isProfileComplete ? (
+          {!editing &&
+            !loading &&
+            (isProfileComplete ? (
               <View style={styles.completeBanner}>
                 <Ionicons name="checkmark-circle" size={20} color="#16A34A" />
                 <Text style={styles.completeBannerText}>Profile complete</Text>
@@ -337,8 +342,7 @@ export default function TenantProfileScreen() {
                   </Text>
                 </View>
               </View>
-            )
-          )}
+            ))}
 
           {/* Personal Information */}
           <View style={styles.section}>
@@ -516,18 +520,14 @@ export default function TenantProfileScreen() {
                   )}
                 </View>
               ) : (
-                <TouchableOpacity
-                  style={styles.uploadButton}
-                  onPress={handleUploadProofOfAddress}
-                >
+                <TouchableOpacity style={styles.uploadButton} onPress={handleUploadProofOfAddress}>
                   <Ionicons name="cloud-upload-outline" size={22} color={RSA.green} />
-                  <Text style={styles.uploadButtonText}>
-                    Upload utility bill or bank statement
-                  </Text>
+                  <Text style={styles.uploadButtonText}>Upload utility bill or bank statement</Text>
                 </TouchableOpacity>
               )}
               <Text style={styles.uploadHint}>
-                Recent utility bill, bank statement, or municipal account (photo or PDF, not older than 3 months)
+                Recent utility bill, bank statement, or municipal account (photo or PDF, not older
+                than 3 months)
               </Text>
             </View>
           </View>
@@ -536,7 +536,8 @@ export default function TenantProfileScreen() {
           <View style={styles.infoCard}>
             <Ionicons name="information-circle" size={20} color={RSA.blue} />
             <Text style={styles.infoText}>
-              This information will be used to pre-fill your rental applications and help property owners review your profile.
+              This information will be used to pre-fill your rental applications and help property
+              owners review your profile.
             </Text>
           </View>
 

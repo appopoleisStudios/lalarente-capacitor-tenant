@@ -304,7 +304,7 @@ export default function EditPropertyScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
           <ActivityIndicator size="large" color="#002395" />
           <Text style={{ marginTop: 12, color: '#6b7280' }}>Loading property...</Text>
@@ -314,7 +314,7 @@ export default function EditPropertyScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <KeyboardAvoidingView>
         <View style={styles.container}>
           {/* Header */}

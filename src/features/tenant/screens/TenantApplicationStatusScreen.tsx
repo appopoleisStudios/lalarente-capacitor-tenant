@@ -57,12 +57,15 @@ const formatDate = (iso: string) =>
     year: 'numeric',
   });
 
-const STATUS_CONFIG: Record<string, {
-  label: string;
-  color: string;
-  bg: string;
-  icon: string;
-}> = {
+const STATUS_CONFIG: Record<
+  string,
+  {
+    label: string;
+    color: string;
+    bg: string;
+    icon: string;
+  }
+> = {
   draft: { label: 'Draft', color: '#9CA3AF', bg: '#F9FAFB', icon: 'create-outline' },
   submitted: { label: 'Submitted', color: '#D97706', bg: '#FEF3C7', icon: 'paper-plane' },
   under_review: { label: 'Under Review', color: colors.rsa.blue, bg: '#E6EBF5', icon: 'eye' },
@@ -97,16 +100,20 @@ export default function TenantApplicationStatusScreen() {
   const loadApplications = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data, error } = await supabase
         .from('rental_applications')
-        .select(`
+        .select(
+          `
           id, property_id, status, backup_rank, shortlisted,
           affordability_ratio, credit_check_status, created_at,
           property:properties!property_id(id, title, address, rent_amount)
-        `)
+        `
+        )
         .eq('tenant_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -116,7 +123,7 @@ export default function TenantApplicationStatusScreen() {
 
       // Load pending holding deposits keyed by application_id
       if (apps.length > 0) {
-        const appIds = apps.map(a => a.id);
+        const appIds = apps.map((a) => a.id);
         const { data: deposits } = await supabase
           .from('holding_deposits')
           .select('id, application_id, amount, status, payment_deadline')
@@ -167,7 +174,7 @@ export default function TenantApplicationStatusScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
@@ -181,20 +188,18 @@ export default function TenantApplicationStatusScreen() {
     );
   }
 
-  const active = applications.filter(a =>
+  const active = applications.filter((a) =>
     ['submitted', 'under_review', 'shortlisted', 'backup'].includes(a.status)
   );
-  const approved = applications.filter(a => a.status === 'approved');
-  const past = applications.filter(a =>
-    ['rejected', 'withdrawn', 'draft'].includes(a.status)
-  );
+  const approved = applications.filter((a) => a.status === 'approved');
+  const past = applications.filter((a) => ['rejected', 'withdrawn', 'draft'].includes(a.status));
 
   const renderSection = (title: string, items: ApplicationRecord[]) => {
     if (items.length === 0) return null;
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{title}</Text>
-        {items.map(app => (
+        {items.map((app) => (
           <ApplicationCard
             key={app.id}
             app={app}
@@ -207,7 +212,7 @@ export default function TenantApplicationStatusScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -264,9 +269,7 @@ function ApplicationCard({
 }) {
   const router = useRouter();
   const config = STATUS_CONFIG[app.status] || STATUS_CONFIG.submitted;
-  const creditInfo = app.credit_check_status
-    ? CREDIT_CONFIG[app.credit_check_status]
-    : null;
+  const creditInfo = app.credit_check_status ? CREDIT_CONFIG[app.credit_check_status] : null;
   const canWithdraw = ['submitted', 'under_review', 'shortlisted', 'backup'].includes(app.status);
   const affordability = app.affordability_ratio;
 
@@ -314,11 +317,16 @@ function ApplicationCard({
             <Ionicons name="lock-closed" size={16} color="#D97706" />
             <View style={styles.depositBannerText}>
               <Text style={styles.depositBannerTitle}>
-                Holding deposit required — R {deposit.amount.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                Holding deposit required — R{' '}
+                {deposit.amount.toLocaleString('en-ZA', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </Text>
               {deposit.payment_deadline && (
                 <Text style={styles.depositBannerDeadline}>
-                  Pay by {new Date(deposit.payment_deadline).toLocaleDateString('en-ZA')} to secure this property
+                  Pay by {new Date(deposit.payment_deadline).toLocaleDateString('en-ZA')} to secure
+                  this property
                 </Text>
               )}
             </View>
@@ -328,9 +336,7 @@ function ApplicationCard({
         {deposit && deposit.status === 'paid' && (
           <View style={styles.depositPaidBanner}>
             <Ionicons name="shield-checkmark" size={16} color={colors.rsa.green} />
-            <Text style={styles.depositPaidText}>
-              Holding deposit paid — property secured
-            </Text>
+            <Text style={styles.depositPaidText}>Holding deposit paid — property secured</Text>
           </View>
         )}
 
@@ -339,16 +345,18 @@ function ApplicationCard({
           {affordability !== null && (
             <View style={styles.metric}>
               <Text style={styles.metricLabel}>Affordability</Text>
-              <Text style={[
-                styles.metricValue,
-                { color: affordability <= 30 ? colors.rsa.green : '#D97706' },
-              ]}>
+              <Text
+                style={[
+                  styles.metricValue,
+                  { color: affordability <= 30 ? colors.rsa.green : '#D97706' },
+                ]}
+              >
                 {affordability.toFixed(0)}%
               </Text>
               <Text style={styles.metricSub}>of income</Text>
             </View>
           )}
-          {creditInfo && (
+          {creditInfo && app.status !== 'approved' && (
             <View style={styles.metric}>
               <Text style={styles.metricLabel}>Credit Check</Text>
               <Text style={[styles.metricValue, { color: creditInfo.color }]}>
@@ -367,7 +375,8 @@ function ApplicationCard({
           <View style={styles.approvedBanner}>
             <Ionicons name="checkmark-circle" size={16} color={colors.rsa.green} />
             <Text style={styles.approvedText}>
-              Congratulations! Your application has been approved. Your landlord will contact you to proceed with the lease.
+              Congratulations! Your application has been approved. Your landlord will contact you to
+              proceed with the lease.
             </Text>
           </View>
         )}
@@ -377,17 +386,15 @@ function ApplicationCard({
           <View style={styles.backupBanner}>
             <Ionicons name="information-circle" size={16} color="#7C3AED" />
             <Text style={styles.backupText}>
-              You are backup #{app.backup_rank}. You will be contacted if the primary applicant withdraws.
+              You are backup #{app.backup_rank}. You will be contacted if the primary applicant
+              withdraws.
             </Text>
           </View>
         )}
 
         {/* Withdraw */}
         {canWithdraw && (
-          <TouchableOpacity
-            style={styles.withdrawButton}
-            onPress={() => onWithdraw(app)}
-          >
+          <TouchableOpacity style={styles.withdrawButton} onPress={() => onWithdraw(app)}>
             <Text style={styles.withdrawButtonText}>Withdraw Application</Text>
           </TouchableOpacity>
         )}

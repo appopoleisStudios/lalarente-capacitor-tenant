@@ -6,11 +6,11 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
-  SafeAreaView,
   Alert,
   Linking,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
@@ -76,7 +76,9 @@ export default function OwnerLeaseDetailScreen() {
   const loadLease = async () => {
     try {
       setError(null);
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
       const leaseId = Array.isArray(id) ? id[0] : id;
@@ -84,11 +86,13 @@ export default function OwnerLeaseDetailScreen() {
 
       const { data, error: leaseError } = await supabase
         .from('leases')
-        .select(`
+        .select(
+          `
           *,
           property:properties!property_id(title, address, city),
           tenant:profiles!tenant_id(full_name, email, phone)
-        `)
+        `
+        )
         .eq('id', leaseId)
         .eq('owner_id', user.id)
         .single();
@@ -116,29 +120,25 @@ export default function OwnerLeaseDetailScreen() {
   const handleRegeneratePDF = async () => {
     if (!lease) return;
 
-    Alert.alert(
-      'Regenerate PDF',
-      'This will generate the lease PDF document. Continue?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Generate',
-          onPress: async () => {
-            try {
-              setActionLoading(true);
-              await regenerateLeasePDF(lease.id);
-              Alert.alert('Success', 'PDF generated successfully! Refreshing...');
-              await loadLease(); // Reload to show the PDF
-            } catch (error) {
-              console.error('Error regenerating PDF:', error);
-              Alert.alert('Error', 'Failed to generate PDF. Check console for details.');
-            } finally {
-              setActionLoading(false);
-            }
-          },
+    Alert.alert('Regenerate PDF', 'This will generate the lease PDF document. Continue?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Generate',
+        onPress: async () => {
+          try {
+            setActionLoading(true);
+            await regenerateLeasePDF(lease.id);
+            Alert.alert('Success', 'PDF generated successfully! Refreshing...');
+            await loadLease(); // Reload to show the PDF
+          } catch (error) {
+            console.error('Error regenerating PDF:', error);
+            Alert.alert('Error', 'Failed to generate PDF. Check console for details.');
+          } finally {
+            setActionLoading(false);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleDownloadDocument = async () => {
@@ -168,15 +168,15 @@ export default function OwnerLeaseDetailScreen() {
       reader.onloadend = async () => {
         const base64data = reader.result as string;
         // Use Paths.document for newer expo-file-system or fallback
-        const docDir = (FileSystem as any).documentDirectory || new (FileSystem as any).Directory((FileSystem as any).Paths?.document).uri;
+        const docDir =
+          (FileSystem as any).documentDirectory ||
+          new (FileSystem as any).Directory((FileSystem as any).Paths?.document).uri;
         const localUri = `${docDir}${filename}`;
 
         // Write to local file
-        await FileSystem.writeAsStringAsync(
-          localUri,
-          base64data.split(',')[1],
-          { encoding: 'base64' }
-        );
+        await FileSystem.writeAsStringAsync(localUri, base64data.split(',')[1], {
+          encoding: 'base64',
+        });
 
         // Share the file
         await Sharing.shareAsync(localUri, {
@@ -202,7 +202,10 @@ export default function OwnerLeaseDetailScreen() {
         `${lease.tenant.full_name}\n${lease.tenant.phone || ''}\n${lease.tenant.email || ''}`,
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Call', onPress: () => lease.tenant?.phone && Linking.openURL(`tel:${lease.tenant.phone}`) },
+          {
+            text: 'Call',
+            onPress: () => lease.tenant?.phone && Linking.openURL(`tel:${lease.tenant.phone}`),
+          },
           { text: 'Message', onPress: () => router.push('/(owner)/messages' as any) },
         ]
       );
@@ -211,7 +214,7 @@ export default function OwnerLeaseDetailScreen() {
 
   const handleSendToTenant = () => {
     if (!lease) return;
-    
+
     Alert.alert(
       'Send Lease Agreement',
       `Send lease agreement to ${lease.tenant?.full_name} for signature?`,
@@ -222,7 +225,7 @@ export default function OwnerLeaseDetailScreen() {
           onPress: async () => {
             try {
               setActionLoading(true);
-              
+
               // Update lease status
               const { error: updateError } = await supabase
                 .from('leases')
@@ -232,11 +235,13 @@ export default function OwnerLeaseDetailScreen() {
               if (updateError) throw updateError;
 
               // Notify tenant that lease is ready for signature
-              await notificationsApi.sendNotification({
-                user_id: lease.tenant_id,
-                type: 'lease_created' as any,
-                data: { lease_id: lease.id, property_id: lease.property_id },
-              }).catch(() => {}); // Non-blocking
+              await notificationsApi
+                .sendNotification({
+                  user_id: lease.tenant_id,
+                  type: 'lease_created' as any,
+                  data: { lease_id: lease.id, property_id: lease.property_id },
+                })
+                .catch(() => {}); // Non-blocking
 
               Alert.alert('Success', 'Lease agreement sent to tenant');
               loadLease(); // Reload to show updated status
@@ -269,7 +274,7 @@ export default function OwnerLeaseDetailScreen() {
       let updateSuccess = false;
       let lastError: any;
       const maxRetries = 3;
-      
+
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
           const { error: updateError } = await supabase
@@ -285,7 +290,7 @@ export default function OwnerLeaseDetailScreen() {
           if (updateError) {
             // Check if it's a network error
             const errorMessage = updateError.message?.toLowerCase() || '';
-            const isNetworkError = 
+            const isNetworkError =
               errorMessage.includes('network') ||
               errorMessage.includes('timeout') ||
               errorMessage.includes('fetch failed') ||
@@ -294,7 +299,7 @@ export default function OwnerLeaseDetailScreen() {
             if (isNetworkError && attempt < maxRetries - 1) {
               console.warn(`Database update attempt ${attempt + 1} failed, retrying...`);
               lastError = updateError;
-              await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+              await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
               continue;
             }
             throw updateError;
@@ -323,7 +328,7 @@ export default function OwnerLeaseDetailScreen() {
           break;
         } catch (error: any) {
           const errorMessage = error?.message?.toLowerCase() || '';
-          const isNetworkError = 
+          const isNetworkError =
             errorMessage.includes('network') ||
             errorMessage.includes('timeout') ||
             errorMessage.includes('fetch failed') ||
@@ -331,10 +336,10 @@ export default function OwnerLeaseDetailScreen() {
 
           if (isNetworkError && attempt < maxRetries - 1) {
             console.warn(`Lease execution attempt ${attempt + 1} failed, retrying...`);
-            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+            await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
             continue;
           }
-          
+
           // If lease execution fails, log but don't fail the whole operation
           // The lease is already signed and active
           console.error('Error executing lease (non-critical):', error);
@@ -347,14 +352,12 @@ export default function OwnerLeaseDetailScreen() {
         }
       }
 
-      Alert.alert(
-        'Success',
-        'Lease agreement signed and activated!',
-        [{ text: 'OK', onPress: () => loadLease() }]
-      );
+      Alert.alert('Success', 'Lease agreement signed and activated!', [
+        { text: 'OK', onPress: () => loadLease() },
+      ]);
     } catch (err: any) {
       console.error('Error signing lease:', err);
-      
+
       // Provide user-friendly error messages based on error type
       let errorTitle = 'Signing Failed';
       let errorMessage = 'Failed to sign lease agreement. Please try again.';
@@ -369,14 +372,13 @@ export default function OwnerLeaseDetailScreen() {
         err?.name === 'NetworkError'
       ) {
         errorTitle = 'Connection Error';
-        errorMessage = 'Network connection failed. Please check your internet connection and try again.';
+        errorMessage =
+          'Network connection failed. Please check your internet connection and try again.';
       } else if (err?.message) {
         errorMessage = err.message;
       }
 
-      Alert.alert(errorTitle, errorMessage, [
-        { text: 'OK', style: 'default' }
-      ]);
+      Alert.alert(errorTitle, errorMessage, [{ text: 'OK', style: 'default' }]);
     } finally {
       setActionLoading(false);
       setShowSignatureModal(false);
@@ -404,7 +406,7 @@ export default function OwnerLeaseDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={RSA.blue} />
         </View>
@@ -414,7 +416,7 @@ export default function OwnerLeaseDetailScreen() {
 
   if (error || !lease) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.centerContainer}>
           <Ionicons name="alert-circle-outline" size={64} color="#F44336" />
           <Text style={styles.errorText}>{error || 'Failed to load lease'}</Text>
@@ -432,7 +434,7 @@ export default function OwnerLeaseDetailScreen() {
   const isExpired = daysRemaining <= 0;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -448,18 +450,14 @@ export default function OwnerLeaseDetailScreen() {
           {isExpiringSoon && (
             <View style={styles.warningBanner}>
               <Ionicons name="warning" size={20} color="#FF9800" />
-              <Text style={styles.warningText}>
-                Lease expires in {daysRemaining} days
-              </Text>
+              <Text style={styles.warningText}>Lease expires in {daysRemaining} days</Text>
             </View>
           )}
 
           {isExpired && (
             <View style={[styles.warningBanner, { backgroundColor: '#FFEBEE' }]}>
               <Ionicons name="alert-circle" size={20} color="#F44336" />
-              <Text style={[styles.warningText, { color: '#F44336' }]}>
-                Lease has expired
-              </Text>
+              <Text style={[styles.warningText, { color: '#F44336' }]}>Lease has expired</Text>
             </View>
           )}
 
@@ -496,9 +494,7 @@ export default function OwnerLeaseDetailScreen() {
               {lease.tenant?.full_name && (
                 <View style={styles.tenantRow}>
                   <Ionicons name="person" size={16} color="#666" />
-                  <Text style={styles.tenantText}>
-                    Tenant: {lease.tenant.full_name}
-                  </Text>
+                  <Text style={styles.tenantText}>Tenant: {lease.tenant.full_name}</Text>
                 </View>
               )}
             </View>
@@ -570,7 +566,9 @@ export default function OwnerLeaseDetailScreen() {
                 <DetailRow
                   icon="document-text"
                   label="Lease Type"
-                  value={lease.lease_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  value={lease.lease_type
+                    .replace('_', ' ')
+                    .replace(/\b\w/g, (l) => l.toUpperCase())}
                 />
               )}
               {lease.executed_at && (
@@ -639,7 +637,9 @@ export default function OwnerLeaseDetailScreen() {
                   <View style={styles.documentInfo}>
                     <Text style={[styles.documentTitle, { color: '#999' }]}>Lease Agreement</Text>
                     <Text style={styles.documentSubtitle}>
-                      {lease.status === 'active' ? 'PDF not generated' : 'Available after both parties sign'}
+                      {lease.status === 'active'
+                        ? 'PDF not generated'
+                        : 'Available after both parties sign'}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -647,7 +647,11 @@ export default function OwnerLeaseDetailScreen() {
                 {/* Temporary button to regenerate PDF for old leases */}
                 {lease.status === 'active' && (
                   <TouchableOpacity
-                    style={[styles.downloadButton, { borderColor: '#FF9800' }, actionLoading && styles.buttonDisabled]}
+                    style={[
+                      styles.downloadButton,
+                      { borderColor: '#FF9800' },
+                      actionLoading && styles.buttonDisabled,
+                    ]}
                     onPress={handleRegeneratePDF}
                     disabled={actionLoading}
                   >
@@ -656,7 +660,9 @@ export default function OwnerLeaseDetailScreen() {
                     ) : (
                       <>
                         <Ionicons name="refresh-outline" size={20} color="#FF9800" />
-                        <Text style={[styles.downloadButtonText, { color: '#FF9800' }]}>Generate PDF</Text>
+                        <Text style={[styles.downloadButtonText, { color: '#FF9800' }]}>
+                          Generate PDF
+                        </Text>
                       </>
                     )}
                   </TouchableOpacity>
@@ -733,9 +739,7 @@ export default function OwnerLeaseDetailScreen() {
             <View style={styles.section}>
               <View style={styles.infoBox}>
                 <Ionicons name="time" size={20} color="#FFA500" />
-                <Text style={styles.infoText}>
-                  Waiting for tenant to sign the lease agreement.
-                </Text>
+                <Text style={styles.infoText}>Waiting for tenant to sign the lease agreement.</Text>
               </View>
             </View>
           )}
@@ -746,10 +750,12 @@ export default function OwnerLeaseDetailScreen() {
               <Text style={styles.sectionTitle}>Inspections</Text>
               <TouchableOpacity
                 style={styles.inspectionButton}
-                onPress={() => router.push({
-                  pathname: '/(owner)/inspections/new' as any,
-                  params: { leaseId: lease.id },
-                })}
+                onPress={() =>
+                  router.push({
+                    pathname: '/(owner)/inspections/new' as any,
+                    params: { leaseId: lease.id },
+                  })
+                }
               >
                 <Ionicons name="clipboard-outline" size={20} color={RSA.blue} />
                 <Text style={styles.inspectionButtonText}>Schedule Inspection</Text>
@@ -760,7 +766,9 @@ export default function OwnerLeaseDetailScreen() {
                 onPress={() => router.push('/(owner)/inspections' as any)}
               >
                 <Ionicons name="list-outline" size={20} color="#6B7280" />
-                <Text style={[styles.inspectionButtonText, { color: '#6B7280' }]}>View All Inspections</Text>
+                <Text style={[styles.inspectionButtonText, { color: '#6B7280' }]}>
+                  View All Inspections
+                </Text>
                 <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
               </TouchableOpacity>
             </View>

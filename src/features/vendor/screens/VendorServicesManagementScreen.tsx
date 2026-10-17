@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   Pressable,
   Alert,
@@ -11,6 +10,7 @@ import {
   TextInput,
   Modal,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/src/contexts/AuthContext';
@@ -162,32 +162,28 @@ export default function ServicesManagementScreen() {
   };
 
   const handleRemoveArea = (area: VendorServiceArea) => {
-    Alert.alert(
-      'Remove Area',
-      `Remove "${area.city}, ${area.province}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await vendorProfileApi.removeServiceArea(area.id);
-              setServiceAreas(serviceAreas.filter((a) => a.id !== area.id));
-              Alert.alert('Success', 'Service area removed');
-            } catch (error) {
-              console.error('Error removing area:', error);
-              Alert.alert('Error', 'Failed to remove service area');
-            }
-          },
+    Alert.alert('Remove Area', `Remove "${area.city}, ${area.province}"?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await vendorProfileApi.removeServiceArea(area.id);
+            setServiceAreas(serviceAreas.filter((a) => a.id !== area.id));
+            Alert.alert('Success', 'Service area removed');
+          } catch (error) {
+            console.error('Error removing area:', error);
+            Alert.alert('Error', 'Failed to remove service area');
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
@@ -203,7 +199,7 @@ export default function ServicesManagementScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
@@ -217,10 +213,7 @@ export default function ServicesManagementScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>🛠️ Your Services</Text>
-            <Pressable
-              style={styles.addButton}
-              onPress={() => setShowAddServiceModal(true)}
-            >
+            <Pressable style={styles.addButton} onPress={() => setShowAddServiceModal(true)}>
               <Ionicons name="add" size={20} color={colors.background.default} />
               <Text style={styles.addButtonText}>Add</Text>
             </Pressable>
@@ -237,10 +230,7 @@ export default function ServicesManagementScreen() {
           ) : (
             <View style={styles.card}>
               {services.map((service, index) => (
-                <View
-                  key={service.id}
-                  style={[styles.serviceItem, index > 0 && styles.itemBorder]}
-                >
+                <View key={service.id} style={[styles.serviceItem, index > 0 && styles.itemBorder]}>
                   <View style={styles.serviceIcon}>
                     <Text style={styles.serviceIconText}>🔧</Text>
                   </View>
@@ -270,10 +260,7 @@ export default function ServicesManagementScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>📍 Service Areas</Text>
-            <Pressable
-              style={styles.addButton}
-              onPress={() => setShowAddAreaModal(true)}
-            >
+            <Pressable style={styles.addButton} onPress={() => setShowAddAreaModal(true)}>
               <Ionicons name="add" size={20} color={colors.background.default} />
               <Text style={styles.addButtonText}>Add</Text>
             </Pressable>
@@ -283,25 +270,17 @@ export default function ServicesManagementScreen() {
             <View style={styles.emptyCard}>
               <Text style={styles.emptyIcon}>🗺️</Text>
               <Text style={styles.emptyText}>No service areas added</Text>
-              <Text style={styles.emptySubtext}>
-                Add areas where you provide services
-              </Text>
+              <Text style={styles.emptySubtext}>Add areas where you provide services</Text>
             </View>
           ) : (
             <View style={styles.card}>
               {serviceAreas.map((area, index) => (
-                <View
-                  key={area.id}
-                  style={[styles.areaItem, index > 0 && styles.itemBorder]}
-                >
+                <View key={area.id} style={[styles.areaItem, index > 0 && styles.itemBorder]}>
                   <Ionicons name="location" size={20} color={colors.rsa.blue} />
                   <Text style={styles.areaText}>
                     {area.city}, {area.province}
                   </Text>
-                  <Pressable
-                    style={styles.removeButton}
-                    onPress={() => handleRemoveArea(area)}
-                  >
+                  <Pressable style={styles.removeButton} onPress={() => handleRemoveArea(area)}>
                     <Ionicons name="trash-outline" size={20} color={colors.rsa.red} />
                   </Pressable>
                 </View>
@@ -316,8 +295,8 @@ export default function ServicesManagementScreen() {
           <View style={styles.infoTextContainer}>
             <Text style={styles.infoTitle}>Why add services?</Text>
             <Text style={styles.infoText}>
-              Adding services helps property owners find you for relevant maintenance
-              requests. The more specific your services, the better matches you'll receive.
+              Adding services helps property owners find you for relevant maintenance requests. The
+              more specific your services, the better matches you'll receive.
             </Text>
           </View>
         </View>

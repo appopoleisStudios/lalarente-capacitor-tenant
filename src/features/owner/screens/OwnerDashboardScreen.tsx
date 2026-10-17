@@ -224,7 +224,7 @@ export default function OwnerDashboardScreen() {
   // Loading state
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={[styles.container, styles.centerContent]}>
           <ActivityIndicator size="large" color="#002395" />
           <Text style={styles.loadingText}>Loading dashboard...</Text>
@@ -236,7 +236,7 @@ export default function OwnerDashboardScreen() {
   // Error state with retry
   if (error) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={[styles.container, styles.centerContent]}>
           <Ionicons name="alert-circle" size={64} color="#DC2626" />
           <Text style={styles.errorTitle}>Unable to load dashboard</Text>
@@ -253,7 +253,7 @@ export default function OwnerDashboardScreen() {
   // No data state (edge case - user might not have properties yet)
   if (!dashboardData) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={[styles.container, styles.centerContent]}>
           <Ionicons name="home-outline" size={64} color="#9CA3AF" />
           <Text style={styles.emptyTitle}>Welcome to LaLarente</Text>
@@ -485,7 +485,7 @@ export default function OwnerDashboardScreen() {
 
   // Success state - render dashboard with real data
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
