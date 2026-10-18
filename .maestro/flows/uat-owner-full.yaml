@@ -76,7 +76,10 @@ appId: com.lalarente.app
 - extendedWaitUntil:
     notVisible: "Lala is typing..."
     timeout: 60000
-- assertNotVisible: "Something went wrong"
+- assertVisible:
+    id: "lala-ai-message"
+- assertNotVisible:
+    id: "lala-error-row"
 - takeScreenshot: uat-owner-06-lala-ai
 
 # ── 7. Messages (header button) ──────────────────────────────────────────────
@@ -304,22 +307,33 @@ appId: com.lalarente.app
     text: "All"
 - takeScreenshot: uat-owner-27-maintenance-filters
 
-# Archived chip — verify it renders (empty state or populated archived list)
+# Archived chip — verify filter executes: empty state must appear (no archived items)
+# or a request card must appear (if archived items exist).
 - tapOn:
     text: "Archived"
 - waitForAnimationToEnd:
     timeout: 2000
-- assertVisible:
-    text: "Archived"
+- extendedWaitUntil:
+    visible: "Nothing archived"
+    timeout: 8000
+    optional: true
+- runFlow:
+    when:
+      visible: "Nothing archived"
+    commands:
+      - assertVisible:
+          text: "Nothing archived"
+      - assertNotVisible:
+          text: "No requests found"
 - takeScreenshot: uat-owner-27b-maintenance-archived
 
-# Return to All view
+# Return to All — empty state must flip back to All view state
 - tapOn:
     text: "All"
 - waitForAnimationToEnd:
     timeout: 2000
-- assertVisible:
-    text: "All"
+- assertNotVisible:
+    text: "Nothing archived"
 
 # ── Done ─────────────────────────────────────────────────────────────────────
 - tapOn:

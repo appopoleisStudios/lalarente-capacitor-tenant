@@ -269,6 +269,7 @@ export default function LalaChatScreen() {
               )}
               <View
                 style={[styles.bubble, item.role === 'user' ? styles.userBubble : styles.aiBubble]}
+                testID={item.role === 'ai' ? 'lala-ai-message' : undefined}
               >
                 <Text style={item.role === 'user' ? styles.userText : styles.aiText}>
                   {item.text}
@@ -334,7 +335,7 @@ export default function LalaChatScreen() {
           </View>
         )}
         {error && (
-          <View style={styles.errorRow}>
+          <View style={styles.errorRow} testID="lala-error-row">
             <Text style={styles.errorText}>{error}</Text>
             <Pressable onPress={handleRetry}>
               <Text style={styles.retryText}>Retry</Text>

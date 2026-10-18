@@ -127,7 +127,10 @@ appId: com.lalarente.app
 - extendedWaitUntil:
     notVisible: "Lala is typing..."
     timeout: 60000
-- assertNotVisible: "Something went wrong"
+- assertVisible:
+    id: "lala-ai-message"
+- assertNotVisible:
+    id: "lala-error-row"
 - takeScreenshot: uat-vendor-08-lala-ai
 
 # ── 6. Profile tab ───────────────────────────────────────────────────────────
