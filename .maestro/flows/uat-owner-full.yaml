@@ -1,8 +1,8 @@
-# UAT — Owner full journey (Navin Indraj / indraj.navin@gmail.com)
+# UAT — Owner full journey
 # Covers every tab and major screen as a real landlord would use the app.
 # Run with: maestro test .maestro/flows/uat-owner-full.yaml \
-#             --env OWNER_EMAIL=indraj.navin@gmail.com \
-#             --env OWNER_PASSWORD=Nadene10_
+#             --env OWNER_EMAIL=<owner-email> \
+#             --env OWNER_PASSWORD=<owner-password>
 appId: com.lalarente.app
 ---
 - runFlow: ../subflows/login-owner.yaml
@@ -68,17 +68,12 @@ appId: com.lalarente.app
     visible:
       id: "lala-chip-0"
     timeout: 15000
-    optional: true
-- runFlow:
-    when:
-      visible:
-        id: "lala-chip-0"
-    commands:
-      - tapOn:
-          id: "lala-chip-0"
-      - extendedWaitUntil:
-          notVisible: "Lala is typing..."
-          timeout: 45000
+- tapOn:
+    id: "lala-chip-0"
+- extendedWaitUntil:
+    notVisible: "Lala is typing..."
+    timeout: 45000
+- assertNotVisible: "Something went wrong"
 - takeScreenshot: uat-owner-06-lala-ai
 
 # ── 7. Messages (header button) ──────────────────────────────────────────────
@@ -104,57 +99,50 @@ appId: com.lalarente.app
 # Compose new message
 - openLink: lalarenteapp://(owner)/messages/new
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "New Message"
+    timeout: 15000
+- assertVisible:
+    text: "New Message"
 - takeScreenshot: uat-owner-08-messages-compose
 - back
 
 # ── 8. Notifications ─────────────────────────────────────────────────────────
 - openLink: lalarenteapp://(owner)/notifications
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Notifications"
+    timeout: 15000
 - assertVisible:
     text: "Notifications"
-    optional: true
 - takeScreenshot: uat-owner-09-notifications
 - back
 
 # ── 9. Rent Roll ─────────────────────────────────────────────────────────────
 - openLink: lalarenteapp://(owner)/rent-roll
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Rent Roll"
+    timeout: 15000
 - assertVisible:
     text: "Rent Roll"
-    optional: true
 - takeScreenshot: uat-owner-10-rent-roll
 - back
 
 # ── 10. Statements ───────────────────────────────────────────────────────────
 - openLink: lalarenteapp://(owner)/statements
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Statements"
+    timeout: 15000
 - assertVisible:
     text: "Statements"
-    optional: true
 - takeScreenshot: uat-owner-11-statements
 - back
 
 # ── 11. Tax Reports ──────────────────────────────────────────────────────────
 - openLink: lalarenteapp://(owner)/tax-reports
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Tax"
+    timeout: 15000
 - assertVisible:
     text: "Tax"
-    optional: true
 - takeScreenshot: uat-owner-12-tax-reports
 - back
 
@@ -163,145 +151,128 @@ appId: com.lalarente.app
 - extendedWaitUntil:
     visible: "FICA / Tenant KYC"
     timeout: 20000
-    optional: true
 - assertVisible:
     text: "FICA / Tenant KYC"
-    optional: true
 - takeScreenshot: uat-owner-13-compliance
 - back
 
 # ── 13. Deposits ─────────────────────────────────────────────────────────────
 - openLink: lalarenteapp://(owner)/deposits
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Deposits"
+    timeout: 15000
 - assertVisible:
     text: "Deposits"
-    optional: true
 - takeScreenshot: uat-owner-14-deposits
 - back
 
 # ── 14. Insurance ────────────────────────────────────────────────────────────
 - openLink: lalarenteapp://(owner)/insurance
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Insurance"
+    timeout: 15000
 - assertVisible:
     text: "Insurance"
-    optional: true
 - takeScreenshot: uat-owner-15-insurance
 - back
 
 # ── 15. Arrears ──────────────────────────────────────────────────────────────
 - openLink: lalarenteapp://(owner)/arrears
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Arrears"
+    timeout: 15000
 - assertVisible:
     text: "Arrears"
-    optional: true
 - takeScreenshot: uat-owner-16-arrears
 - back
 
 # ── 16. Renewals ─────────────────────────────────────────────────────────────
 - openLink: lalarenteapp://(owner)/renewals
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Renewals"
+    timeout: 15000
 - assertVisible:
     text: "Renewals"
-    optional: true
 - takeScreenshot: uat-owner-17-renewals
 - back
 
 # ── 17. Viewings ─────────────────────────────────────────────────────────────
 - openLink: lalarenteapp://(owner)/viewings
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Viewings"
+    timeout: 15000
 - assertVisible:
     text: "Viewings"
-    optional: true
 - takeScreenshot: uat-owner-18-viewings
 - back
 
 # ── 18. Applications ─────────────────────────────────────────────────────────
 - openLink: lalarenteapp://(owner)/applications
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Applications"
+    timeout: 15000
 - assertVisible:
     text: "Applications"
-    optional: true
 - takeScreenshot: uat-owner-19-applications
 - back
 
 # ── 19. Invoices ─────────────────────────────────────────────────────────────
 - openLink: lalarenteapp://(owner)/invoices
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Invoices"
+    timeout: 15000
+- assertVisible:
+    text: "Invoices"
 - takeScreenshot: uat-owner-20-invoices
 - back
 
 # ── 20. Payment disputes ─────────────────────────────────────────────────────
 - openLink: lalarenteapp://(owner)/payment-disputes
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Disputes"
+    timeout: 15000
 - assertVisible:
     text: "Disputes"
-    optional: true
 - takeScreenshot: uat-owner-21-payment-disputes
 - back
 
 # ── 21. Early termination ────────────────────────────────────────────────────
 - openLink: lalarenteapp://(owner)/early-termination
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Early Termination"
+    timeout: 15000
+- assertVisible:
+    text: "Early Termination"
 - takeScreenshot: uat-owner-22-early-termination
 - back
 
 # ── 22. Holding deposits ─────────────────────────────────────────────────────
 - openLink: lalarenteapp://(owner)/holding-deposit
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Holding Deposits"
+    timeout: 15000
+- assertVisible:
+    text: "Holding Deposits"
 - takeScreenshot: uat-owner-23-holding-deposit
 - back
 
 # ── 23. Inspections ──────────────────────────────────────────────────────────
 - openLink: lalarenteapp://(owner)/inspections
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Inspections"
+    timeout: 15000
 - assertVisible:
     text: "Inspections"
-    optional: true
 - takeScreenshot: uat-owner-24-inspections
 - back
 
 # ── 24. Vendor directory (via deep link) ─────────────────────────────────────
 - openLink: lalarenteapp://(owner)/maintenance/vendor-directory
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Vendor Directory"
+    timeout: 15000
 - assertVisible:
     text: "Vendor Directory"
-    optional: true
 - takeScreenshot: uat-owner-25-vendor-directory
 - back
 
@@ -313,9 +284,10 @@ appId: com.lalarente.app
     timeout: 20000
 - openLink: lalarenteapp://(owner)/add-property
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Add Property"
+    timeout: 15000
+- assertVisible:
+    text: "Add Property"
 - takeScreenshot: uat-owner-26-add-property
 - back
 

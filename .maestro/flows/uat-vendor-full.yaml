@@ -1,8 +1,8 @@
-# UAT — Vendor full journey (e2e-vendor@lalarente.com)
+# UAT — Vendor full journey
 # Covers every tab and major screen as a real vendor would use the app.
 # Run with: maestro test .maestro/flows/uat-vendor-full.yaml \
-#             --env VENDOR_EMAIL=e2e-vendor@lalarente.com \
-#             --env VENDOR_PASSWORD=E2eVendor123!
+#             --env VENDOR_EMAIL=<vendor-email> \
+#             --env VENDOR_PASSWORD=<vendor-password>
 appId: com.lalarente.app
 ---
 - runFlow: ../subflows/login-vendor.yaml
@@ -119,17 +119,12 @@ appId: com.lalarente.app
     visible:
       id: "lala-chip-0"
     timeout: 15000
-    optional: true
-- runFlow:
-    when:
-      visible:
-        id: "lala-chip-0"
-    commands:
-      - tapOn:
-          id: "lala-chip-0"
-      - extendedWaitUntil:
-          notVisible: "Lala is typing..."
-          timeout: 45000
+- tapOn:
+    id: "lala-chip-0"
+- extendedWaitUntil:
+    notVisible: "Lala is typing..."
+    timeout: 45000
+- assertNotVisible: "Something went wrong"
 - takeScreenshot: uat-vendor-08-lala-ai
 
 # ── 6. Profile tab ───────────────────────────────────────────────────────────
@@ -168,24 +163,20 @@ appId: com.lalarente.app
 # Services
 - openLink: lalarenteapp://(vendor)/profile/services
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Services"
+    timeout: 15000
 - assertVisible:
     text: "Services"
-    optional: true
 - takeScreenshot: uat-vendor-11-profile-services
 - back
 
 # Documents
 - openLink: lalarenteapp://(vendor)/profile/documents
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Documents"
+    timeout: 15000
 - assertVisible:
     text: "Documents"
-    optional: true
 - takeScreenshot: uat-vendor-12-profile-documents
 - back
 
@@ -217,21 +208,20 @@ appId: com.lalarente.app
 # New message — vendor role guard shows "Use Job Threads" (not a compose form)
 - openLink: lalarenteapp://(vendor)/messages/new
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Use Job Threads"
+    timeout: 15000
+- assertVisible:
+    text: "Use Job Threads"
 - takeScreenshot: uat-vendor-14-messages-new
 - back
 
 # ── 8. Notifications ─────────────────────────────────────────────────────────
 - openLink: lalarenteapp://(vendor)/notifications
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Notifications"
+    timeout: 15000
 - assertVisible:
     text: "Notifications"
-    optional: true
 - takeScreenshot: uat-vendor-15-notifications
 - back
 
@@ -256,9 +246,10 @@ appId: com.lalarente.app
       - tapOn:
           id: "qa-contracts"
       - extendedWaitUntil:
-          notVisible: "This screen doesn't exist."
-          timeout: 10000
-          optional: true
+          visible: "Contracts"
+          timeout: 15000
+      - assertVisible:
+          text: "Contracts"
       - takeScreenshot: uat-vendor-16-contracts
       - back
 
@@ -269,18 +260,20 @@ appId: com.lalarente.app
     commands:
       - openLink: lalarenteapp://(vendor)/contracts
       - extendedWaitUntil:
-          notVisible: "This screen doesn't exist."
-          timeout: 10000
-          optional: true
+          visible: "Contracts"
+          timeout: 15000
+      - assertVisible:
+          text: "Contracts"
       - takeScreenshot: uat-vendor-16-contracts
       - back
 
 # ── 10. Invoices ─────────────────────────────────────────────────────────────
 - openLink: lalarenteapp://(vendor)/invoices
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Invoices"
+    timeout: 15000
+- assertVisible:
+    text: "Invoices"
 - takeScreenshot: uat-vendor-17-invoices
 - back
 

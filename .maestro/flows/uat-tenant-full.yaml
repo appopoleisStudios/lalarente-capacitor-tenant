@@ -1,8 +1,8 @@
-# UAT — Tenant full journey (Navin Indraj / navin.indraj@yahoo.com)
+# UAT — Tenant full journey
 # Covers every tab and major screen as a real tenant would use the app.
 # Run with: maestro test .maestro/flows/uat-tenant-full.yaml \
-#             --env TENANT_EMAIL=navin.indraj@yahoo.com \
-#             --env TENANT_PASSWORD=Nadene10_
+#             --env TENANT_EMAIL=<tenant-email> \
+#             --env TENANT_PASSWORD=<tenant-password>
 appId: com.lalarente.app
 ---
 - runFlow: ../subflows/login-tenant.yaml
@@ -57,17 +57,12 @@ appId: com.lalarente.app
     visible:
       id: "lala-chip-0"
     timeout: 15000
-    optional: true
-- runFlow:
-    when:
-      visible:
-        id: "lala-chip-0"
-    commands:
-      - tapOn:
-          id: "lala-chip-0"
-      - extendedWaitUntil:
-          notVisible: "Lala is typing..."
-          timeout: 45000
+- tapOn:
+    id: "lala-chip-0"
+- extendedWaitUntil:
+    notVisible: "Lala is typing..."
+    timeout: 45000
+- assertNotVisible: "Something went wrong"
 - takeScreenshot: uat-tenant-05-lala-ai
 
 # ── 6. Maintenance — list + new request form ─────────────────────────────────
@@ -102,7 +97,8 @@ appId: com.lalarente.app
       - extendedWaitUntil:
           visible: "Report Issue"
           timeout: 15000
-          optional: true
+      - assertVisible:
+          text: "Report Issue"
       - takeScreenshot: uat-tenant-07-maintenance-new
       - back
 
@@ -113,9 +109,10 @@ appId: com.lalarente.app
     commands:
       - openLink: lalarenteapp://(tenant)/maintenance/report
       - extendedWaitUntil:
-          notVisible: "This screen doesn't exist."
-          timeout: 10000
-          optional: true
+          visible: "Report Issue"
+          timeout: 15000
+      - assertVisible:
+          text: "Report Issue"
       - takeScreenshot: uat-tenant-07-maintenance-new
       - back
 
@@ -143,42 +140,40 @@ appId: com.lalarente.app
 # Compose new message
 - openLink: lalarenteapp://(tenant)/messages/new
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "New Message"
+    timeout: 15000
+- assertVisible:
+    text: "New Message"
 - takeScreenshot: uat-tenant-09-messages-compose
 - back
 
 # ── 8. Notifications ─────────────────────────────────────────────────────────
 - openLink: lalarenteapp://(tenant)/notifications
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Notifications"
+    timeout: 15000
 - assertVisible:
     text: "Notifications"
-    optional: true
 - takeScreenshot: uat-tenant-10-notifications
 - back
 
 # ── 9. Lease details ─────────────────────────────────────────────────────────
 - openLink: lalarenteapp://(tenant)/lease
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Lease"
+    timeout: 15000
+- assertVisible:
+    text: "Lease"
 - takeScreenshot: uat-tenant-11-lease
 - back
 
 # ── 10. Deposit ──────────────────────────────────────────────────────────────
 - openLink: lalarenteapp://(tenant)/deposit
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Deposit"
+    timeout: 15000
 - assertVisible:
     text: "Deposit"
-    optional: true
 - takeScreenshot: uat-tenant-12-deposit
 - back
 
@@ -187,10 +182,8 @@ appId: com.lalarente.app
 - extendedWaitUntil:
     visible: "My Arrears"
     timeout: 20000
-    optional: true
 - assertVisible:
     text: "My Arrears"
-    optional: true
 - takeScreenshot: uat-tenant-13-arrears
 - back
 
@@ -199,37 +192,38 @@ appId: com.lalarente.app
 - extendedWaitUntil:
     visible: "Reports"
     timeout: 20000
-    optional: true
 - assertVisible:
     text: "Reports"
-    optional: true
 - takeScreenshot: uat-tenant-14-reports
 - back
 
 # ── 13. Documents ────────────────────────────────────────────────────────────
 - openLink: lalarenteapp://(tenant)/documents
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Documents"
+    timeout: 15000
+- assertVisible:
+    text: "Documents"
 - takeScreenshot: uat-tenant-15-documents
 - back
 
 # ── 14. Viewings (accessed via deep link — not a tab) ────────────────────────
 - openLink: lalarenteapp://(tenant)/viewings
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Viewings"
+    timeout: 15000
+- assertVisible:
+    text: "Viewings"
 - takeScreenshot: uat-tenant-16-viewings
 - back
 
 # ── 15. Application status ───────────────────────────────────────────────────
 - openLink: lalarenteapp://(tenant)/application-status
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "My Applications"
+    timeout: 15000
+- assertVisible:
+    text: "My Applications"
 - takeScreenshot: uat-tenant-17-application-status
 - back
 
@@ -239,7 +233,6 @@ appId: com.lalarente.app
     visible:
       id: "payment-disputes-title"
     timeout: 30000
-    optional: true
 - assertVisible:
     text: "No payment disputes"
     optional: true
@@ -251,16 +244,18 @@ appId: com.lalarente.app
 - extendedWaitUntil:
     visible: "Holding Deposits"
     timeout: 20000
-    optional: true
+- assertVisible:
+    text: "Holding Deposits"
 - takeScreenshot: uat-tenant-19-holding-deposit
 - back
 
 # ── 18. Lease renewal ────────────────────────────────────────────────────────
 - openLink: lalarenteapp://(tenant)/lease-renewal
 - extendedWaitUntil:
-    notVisible: "This screen doesn't exist."
-    timeout: 10000
-    optional: true
+    visible: "Lease Renewal"
+    timeout: 15000
+- assertVisible:
+    text: "Lease Renewal"
 - takeScreenshot: uat-tenant-20-lease-renewal
 - back
 
@@ -269,10 +264,8 @@ appId: com.lalarente.app
 - extendedWaitUntil:
     visible: "Early Termination"
     timeout: 20000
-    optional: true
 - assertVisible:
     text: "Early Termination"
-    optional: true
 - takeScreenshot: uat-tenant-21-early-termination
 - back
 
