@@ -3,6 +3,8 @@
 -- status changes from 'available' (e.g., to 'rented'), breaking the
 -- tenant dashboard, lease screen, arrears, deposit, and other screens.
 
+DROP POLICY IF EXISTS "Tenants can view their leased property" ON properties;
+
 CREATE POLICY "Tenants can view their leased property"
 ON properties
 FOR SELECT
