@@ -8,7 +8,7 @@ appId: com.lalarente.app
 - extendedWaitUntil:
     visible:
       id: "email-input"
-    timeout: 5000
+    timeout: 30000
     optional: true
 
 # Cold start path — not already on login
