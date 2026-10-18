@@ -26,7 +26,8 @@ import type {
  */
 export async function getMaintenanceRequests(
   userId: string,
-  role?: 'owner' | 'tenant' | 'vendor'
+  role?: 'owner' | 'tenant' | 'vendor',
+  includeArchived = false
 ): Promise<MaintenanceRequestWithRelations[]> {
   // Build query based on role
   let query = supabase.from('maintenance_requests').select(`
@@ -38,16 +39,21 @@ export async function getMaintenanceRequests(
       selected_vendor:profiles!selected_vendor_id(id, full_name)
     `);
 
-  // Apply role-based filter
+  // Apply role-based filter + archive visibility.
+  // Cast through `any` for the archive columns until database.types.ts is
+  // regenerated after the 20261018000002 migration is applied.
   if (role === 'owner') {
     query = query.eq('owner_id', userId);
+    if (!includeArchived) query = (query as any).eq('archived_by_owner', false);
   } else if (role === 'tenant') {
     query = query.eq('tenant_id', userId);
+    if (!includeArchived) query = (query as any).eq('archived_by_tenant', false);
   } else if (role === 'vendor') {
     query = query.eq('selected_vendor_id', userId);
+    if (!includeArchived) query = (query as any).eq('archived_by_vendor', false);
   } else {
-    // Default to owner if role not specified
     query = query.eq('owner_id', userId);
+    if (!includeArchived) query = (query as any).eq('archived_by_owner', false);
   }
 
   query = query.order('created_at', { ascending: false });
@@ -56,6 +62,42 @@ export async function getMaintenanceRequests(
 
   if (error) throw error;
   return (data || []) as unknown as MaintenanceRequestWithRelations[];
+}
+
+/** Archive a maintenance request for a specific role. */
+export async function archiveMaintenanceRequest(
+  requestId: string,
+  role: 'owner' | 'tenant' | 'vendor'
+): Promise<void> {
+  const payload =
+    role === 'owner'
+      ? { archived_by_owner: true }
+      : role === 'tenant'
+        ? { archived_by_tenant: true }
+        : { archived_by_vendor: true };
+  const { error } = await (supabase as any)
+    .from('maintenance_requests')
+    .update(payload)
+    .eq('id', requestId);
+  if (error) throw error;
+}
+
+/** Unarchive a maintenance request for a specific role. */
+export async function unarchiveMaintenanceRequest(
+  requestId: string,
+  role: 'owner' | 'tenant' | 'vendor'
+): Promise<void> {
+  const payload =
+    role === 'owner'
+      ? { archived_by_owner: false }
+      : role === 'tenant'
+        ? { archived_by_tenant: false }
+        : { archived_by_vendor: false };
+  const { error } = await (supabase as any)
+    .from('maintenance_requests')
+    .update(payload)
+    .eq('id', requestId);
+  if (error) throw error;
 }
 
 /**
