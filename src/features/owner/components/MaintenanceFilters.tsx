@@ -5,7 +5,7 @@ import { AnimatedButton } from '@/src/shared/components';
 
 const RSA = { blue: '#002395', green: '#007A4D' };
 
-export type FilterType = 'all' | 'open' | 'assigned' | 'in_progress' | 'completed' | 'archived';
+type FilterType = 'all' | 'open' | 'assigned' | 'in_progress' | 'completed';
 
 interface MaintenanceFiltersProps {
   activeFilter: FilterType;
@@ -16,7 +16,6 @@ interface MaintenanceFiltersProps {
     assigned: number;
     in_progress: number;
     completed: number;
-    archived: number;
   };
 }
 
@@ -31,7 +30,6 @@ export const MaintenanceFilters = ({
     { key: 'assigned' as FilterType, label: 'Assigned', count: counts.assigned },
     { key: 'in_progress' as FilterType, label: 'In Progress', count: counts.in_progress },
     { key: 'completed' as FilterType, label: 'Completed', count: counts.completed },
-    { key: 'archived' as FilterType, label: 'Archived', count: counts.archived },
   ];
 
   return (
@@ -49,13 +47,7 @@ export const MaintenanceFilters = ({
               onFilterChange(filter.key);
             }}
           >
-            <View
-              style={[
-                styles.chip,
-                activeFilter === filter.key &&
-                  (filter.key === 'archived' ? styles.chipArchived : styles.chipActive),
-              ]}
-            >
+            <View style={[styles.chip, activeFilter === filter.key && styles.chipActive]}>
               <Text style={[styles.chipText, activeFilter === filter.key && styles.chipTextActive]}>
                 {filter.label}
               </Text>
@@ -104,10 +96,6 @@ const styles = StyleSheet.create({
   chipActive: {
     backgroundColor: RSA.green,
     borderColor: RSA.green,
-  },
-  chipArchived: {
-    backgroundColor: '#6b7280',
-    borderColor: '#6b7280',
   },
   chipText: {
     fontSize: 14,

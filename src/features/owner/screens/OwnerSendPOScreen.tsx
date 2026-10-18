@@ -49,15 +49,12 @@ export default function OwnerSendPOScreen() {
   const propertyAddress = (params.propertyAddress as string) || '';
   const requestId = params.requestId as string | undefined;
 
-  // Guard: poId is required — must be a useEffect, not a render-time side effect
-  useEffect(() => {
-    if (!poId) {
-      Alert.alert('Error', 'Missing purchase order reference');
-      router.back();
-    }
-  }, [poId]);
-
-  if (!poId) return null;
+  // Guard: poId is required
+  if (!poId) {
+    Alert.alert('Error', 'Missing purchase order reference');
+    router.back();
+    return null;
+  }
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios');

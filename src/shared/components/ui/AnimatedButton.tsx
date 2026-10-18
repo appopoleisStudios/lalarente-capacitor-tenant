@@ -6,7 +6,6 @@ import * as Haptics from 'expo-haptics';
 export interface AnimatedButtonProps {
   children: React.ReactNode;
   onPress?: () => void;
-  onLongPress?: () => void;
   style?: ViewStyle | ViewStyle[];
   hapticType?: 'light' | 'medium';
   accessibilityLabel?: string;
@@ -18,7 +17,6 @@ export interface AnimatedButtonProps {
 export const AnimatedButton = ({
   children,
   onPress,
-  onLongPress,
   style,
   hapticType = 'light',
   accessibilityLabel,
@@ -50,7 +48,6 @@ export const AnimatedButton = ({
     <Animated.View style={[animatedStyle, style]}>
       <Pressable
         onPress={onPress}
-        onLongPress={onLongPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         disabled={disabled}
