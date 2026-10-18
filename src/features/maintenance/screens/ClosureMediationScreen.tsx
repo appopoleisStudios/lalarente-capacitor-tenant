@@ -49,6 +49,7 @@ export default function ClosureMediationScreen() {
       const report = await getClosureReport(requestId);
       if (!report?.id) {
         Alert.alert('Unavailable', 'No closure report on this job yet.');
+        setLoading(false);
         return;
       }
       setClosureId(report.id);
