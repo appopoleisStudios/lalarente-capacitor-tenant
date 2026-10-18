@@ -1,0 +1,291 @@
+# UAT — Vendor full journey
+# Covers every tab and major screen as a real vendor would use the app.
+# Run with: maestro test .maestro/flows/uat-vendor-full.yaml \
+#             --env VENDOR_EMAIL=<vendor-email> \
+#             --env VENDOR_PASSWORD=<vendor-password>
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-vendor.yaml
+
+# ── 1. Dashboard — stat cards ─────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible: ".*Quotes.*"
+    timeout: 20000
+- assertVisible:
+    text: ".*Quotes.*"
+- assertVisible:
+    text: ".*Available.*"
+    optional: true
+- assertVisible:
+    text: ".*Active.*"
+    optional: true
+- assertVisible:
+    text: ".*Completed.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: uat-vendor-01-dashboard
+
+# Quick Actions section must be visible
+- scrollUntilVisible:
+    element:
+      text: "Quick Actions"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- assertVisible:
+    text: "Quick Actions"
+- takeScreenshot: uat-vendor-02-dashboard-quick-actions
+
+# ── 2. Requests tab (maintenance) ────────────────────────────────────────────
+- tapOn:
+    id: "tab-vendor-requests"
+- extendedWaitUntil:
+    visible: "Maintenance Requests"
+    timeout: 20000
+- assertVisible:
+    text: "Maintenance Requests"
+- takeScreenshot: uat-vendor-03-requests
+
+# ── 3. My Jobs tab — filter chips ────────────────────────────────────────────
+- tapOn:
+    id: "tab-vendor-jobs"
+- extendedWaitUntil:
+    visible: "My Jobs"
+    timeout: 20000
+- assertVisible:
+    text: "My Jobs"
+- assertVisible:
+    text: "Active"
+    optional: true
+- assertVisible:
+    text: "Completed"
+    optional: true
+- takeScreenshot: uat-vendor-04-jobs
+
+# Completed tab
+- runFlow:
+    when:
+      visible:
+        id: "vendor-filter-completed"
+    commands:
+      - tapOn:
+          id: "vendor-filter-completed"
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - takeScreenshot: uat-vendor-05-jobs-completed
+
+# ── 4. Earnings tab ──────────────────────────────────────────────────────────
+- tapOn:
+    id: "tab-vendor-earnings"
+- extendedWaitUntil:
+    visible:
+      id: "vendor-earnings-title"
+    timeout: 20000
+- assertVisible:
+    id: "vendor-earnings-total-earned"
+- assertVisible:
+    id: "vendor-earnings-pending-total"
+- assertVisible:
+    id: "vendor-earnings-net-earnings"
+- assertVisible:
+    id: "vendor-earnings-schedule"
+- takeScreenshot: uat-vendor-06-earnings
+
+# Banking preferences screen
+- tapOn:
+    id: "vendor-earnings-banking-button"
+- extendedWaitUntil:
+    visible:
+      id: "vendor-banking-title"
+    timeout: 15000
+- assertVisible:
+    id: "vendor-banking-schedule-instant"
+    optional: true
+- assertVisible:
+    id: "vendor-banking-schedule-weekly"
+    optional: true
+- takeScreenshot: uat-vendor-07-banking
+- back
+
+# ── 5. Lala AI tab ───────────────────────────────────────────────────────────
+- tapOn:
+    id: "tab-vendor-lala-ai"
+- extendedWaitUntil:
+    visible: "Lala Assistant"
+    timeout: 20000
+- assertVisible: "Lala Assistant"
+- extendedWaitUntil:
+    visible:
+      id: "lala-chip-0"
+    timeout: 15000
+- tapOn:
+    id: "lala-chip-0"
+- extendedWaitUntil:
+    visible:
+      id: "lala-ai-message"
+    timeout: 60000
+- assertNotVisible:
+    id: "lala-error-row"
+- takeScreenshot: uat-vendor-08-lala-ai
+
+# ── 6. Profile tab ───────────────────────────────────────────────────────────
+- tapOn:
+    id: "tab-vendor-profile"
+- extendedWaitUntil:
+    visible:
+      id: "vendor-profile-title"
+    timeout: 20000
+- assertVisible:
+    id: "vendor-profile-title"
+- takeScreenshot: uat-vendor-09-profile
+
+# Edit profile
+- scrollUntilVisible:
+    element:
+      id: "vendor-profile-edit"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- tapOn:
+    id: "vendor-profile-edit"
+- extendedWaitUntil:
+    visible: "Edit Profile"
+    timeout: 15000
+- assertVisible:
+    text: "Edit Profile"
+- takeScreenshot: uat-vendor-10-profile-edit
+- tapOn:
+    id: "edit-profile-back"
+- extendedWaitUntil:
+    visible:
+      id: "vendor-profile-title"
+    timeout: 15000
+
+# Services
+- openLink: lalarenteapp://(vendor)/profile/services
+- extendedWaitUntil:
+    visible: "Services"
+    timeout: 15000
+- assertVisible:
+    text: "Services"
+- takeScreenshot: uat-vendor-11-profile-services
+- back
+
+# Documents
+- openLink: lalarenteapp://(vendor)/profile/documents
+- extendedWaitUntil:
+    visible: "Documents"
+    timeout: 15000
+- assertVisible:
+    text: "Documents"
+- takeScreenshot: uat-vendor-12-profile-documents
+- back
+
+# ── 7. Messages — list entry (via Quick Action) ───────────────────────────────
+- tapOn:
+    id: "tab-vendor-home"
+- extendedWaitUntil:
+    visible: "Quick Actions"
+    timeout: 20000
+    optional: true
+- scrollUntilVisible:
+    element:
+      id: "qa-messages"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- tapOn:
+    id: "qa-messages"
+- extendedWaitUntil:
+    visible: "Messages"
+    timeout: 15000
+- assertVisible:
+    text: "Messages"
+- assertVisible:
+    text: "No Messages"
+    optional: true
+- takeScreenshot: uat-vendor-13-messages
+
+# New message — vendor role guard shows "Use Job Threads" (not a compose form)
+- openLink: lalarenteapp://(vendor)/messages/new
+- extendedWaitUntil:
+    visible: "Use Job Threads"
+    timeout: 15000
+- assertVisible:
+    text: "Use Job Threads"
+- takeScreenshot: uat-vendor-14-messages-new
+- back
+
+# ── 8. Notifications ─────────────────────────────────────────────────────────
+- openLink: lalarenteapp://(vendor)/notifications
+- extendedWaitUntil:
+    visible: "Notifications"
+    timeout: 15000
+- assertVisible:
+    text: "Notifications"
+- takeScreenshot: uat-vendor-15-notifications
+- back
+
+# ── 9. Contracts (hidden tab — accessed via dashboard quick action) ───────────
+- tapOn:
+    id: "tab-vendor-home"
+- extendedWaitUntil:
+    visible: ".*Quotes.*"
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      id: "qa-contracts"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: "qa-contracts"
+    commands:
+      - tapOn:
+          id: "qa-contracts"
+      - extendedWaitUntil:
+          visible: "Contracts"
+          timeout: 15000
+      - assertVisible:
+          text: "Contracts"
+      - takeScreenshot: uat-vendor-16-contracts
+      - back
+
+- runFlow:
+    when:
+      notVisible:
+        id: "qa-contracts"
+    commands:
+      - openLink: lalarenteapp://(vendor)/contracts
+      - extendedWaitUntil:
+          visible: "Contracts"
+          timeout: 15000
+      - assertVisible:
+          text: "Contracts"
+      - takeScreenshot: uat-vendor-16-contracts
+      - back
+
+# ── 10. Invoices ─────────────────────────────────────────────────────────────
+- openLink: lalarenteapp://(vendor)/invoices
+- extendedWaitUntil:
+    visible: "Invoices"
+    timeout: 15000
+- assertVisible:
+    text: "Invoices"
+- takeScreenshot: uat-vendor-17-invoices
+- back
+
+# ── Done ─────────────────────────────────────────────────────────────────────
+- tapOn:
+    id: "tab-vendor-home"
+- extendedWaitUntil:
+    visible: ".*Quotes.*"
+    timeout: 30000
+- takeScreenshot: uat-vendor-99-done
+
+# Sign out so the next UAT role starts on the login screen
+- runFlow: ../subflows/sign-out-vendor.yaml

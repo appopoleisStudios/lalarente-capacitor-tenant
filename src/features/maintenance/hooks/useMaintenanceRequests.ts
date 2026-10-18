@@ -16,13 +16,13 @@ import type {
   Priority,
 } from '../api/types/maintenance.types';
 
-export function useMaintenanceRequests() {
+export function useMaintenanceRequests(includeArchived = false) {
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
 
   const userId = user?.id;
   const role = profile?.role === 'admin' ? 'owner' : profile?.role;
-  const queryKey = queryKeys.maintenance.requests(userId, role);
+  const queryKey = [...queryKeys.maintenance.requests(userId, role), { includeArchived }];
 
   const {
     data: requests = [],
@@ -35,7 +35,7 @@ export function useMaintenanceRequests() {
     queryKey,
     queryFn: async () => {
       if (!userId || !role) return [];
-      return await getMaintenanceRequests(userId, role);
+      return await getMaintenanceRequests(userId, role, includeArchived);
     },
     enabled: !!userId && !!role,
     // Keep showing previous data while refetching — avoids flicker on pull-to-refresh

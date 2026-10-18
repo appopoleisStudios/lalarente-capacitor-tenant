@@ -15,18 +15,21 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { AnimatedButton } from '@/src/shared/components';
-import { MaintenanceFilters } from '@/src/features/owner/components/MaintenanceFilters';
+import { MaintenanceFilters, FilterType } from '@/src/features/owner/components/MaintenanceFilters';
 import { StatusBadge, PriorityIndicator } from '@/src/features/maintenance/components';
 import { useMaintenanceRequests } from '@/src/features/maintenance/hooks';
+import {
+  archiveMaintenanceRequest,
+  unarchiveMaintenanceRequest,
+} from '@/src/features/maintenance/api/requests/maintenanceRequests.api';
 import { styles } from './TenantMaintenanceListScreen.styles';
-
-type FilterType = 'all' | 'open' | 'assigned' | 'in_progress' | 'completed';
 
 export default function TenantMaintenanceListScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
 
-  // Real data from database - automatically filtered for tenant role
+  const isArchiveView = activeFilter === 'archived';
+
   const {
     requests: allRequests,
     loading,
@@ -34,28 +37,58 @@ export default function TenantMaintenanceListScreen() {
     refreshing,
     onRefresh,
     refetch,
-  } = useMaintenanceRequests();
+  } = useMaintenanceRequests(isArchiveView);
 
-  // Refresh when screen comes into focus (after creating new request)
   useFocusEffect(
     React.useCallback(() => {
       refetch();
     }, [refetch])
   );
 
-  // Filter requests by status
   const filteredRequests = allRequests.filter((request: any) => {
-    if (activeFilter === 'all') return true;
+    if (activeFilter === 'archived' || activeFilter === 'all') return true;
     return request.status === activeFilter;
   });
 
-  // Calculate counts for filter badges
   const counts = {
-    all: allRequests.length,
-    open: allRequests.filter((r: any) => r.status === 'open').length,
-    assigned: allRequests.filter((r: any) => r.status === 'assigned').length,
-    in_progress: allRequests.filter((r: any) => r.status === 'in_progress').length,
-    completed: allRequests.filter((r: any) => r.status === 'completed').length,
+    all: isArchiveView ? 0 : allRequests.length,
+    open: isArchiveView ? 0 : allRequests.filter((r: any) => r.status === 'open').length,
+    assigned: isArchiveView ? 0 : allRequests.filter((r: any) => r.status === 'assigned').length,
+    in_progress: isArchiveView
+      ? 0
+      : allRequests.filter((r: any) => r.status === 'in_progress').length,
+    completed: isArchiveView ? 0 : allRequests.filter((r: any) => r.status === 'completed').length,
+    archived: isArchiveView ? allRequests.length : 0,
+  };
+
+  const handleCardLongPress = (request: any) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    const isArchived = request.archived_by_tenant;
+    Alert.alert(
+      isArchived ? 'Unarchive request?' : 'Archive request?',
+      isArchived
+        ? 'This will move it back to your active list.'
+        : 'Archived requests are hidden from your main list. You can view them in the Archived tab.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: isArchived ? 'Unarchive' : 'Archive',
+          style: isArchived ? 'default' : 'destructive',
+          onPress: async () => {
+            try {
+              if (isArchived) {
+                await unarchiveMaintenanceRequest(request.id, 'tenant');
+              } else {
+                await archiveMaintenanceRequest(request.id, 'tenant');
+              }
+              refetch();
+            } catch {
+              Alert.alert('Error', 'Could not update archive status. Please try again.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const formatDate = (dateString: string) => {
@@ -179,7 +212,7 @@ export default function TenantMaintenanceListScreen() {
         {/* Filters */}
         <MaintenanceFilters
           activeFilter={activeFilter}
-          onFilterChange={setActiveFilter}
+          onFilterChange={(f) => setActiveFilter(f)}
           counts={counts}
         />
 
@@ -196,14 +229,20 @@ export default function TenantMaintenanceListScreen() {
           <Animated.View entering={FadeInDown.delay(100).duration(500)}>
             {filteredRequests.length === 0 ? (
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyIcon}>✅</Text>
+                <Text style={styles.emptyIcon}>{isArchiveView ? '📦' : '✅'}</Text>
                 <Text style={styles.emptyTitle}>
-                  {activeFilter === 'all' ? 'No issues reported' : 'No issues found'}
+                  {isArchiveView
+                    ? 'Nothing archived'
+                    : activeFilter === 'all'
+                      ? 'No issues reported'
+                      : 'No issues found'}
                 </Text>
                 <Text style={styles.emptySubtitle}>
-                  {activeFilter === 'all'
-                    ? 'Everything is working great!'
-                    : `No ${activeFilter.replace('_', ' ')} issues`}
+                  {isArchiveView
+                    ? 'Long-press any request to archive it'
+                    : activeFilter === 'all'
+                      ? 'Everything is working great!'
+                      : `No ${activeFilter.replace('_', ' ')} issues`}
                 </Text>
                 {activeFilter === 'all' && (
                   <AnimatedButton onPress={handleReportIssue} testID="maintenance-report-cta">
@@ -216,9 +255,13 @@ export default function TenantMaintenanceListScreen() {
             ) : (
               <View>
                 {filteredRequests.map((request: any) => (
-                  <View key={request.id} style={styles.cardButton}>
+                  <View
+                    key={request.id}
+                    style={[styles.cardButton, isArchiveView ? { opacity: 0.65 } : undefined]}
+                  >
                     <AnimatedButton
                       onPress={() => handleCardPress(request.id)}
+                      onLongPress={() => handleCardLongPress(request)}
                       style={styles.cardPressable}
                       testID={`maintenance-card-${request.id}`}
                     >
