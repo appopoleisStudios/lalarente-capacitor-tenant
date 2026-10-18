@@ -138,9 +138,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         fetchProfile(session.user.id, session.access_token)
           .then(setProfile)
           .catch(() => {});
-        void import('@/src/features/notifications/registerPush').then(({ registerDevicePush }) =>
-          registerDevicePush(session.user.id)
-        );
+        void import('@/src/features/notifications/registerPush')
+          .then(({ registerDevicePush }) => registerDevicePush(session.user.id))
+          .catch(() => {});
       } else {
         clearPendingVendorSelection();
         setProfile(null);
