@@ -79,15 +79,21 @@ appId: com.lalarente.app
 - tapOn:
     text: "Sign in to your account"
     optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
 
 - tapOn:
     id: "password-input"
+- waitForAnimationToEnd:
+    timeout: 1000
 - eraseText
 - inputText: ${TENANT_PASSWORD}
 
 - tapOn:
     text: "Sign in to your account"
     optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
 
 - tapOn:
     id: "sign-in-button"

@@ -4,29 +4,38 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/src/core/query/queryKeys';
 import { extractErrorMessage } from '@/src/core/query/queryErrors';
 import {
-    filterByPriority as filterRequestsByPriority,
-    filterByStatus as filterRequestsByStatus,
-    getMaintenanceRequests,
-    subscribeToMaintenanceRequests,
-    unsubscribeFromMaintenanceRequests,
+  filterByPriority as filterRequestsByPriority,
+  filterByStatus as filterRequestsByStatus,
+  getMaintenanceRequests,
+  subscribeToMaintenanceRequests,
+  unsubscribeFromMaintenanceRequests,
 } from '../api';
-import type { MaintenanceRequestWithRelations, MaintenanceStatus, Priority } from '../api/types/maintenance.types';
+import type {
+  MaintenanceRequestWithRelations,
+  MaintenanceStatus,
+  Priority,
+} from '../api/types/maintenance.types';
 
-export function useMaintenanceRequests() {
+export function useMaintenanceRequests(includeArchived = false) {
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
 
   const userId = user?.id;
   const role = profile?.role === 'admin' ? 'owner' : profile?.role;
-  const queryKey = queryKeys.maintenance.requests(userId, role);
+  const queryKey = [...queryKeys.maintenance.requests(userId, role), { includeArchived }];
 
-  const { data: requests = [], isLoading, isError, error, isRefetching, refetch } = useQuery<
-    MaintenanceRequestWithRelations[]
-  >({
+  const {
+    data: requests = [],
+    isLoading,
+    isError,
+    error,
+    isRefetching,
+    refetch,
+  } = useQuery<MaintenanceRequestWithRelations[]>({
     queryKey,
     queryFn: async () => {
       if (!userId || !role) return [];
-      return await getMaintenanceRequests(userId, role);
+      return await getMaintenanceRequests(userId, role, includeArchived);
     },
     enabled: !!userId && !!role,
     // Keep showing previous data while refetching — avoids flicker on pull-to-refresh
@@ -41,12 +50,9 @@ export function useMaintenanceRequests() {
   useEffect(() => {
     if (!userId || !role) return;
 
-    const subscription = subscribeToMaintenanceRequests(
-      userId,
-      () => {
-        queryClient.invalidateQueries({ queryKey });
-      }
-    );
+    const subscription = subscribeToMaintenanceRequests(userId, () => {
+      queryClient.invalidateQueries({ queryKey });
+    });
 
     return () => {
       unsubscribeFromMaintenanceRequests(subscription);

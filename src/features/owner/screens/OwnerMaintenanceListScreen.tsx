@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,24 +6,28 @@ import {
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { AnimatedButton } from '@/src/shared/components';
-import { MaintenanceFilters } from '../components/MaintenanceFilters';
+import { MaintenanceFilters, FilterType } from '../components/MaintenanceFilters';
 import { StatusBadge, PriorityIndicator } from '@/src/features/maintenance/components';
 import { useMaintenanceRequests } from '@/src/features/maintenance/hooks';
+import {
+  archiveMaintenanceRequest,
+  unarchiveMaintenanceRequest,
+} from '@/src/features/maintenance/api/requests/maintenanceRequests.api';
 import { styles } from './OwnerMaintenanceListScreen.styles';
-
-type FilterType = 'all' | 'open' | 'assigned' | 'in_progress' | 'completed';
 
 export default function OwnerMaintenanceListScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
 
-  // Real data from database
+  const isArchiveView = activeFilter === 'archived';
+
   const {
     requests: allRequests,
     loading,
@@ -31,56 +35,71 @@ export default function OwnerMaintenanceListScreen() {
     refreshing,
     onRefresh,
     refetch,
-  } = useMaintenanceRequests();
+  } = useMaintenanceRequests(isArchiveView);
 
-  // Refresh when screen comes into focus (after delete/update)
   useFocusEffect(
     React.useCallback(() => {
       refetch();
     }, [refetch])
   );
 
-  // Filter requests
   const filteredRequests = allRequests.filter((request: any) => {
+    if (activeFilter === 'archived') return true;
     if (activeFilter === 'all') return true;
     return request.status === activeFilter;
   });
 
-  // Calculate counts
   const counts = {
-    all: allRequests.length,
-    open: allRequests.filter((r: any) => r.status === 'open').length,
-    assigned: allRequests.filter((r: any) => r.status === 'assigned').length,
-    in_progress: allRequests.filter((r: any) => r.status === 'in_progress').length,
-    completed: allRequests.filter((r: any) => r.status === 'completed').length,
+    all: isArchiveView ? 0 : allRequests.length,
+    open: isArchiveView ? 0 : allRequests.filter((r: any) => r.status === 'open').length,
+    assigned: isArchiveView ? 0 : allRequests.filter((r: any) => r.status === 'assigned').length,
+    in_progress: isArchiveView
+      ? 0
+      : allRequests.filter((r: any) => r.status === 'in_progress').length,
+    completed: isArchiveView ? 0 : allRequests.filter((r: any) => r.status === 'completed').length,
+    archived: isArchiveView ? allRequests.length : 0,
   };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-
-    if (diffInHours < 24) {
-      return `${diffInHours}h ago`;
-    }
+    if (diffInHours < 24) return `${diffInHours}h ago`;
     const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays < 7) {
-      return `${diffInDays}d ago`;
-    }
+    if (diffInDays < 7) return `${diffInDays}d ago`;
     return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
   };
 
-  const handleNewRequest = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push('/(owner)/maintenance/new');
+  const handleCardLongPress = (request: any) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    const isArchived = request.archived_by_owner;
+    Alert.alert(
+      isArchived ? 'Unarchive request?' : 'Archive request?',
+      isArchived
+        ? 'This will move it back to your active list.'
+        : 'Archived requests are hidden from your main list. You can always view them in the Archived tab.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: isArchived ? 'Unarchive' : 'Archive',
+          style: isArchived ? 'default' : 'destructive',
+          onPress: async () => {
+            try {
+              if (isArchived) {
+                await unarchiveMaintenanceRequest(request.id, 'owner');
+              } else {
+                await archiveMaintenanceRequest(request.id, 'owner');
+              }
+              refetch();
+            } catch {
+              Alert.alert('Error', 'Could not update archive status. Please try again.');
+            }
+          },
+        },
+      ]
+    );
   };
 
-  const handleCardPress = (requestId: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push(`/(owner)/maintenance/${requestId}`);
-  };
-
-  // Loading state
   if (loading && !refreshing) {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -100,7 +119,6 @@ export default function OwnerMaintenanceListScreen() {
     );
   }
 
-  // Error state
   if (error) {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -134,7 +152,9 @@ export default function OwnerMaintenanceListScreen() {
           <View style={styles.headerLeft}>
             <Text style={styles.headerTitle}>Maintenance</Text>
             <Text style={styles.headerSubtitle}>
-              {counts.all} total request{counts.all !== 1 ? 's' : ''}
+              {isArchiveView
+                ? `${counts.archived} archived`
+                : `${counts.all} total request${counts.all !== 1 ? 's' : ''}`}
             </Text>
           </View>
           <View style={styles.headerActions}>
@@ -150,7 +170,12 @@ export default function OwnerMaintenanceListScreen() {
             >
               <Text style={styles.findVendorText}>Find vendor</Text>
             </TouchableOpacity>
-            <AnimatedButton onPress={handleNewRequest}>
+            <AnimatedButton
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.push('/(owner)/maintenance/new');
+              }}
+            >
               <View style={styles.addButton}>
                 <Text style={styles.addIcon}>+</Text>
               </View>
@@ -161,9 +186,18 @@ export default function OwnerMaintenanceListScreen() {
         {/* Filters */}
         <MaintenanceFilters
           activeFilter={activeFilter}
-          onFilterChange={setActiveFilter}
+          onFilterChange={(f) => {
+            setActiveFilter(f);
+          }}
           counts={counts}
         />
+
+        {/* Hint — only when non-archived list */}
+        {!isArchiveView && allRequests.length > 0 && (
+          <Text style={{ fontSize: 11, color: '#9ca3af', paddingHorizontal: 16, paddingTop: 8 }}>
+            Long-press a request to archive it
+          </Text>
+        )}
 
         {/* Content */}
         <ScrollView
@@ -174,24 +208,32 @@ export default function OwnerMaintenanceListScreen() {
           }
           showsVerticalScrollIndicator={false}
         >
-          {/* Requests List */}
           <Animated.View entering={FadeInDown.delay(100).duration(500)}>
             {filteredRequests.length === 0 ? (
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyIcon}>🔧</Text>
-                <Text style={styles.emptyTitle}>No requests found</Text>
-                <Text style={styles.emptySubtitle}>All caught up!</Text>
+                <Text style={styles.emptyIcon}>{isArchiveView ? '📦' : '🔧'}</Text>
+                <Text style={styles.emptyTitle}>
+                  {isArchiveView ? 'Nothing archived' : 'No requests found'}
+                </Text>
+                <Text style={styles.emptySubtitle}>
+                  {isArchiveView ? 'Long-press any request to archive it' : 'All caught up!'}
+                </Text>
               </View>
             ) : (
               <View>
-                {filteredRequests.map((request: any, index: number) => (
+                {filteredRequests.map((request: any) => (
                   <AnimatedButton
                     key={request.id}
-                    onPress={() => handleCardPress(request.id)}
-                    style={styles.cardButton}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      router.push(`/(owner)/maintenance/${request.id}`);
+                    }}
+                    onLongPress={() => handleCardLongPress(request)}
+                    style={
+                      isArchiveView ? [styles.cardButton, { opacity: 0.65 }] : styles.cardButton
+                    }
                   >
                     <View style={styles.card}>
-                      {/* Header */}
                       <View style={styles.cardHeader}>
                         <View style={styles.badges}>
                           <StatusBadge status={request.status} size="small" />
@@ -205,17 +247,14 @@ export default function OwnerMaintenanceListScreen() {
                         <Text style={styles.date}>{formatDate(request.created_at)}</Text>
                       </View>
 
-                      {/* Title */}
                       <Text style={styles.title} numberOfLines={1}>
                         {request.title}
                       </Text>
 
-                      {/* Description */}
                       <Text style={styles.description} numberOfLines={2}>
                         {request.description}
                       </Text>
 
-                      {/* Property & Category */}
                       <View style={styles.meta}>
                         {request.property && (
                           <View style={styles.metaItem}>
