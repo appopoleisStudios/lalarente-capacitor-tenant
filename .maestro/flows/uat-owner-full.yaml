@@ -307,67 +307,71 @@ appId: com.lalarente.app
     text: "All"
 - takeScreenshot: uat-owner-27-maintenance-filters
 
-# Inclusion/exclusion with a live request: archive it, verify it moves to
-# Archived and is absent from All, then unarchive to restore test state.
-- runFlow:
-    when:
-      visible:
-        id: "maintenance-card"
-    commands:
-      - longPressOn:
-          id: "maintenance-card"
-          index: 0
-      - tapOn:
-          text: "Archive"
-      - waitForAnimationToEnd:
-          timeout: 3000
-      - takeScreenshot: uat-owner-27a-after-archive
-      # Switch to Archived — the archived card must appear; "Nothing archived" must not
-      - tapOn:
-          text: "Archived"
-      - waitForAnimationToEnd:
-          timeout: 3000
-      - assertVisible:
-          id: "maintenance-card"
-          index: 0
-      - assertNotVisible:
-          text: "Nothing archived"
-      - takeScreenshot: uat-owner-27b-maintenance-archived
-      # Unarchive to restore state
-      - longPressOn:
-          id: "maintenance-card"
-          index: 0
-      - tapOn:
-          text: "Unarchive"
-      - waitForAnimationToEnd:
-          timeout: 3000
-      # Return to All — card must be back
-      - tapOn:
-          text: "All"
-      - waitForAnimationToEnd:
-          timeout: 2000
-      - assertVisible:
-          id: "maintenance-card"
-          index: 0
-      - takeScreenshot: uat-owner-27c-maintenance-restored
+# Precondition: navigate to Archived and check it is empty.
+# Only run inclusion/exclusion when the archive starts empty — this makes
+# index: 0 in the Archived view unambiguously the request we just archived.
+- tapOn:
+    text: "Archived"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: uat-owner-27-archived-precondition
 
-# No active requests path — just verify archived view is also empty
 - runFlow:
     when:
-      notVisible:
-        id: "maintenance-card"
+      visible: "Nothing archived"
     commands:
-      - tapOn:
-          text: "Archived"
-      - waitForAnimationToEnd:
-          timeout: 2000
-      - assertVisible:
-          text: "Nothing archived"
-      - takeScreenshot: uat-owner-27b-maintenance-archived-empty
       - tapOn:
           text: "All"
       - waitForAnimationToEnd:
           timeout: 2000
+      # Run only when there is at least one active card to archive
+      - runFlow:
+          when:
+            visible:
+              id: "maintenance-card"
+          commands:
+            - longPressOn:
+                id: "maintenance-card"
+                index: 0
+            - tapOn:
+                text: "Archive"
+            - waitForAnimationToEnd:
+                timeout: 3000
+            - takeScreenshot: uat-owner-27a-after-archive
+            # Archive was empty → this is the only item at index 0; no ambiguity
+            - tapOn:
+                text: "Archived"
+            - waitForAnimationToEnd:
+                timeout: 3000
+            - assertNotVisible:
+                text: "Nothing archived"
+            - assertVisible:
+                id: "maintenance-card"
+                index: 0
+            - takeScreenshot: uat-owner-27b-maintenance-archived
+            # Unarchive — index 0 is unambiguously the request we archived
+            - longPressOn:
+                id: "maintenance-card"
+                index: 0
+            - tapOn:
+                text: "Unarchive"
+            - waitForAnimationToEnd:
+                timeout: 3000
+            # Return to All — card must be restored
+            - tapOn:
+                text: "All"
+            - waitForAnimationToEnd:
+                timeout: 2000
+            - assertVisible:
+                id: "maintenance-card"
+                index: 0
+            - takeScreenshot: uat-owner-27c-maintenance-restored
+
+# Return to All regardless of which branch ran
+- tapOn:
+    text: "All"
+- waitForAnimationToEnd:
+    timeout: 2000
 
 # ── Done ─────────────────────────────────────────────────────────────────────
 - tapOn:
