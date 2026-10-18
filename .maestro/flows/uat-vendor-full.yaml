@@ -122,8 +122,11 @@ appId: com.lalarente.app
 - tapOn:
     id: "lala-chip-0"
 - extendedWaitUntil:
+    visible: "Lala is typing..."
+    timeout: 30000
+- extendedWaitUntil:
     notVisible: "Lala is typing..."
-    timeout: 45000
+    timeout: 60000
 - assertNotVisible: "Something went wrong"
 - takeScreenshot: uat-vendor-08-lala-ai
 

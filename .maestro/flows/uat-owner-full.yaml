@@ -71,8 +71,11 @@ appId: com.lalarente.app
 - tapOn:
     id: "lala-chip-0"
 - extendedWaitUntil:
+    visible: "Lala is typing..."
+    timeout: 30000
+- extendedWaitUntil:
     notVisible: "Lala is typing..."
-    timeout: 45000
+    timeout: 60000
 - assertNotVisible: "Something went wrong"
 - takeScreenshot: uat-owner-06-lala-ai
 
@@ -299,8 +302,24 @@ appId: com.lalarente.app
     timeout: 20000
 - assertVisible:
     text: "All"
-    optional: true
 - takeScreenshot: uat-owner-27-maintenance-filters
+
+# Archived chip — verify it renders (empty state or populated archived list)
+- tapOn:
+    text: "Archived"
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    text: "Archived"
+- takeScreenshot: uat-owner-27b-maintenance-archived
+
+# Return to All view
+- tapOn:
+    text: "All"
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    text: "All"
 
 # ── Done ─────────────────────────────────────────────────────────────────────
 - tapOn:
