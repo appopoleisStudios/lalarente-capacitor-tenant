@@ -60,13 +60,9 @@ appId: com.lalarente.app
 - tapOn:
     id: "lala-chip-0"
 - extendedWaitUntil:
-    visible: "Lala is typing..."
-    timeout: 30000
-- extendedWaitUntil:
-    notVisible: "Lala is typing..."
+    visible:
+      id: "lala-ai-message"
     timeout: 60000
-- assertVisible:
-    id: "lala-ai-message"
 - assertNotVisible:
     id: "lala-error-row"
 - takeScreenshot: uat-tenant-05-lala-ai

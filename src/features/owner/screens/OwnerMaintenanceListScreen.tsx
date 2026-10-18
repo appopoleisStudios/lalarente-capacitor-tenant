@@ -224,6 +224,7 @@ export default function OwnerMaintenanceListScreen() {
                 {filteredRequests.map((request: any) => (
                   <AnimatedButton
                     key={request.id}
+                    testID="maintenance-card"
                     onPress={() => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                       router.push(`/(owner)/maintenance/${request.id}`);

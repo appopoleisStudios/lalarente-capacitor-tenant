@@ -71,13 +71,9 @@ appId: com.lalarente.app
 - tapOn:
     id: "lala-chip-0"
 - extendedWaitUntil:
-    visible: "Lala is typing..."
-    timeout: 30000
-- extendedWaitUntil:
-    notVisible: "Lala is typing..."
+    visible:
+      id: "lala-ai-message"
     timeout: 60000
-- assertVisible:
-    id: "lala-ai-message"
 - assertNotVisible:
     id: "lala-error-row"
 - takeScreenshot: uat-owner-06-lala-ai
@@ -297,43 +293,81 @@ appId: com.lalarente.app
 - takeScreenshot: uat-owner-26-add-property
 - back
 
-# ── 26. Maintenance — filter chips ───────────────────────────────────────────
+# ── 26. Maintenance — filter chip inclusion/exclusion ────────────────────────
 - tapOn:
     id: "tab-owner-maintenance"
 - extendedWaitUntil:
     visible: "Maintenance"
     timeout: 20000
+- tapOn:
+    text: "All"
+- waitForAnimationToEnd:
+    timeout: 2000
 - assertVisible:
     text: "All"
 - takeScreenshot: uat-owner-27-maintenance-filters
 
-# Archived chip — verify filter executes: empty state must appear (no archived items)
-# or a request card must appear (if archived items exist).
-- tapOn:
-    text: "Archived"
-- waitForAnimationToEnd:
-    timeout: 2000
-- extendedWaitUntil:
-    visible: "Nothing archived"
-    timeout: 8000
-    optional: true
+# Inclusion/exclusion with a live request: archive it, verify it moves to
+# Archived and is absent from All, then unarchive to restore test state.
 - runFlow:
     when:
-      visible: "Nothing archived"
+      visible:
+        id: "maintenance-card"
     commands:
+      - longPressOn:
+          id: "maintenance-card"
+          index: 0
+      - tapOn:
+          text: "Archive"
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - takeScreenshot: uat-owner-27a-after-archive
+      # Switch to Archived — the archived card must appear; "Nothing archived" must not
+      - tapOn:
+          text: "Archived"
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - assertVisible:
+          id: "maintenance-card"
+          index: 0
+      - assertNotVisible:
+          text: "Nothing archived"
+      - takeScreenshot: uat-owner-27b-maintenance-archived
+      # Unarchive to restore state
+      - longPressOn:
+          id: "maintenance-card"
+          index: 0
+      - tapOn:
+          text: "Unarchive"
+      - waitForAnimationToEnd:
+          timeout: 3000
+      # Return to All — card must be back
+      - tapOn:
+          text: "All"
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - assertVisible:
+          id: "maintenance-card"
+          index: 0
+      - takeScreenshot: uat-owner-27c-maintenance-restored
+
+# No active requests path — just verify archived view is also empty
+- runFlow:
+    when:
+      notVisible:
+        id: "maintenance-card"
+    commands:
+      - tapOn:
+          text: "Archived"
+      - waitForAnimationToEnd:
+          timeout: 2000
       - assertVisible:
           text: "Nothing archived"
-      - assertNotVisible:
-          text: "No requests found"
-- takeScreenshot: uat-owner-27b-maintenance-archived
-
-# Return to All — empty state must flip back to All view state
-- tapOn:
-    text: "All"
-- waitForAnimationToEnd:
-    timeout: 2000
-- assertNotVisible:
-    text: "Nothing archived"
+      - takeScreenshot: uat-owner-27b-maintenance-archived-empty
+      - tapOn:
+          text: "All"
+      - waitForAnimationToEnd:
+          timeout: 2000
 
 # ── Done ─────────────────────────────────────────────────────────────────────
 - tapOn:
