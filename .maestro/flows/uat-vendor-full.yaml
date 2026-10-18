@@ -115,6 +115,19 @@ appId: com.lalarente.app
     visible: "Lala Assistant"
     timeout: 20000
 - assertVisible: "Lala Assistant"
+# Clear any prior conversation so the chip interaction produces a fresh response
+- runFlow:
+    when:
+      visible:
+        id: "lala-new-chat"
+    commands:
+      - tapOn:
+          id: "lala-new-chat"
+      - waitForAnimationToEnd:
+          timeout: 1000
+# Chips only render on empty state — assert no existing AI message before tapping
+- assertNotVisible:
+    id: "lala-ai-message"
 - extendedWaitUntil:
     visible:
       id: "lala-chip-0"
