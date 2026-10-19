@@ -330,8 +330,10 @@ appId: com.lalarente.app
     text: "Nothing archived"
 - takeScreenshot: uat-owner-27-archived-precondition-empty
 
-# Return to All; run archive round-trip only when at least one active card exists.
-# (Skips gracefully on an empty account; all inner assertions are mandatory once entered.)
+# Return to All; archive round-trip requires exactly ONE active card so that
+# archiving it empties All — the only YAML-level proof the card left the list.
+# Skips gracefully when All is empty or has multiple cards (identity tracking
+# across list reorders requires runScript seeding, deferred to next PR).
 - tapOn:
     text: "All"
 - waitForAnimationToEnd:
@@ -341,48 +343,56 @@ appId: com.lalarente.app
       visible:
         id: "maintenance-card"
     commands:
-      # Archive the first card from the active list
-      - longPressOn:
-          id: "maintenance-card"
-          index: 0
-      - tapOn:
-          text: "Archive"
-      - waitForAnimationToEnd:
-          timeout: 3000
-      - takeScreenshot: uat-owner-27a-all-after-archive
-      # Switch to Archived — precondition was empty, so this card is the only one
-      - tapOn:
-          text: "Archived"
-      - waitForAnimationToEnd:
-          timeout: 2000
-      # Mandatory: Archived must show the card (proves it left the active list)
-      - assertNotVisible:
-          text: "Nothing archived"
-      - assertVisible:
-          id: "maintenance-card"
-          index: 0
-      - takeScreenshot: uat-owner-27b-card-in-archived
-      # Unarchive — index 0 is unambiguously the request we just archived
-      - longPressOn:
-          id: "maintenance-card"
-          index: 0
-      - tapOn:
-          text: "Unarchive"
-      - waitForAnimationToEnd:
-          timeout: 3000
-      # Mandatory: Archived must be empty again (proves unarchive moved the card out)
-      - assertVisible:
-          text: "Nothing archived"
-      - takeScreenshot: uat-owner-27c-archived-empty-after-unarchive
-      # Return to All — card must be restored
-      - tapOn:
-          text: "All"
-      - waitForAnimationToEnd:
-          timeout: 2000
-      - assertVisible:
-          id: "maintenance-card"
-          index: 0
-      - takeScreenshot: uat-owner-27d-card-restored-to-all
+      - runFlow:
+          when:
+            notVisible:
+              id: "maintenance-card"
+              index: 1
+          commands:
+            # Exactly one active card — archive it and assert All goes empty
+            - longPressOn:
+                id: "maintenance-card"
+                index: 0
+            - tapOn:
+                text: "Archive"
+            - waitForAnimationToEnd:
+                timeout: 3000
+            # All must be empty: the only card left All (identity proven by empty state)
+            - assertVisible:
+                text: "No requests found"
+            - takeScreenshot: uat-owner-27a-all-empty-after-archive
+            # Archived must have exactly this card (archive was empty before)
+            - tapOn:
+                text: "Archived"
+            - waitForAnimationToEnd:
+                timeout: 2000
+            - assertNotVisible:
+                text: "Nothing archived"
+            - assertVisible:
+                id: "maintenance-card"
+                index: 0
+            - takeScreenshot: uat-owner-27b-card-in-archived
+            # Unarchive — index 0 is unambiguously the request we archived
+            - longPressOn:
+                id: "maintenance-card"
+                index: 0
+            - tapOn:
+                text: "Unarchive"
+            - waitForAnimationToEnd:
+                timeout: 3000
+            # Archived must be empty again (proves this specific card was moved out)
+            - assertVisible:
+                text: "Nothing archived"
+            - takeScreenshot: uat-owner-27c-archived-empty-after-unarchive
+            # All must show the card (round-trip complete)
+            - tapOn:
+                text: "All"
+            - waitForAnimationToEnd:
+                timeout: 2000
+            - assertVisible:
+                id: "maintenance-card"
+                index: 0
+            - takeScreenshot: uat-owner-27d-card-restored-to-all
 
 # ── Done ─────────────────────────────────────────────────────────────────────
 - tapOn:

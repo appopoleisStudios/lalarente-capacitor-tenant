@@ -221,7 +221,7 @@ export default function LalaChatScreen() {
             <Text style={styles.headerTitle}>Lala Assistant</Text>
             <Text style={styles.headerSub}>Property Support</Text>
           </View>
-          {messages.length > 0 && (
+          {messages.length > 0 && !isLoading && (
             <Pressable
               testID="lala-new-chat"
               onPress={() => {
