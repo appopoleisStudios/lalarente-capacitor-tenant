@@ -75,7 +75,10 @@ appId: com.lalarente.app
     text: ".*UAT-${MSG_TOKEN}.*"
 - takeScreenshot: parity-01b-owner-sees-tenant-message
 
-# Open the thread
+# Open the thread. Extra wait first so the XCTest view hierarchy query
+# that backs the tap is stable (iOS 26 flake post-scroll).
+- waitForAnimationToEnd:
+    timeout: 1500
 - tapOn:
     text: ".*UAT-${MSG_TOKEN}.*"
 - waitForAnimationToEnd:
