@@ -115,6 +115,11 @@ appId: com.lalarente.app
     visible: "Lala Assistant"
     timeout: 20000
 - assertVisible: "Lala Assistant"
+# Wait for any in-flight response to settle. lala-new-chat only renders when
+# messages.length > 0 && !isLoading — checking it mid-request would skip reset.
+- extendedWaitUntil:
+    notVisible: "Lala is typing..."
+    timeout: 60000
 # Clear any prior conversation so the chip interaction produces a fresh response
 - runFlow:
     when:
