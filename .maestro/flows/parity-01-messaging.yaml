@@ -41,9 +41,13 @@ appId: com.lalarente.app
 - tapOn:
     text: "Send"
 
-# Should land on messages list or thread — give it a moment
-- waitForAnimationToEnd:
-    timeout: 3000
+# Persisted-send success: handleSend router.replace()s to the new thread
+# screen on success. The thread-message-input appearing proves the thread
+# was created and the client navigated — no race with sign-out.
+- extendedWaitUntil:
+    visible:
+      id: "thread-message-input"
+    timeout: 15000
 - takeScreenshot: parity-01a-tenant-sent
 
 - runFlow: ../subflows/sign-out-tenant.yaml
@@ -82,9 +86,13 @@ appId: com.lalarente.app
     timeout: 15000
 
 # Mandatory read-side check: owner must see the tenant's message body
-# in the thread. Catches RLS regressions on messages SELECT.
-- assertVisible:
-    text: ".*Tenant parity ping ${MSG_TOKEN}.*"
+# in the thread. extendedWaitUntil tolerates slow fetch; catches RLS
+# regressions on messages SELECT (would never appear) distinctly from
+# slow network (eventually appears).
+- extendedWaitUntil:
+    visible:
+      text: ".*Tenant parity ping ${MSG_TOKEN}.*"
+    timeout: 15000
 
 # Compose and send the reply
 - tapOn:
