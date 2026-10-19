@@ -64,6 +64,24 @@ appId: com.lalarente.app
     visible: "Lala Assistant"
     timeout: 20000
 - assertVisible: "Lala Assistant"
+# Wait for any in-flight response to settle. lala-new-chat only renders when
+# messages.length > 0 && !isLoading — checking it mid-request would skip reset.
+- extendedWaitUntil:
+    notVisible: "Lala is typing..."
+    timeout: 60000
+# Clear any prior conversation so the chip interaction produces a fresh response
+- runFlow:
+    when:
+      visible:
+        id: "lala-new-chat"
+    commands:
+      - tapOn:
+          id: "lala-new-chat"
+      - waitForAnimationToEnd:
+          timeout: 1000
+# Chips only render on empty state — assert no existing AI message before tapping
+- assertNotVisible:
+    id: "lala-ai-message"
 - extendedWaitUntil:
     visible:
       id: "lala-chip-0"
@@ -293,7 +311,7 @@ appId: com.lalarente.app
 - takeScreenshot: uat-owner-26-add-property
 - back
 
-# ── 26. Maintenance — filter chip inclusion/exclusion ────────────────────────
+# ── 26. Maintenance — archive/unarchive round-trip ───────────────────────────
 - tapOn:
     id: "tab-owner-maintenance"
 - extendedWaitUntil:
@@ -305,73 +323,81 @@ appId: com.lalarente.app
     timeout: 2000
 - assertVisible:
     text: "All"
-- takeScreenshot: uat-owner-27-maintenance-filters
+- takeScreenshot: uat-owner-27-maintenance-all
 
-# Precondition: navigate to Archived and check it is empty.
-# Only run inclusion/exclusion when the archive starts empty — this makes
-# index: 0 in the Archived view unambiguously the request we just archived.
+# Hard precondition: Archived must be empty so index: 0 after archiving is
+# unambiguously the request we moved, not a pre-existing archived record.
 - tapOn:
     text: "Archived"
 - waitForAnimationToEnd:
     timeout: 2000
-- takeScreenshot: uat-owner-27-archived-precondition
+- assertVisible:
+    text: "Nothing archived"
+- takeScreenshot: uat-owner-27-archived-precondition-empty
 
-- runFlow:
-    when:
-      visible: "Nothing archived"
-    commands:
-      - tapOn:
-          text: "All"
-      - waitForAnimationToEnd:
-          timeout: 2000
-      # Run only when there is at least one active card to archive
-      - runFlow:
-          when:
-            visible:
-              id: "maintenance-card"
-          commands:
-            - longPressOn:
-                id: "maintenance-card"
-                index: 0
-            - tapOn:
-                text: "Archive"
-            - waitForAnimationToEnd:
-                timeout: 3000
-            - takeScreenshot: uat-owner-27a-after-archive
-            # Archive was empty → this is the only item at index 0; no ambiguity
-            - tapOn:
-                text: "Archived"
-            - waitForAnimationToEnd:
-                timeout: 3000
-            - assertNotVisible:
-                text: "Nothing archived"
-            - assertVisible:
-                id: "maintenance-card"
-                index: 0
-            - takeScreenshot: uat-owner-27b-maintenance-archived
-            # Unarchive — index 0 is unambiguously the request we archived
-            - longPressOn:
-                id: "maintenance-card"
-                index: 0
-            - tapOn:
-                text: "Unarchive"
-            - waitForAnimationToEnd:
-                timeout: 3000
-            # Return to All — card must be restored
-            - tapOn:
-                text: "All"
-            - waitForAnimationToEnd:
-                timeout: 2000
-            - assertVisible:
-                id: "maintenance-card"
-                index: 0
-            - takeScreenshot: uat-owner-27c-maintenance-restored
-
-# Return to All regardless of which branch ran
+# Hard fixture precondition: exactly ONE active maintenance request.
+# This test REQUIRES that controlled state — any other count means fixture
+# setup is wrong, so we fail fast rather than silently skip. Archiving the
+# single card makes All show "No requests found", which is the only pure-YAML
+# assertion that proves the specific archived card left the active list.
 - tapOn:
     text: "All"
 - waitForAnimationToEnd:
     timeout: 2000
+- assertVisible:
+    id: "maintenance-card"
+    index: 0
+- assertNotVisible:
+    id: "maintenance-card"
+    index: 1
+
+# Archive round-trip — mandatory, no conditional guards
+- longPressOn:
+    id: "maintenance-card"
+    index: 0
+- tapOn:
+    text: "Archive"
+- waitForAnimationToEnd:
+    timeout: 3000
+# All must be empty — the single card has left the active list
+- assertVisible:
+    text: "No requests found"
+- takeScreenshot: uat-owner-27a-all-empty-after-archive
+# Archived must have exactly this card (archive was empty in the earlier precondition)
+- tapOn:
+    text: "Archived"
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertNotVisible:
+    text: "Nothing archived"
+- assertVisible:
+    id: "maintenance-card"
+    index: 0
+- takeScreenshot: uat-owner-27b-card-in-archived
+# Unarchive — index 0 is unambiguously the request we archived
+- longPressOn:
+    id: "maintenance-card"
+    index: 0
+- tapOn:
+    text: "Unarchive"
+- waitForAnimationToEnd:
+    timeout: 3000
+# Archived must be empty again — proves this specific card was moved out
+- assertVisible:
+    text: "Nothing archived"
+- takeScreenshot: uat-owner-27c-archived-empty-after-unarchive
+# All must show the card (round-trip complete)
+- tapOn:
+    text: "All"
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    id: "maintenance-card"
+    index: 0
+- assertNotVisible:
+    id: "maintenance-card"
+    index: 1
+- takeScreenshot: uat-owner-27d-card-restored-to-all
 
 # ── Done ─────────────────────────────────────────────────────────────────────
 - tapOn:

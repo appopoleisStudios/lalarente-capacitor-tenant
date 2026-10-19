@@ -217,10 +217,25 @@ export default function LalaChatScreen() {
       >
         <View style={styles.header}>
           <Ionicons name="chatbubble-ellipses-outline" size={20} color="#007A4D" />
-          <View style={{ marginLeft: 10 }}>
+          <View style={{ marginLeft: 10, flex: 1 }}>
             <Text style={styles.headerTitle}>Lala Assistant</Text>
             <Text style={styles.headerSub}>Property Support</Text>
           </View>
+          {messages.length > 0 && !isLoading && (
+            <Pressable
+              testID="lala-new-chat"
+              accessibilityLabel="New chat"
+              accessibilityRole="button"
+              onPress={() => {
+                setMessages([]);
+                setPendingActions([]);
+                setError(null);
+              }}
+              hitSlop={8}
+            >
+              <Ionicons name="create-outline" size={20} color="#737373" />
+            </Pressable>
+          )}
         </View>
         <FlatList
           ref={flatListRef}
