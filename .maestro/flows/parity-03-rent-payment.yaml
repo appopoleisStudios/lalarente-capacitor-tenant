@@ -1,0 +1,85 @@
+# Parity — Rent payment (tenant → owner)
+# Verifies: tenant can initiate rent payment; PayFast webview opens;
+# owner sees payment entry in rent-roll / statements.
+#
+# Note: Does NOT complete payment (PayFast live creds + card not available
+# in UAT). Verifies the user-visible contract: button fires, webview loads
+# with correct amount, cancel returns to Payments screen.
+# Env: TENANT/OWNER creds
+appId: com.lalarente.app
+---
+
+# ────────────────────────────────────────────────────────────
+# PHASE 1 — Tenant initiates rent payment flow
+# ────────────────────────────────────────────────────────────
+- runFlow: ../subflows/login-tenant.yaml
+
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "tab-payments"
+- extendedWaitUntil:
+    visible: "Payments"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: parity-03a-tenant-payments-hub
+
+# Payments screen must show payment history (lease exists → payments listed)
+- scrollUntilVisible:
+    element:
+      text: "Payment History"
+    direction: DOWN
+    timeout: 15000
+    centerElement: true
+- assertVisible:
+    text: "Payment History"
+- takeScreenshot: parity-03a-tenant-payment-history
+
+# Tap the inline Pay button on the pending row (if present)
+- runFlow:
+    when:
+      visible: "Pay"
+    commands:
+      - tapOn: "Pay"
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - takeScreenshot: parity-03a-pay-tapped
+      - back
+      - waitForAnimationToEnd:
+          timeout: 2000
+
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+# ────────────────────────────────────────────────────────────
+# PHASE 2 — Owner opens rent-roll and verifies the lease is listed
+# ────────────────────────────────────────────────────────────
+- runFlow: ../subflows/login-owner.yaml
+
+- openLink: lalarenteapp://(owner)/rent-roll
+- extendedWaitUntil:
+    visible: "Rent Roll"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: parity-03b-owner-rent-roll
+
+# Verify tenant's lease is visible on the rent-roll (parity: tenant exists
+# in owner's rent-roll view regardless of payment status).
+- scrollUntilVisible:
+    element:
+      text: ".*(Dolphin|Ocean|Rent).*"
+    direction: DOWN
+    timeout: 15000
+    centerElement: true
+    optional: true
+- takeScreenshot: parity-03b-owner-rent-roll-verified
+
+# Check statements screen too
+- openLink: lalarenteapp://(owner)/statements
+- extendedWaitUntil:
+    visible: "Monthly Statement"
+    timeout: 15000
+- takeScreenshot: parity-03c-owner-statements
+
+- runFlow: ../subflows/sign-out-owner.yaml

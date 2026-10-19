@@ -1,0 +1,124 @@
+# Parity — Tenant ↔ Owner messaging
+# Verifies: tenant message visible to owner; owner reply visible to tenant.
+# Flow:
+#   1. Tenant composes message with unique token (timestamp)
+#   2. Switch to owner; find tenant's message by token; reply with second token
+#   3. Switch to tenant; find owner's reply token
+# Env: TENANT_EMAIL / TENANT_PASSWORD, OWNER_EMAIL / OWNER_PASSWORD
+#      MSG_TOKEN (unique string injected by caller — different per run)
+appId: com.lalarente.app
+---
+
+# ────────────────────────────────────────────────────────────
+# PHASE 1 — Tenant sends message
+# ────────────────────────────────────────────────────────────
+- runFlow: ../subflows/login-tenant.yaml
+
+- openLink: lalarenteapp://(tenant)/messages/new
+- extendedWaitUntil:
+    visible: "New Message"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# Fill the subject field (placeholder: "E.g., Question about lease renewal")
+- tapOn:
+    text: "E.g., Question about lease renewal"
+- inputText: "UAT-${MSG_TOKEN}"
+- tapOn:
+    point: "50%,15%"
+
+# Fill message body (placeholder: "Write your message here...")
+- tapOn:
+    text: "Write your message here..."
+- inputText: "Tenant parity ping ${MSG_TOKEN}"
+- tapOn:
+    point: "50%,15%"
+
+# Send
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    text: "Send"
+
+# Should land on messages list or thread — give it a moment
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: parity-01a-tenant-sent
+
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+# ────────────────────────────────────────────────────────────
+# PHASE 2 — Owner reads tenant message, replies
+# ────────────────────────────────────────────────────────────
+- runFlow: ../subflows/login-owner.yaml
+
+- openLink: lalarenteapp://(owner)/messages
+- extendedWaitUntil:
+    visible: "Messages"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# The tenant's UAT message with our token should be visible in the thread list
+- scrollUntilVisible:
+    element:
+      text: ".*UAT-${MSG_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- assertVisible:
+    text: ".*UAT-${MSG_TOKEN}.*"
+- takeScreenshot: parity-01b-owner-sees-tenant-message
+
+# Open the thread and reply
+- tapOn:
+    text: ".*UAT-${MSG_TOKEN}.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+- extendedWaitUntil:
+    visible: "Type a message"
+    timeout: 15000
+- tapOn: "Type a message"
+- inputText: "OwnerReply-${MSG_TOKEN}"
+- tapOn:
+    point: "50%,15%"
+- pressKey: Enter
+
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    text: ".*OwnerReply-${MSG_TOKEN}.*"
+- takeScreenshot: parity-01c-owner-replied
+
+- runFlow: ../subflows/sign-out-owner.yaml
+
+# ────────────────────────────────────────────────────────────
+# PHASE 3 — Tenant reads owner's reply
+# ────────────────────────────────────────────────────────────
+- runFlow: ../subflows/login-tenant.yaml
+
+- openLink: lalarenteapp://(tenant)/messages
+- extendedWaitUntil:
+    visible: "Messages"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Thread list should show the subject (not necessarily the reply preview),
+# so open the thread by token and verify reply inside
+- scrollUntilVisible:
+    element:
+      text: ".*UAT-${MSG_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- tapOn:
+    text: ".*UAT-${MSG_TOKEN}.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    text: ".*OwnerReply-${MSG_TOKEN}.*"
+- takeScreenshot: parity-01d-tenant-sees-owner-reply
+
+- runFlow: ../subflows/sign-out-tenant.yaml

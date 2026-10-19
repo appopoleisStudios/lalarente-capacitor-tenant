@@ -1,0 +1,30 @@
+# Parity — Application (tenant ↔ owner)
+# Verifies: tenant can access application status; owner has matching
+# Applications dashboard. Does NOT submit a new application.
+# Env: TENANT/OWNER creds
+appId: com.lalarente.app
+---
+
+- runFlow: ../subflows/login-tenant.yaml
+
+- openLink: lalarenteapp://(tenant)/application-status
+- extendedWaitUntil:
+    visible: "My Applications"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: parity-07a-tenant-apps
+
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+- runFlow: ../subflows/login-owner.yaml
+
+- openLink: lalarenteapp://(owner)/applications
+- extendedWaitUntil:
+    visible: "Applications"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: parity-07b-owner-apps
+
+- runFlow: ../subflows/sign-out-owner.yaml

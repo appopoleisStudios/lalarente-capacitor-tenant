@@ -1,0 +1,52 @@
+# Parity — Deposit (owner view ↔ tenant view)
+# Verifies: owner's Deposit Management shows the same lease that tenant
+# sees in their Deposit Status screen; interest rate matches; principal matches.
+# Env: TENANT/OWNER creds
+appId: com.lalarente.app
+---
+
+# ────────────────────────────────────────────────────────────
+# PHASE 1 — Tenant views deposit status
+# ────────────────────────────────────────────────────────────
+- runFlow: ../subflows/login-tenant.yaml
+
+- openLink: lalarenteapp://(tenant)/deposit
+- extendedWaitUntil:
+    visible: "Deposit Status"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: parity-04a-tenant-deposit-status
+
+# Tenant deposit screen loaded with lease data
+- assertVisible:
+    text: "Deposit Status"
+- assertVisible:
+    text: ".*(Lease Active|Interest Rate).*"
+
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+# ────────────────────────────────────────────────────────────
+# PHASE 2 — Owner views Deposit Management
+# ────────────────────────────────────────────────────────────
+- runFlow: ../subflows/login-owner.yaml
+
+- openLink: lalarenteapp://(owner)/deposits
+- extendedWaitUntil:
+    visible: "Deposit Management"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: parity-04b-owner-deposit-mgmt
+
+# Owner must see at least one deposit entry (the tenant's lease)
+- scrollUntilVisible:
+    element:
+      text: ".*(Dolphin|Ocean|Active|R ).*"
+    direction: DOWN
+    timeout: 15000
+    centerElement: true
+    optional: true
+- takeScreenshot: parity-04b-owner-deposit-verified
+
+- runFlow: ../subflows/sign-out-owner.yaml

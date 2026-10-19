@@ -1,0 +1,30 @@
+# Parity — Viewings (tenant ↔ owner)
+# Verifies: tenant can access viewings screen; owner has matching
+# Viewing Requests dashboard.
+# Env: TENANT/OWNER creds
+appId: com.lalarente.app
+---
+
+- runFlow: ../subflows/login-tenant.yaml
+
+- openLink: lalarenteapp://(tenant)/viewings
+- extendedWaitUntil:
+    visible: "My Viewings"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: parity-09a-tenant-viewings
+
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+- runFlow: ../subflows/login-owner.yaml
+
+- openLink: lalarenteapp://(owner)/viewings
+- extendedWaitUntil:
+    visible: "Viewing Requests"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: parity-09b-owner-viewings
+
+- runFlow: ../subflows/sign-out-owner.yaml
