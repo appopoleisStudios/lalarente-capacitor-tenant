@@ -33,8 +33,10 @@ appId: com.lalarente.app
 - tapOn:
     id: "maintenance-title-input"
 - inputText: "UAT-${REQ_TOKEN}"
+# Dismiss keyboard by tapping the Property card (above keyboard, non-input).
+# Status-bar taps don't dismiss the keyboard on iOS.
 - tapOn:
-    point: "50%,8%"
+    text: "Property"
 
 # Description via its testID
 - extendedWaitUntil:
@@ -45,7 +47,7 @@ appId: com.lalarente.app
     id: "maintenance-description-input"
 - inputText: "Parity maintenance ping ${REQ_TOKEN}"
 - tapOn:
-    point: "50%,8%"
+    text: "Property"
 
 # Submit — scrollUntilVisible with permissive visibility first (bring
 # into view on small screens), then extendedWaitUntil to confirm. The
