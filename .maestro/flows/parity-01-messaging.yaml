@@ -71,7 +71,7 @@ appId: com.lalarente.app
     text: ".*UAT-${MSG_TOKEN}.*"
 - takeScreenshot: parity-01b-owner-sees-tenant-message
 
-# Open the thread and reply using stable testIDs
+# Open the thread
 - tapOn:
     text: ".*UAT-${MSG_TOKEN}.*"
 - waitForAnimationToEnd:
@@ -80,24 +80,27 @@ appId: com.lalarente.app
     visible:
       id: "thread-message-input"
     timeout: 15000
+
+# Mandatory read-side check: owner must see the tenant's message body
+# in the thread. Catches RLS regressions on messages SELECT.
+- assertVisible:
+    text: ".*Tenant parity ping ${MSG_TOKEN}.*"
+
+# Compose and send the reply
 - tapOn:
     id: "thread-message-input"
 - inputText: "OwnerReply-${MSG_TOKEN}"
 - tapOn:
     id: "thread-send-button"
-
-# Submission success: input field must clear (optimistic send empties it)
-# and the reply bubble must appear in the message list area, not the composer.
-- extendedWaitUntil:
-    notVisible:
-      id: "thread-message-input"
-      enabled: true
-    timeout: 10000
-    optional: true
 - waitForAnimationToEnd:
-    timeout: 2000
-- assertVisible:
-    text: ".*OwnerReply-${MSG_TOKEN}.*"
+    timeout: 2500
+
+# Mandatory send-success: the reply bubble must be visible in the thread.
+# extendedWaitUntil (not optional) — fails if the message never renders.
+- extendedWaitUntil:
+    visible:
+      text: ".*OwnerReply-${MSG_TOKEN}.*"
+    timeout: 10000
 - takeScreenshot: parity-01c-owner-replied
 
 - runFlow: ../subflows/sign-out-owner.yaml
