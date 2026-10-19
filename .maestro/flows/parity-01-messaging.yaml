@@ -127,10 +127,12 @@ appId: com.lalarente.app
     centerElement: true
 - tapOn:
     text: ".*UAT-${MSG_TOKEN}.*"
-- waitForAnimationToEnd:
-    timeout: 2000
-- assertVisible:
-    text: ".*OwnerReply-${MSG_TOKEN}.*"
+# Thread screen must finish loading messages (slow fetches shouldn't fail
+# a successful delivery). extendedWaitUntil polls up to 15s for the reply.
+- extendedWaitUntil:
+    visible:
+      text: ".*OwnerReply-${MSG_TOKEN}.*"
+    timeout: 15000
 - takeScreenshot: parity-01d-tenant-sees-owner-reply
 
 - runFlow: ../subflows/sign-out-tenant.yaml
