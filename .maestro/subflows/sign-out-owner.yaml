@@ -18,6 +18,10 @@ appId: com.lalarente.app
       text: ".*Logout.*"
     direction: DOWN
     timeout: 15000
+    centerElement: true
+
+- waitForAnimationToEnd:
+    timeout: 1500
 
 - tapOn:
     text: ".*Logout.*"
