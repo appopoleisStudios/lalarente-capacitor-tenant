@@ -24,38 +24,45 @@ appId: com.lalarente.app
     timeout: 2000
 - takeScreenshot: parity-02a-tenant-report-opened
 
-# Fill the title — unique token so owner/vendor can find this exact request
-- scrollUntilVisible:
-    element:
-      text: "Title"
-    direction: UP
+# Fill the title via its testID (regex on "Title" label hit the field
+# header, not the input, and the submit then triggered a Required alert).
+- extendedWaitUntil:
+    visible:
+      id: "maintenance-title-input"
     timeout: 10000
-    centerElement: true
-    optional: true
 - tapOn:
-    text: ".*(Title|What's the issue).*"
+    id: "maintenance-title-input"
 - inputText: "UAT-${REQ_TOKEN}"
-- hideKeyboard
-
-# Description
-- scrollUntilVisible:
-    element:
-      text: ".*(Description|Details).*"
-    direction: DOWN
-    timeout: 10000
-    centerElement: true
+# Dismiss keyboard by tapping the Property card (above keyboard, non-input).
+# Status-bar taps don't dismiss the keyboard on iOS.
 - tapOn:
-    text: ".*(Description|Details).*"
-- inputText: "Parity maintenance ping ${REQ_TOKEN}"
-- hideKeyboard
+    text: "Property"
 
-# Submit — stable testID avoids matching the "Report Issue" screen heading
+# Description via its testID
+- extendedWaitUntil:
+    visible:
+      id: "maintenance-description-input"
+    timeout: 10000
+- tapOn:
+    id: "maintenance-description-input"
+- inputText: "Parity maintenance ping ${REQ_TOKEN}"
+- tapOn:
+    text: "Property"
+
+# Submit — scrollUntilVisible with permissive visibility first (bring
+# into view on small screens), then extendedWaitUntil to confirm. The
+# visibility: 50 setting avoids the tab-bar overlap that broke the
+# default 100% rule.
 - scrollUntilVisible:
     element:
       id: "maintenance-submit"
     direction: DOWN
     timeout: 10000
-    centerElement: true
+    visibilityPercentage: 50
+- extendedWaitUntil:
+    visible:
+      id: "maintenance-submit"
+    timeout: 5000
 - waitForAnimationToEnd:
     timeout: 1500
 - tapOn:
@@ -115,9 +122,10 @@ appId: com.lalarente.app
     timeout: 2000
 - takeScreenshot: parity-02c-vendor-requests-list
 
-# Vendor must see the tenant's new request by token. Vendors see
-# unassigned/open jobs in their service categories; if this fails the
-# vendor service-matching or RLS is broken.
+# Vendor must see the tenant's new request by token. Visibility failure
+# here means the request isn't rendered in this vendor's list — possible
+# causes include fixture mismatch (vendor categories don't match request
+# category), RLS, pagination/filter state, or UI load failure.
 - scrollUntilVisible:
     element:
       text: ".*UAT-${REQ_TOKEN}.*"
