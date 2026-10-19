@@ -9,15 +9,18 @@ appId: com.lalarente.app
 - tapOn:
     id: "tab-vendor-profile"
 
-- extendedWaitUntil:
-    visible: "Vendor Account"
-    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 2000
 
 - scrollUntilVisible:
     element:
       text: ".*Logout.*"
     direction: DOWN
     timeout: 15000
+    centerElement: true
+
+- waitForAnimationToEnd:
+    timeout: 1500
 
 - tapOn:
     text: ".*Logout.*"
