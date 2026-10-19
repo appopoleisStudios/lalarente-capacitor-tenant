@@ -1,10 +1,11 @@
-# Parity — Rent payment (tenant → owner)
-# Verifies: tenant can initiate rent payment; PayFast webview opens;
-# owner sees payment entry in rent-roll / statements.
-#
-# Note: Does NOT complete payment (PayFast live creds + card not available
-# in UAT). Verifies the user-visible contract: button fires, webview loads
-# with correct amount, cancel returns to Payments screen.
+# Parity — Rent payment surface visibility (tenant → owner)
+# Scope (what this flow verifies):
+#   1. Tenant can navigate to Payments and see their Payment History
+#   2. Owner can navigate to rent-roll and statements screens
+# Out of scope (deferred — requires PayFast sandbox fixture):
+#   - Pay button → webview launches with correct amount
+#   - Payment completion → owner sees new payment row
+#   - Payment cancel → tenant returns to Payments screen
 # Env: TENANT/OWNER creds
 appId: com.lalarente.app
 ---
@@ -36,18 +37,8 @@ appId: com.lalarente.app
     text: "Payment History"
 - takeScreenshot: parity-03a-tenant-payment-history
 
-# Tap the inline Pay button on the pending row (if present)
-- runFlow:
-    when:
-      visible: "Pay"
-    commands:
-      - tapOn: "Pay"
-      - waitForAnimationToEnd:
-          timeout: 3000
-      - takeScreenshot: parity-03a-pay-tapped
-      - back
-      - waitForAnimationToEnd:
-          timeout: 2000
+# Pay button interaction skipped here — reaching PayFast requires sandbox
+# creds + a test card. Covered by the deferred fixture-seeded flow.
 
 - runFlow: ../subflows/sign-out-tenant.yaml
 
@@ -64,16 +55,10 @@ appId: com.lalarente.app
     timeout: 2000
 - takeScreenshot: parity-03b-owner-rent-roll
 
-# Verify tenant's lease is visible on the rent-roll (parity: tenant exists
-# in owner's rent-roll view regardless of payment status).
-- scrollUntilVisible:
-    element:
-      text: ".*(Dolphin|Ocean|Rent).*"
-    direction: DOWN
-    timeout: 15000
-    centerElement: true
-    optional: true
-- takeScreenshot: parity-03b-owner-rent-roll-verified
+# Rent Roll screen loaded — screen title is the hard assertion above.
+# Lease-level identity check requires a shared fixture identifier
+# (owner/tenant share a known lease.id); deferred until that fixture exists.
+- takeScreenshot: parity-03b-owner-rent-roll-loaded
 
 # Check statements screen too
 - openLink: lalarenteapp://(owner)/statements

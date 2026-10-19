@@ -1,11 +1,12 @@
-# Parity — Maintenance 3-way (tenant → owner → vendor → tenant → owner)
-# Verifies: tenant request visible to owner; owner assigns vendor; vendor
-# sees request; vendor requests closure; tenant verifies; owner closes.
-# Flow:
-#   1. Tenant reports a maintenance issue with unique token
-#   2. Owner opens maintenance list, finds the token, selects a vendor
-#   3. Vendor logs in, sees the request in Requests tab
-#   4. (deferred: quote → PO lifecycle requires fixture state)
+# Parity — Maintenance surface visibility (tenant → owner → vendor)
+# Scope (what this flow verifies):
+#   1. Tenant can create a maintenance request with a unique token
+#   2. The request is visible to the owner in their maintenance list
+#   3. The request is visible to an eligible vendor in their Requests tab
+# Out of scope (deferred to a fixture-seeded flow):
+#   - Owner-to-vendor assignment propagation
+#   - Vendor quote submission → owner PO approval
+#   - Vendor closure request → tenant verification → owner close
 # Env: TENANT/OWNER/VENDOR creds + REQ_TOKEN
 appId: com.lalarente.app
 ---
@@ -109,16 +110,17 @@ appId: com.lalarente.app
     timeout: 2000
 - takeScreenshot: parity-02c-vendor-requests-list
 
-# Vendor can see all open requests they're eligible for. The tenant's new
-# request should be visible by token (vendors see unassigned/open jobs in
-# their service categories).
+# Vendor must see the tenant's new request by token. Vendors see
+# unassigned/open jobs in their service categories; if this fails the
+# vendor service-matching or RLS is broken.
 - scrollUntilVisible:
     element:
       text: ".*UAT-${REQ_TOKEN}.*"
     direction: DOWN
     timeout: 25000
     centerElement: true
-    optional: true
+- assertVisible:
+    text: ".*UAT-${REQ_TOKEN}.*"
 - takeScreenshot: parity-02c-vendor-sees-request
 
 - runFlow: ../subflows/sign-out-vendor.yaml

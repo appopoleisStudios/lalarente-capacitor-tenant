@@ -77,9 +77,9 @@ appId: com.lalarente.app
 - waitForAnimationToEnd:
     timeout: 2000
 - extendedWaitUntil:
-    visible: "Type a message"
+    visible: "Type a message..."
     timeout: 15000
-- tapOn: "Type a message"
+- tapOn: "Type a message..."
 - inputText: "OwnerReply-${MSG_TOKEN}"
 - tapOn:
     point: "50%,15%"
