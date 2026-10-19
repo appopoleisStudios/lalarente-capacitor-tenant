@@ -1,6 +1,14 @@
-# Parity — Deposit (owner view ↔ tenant view)
-# Verifies: owner's Deposit Management shows the same lease that tenant
-# sees in their Deposit Status screen; interest rate matches; principal matches.
+# Parity — Deposit surface visibility (owner view ↔ tenant view)
+# Scope (what this flow verifies):
+#   1. Tenant can reach Deposit Status screen; it loads with Lease Active
+#      banner (so RLS and lease linkage work)
+#   2. Owner can reach Deposit Management screen; it loads
+# Out of scope (deferred — requires a shared lease.id fixture identifier
+# so we can assert matching principal / interest rate / interest earned
+# between the two roles):
+#   - Matching lease identifier across both roles
+#   - Matching principal amount
+#   - Matching interest rate + earned-to-date figures
 # Env: TENANT/OWNER creds
 appId: com.lalarente.app
 ---
@@ -39,14 +47,8 @@ appId: com.lalarente.app
     timeout: 2000
 - takeScreenshot: parity-04b-owner-deposit-mgmt
 
-# Owner must see at least one deposit entry (the tenant's lease)
-- scrollUntilVisible:
-    element:
-      text: ".*(Dolphin|Ocean|Active|R ).*"
-    direction: DOWN
-    timeout: 15000
-    centerElement: true
-    optional: true
-- takeScreenshot: parity-04b-owner-deposit-verified
+# Owner Deposit Management screen loaded — header is the hard assertion
+# above. Shared-fixture lease identity check deferred (see scope note).
+- takeScreenshot: parity-04b-owner-deposit-loaded
 
 - runFlow: ../subflows/sign-out-owner.yaml

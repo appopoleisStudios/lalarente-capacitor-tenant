@@ -49,19 +49,24 @@ appId: com.lalarente.app
 - inputText: "Parity maintenance ping ${REQ_TOKEN}"
 - hideKeyboard
 
-# Submit — button text may be "Submit" / "Submit Request" / "Report"
+# Submit — stable testID avoids matching the "Report Issue" screen heading
 - scrollUntilVisible:
     element:
-      text: ".*(Submit|Report).*"
+      id: "maintenance-submit"
     direction: DOWN
     timeout: 10000
     centerElement: true
 - waitForAnimationToEnd:
     timeout: 1500
 - tapOn:
-    text: ".*(Submit|Report).*"
+    id: "maintenance-submit"
 - waitForAnimationToEnd:
     timeout: 4000
+# Submission success: we leave the Report Issue screen and land on the
+# maintenance list where the just-created request is visible by token.
+- extendedWaitUntil:
+    notVisible: "Report Issue"
+    timeout: 10000
 - takeScreenshot: parity-02a-tenant-submitted
 
 - runFlow: ../subflows/sign-out-tenant.yaml
