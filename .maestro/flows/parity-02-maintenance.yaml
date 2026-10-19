@@ -24,30 +24,28 @@ appId: com.lalarente.app
     timeout: 2000
 - takeScreenshot: parity-02a-tenant-report-opened
 
-# Fill the title — unique token so owner/vendor can find this exact request
-- scrollUntilVisible:
-    element:
-      text: "Title"
-    direction: UP
+# Fill the title via its testID (regex on "Title" label hit the field
+# header, not the input, and the submit then triggered a Required alert).
+- extendedWaitUntil:
+    visible:
+      id: "maintenance-title-input"
     timeout: 10000
-    centerElement: true
-    optional: true
 - tapOn:
-    text: ".*(Title|What's the issue).*"
+    id: "maintenance-title-input"
 - inputText: "UAT-${REQ_TOKEN}"
-- hideKeyboard
-
-# Description
-- scrollUntilVisible:
-    element:
-      text: ".*(Description|Details).*"
-    direction: DOWN
-    timeout: 10000
-    centerElement: true
 - tapOn:
-    text: ".*(Description|Details).*"
+    point: "50%,8%"
+
+# Description via its testID
+- extendedWaitUntil:
+    visible:
+      id: "maintenance-description-input"
+    timeout: 10000
+- tapOn:
+    id: "maintenance-description-input"
 - inputText: "Parity maintenance ping ${REQ_TOKEN}"
-- hideKeyboard
+- tapOn:
+    point: "50%,8%"
 
 # Submit — scrollUntilVisible with permissive visibility first (bring
 # into view on small screens), then extendedWaitUntil to confirm. The
