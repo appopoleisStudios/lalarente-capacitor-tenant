@@ -98,15 +98,15 @@ appId: com.lalarente.app
     timeout: 15000
 - tapOn:
     id: "lala-chip-0"
-# First establish the specific interaction completed: typing indicator gone.
+# Pre-tap state (above) asserted no lala-ai-message exists. So this wait
+# proves a NEW response arrived after the chip tap — not a stale bubble.
+- extendedWaitUntil:
+    visible:
+      id: "lala-ai-message"
+    timeout: 60000
 - extendedWaitUntil:
     notVisible: "Lala is typing..."
-    timeout: 60000
-# Deterministic success assertion: a response bubble must be visible AND no
-# error row. Provider failures (429, auth, format) all show as lala-error-row
-# and will correctly fail this test — surfacing service-health regressions.
-- assertVisible:
-    id: "lala-ai-message"
+    timeout: 5000
 - assertNotVisible:
     id: "lala-error-row"
 - takeScreenshot: uat-owner-06-lala-ai
