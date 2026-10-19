@@ -180,11 +180,31 @@ export default function ComposeMessageScreen({ role = 'tenant' }: Props) {
     }
   };
 
-  const otherPartyName = selectedLease
-    ? role === 'tenant'
-      ? selectedLease.owner?.full_name
-      : selectedLease.tenant?.full_name
-    : null;
+  const [counterpartyName, setCounterpartyName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedLease?.id) {
+      setCounterpartyName(null);
+      return;
+    }
+    // Prefer the embedded profile name; fall back to SECURITY DEFINER RPC
+    // when RLS blocks the cross-party read (common for tenants reading owners).
+    const embedded =
+      role === 'tenant' ? selectedLease.owner?.full_name : selectedLease.tenant?.full_name;
+    if (embedded) {
+      setCounterpartyName(embedded);
+      return;
+    }
+    (async () => {
+      // RPC was added in migration 20261019000001; cast until types regen.
+      const { data } = await (supabase.rpc as any)('get_lease_counterparty_name', {
+        p_lease_id: selectedLease.id,
+      });
+      setCounterpartyName(typeof data === 'string' ? data : null);
+    })();
+  }, [selectedLease, role]);
+
+  const otherPartyName = counterpartyName;
 
   const canSend =
     subject.trim().length > 0 && message.trim().length > 0 && !sending && !!selectedLease;
@@ -298,7 +318,7 @@ export default function ComposeMessageScreen({ role = 'tenant' }: Props) {
                 </Text>
               </View>
               <View style={styles.pickerInfo}>
-                <Text style={styles.pickerName}>{lease.tenant?.full_name ?? 'Unknown'}</Text>
+                <Text style={styles.pickerName}>{lease.tenant?.full_name ?? 'Tenant'}</Text>
                 {lease.property && <Text style={styles.pickerProp}>{lease.property.title}</Text>}
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
@@ -354,7 +374,9 @@ export default function ComposeMessageScreen({ role = 'tenant' }: Props) {
               disabled={leases.length <= 1}
             >
               <Ionicons name="person-circle" size={18} color={primaryColor} />
-              <Text style={styles.recipientName}>{otherPartyName ?? 'Unknown'}</Text>
+              <Text style={styles.recipientName}>
+                {otherPartyName ?? (role === 'tenant' ? 'Your Landlord' : 'Your Tenant')}
+              </Text>
               {selectedLease?.property && (
                 <Text style={styles.recipientProp}> · {selectedLease.property.title}</Text>
               )}
