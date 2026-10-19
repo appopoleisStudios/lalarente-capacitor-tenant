@@ -1,0 +1,54 @@
+# Parity — Deposit surface visibility (owner view ↔ tenant view)
+# Scope (what this flow verifies):
+#   1. Tenant can reach Deposit Status screen; it loads with Lease Active
+#      banner (so RLS and lease linkage work)
+#   2. Owner can reach Deposit Management screen; it loads
+# Out of scope (deferred — requires a shared lease.id fixture identifier
+# so we can assert matching principal / interest rate / interest earned
+# between the two roles):
+#   - Matching lease identifier across both roles
+#   - Matching principal amount
+#   - Matching interest rate + earned-to-date figures
+# Env: TENANT/OWNER creds
+appId: com.lalarente.app
+---
+
+# ────────────────────────────────────────────────────────────
+# PHASE 1 — Tenant views deposit status
+# ────────────────────────────────────────────────────────────
+- runFlow: ../subflows/login-tenant.yaml
+
+- openLink: lalarenteapp://(tenant)/deposit
+- extendedWaitUntil:
+    visible: "Deposit Status"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: parity-04a-tenant-deposit-status
+
+# Tenant deposit screen loaded with lease data
+- assertVisible:
+    text: "Deposit Status"
+- assertVisible:
+    text: ".*(Lease Active|Interest Rate).*"
+
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+# ────────────────────────────────────────────────────────────
+# PHASE 2 — Owner views Deposit Management
+# ────────────────────────────────────────────────────────────
+- runFlow: ../subflows/login-owner.yaml
+
+- openLink: lalarenteapp://(owner)/deposits
+- extendedWaitUntil:
+    visible: "Deposit Management"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: parity-04b-owner-deposit-mgmt
+
+# Owner Deposit Management screen loaded — header is the hard assertion
+# above. Shared-fixture lease identity check deferred (see scope note).
+- takeScreenshot: parity-04b-owner-deposit-loaded
+
+- runFlow: ../subflows/sign-out-owner.yaml

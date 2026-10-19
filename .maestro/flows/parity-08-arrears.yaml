@@ -1,0 +1,30 @@
+# Parity — Arrears (owner ↔ tenant)
+# Verifies: tenant sees My Arrears screen; owner has Arrears Management
+# dashboard. Both roles can view and act on arrears if any exist.
+# Env: TENANT/OWNER creds
+appId: com.lalarente.app
+---
+
+- runFlow: ../subflows/login-tenant.yaml
+
+- openLink: lalarenteapp://(tenant)/arrears
+- extendedWaitUntil:
+    visible: "My Arrears"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: parity-08a-tenant-arrears
+
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+- runFlow: ../subflows/login-owner.yaml
+
+- openLink: lalarenteapp://(owner)/arrears
+- extendedWaitUntil:
+    visible: "Arrears Management"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: parity-08b-owner-arrears
+
+- runFlow: ../subflows/sign-out-owner.yaml

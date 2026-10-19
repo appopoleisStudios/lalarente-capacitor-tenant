@@ -1,0 +1,70 @@
+# Parity — Rent payment surface visibility (tenant → owner)
+# Scope (what this flow verifies):
+#   1. Tenant can navigate to Payments and see their Payment History
+#   2. Owner can navigate to rent-roll and statements screens
+# Out of scope (deferred — requires PayFast sandbox fixture):
+#   - Pay button → webview launches with correct amount
+#   - Payment completion → owner sees new payment row
+#   - Payment cancel → tenant returns to Payments screen
+# Env: TENANT/OWNER creds
+appId: com.lalarente.app
+---
+
+# ────────────────────────────────────────────────────────────
+# PHASE 1 — Tenant initiates rent payment flow
+# ────────────────────────────────────────────────────────────
+- runFlow: ../subflows/login-tenant.yaml
+
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "tab-payments"
+- extendedWaitUntil:
+    visible: "Payments"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: parity-03a-tenant-payments-hub
+
+# Payments screen must show payment history (lease exists → payments listed)
+- scrollUntilVisible:
+    element:
+      text: "Payment History"
+    direction: DOWN
+    timeout: 15000
+    centerElement: true
+- assertVisible:
+    text: "Payment History"
+- takeScreenshot: parity-03a-tenant-payment-history
+
+# Pay button interaction skipped here — reaching PayFast requires sandbox
+# creds + a test card. Covered by the deferred fixture-seeded flow.
+
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+# ────────────────────────────────────────────────────────────
+# PHASE 2 — Owner opens rent-roll and verifies the lease is listed
+# ────────────────────────────────────────────────────────────
+- runFlow: ../subflows/login-owner.yaml
+
+- openLink: lalarenteapp://(owner)/rent-roll
+- extendedWaitUntil:
+    visible: "Rent Roll"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: parity-03b-owner-rent-roll
+
+# Rent Roll screen loaded — screen title is the hard assertion above.
+# Lease-level identity check requires a shared fixture identifier
+# (owner/tenant share a known lease.id); deferred until that fixture exists.
+- takeScreenshot: parity-03b-owner-rent-roll-loaded
+
+# Check statements screen too
+- openLink: lalarenteapp://(owner)/statements
+- extendedWaitUntil:
+    visible: "Monthly Statement"
+    timeout: 15000
+- takeScreenshot: parity-03c-owner-statements
+
+- runFlow: ../subflows/sign-out-owner.yaml

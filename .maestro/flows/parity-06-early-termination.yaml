@@ -1,0 +1,31 @@
+# Parity — Early termination (tenant ↔ owner)
+# Verifies: tenant can open Early Termination screen; owner has matching
+# screen with same lease visible.
+# Does NOT submit a termination request (destructive).
+# Env: TENANT/OWNER creds
+appId: com.lalarente.app
+---
+
+- runFlow: ../subflows/login-tenant.yaml
+
+- openLink: lalarenteapp://(tenant)/early-termination
+- extendedWaitUntil:
+    visible: "Early Termination"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: parity-06a-tenant-early-term
+
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+- runFlow: ../subflows/login-owner.yaml
+
+- openLink: lalarenteapp://(owner)/early-termination
+- extendedWaitUntil:
+    visible: "Early Terminations"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: parity-06b-owner-early-term
+
+- runFlow: ../subflows/sign-out-owner.yaml

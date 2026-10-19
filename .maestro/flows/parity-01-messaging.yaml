@@ -1,0 +1,146 @@
+# Parity — Tenant ↔ Owner messaging
+# Verifies: tenant message visible to owner; owner reply visible to tenant.
+# Flow:
+#   1. Tenant composes message with unique token (timestamp)
+#   2. Switch to owner; find tenant's message by token; reply with second token
+#   3. Switch to tenant; find owner's reply token
+# Env: TENANT_EMAIL / TENANT_PASSWORD, OWNER_EMAIL / OWNER_PASSWORD
+#      MSG_TOKEN (unique string injected by caller — different per run)
+appId: com.lalarente.app
+---
+
+# ────────────────────────────────────────────────────────────
+# PHASE 1 — Tenant sends message
+# ────────────────────────────────────────────────────────────
+- runFlow: ../subflows/login-tenant.yaml
+
+- openLink: lalarenteapp://(tenant)/messages/new
+- extendedWaitUntil:
+    visible: "New Message"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# Fill the subject field (placeholder: "E.g., Question about lease renewal")
+- tapOn:
+    text: "E.g., Question about lease renewal"
+- inputText: "UAT-${MSG_TOKEN}"
+- tapOn:
+    point: "50%,15%"
+
+# Fill message body (placeholder: "Write your message here...")
+- tapOn:
+    text: "Write your message here..."
+- inputText: "Tenant parity ping ${MSG_TOKEN}"
+- tapOn:
+    point: "50%,15%"
+
+# Send
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    text: "Send"
+
+# Persisted-send success: handleSend router.replace()s to the new thread
+# screen on success. The thread-message-input appearing proves the thread
+# was created and the client navigated — no race with sign-out.
+- extendedWaitUntil:
+    visible:
+      id: "thread-message-input"
+    timeout: 15000
+- takeScreenshot: parity-01a-tenant-sent
+
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+# ────────────────────────────────────────────────────────────
+# PHASE 2 — Owner reads tenant message, replies
+# ────────────────────────────────────────────────────────────
+- runFlow: ../subflows/login-owner.yaml
+
+- openLink: lalarenteapp://(owner)/messages
+- extendedWaitUntil:
+    visible: "Messages"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# The tenant's UAT message with our token should be visible in the thread list
+- scrollUntilVisible:
+    element:
+      text: ".*UAT-${MSG_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- assertVisible:
+    text: ".*UAT-${MSG_TOKEN}.*"
+- takeScreenshot: parity-01b-owner-sees-tenant-message
+
+# Open the thread
+- tapOn:
+    text: ".*UAT-${MSG_TOKEN}.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+- extendedWaitUntil:
+    visible:
+      id: "thread-message-input"
+    timeout: 15000
+
+# Mandatory read-side check: owner must see the tenant's message body
+# in the thread. extendedWaitUntil tolerates slow fetch; catches RLS
+# regressions on messages SELECT (would never appear) distinctly from
+# slow network (eventually appears).
+- extendedWaitUntil:
+    visible:
+      text: ".*Tenant parity ping ${MSG_TOKEN}.*"
+    timeout: 15000
+
+# Compose and send the reply
+- tapOn:
+    id: "thread-message-input"
+- inputText: "OwnerReply-${MSG_TOKEN}"
+- tapOn:
+    id: "thread-send-button"
+- waitForAnimationToEnd:
+    timeout: 2500
+
+# Mandatory send-success: the reply bubble must be visible in the thread.
+# extendedWaitUntil (not optional) — fails if the message never renders.
+- extendedWaitUntil:
+    visible:
+      text: ".*OwnerReply-${MSG_TOKEN}.*"
+    timeout: 10000
+- takeScreenshot: parity-01c-owner-replied
+
+- runFlow: ../subflows/sign-out-owner.yaml
+
+# ────────────────────────────────────────────────────────────
+# PHASE 3 — Tenant reads owner's reply
+# ────────────────────────────────────────────────────────────
+- runFlow: ../subflows/login-tenant.yaml
+
+- openLink: lalarenteapp://(tenant)/messages
+- extendedWaitUntil:
+    visible: "Messages"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Thread list should show the subject (not necessarily the reply preview),
+# so open the thread by token and verify reply inside
+- scrollUntilVisible:
+    element:
+      text: ".*UAT-${MSG_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- tapOn:
+    text: ".*UAT-${MSG_TOKEN}.*"
+# Thread screen must finish loading messages (slow fetches shouldn't fail
+# a successful delivery). extendedWaitUntil polls up to 15s for the reply.
+- extendedWaitUntil:
+    visible:
+      text: ".*OwnerReply-${MSG_TOKEN}.*"
+    timeout: 15000
+- takeScreenshot: parity-01d-tenant-sees-owner-reply
+
+- runFlow: ../subflows/sign-out-tenant.yaml

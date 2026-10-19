@@ -1,0 +1,131 @@
+# Parity — Maintenance surface visibility (tenant → owner → vendor)
+# Scope (what this flow verifies):
+#   1. Tenant can create a maintenance request with a unique token
+#   2. The request is visible to the owner in their maintenance list
+#   3. The request is visible to an eligible vendor in their Requests tab
+# Out of scope (deferred to a fixture-seeded flow):
+#   - Owner-to-vendor assignment propagation
+#   - Vendor quote submission → owner PO approval
+#   - Vendor closure request → tenant verification → owner close
+# Env: TENANT/OWNER/VENDOR creds + REQ_TOKEN
+appId: com.lalarente.app
+---
+
+# ────────────────────────────────────────────────────────────
+# PHASE 1 — Tenant reports maintenance request
+# ────────────────────────────────────────────────────────────
+- runFlow: ../subflows/login-tenant.yaml
+
+- openLink: lalarenteapp://(tenant)/maintenance/report
+- extendedWaitUntil:
+    visible: "Report Issue"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: parity-02a-tenant-report-opened
+
+# Fill the title — unique token so owner/vendor can find this exact request
+- scrollUntilVisible:
+    element:
+      text: "Title"
+    direction: UP
+    timeout: 10000
+    centerElement: true
+    optional: true
+- tapOn:
+    text: ".*(Title|What's the issue).*"
+- inputText: "UAT-${REQ_TOKEN}"
+- hideKeyboard
+
+# Description
+- scrollUntilVisible:
+    element:
+      text: ".*(Description|Details).*"
+    direction: DOWN
+    timeout: 10000
+    centerElement: true
+- tapOn:
+    text: ".*(Description|Details).*"
+- inputText: "Parity maintenance ping ${REQ_TOKEN}"
+- hideKeyboard
+
+# Submit — stable testID avoids matching the "Report Issue" screen heading
+- scrollUntilVisible:
+    element:
+      id: "maintenance-submit"
+    direction: DOWN
+    timeout: 10000
+    centerElement: true
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    id: "maintenance-submit"
+- waitForAnimationToEnd:
+    timeout: 4000
+# Submission success: we leave the Report Issue screen and land on the
+# maintenance list where the just-created request is visible by token.
+- extendedWaitUntil:
+    notVisible: "Report Issue"
+    timeout: 10000
+- takeScreenshot: parity-02a-tenant-submitted
+
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+# ────────────────────────────────────────────────────────────
+# PHASE 2 — Owner sees the request in their maintenance list
+# ────────────────────────────────────────────────────────────
+- runFlow: ../subflows/login-owner.yaml
+
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "tab-owner-maintenance"
+- extendedWaitUntil:
+    visible: "Maintenance"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Owner must see the tenant's UAT request by token
+- scrollUntilVisible:
+    element:
+      text: ".*UAT-${REQ_TOKEN}.*"
+    direction: DOWN
+    timeout: 25000
+    centerElement: true
+- assertVisible:
+    text: ".*UAT-${REQ_TOKEN}.*"
+- takeScreenshot: parity-02b-owner-sees-request
+
+- runFlow: ../subflows/sign-out-owner.yaml
+
+# ────────────────────────────────────────────────────────────
+# PHASE 3 — Vendor sees the request in their Requests tab
+# ────────────────────────────────────────────────────────────
+- runFlow: ../subflows/login-vendor.yaml
+
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "tab-vendor-requests"
+- extendedWaitUntil:
+    visible: "Maintenance Requests"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: parity-02c-vendor-requests-list
+
+# Vendor must see the tenant's new request by token. Vendors see
+# unassigned/open jobs in their service categories; if this fails the
+# vendor service-matching or RLS is broken.
+- scrollUntilVisible:
+    element:
+      text: ".*UAT-${REQ_TOKEN}.*"
+    direction: DOWN
+    timeout: 25000
+    centerElement: true
+- assertVisible:
+    text: ".*UAT-${REQ_TOKEN}.*"
+- takeScreenshot: parity-02c-vendor-sees-request
+
+- runFlow: ../subflows/sign-out-vendor.yaml

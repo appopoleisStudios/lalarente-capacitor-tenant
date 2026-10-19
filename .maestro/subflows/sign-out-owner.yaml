@@ -2,9 +2,15 @@
 # Hard asserts — fails if logout did not complete.
 appId: com.lalarente.app
 ---
+- waitForAnimationToEnd:
+    timeout: 2000
+
 - tapOn:
     id: "tab-owner-home"
     optional: true
+
+- waitForAnimationToEnd:
+    timeout: 2000
 
 - tapOn:
     id: "tab-owner-profile"

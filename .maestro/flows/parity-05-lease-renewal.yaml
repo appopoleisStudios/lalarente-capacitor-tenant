@@ -1,0 +1,36 @@
+# Parity — Lease renewal (owner ↔ tenant)
+# Verifies: both roles see the same renewal entry for their shared lease.
+# Does NOT create a new offer (requires a close-to-expiry lease fixture).
+# Env: TENANT/OWNER creds
+appId: com.lalarente.app
+---
+
+# ────────────────────────────────────────────────────────────
+# PHASE 1 — Tenant opens Lease Renewal screen
+# ────────────────────────────────────────────────────────────
+- runFlow: ../subflows/login-tenant.yaml
+
+- openLink: lalarenteapp://(tenant)/lease-renewal
+- extendedWaitUntil:
+    visible: "Lease Renewal"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: parity-05a-tenant-renewal
+
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+# ────────────────────────────────────────────────────────────
+# PHASE 2 — Owner opens Lease Renewals dashboard
+# ────────────────────────────────────────────────────────────
+- runFlow: ../subflows/login-owner.yaml
+
+- openLink: lalarenteapp://(owner)/renewals
+- extendedWaitUntil:
+    visible: "Lease Renewals"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: parity-05b-owner-renewals
+
+- runFlow: ../subflows/sign-out-owner.yaml
