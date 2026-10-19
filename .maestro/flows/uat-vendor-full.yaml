@@ -151,13 +151,26 @@ appId: com.lalarente.app
     timeout: 15000
 - tapOn:
     id: "lala-chip-0"
-# AI edge function may 429 at the provider during UAT runs. Accept either a
-# response bubble or an error row — both prove the UI handled the chip tap.
+# Terminal-state assertion: either a response bubble or a visible error row.
+# Provider may 429 (OpenAI/Groq TPD cap) during UAT, which is a service-health
+# concern — but the interaction must reach SOME terminal state, never stall.
 - extendedWaitUntil:
     visible:
       id: "lala-ai-message"
     timeout: 60000
     optional: true
+- extendedWaitUntil:
+    visible:
+      id: "lala-error-row"
+    timeout: 3000
+    optional: true
+- runFlow:
+    when:
+      notVisible:
+        id: "lala-ai-message"
+    commands:
+      - assertVisible:
+          id: "lala-error-row"
 - takeScreenshot: uat-vendor-08-lala-ai
 
 # ── 6. Profile tab ───────────────────────────────────────────────────────────
