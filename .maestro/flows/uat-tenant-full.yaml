@@ -85,26 +85,15 @@ appId: com.lalarente.app
     timeout: 15000
 - tapOn:
     id: "lala-chip-0"
-# Terminal-state assertion: either a response bubble or a visible error row.
-# Provider may 429 (OpenAI/Groq TPD cap) during UAT, which is a service-health
-# concern — but the interaction must reach SOME terminal state, never stall.
+# First establish the specific interaction completed: typing indicator gone.
 - extendedWaitUntil:
-    visible:
-      id: "lala-ai-message"
+    notVisible: "Lala is typing..."
     timeout: 60000
-    optional: true
-- extendedWaitUntil:
-    visible:
-      id: "lala-error-row"
-    timeout: 3000
-    optional: true
-- runFlow:
-    when:
-      notVisible:
-        id: "lala-ai-message"
-    commands:
-      - assertVisible:
-          id: "lala-error-row"
+# Deterministic success assertion: response bubble visible AND no error row.
+- assertVisible:
+    id: "lala-ai-message"
+- assertNotVisible:
+    id: "lala-error-row"
 - takeScreenshot: uat-tenant-05-lala-ai
 
 # ── 6. Maintenance — list + new request form ─────────────────────────────────
