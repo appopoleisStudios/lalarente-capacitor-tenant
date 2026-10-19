@@ -49,13 +49,14 @@ appId: com.lalarente.app
 - inputText: "Parity maintenance ping ${REQ_TOKEN}"
 - hideKeyboard
 
-# Submit — stable testID avoids matching the "Report Issue" screen heading
-- scrollUntilVisible:
-    element:
+# Submit — the form renders with the button at the bottom; a plain
+# extendedWaitUntil is more reliable than scrollUntilVisible (which fails
+# when the button is already visible or when the 100% visibility rule
+# clashes with the tab bar).
+- extendedWaitUntil:
+    visible:
       id: "maintenance-submit"
-    direction: DOWN
     timeout: 10000
-    centerElement: true
 - waitForAnimationToEnd:
     timeout: 1500
 - tapOn:
