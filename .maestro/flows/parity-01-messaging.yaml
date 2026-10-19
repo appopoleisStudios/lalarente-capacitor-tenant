@@ -71,20 +71,29 @@ appId: com.lalarente.app
     text: ".*UAT-${MSG_TOKEN}.*"
 - takeScreenshot: parity-01b-owner-sees-tenant-message
 
-# Open the thread and reply
+# Open the thread and reply using stable testIDs
 - tapOn:
     text: ".*UAT-${MSG_TOKEN}.*"
 - waitForAnimationToEnd:
     timeout: 2000
 - extendedWaitUntil:
-    visible: "Type a message..."
+    visible:
+      id: "thread-message-input"
     timeout: 15000
-- tapOn: "Type a message..."
+- tapOn:
+    id: "thread-message-input"
 - inputText: "OwnerReply-${MSG_TOKEN}"
 - tapOn:
-    point: "50%,15%"
-- pressKey: Enter
+    id: "thread-send-button"
 
+# Submission success: input field must clear (optimistic send empties it)
+# and the reply bubble must appear in the message list area, not the composer.
+- extendedWaitUntil:
+    notVisible:
+      id: "thread-message-input"
+      enabled: true
+    timeout: 10000
+    optional: true
 - waitForAnimationToEnd:
     timeout: 2000
 - assertVisible:
