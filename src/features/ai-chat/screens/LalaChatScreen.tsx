@@ -224,6 +224,8 @@ export default function LalaChatScreen() {
           {messages.length > 0 && !isLoading && (
             <Pressable
               testID="lala-new-chat"
+              accessibilityLabel="New chat"
+              accessibilityRole="button"
               onPress={() => {
                 setMessages([]);
                 setPendingActions([]);
