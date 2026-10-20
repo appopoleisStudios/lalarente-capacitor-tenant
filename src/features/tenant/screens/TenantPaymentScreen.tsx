@@ -190,16 +190,24 @@ export default function TenantPaymentScreen() {
         Card: 'card',
       };
       const dbMethod = methodToEnum[selectedMethod] ?? 'eft';
-      const { error } = await supabase
+      // .select() returns the updated rows — if RLS or a trigger silently
+      // blocks the write, data.length is 0 even without an error. We treat
+      // that as a hard failure so no "EFT recorded" alert fires on a no-op
+      // UPDATE (the original production bug).
+      const { data, error } = await supabase
         .from('payments')
         .update({
           status: 'processing',
           payment_method: dbMethod,
           transaction_id: referenceInput.trim() || null,
         })
-        .eq('id', payingPayment.id);
+        .eq('id', payingPayment.id)
+        .select('id');
 
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error('Payment update affected 0 rows (RLS or trigger blocked)');
+      }
 
       setShowPayModal(false);
       Alert.alert(

@@ -163,11 +163,19 @@ export default function OwnerRentRollScreen() {
             setConfirmingPropertyId(item.property_id);
             try {
               const ids = item.processing_payments.map((p) => p.id);
-              const { error } = await supabase
+              // Defence-in-depth: require exact row count updated so an RLS
+              // or trigger block can't produce a false success alert.
+              const { data, error } = await supabase
                 .from('payments')
                 .update({ status: 'completed', paid_date: new Date().toISOString() })
-                .in('id', ids);
+                .in('id', ids)
+                .select('id');
               if (error) throw error;
+              if (!data || data.length !== ids.length) {
+                throw new Error(
+                  `Confirmed ${data?.length ?? 0} of ${ids.length} payments (RLS or trigger blocked)`
+                );
+              }
               Alert.alert('Confirmed', 'Payment marked as received.');
               loadRentRollData();
             } catch (err) {
