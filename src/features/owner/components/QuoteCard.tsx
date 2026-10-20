@@ -178,18 +178,27 @@ export function QuoteCard({
       {/* Actions for submitted quotes */}
       {quote.status === 'submitted' && (
         <View style={styles.actions}>
-          <TouchableOpacity style={[styles.actionButton, styles.rejectButton]} onPress={onReject}>
+          <TouchableOpacity
+            testID="quote-reject"
+            style={[styles.actionButton, styles.rejectButton]}
+            onPress={onReject}
+          >
             <Ionicons name="close-circle-outline" size={18} color={colors.error[600]} />
             <Text style={styles.rejectText}>Reject</Text>
           </TouchableOpacity>
           <TouchableOpacity
+            testID="quote-request-revision"
             style={[styles.actionButton, styles.revisionButton]}
             onPress={onRequestRevision}
           >
             <Ionicons name="create-outline" size={18} color={colors.warning[600]} />
             <Text style={styles.revisionText}>Request Changes</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, styles.acceptButton]} onPress={onAccept}>
+          <TouchableOpacity
+            testID="quote-accept"
+            style={[styles.actionButton, styles.acceptButton]}
+            onPress={onAccept}
+          >
             <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" />
             <Text style={styles.acceptText}>Accept</Text>
           </TouchableOpacity>

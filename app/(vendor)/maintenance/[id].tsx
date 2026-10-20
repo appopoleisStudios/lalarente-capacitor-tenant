@@ -1,7 +1,7 @@
 import { useAuth } from '@/src/contexts/AuthContext';
 import {
   getVendorRequestById,
-  type VendorMaintenanceRequest
+  type VendorMaintenanceRequest,
 } from '@/src/features/maintenance/api';
 import { colors } from '@/src/shared/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
@@ -85,11 +85,9 @@ export default function VendorMaintenanceDetail() {
   const handleSubmitQuote = () => {
     // Check if request is still open
     if (request?.status !== 'open') {
-      Alert.alert(
-        'Request Not Available',
-        'This request is no longer accepting quotes.',
-        [{ text: 'OK' }]
-      );
+      Alert.alert('Request Not Available', 'This request is no longer accepting quotes.', [
+        { text: 'OK' },
+      ]);
       return;
     }
 
@@ -103,31 +101,15 @@ export default function VendorMaintenanceDetail() {
           {
             text: 'Update Profile',
             onPress: () => router.push('/(vendor)/profile'),
-            style: 'default'
+            style: 'default',
           },
         ]
       );
       return;
     }
 
-    // Check if this is an invited request
-    if (request?.has_quote_request) {
-      Alert.alert(
-        'Invited to Quote',
-        'You have been specifically invited to submit a quote for this request.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Submit Quote',
-            onPress: () => router.push(`/(vendor)/maintenance/${id}/quote/new`),
-            style: 'default'
-          },
-        ]
-      );
-      return;
-    }
-
-    // Navigate to quote submission screen
+    // Navigate directly — invited status is already shown via the Invited
+    // badge on the list and detail screens; no confirmation modal needed.
     router.push(`/(vendor)/maintenance/${id}/quote/new`);
   };
 
@@ -248,7 +230,8 @@ export default function VendorMaintenanceDetail() {
                 {request.property?.address || 'Address not available'}
               </Text>
               <Text style={styles.propertyCity}>
-                {request.property?.city || ''}{request.property?.province ? `, ${request.property.province}` : ''}
+                {request.property?.city || ''}
+                {request.property?.province ? `, ${request.property.province}` : ''}
               </Text>
             </View>
           </View>
@@ -382,13 +365,16 @@ export default function VendorMaintenanceDetail() {
               </View>
 
               {/* Revision reason if requested */}
-              {request.my_quote!.status === 'revision_requested' && request.my_quote!.revision_reason && (
-                <View style={styles.revisionReasonContainer}>
-                  <Ionicons name="information-circle" size={16} color={colors.warning[600]} />
-                  <Text style={styles.revisionReasonLabel}>Owner's feedback:</Text>
-                  <Text style={styles.revisionReasonText}>{request.my_quote!.revision_reason}</Text>
-                </View>
-              )}
+              {request.my_quote!.status === 'revision_requested' &&
+                request.my_quote!.revision_reason && (
+                  <View style={styles.revisionReasonContainer}>
+                    <Ionicons name="information-circle" size={16} color={colors.warning[600]} />
+                    <Text style={styles.revisionReasonLabel}>Owner's feedback:</Text>
+                    <Text style={styles.revisionReasonText}>
+                      {request.my_quote!.revision_reason}
+                    </Text>
+                  </View>
+                )}
 
               {/* Action buttons */}
               <View style={styles.quoteActionsRow}>
@@ -436,10 +422,7 @@ export default function VendorMaintenanceDetail() {
           )}
           <TouchableOpacity
             testID="vendor-submit-quote"
-            style={[
-              styles.submitButton,
-              !request.can_quote && styles.submitButtonDisabled
-            ]}
+            style={[styles.submitButton, !request.can_quote && styles.submitButtonDisabled]}
             onPress={handleSubmitQuote}
             disabled={!request.can_quote}
           >
@@ -460,7 +443,13 @@ const styles = StyleSheet.create({
   loadingText: { marginTop: 12, fontSize: 16, color: '#6b7280' },
   errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   errorText: { marginTop: 16, fontSize: 18, fontWeight: '600', color: '#111827' },
-  backButton: { marginTop: 24, paddingHorizontal: 24, paddingVertical: 12, backgroundColor: RSA.blue, borderRadius: 8 },
+  backButton: {
+    marginTop: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: RSA.blue,
+    borderRadius: 8,
+  },
   backButtonText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
 
   header: {
@@ -473,13 +462,26 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
-  headerButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
 
   scrollView: { flex: 1 },
 
   badgesContainer: { flexDirection: 'row', gap: 12, paddingHorizontal: 16, paddingTop: 20 },
-  badge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
   badgeText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
 
   section: { marginHorizontal: 16, marginTop: 20 },
