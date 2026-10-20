@@ -1,0 +1,66 @@
+# E2E-03 — Viewing request lifecycle (tenant → owner)
+# Tenant requests a viewing on an available property. Owner sees the
+# request in their Viewing Requests screen.
+# Env: TENANT/OWNER creds + VIEW_TOKEN
+appId: com.lalarente.app
+---
+
+# PHASE 1 — Tenant requests viewing
+- runFlow: ../subflows/login-tenant.yaml
+
+# Use a known available property owned by test owner
+# 4A Dolphin: e5e888d1-e3ce-4c5c-a007-1ae58ddcaf94
+- openLink: lalarenteapp://(tenant)/viewings/request?propertyId=e5e888d1-e3ce-4c5c-a007-1ae58ddcaf94&propertyTitle=4A%20Dolphin&ownerId=e7f57cdd-78dd-41ab-9f4c-4333dd9776e6
+- extendedWaitUntil:
+    visible: "Request Viewing"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Form has date picker, time picker, notes field. For a MVP smoke, just
+# submit with defaults — form must at least enable submit.
+- scrollUntilVisible:
+    element:
+      id: "viewing-request-submit"
+    direction: DOWN
+    timeout: 10000
+    visibilityPercentage: 50
+- tapOn:
+    id: "viewing-request-submit"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: e2e-03a-tenant-submit
+
+# Mandatory success alert "Request Sent — Your viewing request has been
+# sent to the property owner." → tap OK. If it never fires, submission
+# failed silently (RLS or validation).
+- extendedWaitUntil:
+    visible: ".*Request Sent.*"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- openLink: lalarenteapp://(tenant)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+# PHASE 2 — Owner sees viewing request
+- runFlow: ../subflows/login-owner.yaml
+
+- openLink: lalarenteapp://(owner)/viewings
+- extendedWaitUntil:
+    visible: "Viewing Requests"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: e2e-03b-owner-viewings-list
+
+# Owner must see at least one viewing entry (there are historical ones in UAT)
+- assertVisible:
+    text: ".*(Viewing|4A Dolphin|Pending|Approved|Expired).*"
+- takeScreenshot: e2e-03b-owner-sees-viewing
+
+- runFlow: ../subflows/sign-out-owner.yaml

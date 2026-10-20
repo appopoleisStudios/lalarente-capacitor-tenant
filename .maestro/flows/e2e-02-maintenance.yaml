@@ -1,13 +1,16 @@
-# E2E-02 — Maintenance 3-way full lifecycle (tenant → owner → vendor → tenant → owner)
+# E2E-02 — Maintenance partial lifecycle (tenant → owner → vendor → owner)
 #
-# Chain:
+# Chain IMPLEMENTED (passes end-to-end):
 #   Phase 1: Tenant creates maintenance request with Plumbing category + token
-#   Phase 2: Owner finds request, opens detail, dispatches to dedicated vendors
-#   Phase 3: Vendor logs in, finds request in Requests tab, submits a quote
-#   Phase 4: Owner approves quote (PO is issued)
-#   Phase 5: Vendor marks work complete + requests closure
-#   Phase 6: Tenant verifies closure
-#   Phase 7: Owner marks request completed
+#   Phase 2: Owner opens detail (auto-acknowledge + auto-dispatch)
+#   Phase 3: Vendor finds request → submits a quote with specific item name
+#   Phase 4: Owner reopens the request and sees the vendor's specific quote
+#
+# Chain DEFERRED to a follow-up PR (needs more testIDs + fixture setup):
+#   Phase 5: Owner approves quote → PO issued (OwnerSendPOScreen testIDs)
+#   Phase 6: Vendor marks complete + requests closure (RequestClosureScreen)
+#   Phase 7: Tenant verifies closure (TenantClosureConfirmScreen)
+#   Phase 8: Owner marks request completed
 # Env: TENANT/OWNER/VENDOR creds + REQ_TOKEN
 appId: com.lalarente.app
 ---
@@ -208,15 +211,15 @@ appId: com.lalarente.app
 - waitForAnimationToEnd:
     timeout: 4000
 
-# Confirm quote submitted — dismiss any success alert
-- runFlow:
-    when:
-      visible: ".*(Success|submitted|Quote sent).*"
-    commands:
-      - tapOn:
-          text: "OK"
-      - waitForAnimationToEnd:
-          timeout: 2000
+# Mandatory: a success alert must appear (test fails if submit silently
+# no-ops). Previous optional guard masked RLS or validation failures.
+- extendedWaitUntil:
+    visible: ".*(Success|submitted|Quote sent).*"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 2000
 - takeScreenshot: e2e-02c-vendor-quote-submitted
 
 - openLink: lalarenteapp://(vendor)/
@@ -248,13 +251,17 @@ appId: com.lalarente.app
 - waitForAnimationToEnd:
     timeout: 3000
 
-# Owner must see at least one quote now (vendor just submitted)
+# Owner must see the vendor's SPECIFIC quote item (not just a generic
+# "Quote" heading). Catches RLS regressions on quotes SELECT distinctly
+# from slow fetch.
 - scrollUntilVisible:
     element:
-      text: ".*(Quote|Quotes Received|Pending Review).*"
+      text: ".*Unblock drain ${REQ_TOKEN}.*"
     direction: DOWN
     timeout: 15000
     visibilityPercentage: 30
+- assertVisible:
+    text: ".*Unblock drain ${REQ_TOKEN}.*"
 - takeScreenshot: e2e-02d-owner-sees-quote
 
 - openLink: lalarenteapp://(owner)/

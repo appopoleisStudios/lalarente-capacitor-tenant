@@ -29,8 +29,18 @@ export default function TenantRequestViewingScreen() {
   const ownerId = params.ownerId as string;
 
   const [userId, setUserId] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedTime, setSelectedTime] = useState(new Date());
+  // Default to tomorrow 10:00 so a user who doesn't touch the pickers can
+  // still submit without getting "Invalid Date — select a future date".
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d;
+  });
+  const [selectedTime, setSelectedTime] = useState(() => {
+    const t = new Date();
+    t.setHours(10, 0, 0, 0);
+    return t;
+  });
   const [message, setMessage] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -44,14 +54,18 @@ export default function TenantRequestViewingScreen() {
   }, []);
 
   const initUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (user) {
       setUserId(user.id);
 
       // Check for existing active viewing on this property (only pending/approved block new requests)
       const { data: existing } = await supabase
         .from('viewing_requests')
-        .select('id, status, requested_date, requested_time, confirmed_date, owner_response, alternative_times, updated_at')
+        .select(
+          'id, status, requested_date, requested_time, confirmed_date, owner_response, alternative_times, updated_at'
+        )
         .eq('tenant_id', user.id)
         .eq('property_id', propertyId)
         .in('status', ['pending', 'approved'])
@@ -67,29 +81,25 @@ export default function TenantRequestViewingScreen() {
 
   const handleCancelExisting = async () => {
     if (!existingViewing) return;
-    Alert.alert(
-      'Cancel Viewing Request',
-      'Are you sure you want to cancel this viewing request?',
-      [
-        { text: 'No', style: 'cancel' },
-        {
-          text: 'Yes, Cancel',
-          style: 'destructive',
-          onPress: async () => {
-            setCancelling(true);
-            try {
-              await viewingsApi.cancelViewing(existingViewing.id, 'tenant', 'Cancelled by tenant');
-              setExistingViewing(null);
-            } catch (error) {
-              console.error('Error cancelling viewing:', error);
-              Alert.alert('Error', 'Failed to cancel viewing request.');
-            } finally {
-              setCancelling(false);
-            }
-          },
+    Alert.alert('Cancel Viewing Request', 'Are you sure you want to cancel this viewing request?', [
+      { text: 'No', style: 'cancel' },
+      {
+        text: 'Yes, Cancel',
+        style: 'destructive',
+        onPress: async () => {
+          setCancelling(true);
+          try {
+            await viewingsApi.cancelViewing(existingViewing.id, 'tenant', 'Cancelled by tenant');
+            setExistingViewing(null);
+          } catch (error) {
+            console.error('Error cancelling viewing:', error);
+            Alert.alert('Error', 'Failed to cancel viewing request.');
+          } finally {
+            setCancelling(false);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleDateChange = (event: any, date?: Date) => {
@@ -152,7 +162,10 @@ export default function TenantRequestViewingScreen() {
         .limit(1);
 
       if (raceCheck && raceCheck.length > 0) {
-        Alert.alert('Already Requested', 'You already have an active viewing request for this property.');
+        Alert.alert(
+          'Already Requested',
+          'You already have an active viewing request for this property.'
+        );
         setSubmitting(false);
         return;
       }
@@ -213,25 +226,36 @@ export default function TenantRequestViewingScreen() {
               </View>
             </View>
 
-            <View style={[
-              styles.existingCard,
-              { borderLeftColor: existingViewing.status === 'approved' ? '#4CAF50' : RSA.gold },
-            ]}>
+            <View
+              style={[
+                styles.existingCard,
+                { borderLeftColor: existingViewing.status === 'approved' ? '#4CAF50' : RSA.gold },
+              ]}
+            >
               <View style={styles.existingHeader}>
-                <View style={[
-                  styles.existingBadge,
-                  { backgroundColor: existingViewing.status === 'approved' ? '#E8F5E9' : '#FFF8E1' },
-                ]}>
+                <View
+                  style={[
+                    styles.existingBadge,
+                    {
+                      backgroundColor:
+                        existingViewing.status === 'approved' ? '#E8F5E9' : '#FFF8E1',
+                    },
+                  ]}
+                >
                   <Ionicons
                     name={existingViewing.status === 'approved' ? 'checkmark-circle' : 'time'}
                     size={20}
                     color={existingViewing.status === 'approved' ? '#4CAF50' : '#F9A825'}
                   />
-                  <Text style={[
-                    styles.existingBadgeText,
-                    { color: existingViewing.status === 'approved' ? '#2E7D32' : '#F57F17' },
-                  ]}>
-                    {existingViewing.status === 'approved' ? 'Viewing Confirmed' : 'Viewing Request Pending'}
+                  <Text
+                    style={[
+                      styles.existingBadgeText,
+                      { color: existingViewing.status === 'approved' ? '#2E7D32' : '#F57F17' },
+                    ]}
+                  >
+                    {existingViewing.status === 'approved'
+                      ? 'Viewing Confirmed'
+                      : 'Viewing Request Pending'}
                   </Text>
                 </View>
               </View>
@@ -246,8 +270,12 @@ export default function TenantRequestViewingScreen() {
                 <Ionicons name="calendar-outline" size={18} color="#666" />
                 <Text style={styles.existingDateText}>
                   {new Date(existingViewing.requested_date).toLocaleDateString('en-ZA', {
-                    weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
-                  })} at {existingViewing.requested_time?.slice(0, 5) || '—'}
+                    weekday: 'short',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                  })}{' '}
+                  at {existingViewing.requested_time?.slice(0, 5) || '—'}
                 </Text>
               </View>
 
@@ -381,6 +409,7 @@ export default function TenantRequestViewingScreen() {
             {/* Submit Button */}
             <View style={styles.footer}>
               <TouchableOpacity
+                testID="viewing-request-submit"
                 style={[styles.submitButton, submitting && styles.buttonDisabled]}
                 onPress={handleSubmit}
                 disabled={submitting}
