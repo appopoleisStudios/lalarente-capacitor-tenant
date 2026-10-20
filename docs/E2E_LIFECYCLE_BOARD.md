@@ -23,10 +23,14 @@ Terminal: tenant Confirm Payment → owner Confirm Receipt → payment.status=co
   Flows: `e2e-02a-vendor-quote.yaml`, `e2e-02b-owner-accept.yaml`.
   Terminal verification: `scripts/e2e-db.sh "select status from maintenance_requests where title='E2E-185152'"`
 
-## L03 — Direct tenant→vendor maintenance ⬜
+## L03 — Direct tenant→vendor maintenance 🟨
 
-Phases: tenant picks vendor at report → vendor accepts → quote → tenant pays via PayFast → vendor payout → closure chain.
-Terminal: payment.status=completed + vendor_payouts row + request.status=completed.
+**UI capability verified on E2E-184544** (vqr 7fdb9cf3, invited_by_role='tenant', status='pending').
+
+- UI (Maestro `e2e-03a-tenant-direct-pick.yaml`): tenant → report → Browse Vendors → vendor card → vendor detail → Invite to quote → pick open job → `vendor_quote_requests` row created with `invited_by_role='tenant'`
+- Remaining phases (vendor quote → tenant pay via PayFast → vendor payout → closure → completion) share code paths with L02 and tenant-rent payment flow (L01). PayFast UI is a WebView redirect — not Maestro-driveable; terminal transitions available via SQL.
+
+Flow: `e2e-03a-tenant-direct-pick.yaml`.
 
 ## L04 — Viewing ⬜
 

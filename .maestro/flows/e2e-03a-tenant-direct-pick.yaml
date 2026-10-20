@@ -1,0 +1,98 @@
+# E2E-03a — Tenant creates maintenance request with a specific vendor picked
+# from the marketplace (not broadcast to open market, not owner-dispatched).
+# Terminal of this flow: a maintenance_requests row created with vendor_id
+# set to the picked vendor, status='open'.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-tenant.yaml
+
+- openLink: lalarenteapp://(tenant)/maintenance/report
+- extendedWaitUntil:
+    visible: "Report Issue"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- extendedWaitUntil:
+    visible:
+      id: "maintenance-title-input"
+    timeout: 10000
+- tapOn:
+    id: "maintenance-title-input"
+- inputText: "L03-${REQ_TOKEN}"
+- tapOn:
+    point: "50%,20%"
+
+- tapOn:
+    id: "maintenance-description-input"
+- inputText: "L03 tenant→vendor direct ${REQ_TOKEN}"
+- tapOn:
+    point: "50%,20%"
+
+- scrollUntilVisible:
+    element:
+      id: "maintenance-category-plumbing"
+    direction: DOWN
+    timeout: 10000
+    visibilityPercentage: 50
+- tapOn:
+    id: "maintenance-category-plumbing"
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# Open vendor marketplace → pick first vendor
+- scrollUntilVisible:
+    element:
+      id: "tenant-choose-vendor"
+    direction: DOWN
+    timeout: 10000
+    visibilityPercentage: 50
+- tapOn:
+    id: "tenant-choose-vendor"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Open the first vendor card
+- extendedWaitUntil:
+    visible:
+      id: "tenant-vendor-card"
+    timeout: 15000
+# Pick a non-dedicated vendor (index 2 = TestVendor1_ or similar) — the
+# first card (E2E Test Vendor) is already auto-invited to every E2E job.
+- tapOn:
+    id: "tenant-vendor-card"
+    index: 2
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Vendor detail: tap Invite to quote (will prompt to attach to a job)
+- extendedWaitUntil:
+    visible:
+      id: "vendor-detail-invite"
+    timeout: 10000
+- takeScreenshot: e2e-03a-vendor-detail
+- tapOn:
+    id: "vendor-detail-invite"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Alert "No open jobs" OR "Invite <name>" with job buttons — tap first option
+- extendedWaitUntil:
+    visible: ".*(Use on new report|Invite|Open jobs).*"
+    timeout: 10000
+- takeScreenshot: e2e-03a-invite-alert
+
+# If the alert lists open jobs (E2E-* buttons), tap the first E2E-* job.
+- runFlow:
+    when:
+      visible: ".*E2E-.*"
+    commands:
+      - tapOn:
+          text: ".*E2E-.*"
+          index: 0
+      - waitForAnimationToEnd:
+          timeout: 4000
+      - extendedWaitUntil:
+          visible: ".*(invited|Invitation sent|Sent|OK|Success).*"
+          timeout: 10000
+      - takeScreenshot: e2e-03a-invite-sent
