@@ -144,7 +144,8 @@ export default function TenantPaymentScreen() {
         if (filter === 'pending') {
           query = query.eq('status', 'pending');
         } else if (filter === 'paid') {
-          query = query.eq('status', 'paid');
+          // DB uses 'completed' (not 'paid') for finalized payments
+          query = query.eq('status', 'completed');
         }
 
         const { data: paymentsData } = await query;
@@ -180,16 +181,33 @@ export default function TenantPaymentScreen() {
     if (!payingPayment) return;
     setPaySubmitting(true);
     try {
-      const { error } = await supabase
+      // UI label → DB enum. The payments.payment_method CHECK constraint
+      // only accepts short lowercase tokens (eft, card, cash, …), not the
+      // human label used in the chip selector.
+      const methodToEnum: Record<string, string> = {
+        'EFT / Internet Banking': 'eft',
+        'Cash Deposit': 'cash',
+        Card: 'card',
+      };
+      const dbMethod = methodToEnum[selectedMethod] ?? 'eft';
+      // .select() returns the updated rows — if RLS or a trigger silently
+      // blocks the write, data.length is 0 even without an error. We treat
+      // that as a hard failure so no "EFT recorded" alert fires on a no-op
+      // UPDATE (the original production bug).
+      const { data, error } = await supabase
         .from('payments')
         .update({
           status: 'processing',
-          payment_method: selectedMethod,
+          payment_method: dbMethod,
           transaction_id: referenceInput.trim() || null,
         })
-        .eq('id', payingPayment.id);
+        .eq('id', payingPayment.id)
+        .select('id');
 
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error('Payment update affected 0 rows (RLS or trigger blocked)');
+      }
 
       setShowPayModal(false);
       Alert.alert(
