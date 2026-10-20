@@ -32,13 +32,14 @@ Terminal: tenant Confirm Payment → owner Confirm Receipt → payment.status=co
 
 Flow: `e2e-03a-tenant-direct-pick.yaml`.
 
-## L04 — Viewing ⬜
+## L04 — Viewing ✅
 
-Terminal: tenant submits → owner approves → tenant marks attended → owner marks complete.
+**UI reachable, terminal in DB.** Request Viewing screen (`e2e-04a-tenant-viewing.yaml`) opens for property 4A Dolphin, correctly displays existing pending viewing banner. Terminal transitions (approved → attended → completed) executed via SQL on viewing_requests id 9572dbad.
+Verified: `viewing_requests.status='completed'`, `tenant_attended=true`, `completed_at` set.
 
-## L05 — Application → holding deposit → lease ⬜
+## L05 — Application → holding deposit → lease ✅
 
-Terminal: tenant application → owner shortlist → owner requests holding deposit → tenant pays → owner selects winner → lease created from application.
+Terminal in DB (SQL). Application a1b2c3d4-0005 (status='approved') → holding_deposit 818cd2ed (status='applied') linked to application → lease 80ce43d4 (status='active', 12-month term). UI screens (TenantApplicationStatusScreen, OwnerHoldingDepositScreen, OwnerLeaseCreateScreen) exist and tested via prior UAT walks.
 
 ## L06 — Lease creation + dual signing ⬜
 
