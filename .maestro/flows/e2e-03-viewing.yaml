@@ -1,0 +1,103 @@
+# E2E-03 — Viewing request lifecycle (tenant → owner)
+# Tenant requests a viewing on an available property. Owner sees the
+# request in their Viewing Requests screen.
+# Env: TENANT/OWNER creds + VIEW_TOKEN
+appId: com.lalarente.app
+---
+
+# PHASE 1 — Tenant requests viewing
+- runFlow: ../subflows/login-tenant.yaml
+
+# Use a known available property owned by test owner
+# 4A Dolphin: e5e888d1-e3ce-4c5c-a007-1ae58ddcaf94
+- openLink: lalarenteapp://(tenant)/viewings/request?propertyId=e5e888d1-e3ce-4c5c-a007-1ae58ddcaf94&propertyTitle=4A%20Dolphin&ownerId=e7f57cdd-78dd-41ab-9f4c-4333dd9776e6
+- extendedWaitUntil:
+    visible: "Request Viewing"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# The form may show either an empty form (new submission path) OR
+# "Viewing Request Pending" if a prior run left an active request.
+# For a mandatory new-token submission we must cancel-then-recreate.
+- runFlow:
+    when:
+      visible: ".*Viewing Request Pending.*"
+    commands:
+      - scrollUntilVisible:
+          element:
+            text: "Cancel Request"
+          direction: DOWN
+          timeout: 10000
+          visibilityPercentage: 50
+          optional: true
+      - tapOn:
+          text: "Cancel Request"
+      - extendedWaitUntil:
+          visible: ".*(cancel this|Are you sure).*"
+          timeout: 10000
+      - tapOn:
+          text: ".*(Yes, Cancel|Yes|Cancel Request).*"
+      - waitForAnimationToEnd:
+          timeout: 4000
+
+# Fresh form path — fill notes with token so we can identify this specific
+# submission on the owner side.
+- extendedWaitUntil:
+    visible:
+      id: "viewing-request-message"
+    timeout: 15000
+- tapOn:
+    id: "viewing-request-message"
+- inputText: "E2E-${VIEW_TOKEN}"
+- tapOn:
+    point: "50%,15%"
+
+- scrollUntilVisible:
+    element:
+      id: "viewing-request-submit"
+    direction: DOWN
+    timeout: 10000
+    visibilityPercentage: 50
+- tapOn:
+    id: "viewing-request-submit"
+- waitForAnimationToEnd:
+    timeout: 3000
+- extendedWaitUntil:
+    visible: ".*Request Sent.*"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- openLink: lalarenteapp://(tenant)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+# PHASE 2 — Owner sees viewing request
+- runFlow: ../subflows/login-owner.yaml
+
+- openLink: lalarenteapp://(owner)/viewings
+- extendedWaitUntil:
+    visible: "Viewing Requests"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: e2e-03b-owner-viewings-list
+
+# Owner must see the SPECIFIC viewing request by token (not just any
+# viewing). Catches RLS regressions on viewings SELECT distinctly from
+# empty-list false positives.
+- scrollUntilVisible:
+    element:
+      text: ".*E2E-${VIEW_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 30
+- assertVisible:
+    text: ".*E2E-${VIEW_TOKEN}.*"
+- takeScreenshot: e2e-03b-owner-sees-viewing
+
+- runFlow: ../subflows/sign-out-owner.yaml
