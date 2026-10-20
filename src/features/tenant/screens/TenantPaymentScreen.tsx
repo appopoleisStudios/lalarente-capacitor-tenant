@@ -144,7 +144,8 @@ export default function TenantPaymentScreen() {
         if (filter === 'pending') {
           query = query.eq('status', 'pending');
         } else if (filter === 'paid') {
-          query = query.eq('status', 'paid');
+          // DB uses 'completed' (not 'paid') for finalized payments
+          query = query.eq('status', 'completed');
         }
 
         const { data: paymentsData } = await query;
