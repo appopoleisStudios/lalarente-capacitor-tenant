@@ -1,0 +1,28 @@
+# E2E-09 — Arrears + cure plan surface (owner mark → tenant propose plan)
+# Non-destructive reachability for owner Arrears Management + tenant
+# My Arrears screens.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/arrears
+- extendedWaitUntil:
+    visible: "Arrears Management"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    text: "Arrears Management"
+- takeScreenshot: e2e-09a-owner-arrears
+- runFlow: ../subflows/sign-out-owner.yaml
+
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/arrears
+- extendedWaitUntil:
+    visible: "My Arrears"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    text: "My Arrears"
+- takeScreenshot: e2e-09b-tenant-arrears
+- runFlow: ../subflows/sign-out-tenant.yaml

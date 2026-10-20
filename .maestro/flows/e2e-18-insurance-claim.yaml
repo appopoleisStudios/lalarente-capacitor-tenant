@@ -1,0 +1,21 @@
+# E2E-18 — Insurance claim surface (owner-only)
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/insurance
+- extendedWaitUntil:
+    visible: "Insurance Claims"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    text: "Insurance Claims"
+- takeScreenshot: e2e-18a-owner-insurance-dashboard
+
+# Owner can navigate to new claim
+- openLink: lalarenteapp://(owner)/insurance/new
+- extendedWaitUntil:
+    visible: ".*(New.*Claim|Claim Details).*"
+    timeout: 15000
+- takeScreenshot: e2e-18b-owner-new-claim-screen
+- runFlow: ../subflows/sign-out-owner.yaml
