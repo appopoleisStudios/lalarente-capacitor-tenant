@@ -180,11 +180,20 @@ export default function TenantPaymentScreen() {
     if (!payingPayment) return;
     setPaySubmitting(true);
     try {
+      // UI label → DB enum. The payments.payment_method CHECK constraint
+      // only accepts short lowercase tokens (eft, card, cash, …), not the
+      // human label used in the chip selector.
+      const methodToEnum: Record<string, string> = {
+        'EFT / Internet Banking': 'eft',
+        'Cash Deposit': 'cash',
+        Card: 'card',
+      };
+      const dbMethod = methodToEnum[selectedMethod] ?? 'eft';
       const { error } = await supabase
         .from('payments')
         .update({
           status: 'processing',
-          payment_method: selectedMethod,
+          payment_method: dbMethod,
           transaction_id: referenceInput.trim() || null,
         })
         .eq('id', payingPayment.id);

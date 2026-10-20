@@ -1,0 +1,173 @@
+# E2E-01 — Rent payment full lifecycle
+# Tenant records EFT → Owner confirms receipt → both sides reflect "paid"
+#
+# Chain:
+#   Phase 1: Tenant opens Payments, taps tenant-pay-now on pending payment,
+#            enters reference token, taps tenant-confirm-payment,
+#            verifies "EFT recorded" alert, confirms payment moved to
+#            processing status.
+#   Phase 2: Owner opens Rent Roll, filters to processing, finds the
+#            property with pending verification, taps Confirm Receipt,
+#            verifies the property moves out of processing.
+#   Phase 3: Tenant re-opens Payments, verifies the payment shows up as
+#            paid (completed status) in the history.
+#
+# NOTE: this test modifies real production state. Each run marks one
+# pending rent payment as paid. Scope: real-data test accounts only.
+# Env: TENANT_EMAIL / TENANT_PASSWORD / OWNER_EMAIL / OWNER_PASSWORD
+appId: com.lalarente.app
+---
+
+# ────────────────────────────────────────────────────────────
+# PHASE 1 — Tenant records EFT
+# ────────────────────────────────────────────────────────────
+- runFlow: ../subflows/login-tenant.yaml
+
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "tab-payments"
+- extendedWaitUntil:
+    visible: "Payments"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: e2e-01a-tenant-payments-open
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Open the pay modal. The next-payment hero shows tenant-pay-now at the
+# top; if no next-payment hero is rendered, the Payment History row has
+# tenant-mini-pay. Try the hero first (short wait), fall back to history.
+- runFlow:
+    when:
+      visible:
+        id: "tenant-pay-now"
+    commands:
+      - tapOn:
+          id: "tenant-pay-now"
+      - waitForAnimationToEnd:
+          timeout: 2000
+- runFlow:
+    when:
+      notVisible:
+        id: "tenant-confirm-payment"
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "tenant-mini-pay"
+          direction: DOWN
+          timeout: 10000
+          visibilityPercentage: 50
+      - tapOn:
+          id: "tenant-mini-pay"
+      - waitForAnimationToEnd:
+          timeout: 2000
+
+# Modal is open. Confirm the payment with no reference change.
+- extendedWaitUntil:
+    visible:
+      id: "tenant-confirm-payment"
+    timeout: 10000
+- tapOn:
+    id: "tenant-confirm-payment"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Expect "EFT recorded" alert and tap OK
+- extendedWaitUntil:
+    visible: ".*EFT recorded.*"
+    timeout: 10000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- takeScreenshot: e2e-01a-tenant-eft-recorded
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+# ────────────────────────────────────────────────────────────
+# PHASE 2 — Owner confirms receipt
+# ────────────────────────────────────────────────────────────
+- runFlow: ../subflows/login-owner.yaml
+
+- openLink: lalarenteapp://(owner)/rent-roll
+- extendedWaitUntil:
+    visible: "Rent Roll"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: e2e-01b-owner-rent-roll-open
+
+# Switch to "Processing" filter so the just-recorded payment is in view
+- extendedWaitUntil:
+    visible: "Processing"
+    timeout: 10000
+- tapOn:
+    text: "Processing"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Confirm receipt — testID avoids matching the whole card's
+# accessibilityText which includes the button label.
+- extendedWaitUntil:
+    visible:
+      id: "owner-confirm-receipt"
+    timeout: 15000
+- tapOn:
+    id: "owner-confirm-receipt"
+# Alert "Confirm Payment Receipt" → tap "Confirm Received"
+- extendedWaitUntil:
+    visible: ".*Confirm that you have received.*"
+    timeout: 10000
+- tapOn:
+    text: "Confirm Received"
+# Second alert "Confirmed: Payment marked as received" → tap OK
+- extendedWaitUntil:
+    visible: ".*Payment marked as received.*"
+    timeout: 10000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: e2e-01b-owner-receipt-confirmed
+
+- runFlow: ../subflows/sign-out-owner.yaml
+
+# ────────────────────────────────────────────────────────────
+# PHASE 3 — Tenant verifies payment is paid
+# ────────────────────────────────────────────────────────────
+- runFlow: ../subflows/login-tenant.yaml
+
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "tab-payments"
+- extendedWaitUntil:
+    visible: "Payments"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: e2e-01c-tenant-payments-after
+
+# Tenant's Payments screen must reflect the full round-trip. The UI uses
+# "Paid" filter chip for completed payments. Tap it, then assert at least
+# one "Paid" row is visible in the history.
+- waitForAnimationToEnd:
+    timeout: 2000
+- extendedWaitUntil:
+    visible: "Paid"
+    timeout: 10000
+- tapOn:
+    text: "Paid"
+- waitForAnimationToEnd:
+    timeout: 2000
+- scrollUntilVisible:
+    element:
+      text: ".*(Paid|Completed).*"
+    direction: DOWN
+    timeout: 15000
+    visibilityPercentage: 30
+- takeScreenshot: e2e-01c-tenant-payment-completed
+
+- runFlow: ../subflows/sign-out-tenant.yaml

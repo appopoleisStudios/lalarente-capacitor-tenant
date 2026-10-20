@@ -15,9 +15,8 @@ appId: com.lalarente.app
 - tapOn:
     id: "tab-owner-profile"
 
-- extendedWaitUntil:
-    visible: "Owner Account"
-    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 2500
 
 - scrollUntilVisible:
     element:

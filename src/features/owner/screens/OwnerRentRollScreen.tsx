@@ -297,6 +297,7 @@ export default function OwnerRentRollScreen() {
 
       {item.payment_status === 'processing' && (
         <TouchableOpacity
+          testID="owner-confirm-receipt"
           style={styles.confirmButton}
           onPress={(e) => {
             e.stopPropagation();
