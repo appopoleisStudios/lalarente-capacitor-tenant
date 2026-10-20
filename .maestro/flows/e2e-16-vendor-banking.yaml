@@ -1,0 +1,24 @@
+# E2E-16 — Vendor banking preferences surface
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-vendor.yaml
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "tab-vendor-earnings"
+- extendedWaitUntil:
+    visible:
+      id: "vendor-earnings-title"
+    timeout: 20000
+- assertVisible:
+    id: "vendor-earnings-schedule"
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "vendor-earnings-banking-button"
+- extendedWaitUntil:
+    visible:
+      id: "vendor-banking-title"
+    timeout: 15000
+- takeScreenshot: e2e-16-vendor-banking
+- runFlow: ../subflows/sign-out-vendor.yaml

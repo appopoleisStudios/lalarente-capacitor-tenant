@@ -1,0 +1,98 @@
+# E2E-27 — Deep-link resolution audit (owner routes)
+# Owner-side: every top-level deep link must resolve to a loaded screen.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+
+- openLink: lalarenteapp://(owner)/
+- extendedWaitUntil:
+    visible: "Portfolio Dashboard"
+    timeout: 20000
+
+- openLink: lalarenteapp://(owner)/notifications
+- extendedWaitUntil:
+    visible: "Notifications"
+    timeout: 10000
+
+- openLink: lalarenteapp://(owner)/rent-roll
+- extendedWaitUntil:
+    visible: "Rent Roll"
+    timeout: 10000
+
+- openLink: lalarenteapp://(owner)/statements
+- extendedWaitUntil:
+    visible: "Monthly Statement"
+    timeout: 10000
+
+- openLink: lalarenteapp://(owner)/tax-reports
+- extendedWaitUntil:
+    visible: "Tax Reports"
+    timeout: 10000
+
+- openLink: lalarenteapp://(owner)/compliance
+- extendedWaitUntil:
+    visible: "Compliance"
+    timeout: 10000
+
+- openLink: lalarenteapp://(owner)/deposits
+- extendedWaitUntil:
+    visible: "Deposit Management"
+    timeout: 10000
+
+- openLink: lalarenteapp://(owner)/insurance
+- extendedWaitUntil:
+    visible: "Insurance Claims"
+    timeout: 10000
+
+- openLink: lalarenteapp://(owner)/arrears
+- extendedWaitUntil:
+    visible: "Arrears Management"
+    timeout: 10000
+
+- openLink: lalarenteapp://(owner)/renewals
+- extendedWaitUntil:
+    visible: "Lease Renewals"
+    timeout: 10000
+
+- openLink: lalarenteapp://(owner)/viewings
+- extendedWaitUntil:
+    visible: "Viewing Requests"
+    timeout: 10000
+
+- openLink: lalarenteapp://(owner)/applications
+- extendedWaitUntil:
+    visible: "Applications"
+    timeout: 10000
+
+- openLink: lalarenteapp://(owner)/invoices
+- extendedWaitUntil:
+    visible: "Invoices"
+    timeout: 10000
+
+- openLink: lalarenteapp://(owner)/payment-disputes
+- extendedWaitUntil:
+    visible: "Payment Disputes"
+    timeout: 10000
+
+- openLink: lalarenteapp://(owner)/early-termination
+- extendedWaitUntil:
+    visible: "Early Terminations"
+    timeout: 10000
+
+- openLink: lalarenteapp://(owner)/holding-deposit
+- extendedWaitUntil:
+    visible: "Holding Deposits"
+    timeout: 10000
+
+- openLink: lalarenteapp://(owner)/inspections
+- extendedWaitUntil:
+    visible: "Inspections"
+    timeout: 10000
+
+- openLink: lalarenteapp://(owner)/add-property
+- extendedWaitUntil:
+    visible: "Add Property"
+    timeout: 10000
+
+- takeScreenshot: e2e-27-owner-deeplinks-all-resolved
+- runFlow: ../subflows/sign-out-owner.yaml

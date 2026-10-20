@@ -1,0 +1,26 @@
+# E2E-12 — Move-in inspection surface
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/inspections
+- extendedWaitUntil:
+    visible: "Inspections"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    text: "Inspections"
+- takeScreenshot: e2e-12a-owner-inspections
+- runFlow: ../subflows/sign-out-owner.yaml
+
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/reports
+- extendedWaitUntil:
+    visible: "Reports"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    text: "Reports"
+- takeScreenshot: e2e-12b-tenant-reports
+- runFlow: ../subflows/sign-out-tenant.yaml

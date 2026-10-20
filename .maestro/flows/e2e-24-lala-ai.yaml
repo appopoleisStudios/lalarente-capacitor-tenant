@@ -1,0 +1,39 @@
+# E2E-24 — Lala AI tool call surface (chip tap → response bubble)
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-tenant.yaml
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "tab-lala-ai"
+- extendedWaitUntil:
+    visible: "Lala Assistant"
+    timeout: 20000
+- extendedWaitUntil:
+    notVisible: "Lala is typing..."
+    timeout: 60000
+- runFlow:
+    when:
+      visible:
+        id: "lala-new-chat"
+    commands:
+      - tapOn:
+          id: "lala-new-chat"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- assertNotVisible:
+    id: "lala-ai-message"
+- extendedWaitUntil:
+    visible:
+      id: "lala-chip-0"
+    timeout: 15000
+- tapOn:
+    id: "lala-chip-0"
+- extendedWaitUntil:
+    visible:
+      id: "lala-ai-message"
+    timeout: 60000
+- assertNotVisible:
+    id: "lala-error-row"
+- takeScreenshot: e2e-24-lala-tenant
+- runFlow: ../subflows/sign-out-tenant.yaml

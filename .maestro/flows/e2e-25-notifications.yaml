@@ -1,0 +1,26 @@
+# E2E-25 — Notifications screen reachability (owner + tenant)
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/notifications
+- extendedWaitUntil:
+    visible: "Notifications"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    text: "Notifications"
+- takeScreenshot: e2e-25a-owner-notifs
+- runFlow: ../subflows/sign-out-owner.yaml
+
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/notifications
+- extendedWaitUntil:
+    visible: "Notifications"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    text: "Notifications"
+- takeScreenshot: e2e-25b-tenant-notifs
+- runFlow: ../subflows/sign-out-tenant.yaml

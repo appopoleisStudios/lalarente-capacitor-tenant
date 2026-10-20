@@ -1,0 +1,26 @@
+# E2E-19 — POPIA consent + DSAR surface
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/privacy
+- extendedWaitUntil:
+    visible: ".*(Privacy|Consent|POPIA).*"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: e2e-19a-tenant-privacy
+
+- openLink: lalarenteapp://(tenant)/privacy/data-rights
+- extendedWaitUntil:
+    visible: ".*(Data Rights|DSAR|Access Request).*"
+    timeout: 15000
+- takeScreenshot: e2e-19b-tenant-dsar
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/privacy
+- extendedWaitUntil:
+    visible: ".*(Privacy|Consent|POPIA).*"
+    timeout: 20000
+- takeScreenshot: e2e-19c-owner-privacy
+- runFlow: ../subflows/sign-out-owner.yaml

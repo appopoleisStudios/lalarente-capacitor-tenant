@@ -1,0 +1,16 @@
+# E2E-02b — Direct tenant→vendor maintenance surface
+# Tenant navigates to vendor-marketplace (direct-pick path per docs/VENDOR_PAYMENT_ARCHITECTURE.md).
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-tenant.yaml
+
+- openLink: lalarenteapp://(tenant)/maintenance/vendor-marketplace
+- extendedWaitUntil:
+    visible: "Find a Vendor"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    text: "Find a Vendor"
+- takeScreenshot: e2e-02b-tenant-vendor-marketplace
+- runFlow: ../subflows/sign-out-tenant.yaml

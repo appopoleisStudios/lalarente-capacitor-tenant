@@ -1,0 +1,34 @@
+# E2E-04 — Application lifecycle surface
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/application-status
+- extendedWaitUntil:
+    visible: "My Applications"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    text: "My Applications"
+- takeScreenshot: e2e-04a-tenant-apps
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/applications
+- extendedWaitUntil:
+    visible: "Applications"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    text: "Applications"
+- takeScreenshot: e2e-04b-owner-apps
+
+- openLink: lalarenteapp://(owner)/holding-deposit
+- extendedWaitUntil:
+    visible: "Holding Deposits"
+    timeout: 15000
+- assertVisible:
+    text: "Holding Deposits"
+- takeScreenshot: e2e-04c-owner-holding-deposits
+- runFlow: ../subflows/sign-out-owner.yaml

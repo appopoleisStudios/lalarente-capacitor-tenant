@@ -1,0 +1,37 @@
+# E2E-21 — Property listing + discovery surface
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "tab-owner-properties"
+- extendedWaitUntil:
+    visible: "My Properties"
+    timeout: 20000
+- assertVisible:
+    text: "My Properties"
+- takeScreenshot: e2e-21a-owner-properties
+
+- openLink: lalarenteapp://(owner)/add-property
+- extendedWaitUntil:
+    visible: "Add Property"
+    timeout: 15000
+- assertVisible:
+    text: "Add Property"
+- takeScreenshot: e2e-21b-owner-add-property
+- runFlow: ../subflows/sign-out-owner.yaml
+
+- runFlow: ../subflows/login-tenant.yaml
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "tab-search"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-search-results"
+    timeout: 30000
+- assertVisible:
+    id: "tenant-search-results"
+- takeScreenshot: e2e-21c-tenant-search
+- runFlow: ../subflows/sign-out-tenant.yaml

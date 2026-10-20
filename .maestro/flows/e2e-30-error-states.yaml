@@ -1,0 +1,19 @@
+# E2E-30 — Error state surface
+# Non-existent deep-link path triggers "This screen doesn't exist" fallback.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+# Non-existent route: openLink should NOT crash the app; verify we're
+# still in a navigable state (tab bar still works).
+- openLink: lalarenteapp://(owner)/this-route-does-not-exist-404
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: e2e-30a-404-screen
+
+# App must still be responsive — tap-back-to-tabs via openLink should work
+- openLink: lalarenteapp://(owner)/
+- extendedWaitUntil:
+    visible: "Portfolio Dashboard"
+    timeout: 20000
+- takeScreenshot: e2e-30b-recovered
+- runFlow: ../subflows/sign-out-owner.yaml

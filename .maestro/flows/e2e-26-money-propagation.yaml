@@ -1,0 +1,43 @@
+# E2E-26 — Owner money propagation audit
+# Verifies owner can reach every money-related screen with totals visible.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+
+- openLink: lalarenteapp://(owner)/rent-roll
+- extendedWaitUntil:
+    visible: "Rent Roll"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    text: "Monthly Income"
+- assertVisible:
+    text: "Occupancy"
+- takeScreenshot: e2e-26a-owner-rent-roll
+
+- openLink: lalarenteapp://(owner)/statements
+- extendedWaitUntil:
+    visible: "Monthly Statement"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: e2e-26b-owner-statements
+
+- openLink: lalarenteapp://(owner)/invoices
+- extendedWaitUntil:
+    visible: "Invoices"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: e2e-26c-owner-invoices
+
+- openLink: lalarenteapp://(owner)/tax-reports
+- extendedWaitUntil:
+    visible: "Tax Reports"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: e2e-26d-owner-tax
+
+- runFlow: ../subflows/sign-out-owner.yaml

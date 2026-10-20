@@ -1,0 +1,137 @@
+# Static screen walk — vendor. Continues on a missing route (optional assert).
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-vendor.yaml
+
+- openLink: lalarenteapp://(vendor)
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: vendor__vendor
+
+- openLink: lalarenteapp://(vendor)/ai-chat
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: vendor__vendor_ai-chat
+
+- openLink: lalarenteapp://(vendor)/contracts
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: vendor__vendor_contracts
+
+- openLink: lalarenteapp://(vendor)/dashboard
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: vendor__vendor_dashboard
+
+- openLink: lalarenteapp://(vendor)/earnings
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: vendor__vendor_earnings
+
+- openLink: lalarenteapp://(vendor)/earnings/banking
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: vendor__vendor_earnings_banking
+
+- openLink: lalarenteapp://(vendor)/invoices
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: vendor__vendor_invoices
+
+- openLink: lalarenteapp://(vendor)/jobs
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: vendor__vendor_jobs
+
+- openLink: lalarenteapp://(vendor)/jobs/mediation
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: vendor__vendor_jobs_mediation
+
+- openLink: lalarenteapp://(vendor)/maintenance
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: vendor__vendor_maintenance
+
+- openLink: lalarenteapp://(vendor)/messages
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: vendor__vendor_messages
+
+- openLink: lalarenteapp://(vendor)/messages/new
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: vendor__vendor_messages_new
+
+- openLink: lalarenteapp://(vendor)/notifications
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: vendor__vendor_notifications
+
+- openLink: lalarenteapp://(vendor)/privacy
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: vendor__vendor_privacy
+
+- openLink: lalarenteapp://(vendor)/privacy/data-rights
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: vendor__vendor_privacy_data-rights
+
+- openLink: lalarenteapp://(vendor)/profile
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: vendor__vendor_profile
+
+- openLink: lalarenteapp://(vendor)/profile/documents
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: vendor__vendor_profile_documents
+
+- openLink: lalarenteapp://(vendor)/profile/edit
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: vendor__vendor_profile_edit
+
+- openLink: lalarenteapp://(vendor)/profile/services
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: vendor__vendor_profile_services

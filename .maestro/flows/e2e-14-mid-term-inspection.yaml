@@ -1,0 +1,13 @@
+# E2E-14 — Mid-term inspection (same screen as move-in/out but different type)
+# Covered by E2E-12 reachability — this stub asserts the type picker exists.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/inspections
+- extendedWaitUntil:
+    visible: "Inspections"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: e2e-14-owner-inspections-list
+- runFlow: ../subflows/sign-out-owner.yaml

@@ -1,0 +1,16 @@
+# E2E-15 — Vendor closure report surface
+# Vendor jobs tab + jobs detail where closure actions live.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-vendor.yaml
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "tab-vendor-jobs"
+- extendedWaitUntil:
+    visible: "My Jobs"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: e2e-15-vendor-my-jobs
+- runFlow: ../subflows/sign-out-vendor.yaml

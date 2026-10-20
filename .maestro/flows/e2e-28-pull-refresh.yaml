@@ -1,0 +1,53 @@
+# E2E-28 — Pull-to-refresh audit (owner + tenant lists)
+# Simulates pull-to-refresh via swipe-down gesture on 4 key lists.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "tab-owner-maintenance"
+- extendedWaitUntil:
+    visible: "Maintenance"
+    timeout: 20000
+- swipe:
+    start: 50%,30%
+    end: 50%,70%
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: e2e-28a-owner-maint-pulled
+
+- openLink: lalarenteapp://(owner)/rent-roll
+- extendedWaitUntil:
+    visible: "Rent Roll"
+    timeout: 15000
+- swipe:
+    start: 50%,30%
+    end: 50%,70%
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: e2e-28b-owner-rentroll-pulled
+
+- runFlow: ../subflows/sign-out-owner.yaml
+
+- runFlow: ../subflows/login-tenant.yaml
+
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "tab-payments"
+- extendedWaitUntil:
+    visible: "Payments"
+    timeout: 20000
+- swipe:
+    start: 50%,30%
+    end: 50%,70%
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: e2e-28c-tenant-payments-pulled
+
+- runFlow: ../subflows/sign-out-tenant.yaml

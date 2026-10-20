@@ -1,0 +1,39 @@
+# Continue the live look. Session is already signed in. Do not clear keychain.
+appId: com.lalarente.app
+---
+- tapOn:
+    id: "tab-search"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-search-input"
+    timeout: 20000
+    optional: true
+- takeScreenshot: live-tenant-search
+
+- tapOn:
+    id: "tab-payments"
+- extendedWaitUntil:
+    visible: "Payments"
+    timeout: 20000
+    optional: true
+- takeScreenshot: live-tenant-payments
+
+- tapOn:
+    id: "tab-profile"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-profile-title"
+    timeout: 20000
+    optional: true
+- takeScreenshot: live-tenant-profile
+
+- tapOn:
+    id: "tab-lala-ai"
+- extendedWaitUntil:
+    visible: "Lala"
+    timeout: 20000
+    optional: true
+- takeScreenshot: live-tenant-lala
+
+- tapOn:
+    id: "tab-home"

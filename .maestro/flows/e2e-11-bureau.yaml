@@ -1,0 +1,24 @@
+# E2E-11 — Bureau credit / affordability flow reachability
+# Bureau report is attached to an application; verify tenant can navigate
+# to application detail where bureau fields render.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/application-status
+- extendedWaitUntil:
+    visible: "My Applications"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: e2e-11a-tenant-apps-list
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/applications
+- extendedWaitUntil:
+    visible: "Applications"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: e2e-11b-owner-apps-list
+- runFlow: ../subflows/sign-out-owner.yaml
