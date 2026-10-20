@@ -17,8 +17,42 @@ appId: com.lalarente.app
 - waitForAnimationToEnd:
     timeout: 2000
 
-# Form has date picker, time picker, notes field. For a MVP smoke, just
-# submit with defaults — form must at least enable submit.
+# The form may show either an empty form (new submission path) OR
+# "Viewing Request Pending" if a prior run left an active request.
+# For a mandatory new-token submission we must cancel-then-recreate.
+- runFlow:
+    when:
+      visible: ".*Viewing Request Pending.*"
+    commands:
+      - scrollUntilVisible:
+          element:
+            text: "Cancel Request"
+          direction: DOWN
+          timeout: 10000
+          visibilityPercentage: 50
+          optional: true
+      - tapOn:
+          text: "Cancel Request"
+      - extendedWaitUntil:
+          visible: ".*(cancel this|Are you sure).*"
+          timeout: 10000
+      - tapOn:
+          text: ".*(Yes, Cancel|Yes|Cancel Request).*"
+      - waitForAnimationToEnd:
+          timeout: 4000
+
+# Fresh form path — fill notes with token so we can identify this specific
+# submission on the owner side.
+- extendedWaitUntil:
+    visible:
+      id: "viewing-request-message"
+    timeout: 15000
+- tapOn:
+    id: "viewing-request-message"
+- inputText: "E2E-${VIEW_TOKEN}"
+- tapOn:
+    point: "50%,15%"
+
 - scrollUntilVisible:
     element:
       id: "viewing-request-submit"
@@ -29,11 +63,6 @@ appId: com.lalarente.app
     id: "viewing-request-submit"
 - waitForAnimationToEnd:
     timeout: 3000
-- takeScreenshot: e2e-03a-tenant-submit
-
-# Mandatory success alert "Request Sent — Your viewing request has been
-# sent to the property owner." → tap OK. If it never fires, submission
-# failed silently (RLS or validation).
 - extendedWaitUntil:
     visible: ".*Request Sent.*"
     timeout: 15000
@@ -58,9 +87,17 @@ appId: com.lalarente.app
     timeout: 2000
 - takeScreenshot: e2e-03b-owner-viewings-list
 
-# Owner must see at least one viewing entry (there are historical ones in UAT)
+# Owner must see the SPECIFIC viewing request by token (not just any
+# viewing). Catches RLS regressions on viewings SELECT distinctly from
+# empty-list false positives.
+- scrollUntilVisible:
+    element:
+      text: ".*E2E-${VIEW_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 30
 - assertVisible:
-    text: ".*(Viewing|4A Dolphin|Pending|Approved|Expired).*"
+    text: ".*E2E-${VIEW_TOKEN}.*"
 - takeScreenshot: e2e-03b-owner-sees-viewing
 
 - runFlow: ../subflows/sign-out-owner.yaml

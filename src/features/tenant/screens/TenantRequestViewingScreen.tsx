@@ -363,6 +363,7 @@ export default function TenantRequestViewingScreen() {
               <View style={styles.section}>
                 <Text style={styles.label}>Message (Optional)</Text>
                 <TextInput
+                  testID="viewing-request-message"
                   style={styles.textArea}
                   value={message}
                   onChangeText={setMessage}
