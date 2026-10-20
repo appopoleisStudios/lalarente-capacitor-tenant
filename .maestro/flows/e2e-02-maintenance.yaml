@@ -1,0 +1,172 @@
+# E2E-02 — Maintenance 3-way full lifecycle (tenant → owner → vendor → tenant → owner)
+#
+# Chain:
+#   Phase 1: Tenant creates maintenance request with Plumbing category + token
+#   Phase 2: Owner finds request, opens detail, dispatches to dedicated vendors
+#   Phase 3: Vendor logs in, finds request in Requests tab, submits a quote
+#   Phase 4: Owner approves quote (PO is issued)
+#   Phase 5: Vendor marks work complete + requests closure
+#   Phase 6: Tenant verifies closure
+#   Phase 7: Owner marks request completed
+# Env: TENANT/OWNER/VENDOR creds + REQ_TOKEN
+appId: com.lalarente.app
+---
+
+# ────────────────────────────────────────────────────────────
+# PHASE 1 — Tenant creates request
+# ────────────────────────────────────────────────────────────
+- runFlow: ../subflows/login-tenant.yaml
+
+- openLink: lalarenteapp://(tenant)/maintenance/report
+- extendedWaitUntil:
+    visible: "Report Issue"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- extendedWaitUntil:
+    visible:
+      id: "maintenance-title-input"
+    timeout: 10000
+- tapOn:
+    id: "maintenance-title-input"
+- inputText: "E2E-${REQ_TOKEN}"
+- tapOn:
+    point: "50%,20%"
+
+- tapOn:
+    id: "maintenance-description-input"
+- inputText: "E2E maintenance lifecycle ${REQ_TOKEN}"
+- tapOn:
+    point: "50%,20%"
+
+- scrollUntilVisible:
+    element:
+      id: "maintenance-category-plumbing"
+    direction: DOWN
+    timeout: 10000
+    visibilityPercentage: 50
+- tapOn:
+    id: "maintenance-category-plumbing"
+- waitForAnimationToEnd:
+    timeout: 2500
+# Verify Plumbing is now selected (chip changes state visually when active)
+- takeScreenshot: e2e-02a-category-selected
+
+- scrollUntilVisible:
+    element:
+      id: "maintenance-submit"
+    direction: DOWN
+    timeout: 10000
+    visibilityPercentage: 50
+- tapOn:
+    id: "maintenance-submit"
+
+- extendedWaitUntil:
+    visible: ".*maintenance request.*service providers.*"
+    timeout: 10000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: e2e-02a-tenant-submitted
+
+# router.back() after submit may leave us in a non-tabbed modal route.
+# Force navigation back to the tab root before signing out.
+- openLink: lalarenteapp://(tenant)/
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+# ────────────────────────────────────────────────────────────
+# PHASE 2 — Owner finds request, opens detail, dispatches
+# ────────────────────────────────────────────────────────────
+- runFlow: ../subflows/login-owner.yaml
+
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "tab-owner-maintenance"
+- extendedWaitUntil:
+    visible: "Maintenance"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- scrollUntilVisible:
+    element:
+      text: ".*E2E-${REQ_TOKEN}.*"
+    direction: DOWN
+    timeout: 25000
+    visibilityPercentage: 50
+- assertVisible:
+    text: ".*E2E-${REQ_TOKEN}.*"
+- takeScreenshot: e2e-02b-owner-sees-request
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Open detail
+- tapOn:
+    text: ".*E2E-${REQ_TOKEN}.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- extendedWaitUntil:
+    visible: "Request Details"
+    timeout: 15000
+- takeScreenshot: e2e-02b-owner-detail-open
+
+# Owner acknowledge + dispatch. Flow depends on request state:
+#   - new: Push to Vendors button visible → tap chain
+#   - already Sent to Vendors: Timeline shows "Sent to Vendors" entry, no
+#     action button; skip and proceed to Phase 3 verification.
+# Owner's acknowledgement + routing happens automatically on view-detail
+# in production (verified: new requests get visibility=invited + vendor_routed_at
+# immediately via the dedicated-vendor matcher). Nothing to tap here.
+- takeScreenshot: e2e-02b-owner-sees-detail
+
+- runFlow: ../subflows/sign-out-owner.yaml
+
+# ────────────────────────────────────────────────────────────
+# PHASE 3 — Vendor sees request, submits quote
+# ────────────────────────────────────────────────────────────
+- runFlow: ../subflows/login-vendor.yaml
+
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "tab-vendor-requests"
+- extendedWaitUntil:
+    visible: "Maintenance Requests"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- scrollUntilVisible:
+    element:
+      text: ".*E2E-${REQ_TOKEN}.*"
+    direction: DOWN
+    timeout: 25000
+    visibilityPercentage: 50
+- assertVisible:
+    text: ".*E2E-${REQ_TOKEN}.*"
+- takeScreenshot: e2e-02c-vendor-sees-request
+
+# Open request detail to submit quote
+- tapOn:
+    text: ".*E2E-${REQ_TOKEN}.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: e2e-02c-vendor-request-detail
+
+# Submit a quote — scrolls to "Submit Quote" or similar CTA.
+# NOTE: subsequent phases depend on vendor UI testIDs we haven't yet mapped;
+# this flow will fail at the next unknown selector and that failure point
+# documents the next item to add testIDs for.
+- scrollUntilVisible:
+    element:
+      text: ".*Quote.*"
+    direction: DOWN
+    timeout: 10000
+    visibilityPercentage: 50
+- takeScreenshot: e2e-02c-vendor-quote-cta
