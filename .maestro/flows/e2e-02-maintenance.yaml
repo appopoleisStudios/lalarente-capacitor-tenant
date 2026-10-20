@@ -152,21 +152,112 @@ appId: com.lalarente.app
     text: ".*E2E-${REQ_TOKEN}.*"
 - takeScreenshot: e2e-02c-vendor-sees-request
 
-# Open request detail to submit quote
+# Open request detail
 - tapOn:
     text: ".*E2E-${REQ_TOKEN}.*"
 - waitForAnimationToEnd:
     timeout: 3000
 - takeScreenshot: e2e-02c-vendor-request-detail
 
-# Submit a quote — scrolls to "Submit Quote" or similar CTA.
-# NOTE: subsequent phases depend on vendor UI testIDs we haven't yet mapped;
-# this flow will fail at the next unknown selector and that failure point
-# documents the next item to add testIDs for.
+# Vendor action: tap the Quote CTA to open the submit screen. Button text
+# varies by state ("Submit Quote" / "New Quote" / "Quote Request"); use
+# scroll + first-match tap on any of them.
 - scrollUntilVisible:
     element:
-      text: ".*Quote.*"
+      text: ".*(Submit Quote|New Quote|Quote Request).*"
     direction: DOWN
     timeout: 10000
     visibilityPercentage: 50
-- takeScreenshot: e2e-02c-vendor-quote-cta
+- tapOn:
+    text: ".*(Submit Quote|New Quote|Quote Request).*"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Vendor submit screen uses stable testIDs: quote-item-name, quote-quantity,
+# quote-unit-price, quote-submit
+- extendedWaitUntil:
+    visible:
+      id: "quote-item-name"
+    timeout: 15000
+- tapOn:
+    id: "quote-item-name"
+- inputText: "Unblock drain ${REQ_TOKEN}"
+- tapOn:
+    point: "50%,15%"
+
+- tapOn:
+    id: "quote-quantity"
+- inputText: "1"
+- tapOn:
+    point: "50%,15%"
+
+- tapOn:
+    id: "quote-unit-price"
+- inputText: "500"
+- tapOn:
+    point: "50%,15%"
+
+- scrollUntilVisible:
+    element:
+      id: "quote-submit"
+    direction: DOWN
+    timeout: 10000
+    visibilityPercentage: 50
+- tapOn:
+    id: "quote-submit"
+- waitForAnimationToEnd:
+    timeout: 4000
+
+# Confirm quote submitted — dismiss any success alert
+- runFlow:
+    when:
+      visible: ".*(Success|submitted|Quote sent).*"
+    commands:
+      - tapOn:
+          text: "OK"
+      - waitForAnimationToEnd:
+          timeout: 2000
+- takeScreenshot: e2e-02c-vendor-quote-submitted
+
+- openLink: lalarenteapp://(vendor)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-vendor.yaml
+
+# PHASE 4 — Owner sees the quote
+- runFlow: ../subflows/login-owner.yaml
+
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "tab-owner-maintenance"
+- extendedWaitUntil:
+    visible: "Maintenance"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- scrollUntilVisible:
+    element:
+      text: ".*E2E-${REQ_TOKEN}.*"
+    direction: DOWN
+    timeout: 15000
+    visibilityPercentage: 50
+- tapOn:
+    text: ".*E2E-${REQ_TOKEN}.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Owner must see at least one quote now (vendor just submitted)
+- scrollUntilVisible:
+    element:
+      text: ".*(Quote|Quotes Received|Pending Review).*"
+    direction: DOWN
+    timeout: 15000
+    visibilityPercentage: 30
+- takeScreenshot: e2e-02d-owner-sees-quote
+
+- openLink: lalarenteapp://(owner)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-owner.yaml
