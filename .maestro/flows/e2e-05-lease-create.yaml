@@ -1,0 +1,18 @@
+# E2E-05 — Lease creation screen reachability (owner-side)
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/leases/create
+- waitForAnimationToEnd:
+    timeout: 3000
+# Create Lease screen requires an applicationId URL param. Without it,
+# shows "Application not found" error state (production fix: don't hang
+# on spinner forever).
+- extendedWaitUntil:
+    visible: ".*(Create Lease|Application not found).*"
+    timeout: 20000
+- takeScreenshot: e2e-05-owner-lease-create
+- openLink: lalarenteapp://(owner)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-owner.yaml

@@ -1,0 +1,65 @@
+# E2E-02b — Owner views maintenance request, sees vendor quote, accepts.
+# Short, single-actor. Expects a submitted quote on E2E-${REQ_TOKEN}.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "tab-owner-maintenance"
+- extendedWaitUntil:
+    visible: "Maintenance"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+
+- scrollUntilVisible:
+    element:
+      text: ".*E2E-${REQ_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 50
+- tapOn:
+    text: ".*E2E-${REQ_TOKEN}.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- extendedWaitUntil:
+    visible: "Request Details"
+    timeout: 12000
+
+# Verify owner sees the vendor quote card (parity check — RLS allows read)
+- scrollUntilVisible:
+    element:
+      text: ".*E2E Test Vendor.*"
+    direction: DOWN
+    timeout: 15000
+    visibilityPercentage: 30
+- takeScreenshot: e2e-02b-owner-sees-quote
+
+# Accept the quote
+- scrollUntilVisible:
+    element:
+      id: "quote-accept"
+    direction: DOWN
+    timeout: 10000
+    visibilityPercentage: 50
+- tapOn:
+    id: "quote-accept"
+- waitForAnimationToEnd:
+    timeout: 2500
+
+# Native Alert: "Accept Quote" → "Accept & Generate PO"
+- extendedWaitUntil:
+    visible: ".*Accept & Generate PO.*"
+    timeout: 8000
+- tapOn:
+    text: ".*Accept & Generate PO.*"
+- waitForAnimationToEnd:
+    timeout: 6000
+
+# Owner is navigated to the PO detail screen after accept
+- extendedWaitUntil:
+    visible: ".*(Purchase Order|PO|Vendor).*"
+    timeout: 15000

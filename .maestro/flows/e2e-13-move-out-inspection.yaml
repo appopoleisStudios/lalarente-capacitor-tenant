@@ -1,0 +1,16 @@
+# E2E-13 — Move-out inspection surface (owner conducts, both sign)
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/inspections
+- extendedWaitUntil:
+    visible: "Inspections"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- openLink: lalarenteapp://(owner)/inspections/new
+- extendedWaitUntil:
+    visible: ".*(Schedule|New Inspection).*"
+    timeout: 15000
+- takeScreenshot: e2e-13-owner-schedule-inspection
+- runFlow: ../subflows/sign-out-owner.yaml

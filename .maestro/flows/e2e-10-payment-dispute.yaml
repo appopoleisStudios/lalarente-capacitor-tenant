@@ -1,0 +1,27 @@
+# E2E-10 — Payment dispute surface
+# Non-destructive reachability for tenant Payment Disputes + owner
+# Payment Disputes screens.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/payment-disputes
+- extendedWaitUntil:
+    visible:
+      id: "payment-disputes-title"
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: e2e-10a-tenant-disputes
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/payment-disputes
+- extendedWaitUntil:
+    visible: "Payment Disputes"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    text: "Payment Disputes"
+- takeScreenshot: e2e-10b-owner-disputes
+- runFlow: ../subflows/sign-out-owner.yaml

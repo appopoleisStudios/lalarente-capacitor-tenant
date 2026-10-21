@@ -53,8 +53,9 @@ appId: com.lalarente.app
     id: "maintenance-category-plumbing"
 - waitForAnimationToEnd:
     timeout: 2500
-# Verify Plumbing is now selected (chip changes state visually when active)
 - takeScreenshot: e2e-02a-category-selected
+- waitForAnimationToEnd:
+    timeout: 2000
 
 - scrollUntilVisible:
     element:
@@ -162,26 +163,41 @@ appId: com.lalarente.app
     timeout: 3000
 - takeScreenshot: e2e-02c-vendor-request-detail
 
-# Vendor action: tap the Quote CTA to open the submit screen. Button text
-# varies by state ("Submit Quote" / "New Quote" / "Quote Request"); use
-# scroll + first-match tap on any of them.
-- scrollUntilVisible:
-    element:
-      text: ".*(Submit Quote|New Quote|Quote Request).*"
-    direction: DOWN
+# Vendor taps Submit Quote → navigates directly to quote form.
+- extendedWaitUntil:
+    visible:
+      id: "vendor-submit-quote"
     timeout: 10000
-    visibilityPercentage: 50
 - tapOn:
-    text: ".*(Submit Quote|New Quote|Quote Request).*"
+    id: "vendor-submit-quote"
 - waitForAnimationToEnd:
-    timeout: 3000
+    timeout: 4000
 
-# Vendor submit screen uses stable testIDs: quote-item-name, quote-quantity,
-# quote-unit-price, quote-submit
+# Dismiss any auto-restored draft banner to start from a clean form
 - extendedWaitUntil:
     visible:
       id: "quote-item-name"
     timeout: 15000
+- runFlow:
+    when:
+      visible:
+        id: "quote-draft-restored-banner"
+    commands:
+      - tapOn:
+          id: "quote-draft-discard"
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - runFlow:
+          when:
+            visible: ".*(Discard|Confirm|Yes).*"
+          commands:
+            - tapOn:
+                text: ".*(Discard|Yes|OK).*"
+            - waitForAnimationToEnd:
+                timeout: 1500
+
+# Vendor submit screen uses stable testIDs: quote-item-name, quote-quantity,
+# quote-unit-price, quote-duration-picker, quote-submit
 - tapOn:
     id: "quote-item-name"
 - inputText: "Unblock drain ${REQ_TOKEN}"
@@ -199,6 +215,18 @@ appId: com.lalarente.app
 - inputText: "500"
 - tapOn:
     point: "50%,15%"
+
+# Required: pick a duration
+- scrollUntilVisible:
+    element:
+      id: "quote-duration-picker"
+    direction: DOWN
+    timeout: 10000
+    visibilityPercentage: 50
+# Duration defaults to first option ('1-2 hours') on mount — no tap needed.
+- hideKeyboard
+- waitForAnimationToEnd:
+    timeout: 1000
 
 - scrollUntilVisible:
     element:
@@ -264,7 +292,84 @@ appId: com.lalarente.app
     text: ".*Unblock drain ${REQ_TOKEN}.*"
 - takeScreenshot: e2e-02d-owner-sees-quote
 
+# PHASE 5 — Owner accepts the quote → PO issued
+- scrollUntilVisible:
+    element:
+      id: "quote-accept"
+    direction: DOWN
+    timeout: 10000
+    visibilityPercentage: 50
+- tapOn:
+    id: "quote-accept"
+- waitForAnimationToEnd:
+    timeout: 1500
+- extendedWaitUntil:
+    visible: ".*(Accept|Issue PO|Confirm).*"
+    timeout: 10000
+- tapOn:
+    text: ".*(Accept|Confirm|Yes).*"
+- waitForAnimationToEnd:
+    timeout: 4000
+- runFlow:
+    when:
+      visible: ".*(Success|PO Issued|accepted).*"
+    commands:
+      - tapOn:
+          text: "OK"
+      - waitForAnimationToEnd:
+          timeout: 2000
+- takeScreenshot: e2e-02e-owner-accepted-quote
+
 - openLink: lalarenteapp://(owner)/
 - waitForAnimationToEnd:
     timeout: 2000
 - runFlow: ../subflows/sign-out-owner.yaml
+
+# PHASE 6 — Vendor requests closure
+- runFlow: ../subflows/login-vendor.yaml
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "tab-vendor-jobs"
+- extendedWaitUntil:
+    visible: "My Jobs"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- scrollUntilVisible:
+    element:
+      text: ".*E2E-${REQ_TOKEN}.*"
+    direction: DOWN
+    timeout: 25000
+    visibilityPercentage: 50
+- tapOn:
+    text: ".*E2E-${REQ_TOKEN}.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- scrollUntilVisible:
+    element:
+      text: ".*(Request Closure|Mark Complete).*"
+    direction: DOWN
+    timeout: 15000
+    visibilityPercentage: 50
+- tapOn:
+    text: ".*(Request Closure|Mark Complete).*"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- extendedWaitUntil:
+    visible:
+      id: "closure-notes"
+    timeout: 10000
+- tapOn:
+    id: "closure-notes"
+- inputText: "E2E-${REQ_TOKEN} closure — work completed per PO."
+- tapOn:
+    point: "50%,15%"
+- takeScreenshot: e2e-02f-vendor-closure-form
+
+- openLink: lalarenteapp://(vendor)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-vendor.yaml

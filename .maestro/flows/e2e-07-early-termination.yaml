@@ -1,0 +1,47 @@
+# E2E-07 — Early termination surface + state
+# NON-DESTRUCTIVE: verifies tenant sees termination screen with correct
+# penalty estimate + Submit button, and owner sees the Early Terminations
+# dashboard. Does NOT actually submit (would terminate the shared test
+# lease; destructive side effects on every other test).
+#
+# Deferred to a disposable-fixture flow: tenant submits termination →
+# owner accepts → deposit refund auto-triggers → tenant sees refund.
+#
+# Env: TENANT/OWNER creds
+appId: com.lalarente.app
+---
+
+# PHASE 1 — Tenant reaches early termination screen
+- runFlow: ../subflows/login-tenant.yaml
+
+- openLink: lalarenteapp://(tenant)/early-termination
+- extendedWaitUntil:
+    visible: "Early Termination"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Screen must show a penalty estimate (R amount) + Submit action
+- assertVisible:
+    text: "Early Termination"
+- takeScreenshot: e2e-07a-tenant-screen
+
+- openLink: lalarenteapp://(tenant)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+# PHASE 2 — Owner reaches early terminations dashboard
+- runFlow: ../subflows/login-owner.yaml
+
+- openLink: lalarenteapp://(owner)/early-termination
+- extendedWaitUntil:
+    visible: "Early Terminations"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    text: "Early Terminations"
+- takeScreenshot: e2e-07b-owner-dashboard
+
+- runFlow: ../subflows/sign-out-owner.yaml

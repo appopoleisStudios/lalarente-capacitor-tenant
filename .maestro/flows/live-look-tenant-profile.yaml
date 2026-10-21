@@ -1,0 +1,17 @@
+appId: com.lalarente.app
+---
+- tapOn:
+    id: "tab-profile"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-profile-title"
+    timeout: 20000
+    optional: true
+- takeScreenshot: live-tenant-profile
+- tapOn:
+    id: "tab-lala-ai"
+- extendedWaitUntil:
+    visible: "Lala"
+    timeout: 20000
+    optional: true
+- takeScreenshot: live-tenant-lala

@@ -1,0 +1,14 @@
+# E2E-17 — Vendor contracts surface
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-vendor.yaml
+- openLink: lalarenteapp://(vendor)/contracts
+- extendedWaitUntil:
+    visible: "My Contracts"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    text: "My Contracts"
+- takeScreenshot: e2e-17-vendor-contracts
+- runFlow: ../subflows/sign-out-vendor.yaml

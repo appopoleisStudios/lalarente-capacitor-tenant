@@ -1,0 +1,26 @@
+# E2E-20 — FICA/KYC compliance surface
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/compliance
+- extendedWaitUntil:
+    visible: "Compliance"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    text: "Compliance"
+- takeScreenshot: e2e-20a-owner-compliance
+- runFlow: ../subflows/sign-out-owner.yaml
+
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/documents
+- extendedWaitUntil:
+    visible: "My Documents"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    text: "My Documents"
+- takeScreenshot: e2e-20b-tenant-docs
+- runFlow: ../subflows/sign-out-tenant.yaml

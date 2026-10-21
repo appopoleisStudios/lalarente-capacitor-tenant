@@ -1,0 +1,98 @@
+# E2E-02a — Vendor submits quote on latest E2E-TOKEN maintenance request.
+# Short, single-actor flow. Expects REQ_TOKEN env to match an existing
+# invited request (seed via tenant flow or SQL).
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-vendor.yaml
+
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "tab-vendor-requests"
+- extendedWaitUntil:
+    visible: "Maintenance Requests"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+
+- scrollUntilVisible:
+    element:
+      text: ".*E2E-${REQ_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 50
+- tapOn:
+    text: ".*E2E-${REQ_TOKEN}.*"
+- waitForAnimationToEnd:
+    timeout: 2500
+
+- extendedWaitUntil:
+    visible:
+      id: "vendor-submit-quote"
+    timeout: 12000
+- tapOn:
+    id: "vendor-submit-quote"
+- waitForAnimationToEnd:
+    timeout: 3500
+
+- extendedWaitUntil:
+    visible:
+      id: "quote-item-name"
+    timeout: 12000
+- runFlow:
+    when:
+      visible:
+        id: "quote-draft-restored-banner"
+    commands:
+      - tapOn:
+          id: "quote-draft-discard"
+      - waitForAnimationToEnd:
+          timeout: 1500
+
+- tapOn:
+    id: "quote-item-name"
+- inputText: "Unblock drain ${REQ_TOKEN}"
+- tapOn:
+    point: "50%,15%"
+- waitForAnimationToEnd:
+    timeout: 1000
+
+- tapOn:
+    id: "quote-quantity"
+- inputText: "1"
+- tapOn:
+    point: "50%,15%"
+- waitForAnimationToEnd:
+    timeout: 1000
+
+- tapOn:
+    id: "quote-unit-price"
+- inputText: "500"
+- tapOn:
+    point: "50%,15%"
+- waitForAnimationToEnd:
+    timeout: 1500
+
+- scrollUntilVisible:
+    element:
+      id: "quote-submit"
+    direction: DOWN
+    timeout: 8000
+    visibilityPercentage: 50
+- tapOn:
+    id: "quote-submit"
+- waitForAnimationToEnd:
+    timeout: 2500
+
+# Confirmation dialog: Review Again / Yes, Submit / Save Draft
+- extendedWaitUntil:
+    visible: ".*Yes, Submit.*"
+    timeout: 8000
+- tapOn:
+    text: ".*Yes, Submit.*"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- extendedWaitUntil:
+    visible: ".*(Success|submitted|Quote sent|Quote Submitted).*"
+    timeout: 15000

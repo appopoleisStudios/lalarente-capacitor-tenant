@@ -38,7 +38,10 @@ export default function RequestClosureScreen() {
       return;
     }
     if (!hasMinPhotos) {
-      Alert.alert('Photos Required', `Please upload at least ${minPhotosRequired} completion photos.`);
+      Alert.alert(
+        'Photos Required',
+        `Please upload at least ${minPhotosRequired} completion photos.`
+      );
       return;
     }
     if (!user?.id) {
@@ -93,8 +96,8 @@ export default function RequestClosureScreen() {
             <View style={styles.instructionTextWrap}>
               <Text style={styles.instructionTitle}>Ready to wrap up?</Text>
               <Text style={styles.instructionText}>
-                Summarise the completed work and attach at least {minPhotosRequired} photos showing the final result.
-                The owner will review and approve your submission.
+                Summarise the completed work and attach at least {minPhotosRequired} photos showing
+                the final result. The owner will review and approve your submission.
               </Text>
             </View>
           </View>
@@ -103,6 +106,7 @@ export default function RequestClosureScreen() {
           <View style={styles.section}>
             <Text style={styles.label}>Completion Notes *</Text>
             <TextInput
+              testID="closure-notes"
               style={styles.notesInput}
               placeholder="e.g. All work completed as per PO. Bathroom tiling finished, plumbing tested and working..."
               placeholderTextColor="#9ca3af"
@@ -124,8 +128,7 @@ export default function RequestClosureScreen() {
                 ? '✅ Minimum photos requirement met'
                 : files.length > 0
                   ? `⚠️ Need ${minPhotosRequired - files.length} more photo${minPhotosRequired - files.length > 1 ? 's' : ''}`
-                  : `Upload at least ${minPhotosRequired} photos of the completed work`
-            }
+                  : `Upload at least ${minPhotosRequired} photos of the completed work`}
             </Text>
 
             {files.length > 0 && (
@@ -165,6 +168,7 @@ export default function RequestClosureScreen() {
       {/* Submit Button */}
       <View style={styles.footer}>
         <TouchableOpacity
+          testID="closure-submit"
           style={[
             styles.submitButton,
             (!completionNotes.trim() || !hasMinPhotos || submitting) && styles.submitButtonDisabled,
@@ -198,7 +202,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
-  headerButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
   scrollView: { flex: 1 },
   instructionCard: {

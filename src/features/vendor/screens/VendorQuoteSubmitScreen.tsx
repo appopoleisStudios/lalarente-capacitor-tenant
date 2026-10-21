@@ -99,7 +99,7 @@ export default function VendorQuoteSubmitScreen() {
     { id: '1', name: '', quantity: 1, unit_price: 0 },
   ]);
   const [discount, setDiscount] = useState(0);
-  const [duration, setDuration] = useState('');
+  const [duration, setDuration] = useState<string>(DURATION_OPTIONS[0]);
   const [warranty, setWarranty] = useState('No warranty');
   const [notes, setNotes] = useState('');
   const [showDurationPicker, setShowDurationPicker] = useState(false);

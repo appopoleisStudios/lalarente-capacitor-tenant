@@ -1,0 +1,38 @@
+# E2E-29 — Form validation audit (empty-submit triggers Required alerts)
+# Tenant maintenance form: submit with empty title → "Required" alert.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/maintenance/report
+- extendedWaitUntil:
+    visible: "Report Issue"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Submit with no title/description
+- scrollUntilVisible:
+    element:
+      id: "maintenance-submit"
+    direction: DOWN
+    timeout: 10000
+    visibilityPercentage: 50
+- tapOn:
+    id: "maintenance-submit"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Must show a required-field validation alert
+- extendedWaitUntil:
+    visible: ".*(Required|required|please enter|Please enter).*"
+    timeout: 10000
+- takeScreenshot: e2e-29-tenant-form-validation
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- openLink: lalarenteapp://(tenant)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-tenant.yaml

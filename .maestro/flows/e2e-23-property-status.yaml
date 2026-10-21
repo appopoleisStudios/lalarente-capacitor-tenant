@@ -1,0 +1,16 @@
+# E2E-23 — Property status reachability
+# Owner can navigate to a property detail and see its status.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "tab-owner-properties"
+- extendedWaitUntil:
+    visible: "My Properties"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: e2e-23-owner-properties-list
+- runFlow: ../subflows/sign-out-owner.yaml

@@ -59,6 +59,11 @@ export default function OwnerLeaseCreateScreen() {
   useEffect(() => {
     if (applicationId) {
       loadApplication();
+    } else {
+      // Without an applicationId the screen can't render — avoid an
+      // infinite spinner by clearing the loading state so the empty-state
+      // guard renders.
+      setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [applicationId]);

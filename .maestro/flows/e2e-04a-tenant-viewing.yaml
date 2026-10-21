@@ -1,0 +1,41 @@
+# E2E-04a — Tenant requests a property viewing.
+# Terminal of this flow: viewing_requests row inserted with status='pending'.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-tenant.yaml
+
+- openLink: lalarenteapp://(tenant)/viewings/request?propertyId=e5e888d1-e3ce-4c5c-a007-1ae58ddcaf94&propertyTitle=4A+Dolphin&ownerId=e7f57cdd-78dd-41ab-9f4c-4333dd9776e6
+- extendedWaitUntil:
+    visible: ".*(Preferred Date|Request a Viewing|property viewing).*"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- extendedWaitUntil:
+    visible:
+      id: "viewing-request-message"
+    timeout: 10000
+- tapOn:
+    id: "viewing-request-message"
+- inputText: "E2E viewing request ${REQ_TOKEN}"
+- tapOn:
+    point: "50%,15%"
+- waitForAnimationToEnd:
+    timeout: 1500
+
+- tapOn:
+    id: "viewing-request-submit"
+- waitForAnimationToEnd:
+    timeout: 4000
+
+- extendedWaitUntil:
+    visible: ".*(submitted|success|OK|Request Sent).*"
+    timeout: 15000
+- runFlow:
+    when:
+      visible: "OK"
+    commands:
+      - tapOn:
+          text: "OK"
+      - waitForAnimationToEnd:
+          timeout: 2000

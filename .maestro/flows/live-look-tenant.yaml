@@ -1,0 +1,64 @@
+# Live visual pass: log in as tenant and capture each tab after it paints.
+# Screenshots are for a human/agent to read. Not a pass/fail of every control.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-tenant.yaml
+
+- tapOn:
+    id: "tab-home"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "tenant-dashboard-header"
+    timeout: 30000
+
+- takeScreenshot: live-tenant-home
+
+- scroll
+- takeScreenshot: live-tenant-home-scrolled
+
+- tapOn:
+    id: "tab-search"
+
+- extendedWaitUntil:
+    visible:
+      id: "tenant-search-input"
+    timeout: 25000
+    optional: true
+
+- takeScreenshot: live-tenant-search
+
+- tapOn:
+    id: "tab-payments"
+
+- extendedWaitUntil:
+    notVisible: "Loading"
+    timeout: 20000
+    optional: true
+
+- takeScreenshot: live-tenant-payments
+
+- tapOn:
+    id: "tab-profile"
+
+- extendedWaitUntil:
+    visible:
+      id: "tenant-profile-title"
+    timeout: 25000
+    optional: true
+
+- takeScreenshot: live-tenant-profile
+
+- scroll
+- takeScreenshot: live-tenant-profile-scrolled
+
+- tapOn:
+    id: "tab-lala-ai"
+
+- extendedWaitUntil:
+    visible: "Lala"
+    timeout: 20000
+    optional: true
+
+- takeScreenshot: live-tenant-lala

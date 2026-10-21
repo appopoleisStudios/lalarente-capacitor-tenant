@@ -1,0 +1,26 @@
+# E2E-06 — Lease renewal surface
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/renewals
+- extendedWaitUntil:
+    visible: "Lease Renewals"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    text: "Lease Renewals"
+- takeScreenshot: e2e-06a-owner-renewals
+- runFlow: ../subflows/sign-out-owner.yaml
+
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/lease-renewal
+- extendedWaitUntil:
+    visible: "Lease Renewal"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    text: "Lease Renewal"
+- takeScreenshot: e2e-06b-tenant-renewal
+- runFlow: ../subflows/sign-out-tenant.yaml

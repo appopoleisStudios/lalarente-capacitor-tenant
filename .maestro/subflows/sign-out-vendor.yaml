@@ -2,28 +2,25 @@
 # Hard asserts — fails if logout did not complete.
 appId: com.lalarente.app
 ---
+# Force navigation to tabs root — openLink avoids being stuck on
+# non-tabbed modal routes (contracts, banking, etc.) where profile tab
+# is not visible.
+- openLink: lalarenteapp://(vendor)/
 - waitForAnimationToEnd:
-    timeout: 2000
-
-- tapOn:
-    id: "tab-vendor-home"
-    optional: true
-
-- waitForAnimationToEnd:
-    timeout: 2000
+    timeout: 2500
 
 - tapOn:
     id: "tab-vendor-profile"
 
 - waitForAnimationToEnd:
-    timeout: 2000
+    timeout: 2500
 
 - scrollUntilVisible:
     element:
       text: ".*Logout.*"
     direction: DOWN
     timeout: 15000
-    centerElement: true
+    visibilityPercentage: 50
 
 - waitForAnimationToEnd:
     timeout: 1500

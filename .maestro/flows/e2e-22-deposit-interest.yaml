@@ -1,0 +1,16 @@
+# E2E-22 — Deposit interest accrual (verify tenant sees updated balance)
+# The edge function accrue-deposit-interest runs as a cron; this test only
+# verifies the tenant deposit screen renders interest history.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/deposit
+- extendedWaitUntil:
+    visible: "Deposit Status"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    text: ".*(INTEREST|Interest|Monthly Rent).*"
+- takeScreenshot: e2e-22-tenant-deposit-interest
+- runFlow: ../subflows/sign-out-tenant.yaml

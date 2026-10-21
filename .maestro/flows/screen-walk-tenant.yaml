@@ -1,0 +1,235 @@
+# Static screen walk — tenant. Continues on a missing route (optional assert).
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-tenant.yaml
+
+- openLink: lalarenteapp://(tenant)
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant
+
+- openLink: lalarenteapp://(tenant)/ai-chat
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_ai-chat
+
+- openLink: lalarenteapp://(tenant)/application-status
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_application-status
+
+- openLink: lalarenteapp://(tenant)/arrears
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_arrears
+
+- openLink: lalarenteapp://(tenant)/dashboard
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_dashboard
+
+- openLink: lalarenteapp://(tenant)/deposit
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_deposit
+
+- openLink: lalarenteapp://(tenant)/documents
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_documents
+
+- openLink: lalarenteapp://(tenant)/early-termination
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_early-termination
+
+- openLink: lalarenteapp://(tenant)/holding-deposit
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_holding-deposit
+
+- openLink: lalarenteapp://(tenant)/lease
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_lease
+
+- openLink: lalarenteapp://(tenant)/lease-journey
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_lease-journey
+
+- openLink: lalarenteapp://(tenant)/lease-renewal
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_lease-renewal
+
+- openLink: lalarenteapp://(tenant)/maintenance
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_maintenance
+
+- openLink: lalarenteapp://(tenant)/maintenance/closure-confirm
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_maintenance_closure-confirm
+
+- openLink: lalarenteapp://(tenant)/maintenance/mediation
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_maintenance_mediation
+
+- openLink: lalarenteapp://(tenant)/maintenance/report
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_maintenance_report
+
+- openLink: lalarenteapp://(tenant)/maintenance/vendor-marketplace
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_maintenance_vendor-marketplace
+
+- openLink: lalarenteapp://(tenant)/maintenance/verify
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_maintenance_verify
+
+- openLink: lalarenteapp://(tenant)/messages
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_messages
+
+- openLink: lalarenteapp://(tenant)/messages/new
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_messages_new
+
+- openLink: lalarenteapp://(tenant)/notifications
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_notifications
+
+- openLink: lalarenteapp://(tenant)/payment-disputes
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_payment-disputes
+
+- openLink: lalarenteapp://(tenant)/payments
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_payments
+
+- openLink: lalarenteapp://(tenant)/privacy
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_privacy
+
+- openLink: lalarenteapp://(tenant)/privacy/data-rights
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_privacy_data-rights
+
+- openLink: lalarenteapp://(tenant)/profile
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_profile
+
+- openLink: lalarenteapp://(tenant)/reports
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_reports
+
+- openLink: lalarenteapp://(tenant)/search
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_search
+
+- openLink: lalarenteapp://(tenant)/vendor-payments
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_vendor-payments
+
+- openLink: lalarenteapp://(tenant)/vendor-payments/checkout
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_vendor-payments_checkout
+
+- openLink: lalarenteapp://(tenant)/vendor-payments/result
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_vendor-payments_result
+
+- openLink: lalarenteapp://(tenant)/viewings
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_viewings
+
+- openLink: lalarenteapp://(tenant)/viewings/request
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: tenant__tenant_viewings_request

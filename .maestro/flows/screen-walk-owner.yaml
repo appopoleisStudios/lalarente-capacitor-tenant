@@ -1,0 +1,284 @@
+# Static screen walk — owner. Continues on a missing route (optional assert).
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+
+- openLink: lalarenteapp://(owner)
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner
+
+- openLink: lalarenteapp://(owner)/add-property
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_add-property
+
+- openLink: lalarenteapp://(owner)/ai-chat
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_ai-chat
+
+- openLink: lalarenteapp://(owner)/application-competition
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_application-competition
+
+- openLink: lalarenteapp://(owner)/applications
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_applications
+
+- openLink: lalarenteapp://(owner)/arrears
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_arrears
+
+- openLink: lalarenteapp://(owner)/compliance
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_compliance
+
+- openLink: lalarenteapp://(owner)/dashboard
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_dashboard
+
+- openLink: lalarenteapp://(owner)/deposits
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_deposits
+
+- openLink: lalarenteapp://(owner)/documents
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_documents
+
+- openLink: lalarenteapp://(owner)/early-termination
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_early-termination
+
+- openLink: lalarenteapp://(owner)/holding-deposit
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_holding-deposit
+
+- openLink: lalarenteapp://(owner)/inspections
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_inspections
+
+- openLink: lalarenteapp://(owner)/inspections/new
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_inspections_new
+
+- openLink: lalarenteapp://(owner)/insurance
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_insurance
+
+- openLink: lalarenteapp://(owner)/insurance/new
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_insurance_new
+
+- openLink: lalarenteapp://(owner)/invoices
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_invoices
+
+- openLink: lalarenteapp://(owner)/leases/create
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_leases_create
+
+- openLink: lalarenteapp://(owner)/maintenance
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_maintenance
+
+- openLink: lalarenteapp://(owner)/maintenance/mediation
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_maintenance_mediation
+
+- openLink: lalarenteapp://(owner)/maintenance/new
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_maintenance_new
+
+- openLink: lalarenteapp://(owner)/maintenance/select-vendors
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_maintenance_select-vendors
+
+- openLink: lalarenteapp://(owner)/maintenance/send-po
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_maintenance_send-po
+
+- openLink: lalarenteapp://(owner)/maintenance/vendor-directory
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_maintenance_vendor-directory
+
+- openLink: lalarenteapp://(owner)/messages
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_messages
+
+- openLink: lalarenteapp://(owner)/messages/new
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_messages_new
+
+- openLink: lalarenteapp://(owner)/notifications
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_notifications
+
+- openLink: lalarenteapp://(owner)/payment-disputes
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_payment-disputes
+
+- openLink: lalarenteapp://(owner)/privacy
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_privacy
+
+- openLink: lalarenteapp://(owner)/privacy/data-rights
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_privacy_data-rights
+
+- openLink: lalarenteapp://(owner)/profile
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_profile
+
+- openLink: lalarenteapp://(owner)/properties
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_properties
+
+- openLink: lalarenteapp://(owner)/renewals
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_renewals
+
+- openLink: lalarenteapp://(owner)/rent-roll
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_rent-roll
+
+- openLink: lalarenteapp://(owner)/statements
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_statements
+
+- openLink: lalarenteapp://(owner)/tax-reports
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_tax-reports
+
+- openLink: lalarenteapp://(owner)/tenants
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_tenants
+
+- openLink: lalarenteapp://(owner)/vendor-payments/checkout
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_vendor-payments_checkout
+
+- openLink: lalarenteapp://(owner)/vendor-payments/result
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_vendor-payments_result
+
+- openLink: lalarenteapp://(owner)/viewings
+- extendedWaitUntil:
+    notVisible: "This screen doesn't exist."
+    timeout: 8000
+    optional: true
+- takeScreenshot: owner__owner_viewings

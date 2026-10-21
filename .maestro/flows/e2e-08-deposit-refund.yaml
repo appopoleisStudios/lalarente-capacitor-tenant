@@ -1,0 +1,28 @@
+# E2E-08 — Deposit refund surface (owner-driven)
+# Non-destructive reachability for owner Deposit Management + tenant
+# Deposit Status. Full initiate-deductions-finalize chain deferred.
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/deposits
+- extendedWaitUntil:
+    visible: "Deposit Management"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    text: "Deposit Management"
+- takeScreenshot: e2e-08a-owner-deposit-mgmt
+- runFlow: ../subflows/sign-out-owner.yaml
+
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/deposit
+- extendedWaitUntil:
+    visible: "Deposit Status"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible:
+    text: "Deposit Status"
+- takeScreenshot: e2e-08b-tenant-deposit-status
+- runFlow: ../subflows/sign-out-tenant.yaml
