@@ -618,3 +618,31 @@
         check.
   - [ ] Tenant never sees "approved" state without having paid a
         deposit first.
+
+## CT7-020 🟠 Owner — lease start/end should use date pickers, not text input
+
+- **Role:** owner
+- **Screen / flow:** Owner → Applications → Create Lease → Lease Start Date / Lease End Date
+- **Problem (client's words):** _"Date pickers instead of typing the dates for creating lease start and end."_
+- **Context — same pattern we already fixed on Add Property:**
+  CT7-008 (merged in PR #192) swapped the "Available From" plain
+  TextInput for `@react-native-community/datetimepicker`. The lease
+  creation screen has the same stale pattern on BOTH date fields.
+- **Suggested fix path:**
+  - Audit the owner lease-creation screen (likely
+    `OwnerLeaseCreateScreen.tsx` or `OwnerApplicationDetailScreen`
+    create-lease modal) for the two TextInput date fields.
+  - Replace with `TouchableOpacity` → `DateTimePicker` pattern used
+    on `AddPropertyScreen.tsx` CT7-008.
+  - Start Date: `minimumDate = new Date()` (can't start in the past).
+  - End Date: `minimumDate = form.start_date + 1 month` (lease must be
+    at least one month — align with the RHA minimum).
+  - Both write back as `YYYY-MM-DD` ISO strings to keep the schema
+    unchanged.
+  - Platform: iOS spinner, Android default dialog — same as CT7-008.
+- **Acceptance criteria:**
+  - [ ] Both fields open a native picker on tap, no keyboard
+  - [ ] Can't pick a start date in the past
+  - [ ] End date is at least `start + 1 month`
+  - [ ] Lease row saves with the same ISO date strings the typed form
+        produced (no schema change)
