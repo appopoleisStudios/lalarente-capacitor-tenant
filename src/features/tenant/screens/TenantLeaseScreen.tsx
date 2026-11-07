@@ -18,7 +18,7 @@ import { notificationsApi } from '../../notifications/api/notificationsApi';
 import SignatureModal from '../../leases/components/SignatureModal';
 import { uploadSignature } from '../../leases/api/storageService';
 import { regenerateLeasePDF } from '../../leases/api/regenerateLeasePDF';
-import { checkTenantProfileCompleteness } from '../utils/profileCompleteness';
+import { evaluateSignLeaseGate } from '../utils/leaseSignGate';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
 
@@ -208,36 +208,29 @@ export default function TenantLeaseScreen() {
   };
 
   const handleSignLease = async () => {
-    // Profile-completeness gate (CT7-012). Share the same util the
-    // dashboard banner uses (CT7-013) so banner-clear and gate-pass can
-    // never disagree. Transient DB errors fail open (let the user try to
-    // sign) rather than blocking — a signature failure downstream is
-    // recoverable; blocking a valid tenant on a flaky lookup is not.
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      Alert.alert('Not signed in', 'Please sign in again to continue.');
+    // Profile-completeness gate (CT7-012). Field requirements live in
+    // the shared evaluateSignLeaseGate() / checkTenantProfileCompleteness()
+    // pair — same rules as the dashboard banner (CT7-013), so field lists
+    // can't drift across surfaces even though the two reads happen at
+    // different moments. Fails CLOSED on lookup errors: a retryable alert
+    // rather than opening the signature modal on unknown state.
+    const decision = await evaluateSignLeaseGate();
+    if (decision.action === 'sign') {
+      setShowSignatureModal(true);
       return;
     }
 
-    const result = await checkTenantProfileCompleteness(user.id);
-    if (result.status === 'ok' && !result.complete) {
-      Alert.alert(
-        'Complete your profile first',
-        `Before you can sign a lease you need to add:\n\n• ${result.missing.join('\n• ')}\n\nFICA / RHA require these details to make the lease legally binding.`,
-        [
-          { text: 'Not now', style: 'cancel' },
+    const buttons = decision.cta
+      ? [
+          { text: 'Not now', style: 'cancel' as const },
           {
-            text: 'Go to Profile',
-            onPress: () => router.push('/(tenant)/profile' as any),
+            text: decision.cta.label,
+            onPress: () => router.push(decision.cta!.href as any),
           },
         ]
-      );
-      return;
-    }
+      : [{ text: 'OK', style: 'default' as const }];
 
-    setShowSignatureModal(true);
+    Alert.alert(decision.title, decision.message, buttons);
   };
 
   const handleSignatureSave = async (signatureBase64: string) => {
