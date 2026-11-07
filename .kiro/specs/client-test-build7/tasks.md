@@ -367,6 +367,57 @@
 - **Bundle with CT7-012:** both issues share the same util. Do them
   together in one PR so the shared file doesn't land twice.
 
+## CT7-014 🟠 Tenant profile must capture SA ID document + Salary Certificate uploads
+
+- **Role:** tenant
+- **Screen / flow:** Tenant → Profile
+- **Problem:** Current Profile screen captures the SA ID _number_ and
+  the _amount_ of monthly income — but NOT the actual document uploads
+  that FICA / landlord diligence require. Owners need to see:
+  - **SA ID document** (front + back photo, or ID card scan) — so the
+    landlord can verify the ID number against a real document.
+  - **Salary certificate / payslip** (last 3 months typical) — proof
+    that the stated monthly income is real.
+- **Current state (verified):**
+  - `TenantProfileScreen.tsx` has inputs for: `full_name`, `phone`,
+    `id_number`, `date_of_birth`, `monthly_income`, and one existing
+    upload field: `proof_of_address_url`.
+  - No uploader for the ID document itself.
+  - No uploader for salary certificate / payslips.
+- **Suggested fix path:**
+  - DB: add two columns to `profiles` (or extend the existing
+    `fica_documents` JSON): `id_document_url: text`, `salary_certificate_urls: text[]`.
+    Use text[] for salary so the tenant can submit multiple payslips
+    (typically 3 months).
+  - Storage: reuse the existing `tenant-documents` bucket (or whichever
+    FICA bucket we standardised on in CT7-004's audit) — it already
+    exists and the RLS allows authenticated insert for own folder.
+  - UI on `TenantProfileScreen.tsx`:
+    - "SA ID Document" row with Upload button + preview thumbnail +
+      Replace action. Single file.
+    - "Salary Certificate / Payslips" row with Upload button + list of
+      uploaded files + per-file delete (reuse the CT7-009 photo-delete
+      pattern we just built).
+  - Both uploaders use the shared `src/lib/storage.ts` `uploadFile()`
+    helper (base64 → ArrayBuffer path — the only path that works on RN).
+  - Add both fields to `profileCompleteness.ts` (CT7-012 / CT7-013
+    shared util) so the lease-sign gate and dashboard banner both
+    enforce them.
+- **POPIA note:** both documents are personal identifiers — document
+  access on the owner side must be gated behind the "ID & Income"
+  tenant-approved disclosure flow (we already have the pattern in
+  `src/features/compliance/`). Don't just paste the URL into the
+  owner's applications view.
+- **Acceptance criteria:**
+  - [ ] Tenant Profile shows two new upload sections: SA ID doc +
+        Salary Certificate(s).
+  - [ ] Both persist to Supabase Storage via the shared uploadFile()
+        helper (no \`fetch().blob()\` regression).
+  - [ ] Owner can view them from the rental-application detail screen
+        with POPIA disclosure gating.
+  - [ ] Profile is NOT considered complete (for CT7-012 / CT7-013) until
+        both docs are uploaded.
+
 ---
 
 ## Captured, not yet triaged
