@@ -779,17 +779,20 @@ auth.uid()`; if either join fails the insert rejects.
   vendor] for that. Tenants cannot ask other vendors to resolve. We
   need to define owner responsibility and tenant responsibility in
   maintenance and vendor management for that maintenance."_
-- **Why this matters legally + commercially:**
-  - Property includes **Owner-provided services** (geyser, aircon,
+- **Why this matters commercially:**
+  - Property includes **Owner-provided systems** (geyser, aircon,
     gate motor, borehole pump, DStv, generator, security system, etc.).
-    These are tied to the lease — the owner contracted the vendor;
-    the owner holds the warranty.
+    These are tied to the lease — the owner contracted the installing
+    vendor; the owner typically holds the warranty.
   - If the tenant hires a different vendor for one of those systems
-    the owner can lose the warranty, accept a sub-par repair, and
-    gets charged for work they didn't authorize.
-  - The RHA + CPA back this: appliances/fittings installed by the
-    landlord remain the landlord's responsibility for repair; the
-    tenant's duty is to use them with reasonable care.
+    the owner can void the warranty, accept a sub-par repair, and
+    gets charged for work they didn't authorise.
+- **Legal context (requires legal review before tenant-facing copy):**
+  RHA + CPA are commonly interpreted as making the landlord responsible
+  for upkeep of appliances supplied with the dwelling — but scope
+  depends on the lease. This doc captures commercial intent; production
+  copy must be legal-reviewed before shipping. Not relying on this as
+  authoritative legal advice (per AI Engineer note on PR #200).
 - **Current state (quick audit needed, but as of today):**
   - Tenant → Maintenance → New Request has a category picker that
     doesn't distinguish owner-provided vs tenant-owned systems.
@@ -799,29 +802,80 @@ auth.uid()`; if either join fails the insert rejects.
     vendor; the owner isn't asked "do you want to handle this yourself?"
 - **Suggested fix path (two-phase):**
 
-  **v1 — Category-based routing (ships in days, no schema surgery):**
-  - Property form (Add / Edit): existing "Services Provided" array
-    becomes the canonical list of owner-provided systems. Each entry
-    is a `{ name, tenantMayDispatch: boolean }` pair so the owner
-    explicitly marks each one.
-  - Tenant request flow: when the chosen category matches an
-    owner-provided system where `tenantMayDispatch === false`, the
-    vendor-marketplace path is HIDDEN. The request becomes
-    `status: 'awaiting_owner_dispatch'` and the tenant is told "The
-    landlord will arrange a vendor for this."
-  - Owner inbox: new filter / section "Awaiting your action" lists
-    these. Owner picks a vendor from their existing vendor marketplace
-    and the PO flow proceeds as today.
-  - For categories NOT on the owner's exclusive list, the current
-    tenant-dispatches flow is unchanged.
+  **v1 — Per-system routing on the property's own list:**
 
-  **v2 — Full responsibility matrix (if clients demand finer control):**
-  - Admin-side responsibility matrix per property: for every
-    category × subcategory, who handles it (owner / tenant / either).
-  - Cost-allocation rules per category (owner pays / tenant pays /
-    split).
-  - Audit trail of every dispatch decision.
-  - Probably 2-3 weeks of work; defer until v1 proves the model.
+  _Storage (chosen approach — sidecar table, NOT text[] rewrite):_
+  - New `property_service_items` table:
+    `(id uuid, property_id uuid, name text, tenant_may_dispatch boolean,
+ created_at timestamp)`.
+  - The existing `properties.services_provided text[]` is left in place
+    for backward-compatibility reads; a one-shot backfill seeds the
+    sidecar for each existing entry with `tenant_may_dispatch = true`
+    (preserves today's behaviour for every pre-existing property so
+    no owner is surprised by sudden restrictions). Default for NEW
+    entries also defaults to `true` so the owner must explicitly opt
+    a system into owner-dispatch-only.
+  - Clients read from the sidecar; the text[] column is marked
+    deprecated in the schema notes.
+
+  _Request flow — identity, not category:_
+  - Tenant maintenance request form adds a step: _"Which system
+    is this about?"_ with two groups:
+    1. Systems on this property (from `property_service_items` for
+       the tenant's active lease).
+    2. "Something else (my appliance / general)" fallback.
+  - When the tenant picks a sidecar entry whose
+    `tenant_may_dispatch = false`, the vendor marketplace is HIDDEN
+    and the request is created with `status = 'awaiting_owner_dispatch'`
+    and `service_item_id` pointing at the sidecar row.
+  - When the tenant picks a `tenant_may_dispatch = true` entry OR the
+    "something else" fallback, the existing marketplace flow runs
+    unchanged.
+  - Category alone never routes — only the explicit `service_item_id`
+    does. Addresses Senior Dev's finding that "an aircon the tenant
+    brought" isn't distinguishable from "the aircon the landlord
+    installed" via category.
+
+  _State machine for `maintenance_requests` (addresses Architect):_
+
+  ```
+  (new) ──────────────────────────────┐
+     │                                 │
+     v                                 v
+  awaiting_owner_dispatch        tenant_dispatching
+     │     ▲                           │
+     │     └──── owner reclaims ◀──────┤ (if owner belatedly asserts
+     │                                 │  the system is theirs)
+     v                                 │
+  owner_dispatched ───────► in_progress ◀───┘
+                                 │
+                                 v
+                             completed / disputed / cancelled
+  ```
+
+  - Cancellation allowed from `awaiting_owner_dispatch` by owner OR
+    tenant (either party can close).
+  - Dispatch failure (vendor declines / no vendor available) bounces
+    back to `awaiting_owner_dispatch` with a counter so SLA alerts
+    can nag the owner.
+
+  _Server-side enforcement (addresses Security):_
+  - RLS on `maintenance_requests` INSERT WITH CHECK that if
+    `service_item_id IS NOT NULL` AND the referenced row has
+    `tenant_may_dispatch = false`, the `vendor_id` column MUST be null.
+    So a client that hides-but-still-tries can't slip through.
+  - RLS on `maintenance_vendor_assignments` INSERT WITH CHECK that
+    the request's effective policy allows tenant-dispatch, OR the
+    inserter is the property owner. Direct tenant → vendor dispatch
+    on a restricted item is rejected at the DB.
+  - Only property owner (auth.uid = properties.owner_id) can toggle
+    `tenant_may_dispatch` via RLS UPDATE policy.
+
+  **v2 — Full responsibility matrix (deferred):**
+  - Admin-side matrix per property: category × subcategory → owner /
+    tenant / either, plus cost-allocation rules (owner pays / tenant
+    pays / split) and an audit trail of every dispatch decision.
+  - ~2–3 weeks. Defer until v1 proves the model in production.
 
 - **Legal copy / tenant education needed:**
   - Tenant request screen shows a small explainer: _"Some systems in
@@ -830,22 +884,33 @@ auth.uid()`; if either join fails the insert rejects.
 - **Depends on / interacts with:**
   - CT7-022 (lease preview + edit) — the lease should list owner-
     provided systems so the tenant has agreed to this upfront.
-  - Existing `properties.services_provided` schema — needs the
-    `tenantMayDispatch` flag added (or a sidecar table).
+  - Decision: SIDECAR table chosen over text[] mutation (see Storage
+    section above) — resolves PR #200 Architect finding on the
+    stored-data contract.
 - **Open questions for client:**
   1. Should the owner be able to OVERRIDE and say "for this specific
      geyser issue, go ahead and hire your own vendor"? (one-off waiver)
   2. What happens to cost reimbursement? If the tenant DOES get a
      vendor for a landlord system in an emergency (burst geyser,
      3am), does the landlord reimburse?
-  3. Default for `tenantMayDispatch` — true (today's behaviour) or
-     false (new default to force the owner to explicitly waive)?
+  3. Confirmed: legacy entries default to `tenant_may_dispatch = true`
+     (today's behaviour); new entries also default to `true`; owner
+     opts each system INTO owner-only dispatch.
 - **Acceptance criteria (v1):**
   - [ ] Owner can mark each service-provided entry as
         "tenant may NOT hire own vendor"
-  - [ ] Tenant maintenance request for a flagged category routes
-        straight to the owner — no marketplace
-  - [ ] Owner inbox shows an "Awaiting your action" section with
-        these requests
+  - [ ] Tenant request form shows a picker of this property's systems;
+        selecting a locked system routes straight to owner (not by
+        category alone)
+  - [ ] "Something else" fallback remains open to the marketplace
+  - [ ] Owner inbox shows an "Awaiting your action" section
   - [ ] Owner picks a vendor and the normal PO flow resumes
-  - [ ] Tenant sees a clear explanation on the request screen
+  - [ ] Server-side RLS rejects a tenant-direct vendor assignment on
+        a locked system — not just the UI
+  - [ ] All existing (migrated) services default to
+        `tenant_may_dispatch = true` — no silent restriction on
+        today's live properties
+  - [ ] State transitions match the diagram above; dispatch failure
+        bounces back to `awaiting_owner_dispatch` with a counter
+  - [ ] Tenant sees a clear explanation on the request screen (copy
+        legal-reviewed before shipping)
