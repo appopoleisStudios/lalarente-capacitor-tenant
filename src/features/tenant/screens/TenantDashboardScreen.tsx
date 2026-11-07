@@ -15,6 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../../lib/supabase';
 import { paymentsApi } from '../../properties/api/paymentsApi';
 import { messagesApi } from '../../messaging/api/messagesApi';
+import { checkTenantProfileCompleteness } from '../utils/profileCompleteness';
 import { colors } from '@/src/shared/theme/colors';
 
 const tenancyShortcutTestId = (title: string) =>
@@ -127,11 +128,11 @@ export default function TenantDashboardScreen() {
   const [pendingApplications, setPendingApplications] = useState<any[]>([]);
   const [messageThreads, setMessageThreads] = useState<any[]>([]);
   const [totalUnreadMessages, setTotalUnreadMessages] = useState(0);
-  const [verificationStatus, setVerificationStatus] = useState({
-    identity: false,
-    income: false,
-    references: false,
-  });
+  // Profile completeness is authoritative via checkTenantProfileCompleteness().
+  // undefined = async check hasn't landed yet (don't flash the banner).
+  // [] = all required fields present, hide banner.
+  // [...] = list of missing field labels to show in the banner.
+  const [profileMissing, setProfileMissing] = useState<string[] | undefined>(undefined);
   const [pendingInspection, setPendingInspection] = useState<any>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [viewingAlerts, setViewingAlerts] = useState<any[]>([]);
@@ -354,24 +355,16 @@ export default function TenantDashboardScreen() {
 
       setPendingInspection(pendingInsp ?? null);
 
-      // Check verification status from profile (most reliable — always populated)
-      const { data: verifyProfile } = await supabase
-        .from('profiles')
-        .select('id_number, monthly_income, proof_of_address_url, fica_documents')
-        .eq('id', user.id)
-        .single();
-
-      if (verifyProfile) {
-        const p = verifyProfile as any;
-        const ficaDocs = p.fica_documents || {};
-        const hasIdNumber = !!(p.id_number || ficaDocs.id_number);
-        const hasIncome = !!(p.monthly_income || ficaDocs.monthly_income);
-        const hasAddress = !!p.proof_of_address_url;
-        setVerificationStatus({
-          identity: hasIdNumber,
-          income: hasIncome,
-          references: hasAddress,
-        });
+      // Profile completeness via the shared util — merges column + legacy
+      // fica_documents JSON views, so a user who saved via either code path
+      // shows as complete. Replaces the prior inline check which mis-mapped
+      // the Proof of Address field to a "References" label.
+      // On transient lookup failure we leave profileMissing alone so a
+      // flaky request doesn't nag the user to complete a profile they've
+      // already completed.
+      const completeness = await checkTenantProfileCompleteness(user.id);
+      if (completeness.status === 'ok') {
+        setProfileMissing(completeness.complete ? [] : completeness.missing);
       }
     } catch (err) {
       console.error('Error loading dashboard:', err);
@@ -544,10 +537,14 @@ export default function TenantDashboardScreen() {
             </View>
           )}
 
-          {/* Verification Status */}
-          {(!verificationStatus.identity ||
-            !verificationStatus.income ||
-            !verificationStatus.references) && (
+          {/* Profile Completeness banner — hidden until the async check
+              lands, and only shown when fields are actually missing.
+              Items listed are the REAL missing fields from
+              checkTenantProfileCompleteness (shared with the future
+              lease-sign gate). CTA routes to the Profile screen, not
+              Documents — because the fields actually missing (phone,
+              DOB, ID number, monthly income) are edited on Profile. */}
+          {profileMissing && profileMissing.length > 0 && (
             <View style={styles.section}>
               <View style={styles.verificationCard}>
                 <View style={styles.verificationHeader}>
@@ -555,29 +552,21 @@ export default function TenantDashboardScreen() {
                   <Text style={styles.verificationTitle}>Complete Your Profile</Text>
                 </View>
                 <Text style={styles.verificationSubtext}>
-                  Verify your documents to speed up future applications
+                  Needed for FICA / RHA compliance when you apply for a lease
                 </Text>
                 <View style={styles.verificationItems}>
-                  {[
-                    { label: 'Identity Verification', done: verificationStatus.identity },
-                    { label: 'Proof of Income', done: verificationStatus.income },
-                    { label: 'References', done: verificationStatus.references },
-                  ].map((item) => (
-                    <View key={item.label} style={styles.verificationItem}>
-                      <Ionicons
-                        name={item.done ? 'checkmark-circle' : 'ellipse-outline'}
-                        size={20}
-                        color={item.done ? colors.primary[500] : colors.gray[300]}
-                      />
-                      <Text style={styles.verificationItemText}>{item.label}</Text>
+                  {profileMissing.map((label) => (
+                    <View key={label} style={styles.verificationItem}>
+                      <Ionicons name="ellipse-outline" size={20} color={colors.gray[300]} />
+                      <Text style={styles.verificationItemText}>{label}</Text>
                     </View>
                   ))}
                 </View>
                 <TouchableOpacity
                   style={styles.verificationButton}
-                  onPress={() => router.push('/(tenant)/documents' as any)}
+                  onPress={() => router.push('/(tenant)/profile' as any)}
                 >
-                  <Text style={styles.verificationButtonText}>Complete Verification</Text>
+                  <Text style={styles.verificationButtonText}>Complete Profile</Text>
                 </TouchableOpacity>
               </View>
             </View>
