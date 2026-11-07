@@ -32,14 +32,26 @@ DECLARE
   updated_row rental_applications;
   deposit_status text;
   _app_owner uuid;
+  _app_status text;
 BEGIN
+  -- Reject anonymous callers explicitly — auth.uid() can be NULL and
+  -- `_app_owner <> auth.uid()` evaluates to NULL (not false) for a
+  -- NULL right-hand side, which PL/pgSQL would then treat as a skipped
+  -- IF branch, letting anonymous invocations through. (PR #202 r4
+  -- Security P1.)
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'not authenticated';
+  END IF;
+
   -- Take an exclusive row lock on the application. Any concurrent
   -- approve_application() for the same app queues behind us, which
   -- serialises the approval decision. Concurrent deposit inserts
-  -- aren't blocked by this lock, but the FOR UPDATE below on the
-  -- latest deposit row locks it against status changes and the
-  -- SELECT returns the committed snapshot at this transaction start.
-  SELECT owner_id INTO _app_owner
+  -- aren't blocked by this lock, but FOR UPDATE on the latest
+  -- deposit row (below) locks it against status changes. Under
+  -- READ COMMITTED, each statement sees its own snapshot of
+  -- committed data — so we rely on the explicit locks for cross-
+  -- statement consistency.
+  SELECT owner_id, status INTO _app_owner, _app_status
   FROM public.rental_applications
   WHERE id = app_uuid
   FOR UPDATE;
@@ -47,8 +59,20 @@ BEGIN
   IF _app_owner IS NULL THEN
     RAISE EXCEPTION 'application not found';
   END IF;
-  IF _app_owner <> auth.uid() THEN
+  -- IS DISTINCT FROM is NULL-safe — returns false (not NULL) when
+  -- both sides are NULL. The explicit NULL check above also prevents
+  -- reaching here with NULL auth.uid(), but we use IS DISTINCT FROM
+  -- here for defence-in-depth.
+  IF _app_owner IS DISTINCT FROM auth.uid() THEN
     RAISE EXCEPTION 'not authorized to approve this application';
+  END IF;
+
+  -- Idempotency (PR #202 r4 Senior Dev P1): a repeat call must not
+  -- overwrite approved_at / reviewed_at on an already-approved row.
+  -- Return the existing row unchanged.
+  IF _app_status = 'approved' THEN
+    SELECT * INTO updated_row FROM public.rental_applications WHERE id = app_uuid;
+    RETURN updated_row;
   END IF;
 
   -- Read the latest holding deposit (if any) for this application
@@ -107,4 +131,8 @@ CREATE TRIGGER trg_guard_rental_applications_approved
   WHEN (NEW.status = 'approved')
   EXECUTE FUNCTION guard_rental_applications_approved();
 
+-- Explicitly strip the default PUBLIC EXECUTE grant (Postgres's default
+-- on functions). Only the authenticated role may call this RPC.
+-- (PR #202 r4 Security finding.)
+REVOKE EXECUTE ON FUNCTION approve_application(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION approve_application(uuid) TO authenticated;
