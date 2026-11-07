@@ -31,21 +31,36 @@ AS $$
 DECLARE
   updated_row rental_applications;
   deposit_status text;
+  _app_owner uuid;
 BEGIN
-  -- Caller must be the application's owner.
-  IF NOT EXISTS (
-    SELECT 1 FROM public.rental_applications
-    WHERE id = app_uuid AND owner_id = auth.uid()
-  ) THEN
+  -- Take an exclusive row lock on the application. Any concurrent
+  -- approve_application() for the same app queues behind us, which
+  -- serialises the approval decision. Concurrent deposit inserts
+  -- aren't blocked by this lock, but the FOR UPDATE below on the
+  -- latest deposit row locks it against status changes and the
+  -- SELECT returns the committed snapshot at this transaction start.
+  SELECT owner_id INTO _app_owner
+  FROM public.rental_applications
+  WHERE id = app_uuid
+  FOR UPDATE;
+
+  IF _app_owner IS NULL THEN
+    RAISE EXCEPTION 'application not found';
+  END IF;
+  IF _app_owner <> auth.uid() THEN
     RAISE EXCEPTION 'not authorized to approve this application';
   END IF;
 
-  -- Read the latest holding deposit (if any) for this application.
+  -- Read the latest holding deposit (if any) for this application
+  -- with a FOR UPDATE lock on that row so a concurrent
+  -- holdingDepositApi.confirmPayment() or refund can't flip it
+  -- between this check and the UPDATE below.
   SELECT status INTO deposit_status
   FROM public.holding_deposits
   WHERE application_id = app_uuid
   ORDER BY created_at DESC
-  LIMIT 1;
+  LIMIT 1
+  FOR UPDATE;
 
   IF deposit_status IS NULL THEN
     RAISE EXCEPTION 'cannot approve: no holding deposit for this application';
