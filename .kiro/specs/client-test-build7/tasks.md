@@ -423,3 +423,269 @@
 ## Captured, not yet triaged
 
 <!-- Drop new issues here as they come in; I'll move them above once categorized -->
+
+## CT7-015 🟠 Owner should confirm whether the viewing happened on its date
+
+- **Role:** owner + tenant (parity)
+- **Screen / flow:** Owner → Viewings → viewing on its scheduled date passes →
+  owner should see a "Did the viewing take place?" prompt
+- **Problem (client's words):** _"Once the property is viewed on its appointed
+  date and time, owner should be asked yes or no property viewed or not.
+  If owner says yes, the request viewing on tenant should disappear and
+  only apply should remain."_
+- **Expected flow:**
+  1. Scheduled viewing passes its start time (owner has accepted, tenant
+     has confirmed, calendar event is in the past).
+  2. Owner dashboard / viewings list surfaces a "Confirm viewing" card:
+     Did [Tenant] view [Property] on [date]? → Yes | No.
+  3. On **Yes** — viewing is marked `viewed`. Tenant's "Request viewing"
+     CTA on the property detail disappears; only the Apply CTA remains.
+  4. On **No** — viewing stays in a `no_show` state the owner can then
+     reschedule or cancel from.
+- **Suggested fix path:**
+  - DB: add a `viewed_at: timestamp` + `viewing_outcome: enum('viewed',
+'no_show', 'pending_confirmation')` to `viewing_requests` (or extend
+    the existing `status` enum — need to check the schema).
+  - Server: a cron / trigger moves `confirmed` viewings whose
+    `scheduled_at + duration < now()` into `pending_confirmation`. Could
+    also compute this on read, no cron needed.
+  - Owner UI: new confirmation card on OwnerViewingsScreen / dashboard.
+    Yes → updates row + tenant's view of the property changes.
+  - Tenant UI: `TenantPropertyDetailScreen.renderCTA()` hides the
+    "Request Viewing" button when the tenant has a `viewed` viewing on
+    that property.
+- **Acceptance criteria:**
+  - [ ] Owner sees a confirmation prompt the day after a scheduled viewing.
+  - [ ] Yes → viewing marked viewed; tenant can only Apply from that
+        property's detail page.
+  - [ ] No → viewing marked no_show; owner can reschedule or cancel.
+  - [ ] Owner and tenant never disagree on whether a viewing happened.
+  - [ ] Idempotent — if the owner confirms twice the state doesn't flip.
+
+## CT7-016 🟠 Rental application should pre-fill from tenant profile
+
+- **Role:** tenant
+- **Screen / flow:** Tenant → Property → Apply for rental
+- **Problem (client's words):** _"While applying for property app asks lot
+  of questions. These questions should be in profile as well. And should
+  be in application already if tenant has filled in already in profile.
+  If not then ask those questions."_
+- **Expected flow:**
+  - Application form loads → fields that already exist on the tenant
+    profile are pre-filled and read-only (or editable but pre-filled).
+  - Only genuinely application-specific fields (desired move-in date,
+    preferred lease length, "why this property") are asked fresh.
+  - Fields that are missing from profile AND required for the application
+    are asked as a smaller form — and the answer is ALSO written back to
+    the profile so the next application has them pre-filled.
+- **Suggested fix path:**
+  - Audit `TenantApplicationScreen` for the full question list, categorize
+    each field as:
+    - **Profile-derived** — read from `profiles` + `fica_documents` JSON,
+      show read-only (or editable with a save-back-to-profile hook).
+    - **Application-specific** — ask every time.
+    - **Missing-from-profile** — ask once, save to profile on submit.
+  - Use the same `checkTenantProfileCompleteness` field list where it
+    overlaps so the UX stays consistent with the dashboard banner
+    (CT7-013) and the lease-sign gate (CT7-012).
+  - Consider a shared `getTenantProfilePrefill(userId)` util that
+    returns a typed snapshot used by both the application form and any
+    future lease-sign form.
+- **Acceptance criteria:**
+  - [ ] Tenant with complete profile sees the application form with
+        name / email / phone / ID / DOB / employer / income / etc.
+        already filled.
+  - [ ] Tenant with partial profile sees ONLY the missing fields asked.
+  - [ ] Answers to missing fields are written back to the profile on
+        successful application submit.
+  - [ ] Dashboard banner clears as soon as the application-time
+        answers land (same `useFocusEffect` refresh).
+
+## CT7-017 🔴 Owner — "Send Request" on holding deposit throws RLS error
+
+- **Role:** owner
+- **Screen / flow:** Owner → Applications → Request Holding Deposit →
+  Send Request
+- **Problem (client's words):** _"Request holding deposit Send request
+  button throws error — failed to create holding deposit — RLS issue."_
+- **Diagnosis path:**
+  - Error text "failed to create holding deposit" comes from
+    `holdingDepositApi.create*` — need to find the INSERT call.
+  - Supabase RLS on `holding_deposits` table rejects the insert.
+  - Candidate causes:
+    1. Policy requires `owner_id = auth.uid()` but the INSERT doesn't
+       send owner_id (or sends a different field).
+    2. RLS reads via `applications.owner_id` join but the application
+       row's owner_id doesn't match the signed-in user (data mis-link).
+    3. No INSERT policy at all on `holding_deposits` — only SELECT /
+       UPDATE for owners, so client-side INSERT needs a SECURITY
+       DEFINER function.
+  - Need to pull the `holding_deposits` table RLS policies from
+    `database/migrations/*holding*.sql` and the
+    `holdingDepositApi.create()` payload.
+- **Suggested fix path:**
+  - Grep for `holding_deposits` in migrations to see the policy.
+  - Compare `policy (WITH CHECK ...)` expression against the payload
+    the API sends.
+  - Likely fix: ensure `owner_id = auth.uid()` on the insert payload,
+    OR move creation into a SECURITY DEFINER RPC that validates owner
+    against the application's property.
+- **Acceptance criteria:**
+  - [ ] Owner taps Send Request → row appears in `holding_deposits`
+        with matching `owner_id` / `tenant_id` / `application_id`.
+  - [ ] Tenant gets the "Pay now" CTA on their side.
+  - [ ] No bare "failed to create" toast — real error surfaced if the
+        policy still rejects.
+
+## CT7-018 🟠 Holding deposit payment lacks distinguishing bank-statement reference
+
+- **Role:** tenant (paying) + owner (reconciling)
+- **Screen / flow:** Tenant → Property / Application → Pay holding
+  deposit → PayFast / Yoco → bank statement line item
+- **Problem (client's words):** _"Holding deposit when being paid by
+  tenant, it should have all the details that distinguishes clearly
+  what that deposit was for in bank account and should appear in bank
+  statement."_
+- **Why this matters:** owners receive a terse "LALARENTE PAYFAST" line
+  on their bank statement with no indication of WHICH tenant / property /
+  deposit. Reconciling between the app's holding-deposits list and the
+  actual bank statement becomes manual guesswork — exactly the problem
+  a rental platform is supposed to solve.
+- **Suggested fix path:**
+  - PayFast: the `item_name` + `item_description` + `m_payment_id` fields
+    on the Yoco / PayFast payload flow through to the merchant bank
+    statement's description line (merchant / acquirer dependent — some
+    only surface item_name, some concatenate).
+  - Build a deterministic reference:
+    `LAL-HD-<application_id_short>-<property_short>`
+    e.g. `LAL-HD-A4B2-NASHIN123MAIN` — fits the ~25 char limit most
+    acquirers truncate at.
+  - Store this reference on the `holding_deposits` row so owner's
+    rent-roll / statements screen can show the same string and
+    reconciliation becomes a one-grep job.
+  - Also pass it into \`item_description\` for the PayFast confirmation
+    email the tenant receives — they see exactly what they paid for.
+- **Audit scope:**
+  - `src/features/payments/vendorPay` / \`payfastHost\` pattern — grep for
+    where the payment payload is constructed for holding deposits.
+  - Owner statements screen — add the reference column next to the
+    deposit row.
+- **Acceptance criteria:**
+  - [ ] Bank statement line reads something recognisable (contains
+        "LAL-HD-" prefix + an identifiable tail) — not just
+        "LALARENTE PAYFAST".
+  - [ ] The same reference appears on the owner's holding-deposits
+        screen next to the row.
+  - [ ] Tenant's PayFast confirmation email shows what the deposit
+        was for (property + landlord name).
+  - [ ] No PII (full ID numbers, phone) in the reference — initials or
+        a short hash only.
+
+## CT7-019 🟠 Owner approve-tenancy must be gated on holding deposit paid
+
+- **Role:** owner (surfaced) + tenant (impact)
+- **Screen / flow:** Owner → Applications → Approve
+- **Problem (client's words):** _"Without holding deposit approve should
+  not work for tenancy request approval."_
+- **Expected flow:**
+  1. Owner reviews a rental application.
+  2. Owner requests a holding deposit (CT7-017 covers the current RLS
+     failure on that step — this issue assumes CT7-017 lands first).
+  3. Tenant pays the holding deposit via PayFast (CT7-018 adds the
+     bank-statement reference).
+  4. **Only after the deposit is marked paid** can the owner tap
+     Approve on the application → lease creation.
+  5. Approve button is DISABLED (with explanatory tooltip) until the
+     holding deposit status === 'paid'.
+- **Suggested fix path:**
+  - Audit `OwnerApplicationDetailScreen` approve action for a gate.
+  - Join the application to its latest holding_deposits row by
+    application_id; disable Approve until that row's status is 'paid'.
+  - If the owner chose to SKIP holding deposit (not all landlords want
+    one), add an owner-side config / per-application opt-out — but
+    default to gated.
+  - On tap when still gated, show an Alert: "Request a holding deposit
+    first (or waive it) before approving."
+- **Depends on:**
+  - CT7-017 (holding deposit creation RLS fix).
+  - Decision on waivability (ask client — if waivable, the server-side
+    rule must still enforce "paid OR waived=true").
+- **Acceptance criteria:**
+  - [ ] Owner cannot Approve an application that has no holding_deposit
+        row in status paid (or waived=true).
+  - [ ] Clear UX hint on the approve button explaining why it's gated.
+  - [ ] Server-side RLS / policy ALSO enforces this — not just a client
+        check.
+  - [ ] Tenant never sees "approved" state without having paid a
+        deposit first.
+
+## CT7-020 🟠 Owner — lease start/end should use date pickers, not text input
+
+- **Role:** owner
+- **Screen / flow:** Owner → Applications → Create Lease → Lease Start Date / Lease End Date
+- **Problem (client's words):** _"Date pickers instead of typing the dates for creating lease start and end."_
+- **Context — same pattern we already fixed on Add Property:**
+  CT7-008 (merged in PR #192) swapped the "Available From" plain
+  TextInput for `@react-native-community/datetimepicker`. The lease
+  creation screen has the same stale pattern on BOTH date fields.
+- **Suggested fix path:**
+  - Audit the owner lease-creation screen (likely
+    `OwnerLeaseCreateScreen.tsx` or `OwnerApplicationDetailScreen`
+    create-lease modal) for the two TextInput date fields.
+  - Replace with `TouchableOpacity` → `DateTimePicker` pattern used
+    on `AddPropertyScreen.tsx` CT7-008.
+  - Start Date: `minimumDate = new Date()` (can't start in the past).
+  - End Date: `minimumDate = form.start_date + 1 month` (lease must be
+    at least one month — align with the RHA minimum).
+  - Both write back as `YYYY-MM-DD` ISO strings to keep the schema
+    unchanged.
+  - Platform: iOS spinner, Android default dialog — same as CT7-008.
+- **Acceptance criteria:**
+  - [ ] Both fields open a native picker on tap, no keyboard
+  - [ ] Can't pick a start date in the past
+  - [ ] End date is at least `start + 1 month`
+  - [ ] Lease row saves with the same ISO date strings the typed form
+        produced (no schema change)
+
+## CT7-021 🔴 Owner — Lease creation fails
+
+- **Role:** owner
+- **Screen / flow:** Owner → Applications → Create Lease → Save
+- **Problem (client's words):** _"Lease creation failed."_
+- **Open questions — need on next repro:**
+  - [ ] The exact error toast text (critical — "Failed to create lease"
+        vs a specific DB message)
+  - [ ] Does the lease row appear in `leases` even though UI shows
+        failure? (parallel of CT7-011 — property-created-but-ui-says-failed)
+  - [ ] Does it fail ONLY on certain applications (holding-deposit
+        gate from CT7-019?) or every time?
+- **Diagnosis path (in order of likelihood):**
+  1. **Date fields.** CT7-020 just logged that lease start/end are
+     plain TextInput — if the owner left the format wrong (e.g.
+     "11/7/26" vs "2026-11-07") the INSERT fails with a date-parse
+     error. Fixing CT7-020 would eliminate this class.
+  2. **RLS on `leases`.** Same family as CT7-017 — the INSERT policy
+     might require `owner_id = auth.uid()` AND `property.owner_id =
+auth.uid()`; if either join fails the insert rejects.
+  3. **Missing required field.** The `leases` schema has NOT NULL
+     columns (deposit, escalation type, payment due day) that the UI
+     might not be sending.
+  4. **Cascade from CT7-017 / CT7-019.** If the lease depends on a
+     holding-deposit row that was never created (RLS failure), the
+     foreign-key constraint on `leases.holding_deposit_id` would reject.
+- **Suggested fix path:**
+  - Pull the exact error text (ask client to screenshot the next time).
+  - Grep for `createLease` / `leasesApi.create` in src/features/leases.
+  - Compare the INSERT payload against the `leases` RLS policy in
+    `database/migrations/*lease*.sql`.
+  - Mirror CT7-011 refactor if the UI fails loudly but the row lands —
+    split try/catches so error messages are honest.
+- **Acceptance criteria:**
+  - [ ] Owner can create a lease from an approved application in <5s
+  - [ ] Error path shows the real DB message, not a generic "Failed"
+  - [ ] Lease row never lands silently while UI reports failure
+        (CT7-011 pattern)
+- **Blocked by / related:**
+  - CT7-020 (date pickers) — eliminates the date-format class of fail
+  - CT7-017 (holding deposit RLS) — if lease depends on deposit row
+  - CT7-019 (approve-gated-on-deposit) — if lease depends on approve
