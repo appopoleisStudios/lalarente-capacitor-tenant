@@ -25,6 +25,26 @@ export const styles = StyleSheet.create({
   backIcon: { fontSize: 20, color: '#6b7280' },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
   cancelText: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
+  // CT7-003 — primary Save pill in the header. Pill-shape so it reads as
+  // an action even at this scale; blue when enabled, muted when clean/
+  // saving so the owner knows when it's live.
+  headerSaveButton: {
+    backgroundColor: RSA.blue,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  headerSaveButtonDisabled: {
+    backgroundColor: '#e5e7eb',
+  },
+  headerSaveText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  headerSaveTextDisabled: {
+    color: '#9ca3af',
+  },
   scrollView: { flex: 1 },
   scrollContent: { padding: 16, paddingBottom: 100 },
   section: { marginBottom: 16 },
