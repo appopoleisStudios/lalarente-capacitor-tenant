@@ -8,7 +8,15 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import {
+  addOneCalendarMonth,
+  fromLocalIsoDate,
+  isDateBefore,
+  toLocalIsoDate,
+} from '../../leases/utils/leaseDateMath';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -44,6 +52,75 @@ export default function OwnerLeaseCreateScreen() {
   // Lease form fields
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+
+  // iOS inline spinner holds a DRAFT value that's only committed when
+  // the user taps Done. This covers the "open picker and tap Done
+  // without scrolling" case where the native `set` event never fires —
+  // previously the field would remain empty despite the picker showing
+  // a sensible default (today for start, start+1month for end).
+  const [iosStartDraft, setIosStartDraft] = useState<Date | null>(null);
+  const [iosEndDraft, setIosEndDraft] = useState<Date | null>(null);
+
+  // CT7-020 — lease date pickers. Same pattern as Add Property CT7-008,
+  // hardened per PR #196 SA review:
+  //   - toLocalIsoDate() preserves local calendar day (no UTC round-trip).
+  //   - addOneCalendarMonth() clamps Jan 31 -> Feb 28/29 instead of
+  //     overflowing to March.
+  //   - iOS keeps the spinner open until the owner taps Done; Android
+  //     dismisses on first change (native dialog behaviour).
+
+  const applyStartDate = (iso: string) => {
+    setStartDate(iso);
+    // Clear a now-invalid end date so the owner is nudged to re-pick it.
+    if (endDate) {
+      const requiredMin = addOneCalendarMonth(fromLocalIsoDate(iso));
+      if (isDateBefore(endDate, requiredMin)) setEndDate('');
+    }
+  };
+
+  const handleStartDateChange = (event: DateTimePickerEvent, selected?: Date) => {
+    if (Platform.OS === 'ios') {
+      // Buffer the selection; Done commits.
+      if (selected) setIosStartDraft(selected);
+      return;
+    }
+    // Android closes on every event.
+    setShowStartDatePicker(false);
+    if (event.type === 'set' && selected) {
+      applyStartDate(toLocalIsoDate(selected));
+    }
+  };
+
+  const confirmStartDateIos = () => {
+    // Fall back to the picker's visible default (today or current
+    // startDate) if the user opened and tapped Done without scrolling.
+    const committed = iosStartDraft ?? (startDate ? fromLocalIsoDate(startDate) : new Date());
+    applyStartDate(toLocalIsoDate(committed));
+    setIosStartDraft(null);
+    setShowStartDatePicker(false);
+  };
+
+  const handleEndDateChange = (event: DateTimePickerEvent, selected?: Date) => {
+    if (Platform.OS === 'ios') {
+      if (selected) setIosEndDraft(selected);
+      return;
+    }
+    setShowEndDatePicker(false);
+    if (event.type === 'set' && selected) {
+      setEndDate(toLocalIsoDate(selected));
+    }
+  };
+
+  const confirmEndDateIos = () => {
+    const committed = iosEndDraft ?? (endDate ? fromLocalIsoDate(endDate) : minEndDate);
+    setEndDate(toLocalIsoDate(committed));
+    setIosEndDraft(null);
+    setShowEndDatePicker(false);
+  };
+
+  const minEndDate = startDate ? addOneCalendarMonth(fromLocalIsoDate(startDate)) : new Date();
   const [leaseType, setLeaseType] = useState<'fixed' | 'month_to_month'>('fixed');
   const [monthlyRent, setMonthlyRent] = useState('');
   const [depositAmount, setDepositAmount] = useState('');
@@ -315,24 +392,70 @@ export default function OwnerLeaseCreateScreen() {
 
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>Start Date *</Text>
-                  <TextInput
+                  <TouchableOpacity
                     style={styles.input}
-                    value={startDate}
-                    onChangeText={setStartDate}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor="#999"
-                  />
+                    onPress={() => setShowStartDatePicker(true)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={{ color: startDate ? '#111' : '#999', fontSize: 15 }}>
+                      {startDate || 'YYYY-MM-DD'}
+                    </Text>
+                  </TouchableOpacity>
+                  {showStartDatePicker && (
+                    <>
+                      <DateTimePicker
+                        value={startDate ? fromLocalIsoDate(startDate) : new Date()}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        minimumDate={new Date()}
+                        onChange={handleStartDateChange}
+                      />
+                      {Platform.OS === 'ios' && (
+                        <TouchableOpacity
+                          style={styles.pickerDoneRow}
+                          onPress={confirmStartDateIos}
+                        >
+                          <Text style={styles.pickerDoneText}>Done</Text>
+                        </TouchableOpacity>
+                      )}
+                    </>
+                  )}
                 </View>
 
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>End Date *</Text>
-                  <TextInput
+                  <TouchableOpacity
                     style={styles.input}
-                    value={endDate}
-                    onChangeText={setEndDate}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor="#999"
-                  />
+                    onPress={() => setShowEndDatePicker(true)}
+                    activeOpacity={0.7}
+                    disabled={!startDate}
+                  >
+                    <Text
+                      style={{
+                        color: endDate ? '#111' : '#999',
+                        fontSize: 15,
+                        opacity: startDate ? 1 : 0.5,
+                      }}
+                    >
+                      {endDate || (startDate ? 'YYYY-MM-DD' : 'Pick start date first')}
+                    </Text>
+                  </TouchableOpacity>
+                  {showEndDatePicker && (
+                    <>
+                      <DateTimePicker
+                        value={endDate ? fromLocalIsoDate(endDate) : minEndDate}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        minimumDate={minEndDate}
+                        onChange={handleEndDateChange}
+                      />
+                      {Platform.OS === 'ios' && (
+                        <TouchableOpacity style={styles.pickerDoneRow} onPress={confirmEndDateIos}>
+                          <Text style={styles.pickerDoneText}>Done</Text>
+                        </TouchableOpacity>
+                      )}
+                    </>
+                  )}
                 </View>
               </View>
             </View>
@@ -496,6 +619,18 @@ export default function OwnerLeaseCreateScreen() {
 }
 
 const styles = StyleSheet.create({
+  // CT7-020 iOS spinner Done button — keeps the inline spinner open
+  // until the owner finishes picking the full date (year + month + day).
+  pickerDoneRow: {
+    alignItems: 'flex-end',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  pickerDoneText: {
+    color: RSA.blue,
+    fontSize: 16,
+    fontWeight: '600',
+  },
   safeArea: {
     flex: 1,
     backgroundColor: '#FFF',
