@@ -55,6 +55,14 @@ export default function OwnerLeaseCreateScreen() {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
+  // iOS inline spinner holds a DRAFT value that's only committed when
+  // the user taps Done. This covers the "open picker and tap Done
+  // without scrolling" case where the native `set` event never fires —
+  // previously the field would remain empty despite the picker showing
+  // a sensible default (today for start, start+1month for end).
+  const [iosStartDraft, setIosStartDraft] = useState<Date | null>(null);
+  const [iosEndDraft, setIosEndDraft] = useState<Date | null>(null);
+
   // CT7-020 — lease date pickers. Same pattern as Add Property CT7-008,
   // hardened per PR #196 SA review:
   //   - toLocalIsoDate() preserves local calendar day (no UTC round-trip).
@@ -73,25 +81,43 @@ export default function OwnerLeaseCreateScreen() {
   };
 
   const handleStartDateChange = (event: DateTimePickerEvent, selected?: Date) => {
-    if (Platform.OS === 'android') {
-      setShowStartDatePicker(false);
+    if (Platform.OS === 'ios') {
+      // Buffer the selection; Done commits.
+      if (selected) setIosStartDraft(selected);
+      return;
     }
+    // Android closes on every event.
+    setShowStartDatePicker(false);
     if (event.type === 'set' && selected) {
       applyStartDate(toLocalIsoDate(selected));
-    } else if (event.type === 'dismissed') {
-      setShowStartDatePicker(false);
     }
   };
 
+  const confirmStartDateIos = () => {
+    // Fall back to the picker's visible default (today or current
+    // startDate) if the user opened and tapped Done without scrolling.
+    const committed = iosStartDraft ?? (startDate ? fromLocalIsoDate(startDate) : new Date());
+    applyStartDate(toLocalIsoDate(committed));
+    setIosStartDraft(null);
+    setShowStartDatePicker(false);
+  };
+
   const handleEndDateChange = (event: DateTimePickerEvent, selected?: Date) => {
-    if (Platform.OS === 'android') {
-      setShowEndDatePicker(false);
+    if (Platform.OS === 'ios') {
+      if (selected) setIosEndDraft(selected);
+      return;
     }
+    setShowEndDatePicker(false);
     if (event.type === 'set' && selected) {
       setEndDate(toLocalIsoDate(selected));
-    } else if (event.type === 'dismissed') {
-      setShowEndDatePicker(false);
     }
+  };
+
+  const confirmEndDateIos = () => {
+    const committed = iosEndDraft ?? (endDate ? fromLocalIsoDate(endDate) : minEndDate);
+    setEndDate(toLocalIsoDate(committed));
+    setIosEndDraft(null);
+    setShowEndDatePicker(false);
   };
 
   const minEndDate = startDate ? addOneCalendarMonth(fromLocalIsoDate(startDate)) : new Date();
@@ -387,7 +413,7 @@ export default function OwnerLeaseCreateScreen() {
                       {Platform.OS === 'ios' && (
                         <TouchableOpacity
                           style={styles.pickerDoneRow}
-                          onPress={() => setShowStartDatePicker(false)}
+                          onPress={confirmStartDateIos}
                         >
                           <Text style={styles.pickerDoneText}>Done</Text>
                         </TouchableOpacity>
@@ -424,10 +450,7 @@ export default function OwnerLeaseCreateScreen() {
                         onChange={handleEndDateChange}
                       />
                       {Platform.OS === 'ios' && (
-                        <TouchableOpacity
-                          style={styles.pickerDoneRow}
-                          onPress={() => setShowEndDatePicker(false)}
-                        >
+                        <TouchableOpacity style={styles.pickerDoneRow} onPress={confirmEndDateIos}>
                           <Text style={styles.pickerDoneText}>Done</Text>
                         </TouchableOpacity>
                       )}

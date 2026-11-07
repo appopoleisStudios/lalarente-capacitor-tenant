@@ -69,14 +69,25 @@ describe('addOneCalendarMonth', () => {
 });
 
 describe('isDateBefore', () => {
-  it('compares calendar day only (time components ignored)', () => {
-    const mid = new Date(2026, 10, 7);
-    const earlierTime = new Date(2026, 10, 7, 1, 0, 0, 0);
-    expect(isDateBefore(earlierTime, mid)).toBe(false);
+  // Stronger fixture: a broken timestamp-only implementation
+  // (candidateMs < minimumMs) would return TRUE here because 00:00 is
+  // before 23:59 on the same day. The correct day-stripped impl
+  // returns FALSE because they share the same calendar day. This test
+  // distinguishes the two.
+  it('returns false for earlier TIME on the same calendar day', () => {
+    const minimumLateInDay = new Date(2026, 10, 7, 23, 59, 59);
+    const candidateEarlyInDay = new Date(2026, 10, 7, 0, 0, 0);
+    expect(isDateBefore(candidateEarlyInDay, minimumLateInDay)).toBe(false);
   });
 
-  it('returns true when candidate day is strictly earlier', () => {
-    expect(isDateBefore(new Date(2026, 10, 6), new Date(2026, 10, 7))).toBe(true);
+  // Symmetric check — the converse pair of timestamps (later time of
+  // candidate day, earlier time of minimum day) must still correctly
+  // report candidate as before when the DAY is before, independent of
+  // time components.
+  it('returns true when candidate day is strictly earlier regardless of time', () => {
+    const candidateLateOnPrevDay = new Date(2026, 10, 6, 23, 59, 59);
+    const minimumEarlyOnNextDay = new Date(2026, 10, 7, 0, 0, 1);
+    expect(isDateBefore(candidateLateOnPrevDay, minimumEarlyOnNextDay)).toBe(true);
   });
 
   it('returns false when candidate day is the same', () => {
