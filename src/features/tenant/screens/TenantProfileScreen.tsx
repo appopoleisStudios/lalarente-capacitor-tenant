@@ -54,6 +54,10 @@ export default function TenantProfileScreen() {
   // CT7-014 FICA document uploads (persisted inside fica_documents JSON).
   const [idDocumentUrl, setIdDocumentUrl] = useState('');
   const [salaryCertificateUrl, setSalaryCertificateUrl] = useState('');
+  // Serialize concurrent FICA writes so two uploads in flight can't race
+  // on the read-modify-write of the fica_documents JSON — closes the
+  // Architect's race finding on PR #195 without needing a Postgres RPC.
+  const [savingFicaDoc, setSavingFicaDoc] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -373,25 +377,39 @@ export default function TenantProfileScreen() {
     ]);
   };
 
-  const handleUploadIdDocument = () =>
+  const handleUploadIdDocument = () => {
+    if (savingFicaDoc) return;
     pickFicaDocument('id-documents', 'id', 'SA ID document', async (url) => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-      await persistFicaDocField(user.id, 'id_document_url', url);
-      setIdDocumentUrl(url);
+      setSavingFicaDoc(true);
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) throw new Error('Not authenticated');
+        await persistFicaDocField(user.id, 'id_document_url', url);
+        setIdDocumentUrl(url);
+      } finally {
+        setSavingFicaDoc(false);
+      }
     });
+  };
 
-  const handleUploadSalaryCertificate = () =>
+  const handleUploadSalaryCertificate = () => {
+    if (savingFicaDoc) return;
     pickFicaDocument('proof-of-income', 'salary', 'Salary certificate', async (url) => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-      await persistFicaDocField(user.id, 'salary_certificate_urls', [url]);
-      setSalaryCertificateUrl(url);
+      setSavingFicaDoc(true);
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) throw new Error('Not authenticated');
+        await persistFicaDocField(user.id, 'salary_certificate_urls', [url]);
+        setSalaryCertificateUrl(url);
+      } finally {
+        setSavingFicaDoc(false);
+      }
     });
+  };
 
   // Profile completion check
   const missingFields: string[] = [];
@@ -674,15 +692,21 @@ export default function TenantProfileScreen() {
                     ID document uploaded
                   </Text>
                   {editing && (
-                    <TouchableOpacity onPress={handleUploadIdDocument}>
+                    <TouchableOpacity disabled={savingFicaDoc} onPress={handleUploadIdDocument}>
                       <Text style={styles.replaceText}>Replace</Text>
                     </TouchableOpacity>
                   )}
                 </View>
               ) : (
-                <TouchableOpacity style={styles.uploadButton} onPress={handleUploadIdDocument}>
+                <TouchableOpacity
+                  style={styles.uploadButton}
+                  disabled={savingFicaDoc}
+                  onPress={handleUploadIdDocument}
+                >
                   <Ionicons name="cloud-upload-outline" size={22} color={RSA.green} />
-                  <Text style={styles.uploadButtonText}>Upload ID photo or PDF</Text>
+                  <Text style={styles.uploadButtonText}>
+                    {savingFicaDoc ? 'Please wait…' : 'Upload ID photo or PDF'}
+                  </Text>
                 </TouchableOpacity>
               )}
               <Text style={styles.uploadHint}>
@@ -704,7 +728,10 @@ export default function TenantProfileScreen() {
                     Salary certificate uploaded
                   </Text>
                   {editing && (
-                    <TouchableOpacity onPress={handleUploadSalaryCertificate}>
+                    <TouchableOpacity
+                      disabled={savingFicaDoc}
+                      onPress={handleUploadSalaryCertificate}
+                    >
                       <Text style={styles.replaceText}>Replace</Text>
                     </TouchableOpacity>
                   )}
@@ -712,10 +739,13 @@ export default function TenantProfileScreen() {
               ) : (
                 <TouchableOpacity
                   style={styles.uploadButton}
+                  disabled={savingFicaDoc}
                   onPress={handleUploadSalaryCertificate}
                 >
                   <Ionicons name="cloud-upload-outline" size={22} color={RSA.green} />
-                  <Text style={styles.uploadButtonText}>Upload payslip or salary letter</Text>
+                  <Text style={styles.uploadButtonText}>
+                    {savingFicaDoc ? 'Please wait…' : 'Upload payslip or salary letter'}
+                  </Text>
                 </TouchableOpacity>
               )}
               <Text style={styles.uploadHint}>

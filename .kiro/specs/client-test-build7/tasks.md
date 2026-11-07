@@ -580,3 +580,41 @@
         was for (property + landlord name).
   - [ ] No PII (full ID numbers, phone) in the reference — initials or
         a short hash only.
+
+## CT7-019 🟠 Owner approve-tenancy must be gated on holding deposit paid
+
+- **Role:** owner (surfaced) + tenant (impact)
+- **Screen / flow:** Owner → Applications → Approve
+- **Problem (client's words):** _"Without holding deposit approve should
+  not work for tenancy request approval."_
+- **Expected flow:**
+  1. Owner reviews a rental application.
+  2. Owner requests a holding deposit (CT7-017 covers the current RLS
+     failure on that step — this issue assumes CT7-017 lands first).
+  3. Tenant pays the holding deposit via PayFast (CT7-018 adds the
+     bank-statement reference).
+  4. **Only after the deposit is marked paid** can the owner tap
+     Approve on the application → lease creation.
+  5. Approve button is DISABLED (with explanatory tooltip) until the
+     holding deposit status === 'paid'.
+- **Suggested fix path:**
+  - Audit `OwnerApplicationDetailScreen` approve action for a gate.
+  - Join the application to its latest holding_deposits row by
+    application_id; disable Approve until that row's status is 'paid'.
+  - If the owner chose to SKIP holding deposit (not all landlords want
+    one), add an owner-side config / per-application opt-out — but
+    default to gated.
+  - On tap when still gated, show an Alert: "Request a holding deposit
+    first (or waive it) before approving."
+- **Depends on:**
+  - CT7-017 (holding deposit creation RLS fix).
+  - Decision on waivability (ask client — if waivable, the server-side
+    rule must still enforce "paid OR waived=true").
+- **Acceptance criteria:**
+  - [ ] Owner cannot Approve an application that has no holding_deposit
+        row in status paid (or waived=true).
+  - [ ] Clear UX hint on the approve button explaining why it's gated.
+  - [ ] Server-side RLS / policy ALSO enforces this — not just a client
+        check.
+  - [ ] Tenant never sees "approved" state without having paid a
+        deposit first.
