@@ -21,6 +21,11 @@ interface TenantProfileRow {
     id_number?: string | null;
     date_of_birth?: string | null;
     monthly_income?: number | string | null;
+    // CT7-014: document uploads live in the fica_documents JSON blob
+    // rather than their own columns — no migration needed, and the blob
+    // was already carrying the legacy per-field values.
+    id_document_url?: string | null;
+    salary_certificate_urls?: string[] | null;
   } | null;
 }
 
@@ -31,6 +36,8 @@ const LABEL = {
   dateOfBirth: 'Date of birth',
   monthlyIncome: 'Monthly income',
   proofOfAddress: 'Proof of address',
+  idDocument: 'SA ID document',
+  salaryCertificate: 'Salary certificate / payslip',
 } as const;
 
 /** Return `v` if it has meaningful content, otherwise `null`. Treats
@@ -82,6 +89,11 @@ export async function checkTenantProfileCompleteness(
   const incomeRaw = data.monthly_income ?? data.fica_documents?.monthly_income ?? null;
   const income = positiveNumber(incomeRaw);
 
+  // CT7-014 document fields live in the fica_documents JSON blob.
+  const idDocumentUrl = nonBlank(data.fica_documents?.id_document_url ?? null);
+  const salaryCerts = data.fica_documents?.salary_certificate_urls ?? null;
+  const hasSalaryCert = Array.isArray(salaryCerts) && salaryCerts.some((u) => nonBlank(u) !== null);
+
   const missing: string[] = [];
   if (!nonBlank(data.full_name)) missing.push(LABEL.fullName);
   if (!nonBlank(data.phone)) missing.push(LABEL.phone);
@@ -89,6 +101,8 @@ export async function checkTenantProfileCompleteness(
   if (!dob) missing.push(LABEL.dateOfBirth);
   if (income == null) missing.push(LABEL.monthlyIncome);
   if (!nonBlank(data.proof_of_address_url)) missing.push(LABEL.proofOfAddress);
+  if (!idDocumentUrl) missing.push(LABEL.idDocument);
+  if (!hasSalaryCert) missing.push(LABEL.salaryCertificate);
 
   return missing.length === 0
     ? { status: 'ok', complete: true, missing: [] }

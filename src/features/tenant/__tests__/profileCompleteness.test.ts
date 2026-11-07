@@ -29,7 +29,11 @@ const completeRow = {
   date_of_birth: '1985-01-01',
   proof_of_address_url: 'https://cdn/proof.pdf',
   monthly_income: 25000,
-  fica_documents: null,
+  // CT7-014: FICA document uploads land inside the fica_documents JSON blob.
+  fica_documents: {
+    id_document_url: 'https://cdn/id.pdf',
+    salary_certificate_urls: ['https://cdn/payslip-1.pdf'],
+  },
 };
 
 beforeEach(() => {
@@ -52,7 +56,11 @@ describe('checkTenantProfileCompleteness', () => {
         ...completeRow,
         id_number: '',
         date_of_birth: '',
-        fica_documents: { id_number: '8501015800085', date_of_birth: '1985-01-01' },
+        fica_documents: {
+          ...completeRow.fica_documents,
+          id_number: '8501015800085',
+          date_of_birth: '1985-01-01',
+        },
       },
       error: null,
     });
@@ -99,7 +107,10 @@ describe('checkTenantProfileCompleteness', () => {
       data: {
         ...completeRow,
         monthly_income: null,
-        fica_documents: { monthly_income: '15000' as unknown as number },
+        fica_documents: {
+          ...completeRow.fica_documents,
+          monthly_income: '15000' as unknown as number,
+        },
       },
       error: null,
     });
@@ -118,6 +129,63 @@ describe('checkTenantProfileCompleteness', () => {
     const result = await checkTenantProfileCompleteness('u1');
 
     expect(result).toEqual({ status: 'error', message: 'connection reset' });
+  });
+
+  // CT7-014 — document uploads required.
+
+  it('flags missing when id_document_url is absent from fica_documents', async () => {
+    mockMaybeSingle.mockResolvedValue({
+      data: {
+        ...completeRow,
+        fica_documents: { salary_certificate_urls: ['https://cdn/payslip-1.pdf'] },
+      },
+      error: null,
+    });
+
+    const result = await checkTenantProfileCompleteness('u1');
+
+    expect(result).toMatchObject({ status: 'ok', complete: false });
+    if (result.status === 'ok' && !result.complete) {
+      expect(result.missing).toContain('SA ID document');
+      expect(result.missing).not.toContain('Salary certificate / payslip');
+    }
+  });
+
+  it('flags missing when salary_certificate_urls is empty or missing', async () => {
+    for (const bad of [null, undefined, [], ['   '], ['']]) {
+      mockMaybeSingle.mockResolvedValue({
+        data: {
+          ...completeRow,
+          fica_documents: {
+            id_document_url: 'https://cdn/id.pdf',
+            salary_certificate_urls: bad as never,
+          },
+        },
+        error: null,
+      });
+      const result = await checkTenantProfileCompleteness('u1');
+      expect(result).toMatchObject({ status: 'ok', complete: false });
+      if (result.status === 'ok' && !result.complete) {
+        expect(result.missing).toContain('Salary certificate / payslip');
+      }
+    }
+  });
+
+  it('accepts salary certificates when at least one non-blank URL is present', async () => {
+    mockMaybeSingle.mockResolvedValue({
+      data: {
+        ...completeRow,
+        fica_documents: {
+          id_document_url: 'https://cdn/id.pdf',
+          salary_certificate_urls: ['', '   ', 'https://cdn/payslip-3.pdf'],
+        },
+      },
+      error: null,
+    });
+
+    const result = await checkTenantProfileCompleteness('u1');
+
+    expect(result).toEqual({ status: 'ok', complete: true, missing: [] });
   });
 
   it('returns incomplete with "Profile not found" when no row exists', async () => {

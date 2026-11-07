@@ -50,6 +50,10 @@ export default function TenantProfileScreen() {
   // Proof of Address
   const [proofOfAddressUrl, setProofOfAddressUrl] = useState('');
 
+  // CT7-014 FICA document uploads (persisted inside fica_documents JSON).
+  const [idDocumentUrl, setIdDocumentUrl] = useState('');
+  const [salaryCertificateUrl, setSalaryCertificateUrl] = useState('');
+
   useEffect(() => {
     loadProfile();
   }, []);
@@ -107,6 +111,14 @@ export default function TenantProfileScreen() {
 
         // Proof of Address
         setProofOfAddressUrl(profileData.proof_of_address_url || '');
+
+        // CT7-014 FICA document uploads — read from the fica_documents JSON.
+        const fica = (profileData.fica_documents || {}) as {
+          id_document_url?: string | null;
+          salary_certificate_urls?: string[] | null;
+        };
+        setIdDocumentUrl(fica.id_document_url || '');
+        setSalaryCertificateUrl(fica.salary_certificate_urls?.[0] || '');
       }
     } catch (err) {
       Alert.alert('Error', 'Failed to load profile');
@@ -263,6 +275,138 @@ export default function TenantProfileScreen() {
       { text: 'Cancel', style: 'cancel' },
     ]);
   };
+
+  // CT7-014 — SA ID document + Salary certificate uploaders. Both persist
+  // into the fica_documents JSON blob so no migration is needed. Reuses
+  // the same fetch(uri).arrayBuffer() path as proof-of-address (works on
+  // Hermes; the broken .blob() path is not used anywhere in this file).
+  const persistFicaDocField = async (
+    field: 'id_document_url' | 'salary_certificate_urls',
+    value: string | string[]
+  ) => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { data: current } = await supabase
+      .from('profiles')
+      .select('fica_documents')
+      .eq('id', user.id)
+      .single();
+    const currentFica = ((current as any)?.fica_documents || {}) as Record<string, unknown>;
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ fica_documents: { ...currentFica, [field]: value } as any })
+      .eq('id', user.id);
+
+    if (error) throw error;
+  };
+
+  const uploadFicaDocument = async (
+    bucket: 'id-documents' | 'proof-of-income',
+    pathPrefix: 'id' | 'salary',
+    uri: string,
+    mimeType: string
+  ): Promise<string> => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const ext =
+      mimeType === 'application/pdf'
+        ? 'pdf'
+        : mimeType.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
+    const path = `${user.id}/${pathPrefix}_${Date.now()}.${ext}`;
+
+    const response = await fetch(uri);
+    const arrayBuffer = await response.arrayBuffer();
+
+    const { error: uploadError } = await supabase.storage
+      .from(bucket)
+      .upload(path, arrayBuffer, { contentType: mimeType, upsert: true });
+    if (uploadError) throw uploadError;
+
+    const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path);
+    return urlData.publicUrl;
+  };
+
+  const pickFicaDocument = (
+    bucket: 'id-documents' | 'proof-of-income',
+    pathPrefix: 'id' | 'salary',
+    label: string,
+    onUploaded: (url: string) => Promise<void>
+  ) => {
+    const run = async (pick: () => Promise<void>) => {
+      try {
+        await pick();
+      } catch (err: unknown) {
+        Alert.alert('Error', err instanceof Error ? err.message : `Failed to upload ${label}`);
+      }
+    };
+    Alert.alert('Upload Document', 'Choose source', [
+      {
+        text: 'Take Photo',
+        onPress: () =>
+          run(async () => {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert('Permission Required', 'Camera access is needed to take a photo');
+              return;
+            }
+            const result = await ImagePicker.launchCameraAsync({
+              mediaTypes: ['images'],
+              quality: 0.7,
+            });
+            if (result.canceled || !result.assets?.length) return;
+            const asset = result.assets[0];
+            const url = await uploadFicaDocument(
+              bucket,
+              pathPrefix,
+              asset.uri,
+              asset.mimeType || 'image/jpeg'
+            );
+            await onUploaded(url);
+            Alert.alert('Uploaded', `${label} uploaded successfully`);
+          }),
+      },
+      {
+        text: 'Choose File (PDF or image)',
+        onPress: () =>
+          run(async () => {
+            const result = await DocumentPicker.getDocumentAsync({
+              type: ['image/*', 'application/pdf'],
+              copyToCacheDirectory: true,
+            });
+            if (result.canceled || !result.assets?.length) return;
+            const asset = result.assets[0];
+            const url = await uploadFicaDocument(
+              bucket,
+              pathPrefix,
+              asset.uri,
+              asset.mimeType || 'application/pdf'
+            );
+            await onUploaded(url);
+            Alert.alert('Uploaded', `${label} uploaded successfully`);
+          }),
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const handleUploadIdDocument = () =>
+    pickFicaDocument('id-documents', 'id', 'SA ID document', async (url) => {
+      await persistFicaDocField('id_document_url', url);
+      setIdDocumentUrl(url);
+    });
+
+  const handleUploadSalaryCertificate = () =>
+    pickFicaDocument('proof-of-income', 'salary', 'Salary certificate', async (url) => {
+      await persistFicaDocField('salary_certificate_urls', [url]);
+      setSalaryCertificateUrl(url);
+    });
 
   // Profile completion check
   const missingFields: string[] = [];
@@ -528,6 +672,69 @@ export default function TenantProfileScreen() {
               <Text style={styles.uploadHint}>
                 Recent utility bill, bank statement, or municipal account (photo or PDF, not older
                 than 3 months)
+              </Text>
+            </View>
+          </View>
+
+          {/* CT7-014 — SA ID Document */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>SA ID Document</Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Upload your ID</Text>
+              {idDocumentUrl ? (
+                <View style={styles.uploadedRow}>
+                  <Ionicons name="document-attach" size={20} color={RSA.green} />
+                  <Text style={styles.uploadedText} numberOfLines={1}>
+                    ID document uploaded
+                  </Text>
+                  {editing && (
+                    <TouchableOpacity onPress={handleUploadIdDocument}>
+                      <Text style={styles.replaceText}>Replace</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ) : (
+                <TouchableOpacity style={styles.uploadButton} onPress={handleUploadIdDocument}>
+                  <Ionicons name="cloud-upload-outline" size={22} color={RSA.green} />
+                  <Text style={styles.uploadButtonText}>Upload ID photo or PDF</Text>
+                </TouchableOpacity>
+              )}
+              <Text style={styles.uploadHint}>
+                Clear photo or scan of your SA ID (green ID book or smart ID card).
+              </Text>
+            </View>
+          </View>
+
+          {/* CT7-014 — Salary Certificate */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Salary Certificate</Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Latest payslip or salary letter</Text>
+              {salaryCertificateUrl ? (
+                <View style={styles.uploadedRow}>
+                  <Ionicons name="document-attach" size={20} color={RSA.green} />
+                  <Text style={styles.uploadedText} numberOfLines={1}>
+                    Salary certificate uploaded
+                  </Text>
+                  {editing && (
+                    <TouchableOpacity onPress={handleUploadSalaryCertificate}>
+                      <Text style={styles.replaceText}>Replace</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.uploadButton}
+                  onPress={handleUploadSalaryCertificate}
+                >
+                  <Ionicons name="cloud-upload-outline" size={22} color={RSA.green} />
+                  <Text style={styles.uploadButtonText}>Upload payslip or salary letter</Text>
+                </TouchableOpacity>
+              )}
+              <Text style={styles.uploadHint}>
+                Most recent payslip or an employer salary confirmation letter (photo or PDF).
               </Text>
             </View>
           </View>
