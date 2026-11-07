@@ -536,3 +536,47 @@
   - [ ] Tenant gets the "Pay now" CTA on their side.
   - [ ] No bare "failed to create" toast — real error surfaced if the
         policy still rejects.
+
+## CT7-018 🟠 Holding deposit payment lacks distinguishing bank-statement reference
+
+- **Role:** tenant (paying) + owner (reconciling)
+- **Screen / flow:** Tenant → Property / Application → Pay holding
+  deposit → PayFast / Yoco → bank statement line item
+- **Problem (client's words):** _"Holding deposit when being paid by
+  tenant, it should have all the details that distinguishes clearly
+  what that deposit was for in bank account and should appear in bank
+  statement."_
+- **Why this matters:** owners receive a terse "LALARENTE PAYFAST" line
+  on their bank statement with no indication of WHICH tenant / property /
+  deposit. Reconciling between the app's holding-deposits list and the
+  actual bank statement becomes manual guesswork — exactly the problem
+  a rental platform is supposed to solve.
+- **Suggested fix path:**
+  - PayFast: the `item_name` + `item_description` + `m_payment_id` fields
+    on the Yoco / PayFast payload flow through to the merchant bank
+    statement's description line (merchant / acquirer dependent — some
+    only surface item_name, some concatenate).
+  - Build a deterministic reference:
+    `LAL-HD-<application_id_short>-<property_short>`
+    e.g. `LAL-HD-A4B2-NASHIN123MAIN` — fits the ~25 char limit most
+    acquirers truncate at.
+  - Store this reference on the `holding_deposits` row so owner's
+    rent-roll / statements screen can show the same string and
+    reconciliation becomes a one-grep job.
+  - Also pass it into \`item_description\` for the PayFast confirmation
+    email the tenant receives — they see exactly what they paid for.
+- **Audit scope:**
+  - `src/features/payments/vendorPay` / \`payfastHost\` pattern — grep for
+    where the payment payload is constructed for holding deposits.
+  - Owner statements screen — add the reference column next to the
+    deposit row.
+- **Acceptance criteria:**
+  - [ ] Bank statement line reads something recognisable (contains
+        "LAL-HD-" prefix + an identifiable tail) — not just
+        "LALARENTE PAYFAST".
+  - [ ] The same reference appears on the owner's holding-deposits
+        screen next to the row.
+  - [ ] Tenant's PayFast confirmation email shows what the deposit
+        was for (property + landlord name).
+  - [ ] No PII (full ID numbers, phone) in the reference — initials or
+        a short hash only.
