@@ -8,7 +8,9 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -44,6 +46,43 @@ export default function OwnerLeaseCreateScreen() {
   // Lease form fields
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+
+  // CT7-020 — lease date pickers. Same pattern as Add Property CT7-008.
+  // Writes back as YYYY-MM-DD so the existing schema + handleSubmit are
+  // unchanged. Start cannot be in the past; end must be at least one
+  // month after start (RHA minimum lease).
+  const toIsoDate = (d: Date) => d.toISOString().split('T')[0];
+
+  const handleStartDateChange = (event: DateTimePickerEvent, selected?: Date) => {
+    setShowStartDatePicker(false);
+    if (event.type === 'set' && selected) {
+      const iso = toIsoDate(selected);
+      setStartDate(iso);
+      // If the current end date is before the new start + 1 month, clear it
+      // so the owner is nudged to pick a valid end date.
+      if (endDate) {
+        const minEnd = new Date(selected);
+        minEnd.setMonth(minEnd.getMonth() + 1);
+        if (new Date(endDate) < minEnd) setEndDate('');
+      }
+    }
+  };
+
+  const handleEndDateChange = (event: DateTimePickerEvent, selected?: Date) => {
+    setShowEndDatePicker(false);
+    if (event.type === 'set' && selected) {
+      setEndDate(toIsoDate(selected));
+    }
+  };
+
+  const minEndDate = (() => {
+    if (!startDate) return new Date();
+    const d = new Date(startDate);
+    d.setMonth(d.getMonth() + 1);
+    return d;
+  })();
   const [leaseType, setLeaseType] = useState<'fixed' | 'month_to_month'>('fixed');
   const [monthlyRent, setMonthlyRent] = useState('');
   const [depositAmount, setDepositAmount] = useState('');
@@ -315,24 +354,53 @@ export default function OwnerLeaseCreateScreen() {
 
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>Start Date *</Text>
-                  <TextInput
+                  <TouchableOpacity
                     style={styles.input}
-                    value={startDate}
-                    onChangeText={setStartDate}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor="#999"
-                  />
+                    onPress={() => setShowStartDatePicker(true)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={{ color: startDate ? '#111' : '#999', fontSize: 15 }}>
+                      {startDate || 'YYYY-MM-DD'}
+                    </Text>
+                  </TouchableOpacity>
+                  {showStartDatePicker && (
+                    <DateTimePicker
+                      value={startDate ? new Date(startDate) : new Date()}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      minimumDate={new Date()}
+                      onChange={handleStartDateChange}
+                    />
+                  )}
                 </View>
 
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>End Date *</Text>
-                  <TextInput
+                  <TouchableOpacity
                     style={styles.input}
-                    value={endDate}
-                    onChangeText={setEndDate}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor="#999"
-                  />
+                    onPress={() => setShowEndDatePicker(true)}
+                    activeOpacity={0.7}
+                    disabled={!startDate}
+                  >
+                    <Text
+                      style={{
+                        color: endDate ? '#111' : '#999',
+                        fontSize: 15,
+                        opacity: startDate ? 1 : 0.5,
+                      }}
+                    >
+                      {endDate || (startDate ? 'YYYY-MM-DD' : 'Pick start date first')}
+                    </Text>
+                  </TouchableOpacity>
+                  {showEndDatePicker && (
+                    <DateTimePicker
+                      value={endDate ? new Date(endDate) : minEndDate}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      minimumDate={minEndDate}
+                      onChange={handleEndDateChange}
+                    />
+                  )}
                 </View>
               </View>
             </View>
