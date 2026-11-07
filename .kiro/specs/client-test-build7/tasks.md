@@ -689,3 +689,83 @@ auth.uid()`; if either join fails the insert rejects.
   - CT7-020 (date pickers) — eliminates the date-format class of fail
   - CT7-017 (holding deposit RLS) — if lease depends on deposit row
   - CT7-019 (approve-gated-on-deposit) — if lease depends on approve
+
+## CT7-022 🟠 Owner — show + edit lease PDF before sending to tenant
+
+- **Role:** owner
+- **Screen / flow:** Owner → Applications → Create Lease → tap Create
+- **Problem (client's words):** _"When create lease button is pressed,
+  the PDF of lease document should pop up for the owner to read and
+  approve or edit. When he clicks on edit, some provision has to be
+  provided for them to change the details in texts or clauses of
+  agreement. Delete or add clauses or details."_
+- **Why this matters:** today the lease is generated server-side with
+  a fixed template; the owner sees it only after the tenant signs
+  (via the "Download" button on the lease screen). By then it's too
+  late to correct a clause. Owners frequently have property-specific
+  terms (pet deposits, garden maintenance, tenant-to-pay-for-X) that
+  the generic template doesn't cover.
+- **Design sketch (two viable phases):**
+
+  **v1 — Review + accept/reject + append (ship fast):**
+  - After tapping Create → UI shows a preview screen: PDF rendered
+    via `expo-print` from the SAME HTML template the server uses.
+  - Three actions on the preview:
+    - **Looks good — send to tenant** → saves lease row, uploads PDF,
+      moves lease to `pending_tenant_signature` (current behavior).
+    - **Add custom clauses** → bottom sheet with a textarea; typed
+      paragraphs get appended to a new "Additional Terms" section
+      in the template.
+    - **Cancel** → back to the form (edits preserved).
+  - Zero new WYSIWYG editor; zero template surgery. Good enough for
+    99% of landlord custom-terms needs.
+
+  **v2 — Clause-level editing (if clients demand it after v1):**
+  - Render the lease template as a structured list of clauses
+    (migrate the HTML template to a JSON array of
+    `{ id, title, body, deletable }`).
+  - Preview screen shows each clause as a card with inline edit +
+    delete + "add clause above / below" affordances.
+  - "Required by RHA" clauses are flagged undeletable with a tooltip.
+  - On confirm, the chosen clause set is rendered to HTML →
+    `expo-print` → PDF → upload → same lease flow.
+
+- **Implementation footprint for v1:**
+  - New screen: `app/(owner)/leases/review/[applicationId].tsx`
+  - New util: `src/features/leases/utils/renderLeaseHtml.ts` — pure
+    function taking lease fields + custom-clauses array + property +
+    parties → full HTML (shared with the server-side generator so
+    the preview matches the final PDF byte-for-byte).
+  - OwnerLeaseCreateScreen → on tap Create, instead of writing the
+    row, it routes to the review screen with the form state as
+    params.
+  - Review screen uses `expo-print` `printToFileAsync()` to get a
+    PDF URI, `WebBrowser.openBrowserAsync()` or `<WebView>` to
+    display, and the existing `uploadFile` helper to persist.
+  - Additional Terms are saved as a `lease_custom_clauses` text
+    column on `leases` so they survive and appear on re-renders
+    (renewals, PDF re-generation).
+
+- **Depends on / interacts with:**
+  - CT7-021 (lease create fail) — this new flow REPLACES the current
+    create button; fixing #21's root cause still matters because the
+    same code path writes the row at the end.
+  - CT7-020 (date pickers) — unchanged; the preview reads whatever
+    dates the picker produced.
+
+- **Open questions for client:**
+  1. v1 (append-only) or v2 (clause-level editor)? v1 ships in 2-3
+     days; v2 is probably 2 weeks of work.
+  2. Should custom clauses need a "legal review" flag before sending?
+  3. Are there clauses that MUST appear (e.g. RHA §5A deposit
+     return) that the owner shouldn't be able to delete?
+
+- **Acceptance criteria (v1):**
+  - [ ] Tapping Create Lease shows a scrollable PDF preview, not an
+        instant "lease sent" success
+  - [ ] Owner can type additional clauses into a textarea and see
+        them appear in the preview
+  - [ ] "Send to tenant" is the terminal action — same row, same
+        status transition as today's Create button
+  - [ ] Cancel preserves form state so the owner doesn't re-key the
+        whole lease
