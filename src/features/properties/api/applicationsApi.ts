@@ -304,31 +304,35 @@ export const applicationsApi = {
   },
 
   /**
-   * Approve an application
+   * Approve an application.
+   *
+   * CT7-019: delegates to the SECURITY DEFINER Postgres function
+   * `approve_application(app_uuid)` (migration 075). The function
+   * checks the owner, the holding-deposit status, and flips the
+   * application row in a single transaction — concurrency-safe.
+   * A BEFORE UPDATE trigger on rental_applications also blocks any
+   * direct status→'approved' update outside this RPC, so bypassing
+   * the JS client via a direct REST call doesn't work either.
    */
   async approveApplication(id: string): Promise<RentalApplication> {
-    const { data, error } = await supabase
-      .from('rental_applications')
-      .update({
-        status: 'approved',
-        reviewed_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .select()
-      .single();
+    const { data, error } = await (supabase as any).rpc('approve_application', {
+      app_uuid: id,
+    });
 
     if (error) {
-      console.error('Error approving application:', error);
-      throw new Error(`Failed to approve application: ${error.message}`);
+      console.error('Error approving application via RPC:', error);
+      throw new Error(error.message || 'Failed to approve application');
     }
+
+    // RPC returns a single row (the updated application).
+    const row = (Array.isArray(data) ? data[0] : data) as RentalApplication;
 
     // Send notification to tenant that application was approved
     try {
       const { notificationsApi } =
         await import('@/src/features/notifications/api/notificationsApi');
-      const app = data as any;
       notificationsApi.sendNotification({
-        user_id: app.tenant_id,
+        user_id: (row as any).tenant_id,
         type: 'application_approved',
         data: {
           propertyTitle: '',
@@ -343,7 +347,7 @@ export const applicationsApi = {
 
     // TODO: Reject other pending applications for the same property
 
-    return data;
+    return row;
   },
 
   /**
