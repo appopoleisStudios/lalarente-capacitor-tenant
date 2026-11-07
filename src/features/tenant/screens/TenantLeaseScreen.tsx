@@ -18,6 +18,7 @@ import { notificationsApi } from '../../notifications/api/notificationsApi';
 import SignatureModal from '../../leases/components/SignatureModal';
 import { uploadSignature } from '../../leases/api/storageService';
 import { regenerateLeasePDF } from '../../leases/api/regenerateLeasePDF';
+import { evaluateSignLeaseGate } from '../utils/leaseSignGate';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
 
@@ -206,8 +207,30 @@ export default function TenantLeaseScreen() {
     }
   };
 
-  const handleSignLease = () => {
-    setShowSignatureModal(true);
+  const handleSignLease = async () => {
+    // Profile-completeness gate (CT7-012). Field requirements live in
+    // the shared evaluateSignLeaseGate() / checkTenantProfileCompleteness()
+    // pair — same rules as the dashboard banner (CT7-013), so field lists
+    // can't drift across surfaces even though the two reads happen at
+    // different moments. Fails CLOSED on lookup errors: a retryable alert
+    // rather than opening the signature modal on unknown state.
+    const decision = await evaluateSignLeaseGate();
+    if (decision.action === 'sign') {
+      setShowSignatureModal(true);
+      return;
+    }
+
+    const buttons = decision.cta
+      ? [
+          { text: 'Not now', style: 'cancel' as const },
+          {
+            text: decision.cta.label,
+            onPress: () => router.push(decision.cta!.href as any),
+          },
+        ]
+      : [{ text: 'OK', style: 'default' as const }];
+
+    Alert.alert(decision.title, decision.message, buttons);
   };
 
   const handleSignatureSave = async (signatureBase64: string) => {
