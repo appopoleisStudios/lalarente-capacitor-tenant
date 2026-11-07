@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { supabase } from '../../../lib/supabase';
+import { persistFicaDocField } from '../utils/persistFicaDoc';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 
 const RSA = { green: '#007A4D', blue: '#002395' };
@@ -277,33 +278,9 @@ export default function TenantProfileScreen() {
   };
 
   // CT7-014 — SA ID document + Salary certificate uploaders. Both persist
-  // into the fica_documents JSON blob so no migration is needed. Reuses
-  // the same fetch(uri).arrayBuffer() path as proof-of-address (works on
-  // Hermes; the broken .blob() path is not used anywhere in this file).
-  const persistFicaDocField = async (
-    field: 'id_document_url' | 'salary_certificate_urls',
-    value: string | string[]
-  ) => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
-
-    const { data: current } = await supabase
-      .from('profiles')
-      .select('fica_documents')
-      .eq('id', user.id)
-      .single();
-    const currentFica = ((current as any)?.fica_documents || {}) as Record<string, unknown>;
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({ fica_documents: { ...currentFica, [field]: value } as any })
-      .eq('id', user.id);
-
-    if (error) throw error;
-  };
-
+  // into the fica_documents JSON blob via persistFicaDocField() (util
+  // in ../utils/persistFicaDoc.ts, unit-tested for the read-failure path).
+  // Uses fetch(uri).arrayBuffer() — the canonical Hermes-safe upload path.
   const uploadFicaDocument = async (
     bucket: 'id-documents' | 'proof-of-income',
     pathPrefix: 'id' | 'salary',
@@ -398,13 +375,21 @@ export default function TenantProfileScreen() {
 
   const handleUploadIdDocument = () =>
     pickFicaDocument('id-documents', 'id', 'SA ID document', async (url) => {
-      await persistFicaDocField('id_document_url', url);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+      await persistFicaDocField(user.id, 'id_document_url', url);
       setIdDocumentUrl(url);
     });
 
   const handleUploadSalaryCertificate = () =>
     pickFicaDocument('proof-of-income', 'salary', 'Salary certificate', async (url) => {
-      await persistFicaDocField('salary_certificate_urls', [url]);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+      await persistFicaDocField(user.id, 'salary_certificate_urls', [url]);
       setSalaryCertificateUrl(url);
     });
 

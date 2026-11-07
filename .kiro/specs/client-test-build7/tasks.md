@@ -461,3 +461,42 @@
   - [ ] No → viewing marked no_show; owner can reschedule or cancel.
   - [ ] Owner and tenant never disagree on whether a viewing happened.
   - [ ] Idempotent — if the owner confirms twice the state doesn't flip.
+
+## CT7-016 🟠 Rental application should pre-fill from tenant profile
+
+- **Role:** tenant
+- **Screen / flow:** Tenant → Property → Apply for rental
+- **Problem (client's words):** _"While applying for property app asks lot
+  of questions. These questions should be in profile as well. And should
+  be in application already if tenant has filled in already in profile.
+  If not then ask those questions."_
+- **Expected flow:**
+  - Application form loads → fields that already exist on the tenant
+    profile are pre-filled and read-only (or editable but pre-filled).
+  - Only genuinely application-specific fields (desired move-in date,
+    preferred lease length, "why this property") are asked fresh.
+  - Fields that are missing from profile AND required for the application
+    are asked as a smaller form — and the answer is ALSO written back to
+    the profile so the next application has them pre-filled.
+- **Suggested fix path:**
+  - Audit `TenantApplicationScreen` for the full question list, categorize
+    each field as:
+    - **Profile-derived** — read from `profiles` + `fica_documents` JSON,
+      show read-only (or editable with a save-back-to-profile hook).
+    - **Application-specific** — ask every time.
+    - **Missing-from-profile** — ask once, save to profile on submit.
+  - Use the same `checkTenantProfileCompleteness` field list where it
+    overlaps so the UX stays consistent with the dashboard banner
+    (CT7-013) and the lease-sign gate (CT7-012).
+  - Consider a shared `getTenantProfilePrefill(userId)` util that
+    returns a typed snapshot used by both the application form and any
+    future lease-sign form.
+- **Acceptance criteria:**
+  - [ ] Tenant with complete profile sees the application form with
+        name / email / phone / ID / DOB / employer / income / etc.
+        already filled.
+  - [ ] Tenant with partial profile sees ONLY the missing fields asked.
+  - [ ] Answers to missing fields are written back to the profile on
+        successful application submit.
+  - [ ] Dashboard banner clears as soon as the application-time
+        answers land (same `useFocusEffect` refresh).
