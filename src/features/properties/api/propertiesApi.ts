@@ -1,3 +1,5 @@
+import * as FileSystem from 'expo-file-system/legacy';
+import { decode } from 'base64-arraybuffer';
 import { supabase, STORAGE_BUCKETS } from '@/src/lib/supabase';
 import type { Database } from '@/src/types/database.types';
 
@@ -676,28 +678,19 @@ export const propertiesApi = {
         const fileExt = file.name.split('.').pop() || 'jpg';
         const fileName = `${propertyId}/${timestamp}-${randomString}.${fileExt}`;
 
-        // Convert file to blob for upload
-        let fileBlob: Blob;
-
-        // Handle React Native file (uri-based)
-        if (file.uri.startsWith('file://') || file.uri.startsWith('content://')) {
-          const response = await fetch(file.uri);
-          fileBlob = await response.blob();
-        }
-        // Handle web file or data URI
-        else if (file.uri.startsWith('data:')) {
-          const response = await fetch(file.uri);
-          fileBlob = await response.blob();
-        }
-        // Handle direct blob/file
-        else {
-          throw new Error('Unsupported file format');
-        }
+        // Read as base64 then decode to ArrayBuffer.
+        // On React Native + Hermes, `fetch(uri).blob()` returns an empty Blob
+        // and the Supabase upload fails with "Network request failed".
+        // Base64 → ArrayBuffer is the supported RN path.
+        const base64 = await FileSystem.readAsStringAsync(file.uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        const arrayBuffer = decode(base64);
 
         // Upload to Supabase Storage
         const { data, error } = await supabase.storage
           .from(STORAGE_BUCKETS.PROPERTY_IMAGES)
-          .upload(fileName, fileBlob, {
+          .upload(fileName, arrayBuffer, {
             contentType: file.type,
             cacheControl: '3600',
             upsert: false,

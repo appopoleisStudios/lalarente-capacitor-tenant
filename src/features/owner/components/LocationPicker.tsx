@@ -151,12 +151,13 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
         }}
         fetchDetails={true}
         enablePoweredByContainer={false}
-        listViewDisplayed={false}
         keepResultsAfterBlur={true}
         styles={{
           container: styles.autocompleteContainer,
           textInput: styles.autocompleteInput,
           listView: styles.autocompleteList,
+          row: styles.autocompleteRow,
+          separator: styles.autocompleteSeparator,
         }}
         textInputProps={{
           placeholderTextColor: '#9ca3af',
@@ -194,9 +195,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
         </MapView>
       </View>
 
-      <Text style={styles.mapHint}>
-        💡 Drag the pin to adjust the exact location
-      </Text>
+      <Text style={styles.mapHint}>💡 Drag the pin to adjust the exact location</Text>
     </View>
   );
 };
@@ -218,7 +217,8 @@ const styles = StyleSheet.create({
   },
   autocompleteContainer: {
     flex: 0,
-    zIndex: 1,
+    zIndex: 9999,
+    elevation: 10,
   },
   autocompleteInput: {
     backgroundColor: '#ffffff',
@@ -229,13 +229,35 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 15,
     color: '#111827',
+    height: 46,
   },
+  // Float the suggestion list over the content below the input (map, selected
+  // address, etc.) instead of pushing them down and overlapping the input.
   autocompleteList: {
+    position: 'absolute',
+    top: 50,
+    left: 0,
+    right: 0,
     backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#e5e7eb',
     borderRadius: 12,
-    marginTop: 4,
+    maxHeight: 260,
+    zIndex: 9999,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+  },
+  autocompleteRow: {
+    backgroundColor: '#ffffff',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  autocompleteSeparator: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#e5e7eb',
   },
   selectedAddressContainer: {
     backgroundColor: '#f0fdf4',
