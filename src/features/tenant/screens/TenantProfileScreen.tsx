@@ -411,12 +411,23 @@ export default function TenantProfileScreen() {
     });
   };
 
-  // Profile completion check
+  // Profile completion check — CT7-025. Matches the rules in
+  // src/features/tenant/utils/profileCompleteness.ts so this screen
+  // and the dashboard banner can't disagree. (The util is async /
+  // reads directly from the DB; here we derive the same result from
+  // the state we already have.)
+  const incomeValue = Number(monthlyIncome);
+  const hasValidIncome = Number.isFinite(incomeValue) && incomeValue > 0;
   const missingFields: string[] = [];
-  if (!idNumber) missingFields.push('SA ID Number');
-  if (!email) missingFields.push('Email Address');
-  if (!localPhone) missingFields.push('Phone Number');
+  if (!fullName.trim()) missingFields.push('Full Name');
+  if (!email.trim()) missingFields.push('Email Address');
+  if (!localPhone.trim()) missingFields.push('Phone Number');
+  if (!idNumber.trim()) missingFields.push('SA ID Number');
+  if (!dateOfBirth) missingFields.push('Date of Birth');
+  if (!hasValidIncome) missingFields.push('Monthly Income');
   if (!proofOfAddressUrl) missingFields.push('Proof of Address');
+  if (!idDocumentUrl) missingFields.push('SA ID Document');
+  if (!salaryCertificateUrl) missingFields.push('Salary Certificate');
   const isProfileComplete = missingFields.length === 0;
 
   const handleSignOut = async () => {
