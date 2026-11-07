@@ -66,10 +66,18 @@ export default function EditPropertyScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  // Deterministic return to the Properties tab. router.back() from a hidden-tab
-  // screen (properties/[id]/edit has href:null) can pop past the Properties tab
-  // to the Dashboard — same issue as the vendor profile screens.
-  const goBackToProperties = () => router.navigate('/(owner)/properties' as never);
+  // Return to the previous screen (usually Property Detail) when there is
+  // one on the stack; fall back to the Properties tab for cold-start /
+  // deep-link entries. router.back() is correct from an in-app push; the
+  // fallback avoids popping past the tab stack into the dashboard which
+  // was the original bug for hidden-tab routes.
+  const goBackToProperties = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.navigate('/(owner)/properties' as never);
+    }
+  };
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<PropertyForm>({

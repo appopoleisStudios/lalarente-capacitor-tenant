@@ -248,6 +248,30 @@
   are persisted-out on save (handleSubmit filters remote vs local and
   writes the combined final list back to `properties.images`).
 
+## CT7-010 ✅ Cancel on Edit Property returns to tab root instead of previous screen — FIXED
+
+- **Role:** owner
+- **Screen / flow:** Owner → Property Detail → Edit → tap Cancel (or back arrow)
+- **Problem:** Cancelling the edit took the user all the way back to the
+  Properties list (tab root). Expected: return to the Property Detail
+  screen they came from.
+- **Root cause:** `EditPropertyScreen.tsx:72` was hard-coded to
+  `router.navigate('/(owner)/properties')` to work around an old bug where
+  `router.back()` from a hidden-tab route (`properties/[id]/edit` has
+  `href:null`) would pop past the tab stack and land on the Dashboard.
+  The workaround was too aggressive — it also killed the legitimate
+  back-one-step case.
+- **Fix applied:** `src/features/owner/screens/EditPropertyScreen.tsx`
+  - `goBackToProperties()` now uses `router.canGoBack()` to prefer
+    `router.back()` when there IS a screen to return to, and only falls
+    back to the Properties tab for cold-start / deep-link entries.
+  - All four call sites (back arrow, Cancel, post-save Alert OK button,
+    post-save direct navigation) share the same helper — no duplication.
+- **Side benefit:** post-save flow now also returns to Property Detail if
+  that's where the user came from, which is probably what Navin wants
+  anyway (see the newly-saved changes reflected on the detail screen
+  without manually navigating back in).
+
 ---
 
 ## Captured, not yet triaged
