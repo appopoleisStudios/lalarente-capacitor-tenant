@@ -864,13 +864,19 @@ created_at timestamp)`.
     - `tenant_dispatching` → vendor declines → STAYS in
       `tenant_dispatching` with the same counter; tenant picks a new
       vendor. Responsibility is NOT silently transferred to the owner.
-  - **Owner reclaim pre-conditions** (addresses Senior Dev #2):
-    `tenant_dispatching` → `awaiting_owner_dispatch` requires EITHER
-    (a) no open `maintenance_vendor_assignments` row for the request,
-    OR (b) every open assignment cancelled by the tenant AND any
-    issued PO marked cancelled by the owner. An `owner_reclaim_reason`
-    column records why the transition happened. Server-side gate is
-    the UPDATE policy below.
+  - **Owner reclaim pre-conditions** (rewritten r5 — PR #200 Senior
+    Dev found that the previous OR let reclaim through while a PO was
+    still active): reclaim requires BOTH
+    - **(a)** every `maintenance_vendor_assignments` row for the
+      request is in a terminal status (`cancelled` or `rejected`), AND
+    - **(b)** every `purchase_orders` row for the request is also in
+      a terminal status (`cancelled` or `closed`).
+      An assignment that closed naturally (e.g. vendor completed and
+      the owner issued a PO that's still outstanding) does NOT satisfy
+      (a) alone — the PO must also be settled. `owner_reclaim_reason`
+      records why. Enforcement happens inside the `reclaim_request()`
+      RPC below, not via UPDATE policy — WITH CHECK can't reasonably
+      walk two sibling tables.
 
   _Server-side enforcement — rewritten r3 to address Senior Dev,
   Architect, and Security findings on #200 r2. Three structural
@@ -929,13 +935,27 @@ created_at timestamp)`.
 
   -- Snapshot trigger: captures tenant_may_dispatch onto the request
   -- row at creation time AND forces an allowed initial status.
-  -- Addresses PR #200 r4 Senior Dev finding that vendor_id=NULL
-  -- requests could be inserted with any status.
+  --
+  -- PR #200 r5 Security P1: unlinked ("Something else") requests used
+  -- to default captured_tenant_may_dispatch=true, letting a tenant
+  -- route an owner-provided-system issue through the fallback. Now
+  -- unlinked requests default to FALSE — they route to owner triage
+  -- first, and the owner either leaves them as owner-dispatched OR
+  -- flips captured_tenant_may_dispatch=true after reading the body.
+  -- Linked-system requests still use the sidecar's flag.
   CREATE OR REPLACE FUNCTION capture_dispatch_authority()
   RETURNS trigger LANGUAGE plpgsql AS $$
   BEGIN
     IF NEW.service_item_id IS NULL THEN
-      NEW.captured_tenant_may_dispatch := true;
+      -- Owner (inserting on their own behalf) can opt tenant-dispatch
+      -- in on INSERT. Tenant-inserted unlinked requests always start
+      -- in awaiting_owner_dispatch — tenant cannot self-authorize.
+      IF NEW.owner_id = auth.uid() THEN
+        NEW.captured_tenant_may_dispatch :=
+          COALESCE(NEW.captured_tenant_may_dispatch, false);
+      ELSE
+        NEW.captured_tenant_may_dispatch := false;
+      END IF;
     ELSE
       SELECT tenant_may_dispatch INTO NEW.captured_tenant_may_dispatch
       FROM property_service_items
@@ -949,13 +969,42 @@ created_at timestamp)`.
     -- Force the initial status based on captured authority. Any client
     -- attempt to set status = 'completed' / 'in_progress' / etc. on
     -- INSERT is OVERWRITTEN here. Subsequent transitions go through
-    -- the UPDATE policy + reclaim RPC.
+    -- the UPDATE policy + reclaim RPC (and the owner-triage RPC
+    -- `release_to_tenant_dispatch` for unlinked requests).
     NEW.status := CASE
       WHEN NEW.captured_tenant_may_dispatch THEN 'tenant_dispatching'
       ELSE 'awaiting_owner_dispatch'
     END;
 
     RETURN NEW;
+  END $$;
+
+  -- Owner triage for unlinked requests: after reviewing the body the
+  -- owner can either keep the request (own-dispatch) or RELEASE it
+  -- back to tenant_dispatching (e.g. "oh this is your own kettle").
+  -- Same exclusive-flag pattern as reclaim_request so the UPDATE
+  -- policy sealing captured_tenant_may_dispatch doesn't need to
+  -- special-case this transition.
+  CREATE OR REPLACE FUNCTION release_to_tenant_dispatch(req_id uuid)
+  RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
+  BEGIN
+    IF NOT EXISTS (
+      SELECT 1 FROM maintenance_requests
+      WHERE id = req_id
+        AND owner_id = auth.uid()
+        AND service_item_id IS NULL
+        AND status = 'awaiting_owner_dispatch'
+    ) THEN
+      RAISE EXCEPTION 'not authorized or not an unlinked request';
+    END IF;
+
+    PERFORM set_config('app.triage_in_progress', 'true', true);
+    UPDATE maintenance_requests
+    SET captured_tenant_may_dispatch = true,
+        status = 'tenant_dispatching',
+        updated_at = now()
+    WHERE id = req_id;
+    PERFORM set_config('app.triage_in_progress', 'false', true);
   END $$;
 
   CREATE TRIGGER trg_mr_capture_authority
@@ -1037,25 +1086,41 @@ created_at timestamp)`.
            OR current_setting('app.reclaim_in_progress', true) = 'true')
     );
 
-  -- SECURITY DEFINER RPC for owner reclaim: validates no open
-  -- assignments / POs exist (or all are cancelled), bumps the status,
-  -- and writes the audit field. The policy above only allows the
-  -- transition while this function's exclusive flag is set.
+  -- SECURITY DEFINER RPC for owner reclaim — validates BOTH open
+  -- vendor_assignments AND open purchase_orders are terminated before
+  -- flipping the status. PR #200 r5 Senior Dev finding: an assignment
+  -- could close naturally while its PO stayed outstanding.
   CREATE OR REPLACE FUNCTION reclaim_request(req_id uuid, reason text)
   RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
-  DECLARE open_assignments int;
+  DECLARE
+    open_assignments int;
+    open_pos int;
   BEGIN
     IF NOT EXISTS (SELECT 1 FROM maintenance_requests
                    WHERE id = req_id AND owner_id = auth.uid()) THEN
       RAISE EXCEPTION 'not authorized';
     END IF;
 
+    -- Pre-condition (a): every assignment must be cancelled / rejected.
     SELECT count(*) INTO open_assignments
     FROM maintenance_vendor_assignments
-    WHERE request_id = req_id AND status NOT IN ('cancelled', 'rejected');
+    WHERE request_id = req_id
+      AND status NOT IN ('cancelled', 'rejected');
 
     IF open_assignments > 0 THEN
       RAISE EXCEPTION 'cancel open vendor assignments first';
+    END IF;
+
+    -- Pre-condition (b): every PO must be cancelled / closed.
+    -- Checking assignments alone (prior spec) let a reclaim through
+    -- while a PO was still active for a closed assignment.
+    SELECT count(*) INTO open_pos
+    FROM purchase_orders
+    WHERE request_id = req_id
+      AND status NOT IN ('cancelled', 'closed');
+
+    IF open_pos > 0 THEN
+      RAISE EXCEPTION 'close or cancel open purchase orders first';
     END IF;
 
     PERFORM set_config('app.reclaim_in_progress', 'true', true);
