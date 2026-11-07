@@ -552,7 +552,7 @@ export default function TenantDashboardScreen() {
                   <Text style={styles.verificationTitle}>Complete Your Profile</Text>
                 </View>
                 <Text style={styles.verificationSubtext}>
-                  Required before you can sign a lease (FICA / RHA compliance)
+                  Needed for FICA / RHA compliance when you apply for a lease
                 </Text>
                 <View style={styles.verificationItems}>
                   {profileMissing.map((label) => (
