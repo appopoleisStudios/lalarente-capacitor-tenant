@@ -74,7 +74,10 @@ describe('evaluateSignLeaseGate', () => {
     expect(decision.action).toBe('alert');
     if (decision.action === 'alert') {
       expect(decision.title).toMatch(/couldn't verify/i);
-      expect(decision.message).toContain('connection reset');
+      // No raw backend message is surfaced to the user — retry copy only.
+      // (Security note from PR #194: avoid leaking internal error strings.)
+      expect(decision.message).not.toContain('connection reset');
+      expect(decision.message).toMatch(/try again/i);
       // No Go-to-Profile CTA on lookup error — the user is being asked to retry,
       // not redirected away.
       expect(decision.cta).toBeUndefined();
@@ -92,5 +95,35 @@ describe('evaluateSignLeaseGate', () => {
       message: 'Please sign in again to continue.',
     });
     expect(mockCheckTenantProfileCompleteness).not.toHaveBeenCalled();
+  });
+
+  // Added in response to SA #194 round 2 — a rejected promise from the
+  // auth read or the completeness read was not caught, so the React
+  // onPress handler rejected silently and the user got no feedback.
+
+  it('fails CLOSED when supabase.auth.getUser() rejects', async () => {
+    mockGetUser.mockRejectedValue(new Error('network down'));
+
+    const decision = await evaluateSignLeaseGate();
+
+    expect(decision.action).toBe('alert');
+    if (decision.action === 'alert') {
+      expect(decision.title).toMatch(/couldn't verify/i);
+      expect(decision.cta).toBeUndefined();
+    }
+    expect(mockCheckTenantProfileCompleteness).not.toHaveBeenCalled();
+  });
+
+  it('fails CLOSED when the completeness lookup rejects', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'u1' } } });
+    mockCheckTenantProfileCompleteness.mockRejectedValue(new Error('boom'));
+
+    const decision = await evaluateSignLeaseGate();
+
+    expect(decision.action).toBe('alert');
+    if (decision.action === 'alert') {
+      expect(decision.title).toMatch(/couldn't verify/i);
+      expect(decision.cta).toBeUndefined();
+    }
   });
 });
