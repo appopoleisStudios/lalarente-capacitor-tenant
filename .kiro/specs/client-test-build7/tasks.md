@@ -769,3 +769,487 @@ auth.uid()`; if either join fails the insert rejects.
         status transition as today's Create button
   - [ ] Cancel preserves form state so the owner doesn't re-key the
         whole lease
+
+## CT7-023 🟠 Define owner vs tenant maintenance responsibility + vendor-hire rights
+
+- **Role:** owner + tenant (parity + policy)
+- **Screen / flow:** Tenant → Maintenance → New Request · Owner → Maintenance
+- **Problem (client's words):** _"Maintenance of services provided by
+  property owner is for property owner to resolve and hire tenant [sic:
+  vendor] for that. Tenants cannot ask other vendors to resolve. We
+  need to define owner responsibility and tenant responsibility in
+  maintenance and vendor management for that maintenance."_
+- **Why this matters commercially:**
+  - Property includes **Owner-provided systems** (geyser, aircon,
+    gate motor, borehole pump, DStv, generator, security system, etc.).
+    These are tied to the lease — the owner contracted the installing
+    vendor; the owner typically holds the warranty.
+  - If the tenant hires a different vendor for one of those systems
+    the owner can void the warranty, accept a sub-par repair, and
+    gets charged for work they didn't authorise.
+- **Legal context (requires legal review before tenant-facing copy):**
+  RHA + CPA are commonly interpreted as making the landlord responsible
+  for upkeep of appliances supplied with the dwelling — but scope
+  depends on the lease. This doc captures commercial intent; production
+  copy must be legal-reviewed before shipping. Not relying on this as
+  authoritative legal advice (per AI Engineer note on PR #200).
+- **Current state (quick audit needed, but as of today):**
+  - Tenant → Maintenance → New Request has a category picker that
+    doesn't distinguish owner-provided vs tenant-owned systems.
+  - After submit, the tenant can route to the vendor marketplace and
+    pick ANY vendor — including for e.g. a geyser the owner installed.
+  - Owner sees the request but has no veto over the tenant's chosen
+    vendor; the owner isn't asked "do you want to handle this yourself?"
+- **Suggested fix path (two-phase):**
+
+  **v1 — Per-system routing on the property's own list:**
+
+  _Storage (chosen approach — sidecar table, NOT text[] rewrite):_
+  - New `property_service_items` table:
+    `(id uuid, property_id uuid, name text, tenant_may_dispatch boolean,
+created_at timestamp)`.
+  - The existing `properties.services_provided text[]` is left in place
+    for backward-compatibility reads; a one-shot backfill seeds the
+    sidecar for each existing entry with `tenant_may_dispatch = true`
+    (preserves today's behaviour for every pre-existing property so
+    no owner is surprised by sudden restrictions). Default for NEW
+    entries also defaults to `true` so the owner must explicitly opt
+    a system into owner-dispatch-only.
+  - Clients read from the sidecar; the text[] column is marked
+    deprecated in the schema notes.
+
+  _Request flow — identity, not category:_
+  - Tenant maintenance request form adds a step: _"Which system
+    is this about?"_ with two groups:
+    1. Systems on this property (from `property_service_items` for
+       the tenant's active lease).
+    2. "Something else (my appliance / general)" fallback.
+  - When the tenant picks a sidecar entry whose
+    `tenant_may_dispatch = false`, the vendor marketplace is HIDDEN
+    and the request is created with `status = 'awaiting_owner_dispatch'`
+    and `service_item_id` pointing at the sidecar row.
+  - When the tenant picks a `tenant_may_dispatch = true` entry, the
+    existing marketplace flow runs unchanged.
+  - When the tenant picks the "Something else" fallback
+    (`service_item_id IS NULL`), the trigger forces
+    `captured_tenant_may_dispatch = false` and
+    `status = 'awaiting_owner_dispatch'` — it goes to owner triage
+    FIRST (updated r7, addresses PR #200 r6 Senior Dev P2 which
+    rightly caught that the previous spec text contradicted the
+    database behaviour). The owner either keeps the request as
+    owner-dispatched OR calls `release_to_tenant_dispatch()` which
+    flips to `tenant_dispatching` and the tenant is notified they
+    can now pick a vendor. Tenant NEVER lands in the marketplace
+    directly on "Something else".
+  - Category alone never routes — only the explicit `service_item_id`
+    (or lack of one, which blocks pending triage) does. Addresses the
+    original Senior Dev finding that "an aircon the tenant brought"
+    isn't distinguishable from "the aircon the landlord installed"
+    via category.
+
+  _State machine for `maintenance_requests` (addresses Architect):_
+
+  ```
+  (new) ──────────────────────────────┐
+     │                                 │
+     v                                 v
+  awaiting_owner_dispatch        tenant_dispatching
+     │     ▲                           │
+     │     └── owner reclaims ◀────────┤ (requires any open vendor
+     │        (open PO + assignments  │  assignment / PO to be
+     │         must be cancelled      │  cancelled FIRST)
+     │         first)                 │
+     v                                 │
+  owner_dispatched ───────► in_progress ◀───┘
+                                 │
+                                 v
+                             completed / disputed / cancelled
+  ```
+
+  - Cancellation allowed from `awaiting_owner_dispatch` by owner OR
+    tenant (either party can close).
+  - **Dispatch failure splits by authority** (addresses Senior Dev #1):
+    - `owner_dispatched` → vendor declines → back to
+      `awaiting_owner_dispatch` with an attempt counter; owner-side
+      SLA alerts fire.
+    - `tenant_dispatching` → vendor declines → STAYS in
+      `tenant_dispatching` with the same counter; tenant picks a new
+      vendor. Responsibility is NOT silently transferred to the owner.
+  - **Owner reclaim pre-conditions** (rewritten r5 — PR #200 Senior
+    Dev found that the previous OR let reclaim through while a PO was
+    still active): reclaim requires BOTH
+    - **(a)** every `maintenance_vendor_assignments` row for the
+      request is in a terminal status (`cancelled` or `rejected`), AND
+    - **(b)** every `purchase_orders` row for the request is also in
+      a terminal status (`cancelled` or `closed`).
+      An assignment that closed naturally (e.g. vendor completed and
+      the owner issued a PO that's still outstanding) does NOT satisfy
+      (a) alone — the PO must also be settled. `owner_reclaim_reason`
+      records why. Enforcement happens inside the `reclaim_request()`
+      RPC below, not via UPDATE policy — WITH CHECK can't reasonably
+      walk two sibling tables.
+
+  _Server-side enforcement — rewritten r3 to address Senior Dev,
+  Architect, and Security findings on #200 r2. Three structural
+  changes make the policies defensible:_
+
+  **Change #1 — Snapshot dispatch authority onto the request row.**
+  Previous spec claimed a snapshot but policies still consulted live
+  `psi.tenant_may_dispatch`. Now `maintenance_requests` carries a
+  `captured_tenant_may_dispatch boolean NOT NULL` column populated by
+  a BEFORE INSERT trigger from the referenced sidecar row. The owner
+  can retire / soft-delete the system later and in-flight requests
+  keep the authority they were created under.
+
+  **Change #2 — Protect ownership columns via UPDATE WITH CHECK.**
+  Previous `mr_update` trusted the incoming `owner_id` / `tenant_id`.
+  Now the WITH CHECK compares the proposed values against the EXISTING
+  row's values — a tenant cannot rewrite `owner_id` to their own UID
+  to satisfy the owner exception.
+
+  **Change #3 — Caller must be a party to the request.**
+  Explicit `tenant_id = auth.uid() OR owner_id = auth.uid()` on every
+  INSERT / UPDATE / `mva_insert`. The property-via-FK dance was
+  insufficient — an authenticated caller could satisfy a FK-only
+  policy for anyone's request as long as the service-item check
+  passed (or was null).
+
+  **Reclaim transition — move out of RLS into an RPC.** Enforcing
+  "any open assignment / PO must be cancelled first" in a WITH CHECK
+  is the wrong shape (RLS doesn't look across tables cleanly). A
+  SECURITY DEFINER RPC `reclaim_request(request_id uuid, reason text)`
+  validates the pre-conditions atomically and flips the status; the
+  UPDATE policy denies the status transition except via this RPC's
+  exclusive window.
+
+  ```sql
+  -- property_service_items: owner RW; tenants on an active lease
+  -- can SELECT rows for the leased property so the picker works.
+  -- (Addresses Security finding that psi_rw was owner-only.)
+  CREATE POLICY psi_owner_rw ON property_service_items
+    FOR ALL TO authenticated
+    USING (EXISTS (SELECT 1 FROM properties p
+                   WHERE p.id = property_service_items.property_id
+                     AND p.owner_id = auth.uid()))
+    WITH CHECK (EXISTS (SELECT 1 FROM properties p
+                        WHERE p.id = property_service_items.property_id
+                          AND p.owner_id = auth.uid()));
+
+  CREATE POLICY psi_tenant_select ON property_service_items
+    FOR SELECT TO authenticated
+    USING (EXISTS (
+      SELECT 1 FROM leases l
+      WHERE l.property_id = property_service_items.property_id
+        AND l.tenant_id = auth.uid()
+        AND l.status = 'active'
+    ));
+
+  -- Snapshot trigger: captures tenant_may_dispatch onto the request
+  -- row at creation time AND forces an allowed initial status.
+  --
+  -- PR #200 r5 Security P1: unlinked ("Something else") requests used
+  -- to default captured_tenant_may_dispatch=true, letting a tenant
+  -- route an owner-provided-system issue through the fallback. Now
+  -- unlinked requests default to FALSE — they route to owner triage
+  -- first, and the owner either leaves them as owner-dispatched OR
+  -- flips captured_tenant_may_dispatch=true after reading the body.
+  -- Linked-system requests still use the sidecar's flag.
+  CREATE OR REPLACE FUNCTION capture_dispatch_authority()
+  RETURNS trigger LANGUAGE plpgsql AS $$
+  BEGIN
+    IF NEW.service_item_id IS NULL THEN
+      -- Owner (inserting on their own behalf) can opt tenant-dispatch
+      -- in on INSERT. Tenant-inserted unlinked requests always start
+      -- in awaiting_owner_dispatch — tenant cannot self-authorize.
+      IF NEW.owner_id = auth.uid() THEN
+        NEW.captured_tenant_may_dispatch :=
+          COALESCE(NEW.captured_tenant_may_dispatch, false);
+      ELSE
+        NEW.captured_tenant_may_dispatch := false;
+      END IF;
+    ELSE
+      SELECT tenant_may_dispatch INTO NEW.captured_tenant_may_dispatch
+      FROM property_service_items
+      WHERE id = NEW.service_item_id
+        AND property_id = NEW.property_id;
+      IF NEW.captured_tenant_may_dispatch IS NULL THEN
+        RAISE EXCEPTION 'service_item_id does not belong to property_id';
+      END IF;
+    END IF;
+
+    -- Force the initial status based on captured authority. Any client
+    -- attempt to set status = 'completed' / 'in_progress' / etc. on
+    -- INSERT is OVERWRITTEN here. Subsequent transitions go through
+    -- the UPDATE policy + reclaim RPC (and the owner-triage RPC
+    -- `release_to_tenant_dispatch` for unlinked requests).
+    NEW.status := CASE
+      WHEN NEW.captured_tenant_may_dispatch THEN 'tenant_dispatching'
+      ELSE 'awaiting_owner_dispatch'
+    END;
+
+    RETURN NEW;
+  END $$;
+
+  -- Owner triage for unlinked requests: after reviewing the body the
+  -- owner can either keep the request (own-dispatch) or RELEASE it
+  -- back to tenant_dispatching (e.g. "oh this is your own kettle").
+  -- Same exclusive-flag pattern as reclaim_request so the UPDATE
+  -- policy sealing captured_tenant_may_dispatch doesn't need to
+  -- special-case this transition.
+  CREATE OR REPLACE FUNCTION release_to_tenant_dispatch(req_id uuid)
+  RETURNS void LANGUAGE plpgsql SECURITY DEFINER
+    -- Hardening (PR #200 r6 Security P1): SECURITY DEFINER functions
+    -- without an explicit search_path are vulnerable to object-shadowing
+    -- attacks. Setting a trusted path with pg_temp LAST (empty) means a
+    -- caller can't introduce a same-named temp relation that resolves
+    -- before our intended one.
+    SET search_path = public, pg_catalog, pg_temp
+  AS $$
+  BEGIN
+    IF NOT EXISTS (
+      SELECT 1 FROM public.maintenance_requests
+      WHERE id = req_id
+        AND owner_id = auth.uid()
+        AND service_item_id IS NULL
+        AND status = 'awaiting_owner_dispatch'
+    ) THEN
+      RAISE EXCEPTION 'not authorized or not an unlinked request';
+    END IF;
+
+    PERFORM set_config('app.triage_in_progress', 'true', true);
+    UPDATE public.maintenance_requests
+    SET captured_tenant_may_dispatch = true,
+        status = 'tenant_dispatching',
+        updated_at = now()
+    WHERE id = req_id;
+    PERFORM set_config('app.triage_in_progress', 'false', true);
+  END $$;
+
+  CREATE TRIGGER trg_mr_capture_authority
+    BEFORE INSERT ON maintenance_requests
+    FOR EACH ROW EXECUTE FUNCTION capture_dispatch_authority();
+
+  -- maintenance_requests INSERT: caller must be a party AND — if the
+  -- caller is the tenant — must have an active lease for the request's
+  -- property. Addresses PR #200 r4 Security finding that the earlier
+  -- policy let an authenticated caller forge tenant_id to any UID.
+  CREATE POLICY mr_insert ON maintenance_requests
+    FOR INSERT TO authenticated
+    WITH CHECK (
+      -- owner path: caller is the property's actual owner
+      (owner_id = auth.uid()
+       AND EXISTS (SELECT 1 FROM properties p
+                   WHERE p.id = maintenance_requests.property_id
+                     AND p.owner_id = auth.uid()))
+      OR
+      -- tenant path: caller is the tenant AND has an active lease on
+      -- the request's property AND owner_id matches the property's
+      -- actual owner (blocks tenant forging owner_id to themselves)
+      (tenant_id = auth.uid()
+       AND EXISTS (
+         SELECT 1 FROM leases l
+         JOIN properties p ON p.id = l.property_id
+         WHERE l.tenant_id = auth.uid()
+           AND l.property_id = maintenance_requests.property_id
+           AND l.status = 'active'
+           AND p.owner_id = maintenance_requests.owner_id))
+      -- pre-attach rules:
+      --   unlinked          (captured = true, enforced by trigger)
+      --   tenant-OK system  (captured = true)
+      --   locked system     (captured = false) → only owner can pre-attach
+      AND (vendor_id IS NULL
+           OR captured_tenant_may_dispatch = true
+           OR maintenance_requests.owner_id = auth.uid())
+    );
+
+  -- maintenance_requests UPDATE:
+  -- 1. caller must be a party
+  -- 2. service_item_id + captured_tenant_may_dispatch + owner_id +
+  --    tenant_id + property_id are sealed (cannot be rewritten)
+  -- 3. vendor_id follows the same authority rule as INSERT
+  -- 4. status transitions blocked except via RPCs (tenant reclaim path)
+  CREATE POLICY mr_update ON maintenance_requests
+    FOR UPDATE TO authenticated
+    USING (tenant_id = auth.uid() OR owner_id = auth.uid())
+    WITH CHECK (
+      -- immutable identity + policy columns (compare to existing row)
+      tenant_id = (SELECT tenant_id FROM maintenance_requests mr2
+                   WHERE mr2.id = maintenance_requests.id)
+      AND owner_id = (SELECT owner_id FROM maintenance_requests mr2
+                      WHERE mr2.id = maintenance_requests.id)
+      AND property_id = (SELECT property_id FROM maintenance_requests mr2
+                         WHERE mr2.id = maintenance_requests.id)
+      AND service_item_id IS NOT DISTINCT FROM
+          (SELECT service_item_id FROM maintenance_requests mr2
+           WHERE mr2.id = maintenance_requests.id)
+      AND captured_tenant_may_dispatch = (SELECT captured_tenant_may_dispatch
+                                          FROM maintenance_requests mr2
+                                          WHERE mr2.id = maintenance_requests.id)
+      -- vendor_id: allowed by the captured authority or by the owner
+      AND (vendor_id IS NULL
+           OR captured_tenant_may_dispatch = true
+           OR owner_id = auth.uid())
+      -- status transitions to awaiting_owner_dispatch from
+      -- tenant_dispatching MUST go through reclaim_request() RPC
+      -- (see below). The RPC runs SECURITY DEFINER with set_config
+      -- 'app.reclaim_in_progress' = 'true' which this policy allows.
+      AND (status IS NOT DISTINCT FROM
+           (SELECT status FROM maintenance_requests mr2
+            WHERE mr2.id = maintenance_requests.id)
+           OR NOT (
+             (SELECT status FROM maintenance_requests mr2
+              WHERE mr2.id = maintenance_requests.id) = 'tenant_dispatching'
+             AND status = 'awaiting_owner_dispatch'
+           )
+           OR current_setting('app.reclaim_in_progress', true) = 'true')
+    );
+
+  -- SECURITY DEFINER RPC for owner reclaim — validates BOTH open
+  -- vendor_assignments AND open purchase_orders are terminated before
+  -- flipping the status. PR #200 r5 Senior Dev finding: an assignment
+  -- could close naturally while its PO stayed outstanding.
+  CREATE OR REPLACE FUNCTION reclaim_request(req_id uuid, reason text)
+  RETURNS void LANGUAGE plpgsql SECURITY DEFINER
+    -- Hardening (PR #200 r6 Security P1): SECURITY DEFINER functions
+    -- without an explicit search_path are vulnerable to object-shadowing
+    -- attacks. Setting a trusted path with pg_temp LAST (empty) means a
+    -- caller can't introduce a same-named temp relation that resolves
+    -- before our intended one.
+    SET search_path = public, pg_catalog, pg_temp
+  AS $$
+  DECLARE
+    open_assignments int;
+    open_pos int;
+  BEGIN
+    IF NOT EXISTS (SELECT 1 FROM public.maintenance_requests
+                   WHERE id = req_id AND owner_id = auth.uid()) THEN
+      RAISE EXCEPTION 'not authorized';
+    END IF;
+
+    -- Pre-condition (a): every assignment must be cancelled / rejected.
+    SELECT count(*) INTO open_assignments
+    FROM public.maintenance_vendor_assignments
+    WHERE request_id = req_id
+      AND status NOT IN ('cancelled', 'rejected');
+
+    IF open_assignments > 0 THEN
+      RAISE EXCEPTION 'cancel open vendor assignments first';
+    END IF;
+
+    -- Pre-condition (b): every PO must be cancelled / closed.
+    -- Checking assignments alone (prior spec) let a reclaim through
+    -- while a PO was still active for a closed assignment.
+    SELECT count(*) INTO open_pos
+    FROM public.purchase_orders
+    WHERE request_id = req_id
+      AND status NOT IN ('cancelled', 'closed');
+
+    IF open_pos > 0 THEN
+      RAISE EXCEPTION 'close or cancel open purchase orders first';
+    END IF;
+
+    PERFORM set_config('app.reclaim_in_progress', 'true', true);
+    UPDATE public.maintenance_requests
+    SET status = 'awaiting_owner_dispatch',
+        owner_reclaim_reason = reason,
+        updated_at = now()
+    WHERE id = req_id;
+    PERFORM set_config('app.reclaim_in_progress', 'false', true);
+  END $$;
+
+  -- maintenance_vendor_assignments INSERT: caller must be an authorized
+  -- party to the request (tenant for tenant-dispatchable; owner for
+  -- owner-dispatched). Uses the SNAPSHOTTED captured_tenant_may_dispatch
+  -- so retiring the sidecar item never changes in-flight authority.
+  CREATE POLICY mva_insert ON maintenance_vendor_assignments
+    FOR INSERT TO authenticated
+    WITH CHECK (
+      EXISTS (
+        SELECT 1 FROM maintenance_requests mr
+        WHERE mr.id = maintenance_vendor_assignments.request_id
+          AND (
+            (mr.captured_tenant_may_dispatch = true AND mr.tenant_id = auth.uid())
+            OR mr.owner_id = auth.uid()
+          )
+      )
+    );
+  ```
+
+  _Write path — bi-directional sync during cutover (r4 — addresses
+  Architect's PR #200 r4 finding that old-client writes to the legacy
+  column become invisible to the new sidecar):_
+  - Primary writes from the new app go to `property_service_items`.
+  - Forward trigger (`AFTER INSERT / UPDATE / DELETE` on sidecar)
+    REBUILDS `properties.services_provided text[]` from the current
+    sidecar rows (names only, `deleted_at IS NULL`). Old-client
+    reads stay fresh.
+  - **Reverse trigger** (`AFTER UPDATE OF services_provided ON properties`)
+    reconciles the sidecar when an old client still writes the legacy
+    column: for each name that appears in the new array but not in
+    sidecar, INSERT a sidecar row with `tenant_may_dispatch = true`;
+    for each name in sidecar that's absent from the new array, mark
+    `deleted_at = now()`. Guarded against infinite-loop with a
+    session-scoped `app.sync_in_progress` flag — both triggers skip
+    their work while the other is running. This closes the window
+    where old-client writes vanished.
+  - A follow-up migration (post full-rollout) drops the legacy
+    column AND both triggers.
+
+  _Deletion semantics (addresses Architect #2):_
+  - `property_service_items.deleted_at` soft-deletes.
+  - Existing `maintenance_requests.service_item_id` FK survives.
+  - UI hides deleted items from the tenant selection picker.
+  - For locked items with open requests: the policy decision
+    (`tenant_may_dispatch`) is READ from the snapshot at request-create
+    time — the policy is captured on the request row at insert and the
+    FK is only used for display. Deleting the item never silently
+    unlocks a pending request.
+
+  **v2 — Full responsibility matrix (deferred):**
+  - Admin-side matrix per property: category × subcategory → owner /
+    tenant / either, plus cost-allocation rules (owner pays / tenant
+    pays / split) and an audit trail of every dispatch decision.
+  - ~2–3 weeks. Defer until v1 proves the model in production.
+
+- **Legal copy / tenant education needed:**
+  - Tenant request screen shows a small explainer: _"Some systems in
+    this property are the landlord's to repair. For those, the landlord
+    will arrange the vendor. For your own appliances, you choose."_
+- **Depends on / interacts with:**
+  - CT7-022 (lease preview + edit) — the lease should list owner-
+    provided systems so the tenant has agreed to this upfront.
+  - Decision: SIDECAR table chosen over text[] mutation (see Storage
+    section above) — resolves PR #200 Architect finding on the
+    stored-data contract.
+- **Open questions for client:**
+  1. Should the owner be able to OVERRIDE and say "for this specific
+     geyser issue, go ahead and hire your own vendor"? (one-off waiver)
+  2. What happens to cost reimbursement? If the tenant DOES get a
+     vendor for a landlord system in an emergency (burst geyser,
+     3am), does the landlord reimburse?
+  3. Confirmed: legacy entries default to `tenant_may_dispatch = true`
+     (today's behaviour); new entries also default to `true`; owner
+     opts each system INTO owner-only dispatch.
+- **Acceptance criteria (v1):**
+  - [ ] Owner can mark each service-provided entry as
+        "tenant may NOT hire own vendor"
+  - [ ] Tenant request form shows a picker of this property's systems;
+        selecting a locked system routes straight to owner (not by
+        category alone)
+  - [ ] "Something else" fallback goes to owner triage first;
+        marketplace only opens after `release_to_tenant_dispatch()`
+  - [ ] Owner can call release_to_tenant_dispatch() on an unlinked
+        request to flip it to tenant_dispatching
+  - [ ] An unlinked request that the owner does NOT release stays in
+        owner-dispatched flow end-to-end
+  - [ ] Owner inbox shows an "Awaiting your action" section
+  - [ ] Owner picks a vendor and the normal PO flow resumes
+  - [ ] Server-side RLS rejects a tenant-direct vendor assignment on
+        a locked system — not just the UI
+  - [ ] All existing (migrated) services default to
+        `tenant_may_dispatch = true` — no silent restriction on
+        today's live properties
+  - [ ] State transitions match the diagram above; dispatch failure
+        bounces back to `awaiting_owner_dispatch` with a counter
+  - [ ] Tenant sees a clear explanation on the request screen (copy
+        legal-reviewed before shipping)
