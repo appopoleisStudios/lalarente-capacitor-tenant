@@ -500,3 +500,39 @@
         successful application submit.
   - [ ] Dashboard banner clears as soon as the application-time
         answers land (same `useFocusEffect` refresh).
+
+## CT7-017 🔴 Owner — "Send Request" on holding deposit throws RLS error
+
+- **Role:** owner
+- **Screen / flow:** Owner → Applications → Request Holding Deposit →
+  Send Request
+- **Problem (client's words):** _"Request holding deposit Send request
+  button throws error — failed to create holding deposit — RLS issue."_
+- **Diagnosis path:**
+  - Error text "failed to create holding deposit" comes from
+    `holdingDepositApi.create*` — need to find the INSERT call.
+  - Supabase RLS on `holding_deposits` table rejects the insert.
+  - Candidate causes:
+    1. Policy requires `owner_id = auth.uid()` but the INSERT doesn't
+       send owner_id (or sends a different field).
+    2. RLS reads via `applications.owner_id` join but the application
+       row's owner_id doesn't match the signed-in user (data mis-link).
+    3. No INSERT policy at all on `holding_deposits` — only SELECT /
+       UPDATE for owners, so client-side INSERT needs a SECURITY
+       DEFINER function.
+  - Need to pull the `holding_deposits` table RLS policies from
+    `database/migrations/*holding*.sql` and the
+    `holdingDepositApi.create()` payload.
+- **Suggested fix path:**
+  - Grep for `holding_deposits` in migrations to see the policy.
+  - Compare `policy (WITH CHECK ...)` expression against the payload
+    the API sends.
+  - Likely fix: ensure `owner_id = auth.uid()` on the insert payload,
+    OR move creation into a SECURITY DEFINER RPC that validates owner
+    against the application's property.
+- **Acceptance criteria:**
+  - [ ] Owner taps Send Request → row appears in `holding_deposits`
+        with matching `owner_id` / `tenant_id` / `application_id`.
+  - [ ] Tenant gets the "Pay now" CTA on their side.
+  - [ ] No bare "failed to create" toast — real error surfaced if the
+        policy still rejects.
