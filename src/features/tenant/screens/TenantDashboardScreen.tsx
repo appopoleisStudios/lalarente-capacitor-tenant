@@ -359,8 +359,13 @@ export default function TenantDashboardScreen() {
       // fica_documents JSON views, so a user who saved via either code path
       // shows as complete. Replaces the prior inline check which mis-mapped
       // the Proof of Address field to a "References" label.
+      // On transient lookup failure we leave profileMissing alone so a
+      // flaky request doesn't nag the user to complete a profile they've
+      // already completed.
       const completeness = await checkTenantProfileCompleteness(user.id);
-      setProfileMissing(completeness.complete ? [] : completeness.missing);
+      if (completeness.status === 'ok') {
+        setProfileMissing(completeness.complete ? [] : completeness.missing);
+      }
     } catch (err) {
       console.error('Error loading dashboard:', err);
     } finally {
