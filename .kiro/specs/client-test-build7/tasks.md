@@ -1490,3 +1490,33 @@ created_at timestamp)`.
   - [ ] Multi-property owners see per-property AND portfolio
         aggregation (if open-question #2 resolved as yes).
   - [ ] Legal microcopy: "This summary is not tax advice."
+
+## CT7-025 🟡 Tenant Profile "Profile complete" badge disagrees with dashboard banner
+
+- **Role:** tenant
+- **Screen / flow:** Tenant → Dashboard → Profile
+- **Problem (found during end-to-end walkthrough on 2026-11-07
+  evening):** on the tenant Profile screen the top shows a green
+  "Profile complete" badge, while on the Dashboard the "Complete
+  Your Profile" banner still lists "SA ID document" and "Salary
+  certificate / payslip" as missing.
+- **Root cause:** two independent completeness checks disagree.
+  - Dashboard banner reads from `checkTenantProfileCompleteness()`
+    (the shared util added in CT7-013 + CT7-014 — includes the
+    document uploads).
+  - TenantProfileScreen has its own inline check that predates
+    CT7-014 and only inspects the editable text fields (name,
+    phone, ID, DOB, proof of address). Document uploads introduced
+    by CT7-014 aren't part of that check.
+- **Fix path:**
+  - Replace the Profile screen's inline check with a call to
+    `checkTenantProfileCompleteness()`. Show the same missing-field
+    list the dashboard uses.
+  - The badge then becomes a derived `isComplete` flag; remove the
+    separate state.
+- **Acceptance criteria:**
+  - [ ] Profile screen and dashboard banner are always in sync.
+  - [ ] If any CT7-014 doc is missing, Profile shows a warning
+        state (not green "complete").
+  - [ ] Uploading the missing docs flips both surfaces to complete
+        on the next render.
