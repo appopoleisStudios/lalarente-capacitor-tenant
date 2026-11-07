@@ -1253,3 +1253,240 @@ created_at timestamp)`.
         bounces back to `awaiting_owner_dispatch` with a counter
   - [ ] Tenant sees a clear explanation on the request screen (copy
         legal-reviewed before shipping)
+
+## CT7-024 🟠 Owner — record property taxes + roll into annual tax sheet
+
+- **Role:** owner
+- **Screen / flow:** Owner → Property → Taxes → Record payment · Owner →
+  Tax Reports (existing ITR12 summary screen)
+- **Problem (client's words):** _"Taxes being paid by owner on property
+  should be recordable in app and finally in yearly tax sheet
+  calculations."_
+- **Context — what's already there:**
+  - `OwnerTaxReportScreen` exists (SA tax year March–Feb) with ITR12
+    summary + 3-year history. Shipped in the parity work earlier in
+    the year.
+  - Owner-side expenses are not currently captured on the property
+    level — only rent income, maintenance costs, and vendor payments
+    get rolled up. Property taxes (municipal rates, levies, transfer
+    duty amortisation) are NOT yet ingested.
+- **Why this matters:** the SARS ITR12 rental schedule itemises
+  rates, levies, bond interest, insurance, and repairs separately.
+  Without the owner recording these inside the app, the tax-report
+  screen understates deductions and the owner has to reconcile
+  manually at year-end.
+  _Note from PR #201 r3:_ specific SARS source-code numbers are
+  intentionally NOT hard-coded in this spec — the SA verified my
+  earlier guesses (4208–4211) were historical codes, not the current
+  rental schedule. Code mapping is confirmed against the live SARS
+  source-code list at implementation time; the data model is
+  category-based, not code-based.
+
+- **Suggested fix path:**
+
+  _Schema (new table — no mutation to existing):_
+
+  ```sql
+  CREATE TABLE property_tax_payments (
+    id              uuid primary key default gen_random_uuid(),
+    property_id     uuid not null references properties(id) on delete cascade,
+    owner_id        uuid not null references profiles(id),
+    category        text not null check (category in (
+                      'municipal_rates',
+                      'municipal_levies',
+                      'sectional_title_levy',
+                      'bond_interest',
+                      'insurance',
+                      -- 'repairs_maintenance' intentionally NOT listed —
+                      -- the existing maintenance + vendor payments already
+                      -- feed the tax report via their own pipelines.
+                      -- Including it here would double-count (Architect
+                      -- finding on PR #201 r4). Added only when the owner
+                      -- pays a vendor directly OUTSIDE the app and wants
+                      -- to attribute it; UI gates the category behind an
+                      -- "I paid this outside Lalarente" opt-in.
+                      'other'
+                    )),
+    description     text,
+    amount          numeric(12,2) not null check (amount > 0),
+    paid_on         date not null,
+    -- Qualification for deductibility — addresses PR #201 r3 Architect
+    -- finding. Owners record the raw expense; the tax summary only
+    -- subtracts rows explicitly marked 'allowable'. Default 'uncertain'
+    -- so unreviewed entries don't silently become deductions.
+    deductibility   text not null default 'uncertain'
+                      check (deductibility in (
+                        'allowable',       -- fully deductible
+                        'capital',         -- capital expenditure, not deductible
+                        'mixed_use',       -- requires apportionment
+                        'private',         -- private/non-rental portion
+                        'uncertain'        -- not yet classified
+                      )),
+    apportionment_pct numeric(5,2)
+      check (apportionment_pct is null
+             or (apportionment_pct >= 0 and apportionment_pct <= 100)),
+      -- Required (NOT NULL) when deductibility='mixed_use'; validated
+      -- by a row-level CHECK so the form can't submit missing / out-of-
+      -- range percentages (PR #201 r4 Senior Dev P2).
+      -- Enforced via the table-level CHECK below.
+    document_url    text,                  -- optional receipt / proof
+    created_at      timestamptz default now(),
+    -- Table-level: apportionment_pct must be set when deductibility is
+    -- mixed_use; must be null otherwise so the CSV export isn't ambiguous.
+    CONSTRAINT ptp_apportionment_required_for_mixed CHECK (
+      (deductibility = 'mixed_use' AND apportionment_pct IS NOT NULL)
+      OR (deductibility <> 'mixed_use' AND apportionment_pct IS NULL)
+    )
+  );
+
+  CREATE INDEX idx_prop_tax_owner_year ON property_tax_payments
+    (owner_id, paid_on);
+  ```
+
+  _RLS (addresses PR #201 Security findings on UPDATE path + ENABLE):_
+
+  ```sql
+  -- Mandatory: enable RLS on the table BEFORE creating policies.
+  -- Without these ALTERs the policies are inert and the table defaults
+  -- to open for any authenticated user with table-level GRANT. SA
+  -- finding on r2.
+  ALTER TABLE property_tax_payments ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE property_tax_payments FORCE ROW LEVEL SECURITY;
+
+  -- SELECT: your own payments only
+  CREATE POLICY ptp_select ON property_tax_payments
+    FOR SELECT TO authenticated
+    USING (owner_id = auth.uid());
+
+  -- INSERT: row must belong to you AND the property must be yours
+  CREATE POLICY ptp_insert ON property_tax_payments
+    FOR INSERT TO authenticated
+    WITH CHECK (
+      owner_id = auth.uid()
+      AND EXISTS (SELECT 1 FROM properties p
+                  WHERE p.id = property_id AND p.owner_id = auth.uid())
+    );
+
+  -- UPDATE: USING guards the EXISTING row (you own it + its property);
+  -- WITH CHECK guards the RESULTING row (you still own it + the NEW
+  -- property_id is also yours). Blocks "swap property_id to another
+  -- owner's property while keeping owner_id" per Security finding.
+  CREATE POLICY ptp_update ON property_tax_payments
+    FOR UPDATE TO authenticated
+    USING (
+      owner_id = auth.uid()
+      AND EXISTS (SELECT 1 FROM properties p
+                  WHERE p.id = property_id AND p.owner_id = auth.uid())
+    )
+    WITH CHECK (
+      owner_id = auth.uid()
+      AND EXISTS (SELECT 1 FROM properties p
+                  WHERE p.id = property_id AND p.owner_id = auth.uid())
+    );
+
+  -- DELETE: same USING clause (you own the row and its property)
+  CREATE POLICY ptp_delete ON property_tax_payments
+    FOR DELETE TO authenticated
+    USING (
+      owner_id = auth.uid()
+      AND EXISTS (SELECT 1 FROM properties p
+                  WHERE p.id = property_id AND p.owner_id = auth.uid())
+    );
+  ```
+
+  - Admin / superuser RLS as elsewhere in the app.
+
+  _UI — property-level ledger:_
+  - New screen `app/(owner)/properties/[id]/taxes.tsx` listing tax
+    payments for the selected property.
+  - "Record payment" form fields (expanded per PR #201 r4 Senior Dev
+    P1 — deductibility was previously not exposed in the UI):
+    1. **Category** picker (municipal_rates, levies, …)
+    2. **Amount** (ZAR)
+    3. **Paid on** date (CT7-020 picker pattern)
+    4. **Deductibility** picker, required:
+       - "Fully deductible against rental income" → `allowable`
+       - "Capital expenditure (not deductible)" → `capital`
+       - "Shared with personal use — I'll apportion" → `mixed_use`
+       - "Private / non-rental" → `private`
+       - "Not sure yet — I'll classify later" → `uncertain`
+    5. **Apportionment %** — visible + required ONLY when deductibility
+       = `mixed_use`. Slider / numeric input bounded 0–100.
+    6. **Receipt** — optional file upload (reuses
+       `src/lib/storage.ts::uploadFile()`).
+       Existing entries display their current deductibility and can be
+       edited to re-classify.
+  - Delete + edit on each row (RLS gated).
+
+  _Rollup into existing tax-report screen:_
+  - `OwnerTaxReportScreen` fetches:
+    - current `rentIncomeByMonth`
+    - new `taxExpensesByCategory` from `property_tax_payments` grouped
+      by SA tax year with a **half-open range** so Feb 29 in leap
+      years is included (addresses PR #201 Senior Dev finding):
+      `paid_on >= 'yyyy-03-01' AND paid_on < '(yyyy+1)-03-01'`.
+      NEVER `BETWEEN 'yyyy-03-01' AND '(yyyy+1)-02-28'` — that drops
+      Feb 29 every four years.
+  - Numbers surfaced on the report (category names only — specific
+    SARS source codes confirmed at implementation time against the
+    live source-code list):
+    - Rates · Levies · Bond interest · Insurance · Repairs &
+      maintenance · Other recorded.
+  - **Deductible subtotal** — SUM over rows WHERE
+    `deductibility = 'allowable'` plus `amount * apportionment_pct/100`
+    WHERE `deductibility = 'mixed_use'`. `capital`, `private`, and
+    `uncertain` rows are LISTED on the report (so the owner sees them)
+    but EXCLUDED from the Net rental income subtraction.
+  - Net rental income: income − maintenance − vendor payments −
+    DEDUCTIBLE SUBTOTAL.
+  - Existing 3-year history grid gains two columns: "Rates" +
+    "Levies" so the owner sees trend.
+
+  _Export:_
+  - Add "Export CSV" on the tax-report screen (reuses `expo-sharing`
+    pattern used by the lease PDF). Column shape covers the ITR12
+    rental schedule categories; the owner's accountant maps the
+    categories to the live SARS source codes at year-end filing time.
+    (Dropped the "maps 1:1" promise per PR #201 r3 — the historical
+    code numbers I cited were wrong, and the live code list changes
+    between tax years.)
+
+- **Legal / compliance note (not production copy):**
+  App does not and must not render tax advice. The report is a
+  summary of what the owner recorded; final ITR12 reconciliation
+  stays with SARS / their tax practitioner. Microcopy on the screen
+  must say so.
+
+- **Depends on / interacts with:**
+  - CT7-018 (holding deposit bank reference) — unrelated; just
+    makes OTHER reconciliation easier.
+  - Existing `OwnerTaxReportScreen` — this issue extends it; no
+    breaking changes to its public route or props.
+
+- **Open questions for client:**
+  1. Scope: just RATES + LEVIES + BOND INTEREST + INSURANCE for v1,
+     or also depreciation / capital improvements (which need separate
+     SARS treatment)?
+  2. Do we want multi-property tax aggregation at the Portfolio
+     level, or strictly per-property?
+  3. Receipt upload: required or optional? (SARS audit trail if
+     required.)
+  4. Reminder / schedule: recurring entries (monthly levy auto-add
+     on the 1st) or ad-hoc only?
+
+- **Acceptance criteria (v1):**
+  - [ ] Owner can navigate to a property's taxes screen and record a
+        payment (category, amount, date, optional receipt).
+  - [ ] Records persist per-property and per-owner under RLS.
+  - [ ] Existing OwnerTaxReportScreen pulls tax payments into the SA
+        tax year total and a category breakdown. Specific SARS source-
+        code labels are confirmed against the live source-code list at
+        implementation time, not hard-coded in this spec.
+  - [ ] Owner can export a CSV with the category breakdown columns.
+        Mapping categories to specific SARS codes for the relevant tax
+        year is a manual step for the owner's accountant (per AI
+        Engineer finding on r4 — mapping conditional on a verified
+        code list, not promised as automatic).
+  - [ ] Multi-property owners see per-property AND portfolio
+        aggregation (if open-question #2 resolved as yes).
+  - [ ] Legal microcopy: "This summary is not tax advice."
