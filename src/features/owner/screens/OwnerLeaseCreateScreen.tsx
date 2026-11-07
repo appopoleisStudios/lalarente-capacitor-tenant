@@ -252,7 +252,12 @@ export default function OwnerLeaseCreateScreen() {
                   payment_due_day: parseInt(paymentDueDay),
                   late_fee_amount: lateFeeAmount ? parseFloat(lateFeeAmount) : null,
                   late_fee_grace_days: lateFeeGraceDays ? parseInt(lateFeeGraceDays) : null,
-                  rent_escalation_type: rentEscalationValue ? rentEscalationType : null,
+                  rent_escalation_type: rentEscalationValue
+                    ? // CT7-021: schema CHECK requires 'fixed_percentage' not 'percentage'
+                      rentEscalationType === 'percentage'
+                      ? 'fixed_percentage'
+                      : rentEscalationType
+                    : null,
                   rent_escalation_value: rentEscalationValue
                     ? parseFloat(rentEscalationValue)
                     : null,
@@ -262,7 +267,12 @@ export default function OwnerLeaseCreateScreen() {
                   // SA prescribed rate 5.25% p.a. stored as percentage (not decimal).
                   // normalizeDepositRate() divides by 100 at read time.
                   deposit_interest_rate: 5.25,
-                  status: 'pending_tenant_signature',
+                  // CT7-021: leases_status_check only allows
+                  // ('draft','pending_signatures','active','month_to_month',
+                  //  'renewal_pending','expired','terminated','early_terminated').
+                  // Previous code tried 'pending_tenant_signature' and hit a
+                  // check-constraint violation that surfaced as "lease creation failed".
+                  status: 'pending_signatures',
                 })
                 .select()
                 .single();
@@ -270,9 +280,15 @@ export default function OwnerLeaseCreateScreen() {
               if (leaseError) throw leaseError;
 
               // Update application status
+              // CT7-021: rental_applications_status_check only allows
+              // ('draft','submitted','under_review','shortlisted','approved',
+              //  'rejected','withdrawn','backup','lease_offered','lease_signed').
+              // Previous code tried 'lease_created' and silently failed —
+              // the lease row DID land but the application stayed at 'approved',
+              // so downstream flows (tenant-side lease screen) looked broken.
               await supabase
                 .from('rental_applications')
-                .update({ status: 'lease_created' })
+                .update({ status: 'lease_offered' })
                 .eq('id', application.id);
 
               Alert.alert(

@@ -193,55 +193,53 @@ export default function TenantDashboardScreen() {
         setUserName(profile.full_name || 'Tenant');
       }
 
-      // Get active or pending lease
-      const { data: lease } = await supabase
-        .from('leases')
-        .select(
+      // CT7-002 — parallelise the four independent reads below (lease,
+      // payments, maintenance, viewings). Previously these ran serial
+      // → ~500ms cold-start cost on 4G. Promise.all cuts that to the
+      // slowest of the four.
+      const [leaseResult, payments, maintenanceResult, viewingsResult] = await Promise.all([
+        supabase
+          .from('leases')
+          .select(
+            `
+            *,
+            property:properties!property_id(id, title, address, city, rent_amount, media_3d_url),
+            owner:profiles!owner_id(id, full_name, phone, email)
           `
-          *,
-          property:properties!property_id(id, title, address, city, rent_amount, media_3d_url),
-          owner:profiles!owner_id(id, full_name, phone, email)
-        `
-        )
-        .eq('tenant_id', user.id)
-        .in('status', ['active', 'pending_tenant_signature', 'pending_owner_signature'])
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+          )
+          .eq('tenant_id', user.id)
+          .in('status', ['active', 'pending_tenant_signature', 'pending_owner_signature'])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        paymentsApi.getTenantPayments(user.id),
+        supabase
+          .from('maintenance_requests')
+          .select('*')
+          .eq('tenant_id', user.id)
+          .in('status', ['open', 'assigned', 'in_progress'])
+          .order('created_at', { ascending: false })
+          .limit(3),
+        supabase
+          .from('viewing_requests')
+          .select(
+            'id, requested_date, requested_time, confirmed_date, status, owner_response, property:properties!property_id(id, title, address)'
+          )
+          .eq('tenant_id', user.id)
+          .in('status', ['approved', 'pending'])
+          .order('requested_date', { ascending: true })
+          .limit(3),
+      ]);
 
-      setActiveLease(lease ?? null);
+      setActiveLease(leaseResult.data ?? null);
 
-      // Get upcoming payment
-      const payments = await paymentsApi.getTenantPayments(user.id);
       const upcoming = payments.find((p) => p.status === 'pending');
       setNextPayment(upcoming ?? null);
-
       const recent = payments.filter((p) => p.status === 'completed').slice(0, 3);
       setRecentPayments(recent);
 
-      // Get active maintenance requests
-      const { data: maintenance } = await supabase
-        .from('maintenance_requests')
-        .select('*')
-        .eq('tenant_id', user.id)
-        .in('status', ['open', 'assigned', 'in_progress'])
-        .order('created_at', { ascending: false })
-        .limit(3);
-
-      setMaintenanceRequests(maintenance ?? []);
-
-      // Get upcoming viewings (approved or pending)
-      const { data: viewings } = await supabase
-        .from('viewing_requests')
-        .select(
-          'id, requested_date, requested_time, confirmed_date, status, owner_response, property:properties!property_id(id, title, address)'
-        )
-        .eq('tenant_id', user.id)
-        .in('status', ['approved', 'pending'])
-        .order('requested_date', { ascending: true })
-        .limit(3);
-
-      setUpcomingViewings(viewings ?? []);
+      setMaintenanceRequests(maintenanceResult.data ?? []);
+      setUpcomingViewings(viewingsResult.data ?? []);
 
       // Get recently declined viewings (last 14 days) as alert cards
       // Filter out declined viewings where tenant already has a newer pending/approved
