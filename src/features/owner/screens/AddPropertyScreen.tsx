@@ -1,9 +1,20 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, Alert, Switch, Image } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TextInput,
+  Alert,
+  Switch,
+  Image,
+  TouchableOpacity,
+  Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { AnimatedButton } from '@/src/shared/components';
 import { propertiesApi } from '../../properties/api/propertiesApi';
 import { supabase } from '../../../lib/supabase';
@@ -83,6 +94,17 @@ export default function AddPropertyScreen() {
   const [newAmenity, setNewAmenity] = useState('');
   const [newService, setNewService] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
+  const [showAvailableFromPicker, setShowAvailableFromPicker] = useState(false);
+
+  const handleAvailableFromChange = (event: DateTimePickerEvent, selected?: Date) => {
+    // On Android the picker dismisses itself; on iOS we keep it open until
+    // the user taps Done elsewhere (we close on the first "set" event too).
+    setShowAvailableFromPicker(Platform.OS === 'ios' ? false : false);
+    if (event.type === 'set' && selected) {
+      const iso = selected.toISOString().split('T')[0];
+      setForm((prev) => ({ ...prev, available_from: iso }));
+    }
+  };
 
   React.useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -183,9 +205,11 @@ export default function AddPropertyScreen() {
 
     setSaving(true);
 
+    // Step 1: create the property row. If this fails, nothing was committed
+    // and we can report failure cleanly — the user retries the form.
+    let property: Awaited<ReturnType<typeof propertiesApi.createProperty>>;
     try {
-      // Create property
-      const property = await propertiesApi.createProperty({
+      property = await propertiesApi.createProperty({
         owner_id: userId,
         title: form.title,
         address: form.address,
@@ -211,30 +235,46 @@ export default function AddPropertyScreen() {
         longitude: form.longitude,
         media_3d_url: form.media_3d_url.trim() || null,
       });
+    } catch (error) {
+      console.error('Error creating property:', error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to create property');
+      setSaving(false);
+      return;
+    }
 
-      // Upload picked photos to Supabase Storage (property-images bucket).
-      // uploadPropertyPhotos uploads each file, then appends the public URLs
-      // to the property row — mirrors EditPropertyScreen (#74) behavior.
-      if (form.photos.length > 0) {
+    // Step 2: upload photos. The property already exists at this point —
+    // if uploads fail (network, storage policy, etc.) we must report
+    // partial success, not a blanket "Failed to create property" that
+    // leaves the DB row orphaned and the user thinking nothing happened.
+    let photoUploadFailed = false;
+    if (form.photos.length > 0) {
+      try {
         const files = form.photos.map((uri, index) => ({
           uri,
           name: `photo-${Date.now()}-${index}.jpg`,
           type: 'image/jpeg',
         }));
         await propertiesApi.uploadPropertyPhotos(property.id, files);
+      } catch (error) {
+        console.error('Photo upload failed (property row already created):', error);
+        photoUploadFailed = true;
       }
-
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Success', 'Property created successfully!', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
-    } catch (error) {
-      console.error('Error creating property:', error);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to create property');
-    } finally {
-      setSaving(false);
     }
+
+    Haptics.notificationAsync(
+      photoUploadFailed
+        ? Haptics.NotificationFeedbackType.Warning
+        : Haptics.NotificationFeedbackType.Success
+    );
+    Alert.alert(
+      photoUploadFailed ? 'Property created, photos pending' : 'Success',
+      photoUploadFailed
+        ? "Your property was saved, but we couldn't upload the photos. You can retry from Edit Property."
+        : 'Property created successfully!',
+      [{ text: 'OK', onPress: () => router.back() }]
+    );
+    setSaving(false);
   };
 
   return (
@@ -592,13 +632,29 @@ export default function AddPropertyScreen() {
               <View style={styles.row}>
                 <View style={[styles.section, { flex: 1 }]}>
                   <Text style={styles.label}>Available From</Text>
-                  <TextInput
+                  <TouchableOpacity
                     style={styles.input}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor="#9ca3af"
-                    value={form.available_from}
-                    onChangeText={(text) => setForm({ ...form, available_from: text })}
-                  />
+                    onPress={() => setShowAvailableFromPicker(true)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={{
+                        color: form.available_from ? '#111827' : '#9ca3af',
+                        fontSize: 15,
+                      }}
+                    >
+                      {form.available_from || 'YYYY-MM-DD'}
+                    </Text>
+                  </TouchableOpacity>
+                  {showAvailableFromPicker && (
+                    <DateTimePicker
+                      value={form.available_from ? new Date(form.available_from) : new Date()}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      minimumDate={new Date()}
+                      onChange={handleAvailableFromChange}
+                    />
+                  )}
                 </View>
                 <View style={[styles.section, { flex: 1 }]}>
                   <Text style={styles.label}>Min. Lease (months)</Text>

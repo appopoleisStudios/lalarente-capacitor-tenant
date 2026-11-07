@@ -19,8 +19,9 @@ jest.mock('../../api', () => ({
 
 const api = jest.requireMock('../../api') as Record<string, jest.Mock>;
 
-beforeEach(() => { jest.clearAllMocks(); });
-
+beforeEach(() => {
+  jest.clearAllMocks();
+});
 
 it('resolves with requests when the fetch succeeds', async () => {
   api.getMaintenanceRequests.mockResolvedValue([{ id: 'r1', title: 'Leak' }]);
@@ -42,7 +43,9 @@ it('remaps admin role to owner for query key generation', async () => {
   mockUseAuth.mockReturnValueOnce({ user: { id: 'admin-1' }, profile: { role: 'admin' } });
 
   renderHook(() => useMaintenanceRequests(), { wrapper: createQueryWrapper() });
-  await waitFor(() => expect(api.getMaintenanceRequests).toHaveBeenCalledWith('admin-1', 'owner'));
+  await waitFor(() =>
+    expect(api.getMaintenanceRequests).toHaveBeenCalledWith('admin-1', 'owner', false)
+  );
 });
 
 it('sets up real-time subscription on mount and unsubscribes on unmount', () => {
