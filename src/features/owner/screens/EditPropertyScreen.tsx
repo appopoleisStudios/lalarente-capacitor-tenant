@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -109,6 +109,15 @@ export default function EditPropertyScreen() {
   const [newService, setNewService] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
 
+  // CT7-003 — snapshot the loaded form so the header Save action can be
+  // disabled while the form is unchanged. Updated once per successful
+  // load; compared cheaply by JSON.stringify since the shape is small.
+  const [originalForm, setOriginalForm] = useState<PropertyForm | null>(null);
+  const isDirty = useMemo(() => {
+    if (!originalForm) return false;
+    return JSON.stringify(form) !== JSON.stringify(originalForm);
+  }, [form, originalForm]);
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUserId(data.user?.id || null);
@@ -127,7 +136,7 @@ export default function EditPropertyScreen() {
       const property = await propertiesApi.getProperty(id);
 
       // Populate form with existing data
-      setForm({
+      const loaded: PropertyForm = {
         title: property.title || '',
         address: property.address || '',
         city: property.city || '',
@@ -151,7 +160,9 @@ export default function EditPropertyScreen() {
         media_3d_url: property.media_3d_url || '',
         latitude: (property as any).latitude || null,
         longitude: (property as any).longitude || null,
-      });
+      };
+      setForm(loaded);
+      setOriginalForm(loaded);
     } catch (err) {
       console.error('Error loading property:', err);
       Alert.alert('Error', 'Failed to load property data');
@@ -325,7 +336,9 @@ export default function EditPropertyScreen() {
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <KeyboardAvoidingView>
         <View style={styles.container}>
-          {/* Header */}
+          {/* Header — Save lives here (CT7-003) so it's reachable without
+              scrolling. Back arrow acts as cancel, so the separate Cancel
+              text is dropped to avoid duplicating the exit action. */}
           <View style={styles.header}>
             <AnimatedButton onPress={goBackToProperties} hapticType="medium">
               <View style={styles.backButton}>
@@ -333,8 +346,26 @@ export default function EditPropertyScreen() {
               </View>
             </AnimatedButton>
             <Text style={styles.headerTitle}>Edit Property</Text>
-            <AnimatedButton onPress={goBackToProperties}>
-              <Text style={styles.cancelText}>Cancel</Text>
+            <AnimatedButton
+              onPress={handleSubmit}
+              hapticType="medium"
+              disabled={!isDirty || saving}
+            >
+              <View
+                style={[
+                  styles.headerSaveButton,
+                  (!isDirty || saving) && styles.headerSaveButtonDisabled,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.headerSaveText,
+                    (!isDirty || saving) && styles.headerSaveTextDisabled,
+                  ]}
+                >
+                  {saving ? 'Saving…' : 'Save'}
+                </Text>
+              </View>
             </AnimatedButton>
           </View>
 
@@ -698,14 +729,9 @@ export default function EditPropertyScreen() {
               </View>
             </View>
 
-            {/* Submit */}
-            <AnimatedButton onPress={handleSubmit}>
-              <View style={[styles.submitButton, saving && styles.submitButtonDisabled]}>
-                <Text style={styles.submitButtonText}>
-                  {saving ? 'Updating…' : '💾 Update Property'}
-                </Text>
-              </View>
-            </AnimatedButton>
+            {/* Bottom-of-scroll Save removed in CT7-003 — the header Save
+                is the single action and is reachable without scrolling.
+                Dirty-state gating lives on the header button. */}
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
