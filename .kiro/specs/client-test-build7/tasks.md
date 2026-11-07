@@ -175,6 +175,38 @@
   - [ ] Dropdown does NOT visually overlap the input text
   - [ ] Dropdown floats OVER the map/selected card, not pushing them down
 
+## CT7-007 ✅ Samsung Pass pops up on every text box — FIXED
+
+- **Role:** all roles (surfaced on owner — Samsung phone)
+- **Screen / flow:** any screen with an input (property form, maintenance,
+  search, etc.)
+- **Problem:** Tapping any text box triggers Samsung Pass prompt. Jarring
+  on non-auth fields (address line, description, numbers, etc.).
+- **Diagnosis:**
+  - Samsung Pass is a phone-level autofill service — can't disable from
+    our side as a whole, but we CAN tell each field not to opt in.
+  - On Android, React Native's `TextInput` uses `autoComplete` /
+    `importantForAutofill` to tell the OS the field's semantics. When we
+    leave them unset, Android guesses and Samsung Pass pops on anything it
+    thinks might be a credential-ish field.
+  - Audit showed only 3 fields in the app explicitly declare autofill:
+    `LoginScreen` (email + password), `RegisterScreen` (email) — those
+    SHOULD trigger Samsung Pass (correct UX). Every other field uses the
+    shared `<Input>` component, which had no autofill hint, so Samsung
+    Pass was triggering on everything.
+- **Fix applied:** `src/shared/components/ui/Input.tsx`
+  - Default `autoComplete="off"` + `importantForAutofill="no"` +
+    `textContentType="none"` + `autoCorrect={false}`.
+  - Placed BEFORE `{...props}` so any screen that wants to opt in (future
+    needs — profile email, phone number for OTP, etc.) can still pass an
+    explicit prop that overrides the default.
+  - Auth screens unchanged: they use raw `TextInput`, not the shared
+    `Input`, and still get Samsung Pass as expected.
+- **What Navin will see:**
+  - Tap address, description, amount, search → no more Samsung Pass prompt
+  - Tap email on Login/Register → Samsung Pass still offers to fill
+    (as it should)
+
 ---
 
 ## Captured, not yet triaged
