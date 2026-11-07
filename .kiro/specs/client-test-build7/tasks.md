@@ -646,3 +646,46 @@
   - [ ] End date is at least `start + 1 month`
   - [ ] Lease row saves with the same ISO date strings the typed form
         produced (no schema change)
+
+## CT7-021 🔴 Owner — Lease creation fails
+
+- **Role:** owner
+- **Screen / flow:** Owner → Applications → Create Lease → Save
+- **Problem (client's words):** _"Lease creation failed."_
+- **Open questions — need on next repro:**
+  - [ ] The exact error toast text (critical — "Failed to create lease"
+        vs a specific DB message)
+  - [ ] Does the lease row appear in `leases` even though UI shows
+        failure? (parallel of CT7-011 — property-created-but-ui-says-failed)
+  - [ ] Does it fail ONLY on certain applications (holding-deposit
+        gate from CT7-019?) or every time?
+- **Diagnosis path (in order of likelihood):**
+  1. **Date fields.** CT7-020 just logged that lease start/end are
+     plain TextInput — if the owner left the format wrong (e.g.
+     "11/7/26" vs "2026-11-07") the INSERT fails with a date-parse
+     error. Fixing CT7-020 would eliminate this class.
+  2. **RLS on `leases`.** Same family as CT7-017 — the INSERT policy
+     might require `owner_id = auth.uid()` AND `property.owner_id =
+auth.uid()`; if either join fails the insert rejects.
+  3. **Missing required field.** The `leases` schema has NOT NULL
+     columns (deposit, escalation type, payment due day) that the UI
+     might not be sending.
+  4. **Cascade from CT7-017 / CT7-019.** If the lease depends on a
+     holding-deposit row that was never created (RLS failure), the
+     foreign-key constraint on `leases.holding_deposit_id` would reject.
+- **Suggested fix path:**
+  - Pull the exact error text (ask client to screenshot the next time).
+  - Grep for `createLease` / `leasesApi.create` in src/features/leases.
+  - Compare the INSERT payload against the `leases` RLS policy in
+    `database/migrations/*lease*.sql`.
+  - Mirror CT7-011 refactor if the UI fails loudly but the row lands —
+    split try/catches so error messages are honest.
+- **Acceptance criteria:**
+  - [ ] Owner can create a lease from an approved application in <5s
+  - [ ] Error path shows the real DB message, not a generic "Failed"
+  - [ ] Lease row never lands silently while UI reports failure
+        (CT7-011 pattern)
+- **Blocked by / related:**
+  - CT7-020 (date pickers) — eliminates the date-format class of fail
+  - CT7-017 (holding deposit RLS) — if lease depends on deposit row
+  - CT7-019 (approve-gated-on-deposit) — if lease depends on approve
