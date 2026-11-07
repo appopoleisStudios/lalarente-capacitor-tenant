@@ -81,15 +81,43 @@ export default function OwnerApplicationDetailScreen() {
     }
   };
 
-  // CT7-019 — holding-deposit gate. Owner cannot approve until the
-  // tenant has paid (or the owner has explicitly waived) a holding
-  // deposit. Protects the owner from "approved → tenant disappears"
-  // without securing commitment. Client-side gate only; the server-side
-  // enforcement lives in the leases RLS policy (future work tracked
-  // separately — the client gate is already a meaningful protection).
+  // CT7-019 — holding-deposit gate. The owner can't approve until the
+  // tenant's deposit lifecycle has landed (paid / applied / refunded).
+  // Enforced AUTHORITATIVELY in applicationsApi.approveApplication —
+  // this screen-side check only shapes the UX so the owner sees a
+  // friendly explanation instead of a raw API error.
+  // (No waiver column exists in the schema today; a future PR can add
+  // one if the client wants a per-property opt-out.)
   const depositStatus = holdingDeposit?.status;
   const depositGateCleared =
     depositStatus === 'paid' || depositStatus === 'applied' || depositStatus === 'refunded';
+
+  const remindTenantAboutDeposit = async () => {
+    if (!application) return;
+    try {
+      const { notificationsApi } =
+        await import('@/src/features/notifications/api/notificationsApi');
+      // Use payment_due — closest existing NotificationType to a pending
+      // holding deposit. Future PR can add a dedicated
+      // 'holding_deposit_reminder' type + template; for now this routes
+      // through the same notification pipeline as other payment nudges.
+      await notificationsApi.sendNotification({
+        user_id: application.tenant_id,
+        type: 'payment_due',
+        data: {
+          application_id: application.id,
+          context: 'holding_deposit',
+          amount: holdingDeposit?.amount,
+        },
+      });
+      Alert.alert('Reminder sent', 'The tenant has been notified about the pending deposit.');
+    } catch (err) {
+      Alert.alert(
+        'Could not send reminder',
+        err instanceof Error ? err.message : 'Please try again.'
+      );
+    }
+  };
 
   const handleApprove = async () => {
     if (!depositGateCleared) {
@@ -99,17 +127,15 @@ export default function OwnerApplicationDetailScreen() {
       Alert.alert(
         'Holding deposit required',
         `${label}\n\nRequest + collect a holding deposit before approving. This protects you from an approve-then-disappear scenario.`,
-        [
-          { text: 'OK', style: 'cancel' },
-          {
-            text: holdingDeposit ? 'Remind tenant' : 'Request deposit',
-            onPress: () => {
-              // Both actions live on this same screen's deposit section —
-              // scroll the user there rather than navigating away.
-              // (Smooth-scroll support can be added in a follow-up.)
-            },
-          },
-        ]
+        holdingDeposit
+          ? [
+              { text: 'OK', style: 'cancel' },
+              { text: 'Remind tenant', onPress: remindTenantAboutDeposit },
+            ]
+          : [
+              { text: 'OK', style: 'cancel' },
+              { text: 'Request deposit', onPress: openDepositModal },
+            ]
       );
       return;
     }

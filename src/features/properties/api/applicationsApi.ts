@@ -304,9 +304,40 @@ export const applicationsApi = {
   },
 
   /**
-   * Approve an application
+   * Approve an application.
+   *
+   * CT7-019: enforces the "deposit must be paid before approval" rule
+   * authoritatively at the API level, atomically with the status flip.
+   * The screen's client-side gate (OwnerApplicationDetailScreen) still
+   * fires first for friendly UX, but this is the belt-and-braces
+   * check — a caller that bypasses the UI (direct API call, dev
+   * console, race between screens) will still be blocked.
    */
   async approveApplication(id: string): Promise<RentalApplication> {
+    // Deposit precondition. 'paid' / 'applied' / 'refunded' indicate
+    // the deposit flowed through its lifecycle; anything else is
+    // unacceptable.
+    const { data: latestDeposit, error: depositErr } = await supabase
+      .from('holding_deposits')
+      .select('status')
+      .eq('application_id', id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (depositErr) {
+      console.error('Error loading holding deposit for approval gate:', depositErr);
+      throw new Error(`Could not verify holding deposit before approval: ${depositErr.message}`);
+    }
+
+    const depositCleared =
+      latestDeposit &&
+      ['paid', 'applied', 'refunded'].includes((latestDeposit as { status: string }).status);
+
+    if (!depositCleared) {
+      throw new Error('Holding deposit must be paid before this application can be approved.');
+    }
+
     const { data, error } = await supabase
       .from('rental_applications')
       .update({
