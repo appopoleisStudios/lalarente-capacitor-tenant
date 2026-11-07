@@ -769,3 +769,83 @@ auth.uid()`; if either join fails the insert rejects.
         status transition as today's Create button
   - [ ] Cancel preserves form state so the owner doesn't re-key the
         whole lease
+
+## CT7-023 🟠 Define owner vs tenant maintenance responsibility + vendor-hire rights
+
+- **Role:** owner + tenant (parity + policy)
+- **Screen / flow:** Tenant → Maintenance → New Request · Owner → Maintenance
+- **Problem (client's words):** _"Maintenance of services provided by
+  property owner is for property owner to resolve and hire tenant [sic:
+  vendor] for that. Tenants cannot ask other vendors to resolve. We
+  need to define owner responsibility and tenant responsibility in
+  maintenance and vendor management for that maintenance."_
+- **Why this matters legally + commercially:**
+  - Property includes **Owner-provided services** (geyser, aircon,
+    gate motor, borehole pump, DStv, generator, security system, etc.).
+    These are tied to the lease — the owner contracted the vendor;
+    the owner holds the warranty.
+  - If the tenant hires a different vendor for one of those systems
+    the owner can lose the warranty, accept a sub-par repair, and
+    gets charged for work they didn't authorize.
+  - The RHA + CPA back this: appliances/fittings installed by the
+    landlord remain the landlord's responsibility for repair; the
+    tenant's duty is to use them with reasonable care.
+- **Current state (quick audit needed, but as of today):**
+  - Tenant → Maintenance → New Request has a category picker that
+    doesn't distinguish owner-provided vs tenant-owned systems.
+  - After submit, the tenant can route to the vendor marketplace and
+    pick ANY vendor — including for e.g. a geyser the owner installed.
+  - Owner sees the request but has no veto over the tenant's chosen
+    vendor; the owner isn't asked "do you want to handle this yourself?"
+- **Suggested fix path (two-phase):**
+
+  **v1 — Category-based routing (ships in days, no schema surgery):**
+  - Property form (Add / Edit): existing "Services Provided" array
+    becomes the canonical list of owner-provided systems. Each entry
+    is a `{ name, tenantMayDispatch: boolean }` pair so the owner
+    explicitly marks each one.
+  - Tenant request flow: when the chosen category matches an
+    owner-provided system where `tenantMayDispatch === false`, the
+    vendor-marketplace path is HIDDEN. The request becomes
+    `status: 'awaiting_owner_dispatch'` and the tenant is told "The
+    landlord will arrange a vendor for this."
+  - Owner inbox: new filter / section "Awaiting your action" lists
+    these. Owner picks a vendor from their existing vendor marketplace
+    and the PO flow proceeds as today.
+  - For categories NOT on the owner's exclusive list, the current
+    tenant-dispatches flow is unchanged.
+
+  **v2 — Full responsibility matrix (if clients demand finer control):**
+  - Admin-side responsibility matrix per property: for every
+    category × subcategory, who handles it (owner / tenant / either).
+  - Cost-allocation rules per category (owner pays / tenant pays /
+    split).
+  - Audit trail of every dispatch decision.
+  - Probably 2-3 weeks of work; defer until v1 proves the model.
+
+- **Legal copy / tenant education needed:**
+  - Tenant request screen shows a small explainer: _"Some systems in
+    this property are the landlord's to repair. For those, the landlord
+    will arrange the vendor. For your own appliances, you choose."_
+- **Depends on / interacts with:**
+  - CT7-022 (lease preview + edit) — the lease should list owner-
+    provided systems so the tenant has agreed to this upfront.
+  - Existing `properties.services_provided` schema — needs the
+    `tenantMayDispatch` flag added (or a sidecar table).
+- **Open questions for client:**
+  1. Should the owner be able to OVERRIDE and say "for this specific
+     geyser issue, go ahead and hire your own vendor"? (one-off waiver)
+  2. What happens to cost reimbursement? If the tenant DOES get a
+     vendor for a landlord system in an emergency (burst geyser,
+     3am), does the landlord reimburse?
+  3. Default for `tenantMayDispatch` — true (today's behaviour) or
+     false (new default to force the owner to explicitly waive)?
+- **Acceptance criteria (v1):**
+  - [ ] Owner can mark each service-provided entry as
+        "tenant may NOT hire own vendor"
+  - [ ] Tenant maintenance request for a flagged category routes
+        straight to the owner — no marketplace
+  - [ ] Owner inbox shows an "Awaiting your action" section with
+        these requests
+  - [ ] Owner picks a vendor and the normal PO flow resumes
+  - [ ] Tenant sees a clear explanation on the request screen
