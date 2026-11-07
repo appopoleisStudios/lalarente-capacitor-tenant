@@ -828,13 +828,24 @@ created_at timestamp)`.
     `tenant_may_dispatch = false`, the vendor marketplace is HIDDEN
     and the request is created with `status = 'awaiting_owner_dispatch'`
     and `service_item_id` pointing at the sidecar row.
-  - When the tenant picks a `tenant_may_dispatch = true` entry OR the
-    "something else" fallback, the existing marketplace flow runs
-    unchanged.
+  - When the tenant picks a `tenant_may_dispatch = true` entry, the
+    existing marketplace flow runs unchanged.
+  - When the tenant picks the "Something else" fallback
+    (`service_item_id IS NULL`), the trigger forces
+    `captured_tenant_may_dispatch = false` and
+    `status = 'awaiting_owner_dispatch'` — it goes to owner triage
+    FIRST (updated r7, addresses PR #200 r6 Senior Dev P2 which
+    rightly caught that the previous spec text contradicted the
+    database behaviour). The owner either keeps the request as
+    owner-dispatched OR calls `release_to_tenant_dispatch()` which
+    flips to `tenant_dispatching` and the tenant is notified they
+    can now pick a vendor. Tenant NEVER lands in the marketplace
+    directly on "Something else".
   - Category alone never routes — only the explicit `service_item_id`
-    does. Addresses Senior Dev's finding that "an aircon the tenant
-    brought" isn't distinguishable from "the aircon the landlord
-    installed" via category.
+    (or lack of one, which blocks pending triage) does. Addresses the
+    original Senior Dev finding that "an aircon the tenant brought"
+    isn't distinguishable from "the aircon the landlord installed"
+    via category.
 
   _State machine for `maintenance_requests` (addresses Architect):_
 
@@ -986,10 +997,17 @@ created_at timestamp)`.
   -- policy sealing captured_tenant_may_dispatch doesn't need to
   -- special-case this transition.
   CREATE OR REPLACE FUNCTION release_to_tenant_dispatch(req_id uuid)
-  RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
+  RETURNS void LANGUAGE plpgsql SECURITY DEFINER
+    -- Hardening (PR #200 r6 Security P1): SECURITY DEFINER functions
+    -- without an explicit search_path are vulnerable to object-shadowing
+    -- attacks. Setting a trusted path with pg_temp LAST (empty) means a
+    -- caller can't introduce a same-named temp relation that resolves
+    -- before our intended one.
+    SET search_path = public, pg_catalog, pg_temp
+  AS $$
   BEGIN
     IF NOT EXISTS (
-      SELECT 1 FROM maintenance_requests
+      SELECT 1 FROM public.maintenance_requests
       WHERE id = req_id
         AND owner_id = auth.uid()
         AND service_item_id IS NULL
@@ -999,7 +1017,7 @@ created_at timestamp)`.
     END IF;
 
     PERFORM set_config('app.triage_in_progress', 'true', true);
-    UPDATE maintenance_requests
+    UPDATE public.maintenance_requests
     SET captured_tenant_may_dispatch = true,
         status = 'tenant_dispatching',
         updated_at = now()
@@ -1091,19 +1109,26 @@ created_at timestamp)`.
   -- flipping the status. PR #200 r5 Senior Dev finding: an assignment
   -- could close naturally while its PO stayed outstanding.
   CREATE OR REPLACE FUNCTION reclaim_request(req_id uuid, reason text)
-  RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
+  RETURNS void LANGUAGE plpgsql SECURITY DEFINER
+    -- Hardening (PR #200 r6 Security P1): SECURITY DEFINER functions
+    -- without an explicit search_path are vulnerable to object-shadowing
+    -- attacks. Setting a trusted path with pg_temp LAST (empty) means a
+    -- caller can't introduce a same-named temp relation that resolves
+    -- before our intended one.
+    SET search_path = public, pg_catalog, pg_temp
+  AS $$
   DECLARE
     open_assignments int;
     open_pos int;
   BEGIN
-    IF NOT EXISTS (SELECT 1 FROM maintenance_requests
+    IF NOT EXISTS (SELECT 1 FROM public.maintenance_requests
                    WHERE id = req_id AND owner_id = auth.uid()) THEN
       RAISE EXCEPTION 'not authorized';
     END IF;
 
     -- Pre-condition (a): every assignment must be cancelled / rejected.
     SELECT count(*) INTO open_assignments
-    FROM maintenance_vendor_assignments
+    FROM public.maintenance_vendor_assignments
     WHERE request_id = req_id
       AND status NOT IN ('cancelled', 'rejected');
 
@@ -1115,7 +1140,7 @@ created_at timestamp)`.
     -- Checking assignments alone (prior spec) let a reclaim through
     -- while a PO was still active for a closed assignment.
     SELECT count(*) INTO open_pos
-    FROM purchase_orders
+    FROM public.purchase_orders
     WHERE request_id = req_id
       AND status NOT IN ('cancelled', 'closed');
 
@@ -1124,7 +1149,7 @@ created_at timestamp)`.
     END IF;
 
     PERFORM set_config('app.reclaim_in_progress', 'true', true);
-    UPDATE maintenance_requests
+    UPDATE public.maintenance_requests
     SET status = 'awaiting_owner_dispatch',
         owner_reclaim_reason = reason,
         updated_at = now()
@@ -1211,7 +1236,12 @@ created_at timestamp)`.
   - [ ] Tenant request form shows a picker of this property's systems;
         selecting a locked system routes straight to owner (not by
         category alone)
-  - [ ] "Something else" fallback remains open to the marketplace
+  - [ ] "Something else" fallback goes to owner triage first;
+        marketplace only opens after `release_to_tenant_dispatch()`
+  - [ ] Owner can call release_to_tenant_dispatch() on an unlinked
+        request to flip it to tenant_dispatching
+  - [ ] An unlinked request that the owner does NOT release stays in
+        owner-dispatched flow end-to-end
   - [ ] Owner inbox shows an "Awaiting your action" section
   - [ ] Owner picks a vendor and the normal PO flow resumes
   - [ ] Server-side RLS rejects a tenant-direct vendor assignment on
