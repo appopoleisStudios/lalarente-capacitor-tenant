@@ -272,6 +272,37 @@
   anyway (see the newly-saved changes reflected on the detail screen
   without manually navigating back in).
 
+## CT7-011 ✅ "Failed to create property" shown but property appears on Rent Roll — FIXED
+
+- **Role:** owner
+- **Screen / flow:** Owner → Add Property → tap Create
+- **Problem:** Navin reported that property creation showed a "Failed"
+  error BUT the property still appeared on the Rent Roll afterwards.
+- **Root cause:** `handleSubmit` wrapped BOTH `createProperty()` AND
+  `uploadPropertyPhotos()` in one try/catch. The property row was
+  inserted successfully (DB commit landed → shows up on Rent Roll), then
+  the photo upload threw "Network request failed" (the CT7-004 bug which
+  shipped in build.7). The outer catch reported "Failed to create
+  property", misleading the user into thinking the whole operation
+  failed. Classic cascade-failure masquerading as the wrong error.
+- **Downstream effect:** Even once CT7-004 is deployed and photos upload
+  reliably, ANY future post-create step (email notification, geocoding,
+  indexing) could repeat this misdiagnosis.
+- **Fix applied:** `src/features/owner/screens/AddPropertyScreen.tsx`
+  handleSubmit split into two separately-reported stages:
+  - **Stage 1 — createProperty:** if this throws, nothing was committed,
+    show the real error, user retries the form.
+  - **Stage 2 — uploadPropertyPhotos:** property is already live at this
+    point. If upload throws, show a WARNING: _"Property created, photos
+    pending — retry from Edit Property"_ instead of a blanket failure.
+  - Different haptic (`Warning` vs `Success`) so the user feels the
+    partial-success state.
+- **Why this is a permanent fix, not just a band-aid for CT7-004:**
+  it decouples the UX contract from any specific post-create step. New
+  post-create work can be added in its own try block with the same
+  pattern — report success for what succeeded, warn for what didn't,
+  never roll the whole thing into one misleading "Error".
+
 ---
 
 ## Captured, not yet triaged
