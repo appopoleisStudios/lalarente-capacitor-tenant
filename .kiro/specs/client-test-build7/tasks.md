@@ -807,7 +807,7 @@ auth.uid()`; if either join fails the insert rejects.
   _Storage (chosen approach — sidecar table, NOT text[] rewrite):_
   - New `property_service_items` table:
     `(id uuid, property_id uuid, name text, tenant_may_dispatch boolean,
- created_at timestamp)`.
+created_at timestamp)`.
   - The existing `properties.services_provided text[]` is left in place
     for backward-compatibility reads; a one-shot backfill seeds the
     sidecar for each existing entry with `tenant_may_dispatch = true`
@@ -844,8 +844,10 @@ auth.uid()`; if either join fails the insert rejects.
      v                                 v
   awaiting_owner_dispatch        tenant_dispatching
      │     ▲                           │
-     │     └──── owner reclaims ◀──────┤ (if owner belatedly asserts
-     │                                 │  the system is theirs)
+     │     └── owner reclaims ◀────────┤ (requires any open vendor
+     │        (open PO + assignments  │  assignment / PO to be
+     │         must be cancelled      │  cancelled FIRST)
+     │         first)                 │
      v                                 │
   owner_dispatched ───────► in_progress ◀───┘
                                  │
@@ -855,21 +857,109 @@ auth.uid()`; if either join fails the insert rejects.
 
   - Cancellation allowed from `awaiting_owner_dispatch` by owner OR
     tenant (either party can close).
-  - Dispatch failure (vendor declines / no vendor available) bounces
-    back to `awaiting_owner_dispatch` with a counter so SLA alerts
-    can nag the owner.
+  - **Dispatch failure splits by authority** (addresses Senior Dev #1):
+    - `owner_dispatched` → vendor declines → back to
+      `awaiting_owner_dispatch` with an attempt counter; owner-side
+      SLA alerts fire.
+    - `tenant_dispatching` → vendor declines → STAYS in
+      `tenant_dispatching` with the same counter; tenant picks a new
+      vendor. Responsibility is NOT silently transferred to the owner.
+  - **Owner reclaim pre-conditions** (addresses Senior Dev #2):
+    `tenant_dispatching` → `awaiting_owner_dispatch` requires EITHER
+    (a) no open `maintenance_vendor_assignments` row for the request,
+    OR (b) every open assignment cancelled by the tenant AND any
+    issued PO marked cancelled by the owner. An `owner_reclaim_reason`
+    column records why the transition happened. Server-side gate is
+    the UPDATE policy below.
 
-  _Server-side enforcement (addresses Security):_
-  - RLS on `maintenance_requests` INSERT WITH CHECK that if
-    `service_item_id IS NOT NULL` AND the referenced row has
-    `tenant_may_dispatch = false`, the `vendor_id` column MUST be null.
-    So a client that hides-but-still-tries can't slip through.
-  - RLS on `maintenance_vendor_assignments` INSERT WITH CHECK that
-    the request's effective policy allows tenant-dispatch, OR the
-    inserter is the property owner. Direct tenant → vendor dispatch
-    on a restricted item is rejected at the DB.
-  - Only property owner (auth.uid = properties.owner_id) can toggle
-    `tenant_may_dispatch` via RLS UPDATE policy.
+  _Server-side enforcement — covers all mutation paths (addresses Security):_
+
+  ```sql
+  -- property_service_items: owner-only for INSERT / UPDATE / DELETE
+  -- (toggle, rename, add, retire all gated identically).
+  CREATE POLICY psi_rw ON property_service_items
+    FOR ALL TO authenticated
+    USING (EXISTS (SELECT 1 FROM properties p
+                   WHERE p.id = property_service_items.property_id
+                     AND p.owner_id = auth.uid()))
+    WITH CHECK (EXISTS (SELECT 1 FROM properties p
+                        WHERE p.id = property_service_items.property_id
+                          AND p.owner_id = auth.uid()));
+  -- Soft-delete via deleted_at: UI hides deleted rows from new
+  -- selection, but existing maintenance_requests keep their FK so
+  -- pending dispatch decisions aren't erased.
+
+  -- maintenance_requests: INSERT guard verifies the service_item_id
+  -- actually belongs to the request's property AND the tenant can't
+  -- pre-attach a vendor to an owner-exclusive system.
+  CREATE POLICY mr_insert ON maintenance_requests
+    FOR INSERT TO authenticated
+    WITH CHECK (
+      (service_item_id IS NULL
+       OR EXISTS (SELECT 1 FROM property_service_items psi
+                  WHERE psi.id = service_item_id
+                    AND psi.property_id = maintenance_requests.property_id))
+      AND NOT (service_item_id IS NOT NULL
+               AND vendor_id IS NOT NULL
+               AND EXISTS (SELECT 1 FROM property_service_items psi
+                           WHERE psi.id = service_item_id
+                             AND psi.tenant_may_dispatch = false))
+    );
+
+  -- maintenance_requests: UPDATE guard — service_item_id sealed at
+  -- creation (can't be rewritten mid-flow); vendor_id can only be set
+  -- by the owner when the system is owner-exclusive.
+  CREATE POLICY mr_update ON maintenance_requests
+    FOR UPDATE TO authenticated
+    USING (tenant_id = auth.uid() OR owner_id = auth.uid())
+    WITH CHECK (
+      service_item_id IS NOT DISTINCT FROM (
+        SELECT service_item_id FROM maintenance_requests mr2
+        WHERE mr2.id = maintenance_requests.id
+      )
+      AND (vendor_id IS NULL
+           OR owner_id = auth.uid()
+           OR EXISTS (SELECT 1 FROM property_service_items psi
+                      WHERE psi.id = service_item_id
+                        AND psi.tenant_may_dispatch = true))
+    );
+
+  -- maintenance_vendor_assignments: INSERT guard matches request policy.
+  CREATE POLICY mva_insert ON maintenance_vendor_assignments
+    FOR INSERT TO authenticated
+    WITH CHECK (
+      EXISTS (
+        SELECT 1 FROM maintenance_requests mr
+        LEFT JOIN property_service_items psi ON psi.id = mr.service_item_id
+        WHERE mr.id = maintenance_vendor_assignments.request_id
+          AND (
+            psi.id IS NULL                          -- no linked system
+            OR psi.tenant_may_dispatch = true       -- tenant-OK
+            OR mr.owner_id = auth.uid()             -- owner dispatching
+          )
+      )
+    );
+  ```
+
+  _Write path — sidecar-authoritative (addresses Architect #1):_
+  - All new writes go to `property_service_items`. The legacy
+    `properties.services_provided text[]` column becomes READ-ONLY for
+    one release (display fallback on older app versions), then is
+    dropped. Zero dual-write, zero sync drift. Older clients that
+    still write to the text[] will see their additions ignored by new
+    readers until they upgrade; this is acceptable because the
+    client-side version check already blocks non-upgraded owners from
+    the maintenance flow.
+
+  _Deletion semantics (addresses Architect #2):_
+  - `property_service_items.deleted_at` soft-deletes.
+  - Existing `maintenance_requests.service_item_id` FK survives.
+  - UI hides deleted items from the tenant selection picker.
+  - For locked items with open requests: the policy decision
+    (`tenant_may_dispatch`) is READ from the snapshot at request-create
+    time — the policy is captured on the request row at insert and the
+    FK is only used for display. Deleting the item never silently
+    unlocks a pending request.
 
   **v2 — Full responsibility matrix (deferred):**
   - Admin-side matrix per property: category × subcategory → owner /
