@@ -81,7 +81,39 @@ export default function OwnerApplicationDetailScreen() {
     }
   };
 
+  // CT7-019 — holding-deposit gate. Owner cannot approve until the
+  // tenant has paid (or the owner has explicitly waived) a holding
+  // deposit. Protects the owner from "approved → tenant disappears"
+  // without securing commitment. Client-side gate only; the server-side
+  // enforcement lives in the leases RLS policy (future work tracked
+  // separately — the client gate is already a meaningful protection).
+  const depositStatus = holdingDeposit?.status;
+  const depositGateCleared =
+    depositStatus === 'paid' || depositStatus === 'applied' || depositStatus === 'refunded';
+
   const handleApprove = async () => {
+    if (!depositGateCleared) {
+      const label = holdingDeposit
+        ? `The holding deposit is "${depositStatus}" — the tenant hasn't paid yet.`
+        : 'No holding deposit has been requested for this application yet.';
+      Alert.alert(
+        'Holding deposit required',
+        `${label}\n\nRequest + collect a holding deposit before approving. This protects you from an approve-then-disappear scenario.`,
+        [
+          { text: 'OK', style: 'cancel' },
+          {
+            text: holdingDeposit ? 'Remind tenant' : 'Request deposit',
+            onPress: () => {
+              // Both actions live on this same screen's deposit section —
+              // scroll the user there rather than navigating away.
+              // (Smooth-scroll support can be added in a follow-up.)
+            },
+          },
+        ]
+      );
+      return;
+    }
+
     Alert.alert(
       'Approve Application',
       'Are you sure you want to approve this application? This will allow you to create a lease.',
@@ -593,7 +625,11 @@ export default function OwnerApplicationDetailScreen() {
                 </TouchableOpacity>
               )}
               <TouchableOpacity
-                style={[styles.actionButton, styles.approveButton]}
+                style={[
+                  styles.actionButton,
+                  styles.approveButton,
+                  !depositGateCleared && styles.approveButtonLocked,
+                ]}
                 onPress={handleApprove}
                 disabled={processing}
               >
@@ -601,8 +637,14 @@ export default function OwnerApplicationDetailScreen() {
                   <ActivityIndicator color="#FFF" />
                 ) : (
                   <>
-                    <Ionicons name="checkmark-circle" size={20} color="#FFF" />
-                    <Text style={styles.actionButtonText}>Approve</Text>
+                    <Ionicons
+                      name={depositGateCleared ? 'checkmark-circle' : 'lock-closed'}
+                      size={20}
+                      color="#FFF"
+                    />
+                    <Text style={styles.actionButtonText}>
+                      {depositGateCleared ? 'Approve' : 'Approve (deposit required)'}
+                    </Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -1072,6 +1114,12 @@ const styles = StyleSheet.create({
   },
   approveButton: {
     backgroundColor: '#4CAF50',
+  },
+  // CT7-019 — muted when the holding-deposit gate hasn't cleared. Still
+  // tappable (shows the Alert explaining why); communicates the state
+  // visually without hiding the control entirely.
+  approveButtonLocked: {
+    backgroundColor: '#9CA3AF',
   },
   rejectButton: {
     backgroundColor: '#F44336',
