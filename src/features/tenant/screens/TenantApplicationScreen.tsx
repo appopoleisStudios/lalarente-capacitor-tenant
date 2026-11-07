@@ -77,7 +77,9 @@ export default function TenantApplicationScreen() {
       const propertyData = await propertiesApi.getProperty(propertyId);
       setProperty(propertyData);
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
@@ -127,7 +129,8 @@ export default function TenantApplicationScreen() {
 
           if (latestApp) {
             if (latestApp.id_document_url) setExistingIdDocUrl(latestApp.id_document_url);
-            if (latestApp.proof_of_income_urls?.length) setExistingIncomeDocUrls(latestApp.proof_of_income_urls);
+            if (latestApp.proof_of_income_urls?.length)
+              setExistingIncomeDocUrls(latestApp.proof_of_income_urls);
           }
         }
       }
@@ -220,7 +223,10 @@ export default function TenantApplicationScreen() {
     const asset = result.assets[0];
     const mime = asset.mimeType?.trim();
     if (!mime || mime !== 'application/pdf') {
-      Alert.alert('PDF required', 'Please upload a PDF document for proof of income and references.');
+      Alert.alert(
+        'PDF required',
+        'Please upload a PDF document for proof of income and references.'
+      );
       return;
     }
     onPick({
@@ -330,7 +336,10 @@ export default function TenantApplicationScreen() {
         if (employmentStartDate.trim()) {
           const empDateRegex = /^\d{4}-\d{2}-\d{2}$/;
           if (!empDateRegex.test(employmentStartDate.trim())) {
-            Alert.alert('Invalid', 'Employment start date must be in YYYY-MM-DD format (e.g., 2020-01-15)');
+            Alert.alert(
+              'Invalid',
+              'Employment start date must be in YYYY-MM-DD format (e.g., 2020-01-15)'
+            );
             return false;
           }
           const empDate = new Date(employmentStartDate);
@@ -432,10 +441,7 @@ export default function TenantApplicationScreen() {
       // Columns don't exist yet, data is in JSONB
     }
 
-    await supabase
-      .from('profiles')
-      .update(updateData)
-      .eq('id', userId);
+    await supabase.from('profiles').update(updateData).eq('id', userId);
   };
 
   const submitApplication = async () => {
@@ -443,7 +449,9 @@ export default function TenantApplicationScreen() {
       setSubmitting(true);
       setUploadingDocs(true);
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user || !property) throw new Error('Missing required data');
 
       // Upload ID document (or reuse existing)
@@ -559,10 +567,19 @@ export default function TenantApplicationScreen() {
             {STEPS.map((_, i) => (
               <React.Fragment key={i}>
                 {i > 0 && (
-                  <View style={[styles.progressLine, currentStep >= i + 1 && styles.progressLineActive]} />
+                  <View
+                    style={[styles.progressLine, currentStep >= i + 1 && styles.progressLineActive]}
+                  />
                 )}
-                <View style={[styles.progressStep, currentStep >= i + 1 && styles.progressStepActive]}>
-                  <Text style={[styles.progressStepText, currentStep >= i + 1 && styles.progressStepTextActive]}>
+                <View
+                  style={[styles.progressStep, currentStep >= i + 1 && styles.progressStepActive]}
+                >
+                  <Text
+                    style={[
+                      styles.progressStepText,
+                      currentStep >= i + 1 && styles.progressStepTextActive,
+                    ]}
+                  >
                     {i + 1}
                   </Text>
                 </View>
@@ -571,7 +588,9 @@ export default function TenantApplicationScreen() {
           </View>
           <View style={styles.progressLabels}>
             {STEPS.map((label) => (
-              <Text key={label} style={styles.progressLabel}>{label}</Text>
+              <Text key={label} style={styles.progressLabel}>
+                {label}
+              </Text>
             ))}
           </View>
         </View>
@@ -584,69 +603,125 @@ export default function TenantApplicationScreen() {
         </View>
 
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          {/* Step 1: Personal Information */}
+          {/* CT7-016 — "From your profile" summary. Fields that were pre-
+              filled from the tenant's profile are shown as a read-only
+              summary panel instead of 10 individual inputs. The tenant
+              goes to Profile to edit — single source of truth. */}
           {currentStep === 1 && (
             <View style={styles.formSection}>
               <Text style={styles.sectionTitle}>Personal Information</Text>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Full Name *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={fullName}
-                  onChangeText={setFullName}
-                  placeholder="Enter your full name"
-                  placeholderTextColor="#999"
-                />
-              </View>
+              {(fullName || email || phone || idNumber || dateOfBirth) && (
+                <View style={styles.profilePrefillCard}>
+                  <View style={styles.profilePrefillHeader}>
+                    <Ionicons name="person-circle" size={20} color={RSA.green} />
+                    <Text style={styles.profilePrefillTitle}>From your profile</Text>
+                    <TouchableOpacity onPress={() => router.push('/(tenant)/profile' as any)}>
+                      <Text style={styles.profilePrefillEdit}>Edit</Text>
+                    </TouchableOpacity>
+                  </View>
+                  {fullName ? (
+                    <Text style={styles.profilePrefillRow}>
+                      <Text style={styles.profilePrefillLabel}>Name: </Text>
+                      {fullName}
+                    </Text>
+                  ) : null}
+                  {email ? (
+                    <Text style={styles.profilePrefillRow}>
+                      <Text style={styles.profilePrefillLabel}>Email: </Text>
+                      {email}
+                    </Text>
+                  ) : null}
+                  {phone ? (
+                    <Text style={styles.profilePrefillRow}>
+                      <Text style={styles.profilePrefillLabel}>Phone: </Text>
+                      {phone}
+                    </Text>
+                  ) : null}
+                  {idNumber ? (
+                    <Text style={styles.profilePrefillRow}>
+                      <Text style={styles.profilePrefillLabel}>SA ID: </Text>
+                      {idNumber}
+                    </Text>
+                  ) : null}
+                  {dateOfBirth ? (
+                    <Text style={styles.profilePrefillRow}>
+                      <Text style={styles.profilePrefillLabel}>DOB: </Text>
+                      {dateOfBirth}
+                    </Text>
+                  ) : null}
+                </View>
+              )}
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Email *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="your.email@example.com"
-                  placeholderTextColor="#999"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </View>
+              {/* Only ask for fields the profile doesn't have. */}
+              {!fullName && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Full Name *</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={fullName}
+                    onChangeText={setFullName}
+                    placeholder="Enter your full name"
+                    placeholderTextColor="#999"
+                  />
+                </View>
+              )}
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Phone Number *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={phone}
-                  onChangeText={setPhone}
-                  placeholder="+27 XX XXX XXXX"
-                  placeholderTextColor="#999"
-                  keyboardType="phone-pad"
-                />
-              </View>
+              {!email && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Email *</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="your.email@example.com"
+                    placeholderTextColor="#999"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </View>
+              )}
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>ID Number *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={idNumber}
-                  onChangeText={setIdNumber}
-                  placeholder="Enter your ID number"
-                  placeholderTextColor="#999"
-                />
-              </View>
+              {!phone && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Phone Number *</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={phone}
+                    onChangeText={setPhone}
+                    placeholder="+27 XX XXX XXXX"
+                    placeholderTextColor="#999"
+                    keyboardType="phone-pad"
+                  />
+                </View>
+              )}
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Date of Birth *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={dateOfBirth}
-                  onChangeText={setDateOfBirth}
-                  placeholder="YYYY-MM-DD (e.g., 1990-05-15)"
-                  placeholderTextColor="#999"
-                />
-                <Text style={styles.helperText}>Format: Year-Month-Day (e.g., 1990-05-15)</Text>
-              </View>
+              {!idNumber && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>ID Number *</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={idNumber}
+                    onChangeText={setIdNumber}
+                    placeholder="Enter your ID number"
+                    placeholderTextColor="#999"
+                  />
+                </View>
+              )}
+
+              {!dateOfBirth && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Date of Birth *</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={dateOfBirth}
+                    onChangeText={setDateOfBirth}
+                    placeholder="YYYY-MM-DD (e.g., 1990-05-15)"
+                    placeholderTextColor="#999"
+                  />
+                  <Text style={styles.helperText}>Format: Year-Month-Day (e.g., 1990-05-15)</Text>
+                </View>
+              )}
             </View>
           )}
 
@@ -655,39 +730,75 @@ export default function TenantApplicationScreen() {
             <View style={styles.formSection}>
               <Text style={styles.sectionTitle}>Employment Information</Text>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Employer *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={employer}
-                  onChangeText={setEmployer}
-                  placeholder="Company name"
-                  placeholderTextColor="#999"
-                />
-              </View>
+              {(employer || position || monthlyIncome) && (
+                <View style={styles.profilePrefillCard}>
+                  <View style={styles.profilePrefillHeader}>
+                    <Ionicons name="briefcase" size={20} color={RSA.green} />
+                    <Text style={styles.profilePrefillTitle}>From your profile</Text>
+                    <TouchableOpacity onPress={() => router.push('/(tenant)/profile' as any)}>
+                      <Text style={styles.profilePrefillEdit}>Edit</Text>
+                    </TouchableOpacity>
+                  </View>
+                  {employer ? (
+                    <Text style={styles.profilePrefillRow}>
+                      <Text style={styles.profilePrefillLabel}>Employer: </Text>
+                      {employer}
+                    </Text>
+                  ) : null}
+                  {position ? (
+                    <Text style={styles.profilePrefillRow}>
+                      <Text style={styles.profilePrefillLabel}>Position: </Text>
+                      {position}
+                    </Text>
+                  ) : null}
+                  {monthlyIncome ? (
+                    <Text style={styles.profilePrefillRow}>
+                      <Text style={styles.profilePrefillLabel}>Monthly income: </Text>R{' '}
+                      {Number(monthlyIncome).toLocaleString()}
+                    </Text>
+                  ) : null}
+                </View>
+              )}
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Position *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={position}
-                  onChangeText={setPosition}
-                  placeholder="Your job title"
-                  placeholderTextColor="#999"
-                />
-              </View>
+              {!employer && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Employer *</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={employer}
+                    onChangeText={setEmployer}
+                    placeholder="Company name"
+                    placeholderTextColor="#999"
+                  />
+                </View>
+              )}
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Monthly Income (Gross) *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={monthlyIncome}
-                  onChangeText={setMonthlyIncome}
-                  placeholder="0"
-                  placeholderTextColor="#999"
-                  keyboardType="numeric"
-                />
-              </View>
+              {!position && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Position *</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={position}
+                    onChangeText={setPosition}
+                    placeholder="Your job title"
+                    placeholderTextColor="#999"
+                  />
+                </View>
+              )}
+
+              {!monthlyIncome && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Monthly Income (Gross) *</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={monthlyIncome}
+                    onChangeText={setMonthlyIncome}
+                    placeholder="0"
+                    placeholderTextColor="#999"
+                    keyboardType="numeric"
+                  />
+                </View>
+              )}
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Employment Start Date</Text>
@@ -713,7 +824,9 @@ export default function TenantApplicationScreen() {
               </View>
 
               {affordabilityRatio !== null && (
-                <View style={[styles.affordabilityCard, !isAffordable && styles.affordabilityWarning]}>
+                <View
+                  style={[styles.affordabilityCard, !isAffordable && styles.affordabilityWarning]}
+                >
                   <View style={styles.affordabilityHeader}>
                     <Ionicons
                       name={isAffordable ? 'checkmark-circle' : 'warning'}
@@ -743,12 +856,16 @@ export default function TenantApplicationScreen() {
               {/* SA ID / Passport */}
               <View style={styles.docSection}>
                 <Text style={styles.label}>SA ID / Passport *</Text>
-                <Text style={styles.helperText}>Upload a clear photo or scan of your ID document</Text>
+                <Text style={styles.helperText}>
+                  Upload a clear photo or scan of your ID document
+                </Text>
 
                 {idDocFile ? (
                   <View style={styles.docFileRow}>
                     <Ionicons name="document-attach" size={20} color={RSA.green} />
-                    <Text style={styles.docFileName} numberOfLines={1}>{idDocFile.name}</Text>
+                    <Text style={styles.docFileName} numberOfLines={1}>
+                      {idDocFile.name}
+                    </Text>
                     <TouchableOpacity onPress={() => setIdDocFile(null)}>
                       <Ionicons name="close-circle" size={22} color="#F44336" />
                     </TouchableOpacity>
@@ -756,7 +873,9 @@ export default function TenantApplicationScreen() {
                 ) : existingIdDocUrl ? (
                   <View style={styles.docExistingRow}>
                     <Ionicons name="time-outline" size={20} color="#F59E0B" />
-                    <Text style={styles.docExistingText}>Previously uploaded — pending verification</Text>
+                    <Text style={styles.docExistingText}>
+                      Previously uploaded — pending verification
+                    </Text>
                     <TouchableOpacity onPress={pickIdDoc}>
                       <Text style={styles.docReplaceText}>Replace</Text>
                     </TouchableOpacity>
@@ -774,13 +893,17 @@ export default function TenantApplicationScreen() {
               {/* Proof of Income */}
               <View style={styles.docSection}>
                 <Text style={styles.label}>Proof of Income * (max 3)</Text>
-                <Text style={styles.helperText}>Payslips, bank statements, or employment letter</Text>
+                <Text style={styles.helperText}>
+                  Payslips, bank statements, or employment letter
+                </Text>
 
                 {existingIncomeDocUrls.length > 0 && incomeDocFiles.length === 0 ? (
                   <View style={styles.docExistingRow}>
                     <Ionicons name="time-outline" size={20} color="#F59E0B" />
                     <Text style={styles.docExistingText}>
-                      {existingIncomeDocUrls.length} file{existingIncomeDocUrls.length > 1 ? 's' : ''} previously uploaded — pending verification
+                      {existingIncomeDocUrls.length} file
+                      {existingIncomeDocUrls.length > 1 ? 's' : ''} previously uploaded — pending
+                      verification
                     </Text>
                     <TouchableOpacity onPress={pickIncomeDoc}>
                       <Text style={styles.docReplaceText}>Add New</Text>
@@ -791,8 +914,14 @@ export default function TenantApplicationScreen() {
                     {incomeDocFiles.map((file, i) => (
                       <View key={i} style={styles.docFileRow}>
                         <Ionicons name="document-attach" size={20} color={RSA.green} />
-                        <Text style={styles.docFileName} numberOfLines={1}>{file.name}</Text>
-                        <TouchableOpacity onPress={() => setIncomeDocFiles((prev) => prev.filter((_, idx) => idx !== i))}>
+                        <Text style={styles.docFileName} numberOfLines={1}>
+                          {file.name}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() =>
+                            setIncomeDocFiles((prev) => prev.filter((_, idx) => idx !== i))
+                          }
+                        >
                           <Ionicons name="close-circle" size={22} color="#F44336" />
                         </TouchableOpacity>
                       </View>
@@ -815,13 +944,21 @@ export default function TenantApplicationScreen() {
               {/* References */}
               <View style={styles.docSection}>
                 <Text style={styles.label}>References (optional, max 3)</Text>
-                <Text style={styles.helperText}>Previous landlord letters or character references</Text>
+                <Text style={styles.helperText}>
+                  Previous landlord letters or character references
+                </Text>
 
                 {referenceDocFiles.map((file, i) => (
                   <View key={i} style={styles.docFileRow}>
                     <Ionicons name="document-attach" size={20} color={RSA.blue} />
-                    <Text style={styles.docFileName} numberOfLines={1}>{file.name}</Text>
-                    <TouchableOpacity onPress={() => setReferenceDocFiles((prev) => prev.filter((_, idx) => idx !== i))}>
+                    <Text style={styles.docFileName} numberOfLines={1}>
+                      {file.name}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() =>
+                        setReferenceDocFiles((prev) => prev.filter((_, idx) => idx !== i))
+                      }
+                    >
                       <Ionicons name="close-circle" size={22} color="#F44336" />
                     </TouchableOpacity>
                   </View>
@@ -859,8 +996,13 @@ export default function TenantApplicationScreen() {
                 <Text style={styles.reviewSectionTitle}>Employment Information</Text>
                 <ReviewRow label="Employer" value={employer} />
                 <ReviewRow label="Position" value={position} />
-                <ReviewRow label="Monthly Income" value={`R ${parseFloat(monthlyIncome).toLocaleString()}`} />
-                {employmentStartDate && <ReviewRow label="Employment Start" value={employmentStartDate} />}
+                <ReviewRow
+                  label="Monthly Income"
+                  value={`R ${parseFloat(monthlyIncome).toLocaleString()}`}
+                />
+                {employmentStartDate && (
+                  <ReviewRow label="Employment Start" value={employmentStartDate} />
+                )}
                 {employerContact && <ReviewRow label="Employer Contact" value={employerContact} />}
               </View>
 
@@ -895,7 +1037,8 @@ export default function TenantApplicationScreen() {
               <View style={styles.disclaimer}>
                 <Ionicons name="information-circle" size={20} color="#666" />
                 <Text style={styles.disclaimerText}>
-                  By submitting this application, you confirm that all information provided is accurate and complete.
+                  By submitting this application, you confirm that all information provided is
+                  accurate and complete.
                 </Text>
               </View>
             </View>
@@ -1055,6 +1198,43 @@ const styles = StyleSheet.create({
   },
   formSection: {
     padding: 16,
+  },
+  // CT7-016 — read-only summary of profile-sourced fields so the tenant
+  // isn't asked for the same info again.
+  profilePrefillCard: {
+    backgroundColor: '#E6F7F0',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: RSA.green,
+    padding: 12,
+    marginBottom: 16,
+  },
+  profilePrefillHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  profilePrefillTitle: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '700',
+    color: RSA.green,
+  },
+  profilePrefillEdit: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: RSA.green,
+    textDecorationLine: 'underline',
+  },
+  profilePrefillRow: {
+    fontSize: 13,
+    color: '#111827',
+    marginBottom: 4,
+  },
+  profilePrefillLabel: {
+    color: '#6B7280',
+    fontWeight: '600',
   },
   sectionTitle: {
     fontSize: 20,
