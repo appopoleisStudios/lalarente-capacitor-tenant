@@ -928,8 +928,9 @@ created_at timestamp)`.
     ));
 
   -- Snapshot trigger: captures tenant_may_dispatch onto the request
-  -- row at creation time. Requests inserted without a service_item_id
-  -- default to TRUE (unlinked fallback is always tenant-dispatchable).
+  -- row at creation time AND forces an allowed initial status.
+  -- Addresses PR #200 r4 Senior Dev finding that vendor_id=NULL
+  -- requests could be inserted with any status.
   CREATE OR REPLACE FUNCTION capture_dispatch_authority()
   RETURNS trigger LANGUAGE plpgsql AS $$
   BEGIN
@@ -944,6 +945,16 @@ created_at timestamp)`.
         RAISE EXCEPTION 'service_item_id does not belong to property_id';
       END IF;
     END IF;
+
+    -- Force the initial status based on captured authority. Any client
+    -- attempt to set status = 'completed' / 'in_progress' / etc. on
+    -- INSERT is OVERWRITTEN here. Subsequent transitions go through
+    -- the UPDATE policy + reclaim RPC.
+    NEW.status := CASE
+      WHEN NEW.captured_tenant_may_dispatch THEN 'tenant_dispatching'
+      ELSE 'awaiting_owner_dispatch'
+    END;
+
     RETURN NEW;
   END $$;
 
@@ -951,18 +962,30 @@ created_at timestamp)`.
     BEFORE INSERT ON maintenance_requests
     FOR EACH ROW EXECUTE FUNCTION capture_dispatch_authority();
 
-  -- maintenance_requests INSERT: caller must be a party; vendor pre-
-  -- attachment only allowed when the captured authority permits it
-  -- OR the caller is the owner.
+  -- maintenance_requests INSERT: caller must be a party AND — if the
+  -- caller is the tenant — must have an active lease for the request's
+  -- property. Addresses PR #200 r4 Security finding that the earlier
+  -- policy let an authenticated caller forge tenant_id to any UID.
   CREATE POLICY mr_insert ON maintenance_requests
     FOR INSERT TO authenticated
     WITH CHECK (
-      (tenant_id = auth.uid() OR owner_id = auth.uid())
-      -- owner_id matches the property's actual owner (prevents the
-      -- tenant from inserting with a fake owner_id to bypass gates)
-      AND EXISTS (SELECT 1 FROM properties p
-                  WHERE p.id = maintenance_requests.property_id
-                    AND p.owner_id = maintenance_requests.owner_id)
+      -- owner path: caller is the property's actual owner
+      (owner_id = auth.uid()
+       AND EXISTS (SELECT 1 FROM properties p
+                   WHERE p.id = maintenance_requests.property_id
+                     AND p.owner_id = auth.uid()))
+      OR
+      -- tenant path: caller is the tenant AND has an active lease on
+      -- the request's property AND owner_id matches the property's
+      -- actual owner (blocks tenant forging owner_id to themselves)
+      (tenant_id = auth.uid()
+       AND EXISTS (
+         SELECT 1 FROM leases l
+         JOIN properties p ON p.id = l.property_id
+         WHERE l.tenant_id = auth.uid()
+           AND l.property_id = maintenance_requests.property_id
+           AND l.status = 'active'
+           AND p.owner_id = maintenance_requests.owner_id))
       -- pre-attach rules:
       --   unlinked          (captured = true, enforced by trigger)
       --   tenant-OK system  (captured = true)
@@ -1062,23 +1085,25 @@ created_at timestamp)`.
     );
   ```
 
-  _Write path — sidecar-authoritative with a server-side projection
-  (rewritten r3 — addresses Architect's "older readers go stale"
-  finding):_
-  - Primary writes land in `property_service_items`.
-  - A `AFTER INSERT / UPDATE / DELETE` trigger on
-    `property_service_items` REBUILDS
-    `properties.services_provided text[]` from the current sidecar
-    rows (names only, deleted_at IS NULL). Older clients reading
-    the legacy column keep seeing fresh data; they just don't see
-    the `tenant_may_dispatch` flag (which older clients don't act on
-    anyway).
-  - The legacy column is marked `-- DEPRECATED: regenerated from
-property_service_items; do not write directly`. Old-client direct
-    writes are blocked by a column-level grant REVOKE in the same
-    migration so there's no dual-write to drift.
+  _Write path — bi-directional sync during cutover (r4 — addresses
+  Architect's PR #200 r4 finding that old-client writes to the legacy
+  column become invisible to the new sidecar):_
+  - Primary writes from the new app go to `property_service_items`.
+  - Forward trigger (`AFTER INSERT / UPDATE / DELETE` on sidecar)
+    REBUILDS `properties.services_provided text[]` from the current
+    sidecar rows (names only, `deleted_at IS NULL`). Old-client
+    reads stay fresh.
+  - **Reverse trigger** (`AFTER UPDATE OF services_provided ON properties`)
+    reconciles the sidecar when an old client still writes the legacy
+    column: for each name that appears in the new array but not in
+    sidecar, INSERT a sidecar row with `tenant_may_dispatch = true`;
+    for each name in sidecar that's absent from the new array, mark
+    `deleted_at = now()`. Guarded against infinite-loop with a
+    session-scoped `app.sync_in_progress` flag — both triggers skip
+    their work while the other is running. This closes the window
+    where old-client writes vanished.
   - A follow-up migration (post full-rollout) drops the legacy
-    column. Trigger goes with it.
+    column AND both triggers.
 
   _Deletion semantics (addresses Architect #2):_
   - `property_service_items.deleted_at` soft-deletes.
