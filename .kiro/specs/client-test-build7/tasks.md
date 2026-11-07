@@ -423,3 +423,41 @@
 ## Captured, not yet triaged
 
 <!-- Drop new issues here as they come in; I'll move them above once categorized -->
+
+## CT7-015 🟠 Owner should confirm whether the viewing happened on its date
+
+- **Role:** owner + tenant (parity)
+- **Screen / flow:** Owner → Viewings → viewing on its scheduled date passes →
+  owner should see a "Did the viewing take place?" prompt
+- **Problem (client's words):** _"Once the property is viewed on its appointed
+  date and time, owner should be asked yes or no property viewed or not.
+  If owner says yes, the request viewing on tenant should disappear and
+  only apply should remain."_
+- **Expected flow:**
+  1. Scheduled viewing passes its start time (owner has accepted, tenant
+     has confirmed, calendar event is in the past).
+  2. Owner dashboard / viewings list surfaces a "Confirm viewing" card:
+     Did [Tenant] view [Property] on [date]? → Yes | No.
+  3. On **Yes** — viewing is marked `viewed`. Tenant's "Request viewing"
+     CTA on the property detail disappears; only the Apply CTA remains.
+  4. On **No** — viewing stays in a `no_show` state the owner can then
+     reschedule or cancel from.
+- **Suggested fix path:**
+  - DB: add a `viewed_at: timestamp` + `viewing_outcome: enum('viewed',
+'no_show', 'pending_confirmation')` to `viewing_requests` (or extend
+    the existing `status` enum — need to check the schema).
+  - Server: a cron / trigger moves `confirmed` viewings whose
+    `scheduled_at + duration < now()` into `pending_confirmation`. Could
+    also compute this on read, no cron needed.
+  - Owner UI: new confirmation card on OwnerViewingsScreen / dashboard.
+    Yes → updates row + tenant's view of the property changes.
+  - Tenant UI: `TenantPropertyDetailScreen.renderCTA()` hides the
+    "Request Viewing" button when the tenant has a `viewed` viewing on
+    that property.
+- **Acceptance criteria:**
+  - [ ] Owner sees a confirmation prompt the day after a scheduled viewing.
+  - [ ] Yes → viewing marked viewed; tenant can only Apply from that
+        property's detail page.
+  - [ ] No → viewing marked no_show; owner can reschedule or cancel.
+  - [ ] Owner and tenant never disagree on whether a viewing happened.
+  - [ ] Idempotent — if the owner confirms twice the state doesn't flip.
