@@ -303,6 +303,70 @@
   pattern — report success for what succeeded, warn for what didn't,
   never roll the whole thing into one misleading "Error".
 
+## CT7-012 🟠 Lease signing should be blocked until tenant profile is complete
+
+- **Role:** tenant
+- **Screen / flow:** Tenant → Lease → tap Sign Lease
+- **Problem:** Currently any authenticated tenant can open the signature
+  modal from `TenantLeaseScreen.handleSignLease` with no profile gate.
+  FICA + RHA require verified identity, DOB, address and contact before
+  a lease is binding.
+- **Suggested fix path:**
+  - Build `src/features/tenant/utils/profileCompleteness.ts` as the
+    ONE source of truth for "is this tenant allowed to lease?". It
+    should merge the `profiles` column view and the legacy
+    `fica_documents` JSON view, returning `{ complete, missing[] }`.
+  - Required fields: `full_name`, `phone`, SA `id_number`, `date_of_birth`,
+    `monthly_income`, `proof_of_address_url`.
+  - Gate `handleSignLease` in `TenantLeaseScreen.tsx` on a call to
+    that util. On incomplete, Alert → route to `/(tenant)/profile`.
+  - **Must share the util with CT7-013** so banner + gate can't drift.
+- **Acceptance criteria:**
+  - [ ] Tenant with all required fields can tap Sign Lease and see the
+        signature modal immediately.
+  - [ ] Tenant with any missing field sees an Alert listing exactly
+        which fields are missing + a "Go to Profile" button.
+  - [ ] No code-path duplication: dashboard banner (CT7-013) and lease
+        gate read from the same util.
+
+## CT7-013 🟠 "Complete your profile" banner persists after profile is saved
+
+- **Role:** tenant
+- **Screen / flow:** Tenant → Profile → fill fields → Save → return to
+  Dashboard → banner still shown
+- **Diagnosis (two overlapping bugs — one fix solves both):**
+  1. **Semantic drift.** The dashboard banner at
+     `TenantDashboardScreen.tsx:547-578` checks `id_number`,
+     `monthly_income`, `proof_of_address_url` but labels the three rows
+     "Identity Verification", "Proof of Income", **"References"**.
+     The "References" row is actually checking Proof of Address, so
+     Navin sees "References" as missing even after uploading proof of
+     address — confusing + misleading.
+  2. **Two sources of truth.** Dashboard's completeness check is
+     inline + different from any future gate. If the Profile screen's
+     Save path writes to `profiles.id_number` but the dashboard reads
+     `fica_documents.id_number` (or vice versa) for a given account,
+     the banner never dismisses regardless of what the tenant does.
+     `useFocusEffect` IS wired on the dashboard, so the refresh timing
+     is fine — this is a data-path mismatch, not a caching issue.
+- **Suggested fix path:**
+  - Build the shared `profileCompleteness.ts` util (same one as CT7-012).
+  - Replace the hard-coded `verificationStatus` state + banner JSX with
+    `profileMissing: string[]`. Banner lists the REAL missing fields
+    from the util, and the CTA routes to `/(tenant)/profile` (not
+    `/(tenant)/documents`, which is a dead-end for these fields).
+  - Hide the banner while `profileMissing === undefined` so it doesn't
+    flash on first render before the async check lands.
+- **Acceptance criteria:**
+  - [ ] Banner lists the actual missing fields (no more fake "References"
+        when Proof of Address is what's missing).
+  - [ ] Saving the Profile screen → back to Dashboard → banner is gone
+        within one focus cycle.
+  - [ ] Zero banner flash on first dashboard paint.
+  - [ ] Banner CTA routes to Profile, not Documents.
+- **Bundle with CT7-012:** both issues share the same util. Do them
+  together in one PR so the shared file doesn't land twice.
+
 ---
 
 ## Captured, not yet triaged
