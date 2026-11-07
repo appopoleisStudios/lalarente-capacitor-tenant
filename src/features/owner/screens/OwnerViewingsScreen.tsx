@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   StyleSheet,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -117,7 +118,9 @@ export default function OwnerViewingsScreen() {
 
   const initUser = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
         userIdRef.current = user.id;
@@ -153,7 +156,7 @@ export default function OwnerViewingsScreen() {
     if (selectedStatus === 'all') {
       setFilteredViewings(viewings);
     } else {
-      setFilteredViewings(viewings.filter(v => v.status === selectedStatus));
+      setFilteredViewings(viewings.filter((v) => v.status === selectedStatus));
     }
   };
 
@@ -175,6 +178,50 @@ export default function OwnerViewingsScreen() {
     if (viewing.status !== 'approved') return false;
     const viewingDate = new Date(viewing.confirmed_date || viewing.requested_date);
     return viewingDate >= new Date();
+  };
+
+  // CT7-015 — approved viewings whose scheduled date/time has PASSED
+  // need the owner to confirm what happened (viewed / no-show).
+  const isAwaitingConfirmation = (viewing: ViewingWithRelations) => {
+    if (viewing.status !== 'approved') return false;
+    const viewingDate = new Date(viewing.confirmed_date || viewing.requested_date);
+    return viewingDate < new Date();
+  };
+
+  const handleConfirmViewing = async (viewingId: string, outcome: 'completed' | 'no_show') => {
+    try {
+      const { error } = await supabase
+        .from('viewing_requests')
+        .update({ status: outcome })
+        .eq('id', viewingId);
+      if (error) throw error;
+      Alert.alert(
+        'Updated',
+        outcome === 'completed'
+          ? 'Viewing marked as completed — the tenant can now apply for the property.'
+          : "Marked as no-show. You can reschedule or cancel from the viewing's detail screen."
+      );
+      loadViewings();
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to update viewing');
+    }
+  };
+
+  const promptConfirmViewing = (viewing: ViewingWithRelations) => {
+    const tenantName = (viewing as any).tenant?.full_name || 'the tenant';
+    const propertyTitle = (viewing as any).property?.title || 'the property';
+    Alert.alert('Did the viewing happen?', `Did ${tenantName} view ${propertyTitle}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'No, no-show',
+        style: 'destructive',
+        onPress: () => handleConfirmViewing(viewing.id, 'no_show'),
+      },
+      {
+        text: 'Yes, they viewed',
+        onPress: () => handleConfirmViewing(viewing.id, 'completed'),
+      },
+    ]);
   };
 
   const renderViewingCard = ({ item }: { item: ViewingWithRelations }) => {
@@ -246,9 +293,7 @@ export default function OwnerViewingsScreen() {
         <View style={styles.cardBody}>
           <View style={styles.detailRow}>
             <Ionicons name="person-outline" size={16} color="#666" />
-            <Text style={styles.detailText}>
-              {item.tenant?.full_name || 'Unknown Tenant'}
-            </Text>
+            <Text style={styles.detailText}>{item.tenant?.full_name || 'Unknown Tenant'}</Text>
           </View>
 
           {item.tenant?.email && (
@@ -277,6 +322,35 @@ export default function OwnerViewingsScreen() {
               </Text>
             </View>
           )}
+
+          {/* CT7-015 — viewing has passed; owner confirms outcome. */}
+          {isAwaitingConfirmation(item) && (
+            <View style={styles.confirmViewingBox}>
+              <Text style={styles.confirmViewingTitle}>Did this viewing happen?</Text>
+              <View style={styles.confirmViewingButtons}>
+                <TouchableOpacity
+                  style={[styles.confirmViewingBtn, styles.confirmViewingBtnYes]}
+                  onPress={(e) => {
+                    e.stopPropagation?.();
+                    handleConfirmViewing(item.id, 'completed');
+                  }}
+                >
+                  <Ionicons name="checkmark" size={16} color="#FFF" />
+                  <Text style={styles.confirmViewingBtnText}>Yes, viewed</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.confirmViewingBtn, styles.confirmViewingBtnNo]}
+                  onPress={(e) => {
+                    e.stopPropagation?.();
+                    handleConfirmViewing(item.id, 'no_show');
+                  }}
+                >
+                  <Ionicons name="close" size={16} color="#FFF" />
+                  <Text style={styles.confirmViewingBtnText}>No-show</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
         </View>
 
         <View style={styles.cardFooter}>
@@ -284,9 +358,7 @@ export default function OwnerViewingsScreen() {
             Requested {new Date(item.created_at!).toLocaleDateString('en-ZA')}
           </Text>
           <View style={styles.footerAction}>
-            {requiresAction && (
-              <Text style={styles.actionFooterText}>Tap to respond</Text>
-            )}
+            {requiresAction && <Text style={styles.actionFooterText}>Tap to respond</Text>}
             <Ionicons name="chevron-forward" size={20} color="#999" />
           </View>
         </View>
@@ -300,7 +372,7 @@ export default function OwnerViewingsScreen() {
       <Text style={styles.emptyTitle}>No Viewing Requests</Text>
       <Text style={styles.emptyText}>
         {selectedStatus === 'all'
-          ? 'You haven\'t received any viewing requests yet'
+          ? "You haven't received any viewing requests yet"
           : `No ${selectedStatus} viewing requests`}
       </Text>
     </View>
@@ -376,13 +448,13 @@ export default function OwnerViewingsScreen() {
             </View>
             <View style={styles.statItem}>
               <Text style={[styles.statValue, { color: '#FF9800' }]}>
-                {viewings.filter(v => v.status === 'pending').length}
+                {viewings.filter((v) => v.status === 'pending').length}
               </Text>
               <Text style={styles.statLabel}>Pending</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={[styles.statValue, { color: '#4CAF50' }]}>
-                {viewings.filter(v => isUpcoming(v)).length}
+                {viewings.filter((v) => isUpcoming(v)).length}
               </Text>
               <Text style={styles.statLabel}>Upcoming</Text>
             </View>
@@ -636,6 +708,44 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
     marginTop: 4,
+  },
+  // CT7-015 — post-viewing confirmation prompt on approved cards past
+  // their scheduled date.
+  confirmViewingBox: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 8,
+    gap: 8,
+  },
+  confirmViewingTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#92400E',
+  },
+  confirmViewingButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  confirmViewingBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  confirmViewingBtnYes: {
+    backgroundColor: '#007A4D',
+  },
+  confirmViewingBtnNo: {
+    backgroundColor: '#B45309',
+  },
+  confirmViewingBtnText: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: '600',
   },
   messageLabel: {
     fontSize: 12,
