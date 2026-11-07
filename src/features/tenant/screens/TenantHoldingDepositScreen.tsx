@@ -315,6 +315,35 @@ function DepositCard({
           </View>
         )}
 
+        {/* CT7-018 — EFT reference. Shown prominently on PENDING so the
+            tenant copies it into their bank's reference field. Shows in
+            muted form on PAID state so the owner can still look it up. */}
+        {deposit.reference && (
+          <View style={styles.referenceCard}>
+            <View style={styles.referenceRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.referenceLabel}>USE THIS REFERENCE ON THE EFT</Text>
+                <Text style={styles.referenceValue}>{deposit.reference}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.referenceCopy}
+                onPress={() => {
+                  Alert.alert(
+                    'EFT Reference',
+                    `Use this exact reference on your EFT so your landlord can match it:\n\n${deposit.reference}`
+                  );
+                }}
+              >
+                <Ionicons name="information-circle-outline" size={18} color={colors.rsa.blue} />
+                <Text style={styles.referenceCopyText}>Show</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.referenceHint}>
+              The landlord uses this to match your payment on their bank statement.
+            </Text>
+          </View>
+        )}
+
         {/* Hold expiry (paid only) */}
         {deposit.status === 'paid' && deposit.hold_expires_at && (
           <View style={styles.holdRow}>
@@ -476,6 +505,56 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF3C7',
     borderRadius: 8,
     padding: 10,
+  },
+  // CT7-018 reference card — stands out visually so the tenant
+  // doesn't skip it.
+  referenceCard: {
+    marginTop: 10,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: colors.rsa.blue,
+    borderRadius: 10,
+    padding: 12,
+    gap: 6,
+  },
+  referenceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  referenceLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.rsa.blue,
+    letterSpacing: 0.6,
+    marginBottom: 2,
+  },
+  referenceValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.rsa.blue,
+    fontFamily: 'Courier',
+    letterSpacing: 1,
+  },
+  referenceCopy: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: colors.rsa.blue,
+  },
+  referenceCopyText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.rsa.blue,
+  },
+  referenceHint: {
+    fontSize: 11,
+    color: '#6B7280',
   },
   deadlineText: {
     fontSize: 13,

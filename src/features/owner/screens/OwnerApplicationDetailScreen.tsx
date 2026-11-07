@@ -537,6 +537,19 @@ export default function OwnerApplicationDetailScreen() {
                       </Text>
                     </View>
                   </View>
+                  {/* CT7-018 — bank-statement reference, same string the
+                      tenant is asked to put on their EFT. Owner uses it to
+                      reconcile a line on the bank statement back to this row. */}
+                  {holdingDeposit.reference && (
+                    <View style={styles.depositRow}>
+                      <Text style={styles.depositLabel}>Bank Reference</Text>
+                      <Text
+                        style={[styles.depositValue, { fontFamily: 'Courier', fontWeight: '700' }]}
+                      >
+                        {holdingDeposit.reference}
+                      </Text>
+                    </View>
+                  )}
                   {holdingDeposit.payment_deadline && holdingDeposit.status === 'pending' && (
                     <View style={styles.depositRow}>
                       <Text style={styles.depositLabel}>Pay Deadline</Text>

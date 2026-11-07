@@ -9,7 +9,13 @@ import { supabase } from '../../../lib/supabase';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type HoldingDepositStatus = 'pending' | 'paid' | 'applied' | 'refunded' | 'forfeited' | 'expired';
+export type HoldingDepositStatus =
+  | 'pending'
+  | 'paid'
+  | 'applied'
+  | 'refunded'
+  | 'forfeited'
+  | 'expired';
 
 export interface HoldingDeposit {
   id: string;
@@ -23,6 +29,13 @@ export interface HoldingDeposit {
   paid_at: string | null;
   created_at: string;
   updated_at: string;
+  // CT7-018 — bank-statement reference the tenant uses when paying by
+  // EFT. Generated server-side by trg_holding_deposit_reference; the
+  // client reads it, displays it, and lets the tenant copy it.
+  // Optional on the TS interface so queries written before the column
+  // existed keep typing; the column itself is NOT NULL at the DB layer
+  // and always populated by the trigger.
+  reference?: string;
 }
 
 export interface CreateHoldingDepositInput {
@@ -30,7 +43,7 @@ export interface CreateHoldingDepositInput {
   applicationId?: string;
   amount: number;
   paymentDeadlineHours?: number; // Default 48 hours
-  holdDurationDays?: number;     // Default 7 days
+  holdDurationDays?: number; // Default 7 days
 }
 
 // ─── API ─────────────────────────────────────────────────────────────────────
@@ -157,10 +170,12 @@ export const holdingDepositApi = {
   async getTenantDeposits(tenantId: string): Promise<HoldingDeposit[]> {
     const { data, error } = await supabase
       .from('holding_deposits')
-      .select(`
+      .select(
+        `
         *,
         property:properties!property_id(id, title, address)
-      `)
+      `
+      )
       .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false });
 
@@ -178,10 +193,12 @@ export const holdingDepositApi = {
   async getPropertyDeposits(propertyId: string): Promise<HoldingDeposit[]> {
     const { data, error } = await supabase
       .from('holding_deposits')
-      .select(`
+      .select(
+        `
         *,
         tenant:profiles!tenant_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('property_id', propertyId)
       .order('created_at', { ascending: false });
 
