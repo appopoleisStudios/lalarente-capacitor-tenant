@@ -872,12 +872,44 @@ created_at timestamp)`.
     column records why the transition happened. Server-side gate is
     the UPDATE policy below.
 
-  _Server-side enforcement — covers all mutation paths (addresses Security):_
+  _Server-side enforcement — rewritten r3 to address Senior Dev,
+  Architect, and Security findings on #200 r2. Three structural
+  changes make the policies defensible:_
+
+  **Change #1 — Snapshot dispatch authority onto the request row.**
+  Previous spec claimed a snapshot but policies still consulted live
+  `psi.tenant_may_dispatch`. Now `maintenance_requests` carries a
+  `captured_tenant_may_dispatch boolean NOT NULL` column populated by
+  a BEFORE INSERT trigger from the referenced sidecar row. The owner
+  can retire / soft-delete the system later and in-flight requests
+  keep the authority they were created under.
+
+  **Change #2 — Protect ownership columns via UPDATE WITH CHECK.**
+  Previous `mr_update` trusted the incoming `owner_id` / `tenant_id`.
+  Now the WITH CHECK compares the proposed values against the EXISTING
+  row's values — a tenant cannot rewrite `owner_id` to their own UID
+  to satisfy the owner exception.
+
+  **Change #3 — Caller must be a party to the request.**
+  Explicit `tenant_id = auth.uid() OR owner_id = auth.uid()` on every
+  INSERT / UPDATE / `mva_insert`. The property-via-FK dance was
+  insufficient — an authenticated caller could satisfy a FK-only
+  policy for anyone's request as long as the service-item check
+  passed (or was null).
+
+  **Reclaim transition — move out of RLS into an RPC.** Enforcing
+  "any open assignment / PO must be cancelled first" in a WITH CHECK
+  is the wrong shape (RLS doesn't look across tables cleanly). A
+  SECURITY DEFINER RPC `reclaim_request(request_id uuid, reason text)`
+  validates the pre-conditions atomically and flips the status; the
+  UPDATE policy denies the status transition except via this RPC's
+  exclusive window.
 
   ```sql
-  -- property_service_items: owner-only for INSERT / UPDATE / DELETE
-  -- (toggle, rename, add, retire all gated identically).
-  CREATE POLICY psi_rw ON property_service_items
+  -- property_service_items: owner RW; tenants on an active lease
+  -- can SELECT rows for the leased property so the picker works.
+  -- (Addresses Security finding that psi_rw was owner-only.)
+  CREATE POLICY psi_owner_rw ON property_service_items
     FOR ALL TO authenticated
     USING (EXISTS (SELECT 1 FROM properties p
                    WHERE p.id = property_service_items.property_id
@@ -885,71 +917,168 @@ created_at timestamp)`.
     WITH CHECK (EXISTS (SELECT 1 FROM properties p
                         WHERE p.id = property_service_items.property_id
                           AND p.owner_id = auth.uid()));
-  -- Soft-delete via deleted_at: UI hides deleted rows from new
-  -- selection, but existing maintenance_requests keep their FK so
-  -- pending dispatch decisions aren't erased.
 
-  -- maintenance_requests: INSERT guard verifies the service_item_id
-  -- actually belongs to the request's property AND the tenant can't
-  -- pre-attach a vendor to an owner-exclusive system.
+  CREATE POLICY psi_tenant_select ON property_service_items
+    FOR SELECT TO authenticated
+    USING (EXISTS (
+      SELECT 1 FROM leases l
+      WHERE l.property_id = property_service_items.property_id
+        AND l.tenant_id = auth.uid()
+        AND l.status = 'active'
+    ));
+
+  -- Snapshot trigger: captures tenant_may_dispatch onto the request
+  -- row at creation time. Requests inserted without a service_item_id
+  -- default to TRUE (unlinked fallback is always tenant-dispatchable).
+  CREATE OR REPLACE FUNCTION capture_dispatch_authority()
+  RETURNS trigger LANGUAGE plpgsql AS $$
+  BEGIN
+    IF NEW.service_item_id IS NULL THEN
+      NEW.captured_tenant_may_dispatch := true;
+    ELSE
+      SELECT tenant_may_dispatch INTO NEW.captured_tenant_may_dispatch
+      FROM property_service_items
+      WHERE id = NEW.service_item_id
+        AND property_id = NEW.property_id;
+      IF NEW.captured_tenant_may_dispatch IS NULL THEN
+        RAISE EXCEPTION 'service_item_id does not belong to property_id';
+      END IF;
+    END IF;
+    RETURN NEW;
+  END $$;
+
+  CREATE TRIGGER trg_mr_capture_authority
+    BEFORE INSERT ON maintenance_requests
+    FOR EACH ROW EXECUTE FUNCTION capture_dispatch_authority();
+
+  -- maintenance_requests INSERT: caller must be a party; vendor pre-
+  -- attachment only allowed when the captured authority permits it
+  -- OR the caller is the owner.
   CREATE POLICY mr_insert ON maintenance_requests
     FOR INSERT TO authenticated
     WITH CHECK (
-      (service_item_id IS NULL
-       OR EXISTS (SELECT 1 FROM property_service_items psi
-                  WHERE psi.id = service_item_id
-                    AND psi.property_id = maintenance_requests.property_id))
-      AND NOT (service_item_id IS NOT NULL
-               AND vendor_id IS NOT NULL
-               AND EXISTS (SELECT 1 FROM property_service_items psi
-                           WHERE psi.id = service_item_id
-                             AND psi.tenant_may_dispatch = false))
+      (tenant_id = auth.uid() OR owner_id = auth.uid())
+      -- owner_id matches the property's actual owner (prevents the
+      -- tenant from inserting with a fake owner_id to bypass gates)
+      AND EXISTS (SELECT 1 FROM properties p
+                  WHERE p.id = maintenance_requests.property_id
+                    AND p.owner_id = maintenance_requests.owner_id)
+      -- pre-attach rules:
+      --   unlinked          (captured = true, enforced by trigger)
+      --   tenant-OK system  (captured = true)
+      --   locked system     (captured = false) → only owner can pre-attach
+      AND (vendor_id IS NULL
+           OR captured_tenant_may_dispatch = true
+           OR maintenance_requests.owner_id = auth.uid())
     );
 
-  -- maintenance_requests: UPDATE guard — service_item_id sealed at
-  -- creation (can't be rewritten mid-flow); vendor_id can only be set
-  -- by the owner when the system is owner-exclusive.
+  -- maintenance_requests UPDATE:
+  -- 1. caller must be a party
+  -- 2. service_item_id + captured_tenant_may_dispatch + owner_id +
+  --    tenant_id + property_id are sealed (cannot be rewritten)
+  -- 3. vendor_id follows the same authority rule as INSERT
+  -- 4. status transitions blocked except via RPCs (tenant reclaim path)
   CREATE POLICY mr_update ON maintenance_requests
     FOR UPDATE TO authenticated
     USING (tenant_id = auth.uid() OR owner_id = auth.uid())
     WITH CHECK (
-      service_item_id IS NOT DISTINCT FROM (
-        SELECT service_item_id FROM maintenance_requests mr2
-        WHERE mr2.id = maintenance_requests.id
-      )
+      -- immutable identity + policy columns (compare to existing row)
+      tenant_id = (SELECT tenant_id FROM maintenance_requests mr2
+                   WHERE mr2.id = maintenance_requests.id)
+      AND owner_id = (SELECT owner_id FROM maintenance_requests mr2
+                      WHERE mr2.id = maintenance_requests.id)
+      AND property_id = (SELECT property_id FROM maintenance_requests mr2
+                         WHERE mr2.id = maintenance_requests.id)
+      AND service_item_id IS NOT DISTINCT FROM
+          (SELECT service_item_id FROM maintenance_requests mr2
+           WHERE mr2.id = maintenance_requests.id)
+      AND captured_tenant_may_dispatch = (SELECT captured_tenant_may_dispatch
+                                          FROM maintenance_requests mr2
+                                          WHERE mr2.id = maintenance_requests.id)
+      -- vendor_id: allowed by the captured authority or by the owner
       AND (vendor_id IS NULL
-           OR owner_id = auth.uid()
-           OR EXISTS (SELECT 1 FROM property_service_items psi
-                      WHERE psi.id = service_item_id
-                        AND psi.tenant_may_dispatch = true))
+           OR captured_tenant_may_dispatch = true
+           OR owner_id = auth.uid())
+      -- status transitions to awaiting_owner_dispatch from
+      -- tenant_dispatching MUST go through reclaim_request() RPC
+      -- (see below). The RPC runs SECURITY DEFINER with set_config
+      -- 'app.reclaim_in_progress' = 'true' which this policy allows.
+      AND (status IS NOT DISTINCT FROM
+           (SELECT status FROM maintenance_requests mr2
+            WHERE mr2.id = maintenance_requests.id)
+           OR NOT (
+             (SELECT status FROM maintenance_requests mr2
+              WHERE mr2.id = maintenance_requests.id) = 'tenant_dispatching'
+             AND status = 'awaiting_owner_dispatch'
+           )
+           OR current_setting('app.reclaim_in_progress', true) = 'true')
     );
 
-  -- maintenance_vendor_assignments: INSERT guard matches request policy.
+  -- SECURITY DEFINER RPC for owner reclaim: validates no open
+  -- assignments / POs exist (or all are cancelled), bumps the status,
+  -- and writes the audit field. The policy above only allows the
+  -- transition while this function's exclusive flag is set.
+  CREATE OR REPLACE FUNCTION reclaim_request(req_id uuid, reason text)
+  RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
+  DECLARE open_assignments int;
+  BEGIN
+    IF NOT EXISTS (SELECT 1 FROM maintenance_requests
+                   WHERE id = req_id AND owner_id = auth.uid()) THEN
+      RAISE EXCEPTION 'not authorized';
+    END IF;
+
+    SELECT count(*) INTO open_assignments
+    FROM maintenance_vendor_assignments
+    WHERE request_id = req_id AND status NOT IN ('cancelled', 'rejected');
+
+    IF open_assignments > 0 THEN
+      RAISE EXCEPTION 'cancel open vendor assignments first';
+    END IF;
+
+    PERFORM set_config('app.reclaim_in_progress', 'true', true);
+    UPDATE maintenance_requests
+    SET status = 'awaiting_owner_dispatch',
+        owner_reclaim_reason = reason,
+        updated_at = now()
+    WHERE id = req_id;
+    PERFORM set_config('app.reclaim_in_progress', 'false', true);
+  END $$;
+
+  -- maintenance_vendor_assignments INSERT: caller must be an authorized
+  -- party to the request (tenant for tenant-dispatchable; owner for
+  -- owner-dispatched). Uses the SNAPSHOTTED captured_tenant_may_dispatch
+  -- so retiring the sidecar item never changes in-flight authority.
   CREATE POLICY mva_insert ON maintenance_vendor_assignments
     FOR INSERT TO authenticated
     WITH CHECK (
       EXISTS (
         SELECT 1 FROM maintenance_requests mr
-        LEFT JOIN property_service_items psi ON psi.id = mr.service_item_id
         WHERE mr.id = maintenance_vendor_assignments.request_id
           AND (
-            psi.id IS NULL                          -- no linked system
-            OR psi.tenant_may_dispatch = true       -- tenant-OK
-            OR mr.owner_id = auth.uid()             -- owner dispatching
+            (mr.captured_tenant_may_dispatch = true AND mr.tenant_id = auth.uid())
+            OR mr.owner_id = auth.uid()
           )
       )
     );
   ```
 
-  _Write path — sidecar-authoritative (addresses Architect #1):_
-  - All new writes go to `property_service_items`. The legacy
-    `properties.services_provided text[]` column becomes READ-ONLY for
-    one release (display fallback on older app versions), then is
-    dropped. Zero dual-write, zero sync drift. Older clients that
-    still write to the text[] will see their additions ignored by new
-    readers until they upgrade; this is acceptable because the
-    client-side version check already blocks non-upgraded owners from
-    the maintenance flow.
+  _Write path — sidecar-authoritative with a server-side projection
+  (rewritten r3 — addresses Architect's "older readers go stale"
+  finding):_
+  - Primary writes land in `property_service_items`.
+  - A `AFTER INSERT / UPDATE / DELETE` trigger on
+    `property_service_items` REBUILDS
+    `properties.services_provided text[]` from the current sidecar
+    rows (names only, deleted_at IS NULL). Older clients reading
+    the legacy column keep seeing fresh data; they just don't see
+    the `tenant_may_dispatch` flag (which older clients don't act on
+    anyway).
+  - The legacy column is marked `-- DEPRECATED: regenerated from
+property_service_items; do not write directly`. Old-client direct
+    writes are blocked by a column-level grant REVOKE in the same
+    migration so there's no dual-write to drift.
+  - A follow-up migration (post full-rollout) drops the legacy
+    column. Trigger goes with it.
 
   _Deletion semantics (addresses Architect #2):_
   - `property_service_items.deleted_at` soft-deletes.
