@@ -1,94 +1,102 @@
-// CT7-019 — applicationsApi.approveApplication must reject when the
-// holding deposit hasn't cleared. Belt-and-braces beyond the screen's
-// client-side Alert (OwnerApplicationDetailScreen).
+// CT7-019 — applicationsApi.approveApplication is a thin wrapper over
+// the SECURITY DEFINER `approve_application(app_uuid)` Postgres RPC.
+// The RPC enforces the deposit precondition atomically; these tests
+// cover the JS adapter: argument shape, error passthrough, happy path.
 
 import { applicationsApi } from '../applicationsApi';
 
-const mockChain = {
-  from: jest.fn(),
-};
+const mockRpc = jest.fn();
 
 jest.mock('../../../../lib/supabase', () => ({
   supabase: {
-    from: (...args: unknown[]) => mockChain.from(...args),
+    rpc: (...args: unknown[]) => mockRpc(...args),
   },
 }));
 
-/** Build the Supabase builder stub so .eq / .order / .limit / .maybeSingle
- *  resolve to the given result, and .update().eq().select().single()
- *  resolves to the update result. */
-function stubSupabase(depositResult: unknown, updateResult: unknown) {
-  mockChain.from.mockImplementation((table: string) => {
-    if (table === 'holding_deposits') {
-      return {
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            order: jest.fn().mockReturnValue({
-              limit: jest.fn().mockReturnValue({
-                maybeSingle: jest.fn().mockResolvedValue(depositResult),
-              }),
-            }),
-          }),
-        }),
-      };
-    }
-    // rental_applications
-    return {
-      update: jest.fn().mockReturnValue({
-        eq: jest.fn().mockReturnValue({
-          select: jest.fn().mockReturnValue({
-            single: jest.fn().mockResolvedValue(updateResult),
-          }),
-        }),
-      }),
-    };
-  });
-}
-
 beforeEach(() => {
-  mockChain.from.mockReset();
+  mockRpc.mockReset();
 });
 
-describe('applicationsApi.approveApplication — CT7-019 holding-deposit gate', () => {
-  it('throws when no holding deposit exists for the application', async () => {
-    stubSupabase({ data: null, error: null }, { data: null, error: null });
-    await expect(applicationsApi.approveApplication('app-1')).rejects.toThrow(/holding deposit/i);
+describe('applicationsApi.approveApplication — CT7-019 RPC wrapper', () => {
+  it('invokes approve_application RPC with the supplied id', async () => {
+    mockRpc.mockResolvedValue({
+      data: { id: 'app-1', status: 'approved', tenant_id: 't-1' },
+      error: null,
+    });
+
+    await applicationsApi.approveApplication('app-1');
+
+    expect(mockRpc).toHaveBeenCalledTimes(1);
+    expect(mockRpc).toHaveBeenCalledWith('approve_application', { app_uuid: 'app-1' });
   });
 
-  it('throws when the latest deposit is still pending', async () => {
-    stubSupabase({ data: { status: 'pending' }, error: null }, { data: null, error: null });
-    await expect(applicationsApi.approveApplication('app-1')).rejects.toThrow(/holding deposit/i);
-  });
+  it('forwards the RPC error message to the caller when deposit not paid', async () => {
+    mockRpc.mockResolvedValue({
+      data: null,
+      error: {
+        message: 'cannot approve: holding deposit is pending — must be paid, applied, or refunded',
+      },
+    });
 
-  it('throws when the latest deposit has expired', async () => {
-    stubSupabase({ data: { status: 'expired' }, error: null }, { data: null, error: null });
-    await expect(applicationsApi.approveApplication('app-1')).rejects.toThrow(/holding deposit/i);
-  });
-
-  it('allows approval when the deposit is paid', async () => {
-    stubSupabase(
-      { data: { status: 'paid' }, error: null },
-      { data: { id: 'app-1', status: 'approved' }, error: null }
+    await expect(applicationsApi.approveApplication('app-1')).rejects.toThrow(
+      /holding deposit is pending/
     );
+  });
+
+  it('forwards the RPC error when there is no deposit at all', async () => {
+    mockRpc.mockResolvedValue({
+      data: null,
+      error: { message: 'cannot approve: no holding deposit for this application' },
+    });
+
+    await expect(applicationsApi.approveApplication('app-1')).rejects.toThrow(/no holding deposit/);
+  });
+
+  it('forwards the auth error when caller is not the owner', async () => {
+    mockRpc.mockResolvedValue({
+      data: null,
+      error: { message: 'not authorized to approve this application' },
+    });
+
+    await expect(applicationsApi.approveApplication('app-1')).rejects.toThrow(/not authorized/);
+  });
+
+  it('returns the updated application row on success (status=approved)', async () => {
+    mockRpc.mockResolvedValue({
+      data: {
+        id: 'app-1',
+        status: 'approved',
+        reviewed_at: '2026-11-07T07:50:00Z',
+        tenant_id: 't-1',
+      },
+      error: null,
+    });
+
     const result = await applicationsApi.approveApplication('app-1');
+
+    expect(result).toMatchObject({
+      id: 'app-1',
+      status: 'approved',
+      reviewed_at: '2026-11-07T07:50:00Z',
+    });
+  });
+
+  it('accepts array-wrapped RPC returns (supabase-js variant)', async () => {
+    mockRpc.mockResolvedValue({
+      data: [{ id: 'app-1', status: 'approved', tenant_id: 't-1' }],
+      error: null,
+    });
+
+    const result = await applicationsApi.approveApplication('app-1');
+
     expect(result).toMatchObject({ id: 'app-1', status: 'approved' });
   });
 
-  it('allows approval when the deposit is applied', async () => {
-    stubSupabase(
-      { data: { status: 'applied' }, error: null },
-      { data: { id: 'app-1', status: 'approved' }, error: null }
-    );
-    await expect(applicationsApi.approveApplication('app-1')).resolves.toBeDefined();
-  });
+  it('throws a generic message when the RPC returns a non-message error', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: {} });
 
-  it('surfaces the DB error when the deposit lookup itself fails', async () => {
-    stubSupabase(
-      { data: null, error: { message: 'connection reset' } },
-      { data: null, error: null }
-    );
     await expect(applicationsApi.approveApplication('app-1')).rejects.toThrow(
-      /Could not verify holding deposit/
+      /Failed to approve application/
     );
   });
 });
