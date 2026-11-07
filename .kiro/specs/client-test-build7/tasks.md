@@ -207,6 +207,47 @@
   - Tap email on Login/Register → Samsung Pass still offers to fill
     (as it should)
 
+## CT7-008 ✅ "Available From" needs a date picker — FIXED
+
+- **Role:** owner
+- **Screen / flow:** Owner → Add Property → Lease Terms → Available From
+- **Problem:** Field was a plain text input with placeholder `YYYY-MM-DD`,
+  forcing owners to type the date by hand — error-prone + bad UX.
+- **Fix applied:** `src/features/owner/screens/AddPropertyScreen.tsx`
+  - Replaced `TextInput` with a `TouchableOpacity` that opens
+    `@react-native-community/datetimepicker` (already in deps, same pattern
+    used by `TenantRequestViewingScreen` + `OwnerViewingDetailScreen`).
+  - `minimumDate={new Date()}` — can't pick a date in the past.
+  - Writes back as `YYYY-MM-DD` ISO date string (schema unchanged).
+  - iOS: spinner display, Android: default native dialog.
+- **Follow-up (not in this PR):** `EditPropertyScreen` has the same
+  text-input field — same fix would be ~15 LoC; deferring until Navin
+  confirms the Add-screen UX feels right.
+
+## CT7-009 ✅ "Allow deleting photos while adding/editing property" — FIXED
+
+- **Role:** owner
+- **Screen / flow:** Owner → Add Property + Edit Property → photo strip
+- **Problem (perceived):** Client said delete was missing.
+- **Problem (actual):** A `×` button was already rendered on each photo
+  via `removePhoto(index)` — but it was 24×24 at `top:-8, right:-8`, i.e.
+  partly OFF the photo frame, below the 44pt touch target, and easy to
+  miss on a thumbnail.
+- **Fix applied:**
+  `src/features/owner/screens/AddPropertyScreen.styles.ts`
+  `src/features/owner/screens/EditPropertyScreen.styles.ts`
+  - Button is now 32×32 at `top:2, right:2` — fully inside the photo,
+    above the touch-target floor.
+  - 2px white border + drop-shadow so it reads against any photo colour.
+  - `×` text size bumped to 18 + explicit `lineHeight: 20` for Android
+    vertical centering.
+  - `photoContainer` gets `padding: 6` so the button has breathing room
+    when the parent View clips.
+- **Both screens:** delete logic was already correct; no JS changes
+  needed — only styling. On Edit, remote photos removed from the array
+  are persisted-out on save (handleSubmit filters remote vs local and
+  writes the combined final list back to `properties.images`).
+
 ---
 
 ## Captured, not yet triaged

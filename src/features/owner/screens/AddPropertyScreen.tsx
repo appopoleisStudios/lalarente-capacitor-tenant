@@ -1,9 +1,20 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, Alert, Switch, Image } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TextInput,
+  Alert,
+  Switch,
+  Image,
+  TouchableOpacity,
+  Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { AnimatedButton } from '@/src/shared/components';
 import { propertiesApi } from '../../properties/api/propertiesApi';
 import { supabase } from '../../../lib/supabase';
@@ -83,6 +94,17 @@ export default function AddPropertyScreen() {
   const [newAmenity, setNewAmenity] = useState('');
   const [newService, setNewService] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
+  const [showAvailableFromPicker, setShowAvailableFromPicker] = useState(false);
+
+  const handleAvailableFromChange = (event: DateTimePickerEvent, selected?: Date) => {
+    // On Android the picker dismisses itself; on iOS we keep it open until
+    // the user taps Done elsewhere (we close on the first "set" event too).
+    setShowAvailableFromPicker(Platform.OS === 'ios' ? false : false);
+    if (event.type === 'set' && selected) {
+      const iso = selected.toISOString().split('T')[0];
+      setForm((prev) => ({ ...prev, available_from: iso }));
+    }
+  };
 
   React.useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -592,13 +614,29 @@ export default function AddPropertyScreen() {
               <View style={styles.row}>
                 <View style={[styles.section, { flex: 1 }]}>
                   <Text style={styles.label}>Available From</Text>
-                  <TextInput
+                  <TouchableOpacity
                     style={styles.input}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor="#9ca3af"
-                    value={form.available_from}
-                    onChangeText={(text) => setForm({ ...form, available_from: text })}
-                  />
+                    onPress={() => setShowAvailableFromPicker(true)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={{
+                        color: form.available_from ? '#111827' : '#9ca3af',
+                        fontSize: 15,
+                      }}
+                    >
+                      {form.available_from || 'YYYY-MM-DD'}
+                    </Text>
+                  </TouchableOpacity>
+                  {showAvailableFromPicker && (
+                    <DateTimePicker
+                      value={form.available_from ? new Date(form.available_from) : new Date()}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      minimumDate={new Date()}
+                      onChange={handleAvailableFromChange}
+                    />
+                  )}
                 </View>
                 <View style={[styles.section, { flex: 1 }]}>
                   <Text style={styles.label}>Min. Lease (months)</Text>
