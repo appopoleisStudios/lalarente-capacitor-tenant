@@ -11,6 +11,12 @@ import {
   Platform,
 } from 'react-native';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import {
+  addOneCalendarMonth,
+  fromLocalIsoDate,
+  isDateBefore,
+  toLocalIsoDate,
+} from '../../leases/utils/leaseDateMath';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -49,40 +55,46 @@ export default function OwnerLeaseCreateScreen() {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
-  // CT7-020 — lease date pickers. Same pattern as Add Property CT7-008.
-  // Writes back as YYYY-MM-DD so the existing schema + handleSubmit are
-  // unchanged. Start cannot be in the past; end must be at least one
-  // month after start (RHA minimum lease).
-  const toIsoDate = (d: Date) => d.toISOString().split('T')[0];
+  // CT7-020 — lease date pickers. Same pattern as Add Property CT7-008,
+  // hardened per PR #196 SA review:
+  //   - toLocalIsoDate() preserves local calendar day (no UTC round-trip).
+  //   - addOneCalendarMonth() clamps Jan 31 -> Feb 28/29 instead of
+  //     overflowing to March.
+  //   - iOS keeps the spinner open until the owner taps Done; Android
+  //     dismisses on first change (native dialog behaviour).
+
+  const applyStartDate = (iso: string) => {
+    setStartDate(iso);
+    // Clear a now-invalid end date so the owner is nudged to re-pick it.
+    if (endDate) {
+      const requiredMin = addOneCalendarMonth(fromLocalIsoDate(iso));
+      if (isDateBefore(endDate, requiredMin)) setEndDate('');
+    }
+  };
 
   const handleStartDateChange = (event: DateTimePickerEvent, selected?: Date) => {
-    setShowStartDatePicker(false);
+    if (Platform.OS === 'android') {
+      setShowStartDatePicker(false);
+    }
     if (event.type === 'set' && selected) {
-      const iso = toIsoDate(selected);
-      setStartDate(iso);
-      // If the current end date is before the new start + 1 month, clear it
-      // so the owner is nudged to pick a valid end date.
-      if (endDate) {
-        const minEnd = new Date(selected);
-        minEnd.setMonth(minEnd.getMonth() + 1);
-        if (new Date(endDate) < minEnd) setEndDate('');
-      }
+      applyStartDate(toLocalIsoDate(selected));
+    } else if (event.type === 'dismissed') {
+      setShowStartDatePicker(false);
     }
   };
 
   const handleEndDateChange = (event: DateTimePickerEvent, selected?: Date) => {
-    setShowEndDatePicker(false);
+    if (Platform.OS === 'android') {
+      setShowEndDatePicker(false);
+    }
     if (event.type === 'set' && selected) {
-      setEndDate(toIsoDate(selected));
+      setEndDate(toLocalIsoDate(selected));
+    } else if (event.type === 'dismissed') {
+      setShowEndDatePicker(false);
     }
   };
 
-  const minEndDate = (() => {
-    if (!startDate) return new Date();
-    const d = new Date(startDate);
-    d.setMonth(d.getMonth() + 1);
-    return d;
-  })();
+  const minEndDate = startDate ? addOneCalendarMonth(fromLocalIsoDate(startDate)) : new Date();
   const [leaseType, setLeaseType] = useState<'fixed' | 'month_to_month'>('fixed');
   const [monthlyRent, setMonthlyRent] = useState('');
   const [depositAmount, setDepositAmount] = useState('');
@@ -364,13 +376,23 @@ export default function OwnerLeaseCreateScreen() {
                     </Text>
                   </TouchableOpacity>
                   {showStartDatePicker && (
-                    <DateTimePicker
-                      value={startDate ? new Date(startDate) : new Date()}
-                      mode="date"
-                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                      minimumDate={new Date()}
-                      onChange={handleStartDateChange}
-                    />
+                    <>
+                      <DateTimePicker
+                        value={startDate ? fromLocalIsoDate(startDate) : new Date()}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        minimumDate={new Date()}
+                        onChange={handleStartDateChange}
+                      />
+                      {Platform.OS === 'ios' && (
+                        <TouchableOpacity
+                          style={styles.pickerDoneRow}
+                          onPress={() => setShowStartDatePicker(false)}
+                        >
+                          <Text style={styles.pickerDoneText}>Done</Text>
+                        </TouchableOpacity>
+                      )}
+                    </>
                   )}
                 </View>
 
@@ -393,13 +415,23 @@ export default function OwnerLeaseCreateScreen() {
                     </Text>
                   </TouchableOpacity>
                   {showEndDatePicker && (
-                    <DateTimePicker
-                      value={endDate ? new Date(endDate) : minEndDate}
-                      mode="date"
-                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                      minimumDate={minEndDate}
-                      onChange={handleEndDateChange}
-                    />
+                    <>
+                      <DateTimePicker
+                        value={endDate ? fromLocalIsoDate(endDate) : minEndDate}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        minimumDate={minEndDate}
+                        onChange={handleEndDateChange}
+                      />
+                      {Platform.OS === 'ios' && (
+                        <TouchableOpacity
+                          style={styles.pickerDoneRow}
+                          onPress={() => setShowEndDatePicker(false)}
+                        >
+                          <Text style={styles.pickerDoneText}>Done</Text>
+                        </TouchableOpacity>
+                      )}
+                    </>
                   )}
                 </View>
               </View>
@@ -564,6 +596,18 @@ export default function OwnerLeaseCreateScreen() {
 }
 
 const styles = StyleSheet.create({
+  // CT7-020 iOS spinner Done button — keeps the inline spinner open
+  // until the owner finishes picking the full date (year + month + day).
+  pickerDoneRow: {
+    alignItems: 'flex-end',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  pickerDoneText: {
+    color: RSA.blue,
+    fontSize: 16,
+    fontWeight: '600',
+  },
   safeArea: {
     flex: 1,
     backgroundColor: '#FFF',
