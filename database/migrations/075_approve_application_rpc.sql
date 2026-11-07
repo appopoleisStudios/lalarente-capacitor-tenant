@@ -1,87 +1,69 @@
 -- 075_approve_application_rpc.sql
 --
 -- CT7-019 — owner approve-tenancy must be gated on holding deposit paid.
--- PR #202 r2 SA findings: the JS-level check isn't a server boundary.
--- This RPC enforces the invariant atomically at the database level.
 --
--- Contract:
---   approve_application(app_uuid uuid) returns the updated rental_applications row.
---   Raises an exception if:
---     - caller is not the application's owner (auth.uid() mismatch)
---     - no holding_deposits row for this application exists
---     - the latest holding_deposits row is not in paid / applied / refunded
---
--- Why RPC and not UPDATE RLS:
---   The RLS WITH CHECK would have to look across tables, compare against the
---   holding_deposits status, and still allow regular updates to other columns
---   (reviewed_at, etc.). Encoding that in RLS is clumsy. A SECURITY DEFINER
---   function that performs the full status flip atomically is cleaner, and
---   the client only has one way in.
---
--- The existing UPDATE RLS on rental_applications still gates other updates;
--- callers trying to directly flip status='approved' outside this function
--- will hit a separate guard added here (approve_via_rpc trigger).
+-- r6 rewrite (PR #202): enforcement lives in the TRIGGER on
+-- rental_applications, not in a caller-settable session flag. The
+-- session-flag design was bypassable by any SQL caller who could
+-- SET LOCAL the flag themselves (Security finding). Now the trigger:
+--   1. Rejects transitions to status='approved' unless the source status
+--      is one of ('submitted', 'under_review'). Already-approved stays
+--      idempotent via NEW IS DISTINCT FROM OLD; other sources are rejected.
+--   2. Rejects transitions to status='approved' unless the latest
+--      holding_deposits row for the application is in
+--      ('paid', 'applied', 'refunded').
+--   3. Also rejects INSERTs with status='approved' (same deposit check).
+-- The SECURITY DEFINER RPC still exists for the client UX — it takes
+-- the row lock and performs the UPDATE — but is no longer the only
+-- enforcement point. A direct REST UPDATE / INSERT also goes through
+-- the trigger and is gated identically.
 
-CREATE OR REPLACE FUNCTION approve_application(app_uuid uuid)
-RETURNS rental_applications
-LANGUAGE plpgsql
-SECURITY DEFINER
+-- ============================================================
+-- Trigger function: the authoritative deposit + status-transition gate.
+-- Runs for both INSERT (NEW.status = 'approved') and UPDATE (transitioning
+-- INTO 'approved').
+-- ============================================================
+CREATE OR REPLACE FUNCTION guard_rental_applications_approved()
+RETURNS trigger LANGUAGE plpgsql
 SET search_path = public, pg_catalog, pg_temp
 AS $$
 DECLARE
-  updated_row rental_applications;
   deposit_status text;
-  _app_owner uuid;
-  _app_status text;
+  source_status  text;
 BEGIN
-  -- Reject anonymous callers explicitly — auth.uid() can be NULL and
-  -- `_app_owner <> auth.uid()` evaluates to NULL (not false) for a
-  -- NULL right-hand side, which PL/pgSQL would then treat as a skipped
-  -- IF branch, letting anonymous invocations through. (PR #202 r4
-  -- Security P1.)
-  IF auth.uid() IS NULL THEN
-    RAISE EXCEPTION 'not authenticated';
+  -- Idempotency: UPDATE where status stays 'approved' is a no-op pass
+  -- (lets owners re-save other fields without re-triggering the gate).
+  IF TG_OP = 'UPDATE'
+     AND OLD.status = 'approved'
+     AND NEW.status = 'approved' THEN
+    RETURN NEW;
   END IF;
 
-  -- Take an exclusive row lock on the application. Any concurrent
-  -- approve_application() for the same app queues behind us, which
-  -- serialises the approval decision. Concurrent deposit inserts
-  -- aren't blocked by this lock, but FOR UPDATE on the latest
-  -- deposit row (below) locks it against status changes. Under
-  -- READ COMMITTED, each statement sees its own snapshot of
-  -- committed data — so we rely on the explicit locks for cross-
-  -- statement consistency.
-  SELECT owner_id, status INTO _app_owner, _app_status
-  FROM public.rental_applications
-  WHERE id = app_uuid
-  FOR UPDATE;
-
-  IF _app_owner IS NULL THEN
-    RAISE EXCEPTION 'application not found';
-  END IF;
-  -- IS DISTINCT FROM is NULL-safe — returns false (not NULL) when
-  -- both sides are NULL. The explicit NULL check above also prevents
-  -- reaching here with NULL auth.uid(), but we use IS DISTINCT FROM
-  -- here for defence-in-depth.
-  IF _app_owner IS DISTINCT FROM auth.uid() THEN
-    RAISE EXCEPTION 'not authorized to approve this application';
+  -- Only enforce when the NEW status is 'approved'. All other transitions
+  -- pass straight through (edits to other columns, rejections, etc.).
+  IF NEW.status IS DISTINCT FROM 'approved' THEN
+    RETURN NEW;
   END IF;
 
-  -- Idempotency (PR #202 r4 Senior Dev P1): a repeat call must not
-  -- overwrite approved_at / reviewed_at on an already-approved row.
-  -- Return the existing row unchanged.
-  IF _app_status = 'approved' THEN
-    SELECT * INTO updated_row FROM public.rental_applications WHERE id = app_uuid;
-    RETURN updated_row;
+  -- Source status restriction (PR #202 r5 Senior Dev finding): a terminal
+  -- or improper source cannot become 'approved'. On INSERT the source is
+  -- absent, so we require the row to start as 'submitted' or 'under_review'
+  -- via the same whitelist — INSERTs with status='approved' are blocked.
+  source_status := CASE WHEN TG_OP = 'UPDATE' THEN OLD.status ELSE NULL END;
+
+  IF source_status IS NULL
+     OR source_status NOT IN ('submitted', 'under_review') THEN
+    RAISE EXCEPTION
+      'approve rental_applications: source status % is not eligible (allowed: submitted, under_review)',
+      COALESCE(source_status, '(insert)');
   END IF;
 
-  -- Read the latest holding deposit (if any) for this application
-  -- with a FOR UPDATE lock on that row so a concurrent
-  -- holdingDepositApi.confirmPayment() or refund can't flip it
-  -- between this check and the UPDATE below.
+  -- Deposit gate: read the latest holding_deposits row with FOR UPDATE
+  -- so concurrent status changes on that row serialise behind this
+  -- transaction.
   SELECT status INTO deposit_status
   FROM public.holding_deposits
-  WHERE application_id = app_uuid
+  WHERE application_id = NEW.id
   ORDER BY created_at DESC
   LIMIT 1
   FOR UPDATE;
@@ -91,48 +73,78 @@ BEGIN
   END IF;
 
   IF deposit_status NOT IN ('paid', 'applied', 'refunded') THEN
-    RAISE EXCEPTION 'cannot approve: holding deposit is % — must be paid, applied, or refunded', deposit_status;
+    RAISE EXCEPTION
+      'cannot approve: holding deposit is % — must be paid, applied, or refunded',
+      deposit_status;
   END IF;
 
-  -- Atomic status flip. Set reviewed_at at the same transaction.
-  -- PERFORM the flag so the trigger below knows this came from the RPC.
-  PERFORM set_config('app.approve_via_rpc', 'true', true);
+  RETURN NEW;
+END $$;
+
+DROP TRIGGER IF EXISTS trg_guard_rental_applications_approved ON rental_applications;
+
+-- One trigger, two events. Fires BEFORE INSERT/UPDATE, enforces both paths.
+CREATE TRIGGER trg_guard_rental_applications_approved
+  BEFORE INSERT OR UPDATE ON rental_applications
+  FOR EACH ROW
+  EXECUTE FUNCTION guard_rental_applications_approved();
+
+-- ============================================================
+-- Client-facing RPC. Still useful for the UX — takes the row lock,
+-- surfaces friendly error messages — but is no longer the ONLY
+-- enforcement point. A direct REST write would hit the trigger too.
+-- ============================================================
+CREATE OR REPLACE FUNCTION approve_application(app_uuid uuid)
+RETURNS rental_applications
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_catalog, pg_temp
+AS $$
+DECLARE
+  updated_row rental_applications;
+  _app_owner  uuid;
+  _app_status text;
+BEGIN
+  -- Reject anonymous callers explicitly (SA r4 Security P1).
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'not authenticated';
+  END IF;
+
+  -- Exclusive row lock on the application. Concurrent approve calls
+  -- for the same application queue behind us.
+  SELECT owner_id, status INTO _app_owner, _app_status
+  FROM public.rental_applications
+  WHERE id = app_uuid
+  FOR UPDATE;
+
+  IF _app_owner IS NULL THEN
+    RAISE EXCEPTION 'application not found';
+  END IF;
+  -- IS DISTINCT FROM is NULL-safe.
+  IF _app_owner IS DISTINCT FROM auth.uid() THEN
+    RAISE EXCEPTION 'not authorized to approve this application';
+  END IF;
+
+  -- Idempotency on the RPC level: return current row unchanged.
+  -- The trigger would also accept 'approved' → 'approved' as a no-op,
+  -- but we short-circuit here to avoid the UPDATE roundtrip.
+  IF _app_status = 'approved' THEN
+    SELECT * INTO updated_row FROM public.rental_applications WHERE id = app_uuid;
+    RETURN updated_row;
+  END IF;
+
+  -- The deposit + source-status gate lives in the trigger — this UPDATE
+  -- will RAISE if either fails. Keeps the RPC thin.
   UPDATE public.rental_applications
   SET status = 'approved',
       reviewed_at = now(),
       approved_at = now()
   WHERE id = app_uuid
   RETURNING * INTO updated_row;
-  PERFORM set_config('app.approve_via_rpc', 'false', true);
 
   RETURN updated_row;
 END $$;
 
--- Block direct UPDATEs that attempt to flip status to 'approved' outside
--- this function. The RPC sets app.approve_via_rpc = 'true' before the
--- UPDATE so this trigger allows it through; everyone else is rejected.
-CREATE OR REPLACE FUNCTION guard_rental_applications_approved()
-RETURNS trigger LANGUAGE plpgsql
-SET search_path = public, pg_catalog, pg_temp
-AS $$
-BEGIN
-  IF NEW.status = 'approved'
-     AND (OLD.status IS DISTINCT FROM 'approved')
-     AND COALESCE(current_setting('app.approve_via_rpc', true), 'false') <> 'true' THEN
-    RAISE EXCEPTION 'approve rental_applications only via approve_application() RPC';
-  END IF;
-  RETURN NEW;
-END $$;
-
-DROP TRIGGER IF EXISTS trg_guard_rental_applications_approved ON rental_applications;
-CREATE TRIGGER trg_guard_rental_applications_approved
-  BEFORE UPDATE ON rental_applications
-  FOR EACH ROW
-  WHEN (NEW.status = 'approved')
-  EXECUTE FUNCTION guard_rental_applications_approved();
-
--- Explicitly strip the default PUBLIC EXECUTE grant (Postgres's default
--- on functions). Only the authenticated role may call this RPC.
--- (PR #202 r4 Security finding.)
+-- Strip default PUBLIC EXECUTE; grant only to authenticated.
 REVOKE EXECUTE ON FUNCTION approve_application(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION approve_application(uuid) TO authenticated;
