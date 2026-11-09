@@ -461,6 +461,22 @@ export default function OwnerPropertyDetailScreen() {
                   <Text style={styles.secondaryButtonText}>Maintenance History</Text>
                 </View>
               </AnimatedButton>
+
+              <AnimatedButton
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push({
+                    pathname: '/(owner)/properties/[id]/taxes',
+                    params: { id, title: property?.title ?? '' },
+                  } as never);
+                }}
+                testID="owner-property-taxes"
+                accessibilityRole="button"
+              >
+                <View style={[styles.actionButton, styles.secondaryButton]}>
+                  <Text style={styles.secondaryButtonText}>Tax Payments</Text>
+                </View>
+              </AnimatedButton>
             </View>
           </View>
         </ScrollView>
