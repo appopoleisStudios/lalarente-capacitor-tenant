@@ -452,7 +452,7 @@ ${
 <div class="section">
   <div class="section-title">Additional Terms</div>
   <div class="clause">
-    <div class="clause-text" style="white-space:pre-wrap;">${customClauses.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+    <div class="clause-text" style="white-space:pre-wrap;">${customClauses.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
   </div>
 </div>`
     : ''
