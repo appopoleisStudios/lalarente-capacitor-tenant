@@ -22,6 +22,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { supabase } from '../../../lib/supabase';
+import { leaseDraftStore } from '../../leases/utils/leaseDraftStore';
 
 const RSA = { blue: '#002395', gold: '#FFB81C' }; // Owner colors
 
@@ -47,7 +48,6 @@ export default function OwnerLeaseCreateScreen() {
   const { applicationId } = useLocalSearchParams();
   const [application, setApplication] = useState<Application | null>(null);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
 
   // Lease form fields
   const [startDate, setStartDate] = useState('');
@@ -219,98 +219,32 @@ export default function OwnerLeaseCreateScreen() {
     return true;
   };
 
-  const handleCreateLease = async () => {
+  const handleCreateLease = () => {
     if (!validateForm() || !application) return;
 
-    Alert.alert(
-      'Create Lease',
-      'This will create a lease agreement and send it to the tenant for signing. Continue?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Create',
-          onPress: async () => {
-            setSubmitting(true);
-            try {
-              const {
-                data: { user },
-              } = await supabase.auth.getUser();
-              if (!user) throw new Error('Not authenticated');
+    // CT7-022: route to review screen instead of instant insert.
+    // Pre-generate a UUID so the HTML preview shows a real Lease ID —
+    // the same ID is passed to the insert in OwnerLeaseReviewScreen.
+    const draftLeaseId = crypto.randomUUID();
 
-              const { data: lease, error: leaseError } = await (supabase as any)
-                .from('leases')
-                .insert({
-                  application_id: application.id,
-                  property_id: application.property_id,
-                  owner_id: user.id,
-                  tenant_id: application.tenant_id,
-                  start_date: startDate,
-                  end_date: endDate,
-                  lease_type: leaseType,
-                  monthly_rent: parseFloat(monthlyRent),
-                  deposit_amount: depositAmount ? parseFloat(depositAmount) : null,
-                  payment_due_day: parseInt(paymentDueDay),
-                  late_fee_amount: lateFeeAmount ? parseFloat(lateFeeAmount) : null,
-                  late_fee_grace_days: lateFeeGraceDays ? parseInt(lateFeeGraceDays) : null,
-                  rent_escalation_type: rentEscalationValue
-                    ? // CT7-021: schema CHECK requires 'fixed_percentage' not 'percentage'
-                      rentEscalationType === 'percentage'
-                      ? 'fixed_percentage'
-                      : rentEscalationType
-                    : null,
-                  rent_escalation_value: rentEscalationValue
-                    ? parseFloat(rentEscalationValue)
-                    : null,
-                  rent_escalation_frequency_months: rentEscalationValue
-                    ? parseInt(rentEscalationFrequency)
-                    : null,
-                  // SA prescribed rate 5.25% p.a. stored as percentage (not decimal).
-                  // normalizeDepositRate() divides by 100 at read time.
-                  deposit_interest_rate: 5.25,
-                  // CT7-021: leases_status_check only allows
-                  // ('draft','pending_signatures','active','month_to_month',
-                  //  'renewal_pending','expired','terminated','early_terminated').
-                  // Previous code tried 'pending_tenant_signature' and hit a
-                  // check-constraint violation that surfaced as "lease creation failed".
-                  status: 'pending_signatures',
-                })
-                .select()
-                .single();
+    leaseDraftStore.set({
+      applicationId: Array.isArray(applicationId) ? applicationId[0] : (applicationId as string),
+      startDate,
+      endDate,
+      leaseType,
+      monthlyRent,
+      depositAmount,
+      paymentDueDay,
+      lateFeeAmount,
+      lateFeeGraceDays,
+      rentEscalationType,
+      rentEscalationValue,
+      rentEscalationFrequency,
+      customClauses: '',
+      draftLeaseId,
+    });
 
-              if (leaseError) throw leaseError;
-
-              // Update application status
-              // CT7-021: rental_applications_status_check only allows
-              // ('draft','submitted','under_review','shortlisted','approved',
-              //  'rejected','withdrawn','backup','lease_offered','lease_signed').
-              // Previous code tried 'lease_created' and silently failed —
-              // the lease row DID land but the application stayed at 'approved',
-              // so downstream flows (tenant-side lease screen) looked broken.
-              await supabase
-                .from('rental_applications')
-                .update({ status: 'lease_offered' })
-                .eq('id', application.id);
-
-              Alert.alert(
-                'Success',
-                'Lease created successfully! The tenant will be notified to sign the agreement.',
-                [
-                  {
-                    text: 'OK',
-                    onPress: () => router.push(`/(owner)/leases/${lease.id}`),
-                  },
-                ]
-              );
-            } catch (error) {
-              console.error('Error creating lease:', error);
-              Alert.alert('Error', 'Failed to create lease. Please try again.');
-            } finally {
-              setSubmitting(false);
-            }
-          },
-        },
-      ]
-    );
+    router.push('/(owner)/leases/review');
   };
 
   if (loading) {
@@ -612,19 +546,9 @@ export default function OwnerLeaseCreateScreen() {
 
             {/* Create Button */}
             <View style={styles.section}>
-              <TouchableOpacity
-                style={[styles.createButton, submitting && styles.createButtonDisabled]}
-                onPress={handleCreateLease}
-                disabled={submitting}
-              >
-                {submitting ? (
-                  <ActivityIndicator color="#FFF" />
-                ) : (
-                  <>
-                    <Ionicons name="document-text" size={20} color="#FFF" />
-                    <Text style={styles.createButtonText}>Create Lease Agreement</Text>
-                  </>
-                )}
+              <TouchableOpacity style={styles.createButton} onPress={handleCreateLease}>
+                <Ionicons name="document-text" size={20} color="#FFF" />
+                <Text style={styles.createButtonText}>Review Lease Agreement</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
