@@ -236,22 +236,45 @@ export default function OwnerTaxReportScreen() {
 
       // Half-open range: start = taxYear.startDate, end = day AFTER taxYear.endDate
       // so Feb 29 in leap years is included. Never use BETWEEN with a fixed Feb 28.
-      const taxEndExclusive = new Date(taxYear.endDate);
-      taxEndExclusive.setDate(taxEndExclusive.getDate() + 1);
+      // Half-open range: construct the exclusive upper bound as March 1 of the
+      // tax-year end year. Using endDate+1 fails in leap years (Feb 28+1=Feb 29,
+      // not Mar 1), so we derive the year directly from startDate instead.
+      const taxEndYear = taxYear.startDate.getFullYear() + 1;
+      const taxEndExclusive = `${taxEndYear}-03-01`;
       const taxPayments = await getTaxExpensesByYear(
         uid,
         taxYear.startDate.toISOString().split('T')[0],
-        taxEndExclusive.toISOString().split('T')[0]
+        taxEndExclusive
       );
       const taxPaymentDeductions = totalDeductible(taxPayments);
       const taxExpensesByCategory = summariseByCategory(taxPayments);
+
+      // Attribute tax-payment deductions per property so the breakdown reconciles.
+      const taxDeductionsPerProperty: Record<string, number> = {};
+      for (const tp of taxPayments) {
+        let deductible = 0;
+        if (tp.deductibility === 'allowable') deductible = tp.amount;
+        else if (tp.deductibility === 'mixed_use' && tp.apportionment_pct != null)
+          deductible = tp.amount * (tp.apportionment_pct / 100);
+        if (deductible > 0) {
+          taxDeductionsPerProperty[tp.property_id] =
+            (taxDeductionsPerProperty[tp.property_id] || 0) + deductible;
+        }
+      }
+
+      const reconciledBreakdown = propertyBreakdown.map((pb) => {
+        const pid = Object.keys(propertyMap).find((k) => propertyMap[k] === pb.propertyTitle);
+        const taxDed = pid ? taxDeductionsPerProperty[pid] || 0 : 0;
+        const totalDed = pb.deductions + taxDed;
+        return { ...pb, deductions: totalDed, net: pb.grossIncome - totalDed };
+      });
 
       setSummary({
         grossRentalIncome,
         maintenanceDeductions,
         taxPaymentDeductions,
         netTaxableEstimate: grossRentalIncome - maintenanceDeductions - taxPaymentDeductions,
-        propertyBreakdown,
+        propertyBreakdown: reconciledBreakdown,
         paymentCount: payments?.length || 0,
         deductionCount,
         taxExpensesByCategory,
