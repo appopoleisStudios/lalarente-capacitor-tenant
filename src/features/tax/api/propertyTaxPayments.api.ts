@@ -131,16 +131,19 @@ export async function getTaxExpensesByYear(
   return (data || []) as PropertyTaxPayment[];
 }
 
+export function paymentDeductible(p: PropertyTaxPayment): number {
+  if (p.deductibility === 'allowable') return p.amount;
+  if (p.deductibility === 'mixed_use' && p.apportionment_pct != null)
+    return p.amount * (p.apportionment_pct / 100);
+  return 0;
+}
+
 export function summariseByCategory(payments: PropertyTaxPayment[]): TaxExpensesByCategory[] {
   const map: Record<string, { total: number; deductible: number }> = {};
   for (const p of payments) {
     if (!map[p.category]) map[p.category] = { total: 0, deductible: 0 };
     map[p.category].total += p.amount;
-    if (p.deductibility === 'allowable') {
-      map[p.category].deductible += p.amount;
-    } else if (p.deductibility === 'mixed_use' && p.apportionment_pct != null) {
-      map[p.category].deductible += p.amount * (p.apportionment_pct / 100);
-    }
+    map[p.category].deductible += paymentDeductible(p);
   }
   return Object.entries(map).map(([category, vals]) => ({
     category: category as TaxCategory,
@@ -149,11 +152,5 @@ export function summariseByCategory(payments: PropertyTaxPayment[]): TaxExpenses
 }
 
 export function totalDeductible(payments: PropertyTaxPayment[]): number {
-  return payments.reduce((sum, p) => {
-    if (p.deductibility === 'allowable') return sum + p.amount;
-    if (p.deductibility === 'mixed_use' && p.apportionment_pct != null) {
-      return sum + p.amount * (p.apportionment_pct / 100);
-    }
-    return sum;
-  }, 0);
+  return payments.reduce((sum, p) => sum + paymentDeductible(p), 0);
 }

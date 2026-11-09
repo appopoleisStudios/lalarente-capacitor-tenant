@@ -24,6 +24,7 @@ import { supabase } from '@/src/lib/supabase';
 import { exportTaxStatementPdf } from '../utils/pdfReports';
 import {
   getTaxExpensesByYear,
+  paymentDeductible,
   totalDeductible,
   summariseByCategory,
   TaxExpensesByCategory,
@@ -48,6 +49,7 @@ interface TaxSummary {
 }
 
 interface PropertyTax {
+  propertyId: string;
   propertyTitle: string;
   grossIncome: number;
   deductions: number;
@@ -223,6 +225,7 @@ export default function OwnerTaxReportScreen() {
           const gross = incomePerProperty[pid] || 0;
           const deductions = deductionsPerProperty[pid] || 0;
           return {
+            propertyId: pid,
             propertyTitle: propertyMap[pid] || 'Property',
             grossIncome: gross,
             deductions,
@@ -234,11 +237,8 @@ export default function OwnerTaxReportScreen() {
       const grossRentalIncome = propertyBreakdown.reduce((s, p) => s + p.grossIncome, 0);
       const maintenanceDeductions = propertyBreakdown.reduce((s, p) => s + p.deductions, 0);
 
-      // Half-open range: start = taxYear.startDate, end = day AFTER taxYear.endDate
-      // so Feb 29 in leap years is included. Never use BETWEEN with a fixed Feb 28.
-      // Half-open range: construct the exclusive upper bound as March 1 of the
-      // tax-year end year. Using endDate+1 fails in leap years (Feb 28+1=Feb 29,
-      // not Mar 1), so we derive the year directly from startDate instead.
+      // Exclusive upper bound: March 1 of the end year. endDate+1 fails in leap years
+      // (Feb 28+1 = Feb 29, not Mar 1), so we derive the year from startDate.
       const taxEndYear = taxYear.startDate.getFullYear() + 1;
       const taxEndExclusive = `${taxEndYear}-03-01`;
       const taxPayments = await getTaxExpensesByYear(
@@ -252,19 +252,15 @@ export default function OwnerTaxReportScreen() {
       // Attribute tax-payment deductions per property so the breakdown reconciles.
       const taxDeductionsPerProperty: Record<string, number> = {};
       for (const tp of taxPayments) {
-        let deductible = 0;
-        if (tp.deductibility === 'allowable') deductible = tp.amount;
-        else if (tp.deductibility === 'mixed_use' && tp.apportionment_pct != null)
-          deductible = tp.amount * (tp.apportionment_pct / 100);
-        if (deductible > 0) {
+        const ded = paymentDeductible(tp);
+        if (ded > 0) {
           taxDeductionsPerProperty[tp.property_id] =
-            (taxDeductionsPerProperty[tp.property_id] || 0) + deductible;
+            (taxDeductionsPerProperty[tp.property_id] || 0) + ded;
         }
       }
 
       const reconciledBreakdown = propertyBreakdown.map((pb) => {
-        const pid = Object.keys(propertyMap).find((k) => propertyMap[k] === pb.propertyTitle);
-        const taxDed = pid ? taxDeductionsPerProperty[pid] || 0 : 0;
+        const taxDed = taxDeductionsPerProperty[pb.propertyId] || 0;
         const totalDed = pb.deductions + taxDed;
         return { ...pb, deductions: totalDed, net: pb.grossIncome - totalDed };
       });
