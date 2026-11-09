@@ -95,27 +95,21 @@ CREATE POLICY psi_tenant_select ON property_service_items
 CREATE OR REPLACE FUNCTION capture_dispatch_authority()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
+  -- Legacy / unlinked inserts: preserve caller-supplied status and dispatch flag.
   IF NEW.service_item_id IS NULL THEN
-    -- Unlinked ("Something else"): owner inserting may opt tenant-dispatch
-    -- in; tenant-inserted requests always start in awaiting_owner_dispatch.
-    IF NEW.owner_id = auth.uid() THEN
-      NEW.captured_tenant_may_dispatch :=
-        COALESCE(NEW.captured_tenant_may_dispatch, false);
-    ELSE
-      NEW.captured_tenant_may_dispatch := false;
-    END IF;
-  ELSE
-    SELECT tenant_may_dispatch
-      INTO NEW.captured_tenant_may_dispatch
-      FROM property_service_items
-     WHERE id = NEW.service_item_id
-       AND property_id = NEW.property_id;
-    IF NEW.captured_tenant_may_dispatch IS NULL THEN
-      RAISE EXCEPTION 'service_item_id does not belong to property_id';
-    END IF;
+    RETURN NEW;
   END IF;
 
-  -- Overwrite any client-supplied status with the authority-derived value.
+  SELECT tenant_may_dispatch
+    INTO NEW.captured_tenant_may_dispatch
+    FROM property_service_items
+   WHERE id = NEW.service_item_id
+     AND property_id = NEW.property_id;
+
+  IF NEW.captured_tenant_may_dispatch IS NULL THEN
+    RAISE EXCEPTION 'service_item_id does not belong to property_id';
+  END IF;
+
   NEW.status := CASE
     WHEN NEW.captured_tenant_may_dispatch THEN 'tenant_dispatching'
     ELSE 'awaiting_owner_dispatch'
