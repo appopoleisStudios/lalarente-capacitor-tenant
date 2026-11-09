@@ -186,7 +186,8 @@ export async function createMaintenanceRequest(
       mms_status: 'notification',
       visibility: input.visibility || 'invited',
       images: input.images || null,
-    })
+      ...(input.service_item_id ? { service_item_id: input.service_item_id } : {}),
+    } as any)
     .select()
     .single();
 

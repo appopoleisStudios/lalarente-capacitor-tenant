@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
 import { AnimatedButton } from '@/src/shared/components';
 import { MaintenanceFilters, FilterType } from '../components/MaintenanceFilters';
 import { StatusBadge, PriorityIndicator } from '@/src/features/maintenance/components';
@@ -48,6 +49,10 @@ export default function OwnerMaintenanceListScreen() {
     if (activeFilter === 'all') return true;
     return request.status === activeFilter;
   });
+
+  const awaitingDispatch = isArchiveView
+    ? []
+    : allRequests.filter((r: any) => r.status === 'awaiting_owner_dispatch');
 
   const counts = {
     all: isArchiveView ? 0 : allRequests.length,
@@ -208,6 +213,45 @@ export default function OwnerMaintenanceListScreen() {
           }
           showsVerticalScrollIndicator={false}
         >
+          {/* Awaiting dispatch — always visible regardless of active filter */}
+          {awaitingDispatch.length > 0 && (
+            <Animated.View
+              entering={FadeInDown.delay(80).duration(500)}
+              style={styles.awaitingSection}
+            >
+              <View style={styles.awaitingHeader}>
+                <Text style={styles.awaitingTitle}>⚡ Awaiting your action</Text>
+                <View style={styles.awaitingBadge}>
+                  <Text style={styles.awaitingBadgeText}>{awaitingDispatch.length}</Text>
+                </View>
+              </View>
+              <Text style={styles.awaitingSubtitle}>
+                Tenant-linked requests waiting for you to assign or release to tenant
+              </Text>
+              {awaitingDispatch.map((request: any) => (
+                <AnimatedButton
+                  key={request.id}
+                  testID="awaiting-dispatch-card"
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    router.push(`/(owner)/maintenance/${request.id}`);
+                  }}
+                  style={styles.awaitingCard}
+                >
+                  <View style={styles.awaitingCardInner}>
+                    <Text style={styles.awaitingCardTitle} numberOfLines={1}>
+                      {request.title}
+                    </Text>
+                    <Text style={styles.awaitingCardMeta} numberOfLines={1}>
+                      {request.property?.title || ''} · {formatDate(request.created_at)}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="#6b7280" />
+                </AnimatedButton>
+              ))}
+            </Animated.View>
+          )}
+
           <Animated.View entering={FadeInDown.delay(100).duration(500)}>
             {filteredRequests.length === 0 ? (
               <View style={styles.emptyContainer}>
