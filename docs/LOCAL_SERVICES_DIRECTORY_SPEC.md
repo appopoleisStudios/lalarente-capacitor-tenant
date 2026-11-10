@@ -125,8 +125,8 @@ CREATE TABLE service_listings (
   starts_at TIMESTAMPTZ DEFAULT NOW(),
   expires_at TIMESTAMPTZ NOT NULL,       -- renewal deadline
   deleted_at TIMESTAMPTZ,               -- soft-delete; listing is NEVER hard-deleted
-  monthly_fee_cents INT DEFAULT 0,       -- what we charge them (rate at time of agreement)
-  per_lead_fee_cents INT DEFAULT 0,      -- commission per contact tap (rate at time of agreement)
+  monthly_fee_cents INT NOT NULL DEFAULT 0 CHECK (monthly_fee_cents >= 0),    -- what we charge them
+  per_lead_fee_cents INT NOT NULL DEFAULT 0 CHECK (per_lead_fee_cents >= 0), -- commission per contact tap
   -- Rate fields are locked by a trigger once status transitions to 'active'.
   -- A new listing row (new UUID, new starts_at/expires_at) is used for each
   -- pricing period. Events reference the listing ID whose rates were agreed at
