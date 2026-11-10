@@ -15,7 +15,7 @@
 
 BEGIN;
 
-SELECT plan(14);
+SELECT plan(17);
 
 -- ─── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -241,6 +241,110 @@ SELECT is(
     WHERE id = current_setting('test.td_req_id')::uuid),
   false,
   'G1: reclaim_request resets captured_tenant_may_dispatch to false'
+);
+
+SELECT tests.clear_authentication();
+
+-- ─── H. Reclaim succeeds with zero open assignments/POs ─────────────────────
+
+-- Use the aod_req_id request (now in tenant_dispatching state after F1)
+-- It has no assignments and no POs → reclaim should succeed
+
+SELECT tests.authenticate_as('owner_a');
+
+SELECT lives_ok(
+  $q$ SELECT reclaim_request(current_setting('test.aod_req_id')::uuid, 'H reclaim') $q$,
+  'H1: reclaim succeeds when no open assignments or POs exist'
+);
+
+SELECT is(
+  (SELECT status::text FROM maintenance_requests
+    WHERE id = current_setting('test.aod_req_id')::uuid),
+  'awaiting_owner_dispatch',
+  'H2: request status reset to awaiting_owner_dispatch after reclaim'
+);
+
+SELECT tests.clear_authentication();
+
+-- ─── I. Reclaim blocked when active assignment exists ─────────────────────────
+
+DO $$
+DECLARE
+  v_req_id  uuid;
+  v_vnd_id  uuid;
+BEGIN
+  -- Create a fresh tenant_dispatching request
+  UPDATE property_service_items
+     SET tenant_may_dispatch = true
+   WHERE id = current_setting('test.psi_id')::uuid;
+
+  INSERT INTO maintenance_requests (
+    property_id, owner_id, tenant_id, title, description,
+    priority, status, service_item_id
+  ) VALUES (
+    current_setting('test.prop_id')::uuid,
+    current_setting('test.owner_id')::uuid,
+    current_setting('test.tenant_id')::uuid,
+    'I_active_assign', 'desc', 'low', 'tenant_dispatching',
+    current_setting('test.psi_id')::uuid
+  ) RETURNING id INTO v_req_id;
+
+  PERFORM set_config('test.i_req_id', v_req_id::text, true);
+
+  -- Insert an active assignment directly (bypass trigger for test setup)
+  v_vnd_id := gen_random_uuid();
+  INSERT INTO maintenance_vendor_assignments (request_id, vendor_id, status)
+  VALUES (v_req_id, v_vnd_id, 'pending');
+END $$;
+
+SELECT tests.authenticate_as('owner_a');
+
+SELECT throws_like(
+  $q$ SELECT reclaim_request(current_setting('test.i_req_id')::uuid, 'I reclaim') $q$,
+  '%reclaim aborted%',
+  'I1: reclaim blocked when an active assignment exists'
+);
+
+SELECT tests.clear_authentication();
+
+-- ─── J. Reclaim blocked when active PO exists ────────────────────────────────
+
+DO $$
+DECLARE
+  v_req_id uuid;
+BEGIN
+  -- Create a fresh tenant_dispatching request
+  INSERT INTO maintenance_requests (
+    property_id, owner_id, tenant_id, title, description,
+    priority, status, service_item_id
+  ) VALUES (
+    current_setting('test.prop_id')::uuid,
+    current_setting('test.owner_id')::uuid,
+    current_setting('test.tenant_id')::uuid,
+    'J_active_po', 'desc', 'low', 'tenant_dispatching',
+    current_setting('test.psi_id')::uuid
+  ) RETURNING id INTO v_req_id;
+
+  PERFORM set_config('test.j_req_id', v_req_id::text, true);
+
+  -- Insert an active PO directly
+  INSERT INTO purchase_orders (request_id, property_id, owner_id, vendor_id, status, amount)
+  VALUES (
+    v_req_id,
+    current_setting('test.prop_id')::uuid,
+    current_setting('test.owner_id')::uuid,
+    gen_random_uuid(),
+    'pending',
+    500
+  );
+END $$;
+
+SELECT tests.authenticate_as('owner_a');
+
+SELECT throws_like(
+  $q$ SELECT reclaim_request(current_setting('test.j_req_id')::uuid, 'J reclaim') $q$,
+  '%reclaim aborted%',
+  'J1: reclaim blocked when an active PO exists'
 );
 
 SELECT tests.clear_authentication();
