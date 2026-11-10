@@ -28,6 +28,7 @@ import {
 } from '@/src/features/payments/api/paymentDisputes.api';
 import { colors } from '@/src/shared/theme/colors';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   open: { label: 'Open', color: '#D97706' },
@@ -80,6 +81,7 @@ export default function OwnerPaymentDisputesScreen() {
       const data = await paymentDisputesApi.getOwnerDisputes(user.id);
       setDisputes(data);
     } catch (err) {
+      reportApiError(err, 'payment_disputes', 'select');
       console.error('Error loading disputes:', err);
     } finally {
       setLoading(false);

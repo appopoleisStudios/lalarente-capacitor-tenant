@@ -26,6 +26,7 @@ import {
   ClaimType,
 } from '@/src/features/insurance/api/insuranceClaims.api';
 import { colors } from '@/src/shared/theme/colors';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -94,6 +95,7 @@ export default function OwnerInsuranceClaimsDashboard() {
       setClaims(allClaims);
       setSummary(claimSummary);
     } catch (err: any) {
+      reportApiError(err, 'insurance_claims', 'select');
       console.error('Error loading insurance claims:', err);
       Alert.alert('Error', 'Failed to load insurance claims');
     } finally {

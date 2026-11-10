@@ -3,6 +3,7 @@ import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { uploadLeasePDF } from './storageService';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 export interface LeaseData {
   id: string;
@@ -69,10 +70,14 @@ function formatDate(dateString: string): string {
 function getDaySuffix(day: number): string {
   if (day >= 11 && day <= 13) return 'th';
   switch (day % 10) {
-    case 1: return 'st';
-    case 2: return 'nd';
-    case 3: return 'rd';
-    default: return 'th';
+    case 1:
+      return 'st';
+    case 2:
+      return 'nd';
+    case 3:
+      return 'rd';
+    default:
+      return 'th';
   }
 }
 
@@ -246,7 +251,9 @@ export function generateLeaseHTML(lease: LeaseData): string {
     ${lease.owner.email ? `<tr><td class="label">Email</td><td class="value">${lease.owner.email}</td></tr>` : ''}
     ${lease.owner.phone ? `<tr><td class="label">Phone</td><td class="value">${lease.owner.phone}</td></tr>` : ''}
 
-    ${lease.agency_name || lease.agent_name ? `
+    ${
+      lease.agency_name || lease.agent_name
+        ? `
     <tr><td class="section-header" colspan="2">2. MANAGING AGENT</td></tr>
     ${lease.agency_name ? `<tr><td class="label">Agency</td><td class="value">${lease.agency_name}</td></tr>` : ''}
     ${lease.agency_reg_no ? `<tr><td class="label">Reg. No.</td><td class="value">${lease.agency_reg_no}</td></tr>` : ''}
@@ -254,7 +261,9 @@ export function generateLeaseHTML(lease: LeaseData): string {
     ${lease.agent_name ? `<tr><td class="label">Agent</td><td class="value">${lease.agent_name}</td></tr>` : ''}
     ${lease.agent_phone ? `<tr><td class="label">Agent Phone</td><td class="value">${lease.agent_phone}</td></tr>` : ''}
     ${lease.agent_email ? `<tr><td class="label">Agent Email</td><td class="value">${lease.agent_email}</td></tr>` : ''}
-    ` : ''}
+    `
+        : ''
+    }
 
     <tr><td class="section-header" colspan="2">3. TENANT DETAILS</td></tr>
     <tr><td class="label">Full name</td><td class="value">${lease.tenant.full_name}</td></tr>
@@ -290,37 +299,53 @@ export function generateLeaseHTML(lease: LeaseData): string {
     </div>
   </div>
 
-  ${lease.deposit_amount ? `
+  ${
+    lease.deposit_amount
+      ? `
   <div class="clause">
     <div class="clause-number">2. SECURITY DEPOSIT</div>
     <div class="clause-text">
       The Tenant has paid a security deposit of ${formatCurrency(lease.deposit_amount)}. The deposit shall be held by the Landlord / Agent in trust in terms of the Rental Housing Act. The deposit will be invested in an interest-bearing account and interest accrued will be paid to the Tenant upon termination of this lease, subject to any lawful deductions for damages, arrears, or breach beyond normal wear and tear. The deposit may not be used for the final month's rental.
     </div>
-  </div>` : ''}
+  </div>`
+      : ''
+  }
 
-  ${interestRate ? `
+  ${
+    interestRate
+      ? `
   <div class="clause">
     <div class="clause-number">${lease.deposit_amount ? '3' : '2'}. INTEREST ON ARREARS</div>
     <div class="clause-text">
       Should the Tenant fail to pay the full monthly rental on or before the due date, interest at a rate of ${interestRate}% per annum (being 2% above the prime lending rate) will be charged on arrears from the due date until the date of full payment, calculated daily and capitalised monthly.
     </div>
-  </div>` : ''}
+  </div>`
+      : ''
+  }
 
-  ${lease.rent_escalation_type ? `
+  ${
+    lease.rent_escalation_type
+      ? `
   <div class="clause">
     <div class="clause-number">${lease.deposit_amount ? '4' : '3'}. RENT ESCALATION</div>
     <div class="clause-text">
       The monthly rental shall escalate by ${escalationValue}${escalationType} every ${escalationFrequency} months, effective from the lease start date. The escalated rental amount will be communicated to the Tenant in writing no less than 30 days prior to the escalation date.
     </div>
-  </div>` : ''}
+  </div>`
+      : ''
+  }
 
-  ${lease.late_fee_amount ? `
+  ${
+    lease.late_fee_amount
+      ? `
   <div class="clause">
     <div class="clause-number">${lease.rent_escalation_type ? '5' : '4'}. LATE PAYMENT FEE</div>
     <div class="clause-text">
       If the rental is not received within ${lease.late_fee_grace_days || 3} days of the due date, a late payment administration fee of ${formatCurrency(lease.late_fee_amount)} will be charged.
     </div>
-  </div>` : ''}
+  </div>`
+      : ''
+  }
 </div>
 
 <div class="section">
@@ -378,9 +403,11 @@ export function generateLeaseHTML(lease: LeaseData): string {
   <div class="clause">
     <div class="clause-number">TERMINATION</div>
     <div class="clause-text">
-      ${lease.lease_type === 'month_to_month'
-        ? 'Either party may terminate this month-to-month lease by providing 30 calendar days\' written notice in writing. The Tenant shall remain liable for rental during the notice period.'
-        : 'This fixed-term lease shall terminate on the end date specified in the schedule without further notice. Early termination by the Tenant prior to the expiry date shall constitute a breach. The Landlord may elect to accept early termination subject to a penalty calculated in accordance with the Consumer Protection Act (CPA s14), limited to a reasonable amount not exceeding the rental for the notice period.'}
+      ${
+        lease.lease_type === 'month_to_month'
+          ? "Either party may terminate this month-to-month lease by providing 30 calendar days' written notice in writing. The Tenant shall remain liable for rental during the notice period."
+          : 'This fixed-term lease shall terminate on the end date specified in the schedule without further notice. Early termination by the Tenant prior to the expiry date shall constitute a breach. The Landlord may elect to accept early termination subject to a penalty calculated in accordance with the Consumer Protection Act (CPA s14), limited to a reasonable amount not exceeding the rental for the notice period.'
+      }
     </div>
   </div>
 
@@ -487,6 +514,7 @@ export async function generateAndUploadLeasePDF(leaseData: LeaseData): Promise<s
 
     return publicUrl;
   } catch (error) {
+    reportApiError(error, 'lease_documents', 'insert');
     console.error('Error generating lease PDF:', error);
     throw error;
   }

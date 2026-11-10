@@ -15,6 +15,7 @@ import { supabase } from '@/src/lib/supabase';
 import { PaymentStepsIndicator } from '@/src/shared/components/ui/PaymentStepsIndicator';
 import { EmptyState, LoadingSpinner } from '@/src/shared/components';
 import type { VendorPayConfig } from './vendorPayConfig';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 const fmtMoney = (n: number | null | undefined): string => {
   const v = Number(n ?? 0);
@@ -78,6 +79,7 @@ export function VendorInvoicePayScreen({ config }: { config: VendorPayConfig }) 
       if (result.error) throw result.error;
       setInvoice(result.data as InvoiceDetail);
     } catch (err) {
+      reportApiError(err, 'maintenance_invoices', 'select');
       console.error('Error loading invoice:', err);
       Alert.alert('Error', 'Failed to load invoice details');
       router.back();

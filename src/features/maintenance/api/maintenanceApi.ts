@@ -1,6 +1,7 @@
 import { supabase } from '@/src/lib/supabase';
 import type { MaintenanceRequest, ServiceCategory } from '@/src/types/maintenance.types';
 import { createQuoteRequests } from './vendors/vendorQuoteRequests.api';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 // Feature flag for mock mode
 const USE_MOCK_DATA = false; // ✅ Changed to false - using real data now
@@ -581,6 +582,7 @@ export const maintenanceApi = {
         });
       }
     } catch (e) {
+      reportApiError(e, 'notifications', 'insert');
       console.error('Failed to send vendor notifications:', e);
     }
 
@@ -628,6 +630,7 @@ export const maintenanceApi = {
         });
       }
     } catch (e) {
+      reportApiError(e, 'notifications', 'insert');
       console.error('Failed to send vendor notifications:', e);
     }
 

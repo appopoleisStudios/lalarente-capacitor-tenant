@@ -5,6 +5,7 @@
 
 import { supabase } from '../../../lib/supabase';
 import { generateAndUploadLeasePDF } from './leasePdfService';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 export async function regenerateLeasePDF(leaseId: string): Promise<void> {
   try {
@@ -13,7 +14,8 @@ export async function regenerateLeasePDF(leaseId: string): Promise<void> {
     // Get lease details with related data
     const { data: lease, error: leaseError } = await supabase
       .from('leases')
-      .select(`
+      .select(
+        `
         *,
         property:properties!property_id(
           title,
@@ -35,7 +37,8 @@ export async function regenerateLeasePDF(leaseId: string): Promise<void> {
           id_number,
           date_of_birth
         )
-      `)
+      `
+      )
       .eq('id', leaseId)
       .single();
 
@@ -72,6 +75,7 @@ export async function regenerateLeasePDF(leaseId: string): Promise<void> {
 
     return;
   } catch (error) {
+    reportApiError(error, 'leases', 'update');
     console.error('❌ Error regenerating lease PDF:', error);
     throw error;
   }
@@ -106,6 +110,7 @@ export async function regenerateAllMissingPDFs(): Promise<void> {
         console.log(`\nRegenerating PDF for lease ${lease.id}...`);
         await regenerateLeasePDF(lease.id);
       } catch (error) {
+        reportApiError(error, 'leases', 'update');
         console.error(`Failed to regenerate PDF for lease ${lease.id}:`, error);
         // Continue with next lease
       }
@@ -113,6 +118,7 @@ export async function regenerateAllMissingPDFs(): Promise<void> {
 
     console.log('\n✅ Finished regenerating all missing PDFs');
   } catch (error) {
+    reportApiError(error, 'leases', 'select');
     console.error('❌ Error regenerating PDFs:', error);
     throw error;
   }

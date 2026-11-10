@@ -18,6 +18,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { getOwnerDashboardData, type OwnerDashboardData } from '../api/ownerDashboardApi';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 interface UseOwnerDashboardReturn {
   data: OwnerDashboardData | null;
@@ -70,6 +71,7 @@ export function useOwnerDashboard(ownerId: string | null): UseOwnerDashboardRetu
       const dashboardData = await getOwnerDashboardData(ownerId);
       setData(dashboardData);
     } catch (err) {
+      reportApiError(err, 'properties', 'select');
       console.error('[useOwnerDashboard] Error fetching dashboard data:', err);
       setError(err instanceof Error ? err : new Error('Failed to load dashboard'));
     } finally {

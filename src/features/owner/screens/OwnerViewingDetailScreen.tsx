@@ -24,6 +24,7 @@ import {
   getExpiryReasonMessage,
   formatViewingDateTime,
 } from '../../properties/utils/viewingHelpers';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 const RSA = { blue: '#002395', gold: '#FFB81C' };
 
@@ -72,6 +73,7 @@ export default function OwnerViewingDetailScreen() {
       setSelectedDate(date);
       setSelectedTime(time);
     } catch (error) {
+      reportApiError(error, 'viewings', 'select');
       console.error('Error loading viewing:', error);
       Alert.alert('Error', 'Failed to load viewing details');
     } finally {
@@ -147,6 +149,7 @@ export default function OwnerViewingDetailScreen() {
         ]);
       }
     } catch (error) {
+      reportApiError(error, 'viewings', 'update');
       console.error('Error processing action:', error);
       Alert.alert('Error', 'Failed to process action. Please try again.');
     } finally {
@@ -176,6 +179,7 @@ export default function OwnerViewingDetailScreen() {
         { text: 'OK', onPress: () => router.back() },
       ]);
     } catch (error) {
+      reportApiError(error, 'viewings', 'update');
       console.error('Error cancelling viewing:', error);
       Alert.alert('Error', 'Failed to cancel viewing. Please try again.');
     } finally {

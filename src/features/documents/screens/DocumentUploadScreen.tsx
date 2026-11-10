@@ -14,14 +14,10 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { documentsApi } from '../api/documentsApi';
-import {
-  DocumentType,
-  AccessLevel,
-  DOCUMENT_CATEGORIES,
-  FileInfo,
-} from '../types';
+import { DocumentType, AccessLevel, DOCUMENT_CATEGORIES, FileInfo } from '../types';
 import { supabase } from '../../../lib/supabase';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 const COLORS = {
   owner: { primary: '#002395', secondary: '#FFB81C' },
@@ -59,7 +55,9 @@ export default function DocumentUploadScreen({
   }, []);
 
   const initUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (user) {
       setUserId(user.id);
     }
@@ -125,8 +123,8 @@ export default function DocumentUploadScreen({
     try {
       const tagArray = tags
         .split(',')
-        .map(t => t.trim())
-        .filter(t => t.length > 0);
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0);
 
       await documentsApi.uploadDocument(
         selectedFile,
@@ -148,6 +146,7 @@ export default function DocumentUploadScreen({
         { text: 'OK', onPress: () => router.back() },
       ]);
     } catch (error) {
+      reportApiError(error, 'documents', 'insert');
       console.error('Error uploading document:', error);
       Alert.alert('Error', 'Failed to upload document. Please try again.');
     } finally {
@@ -175,7 +174,7 @@ export default function DocumentUploadScreen({
             </TouchableOpacity>
           </View>
           <ScrollView style={styles.pickerList}>
-            {Object.values(DOCUMENT_CATEGORIES).map(category => (
+            {Object.values(DOCUMENT_CATEGORIES).map((category) => (
               <TouchableOpacity
                 key={category.type}
                 style={[
@@ -201,9 +200,7 @@ export default function DocumentUploadScreen({
                   >
                     {category.label}
                   </Text>
-                  <Text style={styles.pickerItemDescription}>
-                    {category.description}
-                  </Text>
+                  <Text style={styles.pickerItemDescription}>{category.description}</Text>
                 </View>
                 {documentType === category.type && (
                   <Ionicons name="checkmark" size={24} color={colors.primary} />
@@ -231,156 +228,159 @@ export default function DocumentUploadScreen({
             <View style={styles.placeholder} />
           </View>
 
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-          {/* File Picker */}
-          <TouchableOpacity style={styles.filePicker} onPress={pickDocument}>
-            {selectedFile ? (
-              <View style={styles.selectedFile}>
-                <View style={[styles.fileIcon, { backgroundColor: `${colors.primary}15` }]}>
-                  <Ionicons name="document" size={32} color={colors.primary} />
+          <ScrollView
+            style={styles.content}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* File Picker */}
+            <TouchableOpacity style={styles.filePicker} onPress={pickDocument}>
+              {selectedFile ? (
+                <View style={styles.selectedFile}>
+                  <View style={[styles.fileIcon, { backgroundColor: `${colors.primary}15` }]}>
+                    <Ionicons name="document" size={32} color={colors.primary} />
+                  </View>
+                  <View style={styles.fileInfo}>
+                    <Text style={styles.fileName} numberOfLines={1}>
+                      {selectedFile.name}
+                    </Text>
+                    <Text style={styles.fileSize}>{formatFileSize(selectedFile.size)}</Text>
+                  </View>
+                  <TouchableOpacity style={styles.removeFile} onPress={() => setSelectedFile(null)}>
+                    <Ionicons name="close-circle" size={24} color="#999" />
+                  </TouchableOpacity>
                 </View>
-                <View style={styles.fileInfo}>
-                  <Text style={styles.fileName} numberOfLines={1}>
-                    {selectedFile.name}
+              ) : (
+                <View style={styles.emptyPicker}>
+                  <Ionicons name="cloud-upload-outline" size={48} color="#CCC" />
+                  <Text style={styles.pickerLabel}>Tap to select a file</Text>
+                  <Text style={styles.pickerHint}>
+                    PDF or images up to {selectedCategory.maxSize}MB
                   </Text>
-                  <Text style={styles.fileSize}>{formatFileSize(selectedFile.size)}</Text>
                 </View>
-                <TouchableOpacity
-                  style={styles.removeFile}
-                  onPress={() => setSelectedFile(null)}
-                >
-                  <Ionicons name="close-circle" size={24} color="#999" />
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View style={styles.emptyPicker}>
-                <Ionicons name="cloud-upload-outline" size={48} color="#CCC" />
-                <Text style={styles.pickerLabel}>Tap to select a file</Text>
-                <Text style={styles.pickerHint}>
-                  PDF or images up to {selectedCategory.maxSize}MB
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
+              )}
+            </TouchableOpacity>
 
-          {/* Document Type */}
-          <View style={styles.section}>
-            <Text style={styles.label}>Document Type *</Text>
+            {/* Document Type */}
+            <View style={styles.section}>
+              <Text style={styles.label}>Document Type *</Text>
+              <TouchableOpacity style={styles.selectButton} onPress={() => setShowTypePicker(true)}>
+                <Ionicons name={selectedCategory.icon as any} size={20} color="#666" />
+                <Text style={styles.selectText}>{selectedCategory.label}</Text>
+                <Ionicons name="chevron-down" size={20} color="#999" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Title */}
+            <View style={styles.section}>
+              <Text style={styles.label}>Title *</Text>
+              <TextInput
+                style={styles.input}
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Enter document title"
+                maxLength={100}
+              />
+            </View>
+
+            {/* Description */}
+            <View style={styles.section}>
+              <Text style={styles.label}>Description (Optional)</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                value={description}
+                onChangeText={setDescription}
+                placeholder="Add a description..."
+                multiline
+                numberOfLines={3}
+                maxLength={500}
+              />
+            </View>
+
+            {/* Access Level */}
+            <View style={styles.section}>
+              <Text style={styles.label}>Who can access this document?</Text>
+              <View style={styles.accessOptions}>
+                {(
+                  [
+                    { value: 'both', label: 'Both parties', icon: 'people' },
+                    { value: 'owner_only', label: 'Owner only', icon: 'person' },
+                    { value: 'tenant_only', label: 'Tenant only', icon: 'person-outline' },
+                  ] as const
+                ).map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[
+                      styles.accessOption,
+                      accessLevel === option.value && {
+                        borderColor: colors.primary,
+                        backgroundColor: `${colors.primary}10`,
+                      },
+                    ]}
+                    onPress={() => setAccessLevel(option.value)}
+                  >
+                    <Ionicons
+                      name={option.icon as any}
+                      size={20}
+                      color={accessLevel === option.value ? colors.primary : '#666'}
+                    />
+                    <Text
+                      style={[
+                        styles.accessLabel,
+                        accessLevel === option.value && { color: colors.primary },
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Tags */}
+            <View style={styles.section}>
+              <Text style={styles.label}>Tags (Optional)</Text>
+              <TextInput
+                style={styles.input}
+                value={tags}
+                onChangeText={setTags}
+                placeholder="e.g., 2024, tax, annual"
+              />
+              <Text style={styles.hint}>Separate tags with commas</Text>
+            </View>
+
+            {/* Retention Info */}
+            <View style={styles.infoBox}>
+              <Ionicons name="information-circle" size={20} color="#666" />
+              <Text style={styles.infoText}>
+                This document will be retained for {selectedCategory.retentionYears} years as per{' '}
+                {selectedCategory.label.toLowerCase()} policy. You'll be notified before deletion.
+              </Text>
+            </View>
+          </ScrollView>
+
+          {/* Upload Button */}
+          <View style={styles.footer}>
             <TouchableOpacity
-              style={styles.selectButton}
-              onPress={() => setShowTypePicker(true)}
+              style={[
+                styles.uploadButton,
+                { backgroundColor: colors.primary },
+                (!selectedFile || !title.trim() || uploading) && styles.buttonDisabled,
+              ]}
+              onPress={handleUpload}
+              disabled={!selectedFile || !title.trim() || uploading}
             >
-              <Ionicons name={selectedCategory.icon as any} size={20} color="#666" />
-              <Text style={styles.selectText}>{selectedCategory.label}</Text>
-              <Ionicons name="chevron-down" size={20} color="#999" />
+              {uploading ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <>
+                  <Ionicons name="cloud-upload" size={20} color="#FFF" />
+                  <Text style={styles.uploadButtonText}>Upload Document</Text>
+                </>
+              )}
             </TouchableOpacity>
           </View>
-
-          {/* Title */}
-          <View style={styles.section}>
-            <Text style={styles.label}>Title *</Text>
-            <TextInput
-              style={styles.input}
-              value={title}
-              onChangeText={setTitle}
-              placeholder="Enter document title"
-              maxLength={100}
-            />
-          </View>
-
-          {/* Description */}
-          <View style={styles.section}>
-            <Text style={styles.label}>Description (Optional)</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Add a description..."
-              multiline
-              numberOfLines={3}
-              maxLength={500}
-            />
-          </View>
-
-          {/* Access Level */}
-          <View style={styles.section}>
-            <Text style={styles.label}>Who can access this document?</Text>
-            <View style={styles.accessOptions}>
-              {([
-                { value: 'both', label: 'Both parties', icon: 'people' },
-                { value: 'owner_only', label: 'Owner only', icon: 'person' },
-                { value: 'tenant_only', label: 'Tenant only', icon: 'person-outline' },
-              ] as const).map(option => (
-                <TouchableOpacity
-                  key={option.value}
-                  style={[
-                    styles.accessOption,
-                    accessLevel === option.value && { borderColor: colors.primary, backgroundColor: `${colors.primary}10` },
-                  ]}
-                  onPress={() => setAccessLevel(option.value)}
-                >
-                  <Ionicons
-                    name={option.icon as any}
-                    size={20}
-                    color={accessLevel === option.value ? colors.primary : '#666'}
-                  />
-                  <Text
-                    style={[
-                      styles.accessLabel,
-                      accessLevel === option.value && { color: colors.primary },
-                    ]}
-                  >
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Tags */}
-          <View style={styles.section}>
-            <Text style={styles.label}>Tags (Optional)</Text>
-            <TextInput
-              style={styles.input}
-              value={tags}
-              onChangeText={setTags}
-              placeholder="e.g., 2024, tax, annual"
-            />
-            <Text style={styles.hint}>Separate tags with commas</Text>
-          </View>
-
-          {/* Retention Info */}
-          <View style={styles.infoBox}>
-            <Ionicons name="information-circle" size={20} color="#666" />
-            <Text style={styles.infoText}>
-              This document will be retained for {selectedCategory.retentionYears} years as per{' '}
-              {selectedCategory.label.toLowerCase()} policy. You'll be notified before deletion.
-            </Text>
-          </View>
-        </ScrollView>
-
-        {/* Upload Button */}
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={[
-              styles.uploadButton,
-              { backgroundColor: colors.primary },
-              (!selectedFile || !title.trim() || uploading) && styles.buttonDisabled,
-            ]}
-            onPress={handleUpload}
-            disabled={!selectedFile || !title.trim() || uploading}
-          >
-            {uploading ? (
-              <ActivityIndicator size="small" color="#FFF" />
-            ) : (
-              <>
-                <Ionicons name="cloud-upload" size={20} color="#FFF" />
-                <Text style={styles.uploadButtonText}>Upload Document</Text>
-              </>
-            )}
-          </TouchableOpacity>
         </View>
-      </View>
 
         {/* Type Picker Modal */}
         {renderTypePicker()}

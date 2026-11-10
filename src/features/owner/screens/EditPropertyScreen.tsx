@@ -19,6 +19,7 @@ import { propertiesApi } from '../../properties/api/propertiesApi';
 import { supabase } from '../../../lib/supabase';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { styles } from './EditPropertyScreen.styles';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 interface PropertyForm {
   title: string;
@@ -164,6 +165,7 @@ export default function EditPropertyScreen() {
       setForm(loaded);
       setOriginalForm(loaded);
     } catch (err) {
+      reportApiError(err, 'properties', 'select');
       console.error('Error loading property:', err);
       Alert.alert('Error', 'Failed to load property data');
       goBackToProperties();
@@ -313,6 +315,7 @@ export default function EditPropertyScreen() {
         { text: 'OK', onPress: () => goBackToProperties() },
       ]);
     } catch (error) {
+      reportApiError(error, 'properties', 'update');
       console.error('Error updating property:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', error instanceof Error ? error.message : 'Failed to update property');

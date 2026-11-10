@@ -11,6 +11,7 @@
 
 import { supabase } from '@/src/lib/supabase';
 import { notificationsApi } from '@/src/features/notifications/api/notificationsApi';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 // ============================================
 // Constants
@@ -85,6 +86,7 @@ async function logAuditEvent(
         await new Promise((resolve) => setTimeout(resolve, 100));
       } else {
         // Final attempt failed — log to console as fallback
+        reportApiError(err, 'maintenance_invoice_audit_logs', 'insert');
         console.error('Failed to write invoice audit log after retry:', err);
       }
     }

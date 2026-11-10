@@ -1,4 +1,5 @@
 import { supabase } from '@/src/lib/supabase';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 export interface Quote {
   id: string;
@@ -522,6 +523,7 @@ export const quotesApi = {
 
       return quote as Quote;
     } catch (error) {
+      reportApiError(error, 'vendor_quotes', 'insert');
       console.error('Error submitting quote:', error);
       throw error;
     }

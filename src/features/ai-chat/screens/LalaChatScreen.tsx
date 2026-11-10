@@ -21,6 +21,7 @@ import {
 } from '../api/lalaChatApi';
 import { acceptQuote } from '@/src/features/maintenance/api/quotes/quoteActions.api';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 type Message = {
   id: string;
@@ -124,6 +125,7 @@ export default function LalaChatScreen() {
         setPropertyId(null);
       }
     } catch (err) {
+      reportApiError(err, 'leases', 'select');
       console.error('Lala session load error:', err);
       setError('Something went wrong loading chat. Pull to refresh or reopen.');
     } finally {
@@ -163,6 +165,7 @@ export default function LalaChatScreen() {
       setMessages((prev) => [...prev, { id: nextMessageId(), text: reply, role: 'ai' }]);
       setPendingActions(pending_actions ?? []);
     } catch (err) {
+      reportApiError(err, 'lala-ai-chat', 'rpc');
       console.error('Chat error:', err);
       setError(err instanceof Error ? err.message : 'Network error. Please try again later.');
     } finally {

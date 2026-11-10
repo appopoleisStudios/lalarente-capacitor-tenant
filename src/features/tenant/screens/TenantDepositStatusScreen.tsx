@@ -29,6 +29,7 @@ import {
   DepositRefundStatus,
 } from '@/src/features/deposits/api/depositRefund.api';
 import { colors } from '@/src/shared/theme/colors';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -122,6 +123,7 @@ export default function TenantDepositStatusScreen() {
       setInterest(interestData);
       setRefund(refundData);
     } catch (err: any) {
+      reportApiError(err, 'holding_deposits', 'select');
       console.error('Error loading deposit status:', err);
       Alert.alert('Error', 'Failed to load deposit information');
     } finally {

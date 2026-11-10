@@ -30,6 +30,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 const RSA = { blue: '#002395' };
 
@@ -67,6 +68,7 @@ export default function OwnerInvoiceApprovalScreen() {
         setInvoices(data || []);
       }
     } catch (error: any) {
+      reportApiError(error, 'maintenance_invoices', 'select');
       console.error('Error loading invoices:', error);
       Alert.alert('Error', 'Failed to load invoices');
     } finally {

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getQuotesByRequest, subscribeToQuotes, unsubscribeFromQuotes } from '../api';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 export function useQuotes(requestId: string) {
   const [quotes, setQuotes] = useState<any[]>([]);
@@ -16,6 +17,7 @@ export function useQuotes(requestId: string) {
       setQuotes(data);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch quotes');
+      reportApiError(err, 'vendor_quotes', 'select');
       console.error('Error fetching quotes:', err);
     } finally {
       setLoading(false);

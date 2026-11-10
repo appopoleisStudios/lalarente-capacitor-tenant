@@ -30,6 +30,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 const RSA = { blue: '#002395' };
 
@@ -102,6 +103,7 @@ export default function VendorSelectionScreen() {
             )
           );
         } catch (e) {
+          reportApiError(e, 'vendor_profiles', 'select');
           console.error('Failed to fetch dedicated vendors:', e);
           setDedicatedVendors([]);
         }
@@ -114,11 +116,13 @@ export default function VendorSelectionScreen() {
           if (abortRef.current?.signal.aborted) return;
           setCategoryVendors(vendors);
         } catch (e) {
+          reportApiError(e, 'vendor_profiles', 'select');
           console.error('Failed to fetch category vendors:', e);
           setCategoryVendors([]);
         }
       }
     } catch (error: any) {
+      reportApiError(error, 'maintenance_requests', 'select');
       console.error('Error loading data:', error);
       Alert.alert('Error', error.message || 'Failed to load vendor data');
     } finally {
