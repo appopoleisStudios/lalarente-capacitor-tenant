@@ -65,6 +65,17 @@ ALTER TABLE maintenance_vendor_assignments ENABLE ROW LEVEL SECURITY;
 -- ─── 5. Add request_id to purchase_orders ─────────────────────────────────────
 -- Allows reclaim_request() to sweep all POs for a request regardless of
 -- which assignment originally produced them.
+--
+-- Backfill note: existing POs have request_id = NULL after this migration.
+-- No backfill is required because:
+--   (a) The 'tenant_dispatching' status added above did not exist before
+--       this migration; no pre-existing request can be in that state.
+--   (b) reclaim_request() only targets requests in 'tenant_dispatching' state.
+--   (c) Therefore, no existing PO (request_id = NULL) can block or be
+--       relevant to any reclaim call that could legally be issued.
+--
+-- POs created under the new flow will have request_id populated at INSERT
+-- time by the application layer.
 
 ALTER TABLE purchase_orders
   ADD COLUMN IF NOT EXISTS request_id uuid REFERENCES maintenance_requests(id);
