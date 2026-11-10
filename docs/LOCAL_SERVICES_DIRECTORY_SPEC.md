@@ -170,7 +170,7 @@ CREATE TABLE listing_events (
       'tap_website',  -- website CTA tapped
       'share'         -- shared to another app
     )),
-  user_id UUID REFERENCES auth.users(id),  -- NULL = anonymous visitor
+  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,  -- NULL = anonymous visitor or deleted user
   user_role TEXT,                          -- cached role at event time
   session_id UUID,                         -- client-generated per app session
   area_filter TEXT,                        -- what area filter was active
