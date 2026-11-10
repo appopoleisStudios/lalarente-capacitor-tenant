@@ -91,12 +91,15 @@ CREATE POLICY psi_owner_rw ON property_service_items
 
 CREATE POLICY psi_tenant_select ON property_service_items
   FOR SELECT TO authenticated
-  USING (EXISTS (
-    SELECT 1 FROM leases l
-    WHERE l.property_id = property_service_items.property_id
-      AND l.tenant_id   = auth.uid()
-      AND l.status      = 'active'
-  ));
+  USING (
+    property_service_items.deleted_at IS NULL
+    AND EXISTS (
+      SELECT 1 FROM leases l
+      WHERE l.property_id = property_service_items.property_id
+        AND l.tenant_id   = auth.uid()
+        AND l.status      = 'active'
+    )
+  );
 
 -- ─── 7. capture_dispatch_authority() ──────────────────────────────────────────
 -- BEFORE INSERT trigger on maintenance_requests.
@@ -111,6 +114,10 @@ AS $$
 BEGIN
   IF NEW.service_item_id IS NULL THEN
     NEW.captured_tenant_may_dispatch := false;
+    -- Unlinked requests cannot be in dispatch states; coerce to 'open'.
+    IF NEW.status IN ('tenant_dispatching', 'awaiting_owner_dispatch', 'owner_dispatched') THEN
+      NEW.status := 'open';
+    END IF;
     RETURN NEW;
   END IF;
 
@@ -118,7 +125,8 @@ BEGIN
     INTO NEW.captured_tenant_may_dispatch
     FROM property_service_items
    WHERE id          = NEW.service_item_id
-     AND property_id = NEW.property_id;
+     AND property_id = NEW.property_id
+     AND deleted_at  IS NULL;
 
   IF NEW.captured_tenant_may_dispatch IS NULL THEN
     RAISE EXCEPTION 'service_item_id does not belong to property_id';
@@ -280,10 +288,12 @@ CREATE POLICY mr_update ON maintenance_requests
     AND (vendor_id IS NULL
          OR captured_tenant_may_dispatch = true
          OR owner_id = auth.uid())
-    -- Non-owners cannot produce awaiting_owner_dispatch via direct UPDATE
+    -- Non-owners cannot transition status TO awaiting_owner_dispatch (but
+    -- may leave it there via description-only or other non-status updates).
     AND (
       owner_id = auth.uid()
       OR status != 'awaiting_owner_dispatch'
+      OR status = (SELECT mr2.status FROM maintenance_requests mr2 WHERE mr2.id = maintenance_requests.id)
       OR current_setting('app.reclaim_in_progress', true) = 'true'
     )
   );
@@ -505,6 +515,7 @@ BEGIN
   IF v_prop_id IS NOT NULL THEN
     SAVEPOINT test_partial_index;
 
+    -- (a) deleted item + new active item with same name should both succeed
     INSERT INTO property_service_items (property_id, name, tenant_may_dispatch, deleted_at)
     VALUES (v_prop_id, '_test_079_item', true, now())
     RETURNING id INTO v_psi_id;
@@ -512,12 +523,29 @@ BEGIN
     INSERT INTO property_service_items (property_id, name, tenant_may_dispatch)
     VALUES (v_prop_id, '_test_079_item', true);
 
+    -- (b) second active item with same name must be rejected
     BEGIN
       INSERT INTO property_service_items (property_id, name, tenant_may_dispatch)
       VALUES (v_prop_id, '_test_079_item', true);
       RAISE EXCEPTION 'ASSERTION FAIL: duplicate active item should have been rejected';
     EXCEPTION WHEN unique_violation THEN
       NULL;
+    END;
+
+    -- (c) deleted service item must not be selectable as dispatch authority
+    --     (capture_dispatch_authority rejects it because of deleted_at IS NULL filter;
+    --      verify the query returns no row for a deleted id).
+    DECLARE
+      v_found boolean;
+    BEGIN
+      SELECT tenant_may_dispatch IS NOT NULL
+        INTO v_found
+        FROM property_service_items
+       WHERE id         = v_psi_id
+         AND deleted_at IS NULL;
+      IF v_found THEN
+        RAISE EXCEPTION 'ASSERTION FAIL: deleted service item should not match deleted_at IS NULL filter';
+      END IF;
     END;
 
     ROLLBACK TO SAVEPOINT test_partial_index;
