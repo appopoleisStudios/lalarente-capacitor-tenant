@@ -20,8 +20,14 @@ jest.mock('../utils/profileCompleteness', () => ({
     .mockResolvedValue({ status: 'ok', complete: true, missing: [] }),
 }));
 
-const makeSupabaseMock = (overrides: Record<string, { data: unknown; error: unknown }> = {}) => {
-  const defaults: Record<string, { data: unknown; error: null }> = {
+type TableResult = { data: unknown; error: unknown };
+
+// Tracks call counts per table so sequential calls to the same table can
+// return different results (e.g., viewing_requests called twice: once for
+// upcoming, once for declined).
+const makeSupabaseMock = (overrides: Record<string, TableResult | TableResult[]> = {}) => {
+  const callCounts: Record<string, number> = {};
+  const defaults: Record<string, TableResult> = {
     profiles: { data: { full_name: 'Test User' }, error: null },
     leases: { data: null, error: null },
     maintenance_requests: { data: [], error: null },
@@ -32,8 +38,15 @@ const makeSupabaseMock = (overrides: Record<string, { data: unknown; error: unkn
   };
 
   (supabase.from as jest.Mock).mockImplementation((table: string) => {
-    const result = overrides[table] ?? defaults[table] ?? { data: null, error: null };
-    const chain = {
+    callCounts[table] = (callCounts[table] ?? 0) + 1;
+    const override = overrides[table];
+    let result: TableResult;
+    if (Array.isArray(override)) {
+      result = override[(callCounts[table] - 1) % override.length];
+    } else {
+      result = override ?? defaults[table] ?? { data: null, error: null };
+    }
+    const chain: Record<string, unknown> = {
       select: () => chain,
       eq: () => chain,
       in: () => chain,
@@ -44,9 +57,10 @@ const makeSupabaseMock = (overrides: Record<string, { data: unknown; error: unkn
       limit: () => chain,
       maybeSingle: () => Promise.resolve(result),
       single: () => Promise.resolve(result),
-      then: undefined as unknown,
     };
-    chain.then = Promise.resolve(result).then.bind(Promise.resolve(result));
+    (chain as Record<string, unknown>).then = Promise.resolve(result).then.bind(
+      Promise.resolve(result)
+    );
     return chain;
   });
 };
@@ -82,6 +96,20 @@ describe('useTenantDashboard', () => {
     const { result } = renderHook(() => useTenantDashboard('user-1'), { wrapper });
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect((result.current.error as Error).message).toMatch(/maintenance_requests/);
+  });
+
+  it('enters error state when declined viewings query fails', async () => {
+    // viewing_requests is called twice: first for upcoming (call 1 — succeeds),
+    // second for declined (call 2 — fails).
+    makeSupabaseMock({
+      viewing_requests: [
+        { data: [], error: null },
+        { data: null, error: { message: 'rls violation' } },
+      ],
+    });
+    const { result } = renderHook(() => useTenantDashboard('user-1'), { wrapper });
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect((result.current.error as Error).message).toMatch(/viewing_requests.*declined/);
   });
 
   it('is disabled when userId is null', () => {

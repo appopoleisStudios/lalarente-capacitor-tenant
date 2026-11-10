@@ -76,7 +76,7 @@ async function fetchDashboardData(userId: string): Promise<TenantDashboardData> 
   const upcoming = payments.find((p) => p.status === 'pending') ?? null;
   const recent = payments.filter((p) => p.status === 'completed').slice(0, 3);
 
-  const { data: recentDeclined } = await supabase
+  const { data: recentDeclined, error: declinedError } = await supabase
     .from('viewing_requests')
     .select(
       'id, status, requested_date, requested_time, confirmed_date, owner_response, alternative_times, updated_at, created_at, property_id, property:properties!property_id(id, title)'
@@ -86,6 +86,8 @@ async function fetchDashboardData(userId: string): Promise<TenantDashboardData> 
     .gte('created_at', twoWeeksAgo.toISOString())
     .order('created_at', { ascending: false })
     .limit(5);
+
+  if (declinedError) throw new Error(`viewing_requests (declined): ${declinedError.message}`);
 
   let filteredAlerts = recentDeclined ?? [];
   if (filteredAlerts.length > 0) {
