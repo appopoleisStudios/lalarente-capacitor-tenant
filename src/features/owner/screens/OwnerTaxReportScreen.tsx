@@ -256,7 +256,22 @@ export default function OwnerTaxReportScreen() {
         }
       }
 
-      const reconciledBreakdown = propertyBreakdown.map((pb) => {
+      // Seed from existing breakdown, then add any property that only appears in
+      // the tax ledger (no income, no POs this year) so breakdown rows reconcile
+      // with the overall totals.
+      const breakdownById = new Map(propertyBreakdown.map((pb) => [pb.propertyId, pb]));
+      for (const pid of Object.keys(taxDeductionsPerProperty)) {
+        if (!breakdownById.has(pid)) {
+          breakdownById.set(pid, {
+            propertyId: pid,
+            propertyTitle: propertyMap[pid] || 'Property',
+            grossIncome: 0,
+            deductions: 0,
+            net: 0,
+          });
+        }
+      }
+      const reconciledBreakdown = Array.from(breakdownById.values()).map((pb) => {
         const taxDed = taxDeductionsPerProperty[pb.propertyId] || 0;
         const totalDed = pb.deductions + taxDed;
         return { ...pb, deductions: totalDed, net: pb.grossIncome - totalDed };
