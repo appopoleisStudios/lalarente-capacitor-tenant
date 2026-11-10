@@ -17,7 +17,13 @@ export function ScreenHeader({ title, subtitle, onBack, rightAction }: ScreenHea
 
   return (
     <View style={styles.header}>
-      <TouchableOpacity onPress={handleBack} style={styles.backButton} hitSlop={8}>
+      <TouchableOpacity
+        onPress={handleBack}
+        style={styles.backButton}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel="Go back"
+      >
         <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
       </TouchableOpacity>
       <View style={styles.titleBlock}>
