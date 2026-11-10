@@ -118,4 +118,89 @@ describe('useTenantDashboard', () => {
     expect(result.current.fetchStatus).toBe('idle');
     expect(result.current.data).toBeUndefined();
   });
+
+  describe('upcomingViewings filtering', () => {
+    const futureViewing = {
+      id: 'v1',
+      requested_date: '2099-01-01',
+      confirmed_date: null,
+      status: 'approved',
+    };
+    const pastViewing = {
+      id: 'v2',
+      requested_date: '2020-01-01',
+      confirmed_date: null,
+      status: 'approved',
+    };
+    // Rescheduled: original date was past, confirmed date is future
+    const rescheduledFuture = {
+      id: 'v3',
+      requested_date: '2020-01-01',
+      confirmed_date: '2099-06-01',
+      status: 'approved',
+    };
+    // Rescheduled: original date was future, confirmed date is past
+    const rescheduledPast = {
+      id: 'v4',
+      requested_date: '2099-01-01',
+      confirmed_date: '2020-06-01',
+      status: 'approved',
+    };
+
+    it('excludes past appointments and keeps future ones', async () => {
+      makeSupabaseMock({
+        viewing_requests: [
+          { data: [futureViewing, pastViewing], error: null },
+          { data: [], error: null },
+        ],
+      });
+      const { result } = renderHook(() => useTenantDashboard('user-1'), { wrapper });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      const ids = result.current.data!.upcomingViewings.map((v: any) => v.id);
+      expect(ids).toContain('v1');
+      expect(ids).not.toContain('v2');
+    });
+
+    it('uses confirmed_date when rescheduled (past→future should include)', async () => {
+      makeSupabaseMock({
+        viewing_requests: [
+          { data: [rescheduledFuture], error: null },
+          { data: [], error: null },
+        ],
+      });
+      const { result } = renderHook(() => useTenantDashboard('user-1'), { wrapper });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      const ids = result.current.data!.upcomingViewings.map((v: any) => v.id);
+      expect(ids).toContain('v3');
+    });
+
+    it('uses confirmed_date when rescheduled (future→past should exclude)', async () => {
+      makeSupabaseMock({
+        viewing_requests: [
+          { data: [rescheduledPast], error: null },
+          { data: [], error: null },
+        ],
+      });
+      const { result } = renderHook(() => useTenantDashboard('user-1'), { wrapper });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      const ids = result.current.data!.upcomingViewings.map((v: any) => v.id);
+      expect(ids).not.toContain('v4');
+    });
+
+    it('returns only future viewings from a mixed list', async () => {
+      const mixed = [futureViewing, pastViewing, rescheduledFuture, rescheduledPast];
+      makeSupabaseMock({
+        viewing_requests: [
+          { data: mixed, error: null },
+          { data: [], error: null },
+        ],
+      });
+      const { result } = renderHook(() => useTenantDashboard('user-1'), { wrapper });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      const ids = result.current.data!.upcomingViewings.map((v: any) => v.id);
+      expect(ids).toEqual(expect.arrayContaining(['v1', 'v3']));
+      expect(ids).not.toContain('v2');
+      expect(ids).not.toContain('v4');
+    });
+  });
 });

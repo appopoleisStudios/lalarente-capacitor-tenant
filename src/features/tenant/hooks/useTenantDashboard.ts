@@ -73,6 +73,11 @@ async function fetchDashboardData(userId: string): Promise<TenantDashboardData> 
     throw new Error(`maintenance_requests: ${maintenanceResult.error.message}`);
   if (viewingsResult.error) throw new Error(`viewing_requests: ${viewingsResult.error.message}`);
 
+  // Filter out past appointments. When a viewing is rescheduled, confirmed_date
+  // takes precedence over requested_date. Only show viewings whose effective
+  // date is today or in the future.
+  const upcomingViewings = filterUpcomingViewings(viewingsResult.data ?? [], new Date());
+
   const upcoming = payments.find((p) => p.status === 'pending') ?? null;
   const recent = payments.filter((p) => p.status === 'completed').slice(0, 3);
 
@@ -160,7 +165,7 @@ async function fetchDashboardData(userId: string): Promise<TenantDashboardData> 
     nextPayment: upcoming,
     recentPayments: recent,
     maintenanceRequests: maintenanceResult.data ?? [],
-    upcomingViewings: viewingsResult.data ?? [],
+    upcomingViewings,
     pendingApplications: apps ?? [],
     messageThreads: sorted.slice(0, 3).map((t) => ({
       id: t.id,
@@ -176,6 +181,15 @@ async function fetchDashboardData(userId: string): Promise<TenantDashboardData> 
     notifications: unreadNotifs ?? [],
     viewingAlerts: filteredAlerts,
   };
+}
+
+function filterUpcomingViewings(viewings: any[], today: Date): any[] {
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  return viewings.filter((v) => {
+    const effectiveDateStr = v.confirmed_date ?? v.requested_date;
+    if (!effectiveDateStr) return false;
+    return new Date(effectiveDateStr) >= startOfToday;
+  });
 }
 
 export function useTenantDashboard(userId: string | null) {
