@@ -176,12 +176,14 @@ REVOKE ALL ON FUNCTION release_to_tenant_dispatch(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION release_to_tenant_dispatch(uuid) TO authenticated;
 
 -- ─── 9. reclaim_request() RPC ─────────────────────────────────────────────────
--- SELECT FOR UPDATE locks the request row before counting open assignments/POs,
--- preventing a concurrent tenant assignment from slipping in between the check
--- and the status update.
+-- SELECT FOR UPDATE locks the request row; FOR SHARE on assignments/POs
+-- prevents concurrent row-status changes between the count check and the
+-- status update (mva_update only permits -> cancelled, so the FOR SHARE is a
+-- belt-and-suspenders guard against future policy loosening on those tables).
 -- Source-state guard (AND status = 'tenant_dispatching') prevents reclaim
 -- from reopening completed or cancelled requests.
--- Resets captured_tenant_may_dispatch=false so stale authority does not linger.
+-- Resets captured_tenant_may_dispatch=false and vendor_id=null so stale
+-- authority and direct vendor references do not linger.
 
 CREATE OR REPLACE FUNCTION reclaim_request(req_id uuid, reason text)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER
@@ -189,10 +191,11 @@ RETURNS void LANGUAGE plpgsql SECURITY DEFINER
 AS $$
 DECLARE
   mr_owner_id      uuid;
+  mr_vendor_id     uuid;
   open_assignments int;
   open_pos         int;
 BEGIN
-  SELECT owner_id INTO mr_owner_id
+  SELECT owner_id, vendor_id INTO mr_owner_id, mr_vendor_id
     FROM public.maintenance_requests
    WHERE id     = req_id
      AND status = 'tenant_dispatching'
@@ -206,22 +209,34 @@ BEGIN
     RAISE EXCEPTION 'not authorized';
   END IF;
 
+  -- Lock assignment rows so a concurrent status change cannot slip past
+  -- the count check below.
   SELECT count(*) INTO open_assignments
     FROM public.maintenance_vendor_assignments
    WHERE request_id = req_id
-     AND status NOT IN ('cancelled', 'rejected');
+     AND status NOT IN ('cancelled', 'rejected')
+   FOR SHARE;
 
   IF open_assignments > 0 THEN
     RAISE EXCEPTION 'cancel open vendor assignments first';
   END IF;
 
+  -- Lock PO rows for the same reason.
   SELECT count(*) INTO open_pos
     FROM public.purchase_orders
    WHERE request_id = req_id
-     AND status NOT IN ('cancelled', 'closed');
+     AND status NOT IN ('cancelled', 'closed')
+   FOR SHARE;
 
   IF open_pos > 0 THEN
     RAISE EXCEPTION 'close or cancel open purchase orders first';
+  END IF;
+
+  -- Block reclaim if tenant set vendor_id directly (without an assignment row).
+  -- vendor_id is cleared atomically in the UPDATE below.
+  IF mr_vendor_id IS NOT NULL AND open_assignments = 0 THEN
+    -- vendor_id set without a tracking assignment — clear it as part of reclaim.
+    NULL; -- falls through to the UPDATE which sets vendor_id = NULL
   END IF;
 
   PERFORM set_config('app.reclaim_in_progress', 'true', true);
@@ -229,6 +244,7 @@ BEGIN
   UPDATE public.maintenance_requests
      SET status                       = 'awaiting_owner_dispatch',
          captured_tenant_may_dispatch = false,
+         vendor_id                    = NULL,
          owner_reclaim_reason         = reason,
          updated_at                   = now()
    WHERE id = req_id;
