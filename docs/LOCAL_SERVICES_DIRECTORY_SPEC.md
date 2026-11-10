@@ -135,7 +135,7 @@ CREATE TABLE service_listings (
   -- invoice are always billed at the rates agreed for that specific listing row.
   -- This design means mid-period price changes require admin to create a new
   -- listing and expire the old one, never an UPDATE to the rate columns.
-  created_by UUID REFERENCES auth.users(id), -- admin who created it
+  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL, -- admin who created it; NULL after account deletion
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
