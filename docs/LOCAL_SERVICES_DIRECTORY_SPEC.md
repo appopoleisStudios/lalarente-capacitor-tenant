@@ -121,9 +121,10 @@ CREATE TABLE service_listings (
   tier TEXT NOT NULL DEFAULT 'free'
     CHECK (tier IN ('free', 'featured', 'premium')),
   status TEXT NOT NULL DEFAULT 'pending'
-    CHECK (status IN ('pending', 'active', 'paused', 'expired', 'rejected')),
+    CHECK (status IN ('pending', 'active', 'paused', 'expired', 'rejected', 'archived')),
   starts_at TIMESTAMPTZ DEFAULT NOW(),
   expires_at TIMESTAMPTZ NOT NULL,       -- renewal deadline
+  deleted_at TIMESTAMPTZ,               -- soft-delete; listing is NEVER hard-deleted
   monthly_fee_cents INT DEFAULT 0,       -- what we charge them (rate at time of agreement)
   per_lead_fee_cents INT DEFAULT 0,      -- commission per contact tap (rate at time of agreement)
   -- Rate fields are immutable after the listing goes active. Any mid-period
@@ -147,8 +148,12 @@ CREATE INDEX idx_service_listings_areas
 ```sql
 CREATE TABLE listing_events (
   id BIGSERIAL PRIMARY KEY,              -- high volume, bigserial not uuid
-  listing_id UUID REFERENCES service_listings(id) ON DELETE SET NULL,
-  -- NULL listing_id preserved for billing attribution after a listing is deleted.
+  listing_id UUID REFERENCES service_listings(id) ON DELETE RESTRICT,
+  -- Listings are never hard-deleted (soft-delete only via deleted_at + status='archived').
+  -- ON DELETE RESTRICT is a safety net; it prevents accidental hard-DELETE
+  -- from destroying event attribution data.
+  business_name_snapshot TEXT NOT NULL,  -- denormalized at event time; survives listing archival
+  idempotency_key UUID,                  -- client-generated; edge fn deduplicates on this within 1 h
   event_type TEXT NOT NULL
     CHECK (event_type IN (
       'impression',   -- card shown in a list
@@ -215,15 +220,24 @@ CREATE TABLE service_listing_invoices (
 ### 4.5 RLS policies
 
 - **`service_listings`**
-  - SELECT (consumers): `USING (status = 'active' AND starts_at <= NOW() AND expires_at > NOW())`
-    — published window enforced at the policy level; expired-but-active rows are hidden from consumers.
+  - SELECT (consumers): `USING (status = 'active' AND starts_at <= NOW() AND expires_at > NOW() AND deleted_at IS NULL)`.
+    Consumer access is via a **restricted view** (`service_listings_public`) that exposes only:
+    `id, business_name, tagline, description, logo_url, hero_image_url, primary_phone,
+whatsapp_number, email, website_url, categories, areas_served, tier`.
+    Negotiated fields (`monthly_fee_cents`, `per_lead_fee_cents`) and admin fields (`created_by`)
+    are excluded from the public projection.
   - SELECT (admins): separate policy `USING (auth.jwt() ->> 'role' IN ('admin', 'superadmin'))`
-    — admins see all statuses (pending, paused, expired, rejected) for the listings table in §5.3.
-  - INSERT/UPDATE/DELETE: admin or superadmin JWT role only.
+    — admins see the full table including billing fields and all statuses.
+  - INSERT/UPDATE: admin or superadmin JWT role only.
+  - DELETE: blocked entirely (`RESTRICT`); admin sets `deleted_at` + `status='archived'` instead.
 - **`listing_events`**
   - INSERT: **not exposed via RLS**. All writes go through the `log-listing-event` edge function
-    (service role, §8.2). The function enforces that `user_id`, `user_role`, and `created_at`
-    are set server-side, preventing clients from fabricating identity or replaying events.
+    (service role, §8.2). The function:
+    1. Sets `user_id`, `user_role`, `created_at`, and `business_name_snapshot` server-side.
+    2. Deduplicates billable events (`tap_call`, `tap_whatsapp`, `tap_email`) on
+       `(listing_id, user_id, event_type)` within a 1-hour window using `idempotency_key`
+       — prevents repeated submissions from inflating per-tap billing.
+       Anonymous events (`user_id IS NULL`) deduplicate on `(listing_id, session_id, event_type)`.
   - SELECT: admin / superadmin only (prevents competitors from scraping our data).
 - **`service_listing_invoices`**
   - All: admin / superadmin only.
@@ -370,11 +384,14 @@ supabase/
 
 Client calls edge function (not direct insert) to:
 
-1. Set `user_id`, `user_role`, and `created_at` from the verified JWT / server clock —
-   clients cannot fabricate identity or replay events with a falsified timestamp.
-2. Bypass RLS cleanly (service role key never sent to client).
-3. Enrich with IP / user-agent server-side (optional).
-4. Rate-limit abusive clients centrally.
+1. Set `user_id`, `user_role`, `created_at`, and `business_name_snapshot` from the
+   verified JWT / server clock — clients cannot fabricate identity.
+2. **Deduplicate billable taps** — `tap_call`, `tap_whatsapp`, `tap_email` are idempotent
+   within a 1-hour window per `(listing_id, user_id/session_id, event_type)` via
+   `idempotency_key`. A retry or accidental double-tap does not create a duplicate
+   billable event.
+3. Bypass RLS cleanly (service role key never sent to client).
+4. Rate-limit abusive clients centrally (IP + session).
 5. Buffer / batch if needed (v2).
 
 ```ts
