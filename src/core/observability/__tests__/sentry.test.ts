@@ -132,11 +132,16 @@ describe('sanitizeForSentry', () => {
       expect(result.stack).not.toContain('more PII here');
     });
 
-    it('crafted frame-like PII line "\\n    at pii@example.com" is rejected', () => {
-      // A crafted message continuation that matches the old "/^\s+at\s/" regex.
-      // The new filter requires ":digits:digits" source location — email addresses
-      // have no line:col suffix, so they are dropped.
+    it('crafted "\\n    at pii@example.com" (no source location) is rejected', () => {
       const original = new Error('failed\n    at tenant@example.com');
+      const result = sanitizeForSentry(original);
+      expect(result.stack).not.toContain('tenant@example.com');
+    });
+
+    it('crafted "\\n    at pii@example.com:1:5" (with source suffix) is rejected', () => {
+      // V8 frames with @ in content require parens: "(file:line:col)".
+      // "  at email@domain.com:1:5" has no parens — rejected even with digits.
+      const original = new Error('failed\n    at tenant@example.com:1:5');
       const result = sanitizeForSentry(original);
       expect(result.stack).not.toContain('tenant@example.com');
     });

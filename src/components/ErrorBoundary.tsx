@@ -17,7 +17,9 @@ export class ErrorBoundary extends React.Component<React.PropsWithChildren, Stat
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error('[ErrorBoundary]', error, info);
+    // Raw error is not logged to avoid PII leaking into Sentry breadcrumbs
+    // (Sentry SDK captures console.error calls as breadcrumbs by default).
+    console.error('[ErrorBoundary] rendering fallback; details forwarded to Sentry sanitized');
     if (env.sentry.dsn) {
       Sentry.captureException(sanitizeForSentry(error), {
         extra: { componentStack: info.componentStack },

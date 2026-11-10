@@ -41,18 +41,27 @@ const SAFE_ERROR_NAMES = new Set([
 ]);
 
 // Rebuild a stack string from genuine frame lines only.
-// Skips the first line (always the message prefix) then keeps lines that:
-//   - match V8 format:     "  at FunctionName (file.js:10:5)"
-//   - match Hermes/JSC:    "FunctionName@file.js:10:5"
-// Both require ":digits:digits" (source location) so crafted message
-// continuations like "\n    at pii@example.com" are rejected — they lack
-// the ":line:col" suffix that all genuine runtime frames carry.
+// Skips the first line (always the message prefix) then keeps lines matching:
+//   - V8 without @: "  at Something (file.js:10:5)" or "  at file.js:10:5"
+//   - V8 with @ in name: requires source in parens "  at A.b (file.js:10:5)"
+//     (guards against crafted "  at email@domain.com:1:5" injection)
+//   - Hermes/JSC: "FunctionName@file.js:10:5" (no leading whitespace)
 function replaceStackMessage(stack: string | undefined, safeMessage: string): string {
   if (!stack) return `Error: ${safeMessage}`;
   const frameLines = stack
     .split('\n')
     .slice(1) // drop the first line ("ErrorName: message")
-    .filter((line) => /:\d+:\d+/.test(line) && (/^\s+at\s/.test(line) || /@/.test(line)));
+    .filter((line) => {
+      if (/^\s+at\s/.test(line)) {
+        // V8 frame: if the content contains "@", require the source location
+        // to be wrapped in parens — genuine V8 frames use "(file:line:col)".
+        // Crafted injections like "  at email@domain:1:5" have no parens.
+        if (/@/.test(line)) return /\(.*:\d+:\d+\)/.test(line);
+        return /:\d+:\d+/.test(line);
+      }
+      // Hermes/JSC: "name@file:line:col" — must NOT start with whitespace.
+      return /^[^\s][^@]*@.+:\d+:\d+/.test(line);
+    });
   return frameLines.length
     ? `Error: ${safeMessage}\n${frameLines.join('\n')}`
     : `Error: ${safeMessage}`;
