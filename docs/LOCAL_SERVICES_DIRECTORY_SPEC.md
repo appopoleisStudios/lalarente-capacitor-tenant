@@ -107,6 +107,11 @@ New tables, all in `public.` schema. Zero changes to existing tables.
 ```sql
 CREATE TABLE service_listings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  -- Stable provider identity across pricing periods. The first listing for a
+  -- provider sets canonical_listing_id = id (self-referential). Every renewal
+  -- row points back to that first listing. Query `WHERE canonical_listing_id = X`
+  -- to retrieve the full history of a provider regardless of pricing period.
+  canonical_listing_id UUID REFERENCES service_listings(id) ON DELETE RESTRICT,
   business_name TEXT NOT NULL,
   tagline TEXT,                          -- "Trusted People. Better Homes."
   description TEXT,                      -- long-form "about us"
@@ -134,7 +139,8 @@ CREATE TABLE service_listings (
   -- snapshot the rates at billing time, ensuring each period's events and
   -- invoice are always billed at the rates agreed for that specific listing row.
   -- This design means mid-period price changes require admin to create a new
-  -- listing and expire the old one, never an UPDATE to the rate columns.
+  -- listing (renewal row) and expire the old one, never an UPDATE to rate columns.
+  -- The canonical_listing_id on the renewal row links it to the original provider.
   created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL, -- admin who created it; NULL after account deletion
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -146,20 +152,34 @@ CREATE INDEX idx_service_listings_categories
   ON service_listings USING GIN(categories);
 CREATE INDEX idx_service_listings_areas
   ON service_listings USING GIN(areas_served);
+-- Provider history: query all periods for a provider by their first listing's id.
+CREATE INDEX idx_service_listings_canonical
+  ON service_listings(canonical_listing_id);
 ```
+
+**Provider identity and renewal lifecycle:**
+
+A provider has a stable identity anchored to their first (original) listing row:
+
+- When admin creates the **first listing** for a provider, they set `canonical_listing_id = id` (self-referential — set via trigger or admin UI after `INSERT`).
+- When a **pricing period ends** and admin renews/changes tier, they INSERT a new listing row with the new `starts_at`/`expires_at`/rate fields, and set `canonical_listing_id = <original listing's id>`.
+- All event analytics, provider history, and cross-period reporting query `WHERE canonical_listing_id = <original id>` — `business_name_snapshot` on events is for display only and cannot be used as a join key.
+- `ON DELETE RESTRICT` prevents deletion of the original listing while renewal rows reference it; admin must archive renewal rows first.
 
 ### 4.2 `listing_events` — the master data
 
 ```sql
 CREATE TABLE listing_events (
   id BIGSERIAL PRIMARY KEY,              -- high volume, bigserial not uuid
-  listing_id UUID REFERENCES service_listings(id) ON DELETE RESTRICT,
-  -- Listings are never hard-deleted (soft-delete only via deleted_at + status='archived').
-  -- ON DELETE RESTRICT is a safety net; it prevents accidental hard-DELETE
-  -- from destroying event attribution data.
+  listing_id UUID NOT NULL REFERENCES service_listings(id) ON DELETE RESTRICT,
+  -- NOT NULL: every event must be attributable to a specific listing and its
+  -- agreed billing rates. An unlinked event cannot be billed or analyzed.
+  -- ON DELETE RESTRICT is a safety net; listings are never hard-deleted
+  -- (soft-delete only via deleted_at + status='archived').
   business_name_snapshot TEXT NOT NULL,  -- denormalized at event time; survives listing archival
-  idempotency_key UUID UNIQUE,           -- client-generated; edge fn uses INSERT...ON CONFLICT DO NOTHING
-                                         -- for atomic deduplication (see §8.2 deduplication contract)
+  idempotency_key UUID UNIQUE,           -- client-generated; the inline UNIQUE constraint is the
+                                         -- conflict target for INSERT...ON CONFLICT DO NOTHING
+                                         -- (see §8.2 deduplication contract)
   event_type TEXT NOT NULL
     CHECK (event_type IN (
       'impression',   -- card shown in a list
@@ -178,8 +198,10 @@ CREATE TABLE listing_events (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE UNIQUE INDEX idx_listing_events_idempotency
-  ON listing_events(idempotency_key) WHERE idempotency_key IS NOT NULL;
+-- Note: no separate CREATE UNIQUE INDEX for idempotency_key — the inline
+-- UNIQUE constraint on the column already creates a full unique index,
+-- which PostgreSQL uses as the conflict target for ON CONFLICT (idempotency_key).
+-- A redundant partial index on the same column would waste write overhead.
 
 CREATE INDEX idx_listing_events_listing_time
   ON listing_events(listing_id, created_at DESC);
