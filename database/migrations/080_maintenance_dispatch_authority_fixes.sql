@@ -93,13 +93,19 @@ DECLARE
   open_assignments int;
   open_pos         int;
 BEGIN
-  -- Lock the row; also verifies ownership in one round-trip.
+  -- Lock the row. Also restricts eligible source states: only tenant_dispatching
+  -- is reclaimable. Completed/cancelled requests cannot be reopened via reclaim.
   SELECT owner_id INTO mr_owner_id
     FROM public.maintenance_requests
-   WHERE id = req_id
+   WHERE id     = req_id
+     AND status = 'tenant_dispatching'
    FOR UPDATE;
 
-  IF mr_owner_id IS NULL OR mr_owner_id != auth.uid() THEN
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'request not found, not in a reclaimable state, or already terminal';
+  END IF;
+
+  IF mr_owner_id != auth.uid() THEN
     RAISE EXCEPTION 'not authorized';
   END IF;
 
