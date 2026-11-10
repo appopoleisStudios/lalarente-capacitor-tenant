@@ -1,14 +1,17 @@
-import React from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React, { useEffect } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
+import { QueryClient, QueryClientProvider, focusManager } from '@tanstack/react-query';
 
-/** staleTime=30s / gcTime=5min / retry=2: mobile-optimised defaults */
+function onAppStateChange(status: AppStateStatus) {
+  focusManager.setFocused(status === 'active');
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 30 * 1000,
       gcTime: 5 * 60 * 1000,
-      retry: 2,
-      refetchOnWindowFocus: false,
+      retry: 1,
     },
   },
 });
@@ -18,9 +21,10 @@ interface QueryProviderProps {
 }
 
 export function QueryProvider({ children }: QueryProviderProps) {
-  return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
-  );
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', onAppStateChange);
+    return () => sub.remove();
+  }, []);
+
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }
