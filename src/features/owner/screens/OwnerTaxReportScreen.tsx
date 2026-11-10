@@ -22,6 +22,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/src/shared/theme/colors';
 import { supabase } from '@/src/lib/supabase';
 import { exportTaxStatementPdf } from '../utils/pdfReports';
+import {
+  getTaxExpensesByYear,
+  paymentDeductible,
+  totalDeductible,
+  summariseByCategory,
+  TaxExpensesByCategory,
+  CATEGORY_LABELS,
+} from '../../tax/api/propertyTaxPayments.api';
 
 interface TaxYear {
   label: string; // e.g. "2024/2025"
@@ -32,13 +40,16 @@ interface TaxYear {
 interface TaxSummary {
   grossRentalIncome: number;
   maintenanceDeductions: number;
+  taxPaymentDeductions: number;
   netTaxableEstimate: number;
   propertyBreakdown: PropertyTax[];
   paymentCount: number;
   deductionCount: number;
+  taxExpensesByCategory: TaxExpensesByCategory[];
 }
 
 interface PropertyTax {
+  propertyId: string;
   propertyTitle: string;
   grossIncome: number;
   deductions: number;
@@ -119,10 +130,12 @@ export default function OwnerTaxReportScreen() {
         setSummary({
           grossRentalIncome: 0,
           maintenanceDeductions: 0,
+          taxPaymentDeductions: 0,
           netTaxableEstimate: 0,
           propertyBreakdown: [],
           paymentCount: 0,
           deductionCount: 0,
+          taxExpensesByCategory: [],
         });
         setLoading(false);
         return;
@@ -212,6 +225,7 @@ export default function OwnerTaxReportScreen() {
           const gross = incomePerProperty[pid] || 0;
           const deductions = deductionsPerProperty[pid] || 0;
           return {
+            propertyId: pid,
             propertyTitle: propertyMap[pid] || 'Property',
             grossIncome: gross,
             deductions,
@@ -223,13 +237,55 @@ export default function OwnerTaxReportScreen() {
       const grossRentalIncome = propertyBreakdown.reduce((s, p) => s + p.grossIncome, 0);
       const maintenanceDeductions = propertyBreakdown.reduce((s, p) => s + p.deductions, 0);
 
+      // Both boundaries are calendar-date strings to avoid UTC-offset shifts.
+      // toISOString() on a local-midnight Date in UTC+2 rolls back to the previous day.
+      const taxStartYear = taxYear.startDate.getFullYear();
+      const taxStartStr = `${taxStartYear}-03-01`;
+      const taxEndStr = `${taxStartYear + 1}-03-01`;
+      const taxPayments = await getTaxExpensesByYear(uid, taxStartStr, taxEndStr);
+      const taxPaymentDeductions = totalDeductible(taxPayments);
+      const taxExpensesByCategory = summariseByCategory(taxPayments);
+
+      // Attribute tax-payment deductions per property so the breakdown reconciles.
+      const taxDeductionsPerProperty: Record<string, number> = {};
+      for (const tp of taxPayments) {
+        const ded = paymentDeductible(tp);
+        if (ded > 0) {
+          taxDeductionsPerProperty[tp.property_id] =
+            (taxDeductionsPerProperty[tp.property_id] || 0) + ded;
+        }
+      }
+
+      // Seed from existing breakdown, then add any property that only appears in
+      // the tax ledger (no income, no POs this year) so breakdown rows reconcile
+      // with the overall totals.
+      const breakdownById = new Map(propertyBreakdown.map((pb) => [pb.propertyId, pb]));
+      for (const pid of Object.keys(taxDeductionsPerProperty)) {
+        if (!breakdownById.has(pid)) {
+          breakdownById.set(pid, {
+            propertyId: pid,
+            propertyTitle: propertyMap[pid] || 'Property',
+            grossIncome: 0,
+            deductions: 0,
+            net: 0,
+          });
+        }
+      }
+      const reconciledBreakdown = Array.from(breakdownById.values()).map((pb) => {
+        const taxDed = taxDeductionsPerProperty[pb.propertyId] || 0;
+        const totalDed = pb.deductions + taxDed;
+        return { ...pb, deductions: totalDed, net: pb.grossIncome - totalDed };
+      });
+
       setSummary({
         grossRentalIncome,
         maintenanceDeductions,
-        netTaxableEstimate: grossRentalIncome - maintenanceDeductions,
-        propertyBreakdown,
+        taxPaymentDeductions,
+        netTaxableEstimate: grossRentalIncome - maintenanceDeductions - taxPaymentDeductions,
+        propertyBreakdown: reconciledBreakdown,
         paymentCount: payments?.length || 0,
         deductionCount,
+        taxExpensesByCategory,
       });
     } catch (err) {
       console.error('Error fetching tax data:', err);
@@ -349,6 +405,35 @@ export default function OwnerTaxReportScreen() {
             </View>
           </View>
 
+          {/* Tax payment deductions */}
+          {(summary?.taxExpensesByCategory?.length ?? 0) > 0 && (
+            <View style={styles.taxExpensesCard}>
+              <Text style={styles.taxExpensesTitle}>Recorded Tax Expenses</Text>
+              {summary!.taxExpensesByCategory.map((item) => (
+                <View key={item.category} style={styles.taxExpensesRow}>
+                  <Text style={styles.taxExpensesLabel}>{CATEGORY_LABELS[item.category]}</Text>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={styles.taxExpensesTotal}>{fmt(item.total)}</Text>
+                    {item.deductible < item.total && (
+                      <Text style={styles.taxExpensesDeductible}>
+                        {fmt(item.deductible)} deductible
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              ))}
+              <View style={styles.taxExpensesDivider} />
+              <View style={styles.taxExpensesRow}>
+                <Text style={[styles.taxExpensesLabel, { fontWeight: '700' }]}>
+                  Deductible subtotal
+                </Text>
+                <Text style={[styles.taxExpensesTotal, { color: colors.rsa.green }]}>
+                  − {fmt(summary!.taxPaymentDeductions)}
+                </Text>
+              </View>
+            </View>
+          )}
+
           {/* Net estimate */}
           <View style={styles.netCard}>
             <View>
@@ -362,9 +447,10 @@ export default function OwnerTaxReportScreen() {
           <View style={styles.disclaimer}>
             <Ionicons name="information-circle-outline" size={16} color={colors.info[500]} />
             <Text style={styles.disclaimerText}>
-              This is an estimate only. Bond interest, municipal rates, insurance premiums, and
-              levies are not included — add these manually. Consult a tax practitioner for your SARS
-              ITR12 submission. SA tax year: 1 March – 28 February.
+              This is an estimate only. Record rates, levies, bond interest and insurance under each
+              property (Property → Tax Payments) to include them in the deductible subtotal. Final
+              ITR12 reconciliation stays with your tax practitioner. SA tax year: 1 March – 28
+              February.
             </Text>
           </View>
 
@@ -591,5 +677,47 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.text.tertiary,
     marginTop: 12,
+  },
+  taxExpensesCard: {
+    backgroundColor: colors.background.default,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  taxExpensesTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.text.secondary,
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  taxExpensesRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingVertical: 5,
+  },
+  taxExpensesLabel: {
+    fontSize: 13,
+    color: colors.text.secondary,
+    flex: 1,
+  },
+  taxExpensesTotal: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text.primary,
+  },
+  taxExpensesDeductible: {
+    fontSize: 11,
+    color: colors.rsa.green,
+    marginTop: 1,
+  },
+  taxExpensesDivider: {
+    height: 1,
+    backgroundColor: colors.border.default,
+    marginVertical: 8,
   },
 });
