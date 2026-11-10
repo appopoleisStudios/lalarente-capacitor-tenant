@@ -127,9 +127,14 @@ CREATE TABLE service_listings (
   deleted_at TIMESTAMPTZ,               -- soft-delete; listing is NEVER hard-deleted
   monthly_fee_cents INT DEFAULT 0,       -- what we charge them (rate at time of agreement)
   per_lead_fee_cents INT DEFAULT 0,      -- commission per contact tap (rate at time of agreement)
-  -- Rate fields are immutable after the listing goes active. Any mid-period
-  -- price change requires a new listing period. Invoices snapshot the rates
-  -- from the listing row at billing time (see §4.4).
+  -- Rate fields are locked by a trigger once status transitions to 'active'.
+  -- A new listing row (new UUID, new starts_at/expires_at) is used for each
+  -- pricing period. Events reference the listing ID whose rates were agreed at
+  -- the time events were generated. Invoices reference the same listing ID and
+  -- snapshot the rates at billing time, ensuring each period's events and
+  -- invoice are always billed at the rates agreed for that specific listing row.
+  -- This design means mid-period price changes require admin to create a new
+  -- listing and expire the old one, never an UPDATE to the rate columns.
   created_by UUID REFERENCES auth.users(id), -- admin who created it
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -153,7 +158,8 @@ CREATE TABLE listing_events (
   -- ON DELETE RESTRICT is a safety net; it prevents accidental hard-DELETE
   -- from destroying event attribution data.
   business_name_snapshot TEXT NOT NULL,  -- denormalized at event time; survives listing archival
-  idempotency_key UUID,                  -- client-generated; edge fn deduplicates on this within 1 h
+  idempotency_key UUID UNIQUE,           -- client-generated; edge fn uses INSERT...ON CONFLICT DO NOTHING
+                                         -- for atomic deduplication (see §8.2 deduplication contract)
   event_type TEXT NOT NULL
     CHECK (event_type IN (
       'impression',   -- card shown in a list
@@ -172,6 +178,9 @@ CREATE TABLE listing_events (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE UNIQUE INDEX idx_listing_events_idempotency
+  ON listing_events(idempotency_key) WHERE idempotency_key IS NOT NULL;
+
 CREATE INDEX idx_listing_events_listing_time
   ON listing_events(listing_id, created_at DESC);
 CREATE INDEX idx_listing_events_type_time
@@ -179,6 +188,14 @@ CREATE INDEX idx_listing_events_type_time
 CREATE INDEX idx_listing_events_user_time
   ON listing_events(user_id, created_at DESC) WHERE user_id IS NOT NULL;
 ```
+
+**Idempotency contract** (atomic deduplication):
+
+- Client generates a UUID4 `idempotency_key` per intent (once per CTA tap, persisted in memory for the session).
+- Edge function uses `INSERT INTO listing_events (...) ON CONFLICT (idempotency_key) DO NOTHING`.
+- The unique constraint makes this conflict detection atomic; concurrent retries cannot both succeed.
+- A fresh key is required for each new intent — the same key on a retry of the same tap does nothing (correct); a new tap generates a new key.
+- The 1-hour window deduplication from §4.5 is a secondary defence against clients that never send an `idempotency_key`.
 
 ### 4.3 `service_listing_categories` — admin-managed category seed
 
@@ -220,24 +237,34 @@ CREATE TABLE service_listing_invoices (
 ### 4.5 RLS policies
 
 - **`service_listings`**
-  - SELECT (consumers): `USING (status = 'active' AND starts_at <= NOW() AND expires_at > NOW() AND deleted_at IS NULL)`.
-    Consumer access is via a **restricted view** (`service_listings_public`) that exposes only:
-    `id, business_name, tagline, description, logo_url, hero_image_url, primary_phone,
-whatsapp_number, email, website_url, categories, areas_served, tier`.
-    Negotiated fields (`monthly_fee_cents`, `per_lead_fee_cents`) and admin fields (`created_by`)
-    are excluded from the public projection.
-  - SELECT (admins): separate policy `USING (auth.jwt() ->> 'role' IN ('admin', 'superadmin'))`
-    — admins see the full table including billing fields and all statuses.
+  - Base table grants: `REVOKE ALL ON service_listings FROM anon, authenticated` — no direct
+    table access for consumers; prevents column-level bypass of the view restriction.
+  - **Consumer access via view only** (`SECURITY INVOKER` — caller's RLS applies, no owner bypass):
+    ```sql
+    CREATE VIEW service_listings_public SECURITY INVOKER AS
+      SELECT id, business_name, tagline, description, logo_url, hero_image_url,
+             primary_phone, whatsapp_number, email, website_url,
+             categories, areas_served, tier
+        FROM service_listings
+       WHERE status = 'active'
+         AND starts_at <= NOW()
+         AND expires_at > NOW()
+         AND deleted_at IS NULL;
+    GRANT SELECT ON service_listings_public TO anon, authenticated;
+    ```
+    `monthly_fee_cents`, `per_lead_fee_cents`, and `created_by` are not projected and
+    cannot be queried by non-admins even via direct column reference on the base table.
+  - SELECT (admins): full table access via policy `USING (auth.jwt() ->> 'role' IN ('admin', 'superadmin'))`.
   - INSERT/UPDATE: admin or superadmin JWT role only.
-  - DELETE: blocked entirely (`RESTRICT`); admin sets `deleted_at` + `status='archived'` instead.
+  - DELETE: blocked entirely; admin archives via `deleted_at = NOW(), status = 'archived'`.
 - **`listing_events`**
   - INSERT: **not exposed via RLS**. All writes go through the `log-listing-event` edge function
     (service role, §8.2). The function:
     1. Sets `user_id`, `user_role`, `created_at`, and `business_name_snapshot` server-side.
-    2. Deduplicates billable events (`tap_call`, `tap_whatsapp`, `tap_email`) on
-       `(listing_id, user_id, event_type)` within a 1-hour window using `idempotency_key`
-       — prevents repeated submissions from inflating per-tap billing.
-       Anonymous events (`user_id IS NULL`) deduplicate on `(listing_id, session_id, event_type)`.
+    2. Uses `INSERT INTO listing_events (...) ON CONFLICT (idempotency_key) DO NOTHING`
+       — the `UNIQUE` constraint on `idempotency_key` makes this atomic; concurrent
+       retries cannot both succeed. Anonymous events use `(listing_id, session_id, event_type)`
+       window deduplication as a secondary defence when no idempotency key is supplied.
   - SELECT: admin / superadmin only (prevents competitors from scraping our data).
 - **`service_listing_invoices`**
   - All: admin / superadmin only.
