@@ -209,8 +209,9 @@ BEGIN
     RAISE EXCEPTION 'not authorized';
   END IF;
 
-  -- Lock qualifying assignment rows first, then count outside the locking
-  -- clause. PostgreSQL does not allow FOR SHARE on aggregate queries.
+  -- Step 1: lock existing qualifying assignment rows so their status cannot
+  -- change concurrently between this check and the final UPDATE.
+  -- (FOR SHARE on aggregate queries is invalid in PostgreSQL — two statements.)
   PERFORM id
     FROM public.maintenance_vendor_assignments
    WHERE request_id = req_id
@@ -226,7 +227,7 @@ BEGIN
     RAISE EXCEPTION 'cancel open vendor assignments first';
   END IF;
 
-  -- Lock PO rows for the same reason.
+  -- Step 2: same pattern for PO rows.
   PERFORM id
     FROM public.purchase_orders
    WHERE request_id = req_id
@@ -242,22 +243,31 @@ BEGIN
     RAISE EXCEPTION 'close or cancel open purchase orders first';
   END IF;
 
-  -- Block reclaim if tenant set vendor_id directly (without an assignment row).
-  -- vendor_id is cleared atomically in the UPDATE below.
-  IF mr_vendor_id IS NOT NULL AND open_assignments = 0 THEN
-    -- vendor_id set without a tracking assignment — clear it as part of reclaim.
-    NULL; -- falls through to the UPDATE which sets vendor_id = NULL
-  END IF;
-
   PERFORM set_config('app.reclaim_in_progress', 'true', true);
 
+  -- Step 3: atomically recheck at update time using NOT EXISTS so that any
+  -- child row inserted concurrently after Step 1 is caught here.
   UPDATE public.maintenance_requests
      SET status                       = 'awaiting_owner_dispatch',
          captured_tenant_may_dispatch = false,
          vendor_id                    = NULL,
          owner_reclaim_reason         = reason,
          updated_at                   = now()
-   WHERE id = req_id;
+   WHERE id = req_id
+     AND NOT EXISTS (
+           SELECT 1 FROM public.maintenance_vendor_assignments
+            WHERE request_id = req_id
+              AND status NOT IN ('cancelled', 'rejected')
+         )
+     AND NOT EXISTS (
+           SELECT 1 FROM public.purchase_orders
+            WHERE request_id = req_id
+              AND status NOT IN ('cancelled', 'closed')
+         );
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'reclaim aborted: active assignment or PO was created concurrently';
+  END IF;
 
   PERFORM set_config('app.reclaim_in_progress', 'false', true);
 END $$;
