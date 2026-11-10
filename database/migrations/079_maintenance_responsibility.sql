@@ -2,8 +2,11 @@
 -- Introduces property_service_items sidecar, dispatch-authority snapshot,
 -- state-machine enum values, maintenance_vendor_assignments table, and
 -- server-side RPCs (reclaim_request, release_to_tenant_dispatch).
+--
+-- All SA CHANGES_REQUESTED findings have been incorporated directly.
+-- A separate migration 080 is no longer needed.
 
--- ─── 1. property_service_items sidecar ────────────────────────────────────
+-- ─── 1. property_service_items sidecar ────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS property_service_items (
   id                  uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -16,6 +19,11 @@ CREATE TABLE IF NOT EXISTS property_service_items (
 
 CREATE INDEX IF NOT EXISTS idx_psi_property ON property_service_items(property_id);
 
+-- Partial unique index: only one active (non-deleted) row per (property, name).
+CREATE UNIQUE INDEX IF NOT EXISTS idx_psi_property_name_active
+  ON property_service_items(property_id, name)
+  WHERE deleted_at IS NULL;
+
 ALTER TABLE property_service_items ENABLE ROW LEVEL SECURITY;
 
 -- Backfill: seed one row per existing services_provided entry with
@@ -26,20 +34,20 @@ FROM   properties
 WHERE  services_provided IS NOT NULL AND array_length(services_provided, 1) > 0
 ON CONFLICT DO NOTHING;
 
--- ─── 2. Extend maintenance_status enum ────────────────────────────────────
+-- ─── 2. Extend maintenance_status enum ────────────────────────────────────────
 
 ALTER TYPE maintenance_status ADD VALUE IF NOT EXISTS 'awaiting_owner_dispatch';
 ALTER TYPE maintenance_status ADD VALUE IF NOT EXISTS 'tenant_dispatching';
 ALTER TYPE maintenance_status ADD VALUE IF NOT EXISTS 'owner_dispatched';
 
--- ─── 3. New columns on maintenance_requests ───────────────────────────────
+-- ─── 3. New columns on maintenance_requests ───────────────────────────────────
 
 ALTER TABLE maintenance_requests
   ADD COLUMN IF NOT EXISTS service_item_id              uuid        REFERENCES property_service_items(id),
   ADD COLUMN IF NOT EXISTS captured_tenant_may_dispatch boolean     NOT NULL DEFAULT false,
   ADD COLUMN IF NOT EXISTS owner_reclaim_reason          text;
 
--- ─── 4. maintenance_vendor_assignments ────────────────────────────────────
+-- ─── 4. maintenance_vendor_assignments ────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS maintenance_vendor_assignments (
   id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -54,7 +62,7 @@ CREATE INDEX IF NOT EXISTS idx_mva_request ON maintenance_vendor_assignments(req
 
 ALTER TABLE maintenance_vendor_assignments ENABLE ROW LEVEL SECURITY;
 
--- ─── 5. Add request_id to purchase_orders ─────────────────────────────────
+-- ─── 5. Add request_id to purchase_orders ─────────────────────────────────────
 -- Allows reclaim_request() to sweep all POs for a request regardless of
 -- which assignment originally produced them.
 
@@ -63,9 +71,9 @@ ALTER TABLE purchase_orders
 
 CREATE INDEX IF NOT EXISTS idx_po_request ON purchase_orders(request_id);
 
--- ─── 6. RLS policies: property_service_items ──────────────────────────────
+-- ─── 6. RLS policies: property_service_items ──────────────────────────────────
 
-DROP POLICY IF EXISTS psi_owner_rw     ON property_service_items;
+DROP POLICY IF EXISTS psi_owner_rw      ON property_service_items;
 DROP POLICY IF EXISTS psi_tenant_select ON property_service_items;
 
 CREATE POLICY psi_owner_rw ON property_service_items
@@ -90,20 +98,26 @@ CREATE POLICY psi_tenant_select ON property_service_items
       AND l.status      = 'active'
   ));
 
--- ─── 7. Dispatch-authority snapshot trigger ───────────────────────────────
+-- ─── 7. capture_dispatch_authority() ──────────────────────────────────────────
+-- BEFORE INSERT trigger on maintenance_requests.
+-- Fail-safe: unlinked inserts (service_item_id IS NULL) always land with
+-- captured_tenant_may_dispatch=false. A tenant cannot forge the flag by
+-- supplying it in the INSERT payload.
 
 CREATE OR REPLACE FUNCTION capture_dispatch_authority()
-RETURNS trigger LANGUAGE plpgsql AS $$
+RETURNS trigger LANGUAGE plpgsql
+  SET search_path = public, pg_catalog, pg_temp
+AS $$
 BEGIN
-  -- Legacy / unlinked inserts: preserve caller-supplied status and dispatch flag.
   IF NEW.service_item_id IS NULL THEN
+    NEW.captured_tenant_may_dispatch := false;
     RETURN NEW;
   END IF;
 
   SELECT tenant_may_dispatch
     INTO NEW.captured_tenant_may_dispatch
     FROM property_service_items
-   WHERE id = NEW.service_item_id
+   WHERE id          = NEW.service_item_id
      AND property_id = NEW.property_id;
 
   IF NEW.captured_tenant_may_dispatch IS NULL THEN
@@ -123,53 +137,67 @@ CREATE TRIGGER trg_mr_capture_authority
   BEFORE INSERT ON maintenance_requests
   FOR EACH ROW EXECUTE FUNCTION capture_dispatch_authority();
 
--- ─── 8. release_to_tenant_dispatch RPC ───────────────────────────────────
+-- ─── 8. release_to_tenant_dispatch() RPC ──────────────────────────────────────
+-- Single conditional UPDATE eliminates the TOCTOU race present in a
+-- separate IF NOT EXISTS check + UPDATE pattern.
 
 CREATE OR REPLACE FUNCTION release_to_tenant_dispatch(req_id uuid)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER
   SET search_path = public, pg_catalog, pg_temp
 AS $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM public.maintenance_requests
-     WHERE id          = req_id
-       AND owner_id    = auth.uid()
-       AND service_item_id IS NULL
-       AND status      = 'awaiting_owner_dispatch'
-  ) THEN
-    RAISE EXCEPTION 'not authorized or not an unlinked request';
-  END IF;
-
   PERFORM set_config('app.triage_in_progress', 'true', true);
+
   UPDATE public.maintenance_requests
      SET captured_tenant_may_dispatch = true,
          status                       = 'tenant_dispatching',
          updated_at                   = now()
-   WHERE id = req_id;
+   WHERE id       = req_id
+     AND owner_id = auth.uid()
+     AND status   = 'awaiting_owner_dispatch';
+
+  IF NOT FOUND THEN
+    PERFORM set_config('app.triage_in_progress', 'false', true);
+    RAISE EXCEPTION 'not authorized or request not awaiting dispatch';
+  END IF;
+
   PERFORM set_config('app.triage_in_progress', 'false', true);
 END $$;
 
 REVOKE ALL ON FUNCTION release_to_tenant_dispatch(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION release_to_tenant_dispatch(uuid) TO authenticated;
 
--- ─── 9. reclaim_request RPC ───────────────────────────────────────────────
+-- ─── 9. reclaim_request() RPC ─────────────────────────────────────────────────
+-- SELECT FOR UPDATE locks the request row before counting open assignments/POs,
+-- preventing a concurrent tenant assignment from slipping in between the check
+-- and the status update.
+-- Source-state guard (AND status = 'tenant_dispatching') prevents reclaim
+-- from reopening completed or cancelled requests.
+-- Resets captured_tenant_may_dispatch=false so stale authority does not linger.
 
 CREATE OR REPLACE FUNCTION reclaim_request(req_id uuid, reason text)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER
   SET search_path = public, pg_catalog, pg_temp
 AS $$
 DECLARE
+  mr_owner_id      uuid;
   open_assignments int;
   open_pos         int;
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM public.maintenance_requests
-     WHERE id = req_id AND owner_id = auth.uid()
-  ) THEN
+  SELECT owner_id INTO mr_owner_id
+    FROM public.maintenance_requests
+   WHERE id     = req_id
+     AND status = 'tenant_dispatching'
+   FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'request not found, not in a reclaimable state, or already terminal';
+  END IF;
+
+  IF mr_owner_id != auth.uid() THEN
     RAISE EXCEPTION 'not authorized';
   END IF;
 
-  -- Pre-condition (a): every assignment must be in a terminal status.
   SELECT count(*) INTO open_assignments
     FROM public.maintenance_vendor_assignments
    WHERE request_id = req_id
@@ -179,7 +207,6 @@ BEGIN
     RAISE EXCEPTION 'cancel open vendor assignments first';
   END IF;
 
-  -- Pre-condition (b): every PO must be cancelled or closed.
   SELECT count(*) INTO open_pos
     FROM public.purchase_orders
    WHERE request_id = req_id
@@ -190,18 +217,21 @@ BEGIN
   END IF;
 
   PERFORM set_config('app.reclaim_in_progress', 'true', true);
+
   UPDATE public.maintenance_requests
-     SET status               = 'awaiting_owner_dispatch',
-         owner_reclaim_reason = reason,
-         updated_at           = now()
+     SET status                       = 'awaiting_owner_dispatch',
+         captured_tenant_may_dispatch = false,
+         owner_reclaim_reason         = reason,
+         updated_at                   = now()
    WHERE id = req_id;
+
   PERFORM set_config('app.reclaim_in_progress', 'false', true);
 END $$;
 
 REVOKE ALL ON FUNCTION reclaim_request(uuid, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION reclaim_request(uuid, text) TO authenticated;
 
--- ─── 10. Updated RLS policies: maintenance_requests ──────────────────────
+-- ─── 10. RLS policy: maintenance_requests INSERT ──────────────────────────────
 
 DROP POLICY IF EXISTS mr_insert ON maintenance_requests;
 CREATE POLICY mr_insert ON maintenance_requests
@@ -228,33 +258,78 @@ CREATE POLICY mr_insert ON maintenance_requests
          OR maintenance_requests.owner_id = auth.uid())
   );
 
+-- ─── 11. RLS policy: maintenance_requests UPDATE ──────────────────────────────
+-- Non-owners cannot produce status=awaiting_owner_dispatch via direct UPDATE.
+-- Only reclaim_request() (which sets app.reclaim_in_progress) may do so.
+
 DROP POLICY IF EXISTS mr_update ON maintenance_requests;
 CREATE POLICY mr_update ON maintenance_requests
   FOR UPDATE TO authenticated
   USING  (tenant_id = auth.uid() OR owner_id = auth.uid())
   WITH CHECK (
-    -- immutable identity columns
-    tenant_id  = (SELECT tenant_id  FROM maintenance_requests mr2 WHERE mr2.id = maintenance_requests.id)
-    AND owner_id   = (SELECT owner_id   FROM maintenance_requests mr2 WHERE mr2.id = maintenance_requests.id)
+    -- Immutable identity columns
+    tenant_id   = (SELECT tenant_id   FROM maintenance_requests mr2 WHERE mr2.id = maintenance_requests.id)
+    AND owner_id    = (SELECT owner_id    FROM maintenance_requests mr2 WHERE mr2.id = maintenance_requests.id)
     AND property_id = (SELECT property_id FROM maintenance_requests mr2 WHERE mr2.id = maintenance_requests.id)
     AND service_item_id IS NOT DISTINCT FROM
         (SELECT service_item_id FROM maintenance_requests mr2 WHERE mr2.id = maintenance_requests.id)
-    AND captured_tenant_may_dispatch = (SELECT captured_tenant_may_dispatch FROM maintenance_requests mr2 WHERE mr2.id = maintenance_requests.id)
-    -- vendor_id: allowed by captured authority or by the owner
+    -- Dispatch flag is immutable after insert (RPCs manage it directly)
+    AND captured_tenant_may_dispatch =
+        (SELECT captured_tenant_may_dispatch FROM maintenance_requests mr2 WHERE mr2.id = maintenance_requests.id)
+    -- Vendor-hire: tenant may only set vendor_id when they have dispatch authority
     AND (vendor_id IS NULL
          OR captured_tenant_may_dispatch = true
          OR owner_id = auth.uid())
-    -- status: tenant_dispatching → awaiting_owner_dispatch only via RPC
-    AND (status IS NOT DISTINCT FROM
-         (SELECT status FROM maintenance_requests mr2 WHERE mr2.id = maintenance_requests.id)
-         OR NOT (
-           (SELECT status FROM maintenance_requests mr2 WHERE mr2.id = maintenance_requests.id) = 'tenant_dispatching'
-           AND status = 'awaiting_owner_dispatch'
-         )
-         OR current_setting('app.reclaim_in_progress', true) = 'true')
+    -- Non-owners cannot produce awaiting_owner_dispatch via direct UPDATE
+    AND (
+      owner_id = auth.uid()
+      OR status != 'awaiting_owner_dispatch'
+      OR current_setting('app.reclaim_in_progress', true) = 'true'
+    )
   );
 
--- ─── 11. RLS policy: maintenance_vendor_assignments ───────────────────────
+-- ─── 12. check_mva_dispatch_authority() ───────────────────────────────────────
+-- BEFORE INSERT trigger on maintenance_vendor_assignments.
+-- Locks the maintenance_requests row with FOR UPDATE so that a concurrent
+-- reclaim_request() cannot change status between the RLS policy check and
+-- the actual row insertion.
+
+CREATE OR REPLACE FUNCTION check_mva_dispatch_authority()
+RETURNS trigger LANGUAGE plpgsql
+  SET search_path = public, pg_catalog, pg_temp
+AS $$
+DECLARE
+  mr maintenance_requests;
+BEGIN
+  SELECT * INTO mr
+    FROM public.maintenance_requests
+   WHERE id = NEW.request_id
+   FOR UPDATE;
+
+  IF mr IS NULL THEN
+    RAISE EXCEPTION 'maintenance request not found';
+  END IF;
+
+  IF mr.owner_id = auth.uid() THEN
+    RETURN NEW;
+  END IF;
+
+  IF mr.tenant_id = auth.uid() THEN
+    IF mr.status != 'tenant_dispatching' THEN
+      RAISE EXCEPTION 'request is no longer in tenant_dispatching state';
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  RAISE EXCEPTION 'not authorized to assign vendors for this request';
+END $$;
+
+DROP TRIGGER IF EXISTS trg_mva_check_authority ON maintenance_vendor_assignments;
+CREATE TRIGGER trg_mva_check_authority
+  BEFORE INSERT ON maintenance_vendor_assignments
+  FOR EACH ROW EXECUTE FUNCTION check_mva_dispatch_authority();
+
+-- ─── 13. RLS policies: maintenance_vendor_assignments ─────────────────────────
 
 DROP POLICY IF EXISTS mva_insert ON maintenance_vendor_assignments;
 CREATE POLICY mva_insert ON maintenance_vendor_assignments
@@ -264,7 +339,11 @@ CREATE POLICY mva_insert ON maintenance_vendor_assignments
       SELECT 1 FROM maintenance_requests mr
        WHERE mr.id = maintenance_vendor_assignments.request_id
          AND (
-           (mr.captured_tenant_may_dispatch = true AND mr.tenant_id = auth.uid())
+           -- Tenant path: request must still be in tenant_dispatching state
+           (mr.status = 'tenant_dispatching'
+            AND mr.captured_tenant_may_dispatch = true
+            AND mr.tenant_id = auth.uid())
+           -- Owner path: no status restriction
            OR mr.owner_id = auth.uid()
          )
     )
@@ -282,7 +361,30 @@ CREATE POLICY mva_party_select ON maintenance_vendor_assignments
     )
   );
 
--- ─── 12. Bi-directional sync triggers ────────────────────────────────────
+DROP POLICY IF EXISTS mva_update ON maintenance_vendor_assignments;
+CREATE POLICY mva_update ON maintenance_vendor_assignments
+  FOR UPDATE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM maintenance_requests mr
+       WHERE mr.id = maintenance_vendor_assignments.request_id
+         AND (
+           (mr.status = 'tenant_dispatching'
+            AND mr.captured_tenant_may_dispatch = true
+            AND mr.tenant_id = auth.uid())
+           OR mr.owner_id = auth.uid()
+         )
+    )
+  )
+  WITH CHECK (
+    status     = 'cancelled'
+    AND request_id = (SELECT request_id FROM maintenance_vendor_assignments mva2
+                       WHERE mva2.id = maintenance_vendor_assignments.id)
+    AND vendor_id  = (SELECT vendor_id  FROM maintenance_vendor_assignments mva2
+                       WHERE mva2.id = maintenance_vendor_assignments.id)
+  );
+
+-- ─── 14. Bi-directional sync triggers ─────────────────────────────────────────
 -- Forward: sidecar → properties.services_provided (keeps old-client reads fresh)
 -- Reverse: properties.services_provided → sidecar (keeps new-client reads fresh
 --          when an old client still writes the legacy column).
@@ -331,14 +433,12 @@ BEGIN
   new_names := COALESCE(NEW.services_provided, '{}');
   old_names := COALESCE(OLD.services_provided, '{}');
 
-  -- Insert names present in new array but absent from sidecar.
   FOREACH nm IN ARRAY new_names LOOP
     INSERT INTO property_service_items (property_id, name, tenant_may_dispatch)
     VALUES (NEW.id, nm, true)
     ON CONFLICT DO NOTHING;
   END LOOP;
 
-  -- Soft-delete names present in sidecar but absent from new array.
   UPDATE property_service_items
      SET deleted_at = now()
    WHERE property_id = NEW.id
@@ -354,3 +454,76 @@ DROP TRIGGER IF EXISTS trg_array_sync_to_psi ON properties;
 CREATE TRIGGER trg_array_sync_to_psi
   AFTER UPDATE OF services_provided ON properties
   FOR EACH ROW EXECUTE FUNCTION sync_array_to_psi();
+
+-- ─── 15. Inline structural tests ──────────────────────────────────────────────
+-- These assertions run as the migration superuser and verify structural
+-- invariants (indexes, function existence, policy existence).
+-- Behavioral tests that require live auth.uid() context live in
+-- database/tests/079_dispatch_authority_tests.sql (pgTAP).
+
+DO $$
+DECLARE
+  v_prop_id  uuid;
+  v_psi_id   uuid;
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes
+     WHERE tablename  = 'property_service_items'
+       AND indexname  = 'idx_psi_property_name_active'
+  ) THEN
+    RAISE EXCEPTION 'ASSERTION FAIL: idx_psi_property_name_active not found';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc WHERE proname = 'capture_dispatch_authority'
+  ) THEN
+    RAISE EXCEPTION 'ASSERTION FAIL: capture_dispatch_authority function not found';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc WHERE proname = 'check_mva_dispatch_authority'
+  ) THEN
+    RAISE EXCEPTION 'ASSERTION FAIL: check_mva_dispatch_authority function not found';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'trg_mva_check_authority'
+  ) THEN
+    RAISE EXCEPTION 'ASSERTION FAIL: trg_mva_check_authority trigger not found';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+     WHERE tablename  = 'maintenance_vendor_assignments'
+       AND policyname = 'mva_update'
+  ) THEN
+    RAISE EXCEPTION 'ASSERTION FAIL: mva_update policy not found';
+  END IF;
+
+  SELECT id INTO v_prop_id FROM properties LIMIT 1;
+
+  IF v_prop_id IS NOT NULL THEN
+    SAVEPOINT test_partial_index;
+
+    INSERT INTO property_service_items (property_id, name, tenant_may_dispatch, deleted_at)
+    VALUES (v_prop_id, '_test_079_item', true, now())
+    RETURNING id INTO v_psi_id;
+
+    INSERT INTO property_service_items (property_id, name, tenant_may_dispatch)
+    VALUES (v_prop_id, '_test_079_item', true);
+
+    BEGIN
+      INSERT INTO property_service_items (property_id, name, tenant_may_dispatch)
+      VALUES (v_prop_id, '_test_079_item', true);
+      RAISE EXCEPTION 'ASSERTION FAIL: duplicate active item should have been rejected';
+    EXCEPTION WHEN unique_violation THEN
+      NULL;
+    END;
+
+    ROLLBACK TO SAVEPOINT test_partial_index;
+  ELSE
+    RAISE NOTICE 'migration 079 partial-index test skipped: properties table is empty';
+  END IF;
+
+  RAISE NOTICE 'migration 079 structural tests: all passed';
+END $$;
