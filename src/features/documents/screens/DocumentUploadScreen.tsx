@@ -17,7 +17,6 @@ import { documentsApi } from '../api/documentsApi';
 import { DocumentType, AccessLevel, DOCUMENT_CATEGORIES, FileInfo } from '../types';
 import { supabase } from '../../../lib/supabase';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
-import { reportApiError } from '@/src/core/observability/sentry';
 
 const COLORS = {
   owner: { primary: '#002395', secondary: '#FFB81C' },
@@ -146,7 +145,6 @@ export default function DocumentUploadScreen({
         { text: 'OK', onPress: () => router.back() },
       ]);
     } catch (error) {
-      reportApiError(error, 'documents', 'insert');
       console.error('Error uploading document:', error);
       Alert.alert('Error', 'Failed to upload document. Please try again.');
     } finally {
