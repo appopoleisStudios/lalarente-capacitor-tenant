@@ -68,14 +68,12 @@ describe('calculateLegalInterest', () => {
 describe('calculateCurePeriodDeadline', () => {
   it('adds exactly 20 business days from a weekday', () => {
     // 2026-03-02 (Monday) + 20 business days = 2026-03-30 (Monday)
-    const breach = new Date('2026-03-02');
+    // 2026-03-21 (Human Rights Day, Saturday) + weekends are skipped
+    const breach = new Date(2026, 2, 2); // local midnight, timezone-safe
     const deadline = calculateCurePeriodDeadline(breach);
-    // Count: 20 business days forward, skipping 2026-03-21 (Human Rights Day)
-    // and weekends
-    expect(deadline).toBeInstanceOf(Date);
-    // Should be at least 20 calendar days later
-    const diffDays = (deadline.getTime() - breach.getTime()) / (1000 * 60 * 60 * 24);
-    expect(diffDays).toBeGreaterThanOrEqual(20);
+    expect(deadline.getFullYear()).toBe(2026);
+    expect(deadline.getMonth()).toBe(2); // March (0-indexed)
+    expect(deadline.getDate()).toBe(30);
   });
 
   it('skips a public holiday when counting 20 business days', () => {
