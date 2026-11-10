@@ -77,18 +77,15 @@ describe('calculateCurePeriodDeadline', () => {
   });
 
   it('skips a public holiday when counting 20 business days', () => {
-    // Breach notice on 2026-03-16 (Monday)
-    // 2026-03-21 = Human Rights Day — must be skipped
-    const breach = new Date('2026-03-16');
-    const withHoliday = calculateCurePeriodDeadline(breach);
-
-    // For comparison: if we start from 2026-03-23 (after the holiday week) baseline
-    // the result should be 1 calendar day later than a week without the holiday
-    const noHolidayBreach = new Date('2026-03-23'); // same day-of-week but no holiday in window
-    const withoutHoliday = calculateCurePeriodDeadline(noHolidayBreach);
-
-    // Both windows are 20 business days but the first spans a holiday, so it ends later
-    expect(withHoliday.getTime()).toBeLessThan(withoutHoliday.getTime());
+    // 2026-03-16 (Monday) + 20 business days
+    // 2026-04-03 (Good Friday) skipped, 2026-04-06 (Family Day) skipped
+    // Without those two holidays the 20th business day lands on 2026-04-13.
+    // With both skipped it lands on 2026-04-15.
+    const breach = new Date(2026, 2, 16); // local midnight, timezone-safe
+    const deadline = calculateCurePeriodDeadline(breach);
+    expect(deadline.getFullYear()).toBe(2026);
+    expect(deadline.getMonth()).toBe(3); // April (0-indexed)
+    expect(deadline.getDate()).toBe(15);
   });
 
   it('accepts a date string', () => {
