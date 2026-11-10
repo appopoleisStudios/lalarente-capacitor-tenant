@@ -205,17 +205,20 @@ BEGIN
     RAISE EXCEPTION 'request not found, not in a reclaimable state, or already terminal';
   END IF;
 
-  IF mr_owner_id != auth.uid() THEN
+  -- Reject NULL callers explicitly: != evaluates to NULL when auth.uid() is NULL,
+  -- which skips the exception. IS DISTINCT FROM handles both NULL and mismatch.
+  IF auth.uid() IS NULL OR mr_owner_id IS DISTINCT FROM auth.uid() THEN
     RAISE EXCEPTION 'not authorized';
   END IF;
 
-  -- Step 1: lock existing qualifying assignment rows so their status cannot
-  -- change concurrently between this check and the final UPDATE.
-  -- (FOR SHARE on aggregate queries is invalid in PostgreSQL — two statements.)
+  -- Step 1: Lock ALL assignment rows for this request (regardless of status) so
+  -- that any concurrent cancelled→pending reactivation must wait for us to commit.
+  -- trg_guard_assignment_reactivation (BEFORE UPDATE on this table) also acquires
+  -- FOR SHARE on the parent request; together they form a deadlock-free protocol
+  -- (both always lock parent first, then child) that prevents the excluded-row race.
   PERFORM id
     FROM public.maintenance_vendor_assignments
    WHERE request_id = req_id
-     AND status NOT IN ('cancelled', 'rejected')
    FOR SHARE;
 
   SELECT count(*) INTO open_assignments
@@ -231,7 +234,6 @@ BEGIN
   PERFORM id
     FROM public.purchase_orders
    WHERE request_id = req_id
-     AND status NOT IN ('cancelled', 'closed')
    FOR SHARE;
 
   SELECT count(*) INTO open_pos
@@ -245,28 +247,19 @@ BEGIN
 
   PERFORM set_config('app.reclaim_in_progress', 'true', true);
 
-  -- Step 3: atomically recheck at update time using NOT EXISTS so that any
-  -- child row inserted concurrently after Step 1 is caught here.
+  -- Step 3: Update the request. The FOR SHARE locks taken in steps 1–2 prevent any
+  -- concurrent reactivation of a cancelled child from committing before we do, so
+  -- the counts above are stable for the duration of this transaction.
   UPDATE public.maintenance_requests
      SET status                       = 'awaiting_owner_dispatch',
          captured_tenant_may_dispatch = false,
          vendor_id                    = NULL,
          owner_reclaim_reason         = reason,
          updated_at                   = now()
-   WHERE id = req_id
-     AND NOT EXISTS (
-           SELECT 1 FROM public.maintenance_vendor_assignments
-            WHERE request_id = req_id
-              AND status NOT IN ('cancelled', 'rejected')
-         )
-     AND NOT EXISTS (
-           SELECT 1 FROM public.purchase_orders
-            WHERE request_id = req_id
-              AND status NOT IN ('cancelled', 'closed')
-         );
+   WHERE id = req_id;
 
   IF NOT FOUND THEN
-    RAISE EXCEPTION 'reclaim aborted: active assignment or PO was created concurrently';
+    RAISE EXCEPTION 'reclaim aborted: request state changed concurrently';
   END IF;
 
   PERFORM set_config('app.reclaim_in_progress', 'false', true);
@@ -430,7 +423,76 @@ CREATE POLICY mva_update ON maintenance_vendor_assignments
                        WHERE mva2.id = maintenance_vendor_assignments.id)
   );
 
--- ─── 14. Bi-directional sync triggers ─────────────────────────────────────────
+-- ─── 14. Reactivation guards on child tables ──────────────────────────────────
+-- These BEFORE UPDATE triggers prevent the excluded-row concurrency race in
+-- reclaim_request(). When a cancelled/rejected assignment or cancelled/closed PO
+-- is about to be un-cancelled (status promoted back to an active value), the
+-- trigger acquires FOR SHARE on the parent maintenance_requests row. If
+-- reclaim_request() already holds FOR UPDATE on that row, this trigger waits
+-- until the reclaim commits; at that point the request is in
+-- awaiting_owner_dispatch and the guard rejects the reactivation.
+-- Locking order is always parent first → child, so no deadlock is possible.
+
+CREATE OR REPLACE FUNCTION guard_assignment_reactivation()
+RETURNS trigger LANGUAGE plpgsql
+  SET search_path = public, pg_catalog, pg_temp
+AS $$
+DECLARE
+  mr_status text;
+BEGIN
+  IF OLD.status IN ('cancelled', 'rejected')
+     AND NEW.status NOT IN ('cancelled', 'rejected') THEN
+    SELECT status INTO mr_status
+      FROM public.maintenance_requests
+     WHERE id = NEW.request_id
+     FOR SHARE;
+
+    IF mr_status IS NULL THEN
+      RAISE EXCEPTION 'maintenance request not found';
+    END IF;
+
+    IF mr_status != 'tenant_dispatching' THEN
+      RAISE EXCEPTION 'cannot reactivate assignment: request is not in tenant_dispatching state (current: %)', mr_status;
+    END IF;
+  END IF;
+  RETURN NEW;
+END $$;
+
+DROP TRIGGER IF EXISTS trg_guard_assignment_reactivation ON maintenance_vendor_assignments;
+CREATE TRIGGER trg_guard_assignment_reactivation
+  BEFORE UPDATE ON maintenance_vendor_assignments
+  FOR EACH ROW EXECUTE FUNCTION guard_assignment_reactivation();
+
+CREATE OR REPLACE FUNCTION guard_po_reactivation()
+RETURNS trigger LANGUAGE plpgsql
+  SET search_path = public, pg_catalog, pg_temp
+AS $$
+DECLARE
+  mr_status text;
+BEGIN
+  IF OLD.status IN ('cancelled', 'closed')
+     AND NEW.status NOT IN ('cancelled', 'closed') THEN
+    -- Only guarded when the PO is linked to a maintenance request
+    IF NEW.request_id IS NOT NULL THEN
+      SELECT status INTO mr_status
+        FROM public.maintenance_requests
+       WHERE id = NEW.request_id
+       FOR SHARE;
+
+      IF mr_status IS NOT NULL AND mr_status != 'tenant_dispatching' THEN
+        RAISE EXCEPTION 'cannot reactivate PO: request is not in tenant_dispatching state (current: %)', mr_status;
+      END IF;
+    END IF;
+  END IF;
+  RETURN NEW;
+END $$;
+
+DROP TRIGGER IF EXISTS trg_guard_po_reactivation ON purchase_orders;
+CREATE TRIGGER trg_guard_po_reactivation
+  BEFORE UPDATE ON purchase_orders
+  FOR EACH ROW EXECUTE FUNCTION guard_po_reactivation();
+
+-- ─── 15. Bi-directional sync triggers ─────────────────────────────────────────
 -- Forward: sidecar → properties.services_provided (keeps old-client reads fresh)
 -- Reverse: properties.services_provided → sidecar (keeps new-client reads fresh
 --          when an old client still writes the legacy column).
@@ -501,7 +563,7 @@ CREATE TRIGGER trg_array_sync_to_psi
   AFTER UPDATE OF services_provided ON properties
   FOR EACH ROW EXECUTE FUNCTION sync_array_to_psi();
 
--- ─── 15. Inline structural tests ──────────────────────────────────────────────
+-- ─── 16. Inline structural tests ──────────────────────────────────────────────
 -- These assertions run as the migration superuser and verify structural
 -- invariants (indexes, function existence, policy existence).
 -- Behavioral tests that require live auth.uid() context live in
