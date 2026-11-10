@@ -68,6 +68,11 @@ async function fetchDashboardData(userId: string): Promise<TenantDashboardData> 
       .limit(3),
   ]);
 
+  if (leaseResult.error) throw new Error(`leases: ${leaseResult.error.message}`);
+  if (maintenanceResult.error)
+    throw new Error(`maintenance_requests: ${maintenanceResult.error.message}`);
+  if (viewingsResult.error) throw new Error(`viewing_requests: ${viewingsResult.error.message}`);
+
   const upcoming = payments.find((p) => p.status === 'pending') ?? null;
   const recent = payments.filter((p) => p.status === 'completed').slice(0, 3);
 
