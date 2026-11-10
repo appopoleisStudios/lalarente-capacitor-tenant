@@ -1,19 +1,20 @@
 import * as Sentry from '@sentry/react-native';
 import { env } from '../config/env';
 
-// Postgres error codes that carry no row-level data in their messages.
-// Others may contain column values, constraint details, or rejected inputs.
-const SAFE_PG_CODES = new Set([
-  '08006', // connection_failure
-  '28000', // invalid_authorization_specification
-  '42501', // insufficient_privilege
-  '23502', // not_null_violation — message is "column X of relation Y"
-  '23503', // foreign_key_violation — message is constraint name
-  '23505', // unique_violation — message is constraint name
-  '23514', // check_violation — message is constraint name
-  '53100', // disk_full
-  '57014', // query_canceled
-]);
+// Fixed descriptions for known safe Postgres SQLSTATE codes.
+// Using fixed strings (not sb.message) so a custom exception with an
+// allowlisted code cannot smuggle arbitrary message text into Sentry.
+const SAFE_PG_CODE_DESCRIPTIONS: Record<string, string> = {
+  '08006': 'connection failure',
+  '28000': 'invalid authorization',
+  '42501': 'insufficient privilege',
+  '23502': 'not null violation',
+  '23503': 'foreign key violation',
+  '23505': 'unique violation',
+  '23514': 'check violation',
+  '53100': 'disk full',
+  '57014': 'query canceled',
+};
 
 interface SupabaseError {
   code?: string;
@@ -22,26 +23,46 @@ interface SupabaseError {
   details?: string;
 }
 
+// Replace the first line of a stack trace ("ErrorName: original message")
+// with a safe message so that PII in the original message does not appear in
+// the stack string forwarded to Sentry.
+function replaceStackMessage(stack: string | undefined, safeMessage: string): string {
+  if (!stack) return `Error: ${safeMessage}`;
+  const newline = stack.indexOf('\n');
+  if (newline === -1) return `Error: ${safeMessage}`;
+  return `Error: ${safeMessage}${stack.slice(newline)}`;
+}
+
+function safeCodeMessage(code: string): string {
+  const desc = SAFE_PG_CODE_DESCRIPTIONS[code];
+  return desc ? `${code}: ${desc}` : code; // unknown codes: emit code only, no message
+}
+
 export function sanitizeForSentry(error: unknown): Error {
-  // Supabase / PostgREST structured error — use allowlisted codes only.
+  // instanceof Error is checked first so a JS Error that also carries a .code
+  // property (e.g. some Supabase client wrappers) keeps its original stack
+  // instead of being treated as a plain structured object and losing frames.
+  if (error instanceof Error) {
+    const coded = error as Error & { code?: unknown };
+    if (typeof coded.code === 'string') {
+      const safeMessage = safeCodeMessage(coded.code);
+      const sanitized = new Error(safeMessage);
+      sanitized.name = error.name;
+      sanitized.stack = replaceStackMessage(error.stack, safeMessage);
+      return sanitized;
+    }
+    const sanitized = new Error('API error');
+    sanitized.name = error.name;
+    sanitized.stack = replaceStackMessage(error.stack, 'API error');
+    return sanitized;
+  }
+
+  // Plain Supabase / PostgREST structured error object (not an Error instance).
   if (error !== null && typeof error === 'object' && !Array.isArray(error)) {
     const sb = error as SupabaseError;
     if (typeof sb.code === 'string') {
-      const safeMessage = SAFE_PG_CODES.has(sb.code)
-        ? `${sb.code}: ${sb.message ?? 'supabase error'}`
-        : sb.code; // drop message entirely for unknown codes
-      return new Error(safeMessage);
+      return new Error(safeCodeMessage(sb.code));
     }
-  }
-
-  if (error instanceof Error) {
-    // Preserve the original stack (diagnostic frames) while replacing the
-    // message with a safe token. Creating a new Error loses the stack;
-    // copying it here keeps Sentry's grouping accurate.
-    const sanitized = new Error('API error');
-    sanitized.name = error.name;
-    sanitized.stack = error.stack;
-    return sanitized;
   }
 
   return new Error('unknown API error');
@@ -51,10 +72,9 @@ export function sanitizeForSentry(error: unknown): Error {
  * Report an API-layer error to Sentry with Supabase context breadcrumb.
  *
  * Sanitization strategy (POPIA compliance):
- * - Supabase/Postgres structured errors: allowlisted codes only; unknown codes
- *   emit only the code token, dropping any message that may contain row values.
- * - Plain Error objects: stack is preserved for grouping; message is replaced
- *   with a generic token so user data in messages is not forwarded.
+ * - JS Error with .code: fixed description per SQLSTATE; stack message line replaced.
+ * - Plain Error: message replaced with 'API error'; stack message line replaced.
+ * - Supabase plain object: fixed description per SQLSTATE code, no message forwarded.
  *
  * Usage: reportApiError(err, 'properties', 'select')
  */
