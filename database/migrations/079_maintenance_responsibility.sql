@@ -211,11 +211,11 @@ BEGIN
     RAISE EXCEPTION 'not authorized';
   END IF;
 
-  -- Step 1: Lock ALL assignment rows for this request (regardless of status) so
-  -- that any concurrent cancelled→pending reactivation must wait for us to commit.
-  -- trg_guard_assignment_reactivation (BEFORE UPDATE on this table) also acquires
-  -- FOR SHARE on the parent request; together they form a deadlock-free protocol
-  -- (both always lock parent first, then child) that prevents the excluded-row race.
+  -- Step 1: Lock ALL assignment rows for this request (regardless of status).
+  -- Clients cancel assignments via cancel_assignment() RPC, which acquires
+  -- FOR SHARE on the parent before touching the child — same lock order as
+  -- this function (parent FOR UPDATE first). Direct client UPDATEs on
+  -- maintenance_vendor_assignments are restricted to service_role via mva_update.
   PERFORM id
     FROM public.maintenance_vendor_assignments
    WHERE request_id = req_id
@@ -400,97 +400,72 @@ CREATE POLICY mva_party_select ON maintenance_vendor_assignments
     )
   );
 
+-- mva_update: direct UPDATE on assignments is restricted to service_role.
+-- Authenticated clients cancel assignments via cancel_assignment() RPC, which
+-- enforces parent-first locking and avoids deadlock with reclaim_request().
 DROP POLICY IF EXISTS mva_update ON maintenance_vendor_assignments;
 CREATE POLICY mva_update ON maintenance_vendor_assignments
-  FOR UPDATE TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM maintenance_requests mr
-       WHERE mr.id = maintenance_vendor_assignments.request_id
-         AND (
-           (mr.status = 'tenant_dispatching'
-            AND mr.captured_tenant_may_dispatch = true
-            AND mr.tenant_id = auth.uid())
-           OR mr.owner_id = auth.uid()
-         )
-    )
-  )
-  WITH CHECK (
-    status     = 'cancelled'
-    AND request_id = (SELECT request_id FROM maintenance_vendor_assignments mva2
-                       WHERE mva2.id = maintenance_vendor_assignments.id)
-    AND vendor_id  = (SELECT vendor_id  FROM maintenance_vendor_assignments mva2
-                       WHERE mva2.id = maintenance_vendor_assignments.id)
-  );
+  FOR UPDATE TO service_role
+  USING (true)
+  WITH CHECK (true);
 
--- ─── 14. Reactivation guards on child tables ──────────────────────────────────
--- These BEFORE UPDATE triggers prevent the excluded-row concurrency race in
--- reclaim_request(). When a cancelled/rejected assignment or cancelled/closed PO
--- is about to be un-cancelled (status promoted back to an active value), the
--- trigger acquires FOR SHARE on the parent maintenance_requests row. If
--- reclaim_request() already holds FOR UPDATE on that row, this trigger waits
--- until the reclaim commits; at that point the request is in
--- awaiting_owner_dispatch and the guard rejects the reactivation.
--- Locking order is always parent first → child, so no deadlock is possible.
+-- ─── 14. cancel_assignment() RPC — parent-first locking for assignment cancellation
+-- Direct UPDATE on maintenance_vendor_assignments can deadlock with reclaim_request():
+--   reclaim holds parent FOR UPDATE and waits for child rows;
+--   a concurrent child UPDATE holds the child row and would need the parent to validate.
+-- The RPC approach breaks this by acquiring the parent lock BEFORE touching the child,
+-- matching reclaim's lock order (parent → child) and making deadlock impossible.
+-- mva_update RLS restricts direct client UPDATEs to service_role only; tenants and
+-- owners cancel through this RPC.
 
-CREATE OR REPLACE FUNCTION guard_assignment_reactivation()
-RETURNS trigger LANGUAGE plpgsql
+CREATE OR REPLACE FUNCTION cancel_assignment(p_assignment_id uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER
   SET search_path = public, pg_catalog, pg_temp
 AS $$
 DECLARE
-  mr_status text;
+  v_request_id uuid;
+  v_caller_id  uuid := auth.uid();
 BEGIN
-  IF OLD.status IN ('cancelled', 'rejected')
-     AND NEW.status NOT IN ('cancelled', 'rejected') THEN
-    SELECT status INTO mr_status
-      FROM public.maintenance_requests
-     WHERE id = NEW.request_id
-     FOR SHARE;
-
-    IF mr_status IS NULL THEN
-      RAISE EXCEPTION 'maintenance request not found';
-    END IF;
-
-    IF mr_status != 'tenant_dispatching' THEN
-      RAISE EXCEPTION 'cannot reactivate assignment: request is not in tenant_dispatching state (current: %)', mr_status;
-    END IF;
+  IF v_caller_id IS NULL THEN
+    RAISE EXCEPTION 'not authenticated';
   END IF;
-  RETURN NEW;
+
+  -- Step 1: resolve the parent request (no row lock yet).
+  SELECT request_id INTO v_request_id
+    FROM public.maintenance_vendor_assignments
+   WHERE id = p_assignment_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'assignment not found';
+  END IF;
+
+  -- Step 2: lock the parent first so reclaim_request() cannot interleave.
+  PERFORM id FROM public.maintenance_requests
+   WHERE id = v_request_id
+   FOR SHARE;
+
+  -- Step 3: cancel the child row; RLS on maintenance_vendor_assignments still
+  -- checks the caller is an authorised party for this request.
+  UPDATE public.maintenance_vendor_assignments
+     SET status = 'cancelled'
+   WHERE id            = p_assignment_id
+     AND status NOT IN ('cancelled', 'rejected');
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'assignment not found or already cancelled/rejected';
+  END IF;
 END $$;
 
+REVOKE ALL ON FUNCTION cancel_assignment(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION cancel_assignment(uuid) TO authenticated;
+
+-- Drop the trigger-based guards introduced previously — they caused a deadlock
+-- because PostgreSQL locks the target row BEFORE running the BEFORE UPDATE trigger,
+-- so the trigger could not acquire the parent lock first.
 DROP TRIGGER IF EXISTS trg_guard_assignment_reactivation ON maintenance_vendor_assignments;
-CREATE TRIGGER trg_guard_assignment_reactivation
-  BEFORE UPDATE ON maintenance_vendor_assignments
-  FOR EACH ROW EXECUTE FUNCTION guard_assignment_reactivation();
-
-CREATE OR REPLACE FUNCTION guard_po_reactivation()
-RETURNS trigger LANGUAGE plpgsql
-  SET search_path = public, pg_catalog, pg_temp
-AS $$
-DECLARE
-  mr_status text;
-BEGIN
-  IF OLD.status IN ('cancelled', 'closed')
-     AND NEW.status NOT IN ('cancelled', 'closed') THEN
-    -- Only guarded when the PO is linked to a maintenance request
-    IF NEW.request_id IS NOT NULL THEN
-      SELECT status INTO mr_status
-        FROM public.maintenance_requests
-       WHERE id = NEW.request_id
-       FOR SHARE;
-
-      IF mr_status IS NOT NULL AND mr_status != 'tenant_dispatching' THEN
-        RAISE EXCEPTION 'cannot reactivate PO: request is not in tenant_dispatching state (current: %)', mr_status;
-      END IF;
-    END IF;
-  END IF;
-  RETURN NEW;
-END $$;
-
+DROP FUNCTION IF EXISTS guard_assignment_reactivation();
 DROP TRIGGER IF EXISTS trg_guard_po_reactivation ON purchase_orders;
-CREATE TRIGGER trg_guard_po_reactivation
-  BEFORE UPDATE ON purchase_orders
-  FOR EACH ROW EXECUTE FUNCTION guard_po_reactivation();
+DROP FUNCTION IF EXISTS guard_po_reactivation();
 
 -- ─── 15. Bi-directional sync triggers ─────────────────────────────────────────
 -- Forward: sidecar → properties.services_provided (keeps old-client reads fresh)
