@@ -22,6 +22,11 @@ interface QueryProviderProps {
 
 export function QueryProvider({ children }: QueryProviderProps) {
   useEffect(() => {
+    // Synchronize with the current state on mount so an already-backgrounded
+    // app doesn't appear active to focusManager until the next change event.
+    if (AppState.currentState !== 'active') {
+      focusManager.setFocused(false);
+    }
     const sub = AppState.addEventListener('change', onAppStateChange);
     return () => sub.remove();
   }, []);
