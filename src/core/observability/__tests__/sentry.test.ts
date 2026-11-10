@@ -43,6 +43,15 @@ describe('sanitizeForSentry', () => {
       expect(result.message).not.toContain('tenant@example.com');
     });
 
+    it('prototype property as code — returns fixed fallback, not an Object method', () => {
+      // Plain object lookups inherit Object.prototype; Map.get() does not.
+      // e.g. SAFE_PG_CODE_DESCRIPTIONS['constructor'] on a plain object is truthy.
+      for (const key of ['constructor', '__proto__', 'toString', 'hasOwnProperty']) {
+        const result = sanitizeForSentry({ code: key, message: 'hidden' });
+        expect(result.message).toBe('unknown database error');
+      }
+    });
+
     it('emits fixed descriptions for all known SQLSTATE codes', () => {
       const knownCodes: Record<string, string> = {
         '08006': 'connection failure',
@@ -76,15 +85,19 @@ describe('sanitizeForSentry', () => {
       expect(result.stack).toContain('at ');
     });
 
-    it('preserves stack frames while replacing all message lines', () => {
+    it('preserves stack frames with source location while replacing message lines', () => {
       const original = new Error('sensitive: SELECT * FROM users WHERE id = user@example.com');
       const result = sanitizeForSentry(original);
       // Stack first line must use the sanitized message.
       expect(result.stack?.split('\n')[0]).toContain('API error');
-      // All "  at " frame lines from the original must be present in the result.
-      const originalFrames = (original.stack ?? '').split('\n').filter((l) => /^\s+at\s/.test(l));
-      const resultFrames = (result.stack ?? '').split('\n').filter((l) => /^\s+at\s/.test(l));
-      expect(resultFrames).toEqual(originalFrames);
+      // Frames with ":line:col" source location are preserved.
+      // Frames without source location (e.g. "at new Promise (<anonymous>)") are
+      // intentionally dropped by the stricter filter to prevent PII injection.
+      const isLocatedFrame = (l: string) =>
+        /:\d+:\d+/.test(l) && (/^\s+at\s/.test(l) || /@/.test(l));
+      const originalLocatedFrames = (original.stack ?? '').split('\n').filter(isLocatedFrame);
+      const resultLocatedFrames = (result.stack ?? '').split('\n').filter(isLocatedFrame);
+      expect(resultLocatedFrames).toEqual(originalLocatedFrames);
     });
 
     it('normalizes PII in error.name to "Error"', () => {
@@ -117,6 +130,25 @@ describe('sanitizeForSentry', () => {
       expect(result.message).toBe('API error');
       expect(result.stack).not.toContain('user@example.com');
       expect(result.stack).not.toContain('more PII here');
+    });
+
+    it('crafted frame-like PII line "\\n    at pii@example.com" is rejected', () => {
+      // A crafted message continuation that matches the old "/^\s+at\s/" regex.
+      // The new filter requires ":digits:digits" source location — email addresses
+      // have no line:col suffix, so they are dropped.
+      const original = new Error('failed\n    at tenant@example.com');
+      const result = sanitizeForSentry(original);
+      expect(result.stack).not.toContain('tenant@example.com');
+    });
+
+    it('Hermes/JSC stack frames (name@file:line:col) are preserved', () => {
+      // React Native with Hermes uses "FunctionName@bundle.js:1:5" frame format.
+      const original = new Error('render failed');
+      original.stack =
+        'Error: render failed\nrender@/app/bundle.js:1:5\nanonymous@/app/bundle.js:2:10';
+      const result = sanitizeForSentry(original);
+      expect(result.stack).toContain('render@/app/bundle.js:1:5');
+      expect(result.stack).toContain('anonymous@/app/bundle.js:2:10');
     });
 
     it('handles Error with a .code property — keeps stack, uses fixed description', () => {

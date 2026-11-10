@@ -2,19 +2,20 @@ import * as Sentry from '@sentry/react-native';
 import { env } from '../config/env';
 
 // Fixed descriptions for known safe Postgres SQLSTATE codes.
-// Using fixed strings (not sb.message) so a custom exception with an
-// allowlisted code cannot smuggle arbitrary message text into Sentry.
-const SAFE_PG_CODE_DESCRIPTIONS: Record<string, string> = {
-  '08006': 'connection failure',
-  '28000': 'invalid authorization',
-  '42501': 'insufficient privilege',
-  '23502': 'not null violation',
-  '23503': 'foreign key violation',
-  '23505': 'unique violation',
-  '23514': 'check violation',
-  '53100': 'disk full',
-  '57014': 'query canceled',
-};
+// Map (not plain object) to avoid prototype-property pollution:
+// Object literal lookups inherit from Object.prototype, so keys like
+// "constructor" or "__proto__" return truthy values on a plain object.
+const SAFE_PG_CODE_DESCRIPTIONS = new Map<string, string>([
+  ['08006', 'connection failure'],
+  ['28000', 'invalid authorization'],
+  ['42501', 'insufficient privilege'],
+  ['23502', 'not null violation'],
+  ['23503', 'foreign key violation'],
+  ['23505', 'unique violation'],
+  ['23514', 'check violation'],
+  ['53100', 'disk full'],
+  ['57014', 'query canceled'],
+]);
 
 interface SupabaseError {
   code?: string;
@@ -39,12 +40,19 @@ const SAFE_ERROR_NAMES = new Set([
   'StorageError',
 ]);
 
-// Rebuild a stack string using only lines that look like V8/RN stack frames
-// ("  at Something (file:line)"). This strips the entire original message prefix —
-// including multiline messages — and replaces them with safeMessage.
+// Rebuild a stack string from genuine frame lines only.
+// Skips the first line (always the message prefix) then keeps lines that:
+//   - match V8 format:     "  at FunctionName (file.js:10:5)"
+//   - match Hermes/JSC:    "FunctionName@file.js:10:5"
+// Both require ":digits:digits" (source location) so crafted message
+// continuations like "\n    at pii@example.com" are rejected — they lack
+// the ":line:col" suffix that all genuine runtime frames carry.
 function replaceStackMessage(stack: string | undefined, safeMessage: string): string {
   if (!stack) return `Error: ${safeMessage}`;
-  const frameLines = stack.split('\n').filter((line) => /^\s+at\s/.test(line));
+  const frameLines = stack
+    .split('\n')
+    .slice(1) // drop the first line ("ErrorName: message")
+    .filter((line) => /:\d+:\d+/.test(line) && (/^\s+at\s/.test(line) || /@/.test(line)));
   return frameLines.length
     ? `Error: ${safeMessage}\n${frameLines.join('\n')}`
     : `Error: ${safeMessage}`;
@@ -55,7 +63,7 @@ function safeName(name: string): string {
 }
 
 function safeCodeMessage(code: string): string {
-  const desc = SAFE_PG_CODE_DESCRIPTIONS[code];
+  const desc = SAFE_PG_CODE_DESCRIPTIONS.get(code);
   // Unknown codes are not forwarded — they could contain arbitrary caller-supplied text.
   return desc ? `${code}: ${desc}` : 'unknown database error';
 }
