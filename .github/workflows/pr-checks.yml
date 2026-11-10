@@ -16,7 +16,6 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npx eslint . --ext .js,.jsx,.ts,.tsx --max-warnings 0
-        continue-on-error: true
         env:
           CI: true
 
@@ -31,7 +30,6 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npx tsc --noEmit --skipLibCheck
-        continue-on-error: true
         env:
           CI: true
 
