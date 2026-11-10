@@ -176,10 +176,10 @@ REVOKE ALL ON FUNCTION release_to_tenant_dispatch(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION release_to_tenant_dispatch(uuid) TO authenticated;
 
 -- ─── 9. reclaim_request() RPC ─────────────────────────────────────────────────
--- SELECT FOR UPDATE locks the request row; FOR SHARE on assignments/POs
--- prevents concurrent row-status changes between the count check and the
--- status update (mva_update only permits -> cancelled, so the FOR SHARE is a
--- belt-and-suspenders guard against future policy loosening on those tables).
+-- SELECT FOR UPDATE locks the request row. Assignments/POs are locked with a
+-- separate PERFORM...FOR SHARE before the count query; PostgreSQL disallows
+-- FOR SHARE on aggregate queries, so the lock and count are issued as two
+-- statements against the same rows within the same transaction.
 -- Source-state guard (AND status = 'tenant_dispatching') prevents reclaim
 -- from reopening completed or cancelled requests.
 -- Resets captured_tenant_may_dispatch=false and vendor_id=null so stale
@@ -209,24 +209,34 @@ BEGIN
     RAISE EXCEPTION 'not authorized';
   END IF;
 
-  -- Lock assignment rows so a concurrent status change cannot slip past
-  -- the count check below.
-  SELECT count(*) INTO open_assignments
+  -- Lock qualifying assignment rows first, then count outside the locking
+  -- clause. PostgreSQL does not allow FOR SHARE on aggregate queries.
+  PERFORM id
     FROM public.maintenance_vendor_assignments
    WHERE request_id = req_id
      AND status NOT IN ('cancelled', 'rejected')
    FOR SHARE;
+
+  SELECT count(*) INTO open_assignments
+    FROM public.maintenance_vendor_assignments
+   WHERE request_id = req_id
+     AND status NOT IN ('cancelled', 'rejected');
 
   IF open_assignments > 0 THEN
     RAISE EXCEPTION 'cancel open vendor assignments first';
   END IF;
 
   -- Lock PO rows for the same reason.
-  SELECT count(*) INTO open_pos
+  PERFORM id
     FROM public.purchase_orders
    WHERE request_id = req_id
      AND status NOT IN ('cancelled', 'closed')
    FOR SHARE;
+
+  SELECT count(*) INTO open_pos
+    FROM public.purchase_orders
+   WHERE request_id = req_id
+     AND status NOT IN ('cancelled', 'closed');
 
   IF open_pos > 0 THEN
     RAISE EXCEPTION 'close or cancel open purchase orders first';
