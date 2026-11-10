@@ -23,19 +23,41 @@ interface SupabaseError {
   details?: string;
 }
 
-// Replace the first line of a stack trace ("ErrorName: original message")
-// with a safe message so that PII in the original message does not appear in
-// the stack string forwarded to Sentry.
+// Allowlist of safe error name values. Any custom name (e.g. 'tenant@example.com')
+// is normalized to 'Error' before forwarding to Sentry.
+const SAFE_ERROR_NAMES = new Set([
+  'Error',
+  'TypeError',
+  'RangeError',
+  'ReferenceError',
+  'SyntaxError',
+  'URIError',
+  'EvalError',
+  'DatabaseError',
+  'NetworkError',
+  'AuthError',
+  'StorageError',
+]);
+
+// Rebuild a stack string using only lines that look like V8/RN stack frames
+// ("  at Something (file:line)"). This strips the entire original message prefix —
+// including multiline messages — and replaces them with safeMessage.
 function replaceStackMessage(stack: string | undefined, safeMessage: string): string {
   if (!stack) return `Error: ${safeMessage}`;
-  const newline = stack.indexOf('\n');
-  if (newline === -1) return `Error: ${safeMessage}`;
-  return `Error: ${safeMessage}${stack.slice(newline)}`;
+  const frameLines = stack.split('\n').filter((line) => /^\s+at\s/.test(line));
+  return frameLines.length
+    ? `Error: ${safeMessage}\n${frameLines.join('\n')}`
+    : `Error: ${safeMessage}`;
+}
+
+function safeName(name: string): string {
+  return SAFE_ERROR_NAMES.has(name) ? name : 'Error';
 }
 
 function safeCodeMessage(code: string): string {
   const desc = SAFE_PG_CODE_DESCRIPTIONS[code];
-  return desc ? `${code}: ${desc}` : code; // unknown codes: emit code only, no message
+  // Unknown codes are not forwarded — they could contain arbitrary caller-supplied text.
+  return desc ? `${code}: ${desc}` : 'unknown database error';
 }
 
 export function sanitizeForSentry(error: unknown): Error {
@@ -47,12 +69,12 @@ export function sanitizeForSentry(error: unknown): Error {
     if (typeof coded.code === 'string') {
       const safeMessage = safeCodeMessage(coded.code);
       const sanitized = new Error(safeMessage);
-      sanitized.name = error.name;
+      sanitized.name = safeName(error.name);
       sanitized.stack = replaceStackMessage(error.stack, safeMessage);
       return sanitized;
     }
     const sanitized = new Error('API error');
-    sanitized.name = error.name;
+    sanitized.name = safeName(error.name);
     sanitized.stack = replaceStackMessage(error.stack, 'API error');
     return sanitized;
   }

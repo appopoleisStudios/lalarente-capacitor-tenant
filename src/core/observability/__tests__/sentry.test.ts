@@ -27,18 +27,20 @@ describe('sanitizeForSentry', () => {
       expect(result.message).not.toContain('tenant@example.com');
     });
 
-    it('emits only the code for unknown Postgres codes — drops message', () => {
+    it('unknown Postgres code — returns fixed fallback, never the code or message', () => {
       const err = { code: 'P0001', message: 'tenant email tenant@example.com already registered' };
       const result = sanitizeForSentry(err);
-      expect(result.message).toBe('P0001');
+      expect(result.message).toBe('unknown database error');
+      expect(result.message).not.toContain('P0001');
       expect(result.message).not.toContain('tenant@example.com');
     });
 
-    it('emits only the code for unknown codes — no colon-space bypass', () => {
-      const err = { code: '00000', message: 'Request failed for user@example.com' };
+    it('PII value as code — returns fixed fallback, never forwards the code', () => {
+      // Adversarial: caller passes email address as the code field.
+      const err = { code: 'tenant@example.com', message: 'hidden' };
       const result = sanitizeForSentry(err);
-      expect(result.message).toBe('00000');
-      expect(result.message).not.toContain('user@example.com');
+      expect(result.message).toBe('unknown database error');
+      expect(result.message).not.toContain('tenant@example.com');
     });
 
     it('emits fixed descriptions for all known SQLSTATE codes', () => {
@@ -74,25 +76,47 @@ describe('sanitizeForSentry', () => {
       expect(result.stack).toContain('at ');
     });
 
-    it('preserves stack frames while replacing the message line', () => {
+    it('preserves stack frames while replacing all message lines', () => {
       const original = new Error('sensitive: SELECT * FROM users WHERE id = user@example.com');
       const result = sanitizeForSentry(original);
-      // Stack first line should use the sanitized message.
+      // Stack first line must use the sanitized message.
       expect(result.stack?.split('\n')[0]).toContain('API error');
-      // Frames from the original error are preserved.
-      const originalFrames = original.stack?.split('\n').slice(1).join('\n') ?? '';
-      const resultFrames = result.stack?.split('\n').slice(1).join('\n') ?? '';
-      expect(resultFrames).toBe(originalFrames);
+      // All "  at " frame lines from the original must be present in the result.
+      const originalFrames = (original.stack ?? '').split('\n').filter((l) => /^\s+at\s/.test(l));
+      const resultFrames = (result.stack ?? '').split('\n').filter((l) => /^\s+at\s/.test(l));
+      expect(resultFrames).toEqual(originalFrames);
     });
 
-    it('preserves the error name for Sentry grouping', () => {
-      class CustomError extends Error {
-        name = 'CustomError';
-      }
-      const original = new CustomError('sensitive data here');
+    it('normalizes PII in error.name to "Error"', () => {
+      const original = new Error('API call failed');
+      original.name = 'tenant@example.com';
       const result = sanitizeForSentry(original);
-      expect(result.name).toBe('CustomError');
+      expect(result.name).toBe('Error');
+      expect(result.name).not.toContain('@');
+    });
+
+    it('preserves allowlisted error names (e.g. TypeError)', () => {
+      const original = new TypeError('some internal error');
+      const result = sanitizeForSentry(original);
+      expect(result.name).toBe('TypeError');
+    });
+
+    it('normalizes custom subclass name not in allowlist to "Error"', () => {
+      class DatabaseConnectionError extends Error {
+        name = 'DatabaseConnectionError';
+      }
+      const original = new DatabaseConnectionError('host=192.168.1.1 failed');
+      const result = sanitizeForSentry(original);
+      expect(result.name).toBe('Error');
       expect(result.message).toBe('API error');
+    });
+
+    it('multiline message — second line stripped, frames preserved', () => {
+      const original = new Error('query failed\nuser@example.com\nmore PII here');
+      const result = sanitizeForSentry(original);
+      expect(result.message).toBe('API error');
+      expect(result.stack).not.toContain('user@example.com');
+      expect(result.stack).not.toContain('more PII here');
     });
 
     it('handles Error with a .code property — keeps stack, uses fixed description', () => {
@@ -107,12 +131,21 @@ describe('sanitizeForSentry', () => {
       expect(result.stack).toContain('at ');
     });
 
-    it('handles Error with unknown .code — emits code-only, no original message in stack', () => {
+    it('Error with unknown .code — returns fixed fallback, never forwards code value', () => {
       const original = new Error('denied for tenant@example.com') as Error & { code: string };
       original.code = 'CUSTOM01';
       const result = sanitizeForSentry(original);
-      expect(result.message).toBe('CUSTOM01');
+      expect(result.message).toBe('unknown database error');
+      expect(result.message).not.toContain('CUSTOM01');
       expect(result.stack).not.toContain('tenant@example.com');
+    });
+
+    it('Error with PII as .code value — returns fixed fallback', () => {
+      const original = new Error('internal') as Error & { code: string };
+      original.code = 'tenant@example.com';
+      const result = sanitizeForSentry(original);
+      expect(result.message).toBe('unknown database error');
+      expect(result.message).not.toContain('tenant@example.com');
     });
   });
 
