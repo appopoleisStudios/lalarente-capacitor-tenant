@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { getStatusColors } from '@/src/shared/utils/statusColors';
 
 export interface StatusBadgeProps {
   status: 'open' | 'assigned' | 'in_progress' | 'completed' | 'closed' | string;
@@ -8,42 +9,61 @@ export interface StatusBadgeProps {
   customConfig?: { bg: string; text: string; label: string };
 }
 
-const DEFAULT_STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
-  open: { label: 'Open', bg: '#FEF3C7', text: '#92400E' },
-  assigned: { label: 'Assigned', bg: '#DBEAFE', text: '#1E40AF' },
-  in_progress: { label: 'In Progress', bg: '#FDE68A', text: '#B45309' },
-  completed: { label: 'Completed', bg: '#D1FAE5', text: '#065F46' },
-  closed: { label: 'Closed', bg: '#F1F5F9', text: '#475569' },
-  approved: { label: 'Approved', bg: '#D1FAE5', text: '#065F46' },
-  rejected: { label: 'Rejected', bg: '#FEE2E2', text: '#991B1B' },
-  pending: { label: 'Pending', bg: '#FEF3C7', text: '#92400E' },
-  active: { label: 'Active', bg: '#DBEAFE', text: '#1E40AF' },
-  draft: { label: 'Draft', bg: '#F1F5F9', text: '#475569' },
+const STATUS_LABELS: Record<string, string> = {
+  open: 'Open',
+  assigned: 'Assigned',
+  in_progress: 'In Progress',
+  completed: 'Completed',
+  closed: 'Closed',
+  approved: 'Approved',
+  rejected: 'Rejected',
+  pending: 'Pending',
+  active: 'Active',
+  draft: 'Draft',
+  submitted: 'Submitted',
+  under_review: 'Under Review',
+  resolved: 'Resolved',
+  executed: 'Executed',
+  paid: 'Paid',
+  failed: 'Failed',
+  overdue: 'Overdue',
+  declined: 'Declined',
+  expired: 'Expired',
+  terminated: 'Terminated',
+  early_terminated: 'Early Terminated',
+  eviction: 'Eviction',
+  cancelled: 'Cancelled',
+  withdrawn: 'Withdrawn',
+  no_show: 'No Show',
+  partial: 'Partial',
+  mediation: 'Mediation',
+  escalated: 'Escalated',
+  pending_signatures: 'Pending Signatures',
+  pending_verification: 'Pending Verification',
+  pending_closure: 'Pending Closure',
+  cure_period: 'Cure Period',
+  awaiting_owner_dispatch: 'Awaiting Dispatch',
+  tenant_dispatching: 'Tenant Dispatching',
+  owner_dispatched: 'Owner Dispatched',
 };
 
 export function StatusBadge({ status, size = 'medium', label, customConfig }: StatusBadgeProps) {
-  const config = customConfig ?? DEFAULT_STATUS_CONFIG[status] ?? {
-    label: label ?? status,
-    bg: '#F1F5F9',
-    text: '#475569',
-  };
+  const colors = customConfig
+    ? { background: customConfig.bg, text: customConfig.text }
+    : getStatusColors(status);
+
+  const displayLabel = label ?? customConfig?.label ?? STATUS_LABELS[status] ?? status;
 
   return (
     <View
       style={[
         styles.badge,
-        { backgroundColor: config.bg },
+        { backgroundColor: colors.background },
         size === 'small' && styles.badgeSmall,
       ]}
     >
-      <Text
-        style={[
-          styles.text,
-          { color: config.text },
-          size === 'small' && styles.textSmall,
-        ]}
-      >
-        {label ?? config.label}
+      <Text style={[styles.text, { color: colors.text }, size === 'small' && styles.textSmall]}>
+        {displayLabel}
       </Text>
     </View>
   );
