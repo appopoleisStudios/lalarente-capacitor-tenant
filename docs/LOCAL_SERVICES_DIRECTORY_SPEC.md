@@ -71,7 +71,7 @@ Open app → tap "Local Services" tab (new, bottom nav)
   → consumer talks to provider directly off-app
 ```
 
-**Logged events along the way:** `listing_impression` (list view), `listing_view`
+**Logged events along the way:** `impression` (list view), `view`
 (detail view), `tap_call`, `tap_whatsapp`, `tap_email`, `tap_website`.
 
 ### 3.2 Provider journey (v1 — no app login)
@@ -124,8 +124,11 @@ CREATE TABLE service_listings (
     CHECK (status IN ('pending', 'active', 'paused', 'expired', 'rejected')),
   starts_at TIMESTAMPTZ DEFAULT NOW(),
   expires_at TIMESTAMPTZ NOT NULL,       -- renewal deadline
-  monthly_fee_cents INT DEFAULT 0,       -- what we charge them
-  per_lead_fee_cents INT DEFAULT 0,      -- commission per contact tap
+  monthly_fee_cents INT DEFAULT 0,       -- what we charge them (rate at time of agreement)
+  per_lead_fee_cents INT DEFAULT 0,      -- commission per contact tap (rate at time of agreement)
+  -- Rate fields are immutable after the listing goes active. Any mid-period
+  -- price change requires a new listing period. Invoices snapshot the rates
+  -- from the listing row at billing time (see §4.4).
   created_by UUID REFERENCES auth.users(id), -- admin who created it
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -144,7 +147,8 @@ CREATE INDEX idx_service_listings_areas
 ```sql
 CREATE TABLE listing_events (
   id BIGSERIAL PRIMARY KEY,              -- high volume, bigserial not uuid
-  listing_id UUID NOT NULL REFERENCES service_listings(id) ON DELETE CASCADE,
+  listing_id UUID REFERENCES service_listings(id) ON DELETE SET NULL,
+  -- NULL listing_id preserved for billing attribution after a listing is deleted.
   event_type TEXT NOT NULL
     CHECK (event_type IN (
       'impression',   -- card shown in a list
@@ -199,6 +203,9 @@ CREATE TABLE service_listing_invoices (
   lead_count INT NOT NULL,
   lead_fee_cents INT NOT NULL,
   total_cents INT NOT NULL,
+  -- Rates are snapshotted from service_listings at billing time so a future
+  -- price change on the listing does not retroactively alter issued invoices.
+  per_lead_fee_cents_snapshot INT NOT NULL DEFAULT 0,
   status TEXT CHECK (status IN ('draft', 'sent', 'paid', 'overdue', 'written_off')),
   paid_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -208,13 +215,18 @@ CREATE TABLE service_listing_invoices (
 ### 4.5 RLS policies
 
 - **`service_listings`**
-  - SELECT: anyone (`USING (status = 'active' OR auth.role() = 'service_role')`)
-  - INSERT/UPDATE/DELETE: superadmin or admin role only
+  - SELECT (consumers): `USING (status = 'active' AND starts_at <= NOW() AND expires_at > NOW())`
+    — published window enforced at the policy level; expired-but-active rows are hidden from consumers.
+  - SELECT (admins): separate policy `USING (auth.jwt() ->> 'role' IN ('admin', 'superadmin'))`
+    — admins see all statuses (pending, paused, expired, rejected) for the listings table in §5.3.
+  - INSERT/UPDATE/DELETE: admin or superadmin JWT role only.
 - **`listing_events`**
-  - INSERT: anyone (anon + authenticated) — this is write-only from the client
-  - SELECT: superadmin / admin only (prevents competitors from scraping our data)
+  - INSERT: **not exposed via RLS**. All writes go through the `log-listing-event` edge function
+    (service role, §8.2). The function enforces that `user_id`, `user_role`, and `created_at`
+    are set server-side, preventing clients from fabricating identity or replaying events.
+  - SELECT: admin / superadmin only (prevents competitors from scraping our data).
 - **`service_listing_invoices`**
-  - All: superadmin / admin only
+  - All: admin / superadmin only.
 
 ---
 
@@ -358,10 +370,12 @@ supabase/
 
 Client calls edge function (not direct insert) to:
 
-1. Bypass RLS cleanly
-2. Enrich with IP / user-agent server-side (optional)
-3. Rate-limit abusive clients centrally
-4. Buffer / batch if needed (v2)
+1. Set `user_id`, `user_role`, and `created_at` from the verified JWT / server clock —
+   clients cannot fabricate identity or replay events with a falsified timestamp.
+2. Bypass RLS cleanly (service role key never sent to client).
+3. Enrich with IP / user-agent server-side (optional).
+4. Rate-limit abusive clients centrally.
+5. Buffer / batch if needed (v2).
 
 ```ts
 // src/features/services-directory/hooks/useListingEventLogger.ts
