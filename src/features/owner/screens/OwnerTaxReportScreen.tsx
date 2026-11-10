@@ -237,15 +237,12 @@ export default function OwnerTaxReportScreen() {
       const grossRentalIncome = propertyBreakdown.reduce((s, p) => s + p.grossIncome, 0);
       const maintenanceDeductions = propertyBreakdown.reduce((s, p) => s + p.deductions, 0);
 
-      // Exclusive upper bound: March 1 of the end year. endDate+1 fails in leap years
-      // (Feb 28+1 = Feb 29, not Mar 1), so we derive the year from startDate.
-      const taxEndYear = taxYear.startDate.getFullYear() + 1;
-      const taxEndExclusive = `${taxEndYear}-03-01`;
-      const taxPayments = await getTaxExpensesByYear(
-        uid,
-        taxYear.startDate.toISOString().split('T')[0],
-        taxEndExclusive
-      );
+      // Both boundaries are calendar-date strings to avoid UTC-offset shifts.
+      // toISOString() on a local-midnight Date in UTC+2 rolls back to the previous day.
+      const taxStartYear = taxYear.startDate.getFullYear();
+      const taxStartStr = `${taxStartYear}-03-01`;
+      const taxEndStr = `${taxStartYear + 1}-03-01`;
+      const taxPayments = await getTaxExpensesByYear(uid, taxStartStr, taxEndStr);
       const taxPaymentDeductions = totalDeductible(taxPayments);
       const taxExpensesByCategory = summariseByCategory(taxPayments);
 
