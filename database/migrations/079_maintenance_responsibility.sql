@@ -66,21 +66,50 @@ ALTER TABLE maintenance_vendor_assignments ENABLE ROW LEVEL SECURITY;
 -- Allows reclaim_request() to sweep all POs for a request regardless of
 -- which assignment originally produced them.
 --
--- Backfill note: existing POs have request_id = NULL after this migration.
--- No backfill is required because:
---   (a) The 'tenant_dispatching' status added above did not exist before
---       this migration; no pre-existing request can be in that state.
---   (b) reclaim_request() only targets requests in 'tenant_dispatching' state.
---   (c) Therefore, no existing PO (request_id = NULL) can block or be
---       relevant to any reclaim call that could legally be issued.
---
--- POs created under the new flow will have request_id populated at INSERT
--- time by the application layer.
+-- Enforcement strategy:
+--   (a) Backfill: populate request_id for existing POs that are linked to a
+--       maintenance request via service_contracts (the existing PO→contract→
+--       maintenance_request chain). This covers the case where a pre-existing
+--       request could later be released to 'tenant_dispatching' and have its
+--       POs be invisible to reclaim_request().
+--   (b) Forward trigger: a BEFORE INSERT trigger auto-populates request_id
+--       from the contract chain for any new PO created with a contract_id but
+--       no explicit request_id. This ensures application code that pre-dates
+--       this migration (which doesn't set request_id) is still correct.
+--   (c) POs with no contract_id (non-maintenance POs) remain with
+--       request_id = NULL — they are unrelated to the dispatch flow.
 
 ALTER TABLE purchase_orders
   ADD COLUMN IF NOT EXISTS request_id uuid REFERENCES maintenance_requests(id);
 
 CREATE INDEX IF NOT EXISTS idx_po_request ON purchase_orders(request_id);
+
+-- (a) Backfill: link existing POs to their maintenance requests via contract chain.
+UPDATE public.purchase_orders po
+   SET request_id = sc.maintenance_request_id
+  FROM public.service_contracts sc
+ WHERE po.contract_id = sc.id
+   AND sc.maintenance_request_id IS NOT NULL
+   AND po.request_id IS NULL;
+
+-- (b) Forward trigger: auto-populate request_id on new POs from contract chain.
+CREATE OR REPLACE FUNCTION populate_po_request_id()
+RETURNS trigger LANGUAGE plpgsql
+  SET search_path = public, pg_catalog, pg_temp
+AS $$
+BEGIN
+  IF NEW.request_id IS NULL AND NEW.contract_id IS NOT NULL THEN
+    SELECT sc.maintenance_request_id INTO NEW.request_id
+      FROM public.service_contracts sc
+     WHERE sc.id = NEW.contract_id;
+  END IF;
+  RETURN NEW;
+END $$;
+
+DROP TRIGGER IF EXISTS trg_populate_po_request_id ON purchase_orders;
+CREATE TRIGGER trg_populate_po_request_id
+  BEFORE INSERT ON public.purchase_orders
+  FOR EACH ROW EXECUTE FUNCTION populate_po_request_id();
 
 -- ─── 6. RLS policies: property_service_items ──────────────────────────────────
 
