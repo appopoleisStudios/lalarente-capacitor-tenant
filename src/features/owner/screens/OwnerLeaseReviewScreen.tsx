@@ -261,6 +261,9 @@ export default function OwnerLeaseReviewScreen() {
           style={[styles.sendBtn, submitting && styles.btnDisabled]}
           onPress={handleSendToTenant}
           disabled={submitting}
+          accessibilityRole="button"
+          accessibilityLabel="Send lease to tenant"
+          accessibilityState={{ disabled: submitting }}
         >
           {submitting ? (
             <ActivityIndicator size="small" color="#fff" />
