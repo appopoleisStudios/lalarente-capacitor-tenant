@@ -28,10 +28,13 @@ ALTER TABLE property_service_items ENABLE ROW LEVEL SECURITY;
 
 -- Backfill: seed one row per existing services_provided entry with
 -- tenant_may_dispatch = true (preserves today's behaviour).
+-- Lateral unnest with alias filters NULL elements before the NOT NULL constraint fires;
+-- ON CONFLICT DO NOTHING handles duplicate names on the same property.
 INSERT INTO property_service_items (property_id, name, tenant_may_dispatch)
-SELECT id, unnest(services_provided), true
-FROM   properties
-WHERE  services_provided IS NOT NULL AND array_length(services_provided, 1) > 0
+SELECT p.id, elem, true
+FROM   properties p, unnest(p.services_provided) AS elem
+WHERE  p.services_provided IS NOT NULL AND array_length(p.services_provided, 1) > 0
+  AND  elem IS NOT NULL
 ON CONFLICT DO NOTHING;
 
 -- ─── 2. Extend maintenance_status enum ────────────────────────────────────────
@@ -252,6 +255,34 @@ CREATE POLICY psi_tenant_select ON property_service_items
         AND l.status      = 'active'
     )
   );
+
+-- ─── 6b. property_service_items — immutable property membership ───────────────
+-- Once a service item is referenced by a maintenance request, its property_id
+-- must not change. Moving it to another property (even one owned by the same user)
+-- would leave the maintenance request pointing to an item on the wrong property.
+
+CREATE OR REPLACE FUNCTION lock_psi_property_id()
+RETURNS trigger LANGUAGE plpgsql
+  SET search_path = public, pg_catalog, pg_temp
+AS $$
+BEGIN
+  IF NEW.property_id IS DISTINCT FROM OLD.property_id THEN
+    IF EXISTS (
+      SELECT 1 FROM public.maintenance_requests mr
+       WHERE mr.service_item_id = OLD.id
+    ) THEN
+      RAISE EXCEPTION
+        'cannot move service item % to a different property: it is referenced by maintenance requests',
+        OLD.id;
+    END IF;
+  END IF;
+  RETURN NEW;
+END $$;
+
+DROP TRIGGER IF EXISTS trg_lock_psi_property_id ON property_service_items;
+CREATE TRIGGER trg_lock_psi_property_id
+  BEFORE UPDATE OF property_id ON property_service_items
+  FOR EACH ROW EXECUTE FUNCTION lock_psi_property_id();
 
 -- ─── 7. capture_dispatch_authority() ──────────────────────────────────────────
 -- BEFORE INSERT trigger on maintenance_requests.
