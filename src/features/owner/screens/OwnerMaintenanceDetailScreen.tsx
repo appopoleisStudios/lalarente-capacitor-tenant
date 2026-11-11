@@ -7,6 +7,7 @@ import {
   getPOByRequestId,
   getProgressUpdates,
   getQuotesByRequest,
+  maintenanceApi,
   pushToDedicatedVendors,
   pushToOpenMarket,
   rejectQuote,
@@ -43,12 +44,19 @@ import { reportApiError } from '@/src/core/observability/sentry';
 
 const RSA = { blue: '#002395' };
 
-const STATUS_CONFIG = {
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
   open: { label: 'Open', color: colors.error[500], icon: 'alert-circle' },
   assigned: { label: 'Assigned', color: colors.warning[500], icon: 'person' },
   in_progress: { label: 'In Progress', color: colors.info[500], icon: 'time' },
   completed: { label: 'Completed', color: colors.success[500], icon: 'checkmark-circle' },
   closed: { label: 'Closed', color: colors.gray[500], icon: 'archive' },
+  awaiting_owner_dispatch: { label: 'Awaiting Your Action', color: '#D97706', icon: 'hourglass' },
+  tenant_dispatching: {
+    label: 'Tenant Dispatching',
+    color: colors.info[600],
+    icon: 'person-circle',
+  },
+  owner_dispatched: { label: 'Owner Dispatched', color: RSA.blue, icon: 'checkmark-done' },
 };
 
 const PRIORITY_CONFIG = {
@@ -70,6 +78,7 @@ export default function OwnerMaintenanceDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [revisionQuoteId, setRevisionQuoteId] = useState<string | null>(null);
+  const [reclaimModalVisible, setReclaimModalVisible] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -428,6 +437,51 @@ export default function OwnerMaintenanceDetailScreen() {
     }));
   };
 
+  const handleReleaseToTenant = async () => {
+    Alert.alert(
+      'Release to Tenant',
+      'Allow the tenant to find and hire their own vendor for this request?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Release',
+          onPress: async () => {
+            try {
+              setActionLoading(true);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              await maintenanceApi.releaseToTenantDispatch(id);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              Alert.alert('Released', 'Tenant can now dispatch a vendor');
+              fetchRequest();
+            } catch (error: any) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              Alert.alert('Error', error.message || 'Failed to release request');
+            } finally {
+              setActionLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleReclaimRequest = async (reason: string) => {
+    try {
+      setActionLoading(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      await maintenanceApi.reclaimRequest(id, reason);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setReclaimModalVisible(false);
+      Alert.alert('Reclaimed', 'Request is back under your management');
+      fetchRequest();
+    } catch (error: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', error.message || 'Failed to reclaim request');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleDelete = async () => {
     Alert.alert(
       'Delete Request',
@@ -491,10 +545,12 @@ export default function OwnerMaintenanceDetailScreen() {
     );
   }
 
-  const statusConfig = STATUS_CONFIG[request.status as keyof typeof STATUS_CONFIG];
+  const statusConfig = STATUS_CONFIG[request.status] ?? STATUS_CONFIG['open'];
   const priorityConfig = PRIORITY_CONFIG[request.priority as keyof typeof PRIORITY_CONFIG];
   const canAcknowledge = request.mms_status === 'notification' && !request.acknowledged_at;
   const canPushToVendors = request.acknowledged_at && !request.vendor_routed_at;
+  const canReleaseToTenant = request.status === 'awaiting_owner_dispatch';
+  const canReclaim = request.status === 'tenant_dispatching';
 
   // Edge case: Request is in open market but no quotes received
   const isUnquotedOpenMarket =
@@ -840,7 +896,11 @@ export default function OwnerMaintenanceDetailScreen() {
       </ScrollView>
 
       {/* Action Buttons */}
-      {(canAcknowledge || canPushToVendors || isUnquotedOpenMarket) && (
+      {(canAcknowledge ||
+        canPushToVendors ||
+        isUnquotedOpenMarket ||
+        canReleaseToTenant ||
+        canReclaim) && (
         <View style={styles.footer}>
           {canAcknowledge && (
             <View style={styles.actionContainer}>
@@ -894,6 +954,48 @@ export default function OwnerMaintenanceDetailScreen() {
               </TouchableOpacity>
             </View>
           )}
+          {canReleaseToTenant && (
+            <View style={styles.actionContainer}>
+              <Text style={styles.actionHint}>
+                🔓 Tenant submitted this — assign yourself or allow them to find a vendor
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.primaryButton, { flex: 1 }]}
+                  onPress={handlePushToVendors}
+                  disabled={actionLoading}
+                >
+                  <Ionicons name="people" size={20} color="#FFFFFF" />
+                  <Text style={styles.actionButtonText}>Assign Vendor</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.secondaryButton, { flex: 1 }]}
+                  onPress={handleReleaseToTenant}
+                  disabled={actionLoading}
+                >
+                  <Ionicons name="person-circle" size={20} color={RSA.blue} />
+                  <Text style={[styles.actionButtonText, { color: RSA.blue }]}>
+                    Release to Tenant
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+          {canReclaim && (
+            <View style={styles.actionContainer}>
+              <Text style={styles.actionHint}>
+                ⚠️ Tenant is handling vendor selection — reclaim to manage yourself
+              </Text>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.warningButton]}
+                onPress={() => setReclaimModalVisible(true)}
+                disabled={actionLoading}
+              >
+                <Ionicons name="return-down-back" size={20} color="#FFFFFF" />
+                <Text style={styles.actionButtonText}>Reclaim Request</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       )}
 
@@ -907,6 +1009,18 @@ export default function OwnerMaintenanceDetailScreen() {
         submitting={actionLoading}
         onCancel={() => setRevisionQuoteId(null)}
         onConfirm={handleRequestRevision}
+      />
+
+      {/* Reclaim Request Modal */}
+      <ReasonPromptModal
+        visible={reclaimModalVisible}
+        title="Reclaim Request"
+        message="Explain why you're taking back management of this request."
+        placeholder="e.g., Need a specific vendor, tenant selected inappropriate vendor..."
+        confirmLabel="Reclaim"
+        submitting={actionLoading}
+        onCancel={() => setReclaimModalVisible(false)}
+        onConfirm={handleReclaimRequest}
       />
     </SafeAreaView>
   );
