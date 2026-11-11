@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { Text } from './Text';
+import { colors } from '@/src/shared/theme/colors';
 
 interface LoadingSpinnerProps {
   size?: 'small' | 'large';
@@ -11,7 +12,7 @@ interface LoadingSpinnerProps {
 
 export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   size = 'large',
-  color = '#007A4D',
+  color = colors.primary[500],
   message,
   fullScreen = false,
 }) => {
@@ -25,18 +26,10 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
       )}
     </>
   );
-  
+
   if (fullScreen) {
-    return (
-      <View className="flex-1 items-center justify-center bg-white">
-        {content}
-      </View>
-    );
+    return <View className="flex-1 items-center justify-center bg-white">{content}</View>;
   }
-  
-  return (
-    <View className="items-center justify-center p-4">
-      {content}
-    </View>
-  );
+
+  return <View className="items-center justify-center p-4">{content}</View>;
 };

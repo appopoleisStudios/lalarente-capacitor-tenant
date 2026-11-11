@@ -24,6 +24,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 const RSA = { blue: '#002395' };
 
@@ -76,6 +77,7 @@ export default function OwnerQuoteDetailScreen() {
       const revisionsData = await getQuoteRevisions(quoteId);
       setRevisions(revisionsData);
     } catch (error: any) {
+      reportApiError(error, 'vendor_quotes', 'select');
       console.error('Error fetching quote:', error);
       Alert.alert('Error', 'Failed to load quote details');
     } finally {

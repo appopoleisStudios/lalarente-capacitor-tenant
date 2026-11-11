@@ -30,6 +30,7 @@ import {
   TaxExpensesByCategory,
   CATEGORY_LABELS,
 } from '../../tax/api/propertyTaxPayments.api';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 interface TaxYear {
   label: string; // e.g. "2024/2025"
@@ -288,6 +289,7 @@ export default function OwnerTaxReportScreen() {
         taxExpensesByCategory,
       });
     } catch (err) {
+      reportApiError(err, 'payments', 'select');
       console.error('Error fetching tax data:', err);
     } finally {
       setLoading(false);

@@ -30,6 +30,7 @@ import {
   type DataDeletionRequest,
   type UserDataExport,
 } from '../api';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 type Tab = 'access' | 'correction' | 'deletion';
 
@@ -64,7 +65,9 @@ export default function DataSubjectRightsScreen() {
   );
 
   const initUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (user) {
       setUserId(user.id);
       fetchDataForUser(user.id);
@@ -83,6 +86,7 @@ export default function DataSubjectRightsScreen() {
       setCorrectionRequests(summary.correctionRequests);
       setDeletionRequests(summary.deletionRequests);
     } catch (err) {
+      reportApiError(err, 'dsar_requests', 'select');
       console.error('Error fetching DSAR data:', err);
     } finally {
       setLoading(false);
@@ -93,7 +97,11 @@ export default function DataSubjectRightsScreen() {
     if (!userId) return;
     setSubmitting(true);
     try {
-      await dataSubjectRightsApi.submitAccessRequest(userId, 'access', formDescription || undefined);
+      await dataSubjectRightsApi.submitAccessRequest(
+        userId,
+        'access',
+        formDescription || undefined
+      );
       const data = await dataSubjectRightsApi.generateUserDataExport(userId);
       setExportedData(data);
       Alert.alert(
@@ -133,7 +141,10 @@ export default function DataSubjectRightsScreen() {
         correctionValue,
         formDescription || undefined
       );
-      Alert.alert('Request Submitted', 'Your data correction request has been submitted for review.');
+      Alert.alert(
+        'Request Submitted',
+        'Your data correction request has been submitted for review.'
+      );
       setShowForm(false);
       setCorrectionField('');
       setCorrectionValue('');
@@ -165,7 +176,10 @@ export default function DataSubjectRightsScreen() {
                 'marketing',
                 deletionReason || undefined
               );
-              Alert.alert('Request Submitted', 'Your data deletion request has been submitted for review.');
+              Alert.alert(
+                'Request Submitted',
+                'Your data deletion request has been submitted for review.'
+              );
               setShowForm(false);
               setDeletionReason('');
               await fetchDataForUser(userId);
@@ -182,16 +196,23 @@ export default function DataSubjectRightsScreen() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return colors.success[500];
-      case 'pending': return colors.warning[500];
-      case 'processing': case 'under_review': return colors.info[500];
-      case 'rejected': case 'overdue': return colors.error[500];
-      default: return colors.gray[500];
+      case 'completed':
+        return colors.success[500];
+      case 'pending':
+        return colors.warning[500];
+      case 'processing':
+      case 'under_review':
+        return colors.info[500];
+      case 'rejected':
+      case 'overdue':
+        return colors.error[500];
+      default:
+        return colors.gray[500];
     }
   };
 
   const renderRequestList = () => {
-    let requests: Array<{ id: string; status: string; created_at: string; label: string }> = [];
+    let requests: { id: string; status: string; created_at: string; label: string }[] = [];
 
     if (activeTab === 'access') {
       requests = accessRequests.map((r) => ({
@@ -229,7 +250,9 @@ export default function DataSubjectRightsScreen() {
       <View key={req.id} style={styles.requestCard}>
         <View style={styles.requestHeader}>
           <Text style={styles.requestLabel}>{req.label}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(req.status) + '20' }]}>
+          <View
+            style={[styles.statusBadge, { backgroundColor: getStatusColor(req.status) + '20' }]}
+          >
             <Text style={[styles.statusText, { color: getStatusColor(req.status) }]}>
               {req.status.replace(/_/g, ' ')}
             </Text>
@@ -300,7 +323,10 @@ export default function DataSubjectRightsScreen() {
               multiline
             />
             <TouchableOpacity
-              style={[styles.submitButton, (!correctionField || !correctionValue) && styles.submitButtonDisabled]}
+              style={[
+                styles.submitButton,
+                (!correctionField || !correctionValue) && styles.submitButtonDisabled,
+              ]}
               onPress={handleSubmitCorrectionRequest}
               disabled={submitting || !correctionField || !correctionValue}
             >
@@ -318,8 +344,8 @@ export default function DataSubjectRightsScreen() {
             <View style={styles.warningCard}>
               <Ionicons name="warning" size={20} color={colors.warning[600]} />
               <Text style={styles.warningText}>
-                Certain data (active leases, payment records, tax-related data) must be retained
-                per legal obligations and cannot be deleted.
+                Certain data (active leases, payment records, tax-related data) must be retained per
+                legal obligations and cannot be deleted.
               </Text>
             </View>
             <Text style={styles.formLabel}>Reason for deletion (optional)</Text>
@@ -373,7 +399,10 @@ export default function DataSubjectRightsScreen() {
           <TouchableOpacity
             key={tab}
             style={[styles.tab, activeTab === tab && styles.tabActive]}
-            onPress={() => { setActiveTab(tab); setShowForm(false); }}
+            onPress={() => {
+              setActiveTab(tab);
+              setShowForm(false);
+            }}
           >
             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -384,11 +413,12 @@ export default function DataSubjectRightsScreen() {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* New Request Button */}
-        <TouchableOpacity
-          style={styles.newRequestButton}
-          onPress={() => setShowForm(!showForm)}
-        >
-          <Ionicons name={showForm ? 'close' : 'add-circle-outline'} size={20} color={colors.primary[500]} />
+        <TouchableOpacity style={styles.newRequestButton} onPress={() => setShowForm(!showForm)}>
+          <Ionicons
+            name={showForm ? 'close' : 'add-circle-outline'}
+            size={20}
+            color={colors.primary[500]}
+          />
           <Text style={styles.newRequestText}>
             {showForm ? 'Cancel' : `New ${activeTab} request`}
           </Text>
@@ -407,19 +437,53 @@ export default function DataSubjectRightsScreen() {
               Generated: {new Date(exportedData.exportedAt).toLocaleString('en-ZA')}
             </Text>
             {[
-              { label: 'Profile', icon: 'person-outline' as const, count: exportedData.profile ? 1 : 0 },
-              { label: 'Consents', icon: 'shield-checkmark-outline' as const, count: exportedData.consents.length },
-              { label: 'Leases', icon: 'document-text-outline' as const, count: exportedData.leases.length },
-              { label: 'Payments', icon: 'card-outline' as const, count: exportedData.payments.length },
-              { label: 'Applications', icon: 'paper-plane-outline' as const, count: exportedData.applications.length },
-              { label: 'Maintenance', icon: 'hammer-outline' as const, count: exportedData.maintenanceRequests.length },
-              { label: 'Messages', icon: 'chatbubble-outline' as const, count: exportedData.messages.length },
-              { label: 'Viewings', icon: 'eye-outline' as const, count: exportedData.viewings.length },
+              {
+                label: 'Profile',
+                icon: 'person-outline' as const,
+                count: exportedData.profile ? 1 : 0,
+              },
+              {
+                label: 'Consents',
+                icon: 'shield-checkmark-outline' as const,
+                count: exportedData.consents.length,
+              },
+              {
+                label: 'Leases',
+                icon: 'document-text-outline' as const,
+                count: exportedData.leases.length,
+              },
+              {
+                label: 'Payments',
+                icon: 'card-outline' as const,
+                count: exportedData.payments.length,
+              },
+              {
+                label: 'Applications',
+                icon: 'paper-plane-outline' as const,
+                count: exportedData.applications.length,
+              },
+              {
+                label: 'Maintenance',
+                icon: 'hammer-outline' as const,
+                count: exportedData.maintenanceRequests.length,
+              },
+              {
+                label: 'Messages',
+                icon: 'chatbubble-outline' as const,
+                count: exportedData.messages.length,
+              },
+              {
+                label: 'Viewings',
+                icon: 'eye-outline' as const,
+                count: exportedData.viewings.length,
+              },
             ].map((item) => (
               <View key={item.label} style={styles.exportRow}>
                 <Ionicons name={item.icon} size={16} color={colors.text.secondary} />
                 <Text style={styles.exportRowLabel}>{item.label}</Text>
-                <Text style={styles.exportRowCount}>{item.count} record{item.count !== 1 ? 's' : ''}</Text>
+                <Text style={styles.exportRowCount}>
+                  {item.count} record{item.count !== 1 ? 's' : ''}
+                </Text>
               </View>
             ))}
             <TouchableOpacity style={styles.shareButton} onPress={handleShareExport}>

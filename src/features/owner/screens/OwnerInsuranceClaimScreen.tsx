@@ -33,6 +33,7 @@ import {
 } from '@/src/features/insurance/api/insuranceClaims.api';
 import { colors } from '@/src/shared/theme/colors';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -146,6 +147,7 @@ export default function OwnerInsuranceClaimScreen() {
         setSelectedPolicy(userPolicies[0]);
       }
     } catch (err: any) {
+      reportApiError(err, 'insurance_claims', 'select');
       console.error('Error loading claim:', err);
       Alert.alert('Error', 'Failed to load claim information');
     } finally {

@@ -40,6 +40,7 @@ import { viewingsApi } from '../../properties/api/viewingsApi';
 import { messagesApi } from '../../messaging/api/messagesApi';
 import { useOwnerDashboard } from '../hooks/useOwnerDashboard';
 import { Ionicons } from '@expo/vector-icons';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 export default function OwnerDashboardScreen() {
   const router = useRouter();
@@ -135,6 +136,7 @@ export default function OwnerDashboardScreen() {
         }))
       );
     } catch (err) {
+      reportApiError(err, 'message_threads', 'select');
       console.error('Error loading messages for dashboard:', err);
     }
   };
@@ -193,6 +195,7 @@ export default function OwnerDashboardScreen() {
       );
       setPendingAlternativesCount(withAlt.length);
     } catch (error) {
+      reportApiError(error, 'viewings', 'select');
       console.error('Error loading viewing requests:', error);
     }
   };
@@ -217,6 +220,7 @@ export default function OwnerDashboardScreen() {
 
       setRecentCancellations(data ?? []);
     } catch (err) {
+      reportApiError(err, 'viewings', 'select');
       console.error('Error loading recent cancellations:', err);
     }
   };

@@ -29,6 +29,7 @@ import {
 } from '@/src/features/applications/api/holdingDeposit.api';
 import { colors } from '@/src/shared/theme/colors';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -121,6 +122,7 @@ export default function OwnerHoldingDepositScreen() {
         .order('title');
       setProperties((props || []) as Property[]);
     } catch (err: any) {
+      reportApiError(err, 'holding_deposits', 'select');
       console.error('Error loading holding deposits:', err);
       Alert.alert('Error', 'Failed to load holding deposits');
     } finally {

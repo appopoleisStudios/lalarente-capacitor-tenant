@@ -4,6 +4,7 @@
 
 import { supabase } from '@/src/lib/supabase';
 import { InvoiceError, InvoiceErrorCode, type MaintenanceInvoice } from './invoices.api';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 export type InvoiceTalkState = {
   confirmations: { user_id: string; created_at: string }[];
@@ -27,6 +28,7 @@ async function logTalkEvent(
       metadata: metadata || null,
     });
   } catch (err) {
+    reportApiError(err, 'maintenance_invoice_audit_logs', 'insert');
     console.error('Failed to write invoice talk audit log:', err);
   }
 }

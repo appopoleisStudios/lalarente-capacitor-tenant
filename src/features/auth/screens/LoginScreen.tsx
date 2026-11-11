@@ -22,6 +22,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useAuth } from '@/src/contexts/AuthContext';
 import { getDashboardRouteForRole } from '@/src/core/navigation/roleRoutes';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 // South African flag colors
 const RSA_COLORS = {
@@ -108,6 +109,7 @@ export default function LoginScreen() {
       await signIn(email.trim(), password);
       // Navigation is handled by the useEffect watching profile + authLoading.
     } catch (error: any) {
+      reportApiError(error, 'auth', 'select');
       console.error('Login error:', error);
       setFormError(error.message || 'Login failed. Please check your credentials.');
       setLoading(false);

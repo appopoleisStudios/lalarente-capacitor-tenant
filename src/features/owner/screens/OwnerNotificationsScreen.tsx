@@ -13,6 +13,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { colors } from '@/src/shared/theme/colors';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 type AlertItem = {
   id: string;
@@ -254,6 +255,7 @@ export default function OwnerNotificationsScreen() {
 
       setAlerts(items);
     } catch (err) {
+      reportApiError(err, 'notifications', 'select');
       console.error('Error loading owner notifications:', err);
     } finally {
       setLoading(false);

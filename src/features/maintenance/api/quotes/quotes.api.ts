@@ -6,6 +6,7 @@
 import { supabase } from '@/src/lib/supabase';
 import type { Quote, QuoteSubmissionData, QuoteUpdateData } from '../types/quote.types';
 import { createQuoteRevision } from './quoteRevisions.api';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 /**
  * Get quotes for a maintenance request
@@ -153,6 +154,7 @@ export async function submitQuote(quoteData: QuoteSubmissionData): Promise<Quote
 
     return quote as Quote;
   } catch (error) {
+    reportApiError(error, 'vendor_quotes', 'insert');
     console.error('Error submitting quote:', error);
     throw error;
   }

@@ -22,6 +22,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { supabase } from '../../../lib/supabase';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 const RSA = { blue: '#002395', gold: '#FFB81C' }; // Owner colors
 
@@ -187,6 +188,7 @@ export default function OwnerLeaseCreateScreen() {
       setStartDate(nextMonth.toISOString().split('T')[0]);
       setEndDate(oneYearLater.toISOString().split('T')[0]);
     } catch (error) {
+      reportApiError(error, 'rental_applications', 'select');
       console.error('Error loading application:', error);
       Alert.alert('Error', 'Failed to load application');
       router.back();
@@ -302,6 +304,7 @@ export default function OwnerLeaseCreateScreen() {
                 ]
               );
             } catch (error) {
+              reportApiError(error, 'leases', 'insert');
               console.error('Error creating lease:', error);
               Alert.alert('Error', 'Failed to create lease. Please try again.');
             } finally {

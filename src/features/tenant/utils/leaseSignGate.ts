@@ -11,6 +11,7 @@
 
 import { supabase } from '@/src/lib/supabase';
 import { checkTenantProfileCompleteness } from './profileCompleteness';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 export type SignLeaseGateDecision =
   | { action: 'sign' }
@@ -72,6 +73,7 @@ export async function evaluateSignLeaseGate(): Promise<SignLeaseGateDecision> {
     // Rejected promises (network errors from auth.getUser, unexpected
     // throws in the completeness helper, etc.) land here. We never want
     // a raw rejection to bubble into the React event handler.
+    reportApiError(err, 'profiles', 'select');
     console.error('[leaseSignGate] evaluate failed', err);
     return UNEXPECTED_ERROR_DECISION;
   }

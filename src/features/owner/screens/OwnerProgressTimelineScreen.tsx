@@ -1,7 +1,4 @@
-import {
-  getMaintenanceRequestById,
-  getProgressUpdates,
-} from '@/src/features/maintenance/api';
+import { getMaintenanceRequestById, getProgressUpdates } from '@/src/features/maintenance/api';
 import { MediaGallery } from '@/src/features/maintenance/components/MediaGallery';
 import { colors } from '@/src/shared/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 const RSA = { blue: '#002395' };
 
@@ -60,6 +58,7 @@ export default function OwnerProgressTimelineScreen() {
       if (abortRef.current?.signal.aborted) return;
       setProgressUpdates(updates || []);
     } catch (error: any) {
+      reportApiError(error, 'job_progress_updates', 'select');
       console.error('Error loading progress timeline:', error);
       Alert.alert('Error', error.message || 'Failed to load progress updates');
     } finally {
@@ -90,11 +89,10 @@ export default function OwnerProgressTimelineScreen() {
           </View>
           <View style={styles.updateMeta}>
             <Text style={styles.updateDate}>
-              {isLatest ? 'Latest Update · ' : ''}{formattedDate}
+              {isLatest ? 'Latest Update · ' : ''}
+              {formattedDate}
             </Text>
-            <Text style={styles.updateNumber}>
-              Update #{progressUpdates.length - index}
-            </Text>
+            <Text style={styles.updateNumber}>Update #{progressUpdates.length - index}</Text>
           </View>
         </View>
 
@@ -159,15 +157,13 @@ export default function OwnerProgressTimelineScreen() {
           <View style={styles.vendorAvatar}>
             <Ionicons name="business" size={18} color={RSA.blue} />
           </View>
-          <Text style={styles.vendorBarText}>
-            {vendor.full_name || 'Vendor'}
-          </Text>
+          <Text style={styles.vendorBarText}>{vendor.full_name || 'Vendor'}</Text>
         </View>
       )}
 
       <FlatList
         data={progressUpdates}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => item.id}
         renderItem={renderUpdateItem}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
@@ -176,7 +172,8 @@ export default function OwnerProgressTimelineScreen() {
             <Ionicons name="time-outline" size={56} color={colors.gray[300]} />
             <Text style={styles.emptyTitle}>No Progress Updates Yet</Text>
             <Text style={styles.emptyText}>
-              Once the vendor starts submitting daily progress updates, they will appear here in chronological order.
+              Once the vendor starts submitting daily progress updates, they will appear here in
+              chronological order.
             </Text>
           </View>
         }
@@ -201,7 +198,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
-  headerButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerTitleContainer: { flex: 1, marginLeft: 8 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
   headerSubtitle: { fontSize: 13, color: '#6b7280', marginTop: 2 },

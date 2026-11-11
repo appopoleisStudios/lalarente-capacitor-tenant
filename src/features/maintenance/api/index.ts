@@ -10,6 +10,7 @@
 // BACKWARD COMPATIBILITY
 // Re-export old API objects for gradual migration
 // ============================================
+import * as DispatchAuthorityAPI from './requests/dispatchAuthority.api';
 import * as MaintenanceFiltersAPI from './requests/maintenanceFilters.api';
 import * as MaintenanceRequestsAPI from './requests/maintenanceRequests.api';
 import * as MaintenanceSubscriptionsAPI from './requests/maintenanceSubscriptions.api';
@@ -44,6 +45,7 @@ export * from './types';
 // ============================================
 // MAINTENANCE REQUESTS
 // ============================================
+export * from './requests/dispatchAuthority.api';
 export * from './requests/maintenanceFilters.api';
 export * from './requests/maintenanceRequests.api';
 export * from './requests/maintenanceWorkflow.api';
@@ -185,6 +187,11 @@ export const maintenanceApi = {
 
   // Work Order Reports (Plane #68)
   triggerWorkOrderReport: WorkOrderReportAPI.triggerWorkOrderReport,
+
+  // CT7-023: dispatch authority
+  getPropertyServiceItems: DispatchAuthorityAPI.getPropertyServiceItems,
+  releaseToTenantDispatch: DispatchAuthorityAPI.releaseToTenantDispatch,
+  reclaimRequest: DispatchAuthorityAPI.reclaimRequest,
 };
 
 /**
