@@ -92,23 +92,41 @@ UPDATE public.purchase_orders po
    AND sc.maintenance_request_id IS NOT NULL
    AND po.request_id IS NULL;
 
--- (b) Forward trigger: auto-populate request_id on new POs from contract chain.
+-- (b) Forward trigger: enforce request_id consistency from contract chain on INSERT
+-- and on UPDATE OF contract_id.
+-- Rules:
+--   1. If contract_id IS NOT NULL, derive the authoritative request_id from
+--      service_contracts.maintenance_request_id (always overrides caller-supplied value).
+--   2. Reject any explicit request_id that disagrees with the derived value —
+--      a PO cannot claim two different maintenance requests simultaneously.
+--   3. Fire on UPDATE OF contract_id so a re-linked PO stays consistent.
 CREATE OR REPLACE FUNCTION populate_po_request_id()
 RETURNS trigger LANGUAGE plpgsql
   SET search_path = public, pg_catalog, pg_temp
 AS $$
+DECLARE
+  v_derived uuid;
 BEGIN
-  IF NEW.request_id IS NULL AND NEW.contract_id IS NOT NULL THEN
-    SELECT sc.maintenance_request_id INTO NEW.request_id
+  IF NEW.contract_id IS NOT NULL THEN
+    SELECT sc.maintenance_request_id INTO v_derived
       FROM public.service_contracts sc
      WHERE sc.id = NEW.contract_id;
+
+    -- Reject caller-supplied request_id that disagrees with the contract chain.
+    IF NEW.request_id IS NOT NULL AND NEW.request_id IS DISTINCT FROM v_derived THEN
+      RAISE EXCEPTION
+        'purchase_orders.request_id conflicts with contract chain: supplied %, derived from contract %',
+        NEW.request_id, v_derived;
+    END IF;
+
+    NEW.request_id := v_derived;
   END IF;
   RETURN NEW;
 END $$;
 
 DROP TRIGGER IF EXISTS trg_populate_po_request_id ON purchase_orders;
 CREATE TRIGGER trg_populate_po_request_id
-  BEFORE INSERT ON public.purchase_orders
+  BEFORE INSERT OR UPDATE OF contract_id ON public.purchase_orders
   FOR EACH ROW EXECUTE FUNCTION populate_po_request_id();
 
 -- ─── 6. RLS policies: property_service_items ──────────────────────────────────

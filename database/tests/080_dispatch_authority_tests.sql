@@ -15,7 +15,7 @@
 
 BEGIN;
 
-SELECT plan(21);
+SELECT plan(24);
 
 -- ─── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -429,6 +429,79 @@ SELECT lives_ok(
 );
 
 SELECT tests.clear_authentication();
+
+-- ─── M. populate_po_request_id trigger consistency ───────────────────────────
+-- M1: conflicting explicit request_id is rejected
+-- M2: contract_id update keeps request_id consistent
+-- M3: NULL contract_id leaves request_id unchanged
+
+DO $$
+DECLARE
+  v_contract_id uuid := gen_random_uuid();
+  v_req_id      uuid;
+BEGIN
+  -- Create a minimal service_contract row for trigger tests.
+  -- We need a maintenance_request to reference.
+  SELECT id INTO v_req_id
+    FROM maintenance_requests
+   WHERE title = 'L_cancel_reclaim' LIMIT 1;
+
+  INSERT INTO service_contracts (id, maintenance_request_id, property_id, owner_id,
+                                  vendor_id, status, start_date, end_date)
+  VALUES (v_contract_id, v_req_id,
+          current_setting('test.prop_id')::uuid,
+          current_setting('test.owner_id')::uuid,
+          tests.get_supabase_uid('tenant_b'),
+          'active', now(), now() + interval '1 year');
+
+  PERFORM set_config('test.m_contract_id', v_contract_id::text, true);
+  PERFORM set_config('test.m_req_id', v_req_id::text, true);
+END $$;
+
+-- M1: conflicting request_id rejected
+SELECT throws_like(
+  $q$
+    INSERT INTO purchase_orders (contract_id, request_id, po_number, currency,
+                                  subtotal, vat_amount, platform_fee_amount,
+                                  total_amount, status, revision_number)
+    VALUES (current_setting('test.m_contract_id')::uuid,
+            gen_random_uuid(),  -- different from contract's request_id
+            'PO-M1', 'ZAR', 100, 15, 5, 120, 'draft', 1)
+  $q$,
+  '%conflicts with contract chain%',
+  'M1: explicit request_id conflicting with contract chain is rejected'
+);
+
+-- M2: contract_id update keeps request_id consistent (trigger fires on UPDATE OF contract_id)
+DO $$
+DECLARE
+  v_po_id uuid;
+BEGIN
+  INSERT INTO purchase_orders (po_number, currency, subtotal, vat_amount,
+                                platform_fee_amount, total_amount, status, revision_number)
+  VALUES ('PO-M2', 'ZAR', 200, 30, 10, 240, 'draft', 1)
+  RETURNING id INTO v_po_id;
+
+  -- Link to contract — trigger should derive request_id
+  UPDATE purchase_orders SET contract_id = current_setting('test.m_contract_id')::uuid
+   WHERE id = v_po_id;
+
+  PERFORM set_config('test.m_po_id', v_po_id::text, true);
+END $$;
+
+SELECT is(
+  (SELECT request_id FROM purchase_orders WHERE id = current_setting('test.m_po_id')::uuid),
+  current_setting('test.m_req_id')::uuid,
+  'M2: contract_id update propagates request_id via trigger'
+);
+
+-- M3: PO with no contract_id retains NULL request_id
+SELECT is(
+  (SELECT request_id FROM purchase_orders WHERE po_number = 'PO-M2'
+    AND contract_id IS NULL LIMIT 1),
+  NULL,
+  'M3: PO without contract_id keeps request_id NULL'
+);
 
 SELECT * FROM finish();
 ROLLBACK;
