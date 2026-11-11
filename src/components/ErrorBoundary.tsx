@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import * as Sentry from '@sentry/react-native';
 import { env } from '@/src/core/config/env';
-import { sanitizeForSentry } from '@/src/core/observability/sentry';
+import { sanitizeForSentry, sanitizeComponentStack } from '@/src/core/observability/sentry';
 
 interface State {
   hasError: boolean;
@@ -22,7 +22,7 @@ export class ErrorBoundary extends React.Component<React.PropsWithChildren, Stat
     console.error('[ErrorBoundary] rendering fallback; details forwarded to Sentry sanitized');
     if (env.sentry.dsn) {
       Sentry.captureException(sanitizeForSentry(error), {
-        extra: { componentStack: info.componentStack },
+        extra: { componentStack: sanitizeComponentStack(info.componentStack) },
       });
     }
   }

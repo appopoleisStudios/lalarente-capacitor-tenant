@@ -1,4 +1,4 @@
-import { sanitizeForSentry } from '../sentry';
+import { sanitizeForSentry, sanitizeComponentStack } from '../sentry';
 
 jest.mock('@sentry/react-native', () => ({
   addBreadcrumb: jest.fn(),
@@ -146,6 +146,14 @@ describe('sanitizeForSentry', () => {
       expect(result.stack).not.toContain('tenant@example.com');
     });
 
+    it('crafted "    at lookup (tenant@example.com:1:5)" — email in parens is rejected', () => {
+      // Even with the parens pattern satisfied, genuine V8 source locations never
+      // contain "@". Requiring [^@] inside parens blocks this injection.
+      const original = new Error('failed\n    at lookup (tenant@example.com:1:5)');
+      const result = sanitizeForSentry(original);
+      expect(result.stack).not.toContain('tenant@example.com');
+    });
+
     it('Hermes/JSC stack frames (name@file:line:col) are preserved', () => {
       // React Native with Hermes uses "FunctionName@bundle.js:1:5" frame format.
       const original = new Error('render failed');
@@ -202,5 +210,30 @@ describe('sanitizeForSentry', () => {
       const result = sanitizeForSentry({ foo: 'bar' });
       expect(result.message).toBe('unknown API error');
     });
+  });
+});
+
+describe('sanitizeComponentStack', () => {
+  it('strips source-location parens from component stack lines', () => {
+    const stack =
+      '\n    at Foo (webpack://src/components/Foo.tsx:10:5)' +
+      '\n    at Bar (webpack://src/screens/Bar.tsx:42:3)';
+    const result = sanitizeComponentStack(stack);
+    expect(result).toContain('at Foo');
+    expect(result).toContain('at Bar');
+    expect(result).not.toContain('Foo.tsx');
+    expect(result).not.toContain('Bar.tsx');
+  });
+
+  it('keeps component names when no parens present', () => {
+    const stack = '\n    at Wrapper\n    at Provider';
+    const result = sanitizeComponentStack(stack);
+    expect(result).toContain('Wrapper');
+    expect(result).toContain('Provider');
+  });
+
+  it('returns empty string for null/undefined', () => {
+    expect(sanitizeComponentStack(null)).toBe('');
+    expect(sanitizeComponentStack(undefined)).toBe('');
   });
 });

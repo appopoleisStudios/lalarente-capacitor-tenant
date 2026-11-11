@@ -54,9 +54,10 @@ function replaceStackMessage(stack: string | undefined, safeMessage: string): st
     .filter((line) => {
       if (/^\s+at\s/.test(line)) {
         // V8 frame: if the content contains "@", require the source location
-        // to be wrapped in parens — genuine V8 frames use "(file:line:col)".
-        // Crafted injections like "  at email@domain:1:5" have no parens.
-        if (/@/.test(line)) return /\(.*:\d+:\d+\)/.test(line);
+        // to be wrapped in parens with no "@" inside them — genuine V8 file
+        // paths never contain "@", but crafted injections like
+        // "  at lookup (tenant@example.com:1:5)" do.
+        if (/@/.test(line)) return /\([^@]*:\d+:\d+\)/.test(line);
         return /:\d+:\d+/.test(line);
       }
       // Hermes/JSC: "name@file:line:col" — must NOT start with whitespace.
@@ -117,6 +118,17 @@ export function sanitizeForSentry(error: unknown): Error {
  *
  * Usage: reportApiError(err, 'properties', 'select')
  */
+// Strip source-location parens from each React component stack line.
+// Keeps component names (safe identifiers) while removing file:line:col
+// references that could contain PII-laden bundle paths or query params.
+export function sanitizeComponentStack(componentStack: string | null | undefined): string {
+  if (!componentStack) return '';
+  return componentStack
+    .split('\n')
+    .map((line) => line.replace(/\s*\([^)]*\)\s*$/, '').trimEnd())
+    .join('\n');
+}
+
 export function reportApiError(
   error: unknown,
   table: string,
