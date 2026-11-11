@@ -166,8 +166,11 @@ CREATE INDEX idx_service_listings_canonical
 
 A provider has a stable identity anchored to their first (original) listing row:
 
-- When admin creates the **first listing** for a provider, the admin UI sends a single INSERT with both `id` and `canonical_listing_id` set to the same generated UUID (self-referential). The `NOT NULL` constraint requires this — a separate UPDATE-after-INSERT is not viable.
-- A BEFORE INSERT/UPDATE trigger verifies that `canonical_listing_id` references a row where `canonical_listing_id = id` (a true original, not a renewal). This prevents chains and cycles.
+- When admin creates the **first listing** for a provider, the admin UI sends a single INSERT with both `id` and `canonical_listing_id` set to the same pre-generated UUID. The `NOT NULL` constraint requires this — a separate UPDATE-after-INSERT is not viable.
+- A BEFORE INSERT trigger enforces the canonical identity rule with two branches:
+  1. **Self-reference (original):** if `NEW.canonical_listing_id = NEW.id`, the row is its own original — no DB query required; pass through.
+  2. **Renewal:** if `NEW.canonical_listing_id ≠ NEW.id`, query to verify `canonical_listing_id` references an existing row where `canonical_listing_id = id` (a true original). Reject if the target is itself a renewal — this prevents `R → A` where A is already `R' → A'`.
+- `canonical_listing_id` is **immutable after insertion**. A separate BEFORE UPDATE trigger rejects any attempt to change it on an existing row. Without immutability, updating an original's `canonical_listing_id` from `A` to `B` would leave all renewals pointing to A (now `A → B`) creating chains that break `WHERE canonical_listing_id = X` queries.
 - When a **pricing period ends** and admin renews/changes tier, they INSERT a new listing row with the new `starts_at`/`expires_at`/rate fields and set `canonical_listing_id = <original listing's id>`.
 - All event analytics, provider history, and cross-period reporting query `WHERE canonical_listing_id = <original id>` — `business_name_snapshot` on events is for display only and cannot be used as a join key.
 - `ON DELETE RESTRICT` is a safety net but originals are **never hard-deleted** under the platform's soft-delete-only policy (`deleted_at + status='archived'`). Archiving a row does not remove its foreign key reference, so `ON DELETE RESTRICT` is never triggered in normal operation.
