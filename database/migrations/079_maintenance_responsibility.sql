@@ -155,6 +155,49 @@ CREATE TRIGGER trg_lock_po_request_id
   BEFORE UPDATE OF request_id ON public.purchase_orders
   FOR EACH ROW EXECUTE FUNCTION lock_po_request_id();
 
+-- (c) service_contracts.maintenance_request_id consistency:
+--   * Late association (NULL → non-NULL): allow and propagate to linked POs.
+--   * Reassignment (non-NULL → different non-NULL): reject — a contract is bound to
+--     one request; the reclaim sweep relies on this invariant.
+--   * Clearing (non-NULL → NULL): reject — owned POs would become orphaned.
+
+CREATE OR REPLACE FUNCTION sync_sc_request_id()
+RETURNS trigger LANGUAGE plpgsql
+  SET search_path = public, pg_catalog, pg_temp
+AS $$
+BEGIN
+  IF OLD.maintenance_request_id IS NOT NULL
+     AND NEW.maintenance_request_id IS DISTINCT FROM OLD.maintenance_request_id THEN
+    RAISE EXCEPTION
+      'service_contracts.maintenance_request_id is immutable once set; old=%, attempted=%',
+      OLD.maintenance_request_id, NEW.maintenance_request_id;
+  END IF;
+  RETURN NEW;
+END $$;
+
+CREATE OR REPLACE FUNCTION propagate_sc_request_id()
+RETURNS trigger LANGUAGE plpgsql
+  SET search_path = public, pg_catalog, pg_temp
+AS $$
+BEGIN
+  IF OLD.maintenance_request_id IS NULL AND NEW.maintenance_request_id IS NOT NULL THEN
+    UPDATE public.purchase_orders
+       SET request_id = NEW.maintenance_request_id
+     WHERE contract_id = NEW.id;
+  END IF;
+  RETURN NULL;
+END $$;
+
+DROP TRIGGER IF EXISTS trg_sync_sc_request_id ON service_contracts;
+CREATE TRIGGER trg_sync_sc_request_id
+  BEFORE UPDATE OF maintenance_request_id ON public.service_contracts
+  FOR EACH ROW EXECUTE FUNCTION sync_sc_request_id();
+
+DROP TRIGGER IF EXISTS trg_propagate_sc_request_id ON service_contracts;
+CREATE TRIGGER trg_propagate_sc_request_id
+  AFTER UPDATE OF maintenance_request_id ON public.service_contracts
+  FOR EACH ROW EXECUTE FUNCTION propagate_sc_request_id();
+
 -- ─── 6. RLS policies: property_service_items ──────────────────────────────────
 
 DROP POLICY IF EXISTS psi_owner_rw      ON property_service_items;
