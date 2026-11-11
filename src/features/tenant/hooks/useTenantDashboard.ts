@@ -1,18 +1,87 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/src/lib/supabase';
-import { paymentsApi } from '../../properties/api/paymentsApi';
+import { paymentsApi, PaymentWithRelations } from '../../properties/api/paymentsApi';
 import { messagesApi } from '../../messaging/api/messagesApi';
 import { checkTenantProfileCompleteness } from '../utils/profileCompleteness';
 import { queryKeys } from '@/src/core/query/queryKeys';
 
+interface ActiveLeaseProperty {
+  id: string;
+  title: string;
+  address: string;
+  city: string;
+  rent_amount: number | null;
+  media_3d_url: string | null;
+}
+
+interface ActiveLeaseOwner {
+  id: string;
+  full_name: string;
+  phone: string | null;
+  email: string | null;
+}
+
+interface ActiveLease {
+  id: string;
+  status: string;
+  start_date: string;
+  end_date: string | null;
+  monthly_rent: number;
+  lease_type: string;
+  property: ActiveLeaseProperty | null;
+  owner: ActiveLeaseOwner | null;
+}
+
+interface MaintenanceRequest {
+  id: string;
+  status: string;
+  description: string;
+  created_at: string;
+  [key: string]: unknown;
+}
+
+interface UpcomingViewing {
+  id: string;
+  requested_date: string;
+  requested_time: string | null;
+  confirmed_date: string | null;
+  status: string;
+  owner_response: string | null;
+  property_id?: string;
+  property: { id: string; title: string; address: string } | null;
+}
+
+interface PendingApplication {
+  id: string;
+  status: string;
+  created_at: string;
+  property: { id: string; title: string } | null;
+}
+
+interface PendingInspection {
+  id: string;
+  type: string;
+  scheduled_date: string;
+  property: { title: string } | null;
+}
+
+interface DashboardNotification {
+  id: string;
+  type: string;
+  title: string | null;
+  body: string | null;
+  data: Record<string, unknown> | null;
+  created_at: string;
+}
+
 export interface TenantDashboardData {
   userName: string;
-  activeLease: any | null;
-  nextPayment: any | null;
-  recentPayments: any[];
-  maintenanceRequests: any[];
-  upcomingViewings: any[];
-  pendingApplications: any[];
+  activeLease: ActiveLease | null;
+  nextPayment: PaymentWithRelations | null;
+  recentPayments: PaymentWithRelations[];
+  maintenanceRequests: MaintenanceRequest[];
+  upcomingViewings: UpcomingViewing[];
+  pendingApplications: PendingApplication[];
   messageThreads: {
     id: string;
     owner_name: string;
@@ -23,9 +92,9 @@ export interface TenantDashboardData {
   }[];
   totalUnreadMessages: number;
   profileMissing: string[] | undefined;
-  pendingInspection: any | null;
-  notifications: any[];
-  viewingAlerts: any[];
+  pendingInspection: PendingInspection | null;
+  notifications: DashboardNotification[];
+  viewingAlerts: UpcomingViewing[];
 }
 
 export function useTenantDashboard(userId: string | null) {
@@ -87,7 +156,10 @@ async function fetchDashboardData(userId: string): Promise<TenantDashboardData> 
   // Filter out past appointments using the effective date (confirmed_date ?? requested_date),
   // then cap to 3. Must filter before limiting: a SQL LIMIT(3) could fill the
   // buffer with historical records and hide future appointments entirely.
-  const upcomingViewings = filterUpcomingViewings(viewingsResult.data ?? [], new Date()).slice(0, 3);
+  const upcomingViewings = filterUpcomingViewings(
+    (viewingsResult.data ?? []) as UpcomingViewing[],
+    new Date()
+  ).slice(0, 3);
 
   const upcoming = payments.find((p) => p.status === 'pending') ?? null;
   const recent = payments.filter((p) => p.status === 'completed').slice(0, 3);
@@ -105,17 +177,19 @@ async function fetchDashboardData(userId: string): Promise<TenantDashboardData> 
 
   if (declinedError) throw new Error(`viewing_requests (declined): ${declinedError.message}`);
 
-  let filteredAlerts = recentDeclined ?? [];
+  let filteredAlerts: UpcomingViewing[] = (recentDeclined ?? []) as UpcomingViewing[];
   if (filteredAlerts.length > 0) {
-    const declinedPropertyIds = [...new Set(filteredAlerts.map((v: any) => v.property_id))];
+    const declinedPropertyIds = [...new Set(filteredAlerts.map((v) => v.property_id))];
     const { data: activeForProps } = await supabase
       .from('viewing_requests')
       .select('property_id')
       .eq('tenant_id', userId)
       .in('status', ['pending', 'approved'])
       .in('property_id', declinedPropertyIds);
-    const activePropertyIds = new Set((activeForProps ?? []).map((v: any) => v.property_id));
-    filteredAlerts = filteredAlerts.filter((v: any) => !activePropertyIds.has(v.property_id));
+    const activePropertyIds = new Set(
+      ((activeForProps ?? []) as { property_id: string }[]).map((v) => v.property_id)
+    );
+    filteredAlerts = filteredAlerts.filter((v) => !activePropertyIds.has(v.property_id));
   }
 
   if (filteredAlerts.length > 0) {
@@ -126,8 +200,12 @@ async function fetchDashboardData(userId: string): Promise<TenantDashboardData> 
       .in('type', ['viewing_declined', 'viewing_approved'])
       .not('read_at', 'is', null);
     if (readNotifs && readNotifs.length > 0) {
-      const readViewingIds = new Set(readNotifs.map((n: any) => n.data?.viewingId).filter(Boolean));
-      filteredAlerts = filteredAlerts.filter((v: any) => !readViewingIds.has(v.id));
+      const readViewingIds = new Set(
+        (readNotifs as { data?: { viewingId?: string } }[])
+          .map((n) => n.data?.viewingId)
+          .filter(Boolean)
+      );
+      filteredAlerts = filteredAlerts.filter((v) => !readViewingIds.has(v.id));
     }
   }
 
@@ -180,7 +258,7 @@ async function fetchDashboardData(userId: string): Promise<TenantDashboardData> 
     pendingApplications: apps ?? [],
     messageThreads: sorted.slice(0, 3).map((t) => ({
       id: t.id,
-      owner_name: (t as any).owner?.full_name ?? 'Landlord',
+      owner_name: (t as { owner?: { full_name?: string } }).owner?.full_name ?? 'Landlord',
       subject: t.subject,
       unread_count: t.unread_count_tenant ?? 0,
       last_message_at: t.last_message_at,
@@ -194,7 +272,7 @@ async function fetchDashboardData(userId: string): Promise<TenantDashboardData> 
   };
 }
 
-function filterUpcomingViewings(viewings: any[], today: Date): any[] {
+function filterUpcomingViewings(viewings: UpcomingViewing[], today: Date): UpcomingViewing[] {
   const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   return viewings.filter((v) => {
     const effectiveDateStr = v.confirmed_date ?? v.requested_date;

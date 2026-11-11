@@ -21,9 +21,14 @@ jest.mock('../../utils/profileCompleteness', () => ({
 }));
 
 type TableResult = { data: unknown; error: unknown };
+type QueryRecord = { eq: Array<[string, unknown]>; in: Array<[string, unknown[]]> };
+type MockCapture = Record<string, QueryRecord[]>;
 
-const makeSupabaseMock = (overrides: Record<string, TableResult | TableResult[]> = {}) => {
+const makeSupabaseMock = (
+  overrides: Record<string, TableResult | TableResult[]> = {}
+): MockCapture => {
   const callCounts: Record<string, number> = {};
+  const capture: MockCapture = {};
   const defaults: Record<string, TableResult> = {
     profiles: { data: { full_name: 'Test User' }, error: null },
     leases: { data: null, error: null },
@@ -43,8 +48,15 @@ const makeSupabaseMock = (overrides: Record<string, TableResult | TableResult[]>
     } else {
       result = override ?? defaults[table] ?? { data: null, error: null };
     }
+
+    const qr: QueryRecord = { eq: [], in: [] };
+    if (!capture[table]) capture[table] = [];
+    capture[table].push(qr);
+
     let limitN: number | undefined;
     const gteFilters: Array<{ column: string; value: string }> = [];
+    const orderBys: Array<{ column: string; ascending: boolean }> = [];
+
     const resolved = () => {
       let data = result.data;
       if (Array.isArray(data)) {
@@ -53,22 +65,41 @@ const makeSupabaseMock = (overrides: Record<string, TableResult | TableResult[]>
             (row) => String(row[f.column] ?? '') >= f.value
           );
         }
-        if (limitN !== undefined) return { ...result, data: data.slice(0, limitN) };
+        if (orderBys.length > 0) {
+          for (const o of orderBys) {
+            data = [...(data as Record<string, unknown>[])].sort((a, b) => {
+              const av = String(a[o.column] ?? '');
+              const bv = String(b[o.column] ?? '');
+              return o.ascending ? av.localeCompare(bv) : bv.localeCompare(av);
+            });
+          }
+        }
+        if (limitN !== undefined) return { ...result, data: (data as unknown[]).slice(0, limitN) };
         return { ...result, data };
       }
       return result;
     };
+
     const chain: Record<string, unknown> = {
       select: () => chain,
-      eq: () => chain,
-      in: () => chain,
+      eq: (column: string, value: unknown) => {
+        qr.eq.push([column, value]);
+        return chain;
+      },
+      in: (column: string, values: unknown[]) => {
+        qr.in.push([column, values as unknown[]]);
+        return chain;
+      },
       not: () => chain,
       is: () => chain,
       gte: (column: string, value: unknown) => {
         gteFilters.push({ column, value: String(value) });
         return chain;
       },
-      order: () => chain,
+      order: (column: string, opts?: { ascending?: boolean }) => {
+        orderBys.push({ column, ascending: opts?.ascending ?? true });
+        return chain;
+      },
       limit: (n: number) => {
         limitN = n;
         return chain;
@@ -82,6 +113,8 @@ const makeSupabaseMock = (overrides: Record<string, TableResult | TableResult[]>
     ) => Promise.resolve(resolved()).then(onFulfilled, onRejected);
     return chain;
   });
+
+  return capture;
 };
 
 function wrapper({ children }: { children: React.ReactNode }) {
@@ -134,6 +167,16 @@ describe('useTenantDashboard', () => {
     const { result } = renderHook(() => useTenantDashboard(null), { wrapper });
     expect(result.current.fetchStatus).toBe('idle');
     expect(result.current.data).toBeUndefined();
+  });
+
+  it('viewing_requests query filters by tenant_id', async () => {
+    const captured = makeSupabaseMock();
+    const { result } = renderHook(() => useTenantDashboard('user-1'), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    const viewingQueries = captured['viewing_requests'] ?? [];
+    expect(
+      viewingQueries.some((q) => q.eq.some(([col, val]) => col === 'tenant_id' && val === 'user-1'))
+    ).toBe(true);
   });
 
   describe('upcomingViewings filtering', () => {
@@ -251,6 +294,30 @@ describe('useTenantDashboard', () => {
       expect(ids).toContain('f1');
       expect(ids).toContain('f2');
       expect(ids).toContain('f3');
+    });
+
+    it('returns 3 nearest future appointments from an unordered list', async () => {
+      // Provided furthest-first to verify ascending order is applied before slicing.
+      const unordered = [
+        { id: 'far', requested_date: '2099-12-01', confirmed_date: null, status: 'approved' },
+        { id: 'near1', requested_date: '2099-01-01', confirmed_date: null, status: 'approved' },
+        { id: 'near2', requested_date: '2099-02-01', confirmed_date: null, status: 'approved' },
+        { id: 'near3', requested_date: '2099-03-01', confirmed_date: null, status: 'approved' },
+      ];
+      makeSupabaseMock({
+        viewing_requests: [
+          { data: unordered, error: null },
+          { data: [], error: null },
+        ],
+      });
+      const { result } = renderHook(() => useTenantDashboard('user-1'), { wrapper });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      const ids = result.current.data!.upcomingViewings.map((v: any) => v.id);
+      expect(ids).toHaveLength(3);
+      expect(ids[0]).toBe('near1');
+      expect(ids[1]).toBe('near2');
+      expect(ids[2]).toBe('near3');
+      expect(ids).not.toContain('far');
     });
   });
 });
