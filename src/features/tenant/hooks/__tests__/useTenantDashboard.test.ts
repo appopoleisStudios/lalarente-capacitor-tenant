@@ -8,10 +8,10 @@ import { messagesApi } from '../../../messaging/api/messagesApi';
 import { useTenantDashboard } from '../useTenantDashboard';
 
 jest.mock('@/src/lib/supabase', () => ({ supabase: { from: jest.fn(), auth: {} } }));
-jest.mock('../../properties/api/paymentsApi', () => ({
+jest.mock('../../../properties/api/paymentsApi', () => ({
   paymentsApi: { getTenantPayments: jest.fn() },
 }));
-jest.mock('../../messaging/api/messagesApi', () => ({
+jest.mock('../../../messaging/api/messagesApi', () => ({
   messagesApi: { getUserThreads: jest.fn() },
 }));
 jest.mock('../utils/profileCompleteness', () => ({

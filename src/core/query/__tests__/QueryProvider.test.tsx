@@ -19,6 +19,8 @@ describe('QueryProvider AppState synchronization', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (focusManager.setFocused as jest.Mock).mockReset();
+    Object.defineProperty(AppState, 'currentState', { value: 'active', writable: true });
     addListenerSpy = jest
       .spyOn(AppState, 'addEventListener')
       .mockReturnValue({ remove: mockRemove } as any);
@@ -26,6 +28,11 @@ describe('QueryProvider AppState synchronization', () => {
 
   afterEach(() => {
     addListenerSpy.mockRestore();
+    (focusManager.setFocused as jest.Mock).mockReset();
+    const { focusManager: realFM } =
+      jest.requireActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
+    realFM.setFocused(undefined);
+    Object.defineProperty(AppState, 'currentState', { value: 'active', writable: true });
   });
 
   it('calls setFocused(true) on mount when app is already active', () => {
