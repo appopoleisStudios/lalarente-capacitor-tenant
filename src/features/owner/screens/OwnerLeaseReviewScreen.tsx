@@ -132,7 +132,7 @@ export default function OwnerLeaseReviewScreen() {
       lease_type: d.leaseType,
       late_fee_amount: d.lateFeeAmount ? parseFloat(d.lateFeeAmount) : null,
       late_fee_grace_days: d.lateFeeGraceDays ? parseInt(d.lateFeeGraceDays) : null,
-      rent_escalation_type: d.rentEscalationValue ? d.leaseType : null,
+      rent_escalation_type: d.rentEscalationValue ? d.rentEscalationType : null,
       rent_escalation_value: d.rentEscalationValue ? parseFloat(d.rentEscalationValue) : null,
       rent_escalation_frequency_months: d.rentEscalationValue
         ? parseInt(d.rentEscalationFrequency)
@@ -240,6 +240,8 @@ export default function OwnerLeaseReviewScreen() {
             style={styles.webview}
             scrollEnabled
             showsVerticalScrollIndicator
+            javaScriptEnabled={false}
+            originWhitelist={['about:blank']}
           />
         ) : (
           <View style={styles.center}>
@@ -308,7 +310,14 @@ export default function OwnerLeaseReviewScreen() {
                 autoFocus
               />
             </ScrollView>
-            <TouchableOpacity style={styles.doneBtn} onPress={() => setShowClausesModal(false)}>
+            <TouchableOpacity
+              style={styles.doneBtn}
+              onPress={() => {
+                const d = leaseDraftStore.get();
+                if (d) leaseDraftStore.set({ ...d, customClauses });
+                setShowClausesModal(false);
+              }}
+            >
               <Text style={styles.doneBtnText}>Done — Update Preview</Text>
             </TouchableOpacity>
           </View>
