@@ -145,6 +145,12 @@ BEGIN
 
   ELSE
     -- contract_id = NULL
+    -- Reject INSERT with explicit request_id: maintenance linkage requires a contract.
+    -- Silently clearing it would make the PO invisible to the reclaim sweep.
+    IF TG_OP = 'INSERT' AND NEW.request_id IS NOT NULL THEN
+      RAISE EXCEPTION
+        'cannot set request_id without a contract_id; maintenance linkage requires a service contract';
+    END IF;
     IF TG_OP = 'UPDATE' AND OLD.request_id IS NOT NULL THEN
       RAISE EXCEPTION
         'cannot remove contract from a maintenance-linked PO (request_id=%) — it would disappear from the reclaim sweep',
