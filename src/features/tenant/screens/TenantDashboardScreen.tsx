@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,10 +12,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { focusManager } from '@tanstack/react-query';
 import { supabase } from '../../../lib/supabase';
-import { paymentsApi } from '../../properties/api/paymentsApi';
-import { messagesApi } from '../../messaging/api/messagesApi';
-import { checkTenantProfileCompleteness } from '../utils/profileCompleteness';
+import { useAuth } from '@/src/contexts/AuthContext';
+import {
+  useTenantDashboard,
+  useTenantDashboardQueryClient,
+  type TenantDashboardData,
+} from '../hooks/useTenantDashboard';
+import { queryKeys } from '@/src/core/query/queryKeys';
 import { colors } from '@/src/shared/theme/colors';
 
 const tenancyShortcutTestId = (title: string) =>
@@ -118,34 +123,38 @@ const getMaintenanceStatusStyle = (status: string) => {
 
 export default function TenantDashboardScreen() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [userName, setUserName] = useState('Tenant');
-  const [activeLease, setActiveLease] = useState<any>(null);
-  const [nextPayment, setNextPayment] = useState<any>(null);
-  const [recentPayments, setRecentPayments] = useState<any[]>([]);
-  const [maintenanceRequests, setMaintenanceRequests] = useState<any[]>([]);
-  const [upcomingViewings, setUpcomingViewings] = useState<any[]>([]);
-  const [pendingApplications, setPendingApplications] = useState<any[]>([]);
-  const [messageThreads, setMessageThreads] = useState<any[]>([]);
-  const [totalUnreadMessages, setTotalUnreadMessages] = useState(0);
-  // Profile completeness is authoritative via checkTenantProfileCompleteness().
-  // undefined = async check hasn't landed yet (don't flash the banner).
-  // [] = all required fields present, hide banner.
-  // [...] = list of missing field labels to show in the banner.
-  const [profileMissing, setProfileMissing] = useState<string[] | undefined>(undefined);
-  const [pendingInspection, setPendingInspection] = useState<any>(null);
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [viewingAlerts, setViewingAlerts] = useState<any[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
 
+  const { data, isLoading, isRefetching, refetch } = useTenantDashboard(userId);
+  const queryClient = useTenantDashboardQueryClient();
+
+  const {
+    userName = 'Tenant',
+    activeLease = null,
+    nextPayment = null,
+    recentPayments = [],
+    maintenanceRequests = [],
+    upcomingViewings = [],
+    pendingApplications = [],
+    messageThreads = [],
+    totalUnreadMessages = 0,
+    profileMissing = undefined,
+    pendingInspection = null,
+    notifications = [],
+    viewingAlerts = [],
+  } = data ?? {};
+
+  // Notify TanStack Query's focusManager on tab focus so the query refetches
+  // when the screen is revisited and the cache is stale (>30s).
   useFocusEffect(
     useCallback(() => {
-      loadDashboardData();
+      focusManager.setFocused(true);
+      return () => focusManager.setFocused(undefined);
     }, [])
   );
 
-  // Real-time subscription: reload viewingAlerts when owner responds to a request
+  // Real-time subscription: invalidate cache when owner responds to a viewing
   useEffect(() => {
     if (!userId) return;
     const channel = supabase
@@ -159,219 +168,16 @@ export default function TenantDashboardScreen() {
           filter: `tenant_id=eq.${userId}`,
         },
         () => {
-          loadDashboardData();
+          queryClient.invalidateQueries({ queryKey: queryKeys.tenant.dashboard(userId) });
         }
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId]);
+  }, [userId, queryClient]);
 
-  const handlePullToRefresh = async () => {
-    setRefreshing(true);
-    await loadDashboardData();
-    setRefreshing(false);
-  };
-
-  const loadDashboardData = async () => {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-      setUserId(user.id);
-
-      // Get user profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .single();
-
-      if (profile) {
-        setUserName(profile.full_name || 'Tenant');
-      }
-
-      // CT7-002 — parallelise the four independent reads below (lease,
-      // payments, maintenance, viewings). Previously these ran serial
-      // → ~500ms cold-start cost on 4G. Promise.all cuts that to the
-      // slowest of the four.
-      const [leaseResult, payments, maintenanceResult, viewingsResult] = await Promise.all([
-        supabase
-          .from('leases')
-          .select(
-            `
-            *,
-            property:properties!property_id(id, title, address, city, rent_amount, media_3d_url),
-            owner:profiles!owner_id(id, full_name, phone, email)
-          `
-          )
-          .eq('tenant_id', user.id)
-          .in('status', ['active', 'pending_tenant_signature', 'pending_owner_signature'])
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-        paymentsApi.getTenantPayments(user.id),
-        supabase
-          .from('maintenance_requests')
-          .select('*')
-          .eq('tenant_id', user.id)
-          .in('status', ['open', 'assigned', 'in_progress'])
-          .order('created_at', { ascending: false })
-          .limit(3),
-        supabase
-          .from('viewing_requests')
-          .select(
-            'id, requested_date, requested_time, confirmed_date, status, owner_response, property:properties!property_id(id, title, address)'
-          )
-          .eq('tenant_id', user.id)
-          .in('status', ['approved', 'pending'])
-          .order('requested_date', { ascending: true })
-          .limit(3),
-      ]);
-
-      setActiveLease(leaseResult.data ?? null);
-
-      const upcoming = payments.find((p) => p.status === 'pending');
-      setNextPayment(upcoming ?? null);
-      const recent = payments.filter((p) => p.status === 'completed').slice(0, 3);
-      setRecentPayments(recent);
-
-      setMaintenanceRequests(maintenanceResult.data ?? []);
-      setUpcomingViewings(viewingsResult.data ?? []);
-
-      // Get recently declined viewings (last 14 days) as alert cards
-      // Filter out declined viewings where tenant already has a newer pending/approved
-      // request for the same property (i.e. tenant already acted on the decline)
-      const twoWeeksAgo = new Date();
-      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-      const { data: recentDeclined } = await supabase
-        .from('viewing_requests')
-        .select(
-          'id, status, requested_date, requested_time, confirmed_date, owner_response, alternative_times, updated_at, created_at, property_id, property:properties!property_id(id, title)'
-        )
-        .eq('tenant_id', user.id)
-        .eq('status', 'declined')
-        .gte('created_at', twoWeeksAgo.toISOString())
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      // Filter out declined viewings where tenant already re-requested for that property
-      let filteredAlerts = recentDeclined ?? [];
-      if (filteredAlerts.length > 0) {
-        const declinedPropertyIds = [...new Set(filteredAlerts.map((v: any) => v.property_id))];
-        const { data: activeForProps } = await supabase
-          .from('viewing_requests')
-          .select('property_id')
-          .eq('tenant_id', user.id)
-          .in('status', ['pending', 'approved'])
-          .in('property_id', declinedPropertyIds);
-
-        const activePropertyIds = new Set((activeForProps ?? []).map((v: any) => v.property_id));
-        filteredAlerts = filteredAlerts.filter((v: any) => !activePropertyIds.has(v.property_id));
-      }
-
-      // Also filter out declined viewings where the notification was already read
-      // (user already saw it on the notifications screen)
-      if (filteredAlerts.length > 0) {
-        const { data: readNotifs } = await (supabase as any)
-          .from('notifications')
-          .select('data')
-          .eq('user_id', user.id)
-          .in('type', ['viewing_declined', 'viewing_approved'])
-          .not('read_at', 'is', null);
-
-        if (readNotifs && readNotifs.length > 0) {
-          const readViewingIds = new Set(
-            readNotifs.map((n: any) => n.data?.viewingId).filter(Boolean)
-          );
-          filteredAlerts = filteredAlerts.filter((v: any) => !readViewingIds.has(v.id));
-        }
-      }
-
-      setViewingAlerts(filteredAlerts);
-
-      // Get unread notifications (table exists but not in generated types yet)
-      const { data: unreadNotifs } = await (supabase as any)
-        .from('notifications')
-        .select('id, type, title, body, data, created_at')
-        .eq('user_id', user.id)
-        .is('read_at', null)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      setNotifications(unreadNotifs ?? []);
-
-      // Get pending applications
-      const { data: apps } = await supabase
-        .from('rental_applications')
-        .select(
-          `
-          id, status, created_at,
-          property:properties!property_id(id, title)
-        `
-        )
-        .eq('tenant_id', user.id)
-        .in('status', ['submitted', 'under_review', 'pending_verification'])
-        .order('created_at', { ascending: false })
-        .limit(3);
-
-      setPendingApplications(apps ?? []);
-
-      // Get unread message threads
-      const threads = await messagesApi.getUserThreads(user.id, 'tenant');
-      const sorted = [...threads].sort((a, b) => {
-        const aUnread = a.unread_count_tenant ?? 0;
-        const bUnread = b.unread_count_tenant ?? 0;
-        if (bUnread !== aUnread) return bUnread - aUnread;
-        return (
-          new Date(b.last_message_at ?? 0).getTime() - new Date(a.last_message_at ?? 0).getTime()
-        );
-      });
-      const unreadTotal = threads.reduce((sum, t) => sum + (t.unread_count_tenant ?? 0), 0);
-      setTotalUnreadMessages(unreadTotal);
-      setMessageThreads(
-        sorted.slice(0, 3).map((t) => ({
-          id: t.id,
-          owner_name: (t as any).owner?.full_name ?? 'Landlord',
-          subject: t.subject,
-          unread_count: t.unread_count_tenant ?? 0,
-          last_message_at: t.last_message_at,
-          category: t.category,
-        }))
-      );
-
-      // Check for pending inspection that needs tenant signature
-      const { data: pendingInsp } = await supabase
-        .from('inspections')
-        .select('id, type, scheduled_date, property:properties!property_id(title)')
-        .eq('tenant_id', user.id)
-        .eq('status', 'pending_signatures')
-        .limit(1)
-        .maybeSingle();
-
-      setPendingInspection(pendingInsp ?? null);
-
-      // Profile completeness via the shared util — merges column + legacy
-      // fica_documents JSON views, so a user who saved via either code path
-      // shows as complete. Replaces the prior inline check which mis-mapped
-      // the Proof of Address field to a "References" label.
-      // On transient lookup failure we leave profileMissing alone so a
-      // flaky request doesn't nag the user to complete a profile they've
-      // already completed.
-      const completeness = await checkTenantProfileCompleteness(user.id);
-      if (completeness.status === 'ok') {
-        setProfileMissing(completeness.complete ? [] : completeness.missing);
-      }
-    } catch (err) {
-      console.error('Error loading dashboard:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.centerContainer}>
@@ -386,7 +192,13 @@ export default function TenantDashboardScreen() {
       .from('notifications')
       .update({ read_at: new Date().toISOString() })
       .eq('id', notifId);
-    setNotifications((prev) => prev.filter((n) => n.id !== notifId));
+    queryClient.setQueryData(
+      queryKeys.tenant.dashboard(userId ?? undefined),
+      (old: TenantDashboardData | undefined) => {
+        if (!old) return old;
+        return { ...old, notifications: old.notifications.filter((n) => n.id !== notifId) };
+      }
+    );
   };
 
   // Bell badge = unread notifications (from DB) + unactioned viewing declines
@@ -423,11 +235,7 @@ export default function TenantDashboardScreen() {
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handlePullToRefresh}
-              tintColor="#007A4D"
-            />
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#007A4D" />
           }
         >
           {/* Viewing Response Alert Cards — from viewing_requests directly */}
