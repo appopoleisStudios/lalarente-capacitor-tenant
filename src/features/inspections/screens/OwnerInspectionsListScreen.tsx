@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { inspectionsApi } from '../api/inspectionsApi';
 import { supabase } from '../../../lib/supabase';
 import type { InspectionWithRelations, InspectionStatus } from '../types';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 const RSA = { blue: '#002395', gold: '#FFB81C' };
 
@@ -66,7 +67,9 @@ export default function OwnerInspectionsListScreen() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
       setOwnerId(user.id);
 
@@ -74,6 +77,7 @@ export default function OwnerInspectionsListScreen() {
       const data = await inspectionsApi.getOwnerInspections(user.id, status);
       setInspections(data);
     } catch (err) {
+      reportApiError(err, 'inspections', 'select');
       console.error('Error loading inspections:', err);
     } finally {
       setLoading(false);
@@ -105,7 +109,7 @@ export default function OwnerInspectionsListScreen() {
         style={styles.filterScroll}
         contentContainerStyle={styles.filterContent}
       >
-        {FILTERS.map(f => (
+        {FILTERS.map((f) => (
           <TouchableOpacity
             key={f.value}
             style={[styles.chip, filter === f.value && styles.chipActive]}
@@ -139,7 +143,7 @@ export default function OwnerInspectionsListScreen() {
         </View>
       ) : (
         <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
-          {filtered.map(inspection => (
+          {filtered.map((inspection) => (
             <TouchableOpacity
               key={inspection.id}
               style={styles.card}
@@ -148,14 +152,37 @@ export default function OwnerInspectionsListScreen() {
             >
               {/* Type + Status row */}
               <View style={styles.cardTop}>
-                <View style={[styles.typeBadge, { backgroundColor: TYPE_COLORS[inspection.type] + '20', borderColor: TYPE_COLORS[inspection.type] }]}>
+                <View
+                  style={[
+                    styles.typeBadge,
+                    {
+                      backgroundColor: TYPE_COLORS[inspection.type] + '20',
+                      borderColor: TYPE_COLORS[inspection.type],
+                    },
+                  ]}
+                >
                   <Text style={[styles.typeBadgeText, { color: TYPE_COLORS[inspection.type] }]}>
                     {TYPE_LABELS[inspection.type] || inspection.type}
                   </Text>
                 </View>
-                <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[inspection.status || 'scheduled'] + '20' }]}>
-                  <View style={[styles.statusDot, { backgroundColor: STATUS_COLORS[inspection.status || 'scheduled'] }]} />
-                  <Text style={[styles.statusText, { color: STATUS_COLORS[inspection.status || 'scheduled'] }]}>
+                <View
+                  style={[
+                    styles.statusBadge,
+                    { backgroundColor: STATUS_COLORS[inspection.status || 'scheduled'] + '20' },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.statusDot,
+                      { backgroundColor: STATUS_COLORS[inspection.status || 'scheduled'] },
+                    ]}
+                  />
+                  <Text
+                    style={[
+                      styles.statusText,
+                      { color: STATUS_COLORS[inspection.status || 'scheduled'] },
+                    ]}
+                  >
                     {(inspection.status || 'scheduled').replace(/_/g, ' ')}
                   </Text>
                 </View>
@@ -166,7 +193,8 @@ export default function OwnerInspectionsListScreen() {
                 {inspection.property?.title || 'Property'}
               </Text>
               <Text style={styles.propertyAddress} numberOfLines={1}>
-                {inspection.property?.address || ''}{inspection.property?.city ? `, ${inspection.property.city}` : ''}
+                {inspection.property?.address || ''}
+                {inspection.property?.city ? `, ${inspection.property.city}` : ''}
               </Text>
 
               {/* Tenant + Date */}
@@ -224,7 +252,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  filterScroll: { maxHeight: 52, backgroundColor: '#FFF', borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  filterScroll: {
+    maxHeight: 52,
+    backgroundColor: '#FFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
   filterContent: { paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
   chip: {
     paddingHorizontal: 14,

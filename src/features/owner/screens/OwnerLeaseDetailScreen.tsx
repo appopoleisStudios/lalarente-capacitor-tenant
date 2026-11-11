@@ -21,6 +21,7 @@ import { executeLease } from '../../leases/api/leaseExecutionService';
 import { regenerateLeasePDF } from '../../leases/api/regenerateLeasePDF';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 const RSA = { blue: '#002395', gold: '#FFB81C' }; // Owner colors
 
@@ -100,6 +101,7 @@ export default function OwnerLeaseDetailScreen() {
       if (leaseError) throw leaseError;
       setLease(data as Lease);
     } catch (err) {
+      reportApiError(err, 'leases', 'select');
       console.error('Error loading lease:', err);
       setError(err instanceof Error ? err.message : 'Failed to load lease');
     } finally {
@@ -131,6 +133,7 @@ export default function OwnerLeaseDetailScreen() {
             Alert.alert('Success', 'PDF generated successfully! Refreshing...');
             await loadLease(); // Reload to show the PDF
           } catch (error) {
+            reportApiError(error, 'leases', 'update');
             console.error('Error regenerating PDF:', error);
             Alert.alert('Error', 'Failed to generate PDF. Check console for details.');
           } finally {
@@ -246,6 +249,7 @@ export default function OwnerLeaseDetailScreen() {
               Alert.alert('Success', 'Lease agreement sent to tenant');
               loadLease(); // Reload to show updated status
             } catch (err) {
+              reportApiError(err, 'leases', 'update');
               console.error('Error sending lease:', err);
               Alert.alert('Error', 'Failed to send lease agreement');
             } finally {

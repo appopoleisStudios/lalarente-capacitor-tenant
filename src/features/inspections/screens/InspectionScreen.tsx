@@ -20,6 +20,7 @@ import { supabase } from '@/src/lib/supabase';
 import { exportInspectionReportPdf } from '../../owner/utils/pdfReports';
 import SignatureModal from '../../leases/components/SignatureModal';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { reportApiError } from '@/src/core/observability/sentry';
 import {
   InspectionWithRelations,
   RoomInspection,
@@ -82,15 +83,18 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
 
       const roomsPayload = parseInspectionRoomsField(data.rooms);
       setRooms(roomsPayload.rooms);
-      setKeys(roomsPayload.keys ?? {
-        physicalKeys: 0,
-        accessCards: 0,
-        remoteControls: 0,
-        accessCodes: [],
-      });
+      setKeys(
+        roomsPayload.keys ?? {
+          physicalKeys: 0,
+          accessCards: 0,
+          remoteControls: 0,
+          accessCodes: [],
+        }
+      );
       setGeneralNotes(roomsPayload.generalNotes ?? '');
       setCurrentRoomIndex(0);
     } catch (err) {
+      reportApiError(err, 'inspections', 'select');
       console.error('Error loading inspection:', JSON.stringify(err));
       setError(err instanceof Error ? err.message : 'Failed to load inspection. Please try again.');
     } finally {
@@ -104,9 +108,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
     const updatedRooms = [...rooms];
     updatedRooms[currentRoomIndex] = {
       ...room,
-      items: room.items.map((item, i) =>
-        i === itemIndex ? { ...item, condition } : item
-      ),
+      items: room.items.map((item, i) => (i === itemIndex ? { ...item, condition } : item)),
     };
     setRooms(updatedRooms);
   };
@@ -117,9 +119,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
     const updatedRooms = [...rooms];
     updatedRooms[currentRoomIndex] = {
       ...room,
-      items: room.items.map((item, i) =>
-        i === itemIndex ? { ...item, notes } : item
-      ),
+      items: room.items.map((item, i) => (i === itemIndex ? { ...item, notes } : item)),
     };
     setRooms(updatedRooms);
   };
@@ -157,9 +157,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
         const photos = [...(room.items[itemIndex].photos || []), result.assets[0].uri];
         updatedRooms[roomIdx] = {
           ...room,
-          items: room.items.map((item, i) =>
-            i === itemIndex ? { ...item, photos } : item
-          ),
+          items: room.items.map((item, i) => (i === itemIndex ? { ...item, photos } : item)),
         };
       } else {
         updatedRooms[roomIdx] = {
@@ -193,9 +191,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
         const photos = [...(room.items[itemIndex].photos || []), result.assets[0].uri];
         updatedRooms[roomIdx] = {
           ...room,
-          items: room.items.map((item, i) =>
-            i === itemIndex ? { ...item, photos } : item
-          ),
+          items: room.items.map((item, i) => (i === itemIndex ? { ...item, photos } : item)),
         };
       } else {
         updatedRooms[roomIdx] = {
@@ -220,6 +216,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
       await inspectionsApi.updateInspectionRooms(inspection.id, roomsData);
       Alert.alert('Saved', 'Inspection progress saved successfully');
     } catch (err) {
+      reportApiError(err, 'inspections', 'update');
       console.error('Error saving inspection:', err);
       Alert.alert('Error', 'Failed to save inspection progress');
     } finally {
@@ -258,6 +255,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                 { text: 'OK', onPress: () => loadInspection() },
               ]);
             } catch (err) {
+              reportApiError(err, 'inspections', 'update');
               console.error('Error completing inspection:', err);
               Alert.alert('Error', 'Failed to complete inspection');
             } finally {
@@ -282,11 +280,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
       setSaving(true);
 
       // Upload signature
-      const signatureUrl = await uploadSignature(
-        inspection.id,
-        role,
-        signatureBase64
-      );
+      const signatureUrl = await uploadSignature(inspection.id, role, signatureBase64);
 
       // Update inspection with signature
       await inspectionsApi.signInspection(inspection.id, role, signatureUrl);
@@ -295,6 +289,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
         { text: 'OK', onPress: () => loadInspection() },
       ]);
     } catch (err) {
+      reportApiError(err, 'inspections', 'update');
       console.error('Error signing inspection:', err);
       Alert.alert('Error', 'Failed to sign inspection');
     } finally {
@@ -307,7 +302,9 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
     if (!inspection) return;
     try {
       setExporting(true);
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
       await exportInspectionReportPdf(inspection.id, user.id);
       const docsPath = role === 'owner' ? '/(owner)/documents' : '/(tenant)/documents';
@@ -323,16 +320,14 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
   };
 
   const roomCount = rooms.length;
-  const safeRoomIndex =
-    roomCount > 0 ? Math.min(Math.max(currentRoomIndex, 0), roomCount - 1) : 0;
+  const safeRoomIndex = roomCount > 0 ? Math.min(Math.max(currentRoomIndex, 0), roomCount - 1) : 0;
   const currentRoom = roomCount > 0 ? rooms[safeRoomIndex] : undefined;
   const isLastRoom = roomCount > 0 && safeRoomIndex === roomCount - 1;
   const isFirstRoom = safeRoomIndex === 0;
   const canComplete = inspection?.status === 'in_progress' || inspection?.status === 'scheduled';
   const canSign = inspection?.status === 'pending_signatures';
-  const hasSigned = role === 'owner'
-    ? !!inspection?.owner_signed_at
-    : !!inspection?.tenant_signed_at;
+  const hasSigned =
+    role === 'owner' ? !!inspection?.owner_signed_at : !!inspection?.tenant_signed_at;
 
   // Photo validation — every room must have at least 1 photo (room-level or item-level)
   const getRoomPhotoCount = (room: RoomInspection | undefined): number => {
@@ -347,23 +342,25 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
 
   const roomsWithoutPhotos = rooms
     .map((room, idx) => ({ name: room.name, index: idx, photos: getRoomPhotoCount(room) }))
-    .filter(r => r.photos === 0);
+    .filter((r) => r.photos === 0);
 
   const allRoomsHavePhotos = roomsWithoutPhotos.length === 0;
 
   const validatePhotosBeforeAction = (actionName: string, onValid: () => void) => {
     if (!allRoomsHavePhotos) {
-      const missing = roomsWithoutPhotos.map(r => `  • ${r.name}`).join('\n');
+      const missing = roomsWithoutPhotos.map((r) => `  • ${r.name}`).join('\n');
       Alert.alert(
         `Cannot ${actionName}`,
         `Every room requires at least one photo before you can ${actionName.toLowerCase()}.\n\nRooms missing photos:\n${missing}`,
         [
           { text: 'OK' },
           ...(roomsWithoutPhotos.length > 0
-            ? [{
-                text: `Go to ${roomsWithoutPhotos[0].name}`,
-                onPress: () => setCurrentRoomIndex(roomsWithoutPhotos[0].index),
-              }]
+            ? [
+                {
+                  text: `Go to ${roomsWithoutPhotos[0].name}`,
+                  onPress: () => setCurrentRoomIndex(roomsWithoutPhotos[0].index),
+                },
+              ]
             : []),
         ]
       );
@@ -422,397 +419,436 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
               </Text>
               <Text style={styles.headerSubtitle}>{inspection.property?.title}</Text>
             </View>
-          {inspection?.status === 'completed' ? (
-            <TouchableOpacity onPress={handleExportReport} disabled={exporting} style={[styles.headerExportBtn, { backgroundColor: colors.primary }]}>
-              {exporting ? (
-                <ActivityIndicator size="small" color="#FFF" />
-              ) : (
-                <>
-                  <Ionicons name="download-outline" size={18} color="#FFF" />
-                  <Text style={styles.headerExportText}>PDF</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity onPress={saveProgress} disabled={saving}>
-              {saving ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : (
-                <Ionicons name="save-outline" size={24} color={colors.primary} />
-              )}
-            </TouchableOpacity>
-          )}
-          </View>
-
-          {/* Progress Bar */}
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <View
-              style={[
-                styles.progressFill,
-                {
-                  width: `${((safeRoomIndex + 1) / roomCount) * 100}%`,
-                  backgroundColor: colors.primary,
-                },
-              ]}
-            />
-          </View>
-          <Text style={styles.progressText}>
-            Room {safeRoomIndex + 1} of {roomCount}
-          </Text>
-          {/* Room photo status dots */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.roomDots}>
-            {rooms.map((room, idx) => {
-              const hasPhotos = getRoomPhotoCount(room) > 0;
-              const isCurrent = idx === safeRoomIndex;
-              return (
-                <TouchableOpacity
-                  key={idx}
-                  style={[
-                    styles.roomDot,
-                    isCurrent && { borderColor: colors.primary, borderWidth: 2 },
-                    hasPhotos ? styles.roomDotGreen : styles.roomDotRed,
-                  ]}
-                  onPress={() => setCurrentRoomIndex(idx)}
-                >
-                  <Text style={styles.roomDotText} numberOfLines={1}>
-                    {room.name.length > 8 ? room.name.slice(0, 7) + '…' : room.name}
-                  </Text>
-                  {hasPhotos ? (
-                    <Ionicons name="camera" size={10} color="#4CAF50" />
-                  ) : (
-                    <Ionicons name="camera-outline" size={10} color="#F44336" />
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-
-        <ScrollView style={styles.scrollView}>
-          {/* Room Header */}
-          <View style={styles.roomHeader}>
-            <Text style={styles.roomName}>{currentRoom?.name}</Text>
-            <View style={styles.conditionSelector}>
-              {CONDITIONS.map(cond => (
-                <TouchableOpacity
-                  key={cond.value}
-                  style={[
-                    styles.conditionChip,
-                    currentRoom?.overallCondition === cond.value && {
-                      backgroundColor: cond.color,
-                    },
-                  ]}
-                  onPress={() => updateRoomCondition(cond.value)}
-                >
-                  <Text
-                    style={[
-                      styles.conditionChipText,
-                      currentRoom?.overallCondition === cond.value && { color: '#FFF' },
-                    ]}
-                  >
-                    {cond.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Items */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Items to Inspect</Text>
-              {currentRoom && getRoomPhotoCount(currentRoom) === 0 && (
-                <View style={styles.photoWarningBadge}>
-                  <Ionicons name="warning" size={14} color="#F44336" />
-                  <Text style={styles.photoWarningText}>Photos required</Text>
-                </View>
-              )}
-              {currentRoom && getRoomPhotoCount(currentRoom) > 0 && (
-                <View style={styles.photoCountBadge}>
-                  <Ionicons name="camera" size={14} color="#4CAF50" />
-                  <Text style={styles.photoCountText}>{getRoomPhotoCount(currentRoom)}</Text>
-                </View>
-              )}
-            </View>
-            {currentRoom?.items?.map((item, index) => (
-              <View key={index} style={styles.itemCard}>
-                <View style={styles.itemHeader}>
-                  <View style={styles.itemNameRow}>
-                    <Text style={styles.itemName}>{item.name}</Text>
-                    {(item.photos?.length || 0) > 0 && (
-                      <View style={styles.itemPhotoBadge}>
-                        <Ionicons name="camera" size={12} color="#4CAF50" />
-                        <Text style={styles.itemPhotoCount}>{item.photos!.length}</Text>
-                      </View>
-                    )}
-                  </View>
-                  <View style={styles.photoButtons}>
-                    <TouchableOpacity
-                      style={styles.photoButton}
-                      onPress={() => takePhoto(index)}
-                    >
-                      <Ionicons name="camera" size={20} color={colors.primary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.photoButton}
-                      onPress={() => pickImage(index)}
-                    >
-                      <Ionicons name="image" size={20} color={colors.primary} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                {/* Condition Buttons */}
-                <View style={styles.conditionButtons}>
-                  {CONDITIONS.map(cond => (
-                    <TouchableOpacity
-                      key={cond.value}
-                      style={[
-                        styles.conditionButton,
-                        item.condition === cond.value && {
-                          backgroundColor: cond.color,
-                          borderColor: cond.color,
-                        },
-                      ]}
-                      onPress={() => updateItemCondition(index, cond.value)}
-                    >
-                      <Text
-                        style={[
-                          styles.conditionButtonText,
-                          item.condition === cond.value && { color: '#FFF' },
-                        ]}
-                      >
-                        {cond.label[0]}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                {/* Notes */}
-                <TextInput
-                  style={styles.notesInput}
-                  placeholder="Add notes..."
-                  value={item.notes}
-                  onChangeText={text => updateItemNotes(index, text)}
-                  multiline
-                />
-
-                {/* Photos */}
-                {item.photos && item.photos.length > 0 && (
-                  <ScrollView horizontal style={styles.photoScroll}>
-                    {item.photos.map((photo, photoIndex) => (
-                      <Image
-                        key={photoIndex}
-                        source={{ uri: photo }}
-                        style={styles.photoThumbnail}
-                      />
-                    ))}
-                  </ScrollView>
-                )}
-              </View>
-            ))}
-          </View>
-
-          {/* Room Photos */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Room Photos</Text>
-            <View style={styles.roomPhotoActions}>
-              <TouchableOpacity style={[styles.roomPhotoButton, { borderColor: colors.primary }]} onPress={() => takePhoto()}>
-                <Ionicons name="camera" size={22} color={colors.primary} />
-                <Text style={[styles.roomPhotoButtonText, { color: colors.primary }]}>Take Photo</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.roomPhotoButton, { borderColor: colors.primary }]} onPress={() => pickImage()}>
-                <Ionicons name="image" size={22} color={colors.primary} />
-                <Text style={[styles.roomPhotoButtonText, { color: colors.primary }]}>Gallery</Text>
-              </TouchableOpacity>
-            </View>
-            {currentRoom?.photos && currentRoom.photos.length > 0 ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoScroll}>
-                {currentRoom.photos.map((photo, photoIndex) => (
-                  <Image key={photoIndex} source={{ uri: photo }} style={styles.photoThumbnail} />
-                ))}
-              </ScrollView>
-            ) : (
-              <View style={styles.noPhotosHint}>
-                <Ionicons name="alert-circle-outline" size={18} color="#F44336" />
-                <Text style={styles.noPhotosHintText}>
-                  At least one photo of this room is required before sign-off
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {/* Room Notes */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Room Notes</Text>
-            <TextInput
-              style={[styles.notesInput, styles.roomNotes]}
-              placeholder="Additional notes for this room..."
-              value={currentRoom?.notes}
-              onChangeText={updateRoomNotes}
-              multiline
-              numberOfLines={4}
-            />
-          </View>
-
-          {/* Key Handover (only on last room) */}
-          {isLastRoom && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Key Handover</Text>
-              <View style={styles.keyRow}>
-                <Text style={styles.keyLabel}>Physical Keys</Text>
-                <View style={styles.keyCounter}>
-                  <TouchableOpacity
-                    style={styles.counterButton}
-                    onPress={() => setKeys({ ...keys, physicalKeys: Math.max(0, keys.physicalKeys - 1) })}
-                  >
-                    <Ionicons name="remove" size={20} color={colors.primary} />
-                  </TouchableOpacity>
-                  <Text style={styles.counterValue}>{keys.physicalKeys}</Text>
-                  <TouchableOpacity
-                    style={styles.counterButton}
-                    onPress={() => setKeys({ ...keys, physicalKeys: keys.physicalKeys + 1 })}
-                  >
-                    <Ionicons name="add" size={20} color={colors.primary} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-              <View style={styles.keyRow}>
-                <Text style={styles.keyLabel}>Access Cards</Text>
-                <View style={styles.keyCounter}>
-                  <TouchableOpacity
-                    style={styles.counterButton}
-                    onPress={() => setKeys({ ...keys, accessCards: Math.max(0, keys.accessCards - 1) })}
-                  >
-                    <Ionicons name="remove" size={20} color={colors.primary} />
-                  </TouchableOpacity>
-                  <Text style={styles.counterValue}>{keys.accessCards}</Text>
-                  <TouchableOpacity
-                    style={styles.counterButton}
-                    onPress={() => setKeys({ ...keys, accessCards: keys.accessCards + 1 })}
-                  >
-                    <Ionicons name="add" size={20} color={colors.primary} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-              <View style={styles.keyRow}>
-                <Text style={styles.keyLabel}>Remote Controls</Text>
-                <View style={styles.keyCounter}>
-                  <TouchableOpacity
-                    style={styles.counterButton}
-                    onPress={() => setKeys({ ...keys, remoteControls: Math.max(0, keys.remoteControls - 1) })}
-                  >
-                    <Ionicons name="remove" size={20} color={colors.primary} />
-                  </TouchableOpacity>
-                  <Text style={styles.counterValue}>{keys.remoteControls}</Text>
-                  <TouchableOpacity
-                    style={styles.counterButton}
-                    onPress={() => setKeys({ ...keys, remoteControls: keys.remoteControls + 1 })}
-                  >
-                    <Ionicons name="add" size={20} color={colors.primary} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          )}
-
-          {/* General Notes (on last room) */}
-          {isLastRoom && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>General Notes</Text>
-              <TextInput
-                style={[styles.notesInput, styles.roomNotes]}
-                placeholder="Overall inspection notes..."
-                value={generalNotes}
-                onChangeText={setGeneralNotes}
-                multiline
-                numberOfLines={4}
-              />
-            </View>
-          )}
-
-          {/* Signatures Section (when pending) */}
-          {canSign && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Signatures</Text>
-              <View style={styles.signatureCard}>
-                <View style={styles.signatureRow}>
-                  <Text style={styles.signatureLabel}>Owner</Text>
-                  {inspection.owner_signed_at ? (
-                    <View style={styles.signedBadge}>
-                      <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
-                      <Text style={styles.signedText}>Signed</Text>
-                    </View>
-                  ) : (
-                    <Text style={styles.pendingText}>Pending</Text>
-                  )}
-                </View>
-                <View style={styles.signatureRow}>
-                  <Text style={styles.signatureLabel}>Tenant</Text>
-                  {inspection.tenant_signed_at ? (
-                    <View style={styles.signedBadge}>
-                      <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
-                      <Text style={styles.signedText}>Signed</Text>
-                    </View>
-                  ) : (
-                    <Text style={styles.pendingText}>Pending</Text>
-                  )}
-                </View>
-              </View>
-            </View>
-          )}
-
-          <View style={{ height: 100 }} />
-        </ScrollView>
-
-        {/* Navigation Buttons */}
-        <View style={styles.navigationButtons}>
-          <TouchableOpacity
-            style={[styles.navButton, isFirstRoom && styles.navButtonDisabled]}
-            onPress={() => setCurrentRoomIndex(safeRoomIndex - 1)}
-            disabled={isFirstRoom}
-          >
-            <Ionicons name="chevron-back" size={24} color={isFirstRoom ? '#CCC' : colors.primary} />
-            <Text style={[styles.navButtonText, isFirstRoom && { color: '#CCC' }]}>Previous</Text>
-          </TouchableOpacity>
-
-          {isLastRoom ? (
-            canSign ? (
-              hasSigned ? (
-                <View style={[styles.navButton, styles.navButtonPrimary, { backgroundColor: '#4CAF50' }]}>
-                  <Ionicons name="checkmark-circle" size={24} color="#FFF" />
-                  <Text style={[styles.navButtonText, { color: '#FFF' }]}>Signed</Text>
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={[styles.navButton, styles.navButtonPrimary, { backgroundColor: colors.primary }]}
-                  onPress={handleSign}
-                  disabled={saving}
-                >
-                  <Ionicons name="create" size={24} color="#FFF" />
-                  <Text style={[styles.navButtonText, { color: '#FFF' }]}>Sign</Text>
-                </TouchableOpacity>
-              )
-            ) : canComplete ? (
+            {inspection?.status === 'completed' ? (
               <TouchableOpacity
-                style={[styles.navButton, styles.navButtonPrimary, { backgroundColor: colors.primary }]}
-                onPress={completeInspection}
-                disabled={saving}
+                onPress={handleExportReport}
+                disabled={exporting}
+                style={[styles.headerExportBtn, { backgroundColor: colors.primary }]}
               >
-                {saving ? (
+                {exporting ? (
                   <ActivityIndicator size="small" color="#FFF" />
                 ) : (
                   <>
-                    <Ionicons name="checkmark" size={24} color="#FFF" />
-                    <Text style={[styles.navButtonText, { color: '#FFF' }]}>Complete</Text>
+                    <Ionicons name="download-outline" size={18} color="#FFF" />
+                    <Text style={styles.headerExportText}>PDF</Text>
                   </>
                 )}
               </TouchableOpacity>
             ) : (
-              inspection?.status === 'completed' ? (
+              <TouchableOpacity onPress={saveProgress} disabled={saving}>
+                {saving ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <Ionicons name="save-outline" size={24} color={colors.primary} />
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Progress Bar */}
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: `${((safeRoomIndex + 1) / roomCount) * 100}%`,
+                    backgroundColor: colors.primary,
+                  },
+                ]}
+              />
+            </View>
+            <Text style={styles.progressText}>
+              Room {safeRoomIndex + 1} of {roomCount}
+            </Text>
+            {/* Room photo status dots */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.roomDots}>
+              {rooms.map((room, idx) => {
+                const hasPhotos = getRoomPhotoCount(room) > 0;
+                const isCurrent = idx === safeRoomIndex;
+                return (
+                  <TouchableOpacity
+                    key={idx}
+                    style={[
+                      styles.roomDot,
+                      isCurrent && { borderColor: colors.primary, borderWidth: 2 },
+                      hasPhotos ? styles.roomDotGreen : styles.roomDotRed,
+                    ]}
+                    onPress={() => setCurrentRoomIndex(idx)}
+                  >
+                    <Text style={styles.roomDotText} numberOfLines={1}>
+                      {room.name.length > 8 ? room.name.slice(0, 7) + '…' : room.name}
+                    </Text>
+                    {hasPhotos ? (
+                      <Ionicons name="camera" size={10} color="#4CAF50" />
+                    ) : (
+                      <Ionicons name="camera-outline" size={10} color="#F44336" />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          <ScrollView style={styles.scrollView}>
+            {/* Room Header */}
+            <View style={styles.roomHeader}>
+              <Text style={styles.roomName}>{currentRoom?.name}</Text>
+              <View style={styles.conditionSelector}>
+                {CONDITIONS.map((cond) => (
+                  <TouchableOpacity
+                    key={cond.value}
+                    style={[
+                      styles.conditionChip,
+                      currentRoom?.overallCondition === cond.value && {
+                        backgroundColor: cond.color,
+                      },
+                    ]}
+                    onPress={() => updateRoomCondition(cond.value)}
+                  >
+                    <Text
+                      style={[
+                        styles.conditionChipText,
+                        currentRoom?.overallCondition === cond.value && { color: '#FFF' },
+                      ]}
+                    >
+                      {cond.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Items */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionTitle}>Items to Inspect</Text>
+                {currentRoom && getRoomPhotoCount(currentRoom) === 0 && (
+                  <View style={styles.photoWarningBadge}>
+                    <Ionicons name="warning" size={14} color="#F44336" />
+                    <Text style={styles.photoWarningText}>Photos required</Text>
+                  </View>
+                )}
+                {currentRoom && getRoomPhotoCount(currentRoom) > 0 && (
+                  <View style={styles.photoCountBadge}>
+                    <Ionicons name="camera" size={14} color="#4CAF50" />
+                    <Text style={styles.photoCountText}>{getRoomPhotoCount(currentRoom)}</Text>
+                  </View>
+                )}
+              </View>
+              {currentRoom?.items?.map((item, index) => (
+                <View key={index} style={styles.itemCard}>
+                  <View style={styles.itemHeader}>
+                    <View style={styles.itemNameRow}>
+                      <Text style={styles.itemName}>{item.name}</Text>
+                      {(item.photos?.length || 0) > 0 && (
+                        <View style={styles.itemPhotoBadge}>
+                          <Ionicons name="camera" size={12} color="#4CAF50" />
+                          <Text style={styles.itemPhotoCount}>{item.photos!.length}</Text>
+                        </View>
+                      )}
+                    </View>
+                    <View style={styles.photoButtons}>
+                      <TouchableOpacity style={styles.photoButton} onPress={() => takePhoto(index)}>
+                        <Ionicons name="camera" size={20} color={colors.primary} />
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.photoButton} onPress={() => pickImage(index)}>
+                        <Ionicons name="image" size={20} color={colors.primary} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Condition Buttons */}
+                  <View style={styles.conditionButtons}>
+                    {CONDITIONS.map((cond) => (
+                      <TouchableOpacity
+                        key={cond.value}
+                        style={[
+                          styles.conditionButton,
+                          item.condition === cond.value && {
+                            backgroundColor: cond.color,
+                            borderColor: cond.color,
+                          },
+                        ]}
+                        onPress={() => updateItemCondition(index, cond.value)}
+                      >
+                        <Text
+                          style={[
+                            styles.conditionButtonText,
+                            item.condition === cond.value && { color: '#FFF' },
+                          ]}
+                        >
+                          {cond.label[0]}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  {/* Notes */}
+                  <TextInput
+                    style={styles.notesInput}
+                    placeholder="Add notes..."
+                    value={item.notes}
+                    onChangeText={(text) => updateItemNotes(index, text)}
+                    multiline
+                  />
+
+                  {/* Photos */}
+                  {item.photos && item.photos.length > 0 && (
+                    <ScrollView horizontal style={styles.photoScroll}>
+                      {item.photos.map((photo, photoIndex) => (
+                        <Image
+                          key={photoIndex}
+                          source={{ uri: photo }}
+                          style={styles.photoThumbnail}
+                        />
+                      ))}
+                    </ScrollView>
+                  )}
+                </View>
+              ))}
+            </View>
+
+            {/* Room Photos */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Room Photos</Text>
+              <View style={styles.roomPhotoActions}>
                 <TouchableOpacity
-                  style={[styles.navButton, styles.navButtonPrimary, { backgroundColor: colors.primary }]}
+                  style={[styles.roomPhotoButton, { borderColor: colors.primary }]}
+                  onPress={() => takePhoto()}
+                >
+                  <Ionicons name="camera" size={22} color={colors.primary} />
+                  <Text style={[styles.roomPhotoButtonText, { color: colors.primary }]}>
+                    Take Photo
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.roomPhotoButton, { borderColor: colors.primary }]}
+                  onPress={() => pickImage()}
+                >
+                  <Ionicons name="image" size={22} color={colors.primary} />
+                  <Text style={[styles.roomPhotoButtonText, { color: colors.primary }]}>
+                    Gallery
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              {currentRoom?.photos && currentRoom.photos.length > 0 ? (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.photoScroll}
+                >
+                  {currentRoom.photos.map((photo, photoIndex) => (
+                    <Image key={photoIndex} source={{ uri: photo }} style={styles.photoThumbnail} />
+                  ))}
+                </ScrollView>
+              ) : (
+                <View style={styles.noPhotosHint}>
+                  <Ionicons name="alert-circle-outline" size={18} color="#F44336" />
+                  <Text style={styles.noPhotosHintText}>
+                    At least one photo of this room is required before sign-off
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Room Notes */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Room Notes</Text>
+              <TextInput
+                style={[styles.notesInput, styles.roomNotes]}
+                placeholder="Additional notes for this room..."
+                value={currentRoom?.notes}
+                onChangeText={updateRoomNotes}
+                multiline
+                numberOfLines={4}
+              />
+            </View>
+
+            {/* Key Handover (only on last room) */}
+            {isLastRoom && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Key Handover</Text>
+                <View style={styles.keyRow}>
+                  <Text style={styles.keyLabel}>Physical Keys</Text>
+                  <View style={styles.keyCounter}>
+                    <TouchableOpacity
+                      style={styles.counterButton}
+                      onPress={() =>
+                        setKeys({ ...keys, physicalKeys: Math.max(0, keys.physicalKeys - 1) })
+                      }
+                    >
+                      <Ionicons name="remove" size={20} color={colors.primary} />
+                    </TouchableOpacity>
+                    <Text style={styles.counterValue}>{keys.physicalKeys}</Text>
+                    <TouchableOpacity
+                      style={styles.counterButton}
+                      onPress={() => setKeys({ ...keys, physicalKeys: keys.physicalKeys + 1 })}
+                    >
+                      <Ionicons name="add" size={20} color={colors.primary} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                <View style={styles.keyRow}>
+                  <Text style={styles.keyLabel}>Access Cards</Text>
+                  <View style={styles.keyCounter}>
+                    <TouchableOpacity
+                      style={styles.counterButton}
+                      onPress={() =>
+                        setKeys({ ...keys, accessCards: Math.max(0, keys.accessCards - 1) })
+                      }
+                    >
+                      <Ionicons name="remove" size={20} color={colors.primary} />
+                    </TouchableOpacity>
+                    <Text style={styles.counterValue}>{keys.accessCards}</Text>
+                    <TouchableOpacity
+                      style={styles.counterButton}
+                      onPress={() => setKeys({ ...keys, accessCards: keys.accessCards + 1 })}
+                    >
+                      <Ionicons name="add" size={20} color={colors.primary} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                <View style={styles.keyRow}>
+                  <Text style={styles.keyLabel}>Remote Controls</Text>
+                  <View style={styles.keyCounter}>
+                    <TouchableOpacity
+                      style={styles.counterButton}
+                      onPress={() =>
+                        setKeys({ ...keys, remoteControls: Math.max(0, keys.remoteControls - 1) })
+                      }
+                    >
+                      <Ionicons name="remove" size={20} color={colors.primary} />
+                    </TouchableOpacity>
+                    <Text style={styles.counterValue}>{keys.remoteControls}</Text>
+                    <TouchableOpacity
+                      style={styles.counterButton}
+                      onPress={() => setKeys({ ...keys, remoteControls: keys.remoteControls + 1 })}
+                    >
+                      <Ionicons name="add" size={20} color={colors.primary} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* General Notes (on last room) */}
+            {isLastRoom && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>General Notes</Text>
+                <TextInput
+                  style={[styles.notesInput, styles.roomNotes]}
+                  placeholder="Overall inspection notes..."
+                  value={generalNotes}
+                  onChangeText={setGeneralNotes}
+                  multiline
+                  numberOfLines={4}
+                />
+              </View>
+            )}
+
+            {/* Signatures Section (when pending) */}
+            {canSign && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Signatures</Text>
+                <View style={styles.signatureCard}>
+                  <View style={styles.signatureRow}>
+                    <Text style={styles.signatureLabel}>Owner</Text>
+                    {inspection.owner_signed_at ? (
+                      <View style={styles.signedBadge}>
+                        <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
+                        <Text style={styles.signedText}>Signed</Text>
+                      </View>
+                    ) : (
+                      <Text style={styles.pendingText}>Pending</Text>
+                    )}
+                  </View>
+                  <View style={styles.signatureRow}>
+                    <Text style={styles.signatureLabel}>Tenant</Text>
+                    {inspection.tenant_signed_at ? (
+                      <View style={styles.signedBadge}>
+                        <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
+                        <Text style={styles.signedText}>Signed</Text>
+                      </View>
+                    ) : (
+                      <Text style={styles.pendingText}>Pending</Text>
+                    )}
+                  </View>
+                </View>
+              </View>
+            )}
+
+            <View style={{ height: 100 }} />
+          </ScrollView>
+
+          {/* Navigation Buttons */}
+          <View style={styles.navigationButtons}>
+            <TouchableOpacity
+              style={[styles.navButton, isFirstRoom && styles.navButtonDisabled]}
+              onPress={() => setCurrentRoomIndex(safeRoomIndex - 1)}
+              disabled={isFirstRoom}
+            >
+              <Ionicons
+                name="chevron-back"
+                size={24}
+                color={isFirstRoom ? '#CCC' : colors.primary}
+              />
+              <Text style={[styles.navButtonText, isFirstRoom && { color: '#CCC' }]}>Previous</Text>
+            </TouchableOpacity>
+
+            {isLastRoom ? (
+              canSign ? (
+                hasSigned ? (
+                  <View
+                    style={[
+                      styles.navButton,
+                      styles.navButtonPrimary,
+                      { backgroundColor: '#4CAF50' },
+                    ]}
+                  >
+                    <Ionicons name="checkmark-circle" size={24} color="#FFF" />
+                    <Text style={[styles.navButtonText, { color: '#FFF' }]}>Signed</Text>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={[
+                      styles.navButton,
+                      styles.navButtonPrimary,
+                      { backgroundColor: colors.primary },
+                    ]}
+                    onPress={handleSign}
+                    disabled={saving}
+                  >
+                    <Ionicons name="create" size={24} color="#FFF" />
+                    <Text style={[styles.navButtonText, { color: '#FFF' }]}>Sign</Text>
+                  </TouchableOpacity>
+                )
+              ) : canComplete ? (
+                <TouchableOpacity
+                  style={[
+                    styles.navButton,
+                    styles.navButtonPrimary,
+                    { backgroundColor: colors.primary },
+                  ]}
+                  onPress={completeInspection}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <>
+                      <Ionicons name="checkmark" size={24} color="#FFF" />
+                      <Text style={[styles.navButtonText, { color: '#FFF' }]}>Complete</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              ) : inspection?.status === 'completed' ? (
+                <TouchableOpacity
+                  style={[
+                    styles.navButton,
+                    styles.navButtonPrimary,
+                    { backgroundColor: colors.primary },
+                  ]}
                   onPress={handleExportReport}
                   disabled={exporting}
                 >
@@ -831,28 +867,27 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                   <Text style={[styles.navButtonText, { color: '#CCC' }]}>Completed</Text>
                 </View>
               )
-            )
-          ) : (
-            <TouchableOpacity
-              style={[styles.navButton, { borderColor: colors.primary }]}
-              onPress={() => setCurrentRoomIndex(safeRoomIndex + 1)}
-            >
-              <Text style={[styles.navButtonText, { color: colors.primary }]}>Next</Text>
-              <Ionicons name="chevron-forward" size={24} color={colors.primary} />
-            </TouchableOpacity>
-          )}
-        </View>
+            ) : (
+              <TouchableOpacity
+                style={[styles.navButton, { borderColor: colors.primary }]}
+                onPress={() => setCurrentRoomIndex(safeRoomIndex + 1)}
+              >
+                <Text style={[styles.navButtonText, { color: colors.primary }]}>Next</Text>
+                <Ionicons name="chevron-forward" size={24} color={colors.primary} />
+              </TouchableOpacity>
+            )}
+          </View>
 
-        {/* Signature Modal */}
-        <SignatureModal
-          visible={showSignatureModal}
-          onClose={() => setShowSignatureModal(false)}
-          onSave={handleSignatureSave}
-          title="Sign Inspection Report"
-          description="By signing below, you confirm that you have reviewed and agree with this inspection report."
-          primaryColor={colors.primary}
-        />
-      </View>
+          {/* Signature Modal */}
+          <SignatureModal
+            visible={showSignatureModal}
+            onClose={() => setShowSignatureModal(false)}
+            onSave={handleSignatureSave}
+            title="Sign Inspection Report"
+            description="By signing below, you confirm that you have reviewed and agree with this inspection report."
+            primaryColor={colors.primary}
+          />
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

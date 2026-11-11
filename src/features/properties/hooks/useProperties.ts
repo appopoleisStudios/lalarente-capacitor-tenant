@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { propertiesApi } from '../api/propertiesApi';
 import type { PropertyWithRelations } from '../api/propertiesApi';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 interface UsePropertiesOptions {
   ownerId?: string;
@@ -9,7 +10,7 @@ interface UsePropertiesOptions {
 
 export function useProperties(options: UsePropertiesOptions = {}) {
   const { ownerId, autoFetch = true } = options;
-  
+
   const [properties, setProperties] = useState<PropertyWithRelations[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,6 +25,7 @@ export function useProperties(options: UsePropertiesOptions = {}) {
       const data = await propertiesApi.getOwnerProperties(ownerId);
       setProperties(data);
     } catch (err) {
+      reportApiError(err, 'properties', 'select');
       const message = err instanceof Error ? err.message : 'Failed to fetch properties';
       setError(message);
       console.error('Error fetching properties:', err);
@@ -41,6 +43,7 @@ export function useProperties(options: UsePropertiesOptions = {}) {
       const data = await propertiesApi.getOwnerProperties(ownerId);
       setProperties(data);
     } catch (err) {
+      reportApiError(err, 'properties', 'select');
       const message = err instanceof Error ? err.message : 'Failed to refresh properties';
       setError(message);
       console.error('Error refreshing properties:', err);

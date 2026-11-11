@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert, Image } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+  Image,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +21,7 @@ import { maintenanceApi } from '../api';
 import { colors } from '@/src/shared/theme/colors';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { StyleSheet } from 'react-native';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 const RSA = { blue: '#002395' };
 
@@ -54,7 +64,7 @@ export default function ReportMaintenanceScreen() {
     async function fetchData() {
       try {
         setLoadingData(true);
-        
+
         // Fetch categories
         const categoriesData = await maintenanceApi.getServiceCategories();
         setCategories(categoriesData);
@@ -65,6 +75,7 @@ export default function ReportMaintenanceScreen() {
           setProperties(propertiesData);
         }
       } catch (error: any) {
+        reportApiError(error, 'service_categories', 'select');
         console.error('Error fetching data:', error);
         Alert.alert('Error', 'Failed to load form data');
       } finally {
@@ -113,7 +124,7 @@ export default function ReportMaintenanceScreen() {
       // Step 2: Upload media files if any
       if (files.length > 0) {
         const imageUrls = await uploadFiles(request.id);
-        
+
         // Step 3: Update request with image URLs
         if (imageUrls.length > 0) {
           await maintenanceApi.updateMaintenanceRequest(request.id, {
@@ -123,12 +134,11 @@ export default function ReportMaintenanceScreen() {
       }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert(
-        'Success',
-        'Maintenance request submitted successfully',
-        [{ text: 'OK', onPress: () => router.back() }]
-      );
+      Alert.alert('Success', 'Maintenance request submitted successfully', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
     } catch (error: any) {
+      reportApiError(error, 'maintenance_requests', 'insert');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', error.message || 'Failed to submit request');
       console.error('Submit error:', error);
@@ -167,7 +177,11 @@ export default function ReportMaintenanceScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Title */}
         <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.section}>
           <Text style={styles.label}>Title *</Text>
@@ -211,7 +225,9 @@ export default function ReportMaintenanceScreen() {
                   setPropertyId(property.id);
                 }}
               >
-                <Text style={[styles.chipText, propertyId === property.id && styles.chipTextActive]}>
+                <Text
+                  style={[styles.chipText, propertyId === property.id && styles.chipTextActive]}
+                >
                   {property.title}
                 </Text>
               </TouchableOpacity>
@@ -226,14 +242,26 @@ export default function ReportMaintenanceScreen() {
             {PRIORITIES.map((item) => (
               <TouchableOpacity
                 key={item.value}
-                style={[styles.priorityChip, priority === item.value && { backgroundColor: item.color }]}
+                style={[
+                  styles.priorityChip,
+                  priority === item.value && { backgroundColor: item.color },
+                ]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setPriority(item.value as any);
                 }}
               >
-                <Ionicons name={item.icon as any} size={20} color={priority === item.value ? '#FFFFFF' : item.color} />
-                <Text style={[styles.priorityText, priority === item.value && styles.priorityTextActive]}>
+                <Ionicons
+                  name={item.icon as any}
+                  size={20}
+                  color={priority === item.value ? '#FFFFFF' : item.color}
+                />
+                <Text
+                  style={[
+                    styles.priorityText,
+                    priority === item.value && styles.priorityTextActive,
+                  ]}
+                >
                   {item.label}
                 </Text>
               </TouchableOpacity>
@@ -254,7 +282,9 @@ export default function ReportMaintenanceScreen() {
                   setCategoryId(categoryId === category.id ? null : category.id);
                 }}
               >
-                <Text style={[styles.chipText, categoryId === category.id && styles.chipTextActive]}>
+                <Text
+                  style={[styles.chipText, categoryId === category.id && styles.chipTextActive]}
+                >
                   {category.name}
                 </Text>
               </TouchableOpacity>
@@ -266,9 +296,7 @@ export default function ReportMaintenanceScreen() {
         {isOwner && (
           <Animated.View entering={FadeInDown.delay(600).duration(500)} style={styles.section}>
             <Text style={styles.label}>Request Visibility</Text>
-            <Text style={styles.helperText}>
-              Choose how vendors can see this request
-            </Text>
+            <Text style={styles.helperText}>Choose how vendors can see this request</Text>
             <View style={styles.visibilityContainer}>
               <TouchableOpacity
                 style={[
@@ -358,9 +386,7 @@ export default function ReportMaintenanceScreen() {
                   <Ionicons name="close-circle" size={24} color="#DE3831" />
                 </TouchableOpacity>
                 <View style={styles.mediaTypeBadge}>
-                  <Text style={styles.mediaTypeText}>
-                    {file.type === 'video' ? '🎥' : '📷'}
-                  </Text>
+                  <Text style={styles.mediaTypeText}>{file.type === 'video' ? '🎥' : '📷'}</Text>
                 </View>
               </View>
             ))}
@@ -393,9 +419,7 @@ export default function ReportMaintenanceScreen() {
           {submitting ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.submitButtonText}>
-              Submit Request
-            </Text>
+            <Text style={styles.submitButtonText}>Submit Request</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -407,47 +431,138 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f9fafb' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   loadingText: { marginTop: 12, fontSize: 16, color: '#6b7280' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 16, backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
-  backButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
   scrollView: { flex: 1 },
   scrollContent: { padding: 16, paddingBottom: 120 },
   section: { marginBottom: 24 },
   label: { fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 8 },
-  input: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 16, fontSize: 16, color: '#111827' },
+  input: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: '#111827',
+  },
   textArea: { height: 120, paddingTop: 12 },
   charCount: { fontSize: 12, color: '#9ca3af', textAlign: 'right', marginTop: 4 },
   chipContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: '#f5f5f5', borderWidth: 1, borderColor: '#e5e7eb' },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
   chipActive: { backgroundColor: RSA.blue, borderColor: RSA.blue },
   chipText: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
   chipTextActive: { color: '#ffffff' },
   priorityContainer: { flexDirection: 'row', gap: 12 },
-  priorityChip: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12, borderRadius: 12, backgroundColor: '#f5f5f5' },
+  priorityChip: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#f5f5f5',
+  },
   priorityText: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
   priorityTextActive: { color: '#ffffff' },
   helperText: { fontSize: 12, color: '#9ca3af', marginTop: 4, marginBottom: 12 },
   visibilityContainer: { flexDirection: 'row', gap: 12 },
-  visibilityChip: { flex: 1, padding: 16, borderRadius: 12, backgroundColor: '#f5f5f5', borderWidth: 2, borderColor: '#e5e7eb', alignItems: 'center' },
+  visibilityChip: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: '#f5f5f5',
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+    alignItems: 'center',
+  },
   visibilityChipActive: { backgroundColor: RSA.blue, borderColor: RSA.blue },
   visibilityIcon: { fontSize: 32, marginBottom: 8 },
   visibilityLabel: { fontSize: 14, fontWeight: '700', color: '#111827' },
   visibilityLabelActive: { color: '#ffffff' },
   visibilityHint: { fontSize: 11, color: '#9ca3af', marginTop: 4, textAlign: 'center' },
   visibilityHintActive: { color: 'rgba(255, 255, 255, 0.8)' },
-  lockedProperty: { backgroundColor: '#f5f5f5', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb' },
+  lockedProperty: {
+    backgroundColor: '#f5f5f5',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
   lockedPropertyText: { fontSize: 16, fontWeight: '600', color: '#111827' },
   mediaGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   mediaWrapper: { position: 'relative' },
   media: { width: 100, height: 100, borderRadius: 12 },
-  removeMedia: { position: 'absolute', top: -8, right: -8, backgroundColor: '#ffffff', borderRadius: 12 },
-  mediaTypeBadge: { position: 'absolute', bottom: 4, left: 4, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
+  removeMedia: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+  },
+  mediaTypeBadge: {
+    position: 'absolute',
+    bottom: 4,
+    left: 4,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
   mediaTypeText: { fontSize: 12 },
-  addMediaButton: { width: 100, height: 100, borderRadius: 12, borderWidth: 2, borderStyle: 'dashed', borderColor: '#e5e7eb', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5' },
+  addMediaButton: {
+    width: 100,
+    height: 100,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: '#e5e7eb',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
   addMediaText: { fontSize: 12, color: '#6b7280', marginTop: 4, fontWeight: '600' },
   mediaHint: { fontSize: 11, color: '#9ca3af', marginTop: 8 },
-  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, backgroundColor: '#ffffff', borderTopWidth: 1, borderTopColor: '#e5e7eb' },
-  submitButton: { backgroundColor: RSA.blue, paddingVertical: 16, borderRadius: 12, alignItems: 'center' },
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 16,
+    backgroundColor: '#ffffff',
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  submitButton: {
+    backgroundColor: RSA.blue,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
   submitButtonDisabled: { opacity: 0.5 },
   submitButtonText: { fontSize: 16, fontWeight: '700', color: '#ffffff' },
 });

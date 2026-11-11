@@ -27,6 +27,7 @@ import {
   RentInvoiceRow,
   VendorInvoiceRow,
 } from '../utils/pdfReports';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 type Tab = 'rent' | 'vendor';
 type RentInvoice = RentInvoiceRow;
@@ -200,6 +201,7 @@ export default function OwnerInvoicesScreen() {
         }))
       );
     } catch (err) {
+      reportApiError(err, 'payments', 'select');
       console.error('Error fetching rent invoices:', err);
     }
   };
@@ -291,6 +293,7 @@ export default function OwnerInvoicesScreen() {
         })
       );
     } catch (err) {
+      reportApiError(err, 'purchase_orders', 'select');
       console.error('Error fetching vendor invoices:', err);
     }
   };

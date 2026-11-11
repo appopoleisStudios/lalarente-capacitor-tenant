@@ -1,5 +1,6 @@
 import { supabase } from '../../../lib/supabase';
 import { generateAndUploadLeasePDF } from './leasePdfService';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 /**
  * Calculate the next payment date based on start date and payment due day
@@ -12,11 +13,7 @@ function calculateNextPaymentDate(startDate: string, paymentDueDay: number): str
   const targetDate = start > today ? start : today;
 
   // Create date with payment due day
-  const paymentDate = new Date(
-    targetDate.getFullYear(),
-    targetDate.getMonth(),
-    paymentDueDay
-  );
+  const paymentDate = new Date(targetDate.getFullYear(), targetDate.getMonth(), paymentDueDay);
 
   // If payment date has passed this month, move to next month
   if (paymentDate < today) {
@@ -41,7 +38,8 @@ export async function executeLease(leaseId: string): Promise<void> {
     // Get lease details with related data
     const { data: lease, error: leaseError } = await supabase
       .from('leases')
-      .select(`
+      .select(
+        `
         *,
         property:properties!property_id(
           title,
@@ -63,7 +61,8 @@ export async function executeLease(leaseId: string): Promise<void> {
           id_number,
           date_of_birth
         )
-      `)
+      `
+      )
       .eq('id', leaseId)
       .single();
 
@@ -84,6 +83,7 @@ export async function executeLease(leaseId: string): Promise<void> {
       leaseDocumentUrl = await generateAndUploadLeasePDF(lease as any);
       console.log('Lease PDF generated and uploaded successfully:', leaseDocumentUrl);
     } catch (pdfError) {
+      reportApiError(pdfError, 'lease_documents', 'insert');
       console.error('Error generating lease PDF:', pdfError);
       // Don't throw - lease can still be executed without PDF
       // PDF can be generated manually later if needed
@@ -118,23 +118,18 @@ export async function executeLease(leaseId: string): Promise<void> {
     }
 
     // 4. Create first payment record
-    const firstPaymentDate = calculateNextPaymentDate(
-      lease.start_date,
-      lease.payment_due_day || 1
-    );
+    const firstPaymentDate = calculateNextPaymentDate(lease.start_date, lease.payment_due_day || 1);
 
-    const { error: paymentError } = await supabase
-      .from('payments')
-      .insert({
-        lease_id: leaseId,
-        tenant_id: lease.tenant_id!,
-        owner_id: lease.owner_id!,
-        property_id: lease.property_id!,
-        amount: lease.monthly_rent,
-        due_date: firstPaymentDate,
-        type: 'rent',
-        status: 'pending',
-      });
+    const { error: paymentError } = await supabase.from('payments').insert({
+      lease_id: leaseId,
+      tenant_id: lease.tenant_id!,
+      owner_id: lease.owner_id!,
+      property_id: lease.property_id!,
+      amount: lease.monthly_rent,
+      due_date: firstPaymentDate,
+      type: 'rent',
+      status: 'pending',
+    });
 
     if (paymentError) {
       console.error('Error creating payment:', paymentError);
@@ -163,6 +158,7 @@ export async function executeLease(leaseId: string): Promise<void> {
       console.log('Lease document available at:', leaseDocumentUrl);
     }
   } catch (error) {
+    reportApiError(error, 'leases', 'update');
     console.error('Error executing lease:', error);
     throw error;
   }
@@ -176,9 +172,5 @@ export function canExecuteLease(lease: {
   tenant_signed_at: string | null;
   status: string | null;
 }): boolean {
-  return (
-    !!lease.owner_signed_at &&
-    !!lease.tenant_signed_at &&
-    lease.status !== 'active'
-  );
+  return !!lease.owner_signed_at && !!lease.tenant_signed_at && lease.status !== 'active';
 }

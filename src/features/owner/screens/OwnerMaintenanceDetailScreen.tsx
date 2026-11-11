@@ -39,6 +39,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 const RSA = { blue: '#002395' };
 
@@ -159,6 +160,7 @@ export default function OwnerMaintenanceDetailScreen() {
         setClosureReport(null);
       }
     } catch (error: any) {
+      reportApiError(error, 'maintenance_requests', 'select');
       console.error('Error fetching request:', error);
       Alert.alert('Error', 'Failed to load request details');
     } finally {

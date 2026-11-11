@@ -19,6 +19,7 @@ import SignatureModal from '../../leases/components/SignatureModal';
 import { uploadSignature } from '../../leases/api/storageService';
 import { regenerateLeasePDF } from '../../leases/api/regenerateLeasePDF';
 import { evaluateSignLeaseGate } from '../utils/leaseSignGate';
+import { reportApiError } from '@/src/core/observability/sentry';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
 
