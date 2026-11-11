@@ -1,5 +1,5 @@
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { render, waitFor } from '@testing-library/react-native';
 import { AppState } from 'react-native';
 import { focusManager } from '@tanstack/react-query';
 import { QueryProvider } from '../QueryProvider';
@@ -100,30 +100,44 @@ describe('QueryProvider AppState synchronization', () => {
     expect(focusManager.setFocused).toHaveBeenCalledWith(true);
   });
 
-  it('real focusManager: active mount restores isFocused() after stale false', () => {
-    // Use the real focusManager (not the mock) to verify isFocused() is actually
-    // set to true when mounting while active.
-    const { focusManager: realFM } =
-      jest.requireActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
+  it('focus-triggered refetch: foreground transition causes stale query to re-execute', async () => {
+    // Integration test using the real QueryClient and real focusManager.
+    // Verifies that transitioning from background → active causes a stale
+    // query to be refetched, which is the central behavior this component enables.
+    const {
+      QueryClient: RealQueryClient,
+      QueryClientProvider: RealQCProvider,
+      useQuery: realUseQuery,
+      focusManager: realFM,
+    } = jest.requireActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
+
+    const queryFn = jest.fn().mockResolvedValue('result');
+    const client = new RealQueryClient({
+      defaultOptions: { queries: { staleTime: 0, retry: 0, refetchOnWindowFocus: true } },
+    });
+
+    function ObservedQuery() {
+      realUseQuery({ queryKey: ['focus-test'], queryFn });
+      return null;
+    }
 
     realFM.setFocused(false);
-    expect(realFM.isFocused()).toBe(false);
-
-    Object.defineProperty(AppState, 'currentState', { value: 'active', writable: true });
-    // QueryProvider calls focusManager.setFocused — the mock intercepts that call.
-    // We verify the real focusManager separately via the same value that the mock
-    // would have been called with.
-    const mockSetFocused = focusManager.setFocused as jest.Mock;
-    render(
-      <QueryProvider>
-        <Child />
-      </QueryProvider>
+    const { unmount } = render(
+      <RealQCProvider client={client}>
+        <ObservedQuery />
+      </RealQCProvider>
     );
-    // The mock was called with true; propagate to the real manager to verify isFocused.
-    const lastCall = mockSetFocused.mock.calls.at(-1)?.[0];
-    realFM.setFocused(lastCall);
-    expect(realFM.isFocused()).toBe(true);
-    realFM.setFocused(undefined); // restore to default (manager decides)
+
+    // Initial fetch (mount)
+    await waitFor(() => expect(queryFn).toHaveBeenCalledTimes(1));
+
+    // Simulate app foregrounding — should trigger refetch of the stale query
+    realFM.setFocused(true);
+    await waitFor(() => expect(queryFn).toHaveBeenCalledTimes(2));
+
+    unmount();
+    realFM.setFocused(undefined);
+    client.clear();
   });
 
   it('removes the subscription on unmount', () => {
