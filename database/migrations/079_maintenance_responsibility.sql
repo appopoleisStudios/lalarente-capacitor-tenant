@@ -99,12 +99,18 @@ UPDATE public.purchase_orders po
 -- INSERT with contract_id: derive request_id; reject caller-supplied value that conflicts.
 -- UPDATE OF contract_id to non-NULL: re-derive; reject if PO already belongs to a different
 --   maintenance chain (prevents silently clearing/redirecting maintenance ownership).
---   FOR SHARE on the contract serializes with concurrent maintenance_request_id updates,
---   closing the race where a PO insert reads NULL before propagation commits.
 -- UPDATE OF contract_id to NULL: reject if PO already has maintenance request_id (reclaim).
 -- Direct updates to request_id are blocked unconditionally by trg_lock_po_request_id.
 -- Propagation routes through contract_id touch (SET contract_id = contract_id), which fires
 -- this trigger but NOT trg_lock_po_request_id — no session flag or privilege bypass needed.
+--
+-- Lock ordering: this trigger runs AFTER the PO row is locked by the caller's UPDATE/INSERT.
+-- Taking FOR SHARE on the contract here would invert the lock order relative to
+-- propagate_sc_request_id (which holds the contract lock and then tries to lock POs),
+-- creating a deadlock. The plain SELECT is correct: PostgreSQL's row-level locking ensures
+-- propagate's UPDATE … WHERE contract_id = NEW.id waits for any concurrent PO INSERT to
+-- commit, then re-fires this trigger — by which point maintenance_request_id is visible in
+-- the same transaction. No explicit contract lock needed.
 CREATE OR REPLACE FUNCTION populate_po_request_id()
 RETURNS trigger LANGUAGE plpgsql
   SET search_path = public, pg_catalog, pg_temp
@@ -113,11 +119,9 @@ DECLARE
   v_derived uuid;
 BEGIN
   IF NEW.contract_id IS NOT NULL THEN
-    -- FOR SHARE serializes with concurrent service_contracts maintenance_request_id updates.
     SELECT sc.maintenance_request_id INTO v_derived
       FROM public.service_contracts sc
-     WHERE sc.id = NEW.contract_id
-       FOR SHARE;
+     WHERE sc.id = NEW.contract_id;
 
     -- Fail closed: if contract is hidden by RLS (FK passes but row invisible), reject the
     -- operation rather than silently assigning request_id = NULL.
