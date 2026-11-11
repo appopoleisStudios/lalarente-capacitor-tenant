@@ -3,9 +3,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
 import { supabase } from '@/src/lib/supabase';
-import { paymentsApi } from '../../properties/api/paymentsApi';
-import { messagesApi } from '../../messaging/api/messagesApi';
-import { useTenantDashboard } from '../hooks/useTenantDashboard';
+import { paymentsApi } from '../../../properties/api/paymentsApi';
+import { messagesApi } from '../../../messaging/api/messagesApi';
+import { useTenantDashboard } from '../useTenantDashboard';
 
 jest.mock('@/src/lib/supabase', () => ({ supabase: { from: jest.fn(), auth: {} } }));
 jest.mock('../../properties/api/paymentsApi', () => ({
