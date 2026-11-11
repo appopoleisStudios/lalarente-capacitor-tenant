@@ -132,8 +132,9 @@ CREATE TABLE service_listings (
     CHECK (tier IN ('free', 'featured', 'premium')),
   status TEXT NOT NULL DEFAULT 'pending'
     CHECK (status IN ('pending', 'active', 'paused', 'expired', 'rejected', 'archived')),
-  starts_at TIMESTAMPTZ DEFAULT NOW(),
+  starts_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   expires_at TIMESTAMPTZ NOT NULL,       -- renewal deadline
+  CHECK (expires_at > starts_at),        -- every listing must span a positive duration
   deleted_at TIMESTAMPTZ,               -- soft-delete; listing is NEVER hard-deleted
   monthly_fee_cents INT NOT NULL DEFAULT 0 CHECK (monthly_fee_cents >= 0),    -- what we charge them
   per_lead_fee_cents INT NOT NULL DEFAULT 0 CHECK (per_lead_fee_cents >= 0), -- commission per contact tap
@@ -160,6 +161,19 @@ CREATE INDEX idx_service_listings_areas
 -- Provider history: query all periods for a provider by their first listing's id.
 CREATE INDEX idx_service_listings_canonical
   ON service_listings(canonical_listing_id);
+
+-- Overlap prevention: at most one active listing per canonical provider identity
+-- at any point in time. Prevents concurrent renewals from exposing duplicate listings
+-- with different lead rates to discovery queries and event ingestion.
+-- Partial: only active rows participate; pending/paused/expired/archived rows are exempt.
+-- Uses btree_gist for the range exclusion operator (requires CREATE EXTENSION btree_gist).
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+ALTER TABLE service_listings
+  ADD CONSTRAINT no_overlapping_active_periods
+  EXCLUDE USING gist (
+    canonical_listing_id WITH =,
+    tstzrange(starts_at, expires_at, '[)') WITH &&
+  ) WHERE (status = 'active');
 ```
 
 **Provider identity and renewal lifecycle:**
@@ -175,7 +189,7 @@ A provider has a stable identity anchored to their first (original) listing row:
   - INSERT trigger (branch 2) blocks a new row from pointing at a renewal — no chain can be created on INSERT.
   - UPDATE trigger blocks mutating `canonical_listing_id` on any existing row — no chain can be created by later modification.
   - Together these two invariants make it impossible to construct a chain at any point in the row's lifetime.
-- When a **pricing period ends** and admin renews/changes tier, they INSERT a new listing row with the new `starts_at`/`expires_at`/rate fields and set `canonical_listing_id = <original listing's id>`.
+- When a **pricing period ends** and admin renews/changes tier, the renewal is **atomic**: in a single transaction, INSERT the new listing row (new `starts_at`/`expires_at`/rates, `canonical_listing_id = <original id>`) AND UPDATE the old listing's `status = 'expired'`. This ensures discovery queries and event ingestion always see exactly one active listing per provider — the exclusion constraint above enforces this at the DB level, so a concurrent renewal that forgets to expire the old row is rejected.
 - All event analytics, provider history, and cross-period reporting query `WHERE canonical_listing_id = <original id>` — `business_name_snapshot` on events is for display only and cannot be used as a join key.
 - `ON DELETE RESTRICT` is a safety net but originals are **never hard-deleted** under the platform's soft-delete-only policy (`deleted_at + status='archived'`). Archiving a row does not remove its foreign key reference, so `ON DELETE RESTRICT` is never triggered in normal operation.
 
