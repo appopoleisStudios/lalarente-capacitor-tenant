@@ -223,12 +223,18 @@ export default function OwnerLeaseCreateScreen() {
     if (!validateForm() || !application) return;
 
     // CT7-022: route to review screen instead of instant insert.
-    // Pre-generate a UUID so the HTML preview shows a real Lease ID —
-    // the same ID is passed to the insert in OwnerLeaseReviewScreen.
-    const draftLeaseId = crypto.randomUUID();
+    // Preserve customClauses and draftLeaseId from an existing draft for the
+    // same application so back-and-edit cycles don't discard clauses the owner
+    // already typed in the review screen.
+    const appId = Array.isArray(applicationId) ? applicationId[0] : (applicationId as string);
+    const existing = leaseDraftStore.get();
+    const preservedClauses = existing?.applicationId === appId ? existing.customClauses : '';
+    const draftLeaseId = existing?.applicationId === appId
+      ? existing.draftLeaseId
+      : crypto.randomUUID();
 
     leaseDraftStore.set({
-      applicationId: Array.isArray(applicationId) ? applicationId[0] : (applicationId as string),
+      applicationId: appId,
       startDate,
       endDate,
       leaseType,
@@ -240,7 +246,7 @@ export default function OwnerLeaseCreateScreen() {
       rentEscalationType,
       rentEscalationValue,
       rentEscalationFrequency,
-      customClauses: '',
+      customClauses: preservedClauses,
       draftLeaseId,
     });
 
