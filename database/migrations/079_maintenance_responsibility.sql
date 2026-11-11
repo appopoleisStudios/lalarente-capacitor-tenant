@@ -107,8 +107,12 @@ UPDATE public.purchase_orders po
 --   would deadlock if another transaction's propagation needed to lock this same PO.
 -- UPDATE OF contract_id to NULL: reject if PO already has maintenance request_id.
 -- Direct updates to request_id are blocked unconditionally by trg_lock_po_request_id.
+-- SECURITY DEFINER: SELECT ... FOR SHARE requires UPDATE privilege on the locked table.
+-- Callers who can INSERT purchase_orders and read service_contracts but cannot UPDATE
+-- service_contracts would fail without this. Running as the function owner (postgres)
+-- ensures the FOR SHARE locking always succeeds regardless of the caller's privileges.
 CREATE OR REPLACE FUNCTION populate_po_request_id()
-RETURNS trigger LANGUAGE plpgsql
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
   SET search_path = public, pg_catalog, pg_temp
 AS $$
 DECLARE
