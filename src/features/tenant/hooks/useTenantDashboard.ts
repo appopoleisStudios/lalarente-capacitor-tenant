@@ -28,6 +28,8 @@ interface ActiveLease {
   end_date: string | null;
   monthly_rent: number;
   lease_type: string;
+  deposit_amount?: number | null;
+  deposit_total_interest?: number | null;
   property: ActiveLeaseProperty | null;
   owner: ActiveLeaseOwner | null;
 }
@@ -36,6 +38,7 @@ interface MaintenanceRequest {
   id: string;
   status: string;
   description: string;
+  title?: string | null;
   created_at: string;
   [key: string]: unknown;
 }
@@ -47,14 +50,17 @@ interface UpcomingViewing {
   confirmed_date: string | null;
   status: string;
   owner_response: string | null;
+  alternative_times?: string[] | null;
+  updated_at?: string | null;
+  created_at?: string | null;
   property_id?: string;
-  property: { id: string; title: string; address: string } | null;
+  property: { id: string; title: string; address?: string } | null;
 }
 
 interface PendingApplication {
   id: string;
   status: string;
-  created_at: string;
+  created_at: string | null;
   property: { id: string; title: string } | null;
 }
 
@@ -177,9 +183,11 @@ async function fetchDashboardData(userId: string): Promise<TenantDashboardData> 
 
   if (declinedError) throw new Error(`viewing_requests (declined): ${declinedError.message}`);
 
-  let filteredAlerts: UpcomingViewing[] = (recentDeclined ?? []) as UpcomingViewing[];
+  let filteredAlerts: UpcomingViewing[] = (recentDeclined ?? []) as unknown as UpcomingViewing[];
   if (filteredAlerts.length > 0) {
-    const declinedPropertyIds = [...new Set(filteredAlerts.map((v) => v.property_id))];
+    const declinedPropertyIds = [
+      ...new Set(filteredAlerts.map((v) => v.property_id).filter((id): id is string => !!id)),
+    ];
     const { data: activeForProps } = await supabase
       .from('viewing_requests')
       .select('property_id')
@@ -189,7 +197,9 @@ async function fetchDashboardData(userId: string): Promise<TenantDashboardData> 
     const activePropertyIds = new Set(
       ((activeForProps ?? []) as { property_id: string }[]).map((v) => v.property_id)
     );
-    filteredAlerts = filteredAlerts.filter((v) => !activePropertyIds.has(v.property_id));
+    filteredAlerts = filteredAlerts.filter(
+      (v) => v.property_id && !activePropertyIds.has(v.property_id)
+    );
   }
 
   if (filteredAlerts.length > 0) {
@@ -250,12 +260,12 @@ async function fetchDashboardData(userId: string): Promise<TenantDashboardData> 
 
   return {
     userName: profile?.full_name || 'Tenant',
-    activeLease: leaseResult.data ?? null,
+    activeLease: (leaseResult.data ?? null) as unknown as ActiveLease | null,
     nextPayment: upcoming,
     recentPayments: recent,
-    maintenanceRequests: maintenanceResult.data ?? [],
+    maintenanceRequests: (maintenanceResult.data ?? []) as unknown as MaintenanceRequest[],
     upcomingViewings,
-    pendingApplications: apps ?? [],
+    pendingApplications: (apps ?? []) as unknown as PendingApplication[],
     messageThreads: sorted.slice(0, 3).map((t) => ({
       id: t.id,
       owner_name: (t as { owner?: { full_name?: string } }).owner?.full_name ?? 'Landlord',

@@ -489,7 +489,9 @@ export default function TenantDashboardScreen() {
                 <View style={styles.leaseDetailItem}>
                   <Text style={styles.leaseDetailLabel}>Lease Ends</Text>
                   <Text style={styles.leaseDetailValue}>
-                    {new Date(activeLease.end_date).toLocaleDateString('en-ZA')}
+                    {activeLease.end_date
+                      ? new Date(activeLease.end_date).toLocaleDateString('en-ZA')
+                      : '—'}
                   </Text>
                 </View>
               </View>
@@ -849,7 +851,9 @@ export default function TenantDashboardScreen() {
                       {app.property?.title || 'Property'}
                     </Text>
                     <Text style={styles.applicationDate}>
-                      Applied {new Date(app.created_at).toLocaleDateString('en-ZA')}
+                      {app.created_at
+                        ? `Applied ${new Date(app.created_at).toLocaleDateString('en-ZA')}`
+                        : 'Applied'}
                     </Text>
                   </View>
                   <View style={styles.applicationStatusBadge}>
