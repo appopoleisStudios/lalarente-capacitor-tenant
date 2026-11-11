@@ -117,13 +117,15 @@ const makeSupabaseMock = (
   return capture;
 };
 
+let queryClient: QueryClient;
+
 function wrapper({ children }: { children: React.ReactNode }) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return React.createElement(QueryClientProvider, { client: qc }, children);
+  return React.createElement(QueryClientProvider, { client: queryClient }, children);
 }
 
 beforeEach(() => {
   jest.clearAllMocks();
+  queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   (paymentsApi.getTenantPayments as jest.Mock).mockResolvedValue([]);
   (messagesApi.getUserThreads as jest.Mock).mockResolvedValue([]);
 });
