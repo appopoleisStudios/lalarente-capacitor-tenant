@@ -171,7 +171,7 @@ describe('useTenantDashboard', () => {
     expect(result.current.data).toBeUndefined();
   });
 
-  it('all viewing_requests queries filter by tenant_id', async () => {
+  it('all viewing_requests queries scope by tenant_id and correct status values', async () => {
     const captured = makeSupabaseMock();
     const { result } = renderHook(() => useTenantDashboard('user-1'), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -181,6 +181,10 @@ describe('useTenantDashboard', () => {
     expect(
       viewingQueries.every((q) => q.eq.some(([col, val]) => col === 'tenant_id' && val === 'user-1'))
     ).toBe(true);
+    // First query must restrict to upcoming statuses; second must restrict to 'declined'.
+    const [upcomingQuery, declinedQuery] = viewingQueries;
+    expect(upcomingQuery.in).toContainEqual(['status', ['approved', 'pending']]);
+    expect(declinedQuery.eq).toContainEqual(['status', 'declined']);
   });
 
   describe('upcomingViewings filtering', () => {
