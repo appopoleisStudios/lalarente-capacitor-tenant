@@ -81,7 +81,7 @@ function getDaySuffix(day: number): string {
   }
 }
 
-export function generateLeaseHTML(lease: LeaseData): string {
+export function generateLeaseHTML(lease: LeaseData, customClauses?: string): string {
   const leaseTypeDisplay = lease.lease_type === 'fixed' ? 'Fixed Term' : 'Month-to-Month';
   const escalationType = lease.rent_escalation_type === 'percentage' ? '%' : ' (Fixed)';
   const escalationValue = lease.rent_escalation_value || 0;
@@ -447,6 +447,18 @@ export function generateLeaseHTML(lease: LeaseData): string {
   </div>
 </div>
 
+${
+  customClauses
+    ? `
+<div class="section">
+  <div class="section-title">Additional Terms</div>
+  <div class="clause">
+    <div class="clause-text" style="white-space:pre-wrap;">${customClauses.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+  </div>
+</div>`
+    : ''
+}
+
 <div class="signatures">
   <div class="section-title">Signatures</div>
 
@@ -489,9 +501,12 @@ export function generateLeaseHTML(lease: LeaseData): string {
 </html>`;
 }
 
-export async function generateAndUploadLeasePDF(leaseData: LeaseData): Promise<string> {
+export async function generateAndUploadLeasePDF(
+  leaseData: LeaseData,
+  customClauses?: string
+): Promise<string> {
   try {
-    const html = generateLeaseHTML(leaseData);
+    const html = generateLeaseHTML(leaseData, customClauses);
     const { uri } = await Print.printToFileAsync({
       html,
       base64: false,
