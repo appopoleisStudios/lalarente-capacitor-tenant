@@ -15,7 +15,7 @@
 
 BEGIN;
 
-SELECT plan(30);
+SELECT plan(27);
 
 -- ─── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -513,9 +513,11 @@ SELECT is(
 );
 
 -- ─── N. populate_po_request_id — relinking and direct-update protection ──────
--- N1: relinking contract_id from A → B derives B's request_id (no inherited-value rejection)
--- N2: unlinking (contract_id → NULL) clears request_id
--- N3: direct UPDATE OF request_id is rejected
+-- N1: re-linking a maintenance PO to a contract with a different chain is rejected
+-- N2: unlinking a maintenance-linked PO is rejected
+-- N2b: unlinking a non-maintenance PO is allowed
+-- N3: re-linking a maintenance PO to a NULL-chain contract is rejected
+-- N4: direct UPDATE OF request_id is rejected
 
 DO $$
 DECLARE
@@ -538,14 +540,15 @@ BEGIN
   PERFORM set_config('test.n_req_b',      v_req_b::text,      true);
 END $$;
 
--- Relink PO-M2 (currently on contract A/req A) to contract B
-UPDATE purchase_orders SET contract_id = current_setting('test.n_contract_b')::uuid
- WHERE id = current_setting('test.m_po_id')::uuid;
-
-SELECT is(
-  (SELECT request_id FROM purchase_orders WHERE id = current_setting('test.m_po_id')::uuid),
-  current_setting('test.n_req_b')::uuid,
-  'N1: relinking contract_id A→B derives B request_id without inherited-value rejection'
+-- N1: re-linking PO-M2 (request_id = m_req_id) to contract B (request_id = n_req_b ≠ m_req_id)
+-- must be rejected to prevent losing maintenance ownership.
+SELECT throws_like(
+  $q$
+    UPDATE purchase_orders SET contract_id = current_setting('test.n_contract_b')::uuid
+     WHERE id = current_setting('test.m_po_id')::uuid
+  $q$,
+  '%cannot re-link a maintenance-linked PO%',
+  'N1: re-linking a maintenance PO to a different-chain contract is rejected'
 );
 
 -- N2: unlinking a maintenance-linked PO (request_id IS NOT NULL) is rejected
@@ -586,7 +589,18 @@ SELECT lives_ok(
   'N2b: unlinking a non-maintenance PO (request_id IS NULL) is allowed'
 );
 
--- N3: direct request_id update is blocked
+-- N3: re-linking a maintenance PO to a NULL-chain contract is also rejected
+-- (n2b_sc_id was created with maintenance_request_id = NULL in the N2b fixture)
+SELECT throws_like(
+  $q$
+    UPDATE purchase_orders SET contract_id = current_setting('test.n2b_sc_id')::uuid
+     WHERE id = current_setting('test.m_po_id')::uuid
+  $q$,
+  '%cannot re-link a maintenance-linked PO%',
+  'N3: re-linking a maintenance PO to a NULL-chain contract is rejected'
+);
+
+-- N4: direct request_id update is blocked
 SELECT throws_like(
   $q$
     UPDATE purchase_orders
@@ -594,7 +608,7 @@ SELECT throws_like(
      WHERE id = current_setting('test.m_po_id')::uuid
   $q$,
   '%request_id is managed by the contract chain%',
-  'N3: direct UPDATE OF request_id is rejected'
+  'N4: direct UPDATE OF request_id is rejected'
 );
 
 -- ─── O. service_contracts.maintenance_request_id consistency ─────────────────
