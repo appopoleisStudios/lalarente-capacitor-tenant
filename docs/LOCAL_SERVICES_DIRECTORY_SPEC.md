@@ -108,10 +108,15 @@ New tables, all in `public.` schema. Zero changes to existing tables.
 CREATE TABLE service_listings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   -- Stable provider identity across pricing periods. The first listing for a
-  -- provider sets canonical_listing_id = id (self-referential). Every renewal
-  -- row points back to that first listing. Query `WHERE canonical_listing_id = X`
-  -- to retrieve the full history of a provider regardless of pricing period.
-  canonical_listing_id UUID REFERENCES service_listings(id) ON DELETE RESTRICT,
+  -- provider sets canonical_listing_id = id (self-referential, same UUID).
+  -- Every renewal row points back to that first listing. NOT NULL because
+  -- every row must carry its identity anchor; the admin UI must supply both
+  -- id and canonical_listing_id in the same INSERT statement (see §4.1 notes).
+  -- A trigger enforces that canonical_listing_id references a row where
+  -- canonical_listing_id = id (i.e. a true original, not a renewal).
+  -- Query `WHERE canonical_listing_id = X` to retrieve the full history of
+  -- a provider regardless of pricing period.
+  canonical_listing_id UUID NOT NULL REFERENCES service_listings(id) ON DELETE RESTRICT,
   business_name TEXT NOT NULL,
   tagline TEXT,                          -- "Trusted People. Better Homes."
   description TEXT,                      -- long-form "about us"
@@ -161,10 +166,11 @@ CREATE INDEX idx_service_listings_canonical
 
 A provider has a stable identity anchored to their first (original) listing row:
 
-- When admin creates the **first listing** for a provider, they set `canonical_listing_id = id` (self-referential — set via trigger or admin UI after `INSERT`).
-- When a **pricing period ends** and admin renews/changes tier, they INSERT a new listing row with the new `starts_at`/`expires_at`/rate fields, and set `canonical_listing_id = <original listing's id>`.
+- When admin creates the **first listing** for a provider, the admin UI sends a single INSERT with both `id` and `canonical_listing_id` set to the same generated UUID (self-referential). The `NOT NULL` constraint requires this — a separate UPDATE-after-INSERT is not viable.
+- A BEFORE INSERT/UPDATE trigger verifies that `canonical_listing_id` references a row where `canonical_listing_id = id` (a true original, not a renewal). This prevents chains and cycles.
+- When a **pricing period ends** and admin renews/changes tier, they INSERT a new listing row with the new `starts_at`/`expires_at`/rate fields and set `canonical_listing_id = <original listing's id>`.
 - All event analytics, provider history, and cross-period reporting query `WHERE canonical_listing_id = <original id>` — `business_name_snapshot` on events is for display only and cannot be used as a join key.
-- `ON DELETE RESTRICT` prevents deletion of the original listing while renewal rows reference it; admin must archive renewal rows first.
+- `ON DELETE RESTRICT` is a safety net but originals are **never hard-deleted** under the platform's soft-delete-only policy (`deleted_at + status='archived'`). Archiving a row does not remove its foreign key reference, so `ON DELETE RESTRICT` is never triggered in normal operation.
 
 ### 4.2 `listing_events` — the master data
 
