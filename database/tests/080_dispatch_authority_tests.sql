@@ -15,7 +15,7 @@
 
 BEGIN;
 
-SELECT plan(29);
+SELECT plan(30);
 
 -- ─── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -548,14 +548,42 @@ SELECT is(
   'N1: relinking contract_id A→B derives B request_id without inherited-value rejection'
 );
 
--- N2: unlink (contract_id → NULL) → request_id cleared
-UPDATE purchase_orders SET contract_id = NULL
- WHERE id = current_setting('test.m_po_id')::uuid;
+-- N2: unlinking a maintenance-linked PO (request_id IS NOT NULL) is rejected
+-- (PO-M2 currently has request_id = n_req_b from N1)
+SELECT throws_like(
+  $q$
+    UPDATE purchase_orders SET contract_id = NULL
+     WHERE id = current_setting('test.m_po_id')::uuid
+  $q$,
+  '%cannot remove contract from a maintenance-linked PO%',
+  'N2: unlinking contract from maintenance PO is rejected to protect reclaim sweep'
+);
 
-SELECT is(
-  (SELECT request_id FROM purchase_orders WHERE id = current_setting('test.m_po_id')::uuid),
-  NULL,
-  'N2: setting contract_id to NULL clears stale request_id'
+-- N2b: unlinking a non-maintenance PO (request_id IS NULL) is allowed
+-- Use PO-M3 which has no contract and no request_id; first give it a contract with no req.
+DO $$
+DECLARE v_sc_id uuid := gen_random_uuid();
+BEGIN
+  INSERT INTO service_contracts (id, maintenance_request_id, property_id, owner_id,
+                                  vendor_id, status, start_date, end_date)
+  VALUES (v_sc_id, NULL,
+          current_setting('test.prop_id')::uuid,
+          current_setting('test.owner_id')::uuid,
+          tests.get_supabase_uid('tenant_b'),
+          'active', now(), now() + interval '1 year');
+
+  UPDATE purchase_orders SET contract_id = v_sc_id
+   WHERE id = current_setting('test.m3_po_id')::uuid;
+
+  PERFORM set_config('test.n2b_sc_id', v_sc_id::text, true);
+END $$;
+
+SELECT lives_ok(
+  $q$
+    UPDATE purchase_orders SET contract_id = NULL
+     WHERE id = current_setting('test.m3_po_id')::uuid
+  $q$,
+  'N2b: unlinking a non-maintenance PO (request_id IS NULL) is allowed'
 );
 
 -- N3: direct request_id update is blocked
