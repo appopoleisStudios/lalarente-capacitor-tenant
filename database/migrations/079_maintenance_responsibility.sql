@@ -222,6 +222,22 @@ BEGIN
     RAISE EXCEPTION 'not authorized';
   END IF;
 
+  -- Guard: if the request has a directly-set vendor_id with NO corresponding
+  -- active assignment row, block the reclaim rather than silently NULLing it.
+  -- When an assignment row exists the open_assignments check below already
+  -- handles it; this guard catches the edge case where vendor_id was set
+  -- without a corresponding assignment (e.g. by a future code path or migration).
+  IF mr_vendor_id IS NOT NULL THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM public.maintenance_vendor_assignments
+       WHERE request_id = req_id
+         AND vendor_id  = mr_vendor_id
+         AND status NOT IN ('cancelled', 'rejected')
+    ) THEN
+      RAISE EXCEPTION 'reclaim aborted: request.vendor_id is set but has no active assignment row; cancel the vendor association first';
+    END IF;
+  END IF;
+
   -- Step 1: Lock ALL assignment rows for this request (regardless of status).
   -- Clients cancel assignments via cancel_assignment() RPC, which acquires
   -- FOR SHARE on the parent before touching the child — same lock order as
