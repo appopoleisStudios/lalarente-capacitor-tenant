@@ -116,6 +116,14 @@ BEGIN
      WHERE sc.id = NEW.contract_id
        FOR SHARE;
 
+    -- Fail closed: if contract is hidden by RLS (FK passes but row invisible), reject the
+    -- operation rather than silently assigning request_id = NULL.
+    IF NOT FOUND THEN
+      RAISE EXCEPTION
+        'contract % not found or inaccessible; cannot verify maintenance request linkage',
+        NEW.contract_id;
+    END IF;
+
     IF TG_OP = 'INSERT' THEN
       IF NEW.request_id IS NOT NULL AND NEW.request_id IS DISTINCT FROM v_derived THEN
         RAISE EXCEPTION
@@ -185,16 +193,19 @@ BEGIN
   RETURN NEW;
 END $$;
 
+-- SECURITY DEFINER: propagation must cover every linked PO regardless of the caller's
+-- RLS context. Without this, POs owned by other roles would be filtered out, retaining
+-- request_id = NULL and silently escaping the reclaim sweep.
 CREATE OR REPLACE FUNCTION propagate_sc_request_id()
-RETURNS trigger LANGUAGE plpgsql
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
   SET search_path = public, pg_catalog, pg_temp
 AS $$
 BEGIN
   IF OLD.maintenance_request_id IS NULL AND NEW.maintenance_request_id IS NOT NULL THEN
     -- Touch contract_id on each linked PO to re-trigger populate_po_request_id.
-    -- That trigger reads maintenance_request_id via FOR SHARE (serializes the race),
-    -- and writes NEW.request_id directly — not through UPDATE OF request_id, so
-    -- trg_lock_po_request_id is never fired. No session flag or privilege bypass needed.
+    -- Runs as the function definer (service_role / postgres), bypassing PO RLS so all
+    -- linked POs are updated. populate_po_request_id fires as a BEFORE trigger within
+    -- this elevated context and reads the now-committed maintenance_request_id.
     UPDATE public.purchase_orders
        SET contract_id = contract_id
      WHERE contract_id = NEW.id;
