@@ -49,4 +49,43 @@ export default [
       'expo/no-dynamic-env-var': 'off',
     },
   },
+  // ─── Epic 5 enforcement: shared utils + no hardcoded colors ─────────────────
+  // Scoped to src/features/** only. Set to 'warn' until legacy violations are
+  // migrated away; flip to 'error' once the tracked baseline reaches zero.
+  // Baseline (2026-11-10): ~2209 hex colors, ~78 formatDate/Currency/getStatusColor
+  // duplicates, ~73 toLocaleString currency calls.
+  {
+    files: ['src/features/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': [
+        'warn',
+        // 1. Hex color literals — use src/shared/theme/colors instead
+        {
+          selector: "Literal[value=/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/]",
+          message:
+            "Hardcoded hex color. Use a token from src/shared/theme/colors (e.g. colors.primary[500]).",
+        },
+        // 2. Local formatDate / formatCurrency / getStatusColor re-declarations
+        {
+          selector:
+            "FunctionDeclaration[id.name=/^(formatDate|formatCurrency|getStatusColors?|getStatusTextColor|getStatusBackgroundColor)$/]",
+          message:
+            "Import this utility from src/shared/utils instead of re-declaring it locally.",
+        },
+        {
+          selector:
+            "VariableDeclarator[id.name=/^(formatDate|formatCurrency|getStatusColors?|getStatusTextColor|getStatusBackgroundColor)$/] > ArrowFunctionExpression",
+          message:
+            "Import this utility from src/shared/utils instead of re-declaring it locally.",
+        },
+        // 3. toLocaleString for currency — use formatCurrency from src/shared/utils/format
+        {
+          selector:
+            "CallExpression[callee.property.name='toLocaleString'] > Literal[value='en-ZA']",
+          message:
+            "Use formatCurrency or formatDate from src/shared/utils/format instead of inline toLocaleString.",
+        },
+      ],
+    },
+  },
 ];
