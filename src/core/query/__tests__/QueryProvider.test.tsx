@@ -28,14 +28,27 @@ describe('QueryProvider AppState synchronization', () => {
     addListenerSpy.mockRestore();
   });
 
-  it('does not call setFocused on mount when app is already active', () => {
+  it('calls setFocused(true) on mount when app is already active', () => {
     Object.defineProperty(AppState, 'currentState', { value: 'active', writable: true });
     render(
       <QueryProvider>
         <Child />
       </QueryProvider>
     );
-    expect(focusManager.setFocused).not.toHaveBeenCalled();
+    expect(focusManager.setFocused).toHaveBeenCalledWith(true);
+  });
+
+  it('restores focus when remounted after background — regression guard', () => {
+    // Simulate a focusManager that is stuck at false from a prior backgrounded mount.
+    (focusManager.setFocused as jest.Mock).mockClear();
+    Object.defineProperty(AppState, 'currentState', { value: 'active', writable: true });
+    render(
+      <QueryProvider>
+        <Child />
+      </QueryProvider>
+    );
+    // Must set true so stale false is overwritten and queries can refetch.
+    expect(focusManager.setFocused).toHaveBeenCalledWith(true);
   });
 
   it('calls setFocused(false) on mount when app is backgrounded', () => {
@@ -58,7 +71,7 @@ describe('QueryProvider AppState synchronization', () => {
     expect(focusManager.setFocused).toHaveBeenCalledWith(false);
   });
 
-  it('subscribes to AppState change events', () => {
+  it('subscribes to AppState change events and listener drives focusManager', () => {
     Object.defineProperty(AppState, 'currentState', { value: 'active', writable: true });
     render(
       <QueryProvider>
@@ -66,6 +79,12 @@ describe('QueryProvider AppState synchronization', () => {
       </QueryProvider>
     );
     expect(addListenerSpy).toHaveBeenCalledWith('change', expect.any(Function));
+    // Invoke the captured listener to verify it drives focusManager correctly.
+    const listener = addListenerSpy.mock.calls[0][1];
+    listener('background');
+    expect(focusManager.setFocused).toHaveBeenCalledWith(false);
+    listener('active');
+    expect(focusManager.setFocused).toHaveBeenCalledWith(true);
   });
 
   it('removes the subscription on unmount', () => {
