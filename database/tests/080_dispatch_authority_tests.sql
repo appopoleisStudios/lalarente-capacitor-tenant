@@ -15,7 +15,7 @@
 
 BEGIN;
 
-SELECT plan(17);
+SELECT plan(18);
 
 -- ─── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -345,6 +345,40 @@ SELECT throws_like(
   $q$ SELECT reclaim_request(current_setting('test.j_req_id')::uuid, 'J reclaim') $q$,
   '%reclaim aborted%',
   'J1: reclaim blocked when an active PO exists'
+);
+
+SELECT tests.clear_authentication();
+
+-- ─── K. Reclaim blocked when vendor_id set but no assignment row exists ────────
+
+DO $$
+DECLARE
+  v_req_id  uuid;
+  v_vnd_id  uuid := gen_random_uuid();
+BEGIN
+  -- Insert a tenant_dispatching request with vendor_id set directly
+  -- but intentionally no corresponding assignment row.
+  INSERT INTO maintenance_requests (
+    property_id, owner_id, tenant_id, title, description,
+    priority, status, service_item_id, vendor_id
+  ) VALUES (
+    current_setting('test.prop_id')::uuid,
+    current_setting('test.owner_id')::uuid,
+    current_setting('test.tenant_id')::uuid,
+    'K_no_assignment', 'desc', 'low', 'tenant_dispatching',
+    current_setting('test.psi_id')::uuid,
+    v_vnd_id
+  ) RETURNING id INTO v_req_id;
+
+  PERFORM set_config('test.k_req_id', v_req_id::text, true);
+END $$;
+
+SELECT tests.authenticate_as('owner_a');
+
+SELECT throws_like(
+  $q$ SELECT reclaim_request(current_setting('test.k_req_id')::uuid, 'K reclaim') $q$,
+  '%reclaim aborted: request.vendor_id is set but has no active assignment row%',
+  'K1: reclaim blocked when vendor_id set without a corresponding assignment row'
 );
 
 SELECT tests.clear_authentication();
