@@ -1,5 +1,6 @@
 import { colors } from '@/src/shared/theme/colors';
 
+/** Returns `{ text, background }` token pair for any lease/maintenance status string. Unknown statuses fall back to neutral grey. */
 export interface StatusColorSet {
   text: string;
   background: string;
