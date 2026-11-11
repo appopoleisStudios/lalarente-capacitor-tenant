@@ -44,9 +44,17 @@ const makeSupabaseMock = (overrides: Record<string, TableResult | TableResult[]>
       result = override ?? defaults[table] ?? { data: null, error: null };
     }
     let limitN: number | undefined;
+    const gteFilters: Array<{ column: string; value: string }> = [];
     const resolved = () => {
-      if (limitN !== undefined && Array.isArray(result.data)) {
-        return { ...result, data: (result.data as unknown[]).slice(0, limitN) };
+      let data = result.data;
+      if (Array.isArray(data)) {
+        for (const f of gteFilters) {
+          data = (data as Record<string, unknown>[]).filter(
+            (row) => String(row[f.column] ?? '') >= f.value
+          );
+        }
+        if (limitN !== undefined) return { ...result, data: data.slice(0, limitN) };
+        return { ...result, data };
       }
       return result;
     };
@@ -56,7 +64,10 @@ const makeSupabaseMock = (overrides: Record<string, TableResult | TableResult[]>
       in: () => chain,
       not: () => chain,
       is: () => chain,
-      gte: () => chain,
+      gte: (column: string, value: unknown) => {
+        gteFilters.push({ column, value: String(value) });
+        return chain;
+      },
       order: () => chain,
       limit: (n: number) => {
         limitN = n;
