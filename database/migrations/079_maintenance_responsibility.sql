@@ -96,21 +96,19 @@ UPDATE public.purchase_orders po
    AND po.request_id IS NULL;
 
 -- (b) Forward trigger: enforce request_id consistency from contract chain.
--- INSERT with contract_id: derive request_id; reject caller-supplied value that conflicts.
--- UPDATE OF contract_id to non-NULL: re-derive; reject if PO already belongs to a different
---   maintenance chain (prevents silently clearing/redirecting maintenance ownership).
+-- INSERT with contract_id: derive request_id via FOR SHARE on the contract. FOR SHARE
+--   prevents the race where T1 reads NULL (T2 not committed), T2 propagates and misses T1,
+--   T1 commits with request_id=NULL. Mechanism: T1's FOR SHARE blocks T2's exclusive lock
+--   on the contract; T2 commits AFTER T1; T2's propagation then sees T1's PO and corrects it.
+--   No deadlock on INSERT: the PO row does not exist yet, so no lock inversion is possible.
+-- UPDATE OF contract_id to non-NULL: plain SELECT (no FOR SHARE). The PO row is already
+--   locked, so FOR SHARE would invert the lock order vs. propagate_sc_request_id (which
+--   holds the contract lock and then tries to lock POs), causing a deadlock. Accept the
+--   narrower re-link race window.
 -- UPDATE OF contract_id to NULL: reject if PO already has maintenance request_id (reclaim).
 -- Direct updates to request_id are blocked unconditionally by trg_lock_po_request_id.
 -- Propagation routes through contract_id touch (SET contract_id = contract_id), which fires
--- this trigger but NOT trg_lock_po_request_id — no session flag or privilege bypass needed.
---
--- Lock ordering: this trigger runs AFTER the PO row is locked by the caller's UPDATE/INSERT.
--- Taking FOR SHARE on the contract here would invert the lock order relative to
--- propagate_sc_request_id (which holds the contract lock and then tries to lock POs),
--- creating a deadlock. The plain SELECT is correct: PostgreSQL's row-level locking ensures
--- propagate's UPDATE … WHERE contract_id = NEW.id waits for any concurrent PO INSERT to
--- commit, then re-fires this trigger — by which point maintenance_request_id is visible in
--- the same transaction. No explicit contract lock needed.
+-- this trigger (BEFORE UPDATE OF contract_id) but NOT trg_lock_po_request_id.
 CREATE OR REPLACE FUNCTION populate_po_request_id()
 RETURNS trigger LANGUAGE plpgsql
   SET search_path = public, pg_catalog, pg_temp
@@ -119,9 +117,20 @@ DECLARE
   v_derived uuid;
 BEGIN
   IF NEW.contract_id IS NOT NULL THEN
-    SELECT sc.maintenance_request_id INTO v_derived
-      FROM public.service_contracts sc
-     WHERE sc.id = NEW.contract_id;
+    IF TG_OP = 'INSERT' THEN
+      -- FOR SHARE serializes INSERT with concurrent service_contracts maintenance_request_id
+      -- updates. No lock inversion: PO row doesn't exist yet, so no PO lock is held here.
+      SELECT sc.maintenance_request_id INTO v_derived
+        FROM public.service_contracts sc
+       WHERE sc.id = NEW.contract_id
+         FOR SHARE;
+    ELSE
+      -- UPDATE OF contract_id: PO row already locked. Plain SELECT avoids lock inversion
+      -- with propagate_sc_request_id (contract lock → PO lock ordering).
+      SELECT sc.maintenance_request_id INTO v_derived
+        FROM public.service_contracts sc
+       WHERE sc.id = NEW.contract_id;
+    END IF;
 
     -- Fail closed: if contract is hidden by RLS (FK passes but row invisible), reject the
     -- operation rather than silently assigning request_id = NULL.
