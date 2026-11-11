@@ -22,6 +22,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/src/shared/theme/colors';
 import { supabase } from '@/src/lib/supabase';
 import { consentApi, OPTIONAL_CONSENTS, type ConsentRecord, type ConsentType } from '../api';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 export default function ConsentManagementScreen() {
   const router = useRouter();
@@ -68,6 +69,7 @@ export default function ConsentManagementScreen() {
       const data = await consentApi.getActiveConsents(uid);
       setConsents(data);
     } catch (err) {
+      reportApiError(err, 'popia_consents', 'select');
       console.error('Error fetching consents:', err);
     } finally {
       setLoading(false);
@@ -114,6 +116,7 @@ export default function ConsentManagementScreen() {
         setToggling(null);
       }
     } catch (err) {
+      reportApiError(err, 'popia_consents', 'update');
       console.error('Error toggling consent:', err);
       setToggling(null);
     }

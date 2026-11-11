@@ -23,6 +23,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/src/shared/theme/colors';
 import { supabase } from '@/src/lib/supabase';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -332,6 +333,7 @@ export default function OwnerDocumentsHubScreen() {
       results.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       setRecentDocs(results.slice(0, 20));
     } catch (err) {
+      reportApiError(err, 'documents', 'select');
       console.error('Error fetching recent documents:', err);
     } finally {
       setLoading(false);
@@ -417,6 +419,7 @@ export default function OwnerDocumentsHubScreen() {
         });
       }
     } catch (err) {
+      reportApiError(err, 'purchase_orders', 'select');
       console.error('Error fetching PO documents:', err);
     }
     return results;

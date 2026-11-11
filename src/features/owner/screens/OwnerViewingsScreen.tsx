@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { viewingsApi, ViewingWithRelations } from '../../properties/api/viewingsApi';
 import { supabase } from '../../../lib/supabase';
 import { isViewingExpired, getViewingActionStatus } from '../../properties/utils/viewingHelpers';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 const RSA = { blue: '#002395', gold: '#FFB81C' };
 
@@ -129,6 +130,7 @@ export default function OwnerViewingsScreen() {
         setLoading(false);
       }
     } catch (err) {
+      reportApiError(err, 'profiles', 'select');
       console.error('[OwnerViewings] initUser error:', err);
       setLoading(false);
     }
@@ -145,6 +147,7 @@ export default function OwnerViewingsScreen() {
       const data = await viewingsApi.getOwnerViewings(id);
       setViewings(data);
     } catch (error) {
+      reportApiError(error, 'viewings', 'select');
       console.error('[OwnerViewings] Error loading viewings:', error);
     } finally {
       setLoading(false);

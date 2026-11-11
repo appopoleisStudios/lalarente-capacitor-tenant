@@ -14,6 +14,7 @@ import { applicationsApi } from '@/src/features/properties/api/applicationsApi';
 import { getMaintenanceRequests } from '@/src/features/maintenance/api';
 import { supabase } from '@/src/lib/supabase';
 import type { MaintenanceRequest } from '@/src/features/maintenance/api/types/maintenance.types';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -213,6 +214,7 @@ export async function getOwnerDashboardData(ownerId: string): Promise<OwnerDashb
       pendingClosures,
     };
   } catch (error) {
+    reportApiError(error, 'properties', 'select');
     console.error('[ownerDashboardApi] Error fetching dashboard data:', error);
     throw new Error('Failed to load dashboard data. Please try again.');
   }

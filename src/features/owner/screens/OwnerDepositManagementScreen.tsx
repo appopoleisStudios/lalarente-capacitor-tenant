@@ -37,6 +37,7 @@ import {
 } from '@/src/features/inspections/api/inspectionsApi';
 import { colors } from '@/src/shared/theme/colors';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -142,6 +143,7 @@ export default function OwnerDepositManagementScreen() {
 
       setDeposits(records);
     } catch (err: any) {
+      reportApiError(err, 'holding_deposits', 'select');
       console.error('Error loading deposits:', err);
       Alert.alert('Error', 'Failed to load deposit information');
     } finally {
@@ -155,6 +157,7 @@ export default function OwnerDepositManagementScreen() {
       const summary = await depositInterestApi.getInterestHistory(leaseId);
       setSummaries((prev) => ({ ...prev, [leaseId]: summary }));
     } catch (err) {
+      reportApiError(err, 'deposit_interest', 'select');
       console.error('Error loading interest summary:', err);
     }
   };
@@ -175,6 +178,7 @@ export default function OwnerDepositManagementScreen() {
       const result = await inspectionsApi.compareInspections(moveIn.id, moveOut.id);
       setComparisons((prev) => ({ ...prev, [leaseId]: result }));
     } catch (err) {
+      reportApiError(err, 'inspections', 'select');
       console.error('Error loading inspection comparison:', err);
       Alert.alert('Error', 'Failed to load inspection comparison. Please try again.');
     }

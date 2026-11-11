@@ -1,10 +1,10 @@
 import { useAuth } from '@/src/contexts/AuthContext';
 import {
-    getPOById,
-    getPORevisions,
-    sendPOToVendor,
-    type PORevision,
-    type PurchaseOrder,
+  getPOById,
+  getPORevisions,
+  sendPOToVendor,
+  type PORevision,
+  type PurchaseOrder,
 } from '@/src/features/maintenance/api';
 import { colors } from '@/src/shared/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,8 +12,19 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 const RSA = { blue: '#002395' };
 
@@ -71,6 +82,7 @@ export default function OwnerPODetailScreen() {
       const revisionsData = await getPORevisions(poId);
       setRevisions(revisionsData);
     } catch (error: any) {
+      reportApiError(error, 'purchase_orders', 'select');
       console.error('Error fetching PO:', error);
       Alert.alert('Error', 'Failed to load PO details');
     } finally {
@@ -147,7 +159,11 @@ export default function OwnerPODetailScreen() {
     const now = new Date();
     // Strip time for date-only comparison
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const selected = new Date(scheduledDate.getFullYear(), scheduledDate.getMonth(), scheduledDate.getDate());
+    const selected = new Date(
+      scheduledDate.getFullYear(),
+      scheduledDate.getMonth(),
+      scheduledDate.getDate()
+    );
     if (selected < today) {
       Alert.alert('Invalid Date', 'Please select a future date for the scheduled work');
       return;
@@ -171,13 +187,7 @@ export default function OwnerPODetailScreen() {
               const dateStr = scheduledDate.toISOString();
               const timeStr = `${scheduledTime.getHours().toString().padStart(2, '0')}:${scheduledTime.getMinutes().toString().padStart(2, '0')}`;
 
-              await sendPOToVendor(
-                poId,
-                dateStr,
-                timeStr,
-                workInstructions.trim() || null,
-                userId
-              );
+              await sendPOToVendor(poId, dateStr, timeStr, workInstructions.trim() || null, userId);
 
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               Alert.alert('Success', 'PO sent to vendor. They will be notified.');
@@ -196,13 +206,13 @@ export default function OwnerPODetailScreen() {
 
   const onDateChange = (event: any, selectedDate?: Date) => {
     const currentDate = selectedDate || scheduledDate;
-    
+
     // Always close on Android (dialog dismissed)
     // On iOS, only close if user cancelled
     if (Platform.OS === 'android' || event.type === 'dismissed') {
       setShowDatePicker(false);
     }
-    
+
     // Update date if user selected one
     if (event.type === 'set' && selectedDate) {
       setScheduledDate(selectedDate);
@@ -245,7 +255,8 @@ export default function OwnerPODetailScreen() {
     );
   }
 
-  const statusConfig = STATUS_CONFIG[po.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.draft;
+  const statusConfig =
+    STATUS_CONFIG[po.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.draft;
   const hasRevisions = revisions.length > 0;
 
   return (
@@ -261,7 +272,7 @@ export default function OwnerPODetailScreen() {
           disabled={actionLoading}
         >
           <Ionicons
-            name={editMode ? "close" : "create-outline"}
+            name={editMode ? 'close' : 'create-outline'}
             size={24}
             color={editMode ? colors.error[500] : RSA.blue}
           />
@@ -279,7 +290,8 @@ export default function OwnerPODetailScreen() {
         <View style={styles.section}>
           <Text style={styles.poNumber}>{po.po_number}</Text>
           <Text style={styles.poDate}>
-            Issued: {new Date(po.created_at).toLocaleDateString('en-ZA', {
+            Issued:{' '}
+            {new Date(po.created_at).toLocaleDateString('en-ZA', {
               day: 'numeric',
               month: 'long',
               year: 'numeric',
@@ -293,7 +305,9 @@ export default function OwnerPODetailScreen() {
             <View style={styles.contractCard}>
               <Ionicons name="document-text" size={24} color={colors.info[500]} />
               <View style={styles.contractInfo}>
-                <Text style={styles.contractNumber}>Contract ID: {po.contract.id.substring(0, 8)}...</Text>
+                <Text style={styles.contractNumber}>
+                  Contract ID: {po.contract.id.substring(0, 8)}...
+                </Text>
                 <Text style={styles.contractStatus}>Status: {po.contract.status}</Text>
               </View>
             </View>
@@ -409,7 +423,9 @@ export default function OwnerPODetailScreen() {
               </View>
               <View style={styles.costRow}>
                 <Text style={styles.costLabel}>Platform Fee</Text>
-                <Text style={styles.costValue}>R {po.platform_fee_amount?.toLocaleString() || '0'}</Text>
+                <Text style={styles.costValue}>
+                  R {po.platform_fee_amount?.toLocaleString() || '0'}
+                </Text>
               </View>
               <View style={styles.divider} />
               <View style={styles.costRow}>
@@ -432,7 +448,12 @@ export default function OwnerPODetailScreen() {
         {po.revision_reason && !editMode && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Latest Revision Reason</Text>
-            <View style={[styles.notesCard, { backgroundColor: colors.warning[50], borderColor: colors.warning[500] }]}>
+            <View
+              style={[
+                styles.notesCard,
+                { backgroundColor: colors.warning[50], borderColor: colors.warning[500] },
+              ]}
+            >
               <Text style={styles.notesText}>{po.revision_reason}</Text>
             </View>
           </View>
@@ -544,12 +565,13 @@ export default function OwnerPODetailScreen() {
                   <Ionicons name="calendar" size={18} color="#6b7280" />
                   <Text style={styles.sentDetailLabel}>Scheduled Start:</Text>
                   <Text style={styles.sentDetailValue}>
-                    {po.scheduled_start_date && new Date(po.scheduled_start_date).toLocaleDateString('en-ZA', {
-                      weekday: 'short',
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric',
-                    })}
+                    {po.scheduled_start_date &&
+                      new Date(po.scheduled_start_date).toLocaleDateString('en-ZA', {
+                        weekday: 'short',
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
                   </Text>
                 </View>
 
@@ -610,15 +632,33 @@ export default function OwnerPODetailScreen() {
                   {index < revisions.length - 1 && (
                     <View style={styles.revisionDiff}>
                       <Ionicons
-                        name={revision.total_amount > revisions[index + 1].total_amount ? 'arrow-up' : 'arrow-down'}
+                        name={
+                          revision.total_amount > revisions[index + 1].total_amount
+                            ? 'arrow-up'
+                            : 'arrow-down'
+                        }
                         size={14}
-                        color={revision.total_amount > revisions[index + 1].total_amount ? colors.error[500] : colors.success[500]}
+                        color={
+                          revision.total_amount > revisions[index + 1].total_amount
+                            ? colors.error[500]
+                            : colors.success[500]
+                        }
                       />
-                      <Text style={[
-                        styles.revisionDiffText,
-                        { color: revision.total_amount > revisions[index + 1].total_amount ? colors.error[500] : colors.success[500] }
-                      ]}>
-                        R {Math.abs(revision.total_amount - revisions[index + 1].total_amount).toLocaleString()}
+                      <Text
+                        style={[
+                          styles.revisionDiffText,
+                          {
+                            color:
+                              revision.total_amount > revisions[index + 1].total_amount
+                                ? colors.error[500]
+                                : colors.success[500],
+                          },
+                        ]}
+                      >
+                        R{' '}
+                        {Math.abs(
+                          revision.total_amount - revisions[index + 1].total_amount
+                        ).toLocaleString()}
                       </Text>
                     </View>
                   )}
@@ -645,8 +685,8 @@ export default function OwnerPODetailScreen() {
           mode="date"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
           onChange={onDateChange}
-        minimumDate={new Date()}
-      />
+          minimumDate={new Date()}
+        />
       )}
 
       {/* Time Picker Modal */}
@@ -668,7 +708,13 @@ const styles = StyleSheet.create({
   loadingText: { marginTop: 12, fontSize: 16, color: '#6b7280' },
   errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   errorText: { marginTop: 16, fontSize: 18, fontWeight: '600', color: '#111827' },
-  backButton: { marginTop: 24, paddingHorizontal: 24, paddingVertical: 12, backgroundColor: RSA.blue, borderRadius: 8 },
+  backButton: {
+    marginTop: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: RSA.blue,
+    borderRadius: 8,
+  },
   backButtonText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
 
   header: {
@@ -679,9 +725,15 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb'
+    borderBottomColor: '#e5e7eb',
   },
-  headerButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
 
   scrollView: { flex: 1 },
@@ -693,13 +745,18 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 20
+    borderRadius: 20,
   },
   statusText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
 
   section: { marginHorizontal: 16, marginBottom: 24 },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 12 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
 
   poNumber: { fontSize: 24, fontWeight: '700', color: RSA.blue, textAlign: 'center' },
   poDate: { fontSize: 14, color: '#6b7280', textAlign: 'center', marginTop: 4 },
@@ -722,7 +779,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e5e7eb'
+    borderColor: '#e5e7eb',
   },
   costRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   costLabel: { fontSize: 15, color: '#6b7280' },
@@ -736,9 +793,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     borderWidth: 2,
-    borderColor: RSA.blue
+    borderColor: RSA.blue,
   },
-  editRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  editRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   editLabel: { fontSize: 15, fontWeight: '600', color: '#111827', flex: 1 },
   editInput: {
     flex: 1,
@@ -800,7 +862,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e5e7eb'
+    borderColor: '#e5e7eb',
   },
   notesText: { fontSize: 15, color: '#374151', lineHeight: 22 },
 
@@ -812,12 +874,17 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
     marginBottom: 12,
   },
-  revisionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  revisionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   revisionNumber: {
     backgroundColor: colors.gray[100],
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12
+    borderRadius: 12,
   },
   revisionNumberText: { fontSize: 13, fontWeight: '700', color: colors.gray[700] },
   revisionDate: { fontSize: 13, color: '#6b7280' },
@@ -837,20 +904,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e5e7eb'
+    borderColor: '#e5e7eb',
   },
   scheduleDescription: {
     fontSize: 14,
     color: '#6b7280',
     marginBottom: 20,
-    lineHeight: 20
+    lineHeight: 20,
   },
   scheduleField: { marginBottom: 16 },
   scheduleFieldHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 8
+    marginBottom: 8,
   },
   scheduleFieldLabel: { fontSize: 15, fontWeight: '600', color: '#111827' },
   dateTimeButton: {
@@ -901,20 +968,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: colors.success[500]
+    borderColor: colors.success[500],
   },
   sentBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 16
+    marginBottom: 16,
   },
   sentBadgeText: { fontSize: 16, fontWeight: '700', color: colors.success[700] },
   sentDetails: { gap: 12 },
   sentDetailRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8
+    gap: 8,
   },
   sentDetailLabel: { fontSize: 14, color: '#6b7280', fontWeight: '500' },
   sentDetailValue: { fontSize: 14, color: '#111827', fontWeight: '600', flex: 1 },
@@ -922,7 +989,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: colors.success[500]
+    borderTopColor: colors.success[500],
   },
   instructionsDisplayLabel: { fontSize: 13, fontWeight: '600', color: '#6b7280', marginBottom: 6 },
   instructionsDisplayText: { fontSize: 14, color: '#374151', lineHeight: 20 },

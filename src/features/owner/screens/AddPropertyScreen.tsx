@@ -20,6 +20,7 @@ import { propertiesApi } from '../../properties/api/propertiesApi';
 import { supabase } from '../../../lib/supabase';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { styles } from './AddPropertyScreen.styles';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 interface PropertyForm {
   title: string;
@@ -236,6 +237,7 @@ export default function AddPropertyScreen() {
         media_3d_url: form.media_3d_url.trim() || null,
       });
     } catch (error) {
+      reportApiError(error, 'properties', 'insert');
       console.error('Error creating property:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', error instanceof Error ? error.message : 'Failed to create property');
@@ -257,6 +259,7 @@ export default function AddPropertyScreen() {
         }));
         await propertiesApi.uploadPropertyPhotos(property.id, files);
       } catch (error) {
+        reportApiError(error, 'property_photos', 'insert');
         console.error('Photo upload failed (property row already created):', error);
         photoUploadFailed = true;
       }

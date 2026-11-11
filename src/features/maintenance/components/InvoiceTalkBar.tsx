@@ -15,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 type PartyRole = 'owner' | 'tenant' | 'vendor';
 
@@ -40,6 +41,7 @@ export function InvoiceTalkBar({ invoice, role, accent, onChanged }: Props) {
       const state = await getInvoiceTalkState(invoice, user.id, request.tenant_id);
       setTalk({ confirmedByMe: state.confirmedByMe, bothConfirmed: state.bothConfirmed });
     } catch (err) {
+      reportApiError(err, 'maintenance_invoices', 'select');
       console.error('Invoice talk load failed:', err);
     }
   }, [invoice, user?.id]);

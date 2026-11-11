@@ -16,7 +16,11 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useMediaUpload } from '@/src/features/maintenance/hooks';
-import { maintenanceApi, consumePendingVendorSelection } from '@/src/features/maintenance/api';
+import {
+  maintenanceApi,
+  consumePendingVendorSelection,
+  type PropertyServiceItem,
+} from '@/src/features/maintenance/api';
 import { supabase } from '@/src/lib/supabase';
 import { colors } from '@/src/shared/theme/colors';
 import { StyleSheet } from 'react-native';
@@ -59,6 +63,8 @@ export default function TenantMaintenanceReportScreen() {
     full_name: string | null;
     business_name: string | null;
   } | null>(null);
+  const [serviceItems, setServiceItems] = useState<PropertyServiceItem[]>([]);
+  const [selectedServiceItemId, setSelectedServiceItemId] = useState<string | 'other' | null>(null);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -119,6 +125,26 @@ export default function TenantMaintenanceReportScreen() {
     fetchData();
   }, [user?.id]);
 
+  // Fetch service items when selected lease changes
+  useEffect(() => {
+    const propertyId = activeLeases.find((l) => l.id === selectedLeaseId)?.property_id;
+    if (!propertyId) {
+      setServiceItems([]);
+      setSelectedServiceItemId(null);
+      return;
+    }
+    maintenanceApi
+      .getPropertyServiceItems(propertyId)
+      .then((items) => {
+        setServiceItems(items);
+        setSelectedServiceItemId(items.length > 0 ? null : 'other');
+      })
+      .catch(() => {
+        setServiceItems([]);
+        setSelectedServiceItemId('other');
+      });
+  }, [selectedLeaseId, activeLeases]);
+
   const handleSubmit = async () => {
     // Validation
     if (!title.trim()) {
@@ -156,6 +182,11 @@ export default function TenantMaintenanceReportScreen() {
       setSubmitting(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
+      const resolvedServiceItemId =
+        selectedServiceItemId && selectedServiceItemId !== 'other'
+          ? selectedServiceItemId
+          : undefined;
+
       // Step 1: Create maintenance request
       const request = await maintenanceApi.createMaintenanceRequest({
         property_id: selectedLease.property_id,
@@ -166,6 +197,7 @@ export default function TenantMaintenanceReportScreen() {
         title: title.trim(),
         description: description.trim(),
         visibility: selectedVendor ? 'invited' : 'public',
+        service_item_id: resolvedServiceItemId,
       });
 
       if (selectedVendor) {
@@ -365,6 +397,78 @@ export default function TenantMaintenanceReportScreen() {
             </>
           )}
         </Animated.View>
+
+        {/* Service item picker (shown when property has configured items) */}
+        {serviceItems.length > 0 && (
+          <Animated.View entering={FadeInDown.delay(150).duration(500)} style={styles.section}>
+            <Text style={styles.label}>Which system is this about?</Text>
+            <Text style={styles.helperText}>
+              Select the affected system or choose "Something else"
+            </Text>
+            {serviceItems.map((item) => {
+              const isSelected = selectedServiceItemId === item.id;
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  style={[
+                    styles.serviceItemCard,
+                    isSelected && styles.serviceItemCardActive,
+                    !item.tenant_may_dispatch && styles.serviceItemCardLocked,
+                  ]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setSelectedServiceItemId(isSelected ? null : item.id);
+                  }}
+                >
+                  <Ionicons
+                    name={isSelected ? 'radio-button-on' : 'radio-button-off'}
+                    size={22}
+                    color={isSelected ? RSA.green : '#9ca3af'}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[styles.serviceItemName, isSelected && styles.serviceItemNameActive]}
+                    >
+                      {item.name}
+                    </Text>
+                    {!item.tenant_may_dispatch && (
+                      <Text style={styles.serviceItemNote}>
+                        Your owner manages this — they'll be notified to arrange repairs
+                      </Text>
+                    )}
+                  </View>
+                  {!item.tenant_may_dispatch && (
+                    <Ionicons name="lock-closed-outline" size={16} color="#9ca3af" />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+            <TouchableOpacity
+              style={[
+                styles.serviceItemCard,
+                selectedServiceItemId === 'other' && styles.serviceItemCardActive,
+              ]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setSelectedServiceItemId(selectedServiceItemId === 'other' ? null : 'other');
+              }}
+            >
+              <Ionicons
+                name={selectedServiceItemId === 'other' ? 'radio-button-on' : 'radio-button-off'}
+                size={22}
+                color={selectedServiceItemId === 'other' ? RSA.green : '#9ca3af'}
+              />
+              <Text
+                style={[
+                  styles.serviceItemName,
+                  selectedServiceItemId === 'other' && styles.serviceItemNameActive,
+                ]}
+              >
+                Something else
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
 
         {/* Title */}
         <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.section}>
@@ -759,6 +863,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   addMediaText: { fontSize: 12, color: '#6b7280', marginTop: 4, fontWeight: '600' },
+  serviceItemCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+    marginBottom: 10,
+    gap: 12,
+  },
+  serviceItemCardActive: { borderColor: RSA.green, backgroundColor: '#f0fdf4' },
+  serviceItemCardLocked: { backgroundColor: '#f9fafb' },
+  serviceItemName: { fontSize: 15, fontWeight: '600', color: '#111827' },
+  serviceItemNameActive: { color: RSA.green },
+  serviceItemNote: { fontSize: 12, color: '#6b7280', marginTop: 2 },
   vendorPickerCard: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -99,6 +99,7 @@ export interface CreateMaintenanceRequestInput {
   title: string;
   description: string;
   images?: string[];
+  service_item_id?: string;
 }
 
 export interface MaintenanceRequestUpdate {

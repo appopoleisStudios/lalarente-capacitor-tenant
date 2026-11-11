@@ -26,6 +26,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 const RSA = { blue: '#002395' };
 
@@ -77,6 +78,7 @@ export default function OwnerClosureApprovalScreen() {
         setProgressUpdates([]);
       }
     } catch (error: any) {
+      reportApiError(error, 'maintenance_closure_reports', 'select');
       console.error('Error loading closure data:', error);
       Alert.alert('Error', error.message || 'Failed to load closure details');
     } finally {

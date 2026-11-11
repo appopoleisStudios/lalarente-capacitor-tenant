@@ -30,6 +30,7 @@ import { leaseTerminationApi } from '@/src/features/leases/api/leaseTermination.
 import { depositRefundApi } from '@/src/features/deposits/api/depositRefund.api';
 import { colors } from '@/src/shared/theme/colors';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 const RSA_BLUE = '#002395';
 
@@ -84,6 +85,7 @@ export default function OwnerEarlyTerminationScreen() {
       setPending(pendingData as unknown as TerminationRequest[]);
       setHistory(historyData as unknown as TerminationRequest[]);
     } catch (err) {
+      reportApiError(err, 'leases', 'select');
       console.error('Error loading termination data:', err);
     } finally {
       setLoading(false);

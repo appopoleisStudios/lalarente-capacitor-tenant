@@ -13,14 +13,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { documentsApi } from '../api/documentsApi';
-import {
-  DocumentWithRelations,
-  DocumentFilter,
-  DocumentType,
-  DOCUMENT_CATEGORIES,
-} from '../types';
+import { DocumentWithRelations, DocumentFilter, DocumentType, DOCUMENT_CATEGORIES } from '../types';
 import { supabase } from '../../../lib/supabase';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 const COLORS = {
   owner: { primary: '#002395', secondary: '#FFB81C' },
@@ -55,7 +51,9 @@ export default function DocumentsScreen({ role = 'owner', propertyId, leaseId }:
   }, [userId, filter, propertyId, leaseId]);
 
   const initUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (user) {
       setUserId(user.id);
     }
@@ -77,6 +75,7 @@ export default function DocumentsScreen({ role = 'owner', propertyId, leaseId }:
 
       setDocuments(data);
     } catch (error) {
+      reportApiError(error, 'documents', 'select');
       console.error('Error loading documents:', error);
     } finally {
       setLoading(false);
@@ -95,6 +94,7 @@ export default function DocumentsScreen({ role = 'owner', propertyId, leaseId }:
       const data = await documentsApi.searchDocuments(userId, role, searchQuery);
       setDocuments(data);
     } catch (error) {
+      reportApiError(error, 'documents', 'select');
       console.error('Error searching documents:', error);
     } finally {
       setLoading(false);
@@ -155,10 +155,7 @@ export default function DocumentsScreen({ role = 'owner', propertyId, leaseId }:
     const category = DOCUMENT_CATEGORIES[item.type as DocumentType];
 
     return (
-      <TouchableOpacity
-        style={styles.documentCard}
-        onPress={() => navigateToDocument(item.id)}
-      >
+      <TouchableOpacity style={styles.documentCard} onPress={() => navigateToDocument(item.id)}>
         <View style={[styles.iconContainer, { backgroundColor: `${colors.primary}15` }]}>
           <Ionicons
             name={getDocumentIcon(item.type as DocumentType) as any}
@@ -197,9 +194,7 @@ export default function DocumentsScreen({ role = 'owner', propertyId, leaseId }:
       <Ionicons name="folder-open-outline" size={64} color="#CCC" />
       <Text style={styles.emptyTitle}>No Documents</Text>
       <Text style={styles.emptyText}>
-        {searchQuery
-          ? 'No documents match your search'
-          : "You haven't uploaded any documents yet"}
+        {searchQuery ? 'No documents match your search' : "You haven't uploaded any documents yet"}
       </Text>
       {!searchQuery && (
         <TouchableOpacity
@@ -214,7 +209,7 @@ export default function DocumentsScreen({ role = 'owner', propertyId, leaseId }:
   );
 
   const renderFilters = () => {
-    const types: Array<DocumentType | 'all'> = [
+    const types: (DocumentType | 'all')[] = [
       'all',
       'lease_agreement',
       'id_document',
@@ -228,7 +223,7 @@ export default function DocumentsScreen({ role = 'owner', propertyId, leaseId }:
           horizontal
           showsHorizontalScrollIndicator={false}
           data={types}
-          keyExtractor={item => item}
+          keyExtractor={(item) => item}
           renderItem={({ item }) => (
             <TouchableOpacity
               style={[
@@ -237,12 +232,7 @@ export default function DocumentsScreen({ role = 'owner', propertyId, leaseId }:
               ]}
               onPress={() => setFilter({ ...filter, type: item })}
             >
-              <Text
-                style={[
-                  styles.filterText,
-                  filter.type === item && { color: '#FFF' },
-                ]}
-              >
+              <Text style={[styles.filterText, filter.type === item && { color: '#FFF' }]}>
                 {item === 'all' ? 'All' : DOCUMENT_CATEGORIES[item]?.label || item}
               </Text>
             </TouchableOpacity>
@@ -290,7 +280,12 @@ export default function DocumentsScreen({ role = 'owner', propertyId, leaseId }:
                 returnKeyType="search"
               />
               {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => { setSearchQuery(''); loadDocuments(); }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setSearchQuery('');
+                    loadDocuments();
+                  }}
+                >
                   <Ionicons name="close-circle" size={20} color="#999" />
                 </TouchableOpacity>
               )}
@@ -303,7 +298,7 @@ export default function DocumentsScreen({ role = 'owner', propertyId, leaseId }:
           {/* Document List */}
           <FlatList
             data={documents}
-            keyExtractor={item => item.id}
+            keyExtractor={(item) => item.id}
             renderItem={renderDocument}
             ListEmptyComponent={renderEmpty}
             keyboardShouldPersistTaps="handled"

@@ -28,6 +28,7 @@ import { supabase } from '@/src/lib/supabase';
 import { documentsApi } from '@/src/features/documents/api/documentsApi';
 import { applicationsApi } from '@/src/features/properties/api/applicationsApi';
 import type { Document } from '@/src/features/documents/types';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 type Tab = 'fica' | 'property';
 
@@ -259,6 +260,7 @@ export default function OwnerComplianceScreen() {
       });
       setComplianceDocs(map);
     } catch (err) {
+      reportApiError(err, 'documents', 'select');
       console.error('Error fetching compliance docs:', err);
     }
   };
@@ -373,6 +375,7 @@ export default function OwnerComplianceScreen() {
         }))
       );
     } catch (err) {
+      reportApiError(err, 'rental_applications', 'select');
       console.error('Error fetching FICA data:', err);
     }
   };

@@ -24,6 +24,7 @@ import {
   RankedApplication,
 } from '@/src/features/applications/api/applicationCompetition.api';
 import { colors } from '@/src/shared/theme/colors';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -72,6 +73,7 @@ export default function OwnerApplicationCompetitionScreen() {
       const data = await applicationCompetitionApi.getRankedApplications(propertyId!);
       setApplications(data);
     } catch (err: any) {
+      reportApiError(err, 'rental_applications', 'select');
       console.error('Error loading applications:', err);
       Alert.alert('Error', 'Failed to load applications');
     } finally {

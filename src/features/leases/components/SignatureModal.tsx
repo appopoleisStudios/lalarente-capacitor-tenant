@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import SignatureCapture, { SignatureCaptureRef } from './SignatureCapture';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 interface SignatureModalProps {
   visible: boolean;
@@ -49,8 +50,9 @@ export default function SignatureModal({
       await onSave(signature);
       onClose();
     } catch (error: any) {
+      reportApiError(error, 'lease_signatures', 'insert');
       console.error('Error saving signature:', error);
-      
+
       // Provide user-friendly error messages based on error type
       let errorTitle = 'Upload Failed';
       let errorMessage = 'Failed to save signature. Please try again.';
@@ -76,9 +78,7 @@ export default function SignatureModal({
         errorMessage = error.message;
       }
 
-      Alert.alert(errorTitle, errorMessage, [
-        { text: 'OK', style: 'default' }
-      ]);
+      Alert.alert(errorTitle, errorMessage, [{ text: 'OK', style: 'default' }]);
     } finally {
       setSaving(false);
     }
@@ -138,11 +138,7 @@ export default function SignatureModal({
 
           {/* Actions */}
           <View style={styles.actions}>
-            <TouchableOpacity
-              style={styles.clearButton}
-              onPress={handleClear}
-              disabled={saving}
-            >
+            <TouchableOpacity style={styles.clearButton} onPress={handleClear} disabled={saving}>
               <Ionicons name="refresh" size={20} color="#666" />
               <Text style={styles.clearButtonText}>Clear</Text>
             </TouchableOpacity>

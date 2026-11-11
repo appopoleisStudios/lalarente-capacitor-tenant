@@ -13,6 +13,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { exportMonthlyStatementPdf } from '../utils/pdfReports';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 const RSA = { blue: '#002395', gold: '#FFB81C', green: '#007A4D' };
 
@@ -194,6 +195,7 @@ export default function OwnerMonthlyStatementScreen() {
         properties,
       });
     } catch (err) {
+      reportApiError(err, 'payments', 'select');
       console.error('Error loading monthly statement:', err);
     } finally {
       setLoading(false);

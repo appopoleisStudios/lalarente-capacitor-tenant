@@ -10,6 +10,7 @@
  */
 
 import { supabase } from '@/src/lib/supabase';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 export async function triggerWorkOrderReport(
   maintenanceRequestId: string,
@@ -29,6 +30,7 @@ export async function triggerWorkOrderReport(
       console.warn('⚠️ Work order report trigger (non-fatal):', error.message);
     }
   } catch (err) {
+    reportApiError(err, 'generate-work-order-report', 'rpc');
     console.error('Failed to trigger work order report:', err);
   }
 }

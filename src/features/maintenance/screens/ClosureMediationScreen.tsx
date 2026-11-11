@@ -21,6 +21,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 type PartyRole = 'owner' | 'tenant' | 'vendor';
 
@@ -64,6 +65,7 @@ export default function ClosureMediationScreen() {
         }))
       );
     } catch (err) {
+      reportApiError(err, 'maintenance_closure_reports', 'select');
       console.error('Mediation load failed:', err);
       Alert.alert('Error', 'Could not load mediation.');
     } finally {
