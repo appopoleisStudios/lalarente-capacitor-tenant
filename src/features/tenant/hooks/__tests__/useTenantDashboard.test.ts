@@ -43,6 +43,13 @@ const makeSupabaseMock = (overrides: Record<string, TableResult | TableResult[]>
     } else {
       result = override ?? defaults[table] ?? { data: null, error: null };
     }
+    let limitN: number | undefined;
+    const resolved = () => {
+      if (limitN !== undefined && Array.isArray(result.data)) {
+        return { ...result, data: (result.data as unknown[]).slice(0, limitN) };
+      }
+      return result;
+    };
     const chain: Record<string, unknown> = {
       select: () => chain,
       eq: () => chain,
@@ -51,13 +58,17 @@ const makeSupabaseMock = (overrides: Record<string, TableResult | TableResult[]>
       is: () => chain,
       gte: () => chain,
       order: () => chain,
-      limit: () => chain,
-      maybeSingle: () => Promise.resolve(result),
-      single: () => Promise.resolve(result),
+      limit: (n: number) => {
+        limitN = n;
+        return chain;
+      },
+      maybeSingle: () => Promise.resolve(resolved()),
+      single: () => Promise.resolve(resolved()),
     };
-    (chain as Record<string, unknown>).then = Promise.resolve(result).then.bind(
-      Promise.resolve(result)
-    );
+    (chain as Record<string, unknown>).then = (
+      onFulfilled: ((v: unknown) => unknown) | null | undefined,
+      onRejected: ((e: unknown) => unknown) | null | undefined
+    ) => Promise.resolve(resolved()).then(onFulfilled, onRejected);
     return chain;
   });
 };
