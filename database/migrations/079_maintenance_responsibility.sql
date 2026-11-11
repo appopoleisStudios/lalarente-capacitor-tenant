@@ -96,19 +96,17 @@ UPDATE public.purchase_orders po
    AND po.request_id IS NULL;
 
 -- (b) Forward trigger: enforce request_id consistency from contract chain.
--- INSERT with contract_id: derive request_id via FOR SHARE on the contract. FOR SHARE
---   prevents the race where T1 reads NULL (T2 not committed), T2 propagates and misses T1,
---   T1 commits with request_id=NULL. Mechanism: T1's FOR SHARE blocks T2's exclusive lock
---   on the contract; T2 commits AFTER T1; T2's propagation then sees T1's PO and corrects it.
---   No deadlock on INSERT: the PO row does not exist yet, so no lock inversion is possible.
--- UPDATE OF contract_id to non-NULL: plain SELECT (no FOR SHARE). The PO row is already
---   locked, so FOR SHARE would invert the lock order vs. propagate_sc_request_id (which
---   holds the contract lock and then tries to lock POs), causing a deadlock. Accept the
---   narrower re-link race window.
--- UPDATE OF contract_id to NULL: reject if PO already has maintenance request_id (reclaim).
+-- INSERT or UPDATE with CHANGING contract_id (A→B): use FOR SHARE on the new contract.
+--   FOR SHARE blocks any concurrent UPDATE of the contract (which needs NO KEY UPDATE,
+--   incompatible with FOR SHARE) until this PO INSERT/re-link commits. After that, the
+--   contract UPDATE's propagation sees the committed PO and corrects request_id.
+--   No deadlock: the propagation's WHERE contract_id = B scan cannot include this PO
+--   (it still has contract_id = A), so the propagation never waits for this PO's lock.
+-- UPDATE with SAME contract_id (propagation path: SET contract_id = contract_id):
+--   plain SELECT. The contract lock is already held by the same transaction; FOR SHARE
+--   would deadlock if another transaction's propagation needed to lock this same PO.
+-- UPDATE OF contract_id to NULL: reject if PO already has maintenance request_id.
 -- Direct updates to request_id are blocked unconditionally by trg_lock_po_request_id.
--- Propagation routes through contract_id touch (SET contract_id = contract_id), which fires
--- this trigger (BEFORE UPDATE OF contract_id) but NOT trg_lock_po_request_id.
 CREATE OR REPLACE FUNCTION populate_po_request_id()
 RETURNS trigger LANGUAGE plpgsql
   SET search_path = public, pg_catalog, pg_temp
@@ -117,16 +115,17 @@ DECLARE
   v_derived uuid;
 BEGIN
   IF NEW.contract_id IS NOT NULL THEN
-    IF TG_OP = 'INSERT' THEN
-      -- FOR SHARE serializes INSERT with concurrent service_contracts maintenance_request_id
-      -- updates. No lock inversion: PO row doesn't exist yet, so no PO lock is held here.
+    IF TG_OP = 'INSERT' OR NEW.contract_id IS DISTINCT FROM OLD.contract_id THEN
+      -- FOR SHARE: serializes with concurrent service_contracts maintenance_request_id
+      -- updates on the new contract. Lock is safe: propagation's WHERE contract_id = B
+      -- cannot match this PO (which has the old contract_id), so no inversion occurs.
       SELECT sc.maintenance_request_id INTO v_derived
         FROM public.service_contracts sc
        WHERE sc.id = NEW.contract_id
          FOR SHARE;
     ELSE
-      -- UPDATE OF contract_id: PO row already locked. Plain SELECT avoids lock inversion
-      -- with propagate_sc_request_id (contract lock → PO lock ordering).
+      -- Propagation path (SET contract_id = contract_id, value unchanged): plain SELECT.
+      -- The propagation trigger holds the contract lock in the same transaction already.
       SELECT sc.maintenance_request_id INTO v_derived
         FROM public.service_contracts sc
        WHERE sc.id = NEW.contract_id;
