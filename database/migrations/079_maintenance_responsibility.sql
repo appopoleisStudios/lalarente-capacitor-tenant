@@ -135,26 +135,30 @@ BEGIN
        WHERE sc.id = NEW.contract_id;
     END IF;
 
-    -- Fail closed: if contract is hidden by RLS (FK passes but row invisible), reject the
-    -- operation rather than silently assigning request_id = NULL.
+    -- Fail closed: contract not found (FK prevents non-existent IDs; this guards against a
+    -- caller supplying a UUID that passes FK but is somehow absent from the heap).
     IF NOT FOUND THEN
       RAISE EXCEPTION
-        'contract % not found or inaccessible; cannot verify maintenance request linkage',
+        'contract % not found; cannot verify maintenance request linkage',
         NEW.contract_id;
     END IF;
 
     IF TG_OP = 'INSERT' THEN
+      -- Do not expose v_derived in the error: SECURITY DEFINER bypasses RLS, so
+      -- revealing the derived maintenance_request_id would allow a caller with only
+      -- INSERT privilege to probe foreign contract linkages via error messages.
       IF NEW.request_id IS NOT NULL AND NEW.request_id IS DISTINCT FROM v_derived THEN
         RAISE EXCEPTION
-          'purchase_orders.request_id conflicts with contract chain: supplied %, derived from contract %',
-          NEW.request_id, v_derived;
+          'purchase_orders.request_id conflicts with the contract chain for contract %',
+          NEW.contract_id;
       END IF;
     ELSIF TG_OP = 'UPDATE' THEN
       -- Reject re-linking to a different or NULL maintenance chain.
+      -- Error does not expose v_derived for the same SECURITY DEFINER reason above.
       IF OLD.request_id IS NOT NULL AND v_derived IS DISTINCT FROM OLD.request_id THEN
         RAISE EXCEPTION
-          'cannot re-link a maintenance-linked PO (request_id=%) to a contract with a different chain (derived %)',
-          OLD.request_id, v_derived;
+          'cannot re-link a maintenance-linked PO to a contract with a different chain (contract %)',
+          NEW.contract_id;
       END IF;
     END IF;
     NEW.request_id := v_derived;
