@@ -15,7 +15,7 @@
 
 BEGIN;
 
-SELECT plan(18);
+SELECT plan(21);
 
 -- ─── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -379,6 +379,55 @@ SELECT throws_like(
   $q$ SELECT reclaim_request(current_setting('test.k_req_id')::uuid, 'K reclaim') $q$,
   '%reclaim aborted: request.vendor_id is set but has no active assignment row%',
   'K1: reclaim blocked when vendor_id set without a corresponding assignment row'
+);
+
+SELECT tests.clear_authentication();
+
+-- ─── L. Cancel-then-reclaim succeeds — vendor_id cleared by cancel_assignment ─
+-- Verifies that cancel_assignment() clears maintenance_requests.vendor_id so
+-- reclaim_request() can proceed without tripping the orphan-vendor_id guard.
+
+DO $$
+DECLARE
+  v_req_id  uuid;
+  v_vnd_id  uuid := tests.get_supabase_uid('tenant_b');
+  v_asgn_id uuid := gen_random_uuid();
+BEGIN
+  INSERT INTO maintenance_requests (
+    property_id, owner_id, tenant_id, title, description,
+    priority, status, service_item_id, vendor_id
+  ) VALUES (
+    current_setting('test.prop_id')::uuid,
+    current_setting('test.owner_id')::uuid,
+    current_setting('test.tenant_id')::uuid,
+    'L_cancel_reclaim', 'desc', 'low', 'tenant_dispatching',
+    current_setting('test.psi_id')::uuid,
+    v_vnd_id
+  ) RETURNING id INTO v_req_id;
+
+  INSERT INTO maintenance_vendor_assignments (id, request_id, vendor_id, status)
+  VALUES (v_asgn_id, v_req_id, v_vnd_id, 'pending');
+
+  PERFORM set_config('test.l_req_id',  v_req_id::text,  true);
+  PERFORM set_config('test.l_asgn_id', v_asgn_id::text, true);
+END $$;
+
+SELECT tests.authenticate_as('owner_a');
+
+SELECT lives_ok(
+  $q$ SELECT cancel_assignment(current_setting('test.l_asgn_id')::uuid) $q$,
+  'L1: cancel_assignment succeeds for owner'
+);
+
+SELECT is(
+  (SELECT vendor_id FROM maintenance_requests WHERE id = current_setting('test.l_req_id')::uuid),
+  NULL,
+  'L2: cancel_assignment clears maintenance_requests.vendor_id'
+);
+
+SELECT lives_ok(
+  $q$ SELECT reclaim_request(current_setting('test.l_req_id')::uuid, 'L reclaim') $q$,
+  'L3: reclaim_request succeeds after cancel_assignment clears vendor_id'
 );
 
 SELECT tests.clear_authentication();
