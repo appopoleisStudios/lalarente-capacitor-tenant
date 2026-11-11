@@ -169,13 +169,15 @@ describe('useTenantDashboard', () => {
     expect(result.current.data).toBeUndefined();
   });
 
-  it('viewing_requests query filters by tenant_id', async () => {
+  it('all viewing_requests queries filter by tenant_id', async () => {
     const captured = makeSupabaseMock();
     const { result } = renderHook(() => useTenantDashboard('user-1'), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     const viewingQueries = captured['viewing_requests'] ?? [];
+    // The hook issues two queries: approved/pending and declined — both must scope to userId.
+    expect(viewingQueries.length).toBeGreaterThanOrEqual(2);
     expect(
-      viewingQueries.some((q) => q.eq.some(([col, val]) => col === 'tenant_id' && val === 'user-1'))
+      viewingQueries.every((q) => q.eq.some(([col, val]) => col === 'tenant_id' && val === 'user-1'))
     ).toBe(true);
   });
 
