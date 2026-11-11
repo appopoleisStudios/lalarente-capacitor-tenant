@@ -94,9 +94,12 @@ UPDATE public.purchase_orders po
 
 -- (b) Forward trigger: enforce request_id consistency from contract chain.
 -- INSERT: reject an explicit request_id that conflicts with the contract chain.
--- UPDATE OF contract_id: always re-derive (OLD.request_id was trigger-managed,
---   not user-supplied). Clear request_id when contract_id is unlinked (set to NULL).
--- Direct updates to request_id are blocked by trg_lock_po_request_id below.
+-- UPDATE OF contract_id to non-NULL: always re-derive.
+-- UPDATE OF contract_id to NULL: reject if PO already has a request_id (maintenance PO
+--   must not be detached from its reclaim sweep). Non-maintenance POs (request_id IS NULL)
+--   may be unlinked freely.
+-- Direct updates to request_id are blocked by trg_lock_po_request_id below,
+-- except when routed internally via propagate_sc_request_id (uses session flag).
 CREATE OR REPLACE FUNCTION populate_po_request_id()
 RETURNS trigger LANGUAGE plpgsql
   SET search_path = public, pg_catalog, pg_temp
@@ -109,7 +112,6 @@ BEGIN
       SELECT sc.maintenance_request_id INTO v_derived
         FROM public.service_contracts sc
        WHERE sc.id = NEW.contract_id;
-      -- On INSERT only: reject an explicit caller-supplied request_id that disagrees.
       IF NEW.request_id IS NOT NULL AND NEW.request_id IS DISTINCT FROM v_derived THEN
         RAISE EXCEPTION
           'purchase_orders.request_id conflicts with contract chain: supplied %, derived from contract %',
@@ -117,17 +119,20 @@ BEGIN
       END IF;
       NEW.request_id := v_derived;
     END IF;
-    -- NULL contract_id on INSERT: request_id stays as supplied (NULL for non-maintenance POs).
 
   ELSIF TG_OP = 'UPDATE' THEN
     IF NEW.contract_id IS NOT NULL THEN
-      -- Re-link: always derive from new contract (OLD.request_id was trigger-managed).
       SELECT sc.maintenance_request_id INTO v_derived
         FROM public.service_contracts sc
        WHERE sc.id = NEW.contract_id;
       NEW.request_id := v_derived;
     ELSE
-      -- Unlink: contract_id changed to NULL → clear stale request ownership.
+      -- Reject unlinking a maintenance-linked PO — would remove it from reclaim sweep.
+      IF OLD.request_id IS NOT NULL THEN
+        RAISE EXCEPTION
+          'cannot remove contract from a maintenance-linked PO (request_id=%) — it would disappear from the reclaim sweep',
+          OLD.request_id;
+      END IF;
       NEW.request_id := NULL;
     END IF;
   END IF;
@@ -139,13 +144,17 @@ CREATE TRIGGER trg_populate_po_request_id
   BEFORE INSERT OR UPDATE OF contract_id ON public.purchase_orders
   FOR EACH ROW EXECUTE FUNCTION populate_po_request_id();
 
--- Prevent direct modification of request_id; it is managed exclusively by the
--- contract chain trigger above. Callers must update contract_id instead.
+-- Block direct caller-supplied updates to request_id.
+-- Exception: internal propagation from trg_propagate_sc_request_id sets the
+-- session flag app.propagating_request_id = 'true' to bypass this guard.
 CREATE OR REPLACE FUNCTION lock_po_request_id()
 RETURNS trigger LANGUAGE plpgsql
   SET search_path = public, pg_catalog, pg_temp
 AS $$
 BEGIN
+  IF current_setting('app.propagating_request_id', true) = 'true' THEN
+    RETURN NEW;
+  END IF;
   RAISE EXCEPTION
     'purchase_orders.request_id is managed by the contract chain; update contract_id instead';
 END $$;
@@ -157,9 +166,7 @@ CREATE TRIGGER trg_lock_po_request_id
 
 -- (c) service_contracts.maintenance_request_id consistency:
 --   * Late association (NULL → non-NULL): allow and propagate to linked POs.
---   * Reassignment (non-NULL → different non-NULL): reject — a contract is bound to
---     one request; the reclaim sweep relies on this invariant.
---   * Clearing (non-NULL → NULL): reject — owned POs would become orphaned.
+--   * Reassignment / clearing (non-NULL → anything else): reject.
 
 CREATE OR REPLACE FUNCTION sync_sc_request_id()
 RETURNS trigger LANGUAGE plpgsql
@@ -181,9 +188,12 @@ RETURNS trigger LANGUAGE plpgsql
 AS $$
 BEGIN
   IF OLD.maintenance_request_id IS NULL AND NEW.maintenance_request_id IS NOT NULL THEN
+    -- Signal lock_po_request_id to allow this internal propagation.
+    PERFORM set_config('app.propagating_request_id', 'true', true);
     UPDATE public.purchase_orders
        SET request_id = NEW.maintenance_request_id
      WHERE contract_id = NEW.id;
+    PERFORM set_config('app.propagating_request_id', 'false', true);
   END IF;
   RETURN NULL;
 END $$;
