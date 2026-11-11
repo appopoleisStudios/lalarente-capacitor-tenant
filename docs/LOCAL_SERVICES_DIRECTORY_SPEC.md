@@ -189,7 +189,11 @@ A provider has a stable identity anchored to their first (original) listing row:
   - INSERT trigger (branch 2) blocks a new row from pointing at a renewal — no chain can be created on INSERT.
   - UPDATE trigger blocks mutating `canonical_listing_id` on any existing row — no chain can be created by later modification.
   - Together these two invariants make it impossible to construct a chain at any point in the row's lifetime.
-- When a **pricing period ends** and admin renews/changes tier, the renewal is **atomic**: in a single transaction, INSERT the new listing row (new `starts_at`/`expires_at`/rates, `canonical_listing_id = <original id>`) AND UPDATE the old listing's `status = 'expired'`. This ensures discovery queries and event ingestion always see exactly one active listing per provider — the exclusion constraint above enforces this at the DB level, so a concurrent renewal that forgets to expire the old row is rejected.
+- **Renewal lifecycle — two patterns, both atomic within one transaction:**
+  1. **Immediate replacement** (admin replaces active listing now): in a single transaction, first `UPDATE old_listing SET status = 'expired'`, then `INSERT new_listing (status='active', starts_at=NOW(), …)`. The expire-first order is mandatory: inserting an active row while the old one is still active violates `no_overlapping_active_periods` immediately (the constraint is not deferrable). The constraint then guarantees a concurrent renewal that races this transaction cannot slip through.
+
+  2. **Scheduled renewal** (admin creates next period in advance): `INSERT new_listing (status='pending', starts_at=<future date>, …)`. A `pending` row is exempt from the exclusion constraint (`WHERE status='active'`), so it coexists with the current active listing. A scheduled job (or the admin panel) transitions `status = 'pending' → 'active'` and expires the old one atomically when `starts_at` is reached. This avoids a coverage gap where the current active listing is expired before the new one starts.
+
 - All event analytics, provider history, and cross-period reporting query `WHERE canonical_listing_id = <original id>` — `business_name_snapshot` on events is for display only and cannot be used as a join key.
 - `ON DELETE RESTRICT` is a safety net but originals are **never hard-deleted** under the platform's soft-delete-only policy (`deleted_at + status='archived'`). Archiving a row does not remove its foreign key reference, so `ON DELETE RESTRICT` is never triggered in normal operation.
 
