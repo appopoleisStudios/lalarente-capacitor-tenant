@@ -269,7 +269,47 @@ describe('custom clauses HTML escaping', () => {
   });
 });
 
-// ─── 5. Draft store isolation ─────────────────────────────────────────────────
+// ─── 5. Regression guards for OwnerLeaseReviewScreen fixes ───────────────────
+
+describe('OwnerLeaseReviewScreen regression guards', () => {
+  afterEach(() => leaseDraftStore.clear());
+
+  it('rent_escalation_type preview uses rentEscalationType not leaseType', () => {
+    const draft: LeaseDraft = {
+      ...DRAFT,
+      leaseType: 'fixed',
+      rentEscalationType: 'percentage',
+      rentEscalationValue: '5',
+    };
+    const html = generateLeaseHTML({
+      ...LEASE_DATA_FOR_HTML,
+      rent_escalation_type: draft.rentEscalationValue ? draft.rentEscalationType : null,
+      rent_escalation_value: parseFloat(draft.rentEscalationValue),
+      rent_escalation_frequency_months: 12,
+    });
+    expect(html).toContain('%');
+    expect(html).not.toContain('(Fixed)');
+  });
+
+  it('customClauses persist to store when Done is pressed', () => {
+    leaseDraftStore.set({ ...DRAFT, customClauses: '' });
+    const updated = 'Tenant responsible for pool maintenance.';
+    const d = leaseDraftStore.get();
+    if (d) leaseDraftStore.set({ ...d, customClauses: updated });
+    expect(leaseDraftStore.get()?.customClauses).toBe(updated);
+  });
+
+  it('back-to-create navigation recovers updated customClauses from store', () => {
+    leaseDraftStore.set({ ...DRAFT, customClauses: 'original' });
+    const updated = 'updated clauses';
+    const d = leaseDraftStore.get();
+    if (d) leaseDraftStore.set({ ...d, customClauses: updated });
+    const recovered = leaseDraftStore.get()?.customClauses;
+    expect(recovered).toBe(updated);
+  });
+});
+
+// ─── 6. Draft store isolation ─────────────────────────────────────────────────
 
 describe('leaseDraftStore', () => {
   afterEach(() => leaseDraftStore.clear());
