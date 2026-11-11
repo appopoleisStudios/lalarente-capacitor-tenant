@@ -15,7 +15,7 @@
 
 BEGIN;
 
-SELECT plan(24);
+SELECT plan(27);
 
 -- ─── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -495,12 +495,78 @@ SELECT is(
   'M2: contract_id update propagates request_id via trigger'
 );
 
--- M3: PO with no contract_id retains NULL request_id
+-- M3: PO inserted with NULL contract_id has NULL request_id
+DO $$
+DECLARE v_po_id uuid;
+BEGIN
+  INSERT INTO purchase_orders (po_number, currency, subtotal, vat_amount,
+                                platform_fee_amount, total_amount, status, revision_number)
+  VALUES ('PO-M3', 'ZAR', 50, 7, 3, 60, 'draft', 1)
+  RETURNING id INTO v_po_id;
+  PERFORM set_config('test.m3_po_id', v_po_id::text, true);
+END $$;
+
 SELECT is(
-  (SELECT request_id FROM purchase_orders WHERE po_number = 'PO-M2'
-    AND contract_id IS NULL LIMIT 1),
+  (SELECT request_id FROM purchase_orders WHERE id = current_setting('test.m3_po_id')::uuid),
   NULL,
-  'M3: PO without contract_id keeps request_id NULL'
+  'M3: PO inserted without contract_id has NULL request_id'
+);
+
+-- ─── N. populate_po_request_id — relinking and direct-update protection ──────
+-- N1: relinking contract_id from A → B derives B's request_id (no inherited-value rejection)
+-- N2: unlinking (contract_id → NULL) clears request_id
+-- N3: direct UPDATE OF request_id is rejected
+
+DO $$
+DECLARE
+  v_contract_b  uuid := gen_random_uuid();
+  v_req_b       uuid;
+BEGIN
+  SELECT id INTO v_req_b
+    FROM maintenance_requests
+   WHERE title = 'B_linked_false' LIMIT 1;
+
+  INSERT INTO service_contracts (id, maintenance_request_id, property_id, owner_id,
+                                  vendor_id, status, start_date, end_date)
+  VALUES (v_contract_b, v_req_b,
+          current_setting('test.prop_id')::uuid,
+          current_setting('test.owner_id')::uuid,
+          tests.get_supabase_uid('tenant_b'),
+          'active', now(), now() + interval '1 year');
+
+  PERFORM set_config('test.n_contract_b', v_contract_b::text, true);
+  PERFORM set_config('test.n_req_b',      v_req_b::text,      true);
+END $$;
+
+-- Relink PO-M2 (currently on contract A/req A) to contract B
+UPDATE purchase_orders SET contract_id = current_setting('test.n_contract_b')::uuid
+ WHERE id = current_setting('test.m_po_id')::uuid;
+
+SELECT is(
+  (SELECT request_id FROM purchase_orders WHERE id = current_setting('test.m_po_id')::uuid),
+  current_setting('test.n_req_b')::uuid,
+  'N1: relinking contract_id A→B derives B request_id without inherited-value rejection'
+);
+
+-- N2: unlink (contract_id → NULL) → request_id cleared
+UPDATE purchase_orders SET contract_id = NULL
+ WHERE id = current_setting('test.m_po_id')::uuid;
+
+SELECT is(
+  (SELECT request_id FROM purchase_orders WHERE id = current_setting('test.m_po_id')::uuid),
+  NULL,
+  'N2: setting contract_id to NULL clears stale request_id'
+);
+
+-- N3: direct request_id update is blocked
+SELECT throws_like(
+  $q$
+    UPDATE purchase_orders
+       SET request_id = gen_random_uuid()
+     WHERE id = current_setting('test.m_po_id')::uuid
+  $q$,
+  '%request_id is managed by the contract chain%',
+  'N3: direct UPDATE OF request_id is rejected'
 );
 
 SELECT * FROM finish();
