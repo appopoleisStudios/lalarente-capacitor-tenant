@@ -170,10 +170,23 @@ A provider has a stable identity anchored to their first (original) listing row:
 - A BEFORE INSERT trigger enforces the canonical identity rule with two branches:
   1. **Self-reference (original):** if `NEW.canonical_listing_id = NEW.id`, the row is its own original — no DB query required; pass through.
   2. **Renewal:** if `NEW.canonical_listing_id ≠ NEW.id`, query to verify `canonical_listing_id` references an existing row where `canonical_listing_id = id` (a true original). Reject if the target is itself a renewal — this prevents `R → A` where A is already `R' → A'`.
-- `canonical_listing_id` is **immutable after insertion**. A separate BEFORE UPDATE trigger rejects any attempt to change it on an existing row. Without immutability, updating an original's `canonical_listing_id` from `A` to `B` would leave all renewals pointing to A (now `A → B`) creating chains that break `WHERE canonical_listing_id = X` queries.
+- `canonical_listing_id` is **immutable after insertion for every row** (originals and renewals alike). A BEFORE UPDATE trigger rejects any attempt to change it. This applies to originals too — if original A could be updated to point to B, all existing renewals would retain `canonical_listing_id = A` while A now has `canonical_listing_id = B`, silently creating a chain (`R → A → B`) that breaks `WHERE canonical_listing_id = X` queries.
+- **Chain prevention is guaranteed by the two triggers working together:**
+  - INSERT trigger (branch 2) blocks a new row from pointing at a renewal — no chain can be created on INSERT.
+  - UPDATE trigger blocks mutating `canonical_listing_id` on any existing row — no chain can be created by later modification.
+  - Together these two invariants make it impossible to construct a chain at any point in the row's lifetime.
 - When a **pricing period ends** and admin renews/changes tier, they INSERT a new listing row with the new `starts_at`/`expires_at`/rate fields and set `canonical_listing_id = <original listing's id>`.
 - All event analytics, provider history, and cross-period reporting query `WHERE canonical_listing_id = <original id>` — `business_name_snapshot` on events is for display only and cannot be used as a join key.
 - `ON DELETE RESTRICT` is a safety net but originals are **never hard-deleted** under the platform's soft-delete-only policy (`deleted_at + status='archived'`). Archiving a row does not remove its foreign key reference, so `ON DELETE RESTRICT` is never triggered in normal operation.
+
+**Trigger acceptance cases (INSERT trigger):**
+
+| Scenario                                 | `canonical_listing_id`                 | Expected                                                |
+| ---------------------------------------- | -------------------------------------- | ------------------------------------------------------- |
+| Initial creation                         | `= NEW.id` (self-reference)            | ✅ Pass — no DB query, branch 1                         |
+| Valid renewal                            | `= <id of an existing original>`       | ✅ Pass — branch 2 query confirms target is an original |
+| Renewal → renewal                        | `= <id of a row where canonical ≠ id>` | ❌ Rejected — target is itself a renewal                |
+| Attempt to update `canonical_listing_id` | any UPDATE                             | ❌ Rejected — immutability trigger fires                |
 
 ### 4.2 `listing_events` — the master data
 
