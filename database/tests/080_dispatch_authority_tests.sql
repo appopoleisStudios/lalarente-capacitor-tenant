@@ -15,7 +15,7 @@
 
 BEGIN;
 
-SELECT plan(27);
+SELECT plan(29);
 
 -- ─── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -567,6 +567,63 @@ SELECT throws_like(
   $q$,
   '%request_id is managed by the contract chain%',
   'N3: direct UPDATE OF request_id is rejected'
+);
+
+-- ─── O. service_contracts.maintenance_request_id consistency ─────────────────
+-- O1: late association (NULL → non-NULL) propagates request_id to linked POs
+-- O2: reassignment (non-NULL → different) is rejected
+
+DO $$
+DECLARE
+  v_contract_c  uuid := gen_random_uuid();
+  v_req_c       uuid;
+  v_po_c        uuid;
+BEGIN
+  -- Create a contract with no maintenance_request_id (late-association scenario)
+  SELECT id INTO v_req_c
+    FROM maintenance_requests
+   WHERE title = 'B_linked_true' LIMIT 1;
+
+  INSERT INTO service_contracts (id, maintenance_request_id, property_id, owner_id,
+                                  vendor_id, status, start_date, end_date)
+  VALUES (v_contract_c, NULL,
+          current_setting('test.prop_id')::uuid,
+          current_setting('test.owner_id')::uuid,
+          tests.get_supabase_uid('tenant_b'),
+          'active', now(), now() + interval '1 year');
+
+  -- Create PO linked to this contract (request_id will be NULL initially)
+  INSERT INTO purchase_orders (contract_id, po_number, currency,
+                                subtotal, vat_amount, platform_fee_amount,
+                                total_amount, status, revision_number)
+  VALUES (v_contract_c, 'PO-O1', 'ZAR', 100, 15, 5, 120, 'draft', 1)
+  RETURNING id INTO v_po_c;
+
+  PERFORM set_config('test.o_contract_c', v_contract_c::text, true);
+  PERFORM set_config('test.o_req_c',      v_req_c::text,      true);
+  PERFORM set_config('test.o_po_c',       v_po_c::text,       true);
+END $$;
+
+-- Late association: set maintenance_request_id on the contract
+UPDATE service_contracts
+   SET maintenance_request_id = current_setting('test.o_req_c')::uuid
+ WHERE id = current_setting('test.o_contract_c')::uuid;
+
+SELECT is(
+  (SELECT request_id FROM purchase_orders WHERE id = current_setting('test.o_po_c')::uuid),
+  current_setting('test.o_req_c')::uuid,
+  'O1: late association (NULL→non-NULL on contract) propagates request_id to linked POs'
+);
+
+-- O2: reassignment rejected
+SELECT throws_like(
+  $q$
+    UPDATE service_contracts
+       SET maintenance_request_id = gen_random_uuid()
+     WHERE id = current_setting('test.o_contract_c')::uuid
+  $q$,
+  '%maintenance_request_id is immutable once set%',
+  'O2: reassigning a set maintenance_request_id is rejected'
 );
 
 SELECT * FROM finish();
