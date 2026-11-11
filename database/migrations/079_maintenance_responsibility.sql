@@ -206,20 +206,19 @@ DECLARE
   open_assignments int;
   open_pos         int;
 BEGIN
+  -- Include owner_id = auth.uid() in the locking predicate so an unauthorized
+  -- caller gets NOT FOUND before acquiring any lock — no timing side-channel
+  -- and a single failure response regardless of whether the request exists,
+  -- has the wrong state, or belongs to a different owner.
   SELECT owner_id, vendor_id INTO mr_owner_id, mr_vendor_id
     FROM public.maintenance_requests
-   WHERE id     = req_id
-     AND status = 'tenant_dispatching'
+   WHERE id       = req_id
+     AND status   = 'tenant_dispatching'
+     AND owner_id = auth.uid()
    FOR UPDATE;
 
   IF NOT FOUND THEN
-    RAISE EXCEPTION 'request not found, not in a reclaimable state, or already terminal';
-  END IF;
-
-  -- Reject NULL callers explicitly: != evaluates to NULL when auth.uid() is NULL,
-  -- which skips the exception. IS DISTINCT FROM handles both NULL and mismatch.
-  IF auth.uid() IS NULL OR mr_owner_id IS DISTINCT FROM auth.uid() THEN
-    RAISE EXCEPTION 'not authorized';
+    RAISE EXCEPTION 'request not found, not in a reclaimable state, or not authorized';
   END IF;
 
   -- Guard: if the request has a directly-set vendor_id with NO corresponding
@@ -451,14 +450,15 @@ RETURNS void LANGUAGE plpgsql SECURITY DEFINER
 AS $$
 DECLARE
   v_request_id uuid;
+  v_vendor_id  uuid;
   v_caller_id  uuid := auth.uid();
 BEGIN
   IF v_caller_id IS NULL THEN
     RAISE EXCEPTION 'not authenticated';
   END IF;
 
-  -- Step 1: resolve the parent request (no row lock yet).
-  SELECT request_id INTO v_request_id
+  -- Step 1: resolve the parent request and vendor (no row lock yet).
+  SELECT request_id, vendor_id INTO v_request_id, v_vendor_id
     FROM public.maintenance_vendor_assignments
    WHERE id = p_assignment_id;
 
@@ -481,6 +481,15 @@ BEGIN
   IF NOT FOUND THEN
     RAISE EXCEPTION 'assignment not found or already cancelled/rejected';
   END IF;
+
+  -- Step 4: clear vendor_id on the parent request if it was pointing to this
+  -- vendor — without this, reclaim_request() would find vendor_id IS NOT NULL
+  -- with no active assignment and raise an exception, leaving the request
+  -- permanently unreclaimable after a legitimate cancel.
+  UPDATE public.maintenance_requests
+     SET vendor_id = NULL
+   WHERE id        = v_request_id
+     AND vendor_id = v_vendor_id;
 END $$;
 
 REVOKE ALL ON FUNCTION cancel_assignment(uuid) FROM PUBLIC;
