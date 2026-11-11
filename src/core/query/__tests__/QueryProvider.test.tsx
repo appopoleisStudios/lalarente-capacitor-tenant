@@ -100,44 +100,50 @@ describe('QueryProvider AppState synchronization', () => {
     expect(focusManager.setFocused).toHaveBeenCalledWith(true);
   });
 
-  it('focus-triggered refetch: foreground transition causes stale query to re-execute', async () => {
-    // Integration test using the real QueryClient and real focusManager.
-    // Verifies that transitioning from background → active causes a stale
-    // query to be refetched, which is the central behavior this component enables.
-    const {
-      QueryClient: RealQueryClient,
-      QueryClientProvider: RealQCProvider,
-      useQuery: realUseQuery,
-      focusManager: realFM,
-    } = jest.requireActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
+  it('focus-triggered refetch: AppState listener drives real focusManager which triggers stale query refetch', async () => {
+    // Integration test: mounts the actual QueryProvider, invokes the registered
+    // AppState listener, and verifies the full chain:
+    //   AppState 'active' → QueryProvider listener → focusManager.setFocused(true)
+    //   → real internal focusManager notified → stale query refetches.
+    const { focusManager: realFM } =
+      jest.requireActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
 
+    // Bridge mock → real so react-query's internal observers receive the notification.
+    (focusManager.setFocused as jest.Mock).mockImplementation((focused: boolean | undefined) =>
+      realFM.setFocused(focused)
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { useQuery } = require('@tanstack/react-query');
     const queryFn = jest.fn().mockResolvedValue('result');
-    const client = new RealQueryClient({
-      defaultOptions: { queries: { staleTime: 0, retry: 0, refetchOnWindowFocus: true } },
-    });
 
     function ObservedQuery() {
-      realUseQuery({ queryKey: ['focus-test'], queryFn });
+      useQuery({ queryKey: ['focus-test-appstate'], queryFn, refetchOnWindowFocus: true });
       return null;
     }
 
+    Object.defineProperty(AppState, 'currentState', { value: 'background', writable: true });
     realFM.setFocused(false);
+
     const { unmount } = render(
-      <RealQCProvider client={client}>
+      <QueryProvider>
         <ObservedQuery />
-      </RealQCProvider>
+      </QueryProvider>
     );
 
-    // Initial fetch (mount)
+    // Initial fetch on mount
     await waitFor(() => expect(queryFn).toHaveBeenCalledTimes(1));
 
-    // Simulate app foregrounding — should trigger refetch of the stale query
-    realFM.setFocused(true);
+    // Foreground via AppState listener — NOT by calling realFM.setFocused directly
+    Object.defineProperty(AppState, 'currentState', { value: 'active', writable: true });
+    const listener = addListenerSpy.mock.calls[0][1];
+    listener('active');
+
+    // AppState listener → focusManager.setFocused(true) → realFM notified → refetch
     await waitFor(() => expect(queryFn).toHaveBeenCalledTimes(2));
 
     unmount();
     realFM.setFocused(undefined);
-    client.clear();
   });
 
   it('removes the subscription on unmount', () => {
