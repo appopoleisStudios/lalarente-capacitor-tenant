@@ -15,7 +15,7 @@
 
 BEGIN;
 
-SELECT plan(21);
+SELECT plan(24);
 
 -- ─── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -431,6 +431,78 @@ SELECT lives_ok(
 );
 
 SELECT tests.clear_authentication();
+
+-- ─── M. populate_po_request_id trigger consistency ───────────────────────────
+-- M1: conflicting explicit request_id is rejected
+-- M2: contract_id UPDATE propagates the request_id
+-- M3: PO with NULL contract_id is left untouched
+
+DO $$
+DECLARE
+  v_contract_id  uuid := gen_random_uuid();
+  v_req_id       uuid := gen_random_uuid();
+  v_other_req_id uuid := gen_random_uuid();
+  v_po_id        uuid := gen_random_uuid();
+BEGIN
+  INSERT INTO maintenance_requests (id, property_id, owner_id, tenant_id, title, description,
+    priority, status, service_item_id)
+  VALUES (v_req_id, current_setting('test.prop_id')::uuid,
+    current_setting('test.owner_id')::uuid, current_setting('test.tenant_id')::uuid,
+    'M_req', 'desc', 'low', 'pending', current_setting('test.psi_id')::uuid);
+
+  INSERT INTO service_contracts (id, maintenance_request_id, vendor_id, status)
+  VALUES (v_contract_id, v_req_id,
+    tests.get_supabase_uid('tenant_b'), 'active');
+
+  PERFORM set_config('test.m_contract_id',  v_contract_id::text,  true);
+  PERFORM set_config('test.m_req_id',       v_req_id::text,       true);
+  PERFORM set_config('test.m_other_req_id', v_other_req_id::text, true);
+  PERFORM set_config('test.m_po_id',        v_po_id::text,        true);
+END $$;
+
+SELECT throws_like(
+  $q$
+    INSERT INTO purchase_orders (
+      id, contract_id, request_id, po_number, currency,
+      subtotal, vat_amount, platform_fee_amount, total_amount, status, revision_number
+    ) VALUES (
+      gen_random_uuid(),
+      current_setting('test.m_contract_id')::uuid,
+      current_setting('test.m_other_req_id')::uuid,
+      'PO-M1', 'ZAR', 1000, 150, 50, 1200, 'issued', 1
+    )
+  $q$,
+  '%conflicts with contract chain%',
+  'M1: conflicting explicit request_id is rejected by trigger'
+);
+
+DO $$
+DECLARE
+  v_po_id uuid := current_setting('test.m_po_id')::uuid;
+BEGIN
+  INSERT INTO purchase_orders (
+    id, contract_id, po_number, currency,
+    subtotal, vat_amount, platform_fee_amount, total_amount, status, revision_number
+  ) VALUES (
+    v_po_id, NULL, 'PO-M2', 'ZAR', 1000, 150, 50, 1200, 'issued', 1
+  );
+END $$;
+
+SELECT is(
+  (SELECT request_id FROM purchase_orders WHERE id = current_setting('test.m_po_id')::uuid),
+  NULL,
+  'M3: PO with NULL contract_id has NULL request_id'
+);
+
+UPDATE purchase_orders
+   SET contract_id = current_setting('test.m_contract_id')::uuid
+ WHERE id = current_setting('test.m_po_id')::uuid;
+
+SELECT is(
+  (SELECT request_id FROM purchase_orders WHERE id = current_setting('test.m_po_id')::uuid),
+  current_setting('test.m_req_id')::uuid,
+  'M2: contract_id UPDATE propagates request_id from contract chain'
+);
 
 SELECT * FROM finish();
 ROLLBACK;
