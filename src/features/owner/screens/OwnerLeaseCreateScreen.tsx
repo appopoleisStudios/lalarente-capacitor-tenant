@@ -22,7 +22,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { supabase } from '../../../lib/supabase';
-import { leaseDraftStore } from '../../leases/utils/leaseDraftStore';
+import { leaseDraftStore, generateDraftId } from '../../leases/utils/leaseDraftStore';
 
 const RSA = { blue: '#002395', gold: '#FFB81C' }; // Owner colors
 
@@ -229,9 +229,8 @@ export default function OwnerLeaseCreateScreen() {
     const appId = Array.isArray(applicationId) ? applicationId[0] : (applicationId as string);
     const existing = leaseDraftStore.get();
     const preservedClauses = existing?.applicationId === appId ? existing.customClauses : '';
-    const draftLeaseId = existing?.applicationId === appId
-      ? existing.draftLeaseId
-      : crypto.randomUUID();
+    const draftLeaseId =
+      existing?.applicationId === appId ? existing.draftLeaseId : generateDraftId();
 
     leaseDraftStore.set({
       applicationId: appId,

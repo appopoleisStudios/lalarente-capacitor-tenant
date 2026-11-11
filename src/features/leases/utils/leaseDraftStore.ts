@@ -21,6 +21,13 @@ export interface LeaseDraft {
   draftLeaseId: string;
 }
 
+export function generateDraftId(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
 let _draft: LeaseDraft | null = null;
 
 export const leaseDraftStore = {
