@@ -76,8 +76,7 @@ async function fetchDashboardData(userId: string): Promise<TenantDashboardData> 
       )
       .eq('tenant_id', userId)
       .in('status', ['approved', 'pending'])
-      .order('requested_date', { ascending: true })
-      .limit(3),
+      .order('requested_date', { ascending: true }),
   ]);
 
   if (leaseResult.error) throw new Error(`leases: ${leaseResult.error.message}`);
@@ -85,10 +84,10 @@ async function fetchDashboardData(userId: string): Promise<TenantDashboardData> 
     throw new Error(`maintenance_requests: ${maintenanceResult.error.message}`);
   if (viewingsResult.error) throw new Error(`viewing_requests: ${viewingsResult.error.message}`);
 
-  // Filter out past appointments. When a viewing is rescheduled, confirmed_date
-  // takes precedence over requested_date. Only show viewings whose effective
-  // date is today or in the future.
-  const upcomingViewings = filterUpcomingViewings(viewingsResult.data ?? [], new Date());
+  // Filter out past appointments using the effective date (confirmed_date ?? requested_date),
+  // then cap to 3. Must filter before limiting: a SQL LIMIT(3) could fill the
+  // buffer with historical records and hide future appointments entirely.
+  const upcomingViewings = filterUpcomingViewings(viewingsResult.data ?? [], new Date()).slice(0, 3);
 
   const upcoming = payments.find((p) => p.status === 'pending') ?? null;
   const recent = payments.filter((p) => p.status === 'completed').slice(0, 3);
