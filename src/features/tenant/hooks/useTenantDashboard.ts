@@ -28,6 +28,18 @@ export interface TenantDashboardData {
   viewingAlerts: any[];
 }
 
+export function useTenantDashboard(userId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.tenant.dashboard(userId ?? undefined),
+    queryFn: () => fetchDashboardData(userId!),
+    enabled: !!userId,
+  });
+}
+
+export function useTenantDashboardQueryClient() {
+  return useQueryClient();
+}
+
 async function fetchDashboardData(userId: string): Promise<TenantDashboardData> {
   const { data: profile } = await supabase
     .from('profiles')
@@ -190,16 +202,4 @@ function filterUpcomingViewings(viewings: any[], today: Date): any[] {
     if (!effectiveDateStr) return false;
     return new Date(effectiveDateStr) >= startOfToday;
   });
-}
-
-export function useTenantDashboard(userId: string | null) {
-  return useQuery({
-    queryKey: queryKeys.tenant.dashboard(userId ?? undefined),
-    queryFn: () => fetchDashboardData(userId!),
-    enabled: !!userId,
-  });
-}
-
-export function useTenantDashboardQueryClient() {
-  return useQueryClient();
 }
