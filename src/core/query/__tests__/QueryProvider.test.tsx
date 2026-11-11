@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, waitFor } from '@testing-library/react-native';
+import { render, waitFor, act } from '@testing-library/react-native';
 import { AppState } from 'react-native';
 import { focusManager } from '@tanstack/react-query';
 import { QueryProvider } from '../QueryProvider';
@@ -118,7 +118,15 @@ describe('QueryProvider AppState synchronization', () => {
     const queryFn = jest.fn().mockResolvedValue('result');
 
     function ObservedQuery() {
-      useQuery({ queryKey: ['focus-test-appstate'], queryFn, refetchOnWindowFocus: true });
+      // staleTime: 0 so the query is immediately stale after the initial fetch;
+      // without it the provider's 30s default keeps the query fresh and foregrounding
+      // does not trigger a refetch.
+      useQuery({
+        queryKey: ['focus-test-appstate'],
+        queryFn,
+        refetchOnWindowFocus: true,
+        staleTime: 0,
+      });
       return null;
     }
 
@@ -131,15 +139,18 @@ describe('QueryProvider AppState synchronization', () => {
       </QueryProvider>
     );
 
-    // Initial fetch on mount
+    // Wait for initial fetch to complete (not just invoked) so the query is in
+    // success state before foregrounding — avoids the race where foregrounding
+    // while the request is in-flight reuses the existing request.
     await waitFor(() => expect(queryFn).toHaveBeenCalledTimes(1));
+    await act(async () => {});
 
     // Foreground via AppState listener — NOT by calling realFM.setFocused directly
     Object.defineProperty(AppState, 'currentState', { value: 'active', writable: true });
     const listener = addListenerSpy.mock.calls[0][1];
     listener('active');
 
-    // AppState listener → focusManager.setFocused(true) → realFM notified → refetch
+    // AppState listener → focusManager.setFocused(true) → realFM notified → stale query refetches
     await waitFor(() => expect(queryFn).toHaveBeenCalledTimes(2));
 
     unmount();
