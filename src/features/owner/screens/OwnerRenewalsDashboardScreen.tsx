@@ -25,6 +25,7 @@ import {
   type ExpiringLease,
   type LeaseExpiryInfo,
 } from '@/src/features/leases/api/leaseExpiry.api';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 interface LeaseWithExpiry extends ExpiringLease {
   expiryInfo?: LeaseExpiryInfo;
@@ -75,6 +76,7 @@ export default function OwnerRenewalsDashboardScreen() {
 
       setLeases(enriched);
     } catch (err) {
+      reportApiError(err, 'leases', 'select');
       console.error('Error fetching renewals:', err);
     } finally {
       setLoading(false);

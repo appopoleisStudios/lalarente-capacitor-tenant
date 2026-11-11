@@ -14,12 +14,9 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import { documentsApi } from '../api/documentsApi';
-import {
-  DocumentWithRelations,
-  DocumentType,
-  DOCUMENT_CATEGORIES,
-} from '../types';
+import { DocumentWithRelations, DocumentType, DOCUMENT_CATEGORIES } from '../types';
 import { supabase } from '../../../lib/supabase';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 const COLORS = {
   owner: { primary: '#002395', secondary: '#FFB81C' },
@@ -52,7 +49,9 @@ export default function DocumentViewerScreen({ role = 'owner' }: Props) {
   }, [id, userId]);
 
   const initUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (user) {
       setUserId(user.id);
     }
@@ -66,6 +65,7 @@ export default function DocumentViewerScreen({ role = 'owner' }: Props) {
       const data = await documentsApi.getDocument(documentId);
       setDocument(data);
     } catch (error) {
+      reportApiError(error, 'documents', 'select');
       console.error('Error loading document:', error);
       Alert.alert('Error', 'Failed to load document');
     } finally {
@@ -119,6 +119,7 @@ export default function DocumentViewerScreen({ role = 'owner' }: Props) {
                 { text: 'OK', onPress: () => router.back() },
               ]);
             } catch (error) {
+              reportApiError(error, 'documents', 'delete');
               console.error('Error deleting document:', error);
               Alert.alert('Error', 'Failed to delete document');
             }
@@ -157,6 +158,7 @@ export default function DocumentViewerScreen({ role = 'owner' }: Props) {
       setDocument({ ...document, ...updated });
       Alert.alert('Success', `Retention extended by ${years} year${years > 1 ? 's' : ''}`);
     } catch (error) {
+      reportApiError(error, 'documents', 'update');
       console.error('Error extending retention:', error);
       Alert.alert('Error', 'Failed to extend retention');
     }
@@ -249,7 +251,11 @@ export default function DocumentViewerScreen({ role = 'owner' }: Props) {
           {/* Document Card */}
           <View style={styles.documentCard}>
             <View style={[styles.iconContainer, { backgroundColor: `${colors.primary}15` }]}>
-              <Ionicons name={category?.icon as any || 'document'} size={40} color={colors.primary} />
+              <Ionicons
+                name={(category?.icon as any) || 'document'}
+                size={40}
+                color={colors.primary}
+              />
             </View>
             <Text style={styles.documentTitle}>{document.title}</Text>
             <Text style={styles.documentType}>{category?.label || document.type}</Text>
@@ -265,7 +271,8 @@ export default function DocumentViewerScreen({ role = 'owner' }: Props) {
               <View style={styles.warningContent}>
                 <Text style={styles.warningTitle}>Expiring Soon</Text>
                 <Text style={styles.warningText}>
-                  This document will be deleted in {daysUntilExpiry} day{daysUntilExpiry !== 1 ? 's' : ''}.
+                  This document will be deleted in {daysUntilExpiry} day
+                  {daysUntilExpiry !== 1 ? 's' : ''}.
                 </Text>
               </View>
               <TouchableOpacity
@@ -283,7 +290,9 @@ export default function DocumentViewerScreen({ role = 'owner' }: Props) {
 
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>File Name</Text>
-              <Text style={styles.detailValue} numberOfLines={1}>{document.filename}</Text>
+              <Text style={styles.detailValue} numberOfLines={1}>
+                {document.filename}
+              </Text>
             </View>
 
             <View style={styles.detailRow}>
@@ -314,9 +323,13 @@ export default function DocumentViewerScreen({ role = 'owner' }: Props) {
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Access Level</Text>
               <Text style={styles.detailValue}>
-                {document.access_level === 'both' ? 'Both Parties' :
-                 document.access_level === 'owner_only' ? 'Owner Only' :
-                 document.access_level === 'tenant_only' ? 'Tenant Only' : 'Admin Only'}
+                {document.access_level === 'both'
+                  ? 'Both Parties'
+                  : document.access_level === 'owner_only'
+                    ? 'Owner Only'
+                    : document.access_level === 'tenant_only'
+                      ? 'Tenant Only'
+                      : 'Admin Only'}
               </Text>
             </View>
           </View>
@@ -328,16 +341,14 @@ export default function DocumentViewerScreen({ role = 'owner' }: Props) {
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Retention Period</Text>
               <Text style={styles.detailValue}>
-                {document.retention_period_years} year{document.retention_period_years !== 1 ? 's' : ''}
+                {document.retention_period_years} year
+                {document.retention_period_years !== 1 ? 's' : ''}
               </Text>
             </View>
 
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Scheduled Deletion</Text>
-              <Text style={[
-                styles.detailValue,
-                isExpiringSoon && styles.expiringText
-              ]}>
+              <Text style={[styles.detailValue, isExpiringSoon && styles.expiringText]}>
                 {formatDate(document.delete_after)}
               </Text>
             </View>
@@ -359,7 +370,8 @@ export default function DocumentViewerScreen({ role = 'owner' }: Props) {
                 <View style={styles.relatedItem}>
                   <Ionicons name="document-text-outline" size={20} color="#666" />
                   <Text style={styles.relatedText}>
-                    Lease: {formatDate(document.lease.start_date)} - {formatDate(document.lease.end_date)}
+                    Lease: {formatDate(document.lease.start_date)} -{' '}
+                    {formatDate(document.lease.end_date)}
                   </Text>
                 </View>
               )}
@@ -418,9 +430,7 @@ export default function DocumentViewerScreen({ role = 'owner' }: Props) {
                 onPress={handleDelete}
               >
                 <Ionicons name="trash-outline" size={20} color="#E53935" />
-                <Text style={[styles.actionButtonText, { color: '#E53935' }]}>
-                  Delete Document
-                </Text>
+                <Text style={[styles.actionButtonText, { color: '#E53935' }]}>Delete Document</Text>
               </TouchableOpacity>
             )}
           </View>

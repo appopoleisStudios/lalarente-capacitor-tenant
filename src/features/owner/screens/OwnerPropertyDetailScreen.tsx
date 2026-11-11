@@ -19,6 +19,7 @@ import { leasesApi } from '../../properties/api/leasesApi';
 import type { PropertyWithRelations } from '../../properties/api/propertiesApi';
 import type { LeaseWithRelations } from '../../properties/api/leasesApi';
 import { styles } from './OwnerPropertyDetailScreen.styles';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -57,6 +58,7 @@ export default function OwnerPropertyDetailScreen() {
         }
       }
     } catch (err) {
+      reportApiError(err, 'properties', 'select');
       console.error('Error loading property:', err);
       setError(err instanceof Error ? err.message : 'Failed to load property');
     } finally {
@@ -459,6 +461,22 @@ export default function OwnerPropertyDetailScreen() {
               >
                 <View style={[styles.actionButton, styles.secondaryButton]}>
                   <Text style={styles.secondaryButtonText}>Maintenance History</Text>
+                </View>
+              </AnimatedButton>
+
+              <AnimatedButton
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push({
+                    pathname: '/(owner)/properties/[id]/taxes',
+                    params: { id, title: property?.title ?? '' },
+                  } as never);
+                }}
+                testID="owner-property-taxes"
+                accessibilityRole="button"
+              >
+                <View style={[styles.actionButton, styles.secondaryButton]}>
+                  <Text style={styles.secondaryButtonText}>Tax Payments</Text>
                 </View>
               </AnimatedButton>
             </View>

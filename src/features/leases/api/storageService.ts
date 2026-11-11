@@ -1,5 +1,6 @@
 import { supabase } from '../../../lib/supabase';
 import { decode } from 'base64-arraybuffer';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 // Custom error types for better error handling
 export class StorageUploadError extends Error {
@@ -14,7 +15,10 @@ export class StorageUploadError extends Error {
 }
 
 export class NetworkError extends Error {
-  constructor(message: string, public readonly originalError?: any) {
+  constructor(
+    message: string,
+    public readonly originalError?: any
+  ) {
     super(message);
     this.name = 'NetworkError';
   }
@@ -40,14 +44,14 @@ const RETRY_CONFIG = {
 /**
  * Sleep utility for retry delays
  */
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
  * Check if error is retryable (network issues, timeouts, etc.)
  */
 function isRetryableError(error: any): boolean {
   if (!error) return false;
-  
+
   const retryableMessages = [
     'network',
     'timeout',
@@ -57,9 +61,9 @@ function isRetryableError(error: any): boolean {
     'fetch failed',
     'Failed to fetch',
   ];
-  
+
   const errorMessage = error.message?.toLowerCase() || '';
-  return retryableMessages.some(msg => errorMessage.includes(msg.toLowerCase()));
+  return retryableMessages.some((msg) => errorMessage.includes(msg.toLowerCase()));
 }
 
 /**
@@ -72,7 +76,7 @@ function validateSignatureData(base64Signature: string): void {
 
   // Remove data URL prefix if present
   const base64Data = base64Signature.replace(/^data:image\/\w+;base64,/, '');
-  
+
   // Check if it's valid base64
   const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
   if (!base64Regex.test(base64Data)) {
@@ -119,7 +123,7 @@ export async function uploadSignature(
     try {
       // Remove data URL prefix if present
       const base64Data = base64Signature.replace(/^data:image\/\w+;base64,/, '');
-      
+
       // Convert base64 to array buffer
       let arrayBuffer: ArrayBuffer;
       try {
@@ -135,9 +139,9 @@ export async function uploadSignature(
 
       // Create file path
       const filePath = `${leaseId}/${party}.png`;
-      
+
       // Upload to Supabase Storage (using existing 'signatures' bucket)
-      const { data, error} = await supabase.storage
+      const { data, error } = await supabase.storage
         .from('signatures')
         .upload(filePath, arrayBuffer, {
           contentType: 'image/png',
@@ -187,9 +191,7 @@ export async function uploadSignature(
       }
 
       // Get public URL (using existing 'signatures' bucket)
-      const { data: urlData } = supabase.storage
-        .from('signatures')
-        .getPublicUrl(filePath);
+      const { data: urlData } = supabase.storage.from('signatures').getPublicUrl(filePath);
 
       if (!urlData?.publicUrl) {
         throw new StorageUploadError(
@@ -201,7 +203,6 @@ export async function uploadSignature(
       // Success - return the URL
       console.log(`Signature uploaded successfully on attempt ${attempt + 1}`);
       return urlData.publicUrl;
-
     } catch (error) {
       // Don't retry validation errors or non-retryable storage errors
       if (
@@ -214,7 +215,10 @@ export async function uploadSignature(
       // Check for network errors
       if (isRetryableError(error)) {
         if (attempt < RETRY_CONFIG.maxRetries) {
-          console.warn(`Upload attempt ${attempt + 1} failed with network error, retrying...`, error);
+          console.warn(
+            `Upload attempt ${attempt + 1} failed with network error, retrying...`,
+            error
+          );
           lastError = error;
           await sleep(delay);
           delay = Math.min(delay * RETRY_CONFIG.backoffMultiplier, RETRY_CONFIG.maxDelayMs);
@@ -227,6 +231,7 @@ export async function uploadSignature(
       }
 
       // Unknown error
+      reportApiError(error, 'lease_signatures', 'insert');
       console.error('Unexpected error uploading signature:', error);
       throw new StorageUploadError(
         'An unexpected error occurred while uploading signature. Please try again.',
@@ -283,13 +288,11 @@ export async function uploadLeasePDF(
   for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
     try {
       const filePath = `${leaseId}/signed-lease.pdf`;
-      
-      const { data, error } = await supabase.storage
-        .from('contracts')
-        .upload(filePath, pdfData, {
-          contentType: 'application/pdf',
-          upsert: true,
-        });
+
+      const { data, error } = await supabase.storage.from('contracts').upload(filePath, pdfData, {
+        contentType: 'application/pdf',
+        upsert: true,
+      });
 
       if (error) {
         // Check for specific error types
@@ -333,9 +336,7 @@ export async function uploadLeasePDF(
         );
       }
 
-      const { data: urlData } = supabase.storage
-        .from('contracts')
-        .getPublicUrl(filePath);
+      const { data: urlData } = supabase.storage.from('contracts').getPublicUrl(filePath);
 
       if (!urlData?.publicUrl) {
         throw new StorageUploadError(
@@ -346,7 +347,6 @@ export async function uploadLeasePDF(
 
       console.log(`PDF uploaded successfully on attempt ${attempt + 1}`);
       return urlData.publicUrl;
-
     } catch (error) {
       // Don't retry validation errors or non-retryable storage errors
       if (
@@ -359,7 +359,10 @@ export async function uploadLeasePDF(
       // Check for network errors
       if (isRetryableError(error)) {
         if (attempt < RETRY_CONFIG.maxRetries) {
-          console.warn(`PDF upload attempt ${attempt + 1} failed with network error, retrying...`, error);
+          console.warn(
+            `PDF upload attempt ${attempt + 1} failed with network error, retrying...`,
+            error
+          );
           lastError = error;
           await sleep(delay);
           delay = Math.min(delay * RETRY_CONFIG.backoffMultiplier, RETRY_CONFIG.maxDelayMs);
@@ -371,6 +374,7 @@ export async function uploadLeasePDF(
         );
       }
 
+      reportApiError(error, 'lease_documents', 'insert');
       console.error('Unexpected error uploading PDF:', error);
       throw new StorageUploadError(
         'An unexpected error occurred while uploading PDF. Please try again.',
@@ -395,10 +399,7 @@ export async function uploadLeasePDF(
  * @throws {NetworkError} If network connection fails
  * @throws {StorageUploadError} If storage deletion fails after retries
  */
-export async function deleteSignature(
-  leaseId: string,
-  party: 'owner' | 'tenant'
-): Promise<void> {
+export async function deleteSignature(leaseId: string, party: 'owner' | 'tenant'): Promise<void> {
   // Validate inputs
   if (!leaseId || leaseId.trim().length === 0) {
     throw new ValidationError('Lease ID is required');
@@ -414,10 +415,8 @@ export async function deleteSignature(
   for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
     try {
       const filePath = `${leaseId}/${party}.png`;
-      
-      const { error } = await supabase.storage
-        .from('signatures')
-        .remove([filePath]);
+
+      const { error } = await supabase.storage.from('signatures').remove([filePath]);
 
       if (error) {
         // Check for specific error types
@@ -461,7 +460,6 @@ export async function deleteSignature(
 
       console.log(`Signature deleted successfully on attempt ${attempt + 1}`);
       return;
-
     } catch (error) {
       // Don't retry validation errors or non-retryable storage errors
       if (
@@ -474,7 +472,10 @@ export async function deleteSignature(
       // Check for network errors
       if (isRetryableError(error)) {
         if (attempt < RETRY_CONFIG.maxRetries) {
-          console.warn(`Delete attempt ${attempt + 1} failed with network error, retrying...`, error);
+          console.warn(
+            `Delete attempt ${attempt + 1} failed with network error, retrying...`,
+            error
+          );
           lastError = error;
           await sleep(delay);
           delay = Math.min(delay * RETRY_CONFIG.backoffMultiplier, RETRY_CONFIG.maxDelayMs);
@@ -486,6 +487,7 @@ export async function deleteSignature(
         );
       }
 
+      reportApiError(error, 'lease_signatures', 'delete');
       console.error('Unexpected error deleting signature:', error);
       throw new StorageUploadError(
         'An unexpected error occurred while deleting signature. Please try again.',
@@ -512,6 +514,7 @@ export async function checkBucketExists(bucketName: string): Promise<boolean> {
     const { data, error } = await supabase.storage.getBucket(bucketName);
     return !error && !!data;
   } catch (error) {
+    reportApiError(error, bucketName, 'select');
     console.error(`Error checking bucket ${bucketName}:`, error);
     return false;
   }

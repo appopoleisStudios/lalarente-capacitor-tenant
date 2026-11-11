@@ -18,6 +18,7 @@ import { inspectionsApi } from '../api/inspectionsApi';
 import { supabase } from '../../../lib/supabase';
 import type { InspectionType } from '../types';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 const RSA = { blue: '#002395', gold: '#FFB81C' };
 
@@ -37,7 +38,12 @@ interface ActiveLease {
 }
 
 function formatDate(date: Date): string {
-  return date.toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+  return date.toLocaleDateString('en-ZA', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 }
 
 export default function OwnerScheduleInspectionScreen() {
@@ -63,18 +69,22 @@ export default function OwnerScheduleInspectionScreen() {
 
   const loadData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
       setOwnerId(user.id);
 
       // Fetch active leases with property + tenant
       const { data: leasesData, error } = await supabase
         .from('leases')
-        .select(`
+        .select(
+          `
           id, status, start_date,
           properties!property_id(title),
           profiles!tenant_id(full_name)
-        `)
+        `
+        )
         .eq('owner_id', user.id)
         .in('status', ['active', 'pending_tenant_signature', 'pending_owner_signature'])
         .order('start_date', { ascending: false });
@@ -92,12 +102,13 @@ export default function OwnerScheduleInspectionScreen() {
       setLeases(formattedLeases);
 
       // Smart default: if a leaseId is pre-filled, auto-select it
-      if (prefilledLeaseId && formattedLeases.find(l => l.id === prefilledLeaseId)) {
+      if (prefilledLeaseId && formattedLeases.find((l) => l.id === prefilledLeaseId)) {
         setSelectedLeaseId(prefilledLeaseId);
       } else if (formattedLeases.length === 1) {
         setSelectedLeaseId(formattedLeases[0].id);
       }
     } catch (err) {
+      reportApiError(err, 'leases', 'select');
       console.error('Error loading leases:', err);
       Alert.alert('Error', 'Failed to load active leases');
     } finally {
@@ -144,23 +155,28 @@ export default function OwnerScheduleInspectionScreen() {
         });
       }
 
-      Alert.alert('Inspection Scheduled', 'The inspection has been scheduled successfully. The tenant will be notified.', [
-        {
-          text: 'Open Inspection',
-          onPress: () => {
-            router.back();
-            router.push({
-              pathname: '/(owner)/inspections/[id]' as any,
-              params: { id: inspection.id },
-            });
+      Alert.alert(
+        'Inspection Scheduled',
+        'The inspection has been scheduled successfully. The tenant will be notified.',
+        [
+          {
+            text: 'Open Inspection',
+            onPress: () => {
+              router.back();
+              router.push({
+                pathname: '/(owner)/inspections/[id]' as any,
+                params: { id: inspection.id },
+              });
+            },
           },
-        },
-        {
-          text: 'Done',
-          onPress: () => router.back(),
-        },
-      ]);
+          {
+            text: 'Done',
+            onPress: () => router.back(),
+          },
+        ]
+      );
     } catch (err) {
+      reportApiError(err, 'inspections', 'insert');
       console.error('Error scheduling inspection:', err);
       Alert.alert('Error', err instanceof Error ? err.message : 'Failed to schedule inspection');
     } finally {
@@ -193,7 +209,7 @@ export default function OwnerScheduleInspectionScreen() {
         {/* Inspection Type */}
         <Text style={styles.sectionLabel}>Inspection Type</Text>
         <View style={styles.typeGrid}>
-          {TYPES.map(t => (
+          {TYPES.map((t) => (
             <TouchableOpacity
               key={t.value}
               style={[styles.typeCard, selectedType === t.value && styles.typeCardActive]}
@@ -222,14 +238,19 @@ export default function OwnerScheduleInspectionScreen() {
           </View>
         ) : (
           <View style={styles.leaseList}>
-            {leases.map(lease => (
+            {leases.map((lease) => (
               <TouchableOpacity
                 key={lease.id}
                 style={[styles.leaseCard, selectedLeaseId === lease.id && styles.leaseCardActive]}
                 onPress={() => setSelectedLeaseId(lease.id)}
               >
                 <View style={styles.leaseRadio}>
-                  <View style={[styles.radioOuter, selectedLeaseId === lease.id && styles.radioOuterActive]}>
+                  <View
+                    style={[
+                      styles.radioOuter,
+                      selectedLeaseId === lease.id && styles.radioOuterActive,
+                    ]}
+                  >
                     {selectedLeaseId === lease.id && <View style={styles.radioInner} />}
                   </View>
                 </View>
@@ -244,10 +265,7 @@ export default function OwnerScheduleInspectionScreen() {
 
         {/* Date Picker */}
         <Text style={styles.sectionLabel}>Inspection Date</Text>
-        <TouchableOpacity
-          style={styles.dateInput}
-          onPress={() => setShowDatePicker(true)}
-        >
+        <TouchableOpacity style={styles.dateInput} onPress={() => setShowDatePicker(true)}>
           <Ionicons name="calendar-outline" size={20} color={RSA.blue} />
           <Text style={styles.dateText}>{formatDate(scheduledDate)}</Text>
           <Ionicons name="chevron-down" size={18} color="#9CA3AF" />
@@ -263,10 +281,7 @@ export default function OwnerScheduleInspectionScreen() {
           />
         )}
         {Platform.OS === 'ios' && showDatePicker && (
-          <TouchableOpacity
-            style={styles.doneBtn}
-            onPress={() => setShowDatePicker(false)}
-          >
+          <TouchableOpacity style={styles.doneBtn} onPress={() => setShowDatePicker(false)}>
             <Text style={styles.doneBtnText}>Done</Text>
           </TouchableOpacity>
         )}
@@ -287,7 +302,8 @@ export default function OwnerScheduleInspectionScreen() {
         <View style={styles.legalNote}>
           <Ionicons name="information-circle-outline" size={16} color="#6B7280" />
           <Text style={styles.legalNoteText}>
-            RHA s5(3)(e)–(f): A joint inspection must be conducted before tenant takes occupation. Minimum 24 hours written notice required.
+            RHA s5(3)(e)–(f): A joint inspection must be conducted before tenant takes occupation.
+            Minimum 24 hours written notice required.
           </Text>
         </View>
 
@@ -328,7 +344,13 @@ const styles = StyleSheet.create({
   headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: '#111827', textAlign: 'center' },
   scroll: { flex: 1 },
   scrollContent: { padding: 16, gap: 8 },
-  sectionLabel: { fontSize: 14, fontWeight: '700', color: '#374151', marginTop: 12, marginBottom: 8 },
+  sectionLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#374151',
+    marginTop: 12,
+    marginBottom: 8,
+  },
   typeGrid: { flexDirection: 'row', gap: 10, marginBottom: 4 },
   typeCard: {
     flex: 1,

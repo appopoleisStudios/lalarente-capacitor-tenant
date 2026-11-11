@@ -18,6 +18,7 @@ import {
   formatSAPhoneNumber,
   isValidSAPhoneNumber,
 } from '../templates/smsTemplates';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 // notifications table does not yet have a migration — cast via any until 033 is applied
 const notifTable = () => (supabase as any).from('notifications');
@@ -108,6 +109,7 @@ export const notificationsApi = {
         body: content.body,
       } as any;
     } catch (error) {
+      reportApiError(error, 'notifications', 'insert');
       console.error('Error sending notification:', error);
       return null;
     }

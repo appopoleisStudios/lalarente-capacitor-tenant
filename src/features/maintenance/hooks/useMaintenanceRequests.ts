@@ -15,6 +15,7 @@ import type {
   MaintenanceStatus,
   Priority,
 } from '../api/types/maintenance.types';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 export function useMaintenanceRequests(includeArchived = false) {
   const { user, profile } = useAuth();
@@ -66,6 +67,7 @@ export function useMaintenanceRequests(includeArchived = false) {
         const data = await filterRequestsByStatus(userId, statuses);
         queryClient.setQueryData(queryKey, data);
       } catch (err) {
+        reportApiError(err, 'maintenance_requests', 'select');
         console.error('Error filtering by status:', err);
         // Re-throw so callers can surface feedback (toast, snackbar, etc.)
         // rather than silently showing stale cached data.
@@ -82,6 +84,7 @@ export function useMaintenanceRequests(includeArchived = false) {
         const data = await filterRequestsByPriority(userId, priorities);
         queryClient.setQueryData(queryKey, data);
       } catch (err) {
+        reportApiError(err, 'maintenance_requests', 'select');
         console.error('Error filtering by priority:', err);
         // Re-throw so callers can surface feedback (toast, snackbar, etc.)
         // rather than silently showing stale cached data.

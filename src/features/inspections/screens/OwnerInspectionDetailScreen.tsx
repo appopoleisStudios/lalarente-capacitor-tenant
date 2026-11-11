@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { inspectionsApi } from '../api/inspectionsApi';
 import { supabase } from '../../../lib/supabase';
 import { exportInspectionReportPdf } from '../../owner/utils/pdfReports';
+import { reportApiError } from '@/src/core/observability/sentry';
 import type { InspectionWithRelations, InspectionRooms, RoomInspection } from '../types';
 import { normalizeRoomList } from '../utils/normalizeRooms';
 
@@ -22,22 +23,22 @@ const RSA = { blue: '#002395', gold: '#FFB81C' };
 
 const CONDITION_COLOR: Record<string, string> = {
   excellent: '#10B981',
-  good:      '#3B82F6',
-  fair:      '#F59E0B',
-  poor:      '#F97316',
-  damaged:   '#EF4444',
+  good: '#3B82F6',
+  fair: '#F59E0B',
+  poor: '#F97316',
+  damaged: '#EF4444',
 };
 
 const STATUS_COLOR: Record<string, string> = {
-  scheduled:          '#3B82F6',
-  in_progress:        '#F59E0B',
+  scheduled: '#3B82F6',
+  in_progress: '#F59E0B',
   pending_signatures: '#8B5CF6',
-  completed:          '#10B981',
-  cancelled:          '#6B7280',
+  completed: '#10B981',
+  cancelled: '#6B7280',
 };
 
 const TYPE_LABEL: Record<string, string> = {
-  move_in:  'Move-In Inspection',
+  move_in: 'Move-In Inspection',
   periodic: 'Periodic Inspection',
   move_out: 'Move-Out Inspection',
 };
@@ -45,7 +46,9 @@ const TYPE_LABEL: Record<string, string> = {
 function fmt(dateStr: string | null | undefined): string {
   if (!dateStr) return '—';
   return new Date(dateStr).toLocaleDateString('en-ZA', {
-    day: 'numeric', month: 'long', year: 'numeric',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
   });
 }
 
@@ -85,6 +88,7 @@ export default function OwnerInspectionDetailScreen() {
       const roomsData = data.rooms as InspectionRooms;
       setRooms(normalizeRoomList(roomsData?.rooms));
     } catch (err) {
+      reportApiError(err, 'inspections', 'select');
       console.error('Inspection load error:', err);
       Alert.alert('Error', 'Failed to load inspection details.');
     } finally {
@@ -96,7 +100,9 @@ export default function OwnerInspectionDetailScreen() {
     if (!inspection) return;
     try {
       setExporting(true);
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
       await exportInspectionReportPdf(inspection.id, user.id);
       Alert.alert('Report Saved', 'PDF report saved to your Documents.', [
@@ -160,10 +166,11 @@ export default function OwnerInspectionDetailScreen() {
             onPress={handleExport}
             disabled={exporting}
           >
-            {exporting
-              ? <ActivityIndicator size="small" color="#FFF" />
-              : <Ionicons name="download-outline" size={20} color="#FFF" />
-            }
+            {exporting ? (
+              <ActivityIndicator size="small" color="#FFF" />
+            ) : (
+              <Ionicons name="download-outline" size={20} color="#FFF" />
+            )}
           </TouchableOpacity>
         )}
       </View>
@@ -172,10 +179,17 @@ export default function OwnerInspectionDetailScreen() {
         {/* Status card */}
         <View style={styles.card}>
           <View style={styles.rowBetween}>
-            <View style={[styles.statusBadge, { backgroundColor: statusColor + '20', borderColor: statusColor }]}>
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: statusColor + '20', borderColor: statusColor },
+              ]}
+            >
               <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
               <Text style={[styles.statusText, { color: statusColor }]}>
-                {(inspection.status ?? 'scheduled').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                {(inspection.status ?? 'scheduled')
+                  .replace(/_/g, ' ')
+                  .replace(/\b\w/g, (c) => c.toUpperCase())}
               </Text>
             </View>
             {inspection.overall_condition && (
@@ -209,7 +223,9 @@ export default function OwnerInspectionDetailScreen() {
             <View style={styles.infoItem}>
               <Ionicons name="business-outline" size={14} color="#6B7280" />
               <Text style={styles.infoLabel}>Property</Text>
-              <Text style={styles.infoValue} numberOfLines={1}>{inspection.property?.address ?? '—'}</Text>
+              <Text style={styles.infoValue} numberOfLines={1}>
+                {inspection.property?.address ?? '—'}
+              </Text>
             </View>
           </View>
         </View>
@@ -272,18 +288,14 @@ export default function OwnerInspectionDetailScreen() {
 
                 {expandedRoom === idx && (
                   <View style={styles.roomDetail}>
-                    {room.notes ? (
-                      <Text style={styles.roomNotes}>{room.notes}</Text>
-                    ) : null}
+                    {room.notes ? <Text style={styles.roomNotes}>{room.notes}</Text> : null}
                     {(room.items ?? []).map((item, iIdx) => (
                       <View key={iIdx}>
                         <View style={styles.itemRow}>
                           <Text style={styles.itemName}>{item.name}</Text>
                           <ConditionBadge value={item.condition ?? 'good'} />
                         </View>
-                        {item.notes ? (
-                          <Text style={styles.itemNotes}>{item.notes}</Text>
-                        ) : null}
+                        {item.notes ? <Text style={styles.itemNotes}>{item.notes}</Text> : null}
                         {(item.photos ?? []).length > 0 && (
                           <ScrollView
                             horizontal
@@ -291,11 +303,7 @@ export default function OwnerInspectionDetailScreen() {
                             style={styles.photoScroll}
                           >
                             {(item.photos ?? []).map((uri, pIdx) => (
-                              <Image
-                                key={pIdx}
-                                source={{ uri }}
-                                style={styles.photoThumb}
-                              />
+                              <Image key={pIdx} source={{ uri }} style={styles.photoThumb} />
                             ))}
                           </ScrollView>
                         )}
@@ -307,11 +315,7 @@ export default function OwnerInspectionDetailScreen() {
                         <Text style={styles.roomPhotosLabel}>Room Photos</Text>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                           {(room.photos ?? []).map((uri, pIdx) => (
-                            <Image
-                              key={pIdx}
-                              source={{ uri }}
-                              style={styles.photoThumb}
-                            />
+                            <Image key={pIdx} source={{ uri }} style={styles.photoThumb} />
                           ))}
                         </ScrollView>
                       </View>
@@ -353,9 +357,7 @@ export default function OwnerInspectionDetailScreen() {
               )}
             </View>
             {(keys.accessCodes ?? []).length > 0 && (
-              <Text style={styles.accessCodes}>
-                Access codes: {keys.accessCodes!.join(', ')}
-              </Text>
+              <Text style={styles.accessCodes}>Access codes: {keys.accessCodes!.join(', ')}</Text>
             )}
           </View>
         )}
@@ -396,7 +398,13 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F5F7FA' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   errorText: { fontSize: 16, color: '#374151', marginTop: 12 },
-  retryBtn: { marginTop: 16, backgroundColor: RSA.blue, borderRadius: 10, paddingHorizontal: 24, paddingVertical: 12 },
+  retryBtn: {
+    marginTop: 16,
+    backgroundColor: RSA.blue,
+    borderRadius: 10,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
   retryBtnText: { color: '#FFF', fontWeight: '600', fontSize: 15 },
 
   header: {
@@ -413,8 +421,10 @@ const styles = StyleSheet.create({
   exportBtn: {
     backgroundColor: RSA.blue,
     borderRadius: 20,
-    width: 36, height: 36,
-    alignItems: 'center', justifyContent: 'center',
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   card: {
@@ -431,16 +441,22 @@ const styles = StyleSheet.create({
 
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   statusBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 10, paddingVertical: 5,
-    borderRadius: 20, borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
   },
   statusDot: { width: 7, height: 7, borderRadius: 3.5 },
   statusText: { fontSize: 13, fontWeight: '600', textTransform: 'capitalize' },
 
   condBadge: {
-    paddingHorizontal: 10, paddingVertical: 4,
-    borderRadius: 8, borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
   },
   condBadgeText: { fontSize: 12, fontWeight: '700' },
 
@@ -456,22 +472,37 @@ const styles = StyleSheet.create({
   sigDate: { fontSize: 12, color: '#6B7280', marginTop: 1 },
 
   roomRow: {
-    flexDirection: 'row', alignItems: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 12,
   },
   roomName: { fontSize: 14, fontWeight: '600', color: '#374151' },
   roomDetail: { paddingBottom: 8, paddingLeft: 4 },
   roomNotes: { fontSize: 13, color: '#6B7280', marginBottom: 8, fontStyle: 'italic' },
   itemRow: {
-    flexDirection: 'row', alignItems: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 6,
-    borderTopWidth: 1, borderTopColor: '#F9FAFB',
+    borderTopWidth: 1,
+    borderTopColor: '#F9FAFB',
   },
   itemName: { fontSize: 13, color: '#4B5563', flex: 1 },
-  itemNotes: { fontSize: 12, color: '#9CA3AF', marginLeft: 2, marginBottom: 4, fontStyle: 'italic' },
+  itemNotes: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginLeft: 2,
+    marginBottom: 4,
+    fontStyle: 'italic',
+  },
   photoScroll: { marginVertical: 6 },
-  photoThumb: { width: 80, height: 60, borderRadius: 6, marginRight: 6, backgroundColor: '#F3F4F6' },
+  photoThumb: {
+    width: 80,
+    height: 60,
+    borderRadius: 6,
+    marginRight: 6,
+    backgroundColor: '#F3F4F6',
+  },
   roomPhotosSection: { marginTop: 8, borderTopWidth: 1, borderTopColor: '#F3F4F6', paddingTop: 8 },
   roomPhotosLabel: { fontSize: 11, fontWeight: '600', color: '#6B7280', marginBottom: 6 },
 

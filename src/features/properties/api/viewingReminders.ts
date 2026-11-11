@@ -1,5 +1,6 @@
 import { supabase } from '../../../lib/supabase';
 import { notificationsApi } from '../../notifications/api/notificationsApi';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 /**
  * Viewing Reminder System
@@ -78,7 +79,8 @@ export async function sendViewingReminders(): Promise<{
     // Get all approved viewings for tomorrow that haven't had reminders sent
     const { data: viewings, error } = await supabase
       .from('viewing_requests')
-      .select(`
+      .select(
+        `
         id,
         tenant_id,
         owner_id,
@@ -95,7 +97,8 @@ export async function sendViewingReminders(): Promise<{
         owner:profiles!owner_id (
           full_name
         )
-      `)
+      `
+      )
       .eq('status', 'approved')
       .gte('confirmed_date', tomorrowStr)
       .lt('confirmed_date', dayAfterTomorrowStr)
@@ -159,6 +162,7 @@ export async function sendViewingReminders(): Promise<{
         results.success++;
         console.log(`✓ Sent reminder for viewing ${viewing.id}`);
       } catch (error) {
+        reportApiError(error, 'viewing_requests', 'update');
         results.failed++;
         const errorMsg = error instanceof Error ? error.message : 'Unknown error';
         results.errors.push(`Viewing ${viewing.id}: ${errorMsg}`);
@@ -169,6 +173,7 @@ export async function sendViewingReminders(): Promise<{
     console.log(`Reminder job complete: ${results.success} sent, ${results.failed} failed`);
     return results;
   } catch (error) {
+    reportApiError(error, 'viewing_requests', 'select');
     console.error('Fatal error in sendViewingReminders:', error);
     results.errors.push(error instanceof Error ? error.message : 'Fatal error');
     return results;

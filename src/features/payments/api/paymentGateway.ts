@@ -15,6 +15,7 @@
 import { supabase } from '../../../lib/supabase';
 import { env } from '../../../core/config/env';
 import CryptoJS from 'crypto-js';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 export interface PaymentGatewayConfig {
   gateway: 'payfast' | 'yoco';
@@ -123,10 +124,7 @@ export function generatePayFastPaymentUrl(
  * Sorts all params alphabetically, joins as key=value pairs,
  * appends passphrase, and computes MD5 hash.
  */
-export function generatePayFastSignature(
-  params: URLSearchParams,
-  passphrase: string = ''
-): string {
+export function generatePayFastSignature(params: URLSearchParams, passphrase: string = ''): string {
   // Sort parameters alphabetically and create string
   const sortedParams = Array.from(params.entries())
     .filter(([key]) => key !== 'signature')
@@ -183,7 +181,7 @@ export async function createYocoCheckout(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.secretKey}`,
+        Authorization: `Bearer ${config.secretKey}`,
       },
       body: JSON.stringify({
         amount: Math.round(request.amount * 100), // Yoco uses cents
@@ -224,9 +222,7 @@ export async function createYocoCheckout(
  * Process payment webhook
  * Called by webhook endpoint when payment status changes
  */
-export async function processPaymentWebhook(
-  payload: WebhookPayload
-): Promise<void> {
+export async function processPaymentWebhook(payload: WebhookPayload): Promise<void> {
   try {
     const { paymentId, transactionId, status, gateway } = payload;
 
@@ -248,10 +244,7 @@ export async function processPaymentWebhook(
       updateData.failure_reason = 'Payment cancelled by user';
     }
 
-    const { error } = await supabase
-      .from('payments')
-      .update(updateData)
-      .eq('id', paymentId);
+    const { error } = await supabase.from('payments').update(updateData).eq('id', paymentId);
 
     if (error) {
       console.error('Error updating payment from webhook:', error);
@@ -265,6 +258,7 @@ export async function processPaymentWebhook(
 
     console.log(`Payment ${paymentId} updated: ${status}`);
   } catch (error) {
+    reportApiError(error, 'payments', 'update');
     console.error('Error processing payment webhook:', error);
     throw error;
   }
@@ -282,11 +276,13 @@ export async function initiatePayment(
     // Get payment details
     const { data: payment, error: fetchError } = await supabase
       .from('payments')
-      .select(`
+      .select(
+        `
         *,
         tenant:profiles!tenant_id(email, full_name),
         property:properties!property_id(title)
-      `)
+      `
+      )
       .eq('id', paymentId)
       .single();
 
@@ -340,6 +336,7 @@ export async function initiatePayment(
       error: 'Invalid payment gateway',
     };
   } catch (error: any) {
+    reportApiError(error, 'payments', 'select');
     console.error('Error initiating payment:', error);
     return {
       success: false,
@@ -405,6 +402,7 @@ export async function schedulePaymentRetry(paymentId: string): Promise<boolean> 
 
     return true;
   } catch (error) {
+    reportApiError(error, 'payments', 'update');
     console.error('Error scheduling payment retry:', error);
     return false;
   }

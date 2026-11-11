@@ -1,5 +1,6 @@
 import { supabase } from '../../../lib/supabase';
 import * as FileSystem from 'expo-file-system/legacy';
+import { reportApiError } from '@/src/core/observability/sentry';
 import { decode } from 'base64-arraybuffer';
 import type {
   Document,
@@ -66,9 +67,7 @@ export const documentsApi = {
       }
 
       // Get public URL
-      const { data: urlData } = supabase.storage
-        .from(DOCUMENTS_BUCKET)
-        .getPublicUrl(fileName);
+      const { data: urlData } = supabase.storage.from(DOCUMENTS_BUCKET).getPublicUrl(fileName);
 
       if (!urlData?.publicUrl) {
         throw new Error('Failed to get file URL');
@@ -113,6 +112,7 @@ export const documentsApi = {
 
       return document;
     } catch (error) {
+      reportApiError(error, 'documents', 'insert');
       console.error('Error in uploadDocument:', error);
       throw error;
     }
@@ -124,14 +124,16 @@ export const documentsApi = {
   async getDocument(id: string): Promise<DocumentWithRelations> {
     const { data, error } = await supabase
       .from('documents')
-      .select(`
+      .select(
+        `
         *,
         property:properties!property_id(id, title),
         lease:leases!lease_id(id, start_date, end_date),
         owner:profiles!owner_id(id, full_name),
         tenant:profiles!tenant_id(id, full_name),
         uploader:profiles!uploaded_by(id, full_name)
-      `)
+      `
+      )
       .eq('id', id)
       .single();
 
@@ -156,11 +158,13 @@ export const documentsApi = {
   ): Promise<DocumentWithRelations[]> {
     let query = supabase
       .from('documents')
-      .select(`
+      .select(
+        `
         *,
         property:properties!property_id(id, title),
         lease:leases!lease_id(id, start_date, end_date)
-      `)
+      `
+      )
       .or(`uploaded_by.eq.${userId},${role}_id.eq.${userId}`);
 
     // Apply filters
@@ -200,10 +204,12 @@ export const documentsApi = {
   async getPropertyDocuments(propertyId: string): Promise<DocumentWithRelations[]> {
     const { data, error } = await supabase
       .from('documents')
-      .select(`
+      .select(
+        `
         *,
         uploader:profiles!uploaded_by(id, full_name)
-      `)
+      `
+      )
       .eq('property_id', propertyId)
       .order('created_at', { ascending: false });
 
@@ -221,10 +227,12 @@ export const documentsApi = {
   async getLeaseDocuments(leaseId: string): Promise<DocumentWithRelations[]> {
     const { data, error } = await supabase
       .from('documents')
-      .select(`
+      .select(
+        `
         *,
         uploader:profiles!uploaded_by(id, full_name)
-      `)
+      `
+      )
       .eq('lease_id', leaseId)
       .order('created_at', { ascending: false });
 
@@ -294,10 +302,7 @@ export const documentsApi = {
     }
 
     // Delete document record
-    const { error: deleteError } = await supabase
-      .from('documents')
-      .delete()
-      .eq('id', id);
+    const { error: deleteError } = await supabase.from('documents').delete().eq('id', id);
 
     if (deleteError) {
       throw new Error(`Failed to delete document: ${deleteError.message}`);
@@ -364,7 +369,10 @@ export const documentsApi = {
   /**
    * Get document statistics for a user
    */
-  async getDocumentStats(userId: string, role: 'owner' | 'tenant'): Promise<{
+  async getDocumentStats(
+    userId: string,
+    role: 'owner' | 'tenant'
+  ): Promise<{
     totalDocuments: number;
     byType: Record<string, number>;
     totalSize: number;
@@ -376,7 +384,7 @@ export const documentsApi = {
     const byType: Record<string, number> = {};
     let totalSize = 0;
 
-    documents.forEach(doc => {
+    documents.forEach((doc) => {
       byType[doc.type] = (byType[doc.type] || 0) + 1;
       totalSize += doc.file_size || 0;
     });
@@ -419,10 +427,12 @@ export const documentsApi = {
   ): Promise<DocumentWithRelations[]> {
     const { data, error } = await supabase
       .from('documents')
-      .select(`
+      .select(
+        `
         *,
         property:properties!property_id(id, title)
-      `)
+      `
+      )
       .or(`uploaded_by.eq.${userId},${role}_id.eq.${userId}`)
       .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
       .order('created_at', { ascending: false })

@@ -26,6 +26,7 @@ import {
   type EscalationSummary,
 } from '@/src/features/payments/api/arrearsEscalation.api';
 import { paymentDisputesApi } from '@/src/features/payments/api/paymentDisputes.api';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 const STAGE_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
   friendly_reminder: {
@@ -82,6 +83,7 @@ export default function OwnerArrearsManagementScreen() {
       setSummary(escalationsData);
       setArrangements(arrangementsData);
     } catch (err) {
+      reportApiError(err, 'lease_escalations', 'select');
       console.error('Error fetching arrears:', err);
     } finally {
       setLoading(false);

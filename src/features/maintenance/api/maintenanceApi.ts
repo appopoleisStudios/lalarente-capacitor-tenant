@@ -1,6 +1,7 @@
 import { supabase } from '@/src/lib/supabase';
 import type { MaintenanceRequest, ServiceCategory } from '@/src/types/maintenance.types';
 import { createQuoteRequests } from './vendors/vendorQuoteRequests.api';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 // Feature flag for mock mode
 const USE_MOCK_DATA = false; // ✅ Changed to false - using real data now
@@ -15,6 +16,13 @@ export interface CreateMaintenanceRequestInput {
   title: string;
   description: string;
   images?: string[]; // Array of URLs
+  service_item_id?: string;
+}
+
+export interface PropertyServiceItem {
+  id: string;
+  name: string;
+  tenant_may_dispatch: boolean;
 }
 
 export const maintenanceApi = {
@@ -91,7 +99,7 @@ export const maintenanceApi = {
       throw new Error('Owner ID is required');
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('maintenance_requests')
       .insert({
         property_id: input.property_id,
@@ -105,6 +113,7 @@ export const maintenanceApi = {
         mms_status: 'notification',
         visibility: input.visibility || 'invited',
         images: input.images || null,
+        service_item_id: input.service_item_id || null,
       })
       .select()
       .single();
@@ -581,6 +590,7 @@ export const maintenanceApi = {
         });
       }
     } catch (e) {
+      reportApiError(e, 'notifications', 'insert');
       console.error('Failed to send vendor notifications:', e);
     }
 
@@ -628,6 +638,7 @@ export const maintenanceApi = {
         });
       }
     } catch (e) {
+      reportApiError(e, 'notifications', 'insert');
       console.error('Failed to send vendor notifications:', e);
     }
 
@@ -1437,5 +1448,28 @@ export const vendorMaintenanceApi = {
     if (updateError) throw updateError;
 
     return { success: true, message: 'Quote request declined' };
+  },
+
+  // ── CT7-023: dispatch-authority helpers ──────────────────────────────────
+
+  async getPropertyServiceItems(propertyId: string): Promise<PropertyServiceItem[]> {
+    const { data, error } = await (supabase as any)
+      .from('property_service_items')
+      .select('id, name, tenant_may_dispatch')
+      .eq('property_id', propertyId)
+      .is('deleted_at', null)
+      .order('created_at');
+    if (error) throw error;
+    return (data || []) as PropertyServiceItem[];
+  },
+
+  async releaseToTenantDispatch(reqId: string) {
+    const { error } = await (supabase as any).rpc('release_to_tenant_dispatch', { req_id: reqId });
+    if (error) throw error;
+  },
+
+  async reclaimRequest(reqId: string, reason: string) {
+    const { error } = await (supabase as any).rpc('reclaim_request', { req_id: reqId, reason });
+    if (error) throw error;
   },
 };

@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 const RSA = { blue: '#002395', gold: '#FFB81C' }; // Owner colors
 
@@ -107,6 +108,7 @@ export default function TenantsScreen() {
 
       setLeases(leasesWithPayments as Lease[]);
     } catch (error) {
+      reportApiError(error, 'leases', 'select');
       console.error('Error loading leases:', error);
     } finally {
       setLoading(false);

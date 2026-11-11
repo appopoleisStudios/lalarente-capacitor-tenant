@@ -20,6 +20,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/src/lib/supabase';
 import { sendPOToVendor } from '@/src/features/maintenance/api/purchase-orders/poActions.api';
+import { reportApiError } from '@/src/core/observability/sentry';
 
 export default function OwnerSendPOScreen() {
   const router = useRouter();
@@ -124,6 +125,7 @@ export default function OwnerSendPOScreen() {
         },
       ]);
     } catch (error: any) {
+      reportApiError(error, 'purchase_orders', 'update');
       console.error('Error sending PO:', error);
       Alert.alert('Error', error.message || 'Failed to send purchase order');
     } finally {
