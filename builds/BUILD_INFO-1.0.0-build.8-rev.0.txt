@@ -1,0 +1,90 @@
+LaLarente App - Build Information
+==================================
+
+Build Date: 2026-11-12 18:00:00
+Build Type: Client Testing (Alpha)
+
+Version Information:
+  Version:      1.0.0
+  Build Number: 8
+  Revision:     0
+  Full Version: 1.0.0-build.8-rev.0
+
+Android Information:
+  Version Code: 8
+  Version Name: 1.0.0
+  Package:      com.lalarente.app
+
+Build Configuration:
+  Platform:     Android
+  Build Type:   APK (Release)
+  Build Method: Local Gradle
+  Minify:       Enabled
+  Hermes:       Enabled
+  Architectures: armeabi-v7a, arm64-v8a, x86, x86_64
+
+Features Included:
+  ✓ Authentication & Session Persistence (fixed)
+  ✓ Property Management — CRUD, photos, search (100%)
+  ✓ Owner Profile — live data, inline editing (100%)
+  ✓ Tenant Profile — date picker, country code, ID upload (100%)
+  ✓ Viewing Requests — request, approve, decline, alt times (100%)
+  ✓ Rental Applications — apply, review, competition (100%)
+  ✓ Holding Deposits — create, track, apply to lease (100%)
+  ✓ Lease Management — create, dual-sign, PDF (100%)
+  ✓ Payment Tracking — rent, disputes, arrears, escalation (100%)
+  ✓ Maintenance Workflow — report, assign, quotes, POs, closure (100%)
+  ✓ Vendor Portal — quotes, work orders, ratings (100%)
+  ✓ Lease Renewal — CPA notices, negotiate, execute (100%)
+  ✓ Early Termination — penalty calc, deposit trigger (100%)
+  ✓ Deposit Management — interest accrual, deductions, refund (100%)
+  ✓ Inspections — schedule, conduct, sign off (100%)
+  ✓ Insurance Claims — create, upload docs, track (100%)
+  ✓ In-App Messaging — owner-tenant threads (100%)
+  ✓ Notifications — in-app notification centre (100%)
+  ✓ Documents Hub — upload, verify, FICA KYC (100%)
+  ✓ POPIA Compliance — consent, DSAR, privacy hub (100%)
+  ✓ Owner Dashboard — live analytics, activity feed, alerts (100%)
+  ✓ Tenant Dashboard — real-time updates, quick actions (100%)
+
+CT7 Fixes (Build 7 → Build 8):
+  ✓ CT7-001: Sign-up no longer requires document uploads
+  ✓ CT7-002: Dashboard cold-start parallel loads (no sluggish sequential fetches)
+  ✓ CT7-003: "Save" button at top of Edit Property header
+  ✓ CT7-012: Lease signing blocked until tenant profile complete (gate + alert)
+  ✓ CT7-013: Profile banner lists exact missing fields from shared util
+  ✓ CT7-014: SA ID document + Salary Certificate uploaders in tenant profile
+  ✓ CT7-015: Owner viewing-outcome confirmation prompt after viewing date
+  ✓ CT7-016: Rental application pre-fills from tenant profile (collapsed summary)
+  ✓ CT7-017: Holding deposit Send Request RLS fix
+  ✓ CT7-018: EFT reference card shown prominently for tenant bank transfer
+  ✓ CT7-019: Approve-tenancy gated on holding deposit paid
+  ✓ CT7-020: Lease start/end use date pickers (no free-text input)
+  ✓ CT7-021: Lease creation enum fix — no more "failed to create" error
+  ✓ CT7-022: Lease PDF preview + custom clauses persist before sending to tenant
+  ✓ CT7-023: Owner vs tenant maintenance responsibility defined + migration
+  ✓ CT7-024: Property tax payments screen — record rates, levies, bond interest
+  ✓ CT7-025: Profile "complete" badge uses same rules as dashboard banner
+
+Known Limitations:
+  - Payment gateway (PayFast/Yoco) not live — mock flows only
+  - Push notifications (FCM) not yet configured
+  - GEN-002: Email validation not enforced (intentional for testing)
+
+Testing Focus (CT7 QA):
+  1. Tenant: complete profile → verify banner clears + lease-sign gate opens
+  2. Owner: add property → Edit header shows Save button top-right
+  3. Tenant: apply for property → verify "From your profile" summary shown
+  4. Owner: viewing past due → confirm outcome prompt appears
+  5. Owner: create lease → verify date pickers (not text inputs)
+  6. Owner: property → Taxes tab → record rates/levies entry
+  7. Tenant: Holding Deposit screen → verify EFT reference displayed
+  8. Owner: Maintenance → confirm responsibility toggle works
+
+Distribution:
+  Method: Direct APK install
+  Requires: "Install from unknown sources" enabled
+
+Support:
+  For issues, contact development team
+  Include this build number in bug reports: 1.0.0-build.8-rev.0

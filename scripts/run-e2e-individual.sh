@@ -17,7 +17,7 @@ run_flow() {
   echo ""
   echo "━━ $role › $label"
   local output
-  output=$("$MAESTRO" test "${extra_env[@]}" ".maestro/flows/$flow.yaml" 2>&1)
+  output=$("$MAESTRO" --device "$UDID" test "${extra_env[@]}" ".maestro/flows/$flow.yaml" 2>&1)
   local ec=$?
   # capture screenshot
   local slug=$(echo "$label" | tr '/ ' '--')

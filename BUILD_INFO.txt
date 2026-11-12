@@ -1,17 +1,17 @@
 LaLarente App - Build Information
 ==================================
 
-Build Date: 2026-08-16 14:18:30
+Build Date: 2026-11-12 18:00:00
 Build Type: Client Testing (Alpha)
 
 Version Information:
   Version:      1.0.0
-  Build Number: 5
+  Build Number: 8
   Revision:     0
-  Full Version: 1.0.0-build.5-rev.0
+  Full Version: 1.0.0-build.8-rev.0
 
 Android Information:
-  Version Code: 5
+  Version Code: 8
   Version Name: 1.0.0
   Package:      com.lalarente.app
 
@@ -47,21 +47,39 @@ Features Included:
   ✓ Owner Dashboard — live analytics, activity feed, alerts (100%)
   ✓ Tenant Dashboard — real-time updates, quick actions (100%)
 
+CT7 Fixes (Build 7 → Build 8):
+  ✓ CT7-001: Sign-up no longer requires document uploads
+  ✓ CT7-002: Dashboard cold-start parallel loads (no sluggish sequential fetches)
+  ✓ CT7-003: "Save" button at top of Edit Property header
+  ✓ CT7-012: Lease signing blocked until tenant profile complete (gate + alert)
+  ✓ CT7-013: Profile banner lists exact missing fields from shared util
+  ✓ CT7-014: SA ID document + Salary Certificate uploaders in tenant profile
+  ✓ CT7-015: Owner viewing-outcome confirmation prompt after viewing date
+  ✓ CT7-016: Rental application pre-fills from tenant profile (collapsed summary)
+  ✓ CT7-017: Holding deposit Send Request RLS fix
+  ✓ CT7-018: EFT reference card shown prominently for tenant bank transfer
+  ✓ CT7-019: Approve-tenancy gated on holding deposit paid
+  ✓ CT7-020: Lease start/end use date pickers (no free-text input)
+  ✓ CT7-021: Lease creation enum fix — no more "failed to create" error
+  ✓ CT7-022: Lease PDF preview + custom clauses persist before sending to tenant
+  ✓ CT7-023: Owner vs tenant maintenance responsibility defined + migration
+  ✓ CT7-024: Property tax payments screen — record rates, levies, bond interest
+  ✓ CT7-025: Profile "complete" badge uses same rules as dashboard banner
+
 Known Limitations:
   - Payment gateway (PayFast/Yoco) not live — mock flows only
   - Push notifications (FCM) not yet configured
   - GEN-002: Email validation not enforced (intentional for testing)
 
-Testing Focus (QA Parity Flows):
-  1. Auth & session persistence — close + reopen app, stay logged in
-  2. Owner: add property → tenant: search & request viewing
-  3. Owner: approve/decline viewing with alternate times
-  4. Tenant: apply for property → owner: review & accept
-  5. Full lease creation, signing, and payment flow
-  6. Maintenance report → vendor assign → closure verification
-  7. Lease renewal negotiation end-to-end
-  8. Deposit deductions and refund flow
-  See docs/QA_PARITY_TEST_FLOWS.md for complete test cases
+Testing Focus (CT7 QA):
+  1. Tenant: complete profile → verify banner clears + lease-sign gate opens
+  2. Owner: add property → Edit header shows Save button top-right
+  3. Tenant: apply for property → verify "From your profile" summary shown
+  4. Owner: viewing past due → confirm outcome prompt appears
+  5. Owner: create lease → verify date pickers (not text inputs)
+  6. Owner: property → Taxes tab → record rates/levies entry
+  7. Tenant: Holding Deposit screen → verify EFT reference displayed
+  8. Owner: Maintenance → confirm responsibility toggle works
 
 Distribution:
   Method: Direct APK install
@@ -69,5 +87,4 @@ Distribution:
 
 Support:
   For issues, contact development team
-  Include this build number in bug reports
-
+  Include this build number in bug reports: 1.0.0-build.8-rev.0
