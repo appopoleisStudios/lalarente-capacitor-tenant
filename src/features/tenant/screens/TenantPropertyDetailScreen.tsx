@@ -357,6 +357,8 @@ export default function TenantPropertyDetailScreen() {
                   <Image
                     key={index}
                     testID="tenant-property-photo"
+                    accessible
+                    accessibilityLabel="Property photo"
                     source={{ uri: image }}
                     style={styles.propertyImage}
                   />

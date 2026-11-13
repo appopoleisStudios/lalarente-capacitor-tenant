@@ -96,6 +96,12 @@ export default function OwnerLayout() {
         }}
       />
       <Tabs.Screen
+        name="properties/[id]/taxes"
+        options={{
+          href: null, // Hidden from tabs - property tax screen
+        }}
+      />
+      <Tabs.Screen
         name="properties/[id]/view3d"
         options={{
           href: null, // Hidden from tabs - fullscreen 3D tour viewer
@@ -173,6 +179,12 @@ export default function OwnerLayout() {
         name="leases/create"
         options={{
           href: null, // Hidden from tabs - lease creation screen
+        }}
+      />
+      <Tabs.Screen
+        name="leases/review"
+        options={{
+          href: null, // Hidden from tabs - lease review screen
         }}
       />
       <Tabs.Screen

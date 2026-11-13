@@ -61,14 +61,13 @@ appId: com.lalarente.app
 - waitForAnimationToEnd:
     timeout: 2500
 - tapOn:
-    point: "17%,22%"
+    point: "50%,28%"
 - waitForAnimationToEnd:
-    timeout: 1500
+    timeout: 1000
 - tapOn:
-    text: "(Add|Done|Choose)"
-    optional: true
+    point: "90%,15%"
 - waitForAnimationToEnd:
-    timeout: 2500
+    timeout: 3000
 - extendedWaitUntil:
     visible:
       id: "owner-edit-property-photo"
@@ -85,14 +84,13 @@ appId: com.lalarente.app
 - waitForAnimationToEnd:
     timeout: 2500
 - tapOn:
-    point: "17%,22%"
+    point: "50%,28%"
 - waitForAnimationToEnd:
-    timeout: 1500
+    timeout: 1000
 - tapOn:
-    text: "(Add|Done|Choose)"
-    optional: true
+    point: "90%,15%"
 - waitForAnimationToEnd:
-    timeout: 2500
+    timeout: 3000
 - extendedWaitUntil:
     visible:
       id: "owner-edit-property-photo"
@@ -167,7 +165,7 @@ appId: com.lalarente.app
     timeout: 1500
 - scrollUntilVisible:
     element:
-      id: "tenant-search-card-image"
+      text: "Property photo, ${LC_PROPERTY_TITLE}.*"
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60

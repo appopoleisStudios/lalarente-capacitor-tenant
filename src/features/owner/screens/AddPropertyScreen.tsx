@@ -176,7 +176,12 @@ export default function AddPropertyScreen() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
-      quality: 0.8,
+      // Listing photos: re-encode to JPEG (iOS otherwise hands back HEIC, which
+      // other devices can't show) and compress — full camera originals were
+      // 1.5–3 MB each and listings sat blank while they downloaded.
+      quality: 0.5,
+      preferredAssetRepresentationMode:
+        ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
       selectionLimit: 10,
     });
 
@@ -343,11 +348,19 @@ export default function AddPropertyScreen() {
                   {form.photos.map((photo, index) => (
                     <View key={index} style={styles.photoContainer}>
                       <Image source={{ uri: photo }} style={styles.photoPreview} />
-                      <AnimatedButton onPress={() => removePhoto(index)}>
+                      <TouchableOpacity
+                        onPress={() => removePhoto(index)}
+                        style={styles.photoRemoveWrap}
+                        hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                        activeOpacity={0.7}
+                        accessibilityRole="button"
+                        accessibilityLabel="Remove photo"
+                        testID="owner-add-property-photo-remove"
+                      >
                         <View style={styles.photoRemove}>
                           <Text style={styles.photoRemoveText}>×</Text>
                         </View>
-                      </AnimatedButton>
+                      </TouchableOpacity>
                     </View>
                   ))}
                 </ScrollView>

@@ -108,10 +108,10 @@ export const styles = StyleSheet.create({
   // Larger, higher-contrast delete button that sits clearly on top of the
   // photo (top-right inside the frame, not clipped). 32×32 with a white
   // border + drop-shadow so it reads against any photo background.
+  // Absolute positioning lives on the AnimatedButton wrapper: on the inner
+  // View it left the wrapper in flow below the photo, clipped and untappable.
+  photoRemoveWrap: { position: 'absolute', top: 2, right: 2, zIndex: 2 },
   photoRemove: {
-    position: 'absolute',
-    top: 2,
-    right: 2,
     width: 32,
     height: 32,
     borderRadius: 16,

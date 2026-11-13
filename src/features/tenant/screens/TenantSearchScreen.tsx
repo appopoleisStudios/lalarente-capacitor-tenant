@@ -130,6 +130,8 @@ export default function TenantSearchScreen() {
         {mainImage ? (
           <Image
             testID="tenant-search-card-image"
+            accessible
+            accessibilityLabel="Property photo"
             source={{ uri: mainImage }}
             style={styles.propertyImage}
           />
