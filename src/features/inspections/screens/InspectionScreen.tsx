@@ -226,6 +226,33 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
     }
   };
 
+  // Like listing photos: a photo can be removed until the inspection is
+  // completed. Saved with the rest of the inspection (Save / Complete).
+  const removePhoto = (photoIndex: number, itemIndex?: number) => {
+    const roomIdx = Math.min(Math.max(currentRoomIndex, 0), rooms.length - 1);
+    setRooms((prev) => {
+      const updated = [...prev];
+      const room = updated[roomIdx];
+      if (!room) return prev;
+      if (itemIndex !== undefined && room.items[itemIndex]) {
+        updated[roomIdx] = {
+          ...room,
+          items: room.items.map((item, i) =>
+            i === itemIndex
+              ? { ...item, photos: (item.photos || []).filter((_, p) => p !== photoIndex) }
+              : item
+          ),
+        };
+      } else {
+        updated[roomIdx] = {
+          ...room,
+          photos: (room.photos || []).filter((_, p) => p !== photoIndex),
+        };
+      }
+      return updated;
+    });
+  };
+
   const pickImage = async (itemIndex?: number) => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -475,7 +502,12 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
             </TouchableOpacity>
             <View style={styles.headerCenter}>
               <Text style={styles.headerTitle}>
-                {inspection.type === 'move_in' ? 'Move-In' : 'Move-Out'} Inspection
+                {inspection.type === 'move_in'
+                  ? 'Move-In'
+                  : inspection.type === 'move_out'
+                    ? 'Move-Out'
+                    : 'Periodic'}{' '}
+                Inspection
               </Text>
               <Text style={styles.headerSubtitle}>{inspection.property?.title}</Text>
             </View>
@@ -693,11 +725,23 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                   {item.photos && item.photos.length > 0 && (
                     <ScrollView horizontal style={styles.photoScroll}>
                       {item.photos.map((photo, photoIndex) => (
-                        <Image
-                          key={photoIndex}
-                          source={{ uri: photo }}
-                          style={styles.photoThumbnail}
-                        />
+                        <View key={photoIndex} style={styles.photoThumbWrap}>
+                          <Image source={{ uri: photo }} style={styles.photoThumbnail} />
+                          {canComplete && (
+                            <TouchableOpacity
+                              testID={`inspection-item-${index}-photo-remove`}
+                              style={styles.photoRemoveWrap}
+                              onPress={() => removePhoto(photoIndex, index)}
+                              hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                              accessibilityRole="button"
+                              accessibilityLabel="Remove photo"
+                            >
+                              <View style={styles.photoRemove}>
+                                <Text style={styles.photoRemoveText}>×</Text>
+                              </View>
+                            </TouchableOpacity>
+                          )}
+                        </View>
                       ))}
                     </ScrollView>
                   )}
@@ -737,7 +781,23 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                   style={styles.photoScroll}
                 >
                   {currentRoom.photos.map((photo, photoIndex) => (
-                    <Image key={photoIndex} source={{ uri: photo }} style={styles.photoThumbnail} />
+                    <View key={photoIndex} style={styles.photoThumbWrap}>
+                      <Image source={{ uri: photo }} style={styles.photoThumbnail} />
+                      {canComplete && (
+                        <TouchableOpacity
+                          testID="inspection-room-photo-remove"
+                          style={styles.photoRemoveWrap}
+                          onPress={() => removePhoto(photoIndex)}
+                          hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                          accessibilityRole="button"
+                          accessibilityLabel="Remove photo"
+                        >
+                          <View style={styles.photoRemove}>
+                            <Text style={styles.photoRemoveText}>×</Text>
+                          </View>
+                        </TouchableOpacity>
+                      )}
+                    </View>
                   ))}
                 </ScrollView>
               ) : (
@@ -1285,8 +1345,20 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 8,
-    marginRight: 8,
   },
+  photoThumbWrap: { marginRight: 8, paddingTop: 6, paddingRight: 6 },
+  photoRemoveWrap: { position: 'absolute', top: 0, right: 0, zIndex: 2 },
+  photoRemove: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#DC2626',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFF',
+  },
+  photoRemoveText: { color: '#FFF', fontSize: 14, fontWeight: '700', lineHeight: 16 },
   keyRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -1,0 +1,98 @@
+# Inspection photos can be removed until the inspection is completed (B9-010).
+# Owner opens an in-progress inspection, adds two room photos from the gallery,
+# removes one with the ×, saves, reopens: exactly one photo remains.
+# PRECONDITION: INSPECTION_ID is an in-progress inspection owned by OWNER and
+# the simulator photo library has photos (xcrun simctl addmedia).
+# Env: OWNER_EMAIL, OWNER_PASSWORD, INSPECTION_ID
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/inspections/${INSPECTION_ID}
+- extendedWaitUntil:
+    visible:
+      id: "inspection-save"
+    timeout: 30000
+- assertNotVisible:
+    id: "inspection-room-photo-remove"
+
+# ── add two room photos (single-select picker with a crop step) ──────────
+- repeat:
+    times: 2
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "inspection-room-gallery"
+          direction: DOWN
+          timeout: 20000
+          centerElement: true
+      - tapOn:
+          id: "inspection-room-gallery"
+      - extendedWaitUntil:
+          visible: "Collections"
+          timeout: 10000
+          optional: true
+      - repeat:
+          times: 3
+          while:
+            visible: "Collections"
+          commands:
+            - tapOn:
+                point: "50%,28%"
+            - waitForAnimationToEnd:
+                timeout: 2000
+            - tapOn:
+                text: "Choose"
+                optional: true
+      - extendedWaitUntil:
+          notVisible:
+            id: "inspection-photo-uploading"
+          timeout: 30000
+- scrollUntilVisible:
+    element:
+      id: "inspection-room-photo-remove"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- assertVisible:
+    id: "inspection-room-photo-remove"
+    index: 1
+- takeScreenshot: inspection-two-photos
+
+# ── remove one, save ──────────────────────────────────────────────────────
+- tapOn:
+    id: "inspection-room-photo-remove"
+    index: 0
+- waitForAnimationToEnd:
+    timeout: 1000
+- assertNotVisible:
+    id: "inspection-room-photo-remove"
+    index: 1
+- assertVisible:
+    id: "inspection-room-photo-remove"
+- tapOn:
+    id: "inspection-save"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    text: "OK"
+    optional: true
+
+# ── reopen: one photo remains ─────────────────────────────────────────────
+- openLink: lalarenteapp://(owner)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- openLink: lalarenteapp://(owner)/inspections/${INSPECTION_ID}
+- extendedWaitUntil:
+    visible:
+      id: "inspection-save"
+    timeout: 30000
+- scrollUntilVisible:
+    element:
+      id: "inspection-room-photo-remove"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- assertNotVisible:
+    id: "inspection-room-photo-remove"
+    index: 1
+- takeScreenshot: inspection-one-photo-after-reopen
