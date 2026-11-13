@@ -1,0 +1,311 @@
+# Lifecycle stage 2a — Viewing request approved (tenant ↔ owner)
+# Covers LC-2-01, 2-03, 2-05, 2-06, 2-08, 2-10, 2-14, 2-16, 2-17.
+# Tenant requests a viewing with a tokenised message; owner finds that exact
+# request, exercises every Approve-modal control and approves with a note;
+# tenant sees it approved with the owner's note.
+# Not automatable: Call buttons (shown only when the other party has a phone
+# number; they leave the app), native picker wheels (opened, not spun).
+# Env: TENANT_*/OWNER_* creds, LC_PROPERTY_ID, LC_PROPERTY_TITLE, LC_TOKEN
+appId: com.lalarente.app
+---
+# ── PHASE 1 — tenant sends the request ────────────────────────────────────
+- runFlow: ../subflows/login-tenant.yaml
+- runFlow:
+    file: ../subflows/lc-tenant-request-viewing.yaml
+    env:
+      PROP_ID: "${LC_PROPERTY_ID}"
+      PROP_TITLE: "${LC_PROPERTY_TITLE}"
+      MSG: "LC-view"
+
+# ── tenant My Viewings: every filter chip, card, detail controls ──────────
+- openLink: lalarenteapp://(tenant)/viewings
+- extendedWaitUntil:
+    visible: "My Viewings"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "tenant-viewings-filter-approved"
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    id: "tenant-viewings-filter-completed"
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    id: "tenant-viewings-filter-all"
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    id: "tenant-viewings-filter-pending"
+- waitForAnimationToEnd:
+    timeout: 1000
+- extendedWaitUntil:
+    visible:
+      id: "tenant-viewing-card"
+    timeout: 20000
+- takeScreenshot: lc02a-tenant-list-pending
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    id: "tenant-viewing-card"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "tenant-viewing-detail-back"
+    timeout: 20000
+- assertVisible: ".*${LC_PROPERTY_TITLE}.*"
+- assertVisible: "(?i).*pending.*"
+- assertVisible:
+    id: "tenant-viewing-detail-cancel"
+- takeScreenshot: lc02a-tenant-detail-pending
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    id: "tenant-viewing-detail-property"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-back"
+    timeout: 20000
+- tapOn:
+    id: "tenant-property-back"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-viewing-detail-back"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-viewing-detail-chat"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "tenant-viewing-detail-chat"
+- extendedWaitUntil:
+    visible: "Messages"
+    timeout: 20000
+- openLink: lalarenteapp://(tenant)/viewings
+- extendedWaitUntil:
+    visible: "My Viewings"
+    timeout: 20000
+- tapOn:
+    id: "screen-back"
+- waitForAnimationToEnd:
+    timeout: 2000
+- openLink: lalarenteapp://(tenant)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+# ── PHASE 2 — owner list: every filter chip, then the request ─────────────
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/viewings
+- extendedWaitUntil:
+    visible: "Viewing Requests"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "owner-viewings-filter-approved"
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    id: "owner-viewings-filter-completed"
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    id: "owner-viewings-filter-pending"
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    id: "owner-viewings-filter-all"
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    id: "owner-viewings-back"
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow:
+    file: ../subflows/lc-owner-open-viewing.yaml
+    env:
+      MSG: "LC-view"
+- assertVisible: ".*${LC_PROPERTY_TITLE}.*"
+- assertVisible: ".*LC-view ${LC_TOKEN}.*"
+- assertVisible:
+    id: "owner-viewing-detail-approve"
+- assertVisible:
+    id: "owner-viewing-detail-decline"
+- takeScreenshot: lc02a-owner-detail-pending
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── Approve modal: close (x), Cancel, date/time toggle, notes, confirm ────
+- tapOn:
+    id: "owner-viewing-detail-approve"
+- extendedWaitUntil:
+    visible: "Approve Viewing"
+    timeout: 20000
+- tapOn:
+    id: "owner-viewing-modal-close"
+- extendedWaitUntil:
+    notVisible: "Approve Viewing"
+    timeout: 15000
+- tapOn:
+    id: "owner-viewing-detail-approve"
+- extendedWaitUntil:
+    visible: "Approve Viewing"
+    timeout: 20000
+- tapOn:
+    id: "owner-viewing-modal-cancel"
+- extendedWaitUntil:
+    notVisible: "Approve Viewing"
+    timeout: 15000
+- tapOn:
+    id: "owner-viewing-detail-approve"
+- extendedWaitUntil:
+    visible: "Approve Viewing"
+    timeout: 20000
+- assertNotVisible:
+    id: "owner-viewing-modal-date"
+- tapOn:
+    id: "owner-viewing-modal-modify-toggle"
+- assertVisible:
+    id: "owner-viewing-modal-date"
+- assertVisible:
+    id: "owner-viewing-modal-time"
+- tapOn:
+    id: "owner-viewing-modal-date"
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "owner-viewing-modal-time"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: lc02a-owner-approve-modal
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    id: "owner-viewing-modal-modify-toggle"
+- waitForAnimationToEnd:
+    timeout: 2000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-viewing-modal-notes"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "owner-viewing-modal-notes"
+- inputText: "LC-approve-note ${LC_TOKEN}"
+- tapOn:
+    text: "Approve Viewing"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-viewing-modal-confirm"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "owner-viewing-modal-confirm"
+- extendedWaitUntil:
+    visible: "Approved"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# ── after approval: approve/decline gone, cancel available, chat opens messages ───
+- runFlow:
+    file: ../subflows/lc-owner-open-viewing.yaml
+    env:
+      MSG: "LC-view"
+- assertNotVisible:
+    id: "owner-viewing-detail-approve"
+- assertNotVisible:
+    id: "owner-viewing-detail-decline"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-viewing-detail-cancel-approved"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- takeScreenshot: lc02a-owner-detail-approved
+- waitForAnimationToEnd:
+    timeout: 1500
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-viewing-detail-chat"
+    direction: UP
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "owner-viewing-detail-chat"
+- extendedWaitUntil:
+    visible: "Messages"
+    timeout: 20000
+- runFlow:
+    file: ../subflows/lc-owner-open-viewing.yaml
+    env:
+      MSG: "LC-view"
+- tapOn:
+    id: "owner-viewing-detail-back"
+- extendedWaitUntil:
+    visible: "Viewing Requests"
+    timeout: 20000
+- openLink: lalarenteapp://(owner)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-owner.yaml
+
+# ── PHASE 3 — tenant sees Approved and the owner note ─────────────────────
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/viewings
+- extendedWaitUntil:
+    visible: "My Viewings"
+    timeout: 20000
+- tapOn:
+    id: "tenant-viewings-filter-approved"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-viewing-card"
+    timeout: 20000
+- tapOn:
+    id: "tenant-viewing-card"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "tenant-viewing-detail-back"
+    timeout: 20000
+- assertVisible: ".*${LC_PROPERTY_TITLE}.*"
+- assertVisible: "(?i).*approved.*"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*LC-approve-note ${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- takeScreenshot: lc02a-tenant-detail-approved
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    id: "tenant-viewing-detail-back"
+- extendedWaitUntil:
+    visible: "My Viewings"
+    timeout: 20000
+- openLink: lalarenteapp://(tenant)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-tenant.yaml

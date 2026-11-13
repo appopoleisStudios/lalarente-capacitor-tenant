@@ -325,6 +325,7 @@ export default function TenantMaintenanceListScreen() {
                     </AnimatedButton>
                     <View style={styles.cardActions}>
                       <TouchableOpacity
+                        testID="tenant-maintenance-chat-owner"
                         style={styles.messageBtn}
                         onPress={() => handleMessageLandlord(request)}
                         activeOpacity={0.8}

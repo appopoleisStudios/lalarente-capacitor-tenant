@@ -372,6 +372,7 @@ export default function TenantLeaseScreen() {
             You don't have an active lease yet. Apply for a property to get started.
           </Text>
           <TouchableOpacity
+            testID="tenant-lease-search-properties"
             style={styles.searchButton}
             onPress={() => router.push('/(tenant)/search')}
           >
@@ -388,7 +389,11 @@ export default function TenantLeaseScreen() {
         <View style={styles.centerContainer}>
           <Ionicons name="alert-circle-outline" size={64} color="#F44336" />
           <Text style={styles.errorText}>{error || 'Failed to load lease'}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadActiveLease}>
+          <TouchableOpacity
+            testID="tenant-lease-retry"
+            style={styles.retryButton}
+            onPress={loadActiveLease}
+          >
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -546,7 +551,11 @@ export default function TenantLeaseScreen() {
             <Text style={styles.sectionTitle}>Lease Document</Text>
             {lease.lease_document_url ? (
               <View>
-                <TouchableOpacity style={styles.documentCard} onPress={handleViewDocument}>
+                <TouchableOpacity
+                  testID="tenant-lease-view-document"
+                  style={styles.documentCard}
+                  onPress={handleViewDocument}
+                >
                   <View style={styles.documentIcon}>
                     <Ionicons name="document-text" size={32} color={RSA.green} />
                   </View>
@@ -559,6 +568,7 @@ export default function TenantLeaseScreen() {
 
                 {/* Download Button */}
                 <TouchableOpacity
+                  testID="tenant-lease-download-pdf"
                   style={[styles.downloadButton, actionLoading && styles.buttonDisabled]}
                   onPress={handleDownloadDocument}
                   disabled={actionLoading}
@@ -595,6 +605,7 @@ export default function TenantLeaseScreen() {
                 {/* Generate PDF button — shown when lease is active but document URL is null */}
                 {lease.status === 'active' && (
                   <TouchableOpacity
+                    testID="tenant-lease-generate-pdf"
                     style={[styles.downloadButton, actionLoading && styles.buttonDisabled]}
                     onPress={handleGeneratePDF}
                     disabled={actionLoading}
@@ -642,6 +653,7 @@ export default function TenantLeaseScreen() {
                 </Text>
               </View>
               <TouchableOpacity
+                testID="tenant-lease-sign"
                 style={[styles.primaryButton, actionLoading && styles.buttonDisabled]}
                 onPress={handleSignLease}
                 disabled={actionLoading}
@@ -673,6 +685,7 @@ export default function TenantLeaseScreen() {
           {(lease.status === 'active' || lease.status === 'month_to_month') && (
             <View style={styles.section}>
               <TouchableOpacity
+                testID="tenant-lease-early-termination"
                 style={styles.terminationButton}
                 onPress={() =>
                   router.push({
@@ -689,7 +702,11 @@ export default function TenantLeaseScreen() {
 
           {/* Contact Owner */}
           <View style={styles.section}>
-            <TouchableOpacity style={styles.contactButton} onPress={handleContactOwner}>
+            <TouchableOpacity
+              testID="tenant-lease-contact-owner"
+              style={styles.contactButton}
+              onPress={handleContactOwner}
+            >
               <Ionicons name="chatbubble-outline" size={20} color={RSA.green} />
               <Text style={styles.contactButtonText}>Contact Owner</Text>
             </TouchableOpacity>

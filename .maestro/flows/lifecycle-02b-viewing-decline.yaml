@@ -1,0 +1,199 @@
+# Lifecycle stage 2b — Viewing declined with alternative slots
+# Covers LC-2-11, 2-18. Uses the branch property so the main chain is untouched.
+# Env: creds, LC_BRANCH_PROPERTY_ID, LC_BRANCH_PROPERTY_TITLE, LC_TOKEN
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-tenant.yaml
+- runFlow:
+    file: ../subflows/lc-tenant-request-viewing.yaml
+    env:
+      PROP_ID: "${LC_BRANCH_PROPERTY_ID}"
+      PROP_TITLE: "${LC_BRANCH_PROPERTY_TITLE}"
+      MSG: "LC-decline"
+- openLink: lalarenteapp://(tenant)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-tenant.yaml
+- runFlow: ../subflows/login-owner.yaml
+- runFlow:
+    file: ../subflows/lc-owner-open-viewing.yaml
+    env:
+      MSG: "LC-decline"
+
+# ── Decline modal: reason is required ─────────────────────────────────────
+- tapOn:
+    id: "owner-viewing-detail-decline"
+- extendedWaitUntil:
+    visible: "Decline Viewing"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-viewing-modal-confirm"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "owner-viewing-modal-confirm"
+- extendedWaitUntil:
+    visible: "Required"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+
+# ── alternative slots: add up to 3, pickers, remove ───────────────────────
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-viewing-modal-decline-reason"
+    direction: UP
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "owner-viewing-modal-decline-reason"
+- inputText: "LC-decline-reason ${LC_TOKEN}"
+- tapOn:
+    text: "Decline Viewing"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-viewing-modal-slot-add"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "owner-viewing-modal-slot-add"
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    id: "owner-viewing-modal-slot-add"
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    id: "owner-viewing-modal-slot-add"
+- waitForAnimationToEnd:
+    timeout: 1000
+- assertNotVisible:
+    id: "owner-viewing-modal-slot-add"
+- takeScreenshot: lc02b-owner-three-slots
+- waitForAnimationToEnd:
+    timeout: 1500
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-viewing-modal-slot-date"
+    direction: UP
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "owner-viewing-modal-slot-date"
+    index: 0
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "owner-viewing-modal-slot-time"
+    index: 0
+- waitForAnimationToEnd:
+    timeout: 2000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-viewing-modal-slot-remove"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "owner-viewing-modal-slot-remove"
+    index: 2
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-viewing-modal-slot-add"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-viewing-modal-confirm"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "owner-viewing-modal-confirm"
+- extendedWaitUntil:
+    visible: "Declined"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 3000
+- openLink: lalarenteapp://(owner)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-owner.yaml
+
+# ── tenant sees the reason and can pick an alternative slot ───────────────
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/viewings
+- extendedWaitUntil:
+    visible: "My Viewings"
+    timeout: 20000
+- tapOn:
+    id: "tenant-viewings-filter-all"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*${LC_BRANCH_PROPERTY_TITLE}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    text: ".*${LC_BRANCH_PROPERTY_TITLE}.*"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "tenant-viewing-detail-back"
+    timeout: 20000
+- assertVisible: "(?i).*declined.*"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*LC-decline-reason ${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- assertNotVisible:
+    id: "tenant-viewing-detail-cancel"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-viewing-detail-alternative"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- takeScreenshot: lc02b-tenant-declined-alternatives
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    id: "tenant-viewing-detail-alternative"
+    index: 0
+- extendedWaitUntil:
+    visible: "Request This Slot\\?"
+    timeout: 15000
+- tapOn:
+    text: "Cancel"
+- openLink: lalarenteapp://(tenant)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-tenant.yaml

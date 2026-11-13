@@ -20,6 +20,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/src/lib/supabase';
 import { colors } from '@/src/shared/theme/colors';
+import { isPaymentClaimed } from '@/src/features/applications/api/holdingDeposit.api';
 
 interface HoldingDepositSummary {
   id: string;
@@ -27,6 +28,7 @@ interface HoldingDepositSummary {
   amount: number;
   status: string;
   payment_deadline: string | null;
+  payment_method: string | null;
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -126,7 +128,7 @@ export default function TenantApplicationStatusScreen() {
         const appIds = apps.map((a) => a.id);
         const { data: deposits } = await supabase
           .from('holding_deposits')
-          .select('id, application_id, amount, status, payment_deadline')
+          .select('id, application_id, amount, status, payment_deadline, payment_method')
           .in('application_id', appIds)
           .in('status', ['pending', 'paid']);
         const depositMap: Record<string, HoldingDepositSummary> = {};
@@ -176,7 +178,11 @@ export default function TenantApplicationStatusScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            testID="tenant-applications-back"
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </TouchableOpacity>
           <Text style={styles.title}>My Applications</Text>
@@ -215,7 +221,11 @@ export default function TenantApplicationStatusScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          testID="tenant-applications-back"
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <View style={styles.headerText}>
@@ -232,6 +242,7 @@ export default function TenantApplicationStatusScreen() {
             Browse properties and apply — your applications will track here
           </Text>
           <TouchableOpacity
+            testID="tenant-applications-browse"
             style={styles.browseButton}
             onPress={() => router.push('/(tenant)/search' as any)}
           >
@@ -311,19 +322,23 @@ function ApplicationCard({
         {/* Holding Deposit Banner */}
         {deposit && deposit.status === 'pending' && (
           <TouchableOpacity
+            testID="tenant-applications-deposit-banner"
             style={styles.depositBanner}
             onPress={() => router.push('/(tenant)/holding-deposit' as any)}
           >
             <Ionicons name="lock-closed" size={16} color="#D97706" />
             <View style={styles.depositBannerText}>
               <Text style={styles.depositBannerTitle}>
-                Holding deposit required — R{' '}
+                {isPaymentClaimed(deposit)
+                  ? 'Payment reported, awaiting owner confirmation'
+                  : 'Holding deposit required'}{' '}
+                — R{' '}
                 {deposit.amount.toLocaleString('en-ZA', {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
               </Text>
-              {deposit.payment_deadline && (
+              {deposit.payment_deadline && !isPaymentClaimed(deposit) && (
                 <Text style={styles.depositBannerDeadline}>
                   Pay by {new Date(deposit.payment_deadline).toLocaleDateString('en-ZA')} to secure
                   this property
@@ -394,7 +409,11 @@ function ApplicationCard({
 
         {/* Withdraw */}
         {canWithdraw && (
-          <TouchableOpacity style={styles.withdrawButton} onPress={() => onWithdraw(app)}>
+          <TouchableOpacity
+            testID="tenant-applications-withdraw"
+            style={styles.withdrawButton}
+            onPress={() => onWithdraw(app)}
+          >
             <Text style={styles.withdrawButtonText}>Withdraw Application</Text>
           </TouchableOpacity>
         )}

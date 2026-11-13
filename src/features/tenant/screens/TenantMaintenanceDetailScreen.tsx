@@ -165,7 +165,11 @@ export default function TenantMaintenanceDetailScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            testID="tenant-maintenance-detail-back"
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color="#111827" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Maintenance Request</Text>
@@ -183,7 +187,11 @@ export default function TenantMaintenanceDetailScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            testID="tenant-maintenance-detail-back"
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color="#111827" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Maintenance Request</Text>
@@ -192,7 +200,11 @@ export default function TenantMaintenanceDetailScreen() {
         <View style={styles.errorContainer}>
           <Text style={styles.errorIcon}>⚠️</Text>
           <Text style={styles.errorTitle}>Request Not Found</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={() => router.back()}>
+          <TouchableOpacity
+            testID="tenant-maintenance-detail-go-back"
+            style={styles.retryButton}
+            onPress={() => router.back()}
+          >
             <Text style={styles.retryButtonText}>Go Back</Text>
           </TouchableOpacity>
         </View>
@@ -208,7 +220,11 @@ export default function TenantMaintenanceDetailScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          testID="tenant-maintenance-detail-back"
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color="#111827" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Request Details</Text>
@@ -486,6 +502,7 @@ export default function TenantMaintenanceDetailScreen() {
         {/* Chat with Owner */}
         <Animated.View entering={FadeInDown.delay(700).duration(500)}>
           <TouchableOpacity
+            testID="tenant-maintenance-detail-message-owner"
             style={styles.messageLandlordBtn}
             onPress={handleMessageLandlord}
             disabled={openingMessages}

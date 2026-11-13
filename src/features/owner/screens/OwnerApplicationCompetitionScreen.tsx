@@ -263,6 +263,7 @@ export default function OwnerApplicationCompetitionScreen() {
           <View style={styles.actionsRow}>
             {canShortlist && (
               <TouchableOpacity
+                testID="owner-competition-shortlist"
                 style={[styles.actionBtn, styles.actionBtnSecondary]}
                 onPress={() => handleShortlist(item)}
                 disabled={isLoading}
@@ -276,6 +277,7 @@ export default function OwnerApplicationCompetitionScreen() {
             )}
             {canSetBackup && (
               <TouchableOpacity
+                testID="owner-competition-backup"
                 style={[styles.actionBtn, styles.actionBtnSecondary]}
                 onPress={() => handleSetBackup(item)}
                 disabled={isLoading}
@@ -289,6 +291,7 @@ export default function OwnerApplicationCompetitionScreen() {
             )}
             {canSelect && (
               <TouchableOpacity
+                testID="owner-competition-select"
                 style={[styles.actionBtn, styles.actionBtnPrimary]}
                 onPress={() => handleSelectWinner(item)}
                 disabled={isLoading}
@@ -310,7 +313,11 @@ export default function OwnerApplicationCompetitionScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            testID="owner-competition-back"
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </TouchableOpacity>
           <Text style={styles.title}>Applications</Text>
@@ -326,7 +333,11 @@ export default function OwnerApplicationCompetitionScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          testID="owner-competition-back"
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <View style={styles.headerText}>
@@ -374,7 +385,11 @@ export default function OwnerApplicationCompetitionScreen() {
                 <Ionicons name="checkmark-circle" size={20} color={colors.rsa.green} />
                 <Text style={styles.approvedText}>Tenant selected. Lease can now be created.</Text>
                 {hasBackup && (
-                  <TouchableOpacity onPress={handlePromoteBackup} style={styles.promoteBtn}>
+                  <TouchableOpacity
+                    testID="owner-competition-promote-backup"
+                    onPress={handlePromoteBackup}
+                    style={styles.promoteBtn}
+                  >
                     <Text style={styles.promoteBtnText}>Promote Backup</Text>
                   </TouchableOpacity>
                 )}

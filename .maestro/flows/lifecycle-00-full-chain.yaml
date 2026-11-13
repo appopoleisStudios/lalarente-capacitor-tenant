@@ -1,0 +1,20 @@
+# Lifecycle master chain — viewing → application → holding deposit →
+# lease → move-in inspection → issue to maintenance → occupied.
+# Runs the main-path stage flows in order against LC_PROPERTY (07b/07c need
+# VENDOR_* credentials). Run separately: branch flows (02b decline, 02c cancel,
+# 03b withdraw/reject), the error-state sweep (09), and the time-gated
+# flow 02d (after the viewing time has passed).
+# Run with scripts/run-lifecycle-e2e.sh (no arguments).
+appId: com.lalarente.app
+---
+- runFlow: lifecycle-01-search-property.yaml
+- runFlow: lifecycle-02a-viewing-approve.yaml
+- runFlow: lifecycle-03a-application-submit.yaml
+- runFlow: lifecycle-04-holding-deposit.yaml
+- runFlow: lifecycle-05-lease-create-sign.yaml
+- runFlow: lifecycle-06-inspection.yaml
+- runFlow: lifecycle-07-inspection-issue-maintenance.yaml
+- runFlow: lifecycle-07b-issue-vendor-quote.yaml
+- runFlow: lifecycle-07c-send-po.yaml
+- runFlow: lifecycle-07d-work-closure-verification.yaml
+- runFlow: lifecycle-08-occupied.yaml

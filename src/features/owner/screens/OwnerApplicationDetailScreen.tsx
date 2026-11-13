@@ -16,7 +16,11 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { applicationsApi, ApplicationWithRelations } from '../../properties/api/applicationsApi';
-import { holdingDepositApi, HoldingDeposit } from '../../applications/api/holdingDeposit.api';
+import {
+  holdingDepositApi,
+  HoldingDeposit,
+  isPaymentClaimed,
+} from '../../applications/api/holdingDeposit.api';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { ReasonPromptModal } from '@/src/shared/components/ui/ReasonPromptModal';
 
@@ -248,7 +252,11 @@ export default function OwnerApplicationDetailScreen() {
         <View style={styles.centerContainer}>
           <Ionicons name="alert-circle-outline" size={64} color="#F44336" />
           <Text style={styles.errorText}>{error || 'Application not found'}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadApplication}>
+          <TouchableOpacity
+            testID="owner-application-retry"
+            style={styles.retryButton}
+            onPress={loadApplication}
+          >
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -270,7 +278,11 @@ export default function OwnerApplicationDetailScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <TouchableOpacity
+                testID="owner-application-back"
+                onPress={() => router.back()}
+                style={styles.backButton}
+              >
                 <Text style={styles.backIcon}>←</Text>
               </TouchableOpacity>
               <Text style={styles.headerTitle}>Application Details</Text>
@@ -558,6 +570,16 @@ export default function OwnerApplicationDetailScreen() {
                       </Text>
                     </View>
                   )}
+                  {isPaymentClaimed(holdingDeposit) && (
+                    <TouchableOpacity
+                      style={styles.depositRow}
+                      onPress={() => router.push('/(owner)/holding-deposit' as any)}
+                      testID="owner-application-deposit-claimed"
+                    >
+                      <Text style={styles.depositLabel}>Tenant reports payment made</Text>
+                      <Text style={styles.depositDeadline}>Confirm receipt</Text>
+                    </TouchableOpacity>
+                  )}
                   {holdingDeposit.paid_at && (
                     <View style={styles.depositRow}>
                       <Text style={styles.depositLabel}>Paid On</Text>
@@ -568,6 +590,7 @@ export default function OwnerApplicationDetailScreen() {
                   )}
                   {holdingDeposit.status === 'paid' && (
                     <TouchableOpacity
+                      testID="owner-application-deposit-apply-to-lease"
                       style={styles.applyLeaseButton}
                       onPress={() => {
                         Alert.alert(
@@ -602,6 +625,7 @@ export default function OwnerApplicationDetailScreen() {
                   <Text style={styles.noDepositText}>No holding deposit requested yet</Text>
                   {['under_review', 'shortlisted'].includes(application?.status || '') && (
                     <TouchableOpacity
+                      testID="owner-application-request-holding-deposit"
                       style={styles.requestDepositButton}
                       onPress={openDepositModal}
                     >
@@ -646,6 +670,7 @@ export default function OwnerApplicationDetailScreen() {
           {application.status === 'submitted' || application.status === 'under_review' ? (
             <View style={styles.actionBar}>
               <TouchableOpacity
+                testID="owner-application-reject"
                 style={[styles.actionButton, styles.rejectButton]}
                 onPress={() => setShowRejectModal(true)}
                 disabled={processing}
@@ -655,6 +680,7 @@ export default function OwnerApplicationDetailScreen() {
               </TouchableOpacity>
               {!holdingDeposit && (
                 <TouchableOpacity
+                  testID="owner-application-request-deposit"
                   style={[styles.actionButton, styles.depositButton]}
                   onPress={openDepositModal}
                   disabled={processing}
@@ -664,6 +690,7 @@ export default function OwnerApplicationDetailScreen() {
                 </TouchableOpacity>
               )}
               <TouchableOpacity
+                testID="owner-application-approve"
                 style={[
                   styles.actionButton,
                   styles.approveButton,
@@ -691,6 +718,7 @@ export default function OwnerApplicationDetailScreen() {
           ) : application.status === 'approved' && !hasLease ? (
             <View style={styles.actionBar}>
               <TouchableOpacity
+                testID="owner-application-create-lease"
                 style={[styles.actionButton, styles.createLeaseButton]}
                 onPress={() => router.push(`/(owner)/leases/create?applicationId=${id}` as any)}
               >
@@ -701,6 +729,7 @@ export default function OwnerApplicationDetailScreen() {
           ) : application.status === 'approved' && hasLease ? (
             <View style={styles.actionBar}>
               <TouchableOpacity
+                testID="owner-application-view-lease"
                 style={[styles.actionButton, styles.viewLeaseButton]}
                 onPress={async () => {
                   // Get the lease ID and navigate to it
@@ -732,6 +761,7 @@ export default function OwnerApplicationDetailScreen() {
                   </Text>
                   <Text style={styles.modalLabel}>Amount (ZAR)</Text>
                   <TextInput
+                    testID="owner-application-deposit-amount"
                     style={styles.modalInput}
                     value={depositAmount}
                     onChangeText={setDepositAmount}
@@ -743,6 +773,7 @@ export default function OwnerApplicationDetailScreen() {
                   </Text>
                   <View style={styles.modalActions}>
                     <TouchableOpacity
+                      testID="owner-application-deposit-cancel"
                       style={styles.modalCancel}
                       onPress={() => {
                         setShowDepositModal(false);
@@ -752,6 +783,7 @@ export default function OwnerApplicationDetailScreen() {
                       <Text style={styles.modalCancelText}>Cancel</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
+                      testID="owner-application-deposit-send"
                       style={[styles.modalConfirm, processing && { opacity: 0.7 }]}
                       onPress={handleRequestDeposit}
                       disabled={processing}
@@ -892,7 +924,11 @@ const ScreeningRow = ({
 };
 
 const DocumentRow = ({ label, onPress }: { label: string; onPress: () => void }) => (
-  <TouchableOpacity style={styles.documentRow} onPress={onPress}>
+  <TouchableOpacity
+    testID="owner-application-document-row"
+    style={styles.documentRow}
+    onPress={onPress}
+  >
     <Ionicons name="document-text" size={20} color="#002395" />
     <Text style={styles.documentLabel}>{label}</Text>
     <Ionicons name="open-outline" size={20} color="#002395" />

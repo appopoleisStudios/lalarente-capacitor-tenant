@@ -291,7 +291,11 @@ export default function OwnerViewingDetailScreen() {
                   {actionType === 'decline' && 'Decline Viewing'}
                   {actionType === 'complete' && 'Complete Viewing'}
                 </Text>
-                <TouchableOpacity onPress={() => setShowActionModal(false)} disabled={processing}>
+                <TouchableOpacity
+                  testID="owner-viewing-modal-close"
+                  onPress={() => setShowActionModal(false)}
+                  disabled={processing}
+                >
                   <Ionicons name="close" size={24} color="#333" />
                 </TouchableOpacity>
               </View>
@@ -317,6 +321,7 @@ export default function OwnerViewingDetailScreen() {
                     <View style={styles.dateTimeSection}>
                       <View style={styles.checkboxRow}>
                         <TouchableOpacity
+                          testID="owner-viewing-modal-modify-toggle"
                           style={styles.checkbox}
                           onPress={() => setModifyDateTime(!modifyDateTime)}
                         >
@@ -332,6 +337,7 @@ export default function OwnerViewingDetailScreen() {
                       {modifyDateTime && (
                         <View style={styles.dateTimeInputs}>
                           <TouchableOpacity
+                            testID="owner-viewing-modal-date"
                             style={styles.dateTimeButton}
                             onPress={() => setShowDatePicker(true)}
                           >
@@ -342,6 +348,7 @@ export default function OwnerViewingDetailScreen() {
                           </TouchableOpacity>
 
                           <TouchableOpacity
+                            testID="owner-viewing-modal-time"
                             style={styles.dateTimeButton}
                             onPress={() => setShowTimePicker(true)}
                           >
@@ -357,6 +364,7 @@ export default function OwnerViewingDetailScreen() {
                     <View style={styles.inputGroup}>
                       <Text style={styles.inputLabel}>Notes (Optional)</Text>
                       <TextInput
+                        testID="owner-viewing-modal-notes"
                         style={styles.textArea}
                         value={responseNotes}
                         onChangeText={setResponseNotes}
@@ -374,6 +382,7 @@ export default function OwnerViewingDetailScreen() {
                     <View style={styles.inputGroup}>
                       <Text style={styles.inputLabel}>Reason for Declining *</Text>
                       <TextInput
+                        testID="owner-viewing-modal-decline-reason"
                         style={styles.textArea}
                         value={declineReason}
                         onChangeText={setDeclineReason}
@@ -393,6 +402,7 @@ export default function OwnerViewingDetailScreen() {
                       {alternativeSlots.map((slot, index) => (
                         <View key={index} style={styles.slotRow}>
                           <TouchableOpacity
+                            testID="owner-viewing-modal-slot-date"
                             style={styles.slotButton}
                             onPress={() => openSlotPicker(index, 'date')}
                           >
@@ -401,6 +411,7 @@ export default function OwnerViewingDetailScreen() {
                           </TouchableOpacity>
 
                           <TouchableOpacity
+                            testID="owner-viewing-modal-slot-time"
                             style={styles.slotButton}
                             onPress={() => openSlotPicker(index, 'time')}
                           >
@@ -409,6 +420,7 @@ export default function OwnerViewingDetailScreen() {
                           </TouchableOpacity>
 
                           <TouchableOpacity
+                            testID="owner-viewing-modal-slot-remove"
                             style={styles.removeSlotButton}
                             onPress={() => removeAlternativeSlot(index)}
                           >
@@ -418,7 +430,11 @@ export default function OwnerViewingDetailScreen() {
                       ))}
 
                       {alternativeSlots.length < 3 && (
-                        <TouchableOpacity style={styles.addSlotButton} onPress={addAlternativeSlot}>
+                        <TouchableOpacity
+                          testID="owner-viewing-modal-slot-add"
+                          style={styles.addSlotButton}
+                          onPress={addAlternativeSlot}
+                        >
                           <Ionicons name="add-circle-outline" size={20} color={RSA.blue} />
                           <Text style={styles.addSlotText}>Add Alternative</Text>
                         </TouchableOpacity>
@@ -431,6 +447,7 @@ export default function OwnerViewingDetailScreen() {
                   <View style={styles.inputGroup}>
                     <Text style={styles.inputLabel}>Viewing Notes (Optional)</Text>
                     <TextInput
+                      testID="owner-viewing-modal-complete-notes"
                       style={styles.textArea}
                       value={responseNotes}
                       onChangeText={setResponseNotes}
@@ -445,6 +462,7 @@ export default function OwnerViewingDetailScreen() {
 
               <View style={styles.modalFooter}>
                 <TouchableOpacity
+                  testID="owner-viewing-modal-cancel"
                   style={styles.cancelModalButton}
                   onPress={() => setShowActionModal(false)}
                   disabled={processing}
@@ -453,6 +471,7 @@ export default function OwnerViewingDetailScreen() {
                 </TouchableOpacity>
 
                 <TouchableOpacity
+                  testID="owner-viewing-modal-confirm"
                   style={[styles.confirmButton, processing && styles.buttonDisabled]}
                   onPress={handleConfirmAction}
                   disabled={processing}
@@ -515,7 +534,11 @@ export default function OwnerViewingDetailScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.container}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <TouchableOpacity
+              testID="owner-viewing-detail-back"
+              onPress={() => router.back()}
+              style={styles.backButton}
+            >
               <Ionicons name="arrow-back" size={24} color="#333" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Viewing Details</Text>
@@ -547,7 +570,11 @@ export default function OwnerViewingDetailScreen() {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            testID="owner-viewing-detail-back"
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Viewing Request</Text>
@@ -626,11 +653,19 @@ export default function OwnerViewingDetailScreen() {
 
               {viewing.tenant?.phone && (
                 <View style={styles.contactActions}>
-                  <TouchableOpacity style={styles.contactButton} onPress={handleCallTenant}>
+                  <TouchableOpacity
+                    testID="owner-viewing-detail-call"
+                    style={styles.contactButton}
+                    onPress={handleCallTenant}
+                  >
                     <Ionicons name="call" size={18} color={RSA.blue} />
                     <Text style={styles.contactButtonText}>Call</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.contactButton} onPress={handleChatTenant}>
+                  <TouchableOpacity
+                    testID="owner-viewing-detail-chat"
+                    style={styles.contactButton}
+                    onPress={handleChatTenant}
+                  >
                     <Ionicons name="chatbubble" size={18} color={RSA.blue} />
                     <Text style={styles.contactButtonText}>Chat</Text>
                   </TouchableOpacity>
@@ -720,6 +755,7 @@ export default function OwnerViewingDetailScreen() {
         {isPending && !expired && (
           <View style={styles.footer}>
             <TouchableOpacity
+              testID="owner-viewing-detail-decline"
               style={[
                 styles.actionButton,
                 styles.declineButton,
@@ -733,6 +769,7 @@ export default function OwnerViewingDetailScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
+              testID="owner-viewing-detail-approve"
               style={[
                 styles.actionButton,
                 styles.approveButton,
@@ -750,6 +787,7 @@ export default function OwnerViewingDetailScreen() {
         {canComplete && (
           <View style={styles.footer}>
             <TouchableOpacity
+              testID="owner-viewing-detail-cancel"
               style={[styles.actionButton, styles.cancelButton]}
               onPress={handleCancel}
               disabled={processing}
@@ -759,6 +797,7 @@ export default function OwnerViewingDetailScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
+              testID="owner-viewing-detail-complete"
               style={[styles.actionButton, styles.completeButton]}
               onPress={handleCompletePress}
               disabled={processing}
@@ -772,6 +811,7 @@ export default function OwnerViewingDetailScreen() {
         {isApproved && !canComplete && (
           <View style={styles.footer}>
             <TouchableOpacity
+              testID="owner-viewing-detail-cancel-approved"
               style={[styles.singleActionButton, styles.cancelButtonFull]}
               onPress={handleCancel}
               disabled={processing}

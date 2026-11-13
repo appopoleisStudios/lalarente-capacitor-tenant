@@ -1,0 +1,418 @@
+# Lifecycle stage 7b — Vendor quotes on the inspection issue; owner works the
+# quote detail screen and accepts it (a PO is generated, not yet sent).
+# Needs stage 7 (request on the open market) and a vendor account.
+# Owner order matters: revision history, Reject→Cancel and Request Changes→
+# Cancel come before Accept, because accepting removes the action buttons.
+# Env: creds incl. VENDOR_*, LC_TOKEN
+appId: com.lalarente.app
+---
+# ── PHASE 1 — vendor finds the request and submits a quote ────────────────
+- runFlow: ../subflows/login-vendor.yaml
+- tapOn:
+    id: "tab-vendor-requests"
+- extendedWaitUntil:
+    visible: "Maintenance Requests"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*inspection issue LC-${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    text: ".*inspection issue LC-${LC_TOKEN}.*"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "vendor-submit-quote"
+    timeout: 25000
+- tapOn:
+    id: "vendor-submit-quote"
+- extendedWaitUntil:
+    visible:
+      id: "quote-item-name"
+    timeout: 20000
+- runFlow:
+    when:
+      visible:
+        id: "quote-draft-restored-banner"
+    commands:
+      - tapOn:
+          id: "quote-draft-discard"
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - tapOn:
+          text: ".*(Discard|Yes|OK).*"
+          optional: true
+
+# ── header Save with nothing entered ──────────────────────────────────────
+- tapOn:
+    id: "quote-save-draft-header"
+- extendedWaitUntil:
+    visible: "Nothing to Save"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- tapOn:
+    id: "quote-item-name"
+- inputText: "LC-quote ${LC_TOKEN}"
+- tapOn:
+    point: "50%,15%"
+- tapOn:
+    id: "quote-quantity"
+- inputText: "1"
+- tapOn:
+    point: "50%,15%"
+- tapOn:
+    id: "quote-unit-price"
+- inputText: "500"
+- tapOn:
+    point: "50%,15%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "quote-duration-picker"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "quote-duration-picker"
+- extendedWaitUntil:
+    visible:
+      id: "quote-duration-1-day"
+    timeout: 20000
+- tapOn:
+    id: "quote-duration-1-day"
+- assertVisible: "1 day"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "quote-notes"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "quote-notes"
+- inputText: "LC-quote-note ${LC_TOKEN}"
+- tapOn:
+    text: ".*How long.*"
+
+# ── save draft, leave, come back: draft restored ──────────────────────────
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "quote-save-draft"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "quote-save-draft"
+- extendedWaitUntil:
+    visible: ".*Draft Saved.*"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "quote-back"
+    direction: UP
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "quote-back"
+- extendedWaitUntil:
+    visible:
+      id: "vendor-submit-quote"
+    timeout: 25000
+- tapOn:
+    id: "vendor-submit-quote"
+- extendedWaitUntil:
+    visible:
+      id: "quote-draft-restored-banner"
+    timeout: 25000
+- assertVisible: ".*LC-quote ${LC_TOKEN}.*"
+- takeScreenshot: lc07b-vendor-draft-restored
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── submit: Review Again, then Yes, Submit ────────────────────────────────
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "quote-submit"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "quote-submit"
+- extendedWaitUntil:
+    visible: ".*Important Notice"
+    timeout: 15000
+- tapOn:
+    text: "Review Again"
+- tapOn:
+    id: "quote-submit"
+- extendedWaitUntil:
+    visible: ".*Important Notice"
+    timeout: 15000
+- tapOn:
+    text: "Yes, Submit"
+- extendedWaitUntil:
+    visible: ".*Quote Submitted.*"
+    timeout: 30000
+- tapOn:
+    text: "OK"
+- openLink: lalarenteapp://(vendor)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-vendor.yaml
+
+# ── PHASE 2 — owner: quote on the request, then the quote detail screen ───
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/maintenance
+- extendedWaitUntil:
+    visible: "Maintenance"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*inspection issue LC-${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    text: ".*inspection issue LC-${LC_TOKEN}.*"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "owner-maintenance-detail-back"
+    timeout: 25000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*LC-quote ${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- takeScreenshot: lc07b-owner-sees-quote
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── inline quote card: Reject → Cancel, Request Revision → Cancel, Accept → Cancel ───
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "quote-reject"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "quote-reject"
+- extendedWaitUntil:
+    visible: "Reject Quote"
+    timeout: 15000
+- tapOn:
+    text: "Cancel"
+- tapOn:
+    id: "quote-request-revision"
+- extendedWaitUntil:
+    visible:
+      id: "reason-input"
+    timeout: 20000
+- tapOn:
+    id: "reason-input"
+- inputText: "LC-inline-revision ${LC_TOKEN}"
+- tapOn:
+    id: "reason-cancel"
+- extendedWaitUntil:
+    notVisible:
+      id: "reason-input"
+    timeout: 15000
+- tapOn:
+    id: "quote-accept"
+- extendedWaitUntil:
+    visible: "Accept Quote"
+    timeout: 15000
+- tapOn:
+    text: "Cancel"
+- assertVisible:
+    id: "quote-accept"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: "View Full Details"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    text: "View Full Details"
+- extendedWaitUntil:
+    visible:
+      id: "owner-quote-back"
+    timeout: 25000
+- assertVisible: "Quote Details"
+- runFlow:
+    when:
+      visible:
+        id: "owner-quote-revisions-toggle"
+    commands:
+      - tapOn:
+          id: "owner-quote-revisions-toggle"
+      - assertVisible: "Hide History"
+      - tapOn:
+          id: "owner-quote-revisions-toggle"
+      - assertVisible: "Show History"
+- tapOn:
+    id: "owner-quote-back"
+- extendedWaitUntil:
+    visible:
+      id: "owner-maintenance-detail-back"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: "View Full Details"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    text: "View Full Details"
+- extendedWaitUntil:
+    visible:
+      id: "owner-quote-back"
+    timeout: 25000
+
+# ── Reject → Cancel ───────────────────────────────────────────────────────
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-quote-reject"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "owner-quote-reject"
+- extendedWaitUntil:
+    visible: "Reject Quote"
+    timeout: 15000
+- tapOn:
+    text: "Cancel"
+- assertVisible:
+    id: "owner-quote-reject"
+
+# ── Request Changes → type a reason → Cancel ──────────────────────────────
+- tapOn:
+    id: "owner-quote-request-changes"
+- extendedWaitUntil:
+    visible:
+      id: "reason-input"
+    timeout: 20000
+- tapOn:
+    id: "reason-input"
+- inputText: "LC-revision ${LC_TOKEN}"
+- tapOn:
+    id: "reason-cancel"
+- extendedWaitUntil:
+    notVisible:
+      id: "reason-input"
+    timeout: 15000
+
+# ── Accept → Cancel, then Accept & Generate PO ────────────────────────────
+- tapOn:
+    id: "owner-quote-accept"
+- extendedWaitUntil:
+    visible: "Accept Quote"
+    timeout: 15000
+- tapOn:
+    text: "Cancel"
+- assertVisible:
+    id: "owner-quote-accept"
+- tapOn:
+    id: "owner-quote-accept"
+- extendedWaitUntil:
+    visible: "Accept Quote"
+    timeout: 15000
+- tapOn:
+    text: "Accept & Generate PO"
+- extendedWaitUntil:
+    visible: "Quote accepted and PO generated"
+    timeout: 30000
+- tapOn:
+    text: "OK"
+- extendedWaitUntil:
+    visible:
+      id: "owner-maintenance-detail-back"
+    timeout: 25000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: "Purchase Order"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- assertVisible: "Awaiting send"
+- takeScreenshot: lc07b-owner-po-awaiting-send
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(owner)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-owner.yaml
+
+# ── PHASE 3 — tenant sees the request has moved on ────────────────────────
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/maintenance
+- extendedWaitUntil:
+    visible: "Maintenance"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*inspection issue LC-${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    text: ".*inspection issue LC-${LC_TOKEN}.*"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "tenant-maintenance-detail-back"
+    timeout: 25000
+- takeScreenshot: lc07b-tenant-after-quote-accepted
+- waitForAnimationToEnd:
+    timeout: 1500
+- runFlow:
+    when:
+      visible:
+        id: "tenant-quotes-title"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            id: "tenant-quote-row"
+          direction: DOWN
+          timeout: 20000
+          visibilityPercentage: 60
+      - assertVisible: ".*LC-quote ${LC_TOKEN}.*|.*500.*"
+- openLink: lalarenteapp://(tenant)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-tenant.yaml

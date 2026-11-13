@@ -198,7 +198,11 @@ export default function OwnerScheduleInspectionScreen() {
     <SafeAreaView style={styles.safeArea}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity
+          testID="owner-schedule-inspection-back"
+          onPress={() => router.back()}
+          style={styles.backBtn}
+        >
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Schedule Inspection</Text>
@@ -211,6 +215,7 @@ export default function OwnerScheduleInspectionScreen() {
         <View style={styles.typeGrid}>
           {TYPES.map((t) => (
             <TouchableOpacity
+              testID={`owner-schedule-inspection-type-${t.value}`}
               key={t.value}
               style={[styles.typeCard, selectedType === t.value && styles.typeCardActive]}
               onPress={() => setSelectedType(t.value)}
@@ -240,6 +245,7 @@ export default function OwnerScheduleInspectionScreen() {
           <View style={styles.leaseList}>
             {leases.map((lease) => (
               <TouchableOpacity
+                testID="owner-schedule-inspection-lease"
                 key={lease.id}
                 style={[styles.leaseCard, selectedLeaseId === lease.id && styles.leaseCardActive]}
                 onPress={() => setSelectedLeaseId(lease.id)}
@@ -265,7 +271,11 @@ export default function OwnerScheduleInspectionScreen() {
 
         {/* Date Picker */}
         <Text style={styles.sectionLabel}>Inspection Date</Text>
-        <TouchableOpacity style={styles.dateInput} onPress={() => setShowDatePicker(true)}>
+        <TouchableOpacity
+          testID="owner-schedule-inspection-date"
+          style={styles.dateInput}
+          onPress={() => setShowDatePicker(true)}
+        >
           <Ionicons name="calendar-outline" size={20} color={RSA.blue} />
           <Text style={styles.dateText}>{formatDate(scheduledDate)}</Text>
           <Ionicons name="chevron-down" size={18} color="#9CA3AF" />
@@ -281,7 +291,11 @@ export default function OwnerScheduleInspectionScreen() {
           />
         )}
         {Platform.OS === 'ios' && showDatePicker && (
-          <TouchableOpacity style={styles.doneBtn} onPress={() => setShowDatePicker(false)}>
+          <TouchableOpacity
+            testID="owner-schedule-inspection-date-done"
+            style={styles.doneBtn}
+            onPress={() => setShowDatePicker(false)}
+          >
             <Text style={styles.doneBtnText}>Done</Text>
           </TouchableOpacity>
         )}
@@ -289,6 +303,7 @@ export default function OwnerScheduleInspectionScreen() {
         {/* Notes */}
         <Text style={styles.sectionLabel}>Notes (Optional)</Text>
         <TextInput
+          testID="owner-schedule-inspection-notes"
           style={styles.notesInput}
           placeholder="Any special instructions or items to focus on..."
           value={notes}
@@ -309,6 +324,7 @@ export default function OwnerScheduleInspectionScreen() {
 
         {/* Submit */}
         <TouchableOpacity
+          testID="owner-schedule-inspection-submit"
           style={[styles.submitBtn, (!selectedLeaseId || submitting) && styles.submitBtnDisabled]}
           onPress={handleSubmit}
           disabled={!selectedLeaseId || submitting}

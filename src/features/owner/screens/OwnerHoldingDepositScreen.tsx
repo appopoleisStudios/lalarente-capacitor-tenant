@@ -24,6 +24,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/src/lib/supabase';
 import {
   holdingDepositApi,
+  isPaymentClaimed,
   HoldingDeposit,
   HoldingDepositStatus,
 } from '@/src/features/applications/api/holdingDeposit.api';
@@ -152,6 +153,50 @@ export default function OwnerHoldingDepositScreen() {
     );
   };
 
+  const handleConfirmReceipt = (deposit: DepositWithMeta) => {
+    Alert.alert(
+      'Confirm Receipt',
+      `Confirm you received ${formatZAR(deposit.amount)} from ${deposit.tenant?.full_name}? The property will be held for them.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes, Received',
+          onPress: async () => {
+            try {
+              await holdingDepositApi.confirmPayment(deposit.id, deposit.payment_method || 'eft');
+              Alert.alert('Confirmed', 'The holding deposit has been marked as paid.');
+              loadData();
+            } catch (err: any) {
+              Alert.alert('Error', err.message || 'Failed to confirm receipt');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleNotReceived = (deposit: DepositWithMeta) => {
+    Alert.alert(
+      'Payment Not Received',
+      `Tell ${deposit.tenant?.full_name} that the ${formatZAR(deposit.amount)} payment has not arrived?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes, Not Received',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await holdingDepositApi.rejectPaymentClaim(deposit.id);
+              loadData();
+            } catch (err: any) {
+              Alert.alert('Error', err.message || 'Failed to update deposit');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleApplyToLease = (deposit: DepositWithMeta) => {
     Alert.alert(
       'Apply to Lease',
@@ -193,7 +238,11 @@ export default function OwnerHoldingDepositScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            testID="owner-holding-deposit-back"
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </TouchableOpacity>
           <Text style={styles.title}>Holding Deposits</Text>
@@ -218,14 +267,22 @@ export default function OwnerHoldingDepositScreen() {
       <KeyboardAvoidingView>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            testID="owner-holding-deposit-back"
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </TouchableOpacity>
           <View style={styles.headerText}>
             <Text style={styles.title}>Holding Deposits</Text>
             <Text style={styles.subtitle}>{deposits.length} total</Text>
           </View>
-          <TouchableOpacity style={styles.createBtn} onPress={() => setShowCreateModal(true)}>
+          <TouchableOpacity
+            testID="owner-holding-deposit-create"
+            style={styles.createBtn}
+            onPress={() => setShowCreateModal(true)}
+          >
             <Ionicons name="add" size={22} color={colors.rsa.white} />
           </TouchableOpacity>
         </View>
@@ -269,6 +326,7 @@ export default function OwnerHoldingDepositScreen() {
               <View style={styles.filterRow}>
                 {FILTER_OPTIONS.map((f) => (
                   <TouchableOpacity
+                    testID={`owner-holding-deposit-filter-${f}`}
                     key={f}
                     style={[
                       styles.filterChip,
@@ -294,6 +352,8 @@ export default function OwnerHoldingDepositScreen() {
               deposit={item}
               onRefund={handleRefund}
               onApplyToLease={handleApplyToLease}
+              onConfirmReceipt={handleConfirmReceipt}
+              onNotReceived={handleNotReceived}
             />
           )}
           ListEmptyComponent={
@@ -328,10 +388,14 @@ function DepositCard({
   deposit,
   onRefund,
   onApplyToLease,
+  onConfirmReceipt,
+  onNotReceived,
 }: {
   deposit: DepositWithMeta;
   onRefund: (d: DepositWithMeta) => void;
   onApplyToLease: (d: DepositWithMeta) => void;
+  onConfirmReceipt: (d: DepositWithMeta) => void;
+  onNotReceived: (d: DepositWithMeta) => void;
 }) {
   const config = STATUS_CONFIG[deposit.status] || STATUS_CONFIG.pending;
 
@@ -384,9 +448,38 @@ function DepositCard({
         )}
 
         {/* Actions */}
+        {isPaymentClaimed(deposit) && (
+          <>
+            <View style={styles.cardRow}>
+              <Ionicons name="alert-circle-outline" size={14} color="#D97706" />
+              <Text style={[styles.cardSecondary, { color: '#D97706' }]}>
+                Tenant reports payment made — confirm once received
+              </Text>
+            </View>
+            <View style={styles.cardActions}>
+              <TouchableOpacity
+                style={[styles.cardActionBtn, { borderColor: colors.role.owner.primary }]}
+                onPress={() => onConfirmReceipt(deposit)}
+                testID="owner-holding-deposit-confirm-receipt"
+              >
+                <Text style={[styles.cardActionText, { color: colors.role.owner.primary }]}>
+                  Confirm Receipt
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.cardActionBtn, { borderColor: colors.rsa.red }]}
+                onPress={() => onNotReceived(deposit)}
+                testID="owner-holding-deposit-not-received"
+              >
+                <Text style={[styles.cardActionText, { color: colors.rsa.red }]}>Not Received</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
         {deposit.status === 'paid' && (
           <View style={styles.cardActions}>
             <TouchableOpacity
+              testID="owner-holding-deposit-apply"
               style={[styles.cardActionBtn, { borderColor: colors.role.owner.primary }]}
               onPress={() => onApplyToLease(deposit)}
             >
@@ -395,6 +488,7 @@ function DepositCard({
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
+              testID="owner-holding-deposit-refund"
               style={[styles.cardActionBtn, { borderColor: colors.rsa.red }]}
               onPress={() => onRefund(deposit)}
             >
@@ -483,7 +577,11 @@ function CreateDepositModal({
       <SafeAreaView style={styles.modalContainer} edges={['top']}>
         <View style={styles.modalHeader}>
           <Text style={styles.modalTitle}>Request Holding Deposit</Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+          <TouchableOpacity
+            testID="owner-holding-deposit-modal-close"
+            onPress={onClose}
+            style={styles.closeBtn}
+          >
             <Ionicons name="close" size={24} color={colors.text.primary} />
           </TouchableOpacity>
         </View>
@@ -497,6 +595,7 @@ function CreateDepositModal({
             ) : (
               properties.map((p) => (
                 <TouchableOpacity
+                  testID="owner-holding-deposit-modal-property"
                   key={p.id}
                   style={[
                     styles.propertyOption,
@@ -526,6 +625,7 @@ function CreateDepositModal({
           {/* Tenant Email */}
           <Text style={styles.fieldLabel}>Tenant Email</Text>
           <TextInput
+            testID="owner-holding-deposit-modal-email"
             style={styles.textInput}
             value={tenantEmail}
             onChangeText={setTenantEmail}
@@ -537,6 +637,7 @@ function CreateDepositModal({
           {/* Amount */}
           <Text style={styles.fieldLabel}>Amount (ZAR)</Text>
           <TextInput
+            testID="owner-holding-deposit-modal-amount"
             style={styles.textInput}
             value={amount}
             onChangeText={setAmount}
@@ -553,6 +654,7 @@ function CreateDepositModal({
           </View>
 
           <TouchableOpacity
+            testID="owner-holding-deposit-modal-create"
             style={[styles.createButton, loading && { opacity: 0.7 }]}
             onPress={handleCreate}
             disabled={loading}

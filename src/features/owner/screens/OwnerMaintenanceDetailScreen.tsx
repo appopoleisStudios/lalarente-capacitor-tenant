@@ -537,7 +537,11 @@ export default function OwnerMaintenanceDetailScreen() {
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle" size={64} color={colors.error[500]} />
           <Text style={styles.errorText}>Request not found</Text>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <TouchableOpacity
+            testID="owner-maintenance-detail-go-back"
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
             <Text style={styles.backButtonText}>Go Back</Text>
           </TouchableOpacity>
         </View>
@@ -568,6 +572,7 @@ export default function OwnerMaintenanceDetailScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
+          testID="owner-maintenance-detail-back"
           onPress={() => {
             // Navigate back to maintenance list instead of using router.back()
             // which can go to dashboard
@@ -583,6 +588,7 @@ export default function OwnerMaintenanceDetailScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Request Details</Text>
         <TouchableOpacity
+          testID="owner-maintenance-detail-actions"
           onPress={() => {
             Alert.alert('Actions', 'Choose an action', [
               {
@@ -648,6 +654,7 @@ export default function OwnerMaintenanceDetailScreen() {
             </Text>
           </View>
           <TouchableOpacity
+            testID="owner-maintenance-detail-chat-tenant"
             style={styles.chatButton}
             onPress={() => {
               if (request.tenant) {
@@ -695,6 +702,7 @@ export default function OwnerMaintenanceDetailScreen() {
         {request.status === 'in_progress' && (
           <View style={styles.section}>
             <TouchableOpacity
+              testID="owner-maintenance-detail-progress"
               accessibilityLabel="View vendor progress updates"
               accessibilityRole="button"
               style={styles.progressCard}
@@ -730,6 +738,7 @@ export default function OwnerMaintenanceDetailScreen() {
         {closureReport && closureReport.status === 'pending' && (
           <View style={styles.section}>
             <TouchableOpacity
+              testID="owner-maintenance-detail-review-closure"
               accessibilityLabel="Review closure report in detail"
               accessibilityRole="button"
               style={styles.closureReviewCard}
@@ -870,6 +879,7 @@ export default function OwnerMaintenanceDetailScreen() {
                 </Text>
               </View>
               <TouchableOpacity
+                testID="owner-maintenance-detail-work-order"
                 accessibilityLabel="View work order report"
                 accessibilityRole="button"
                 style={styles.invoiceCard}
@@ -908,6 +918,7 @@ export default function OwnerMaintenanceDetailScreen() {
                 📋 Acknowledge to confirm you've reviewed this request
               </Text>
               <TouchableOpacity
+                testID="owner-maintenance-detail-acknowledge"
                 style={[styles.actionButton, styles.primaryButton]}
                 onPress={handleAcknowledge}
                 disabled={actionLoading}
@@ -925,6 +936,7 @@ export default function OwnerMaintenanceDetailScreen() {
           )}
           {canPushToVendors && (
             <TouchableOpacity
+              testID="owner-maintenance-detail-push-vendors"
               style={[styles.actionButton, styles.secondaryButton]}
               onPress={handlePushToVendors}
               disabled={actionLoading}
@@ -939,6 +951,7 @@ export default function OwnerMaintenanceDetailScreen() {
                 ⚠️ No quotes received yet. Send to your dedicated vendors?
               </Text>
               <TouchableOpacity
+                testID="owner-maintenance-detail-dedicated-vendors"
                 style={[styles.actionButton, styles.warningButton]}
                 onPress={handleSendToDedicatedVendors}
                 disabled={actionLoading}
@@ -961,6 +974,7 @@ export default function OwnerMaintenanceDetailScreen() {
               </Text>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <TouchableOpacity
+                  testID="owner-maintenance-detail-assign-vendor"
                   style={[styles.actionButton, styles.primaryButton, { flex: 1 }]}
                   onPress={handlePushToVendors}
                   disabled={actionLoading}
@@ -969,6 +983,7 @@ export default function OwnerMaintenanceDetailScreen() {
                   <Text style={styles.actionButtonText}>Assign Vendor</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
+                  testID="owner-maintenance-detail-release-tenant"
                   style={[styles.actionButton, styles.secondaryButton, { flex: 1 }]}
                   onPress={handleReleaseToTenant}
                   disabled={actionLoading}
@@ -987,6 +1002,7 @@ export default function OwnerMaintenanceDetailScreen() {
                 ⚠️ Tenant is handling vendor selection — reclaim to manage yourself
               </Text>
               <TouchableOpacity
+                testID="owner-maintenance-detail-reclaim"
                 style={[styles.actionButton, styles.warningButton]}
                 onPress={() => setReclaimModalVisible(true)}
                 disabled={actionLoading}

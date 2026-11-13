@@ -1,0 +1,771 @@
+# Lifecycle stage 7d — Work, closure and tenant verification (runs right
+# after 07c: the PO starts today)
+# Vendor starts work, posts a progress update, requests closure; owner views
+# progress, opens the closure review (Request Changes → Cancel), approves and
+# forwards to the tenant; tenant opens it from Reports and from the request,
+# exercises "Work Needs Fixes" validation, then approves the work.
+# Photo picks use screen points (unverified on device, as in stage 6).
+# Not on this path: tenant closure-confirm screen (tenant-dispatched jobs
+# only), Reclaim (tenant_dispatching only), sending a closure rejection
+# (needs a second closure cycle), mediation (3 rejections).
+# Env: creds incl. VENDOR_*, LC_TOKEN
+appId: com.lalarente.app
+---
+# ── PHASE 1 — vendor: start work ──────────────────────────────────────────
+- runFlow: ../subflows/login-vendor.yaml
+- tapOn:
+    id: "tab-vendor-jobs"
+- extendedWaitUntil:
+    visible: "My Jobs"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*inspection issue LC-${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    text: ".*inspection issue LC-${LC_TOKEN}.*"
+    index: 0
+- waitForAnimationToEnd:
+    timeout: 3000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "vendor-start-work"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "vendor-start-work"
+- extendedWaitUntil:
+    visible: ".*Start Work"
+    timeout: 15000
+- tapOn:
+    text: "Not Yet"
+- assertVisible:
+    id: "vendor-start-work"
+- tapOn:
+    id: "vendor-start-work"
+- extendedWaitUntil:
+    visible: ".*Start Work"
+    timeout: 15000
+- tapOn:
+    text: "Start Now"
+- extendedWaitUntil:
+    visible: ".*Work started.*"
+    timeout: 30000
+- tapOn:
+    text: "OK"
+
+# ── daily progress update: notes + 1 photo ────────────────────────────────
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "vendor-daily-update"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "vendor-daily-update"
+- extendedWaitUntil:
+    visible: "Daily Progress Update"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: "Submit Progress Update"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    text: "Submit Progress Update"
+- extendedWaitUntil:
+    visible: "Notes Required"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*Completed tiling.*"
+    direction: UP
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    text: ".*Completed tiling.*"
+- inputText: "LC-progress ${LC_TOKEN}"
+- tapOn:
+    text: "Daily Progress Update"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: "Gallery"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    text: "Gallery"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn:
+    point: "17%,22%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    text: "(Add|Done|Choose)"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2500
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: "Submit Progress Update"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    text: "Submit Progress Update"
+- extendedWaitUntil:
+    visible: ".*Update Submitted"
+    timeout: 60000
+- tapOn:
+    text: "OK"
+
+# ── request closure: notes + 2 photos ─────────────────────────────────────
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "vendor-request-closure"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "vendor-request-closure"
+- extendedWaitUntil:
+    visible:
+      id: "closure-notes"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "closure-submit"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "closure-submit"
+- extendedWaitUntil:
+    visible: "Notes Required"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "closure-notes"
+    direction: UP
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "closure-notes"
+- inputText: "LC-closure ${LC_TOKEN}"
+- tapOn:
+    text: ".*Summarise the completed work.*"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: "Gallery"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    text: "Gallery"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn:
+    point: "17%,22%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    text: "(Add|Done|Choose)"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2500
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: "Gallery"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    text: "Gallery"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn:
+    point: "17%,22%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    text: "(Add|Done|Choose)"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2500
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "closure-submit"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "closure-submit"
+- extendedWaitUntil:
+    visible: ".*Closure Requested"
+    timeout: 60000
+- tapOn:
+    text: "OK"
+- assertVisible: ".*Awaiting Owner Approval.*"
+- takeScreenshot: lc07d-vendor-awaiting-approval
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(vendor)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-vendor.yaml
+
+# ── PHASE 2 — owner: progress, closure review ─────────────────────────────
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/maintenance
+- extendedWaitUntil:
+    visible: "Maintenance"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*inspection issue LC-${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    text: ".*inspection issue LC-${LC_TOKEN}.*"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "owner-maintenance-detail-back"
+    timeout: 25000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-maintenance-detail-progress"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "owner-maintenance-detail-progress"
+- waitForAnimationToEnd:
+    timeout: 4000
+- assertVisible: ".*LC-progress ${LC_TOKEN}.*"
+- takeScreenshot: lc07d-owner-progress
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(owner)/maintenance
+- extendedWaitUntil:
+    visible: "Maintenance"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*inspection issue LC-${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    text: ".*inspection issue LC-${LC_TOKEN}.*"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "owner-maintenance-detail-back"
+    timeout: 25000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-maintenance-detail-review-closure"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "owner-maintenance-detail-review-closure"
+- extendedWaitUntil:
+    visible:
+      id: "closure-review-title"
+    timeout: 25000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*LC-closure ${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+
+# ── Request Changes modal: send disabled while empty, type reason, Cancel ───
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "closure-reject-button"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "closure-reject-button"
+- extendedWaitUntil:
+    visible:
+      id: "closure-reject-reason"
+    timeout: 20000
+- tapOn:
+    id: "closure-reject-send"
+- assertVisible:
+    id: "closure-reject-reason"
+- tapOn:
+    id: "closure-reject-reason"
+- inputText: "LC-reject-draft ${LC_TOKEN}"
+- tapOn:
+    id: "closure-reject-cancel"
+- extendedWaitUntil:
+    notVisible:
+      id: "closure-reject-reason"
+    timeout: 15000
+
+# ── Approve → Cancel, then Approve ────────────────────────────────────────
+- tapOn:
+    id: "closure-approve-button"
+- extendedWaitUntil:
+    visible: "Approve Job Completion"
+    timeout: 15000
+- tapOn:
+    text: "Cancel"
+- assertVisible:
+    id: "closure-approve-button"
+- tapOn:
+    id: "closure-approve-button"
+- extendedWaitUntil:
+    visible: "Approve Job Completion"
+    timeout: 15000
+- tapOn:
+    text: "Approve"
+- extendedWaitUntil:
+    visible: "Closure approved successfully."
+    timeout: 30000
+- tapOn:
+    text: "OK"
+
+# ── Forward to Tenant → Cancel, then forward ──────────────────────────────
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "closure-forward-button"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "closure-forward-button"
+- extendedWaitUntil:
+    visible: "Forward to Tenant"
+    timeout: 15000
+- tapOn:
+    text: "Cancel"
+- assertVisible:
+    id: "closure-forward-button"
+- tapOn:
+    id: "closure-forward-button"
+- extendedWaitUntil:
+    visible: "Forward to Tenant"
+    timeout: 15000
+- tapOn:
+    text: "Forward for Verification"
+- extendedWaitUntil:
+    visible: "Forwarded"
+    timeout: 30000
+- tapOn:
+    text: "OK"
+- takeScreenshot: lc07d-owner-forwarded
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(owner)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-owner.yaml
+
+# ── PHASE 3 — tenant: Reports row opens verification ──────────────────────
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/reports
+- extendedWaitUntil:
+    visible: "Reports"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-report-closure-row"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "tenant-report-closure-row"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "tenant-verify-title"
+    timeout: 25000
+- assertVisible: ".*LC-closure ${LC_TOKEN}.*"
+- assertVisible:
+    id: "tenant-verify-satisfactory"
+- assertVisible:
+    id: "tenant-verify-needs-fixes"
+- takeScreenshot: lc07d-tenant-verify-from-reports
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── request detail: Verify Completed Work opens the same screen ───────────
+- openLink: lalarenteapp://(tenant)/maintenance
+- extendedWaitUntil:
+    visible: "Maintenance"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*inspection issue LC-${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    text: ".*inspection issue LC-${LC_TOKEN}.*"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "tenant-maintenance-detail-back"
+    timeout: 25000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "maintenance-progress-update"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- assertVisible: ".*LC-progress ${LC_TOKEN}.*"
+- assertVisible:
+    id: "maintenance-progress-update-photos"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "maintenance-verify-work"
+    direction: UP
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "maintenance-verify-work"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-verify-title"
+    timeout: 25000
+
+# ── Work Needs Fixes: reason too short, photo add/remove, no photo, back ───
+- tapOn:
+    id: "tenant-verify-needs-fixes"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-verify-reject-reason"
+    timeout: 20000
+- tapOn:
+    id: "tenant-verify-reject-reason"
+- inputText: "short"
+- tapOn:
+    text: "What needs to be fixed\\? \\*"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-verify-reject-submit"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "tenant-verify-reject-submit"
+- extendedWaitUntil:
+    visible: "Please provide a reason of at least 10 characters"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-verify-reject-reason"
+    direction: UP
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "tenant-verify-reject-reason"
+- inputText: " - LC-fix-reason ${LC_TOKEN}"
+- tapOn:
+    text: "What needs to be fixed\\? \\*"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-verify-reject-add-photo"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "tenant-verify-reject-add-photo"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn:
+    point: "17%,22%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    text: "(Add|Done|Choose)"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2500
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-verify-reject-remove-photo"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "tenant-verify-reject-remove-photo"
+    index: 0
+- extendedWaitUntil:
+    notVisible:
+      id: "tenant-verify-reject-remove-photo"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-verify-reject-submit"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "tenant-verify-reject-submit"
+- extendedWaitUntil:
+    visible: "Please upload at least 1 photo showing the issue"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-verify-reject-back"
+    direction: UP
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "tenant-verify-reject-back"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-verify-satisfactory"
+    timeout: 20000
+
+# ── Work is Satisfactory: back, feedback, photo add/remove/add, confirm ───
+- tapOn:
+    id: "tenant-verify-satisfactory"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-verify-approve-notes"
+    timeout: 20000
+- tapOn:
+    id: "tenant-verify-approve-back"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-verify-satisfactory"
+    timeout: 20000
+- tapOn:
+    id: "tenant-verify-satisfactory"
+- tapOn:
+    id: "tenant-verify-approve-notes"
+- inputText: "LC-verified ${LC_TOKEN}"
+- tapOn:
+    text: "Feedback \\(Optional\\)"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-verify-approve-add-photo"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "tenant-verify-approve-add-photo"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn:
+    point: "17%,22%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    text: "(Add|Done|Choose)"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2500
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-verify-approve-remove-photo"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "tenant-verify-approve-remove-photo"
+    index: 0
+- extendedWaitUntil:
+    notVisible:
+      id: "tenant-verify-approve-remove-photo"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-verify-approve-add-photo"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "tenant-verify-approve-add-photo"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn:
+    point: "17%,22%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    text: "(Add|Done|Choose)"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2500
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-verify-approve-submit"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "tenant-verify-approve-submit"
+- extendedWaitUntil:
+    visible: "Work Approved"
+    timeout: 60000
+- tapOn:
+    text: "OK"
+
+# ── Reports: closure no longer pending; work order row when the report exists ───
+- openLink: lalarenteapp://(tenant)/reports
+- extendedWaitUntil:
+    visible: "Reports"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertNotVisible:
+    id: "tenant-report-closure-row"
+- runFlow:
+    when:
+      visible:
+        id: "tenant-report-work-order-row"
+    commands:
+      - tapOn:
+          id: "tenant-report-work-order-row"
+          index: 0
+      - waitForAnimationToEnd:
+          timeout: 4000
+      - takeScreenshot: lcx-tenant-work-order
+      - waitForAnimationToEnd:
+          timeout: 1500
+- openLink: lalarenteapp://(tenant)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+# ── PHASE 4 — owner sees the verified job; work order report when generated ───
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/maintenance
+- extendedWaitUntil:
+    visible: "Maintenance"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*inspection issue LC-${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    text: ".*inspection issue LC-${LC_TOKEN}.*"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "owner-maintenance-detail-back"
+    timeout: 25000
+- assertVisible: "(?i).*(completed|verified|closed).*"
+- takeScreenshot: lc07d-owner-job-complete
+- waitForAnimationToEnd:
+    timeout: 1500
+- runFlow:
+    when:
+      visible:
+        id: "owner-maintenance-detail-work-order"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            id: "owner-maintenance-detail-work-order"
+          direction: DOWN
+          timeout: 20000
+          visibilityPercentage: 60
+      - tapOn:
+          id: "owner-maintenance-detail-work-order"
+      - waitForAnimationToEnd:
+          timeout: 4000
+      - takeScreenshot: lcx-owner-work-order
+      - waitForAnimationToEnd:
+          timeout: 1500
+- openLink: lalarenteapp://(owner)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-owner.yaml

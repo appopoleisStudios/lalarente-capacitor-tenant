@@ -12,7 +12,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { viewingsApi, ViewingWithRelations, RequestViewingInput } from '../../properties/api/viewingsApi';
+import {
+  viewingsApi,
+  ViewingWithRelations,
+  RequestViewingInput,
+} from '../../properties/api/viewingsApi';
 import { supabase } from '../../../lib/supabase';
 
 const RSA = { green: '#007A4D', gold: '#FFB81C' };
@@ -112,18 +116,14 @@ export default function TenantViewingDetailScreen() {
   };
 
   const handleCancel = () => {
-    Alert.alert(
-      'Cancel Viewing',
-      'Are you sure you want to cancel this viewing request?',
-      [
-        { text: 'No', style: 'cancel' },
-        {
-          text: 'Yes, Cancel',
-          style: 'destructive',
-          onPress: confirmCancel,
-        },
-      ]
-    );
+    Alert.alert('Cancel Viewing', 'Are you sure you want to cancel this viewing request?', [
+      { text: 'No', style: 'cancel' },
+      {
+        text: 'Yes, Cancel',
+        style: 'destructive',
+        onPress: confirmCancel,
+      },
+    ]);
   };
 
   const confirmCancel = async () => {
@@ -177,7 +177,11 @@ export default function TenantViewingDetailScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <TouchableOpacity
+              testID="tenant-viewing-detail-back"
+              onPress={() => router.back()}
+              style={styles.backButton}
+            >
               <Ionicons name="arrow-back" size={24} color="#333" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Viewing Details</Text>
@@ -207,7 +211,11 @@ export default function TenantViewingDetailScreen() {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            testID="tenant-viewing-detail-back"
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Viewing Details</Text>
@@ -232,7 +240,11 @@ export default function TenantViewingDetailScreen() {
           {/* Property Card */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Property</Text>
-            <TouchableOpacity style={styles.propertyCard} onPress={handleViewProperty}>
+            <TouchableOpacity
+              testID="tenant-viewing-detail-property"
+              style={styles.propertyCard}
+              onPress={handleViewProperty}
+            >
               <View style={styles.propertyHeader}>
                 <Ionicons name="home" size={24} color={RSA.green} />
                 <View style={styles.propertyInfo}>
@@ -298,7 +310,7 @@ export default function TenantViewingDetailScreen() {
           {viewing.alternative_times && viewing.alternative_times.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Suggested Alternative Times</Text>
-              {(acceptedSlot || hasNewPending) ? (
+              {acceptedSlot || hasNewPending ? (
                 <View style={styles.slotAcceptedCard}>
                   <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
                   <View style={{ flex: 1 }}>
@@ -312,42 +324,37 @@ export default function TenantViewingDetailScreen() {
                 </View>
               ) : (
                 <>
-                  <Text style={styles.altHint}>
-                    Tap a slot to request that date & time
-                  </Text>
+                  <Text style={styles.altHint}>Tap a slot to request that date & time</Text>
                   {viewing.alternative_times.map((time, index) => {
                     const parsed = parseAlternativeTime(time);
                     return (
                       <TouchableOpacity
+                        testID="tenant-viewing-detail-alternative"
                         key={index}
                         style={styles.alternativeCard}
                         onPress={() => {
                           if (parsed.isoDate && viewing.property_id) {
-                            Alert.alert(
-                              'Request This Slot?',
-                              `${parsed.date} at ${parsed.time}`,
-                              [
-                                { text: 'Cancel', style: 'cancel' },
-                                {
-                                  text: 'Request',
-                                  onPress: async () => {
-                                    try {
-                                      await viewingsApi.requestViewing({
-                                        property_id: viewing.property_id,
-                                        tenant_id: viewing.tenant_id,
-                                        owner_id: viewing.owner_id,
-                                        requested_date: parsed.isoDate,
-                                        requested_time: parsed.isoTime,
-                                        tenant_notes: 'Re-request from declined viewing',
-                                      });
-                                      setAcceptedSlot(`${parsed.date} at ${parsed.time}`);
-                                    } catch (err) {
-                                      Alert.alert('Error', 'Failed to request viewing.');
-                                    }
-                                  },
+                            Alert.alert('Request This Slot?', `${parsed.date} at ${parsed.time}`, [
+                              { text: 'Cancel', style: 'cancel' },
+                              {
+                                text: 'Request',
+                                onPress: async () => {
+                                  try {
+                                    await viewingsApi.requestViewing({
+                                      property_id: viewing.property_id,
+                                      tenant_id: viewing.tenant_id,
+                                      owner_id: viewing.owner_id,
+                                      requested_date: parsed.isoDate,
+                                      requested_time: parsed.isoTime,
+                                      tenant_notes: 'Re-request from declined viewing',
+                                    });
+                                    setAcceptedSlot(`${parsed.date} at ${parsed.time}`);
+                                  } catch (err) {
+                                    Alert.alert('Error', 'Failed to request viewing.');
+                                  }
                                 },
-                              ]
-                            );
+                              },
+                            ]);
                           }
                         }}
                         activeOpacity={0.7}
@@ -389,12 +396,17 @@ export default function TenantViewingDetailScreen() {
 
                 <View style={styles.contactActions}>
                   {viewing.owner.phone && (
-                    <TouchableOpacity style={styles.contactButton} onPress={handleCallOwner}>
+                    <TouchableOpacity
+                      testID="tenant-viewing-detail-call"
+                      style={styles.contactButton}
+                      onPress={handleCallOwner}
+                    >
                       <Ionicons name="call" size={18} color={RSA.green} />
                       <Text style={styles.contactButtonText}>Call</Text>
                     </TouchableOpacity>
                   )}
                   <TouchableOpacity
+                    testID="tenant-viewing-detail-chat"
                     style={styles.contactButton}
                     onPress={() => router.push('/(tenant)/messages' as any)}
                   >
@@ -439,6 +451,7 @@ export default function TenantViewingDetailScreen() {
         {canCancel && (
           <View style={styles.footer}>
             <TouchableOpacity
+              testID="tenant-viewing-detail-cancel"
               style={[styles.cancelButton, cancelling && styles.buttonDisabled]}
               onPress={handleCancel}
               disabled={cancelling}

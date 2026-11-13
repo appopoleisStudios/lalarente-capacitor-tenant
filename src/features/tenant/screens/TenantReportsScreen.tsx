@@ -163,7 +163,11 @@ export default function TenantReportsScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          testID="tenant-reports-back"
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Reports</Text>
@@ -196,6 +200,7 @@ export default function TenantReportsScreen() {
               </Text>
               {pendingClosures.map((closure) => (
                 <TouchableOpacity
+                  testID="tenant-report-closure-row"
                   key={closure.id}
                   style={styles.closureCard}
                   onPress={() => navigateToVerification(closure)}
@@ -235,6 +240,7 @@ export default function TenantReportsScreen() {
               </Text>
               {workOrders.map((wo) => (
                 <TouchableOpacity
+                  testID="tenant-report-work-order-row"
                   key={wo.id}
                   style={styles.inspectionCard}
                   onPress={() =>
@@ -301,6 +307,7 @@ export default function TenantReportsScreen() {
                     key={inspection.id}
                     style={styles.inspectionCard}
                     onPress={navigateToInspection}
+                    testID="tenant-report-inspection-row"
                     activeOpacity={0.7}
                   >
                     <View style={styles.inspectionTop}>
@@ -342,6 +349,7 @@ export default function TenantReportsScreen() {
 
                     {needsSignature && (
                       <TouchableOpacity
+                        testID="tenant-report-inspection-sign"
                         style={styles.signatureAlert}
                         onPress={navigateToInspection}
                         activeOpacity={0.7}

@@ -82,7 +82,11 @@ export default function TenantApplicationDetailScreen() {
         <View style={styles.centerContainer}>
           <Ionicons name="alert-circle-outline" size={64} color="#F44336" />
           <Text style={styles.errorText}>{error || 'Application not found'}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadApplication}>
+          <TouchableOpacity
+            testID="tenant-application-retry"
+            style={styles.retryButton}
+            onPress={loadApplication}
+          >
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -114,7 +118,11 @@ export default function TenantApplicationDetailScreen() {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            testID="tenant-application-back"
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>My Application</Text>
@@ -146,7 +154,9 @@ export default function TenantApplicationDetailScreen() {
               <TimelineItem
                 icon="paper-plane"
                 label="Submitted"
-                date={new Date(application.submitted_at || application.created_at!).toLocaleString()}
+                date={new Date(
+                  application.submitted_at || application.created_at!
+                ).toLocaleString()}
                 completed
               />
               {application.reviewed_at && (
@@ -191,10 +201,10 @@ export default function TenantApplicationDetailScreen() {
           {/* Status Message */}
           <View style={styles.section}>
             <View style={styles.messageCard}>
-              <Ionicons 
-                name={application.status === 'rejected' ? 'alert-circle' : 'information-circle'} 
-                size={24} 
-                color={application.status === 'rejected' ? '#F44336' : RSA.blue} 
+              <Ionicons
+                name={application.status === 'rejected' ? 'alert-circle' : 'information-circle'}
+                size={24}
+                color={application.status === 'rejected' ? '#F44336' : RSA.blue}
               />
               <Text style={styles.messageText}>
                 {application.status === 'submitted' &&
@@ -214,9 +224,15 @@ export default function TenantApplicationDetailScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Reason for Rejection</Text>
               <View style={[styles.card, styles.rejectionCard]}>
-                <Ionicons name="alert-circle" size={24} color="#F44336" style={{ marginBottom: 8 }} />
+                <Ionicons
+                  name="alert-circle"
+                  size={24}
+                  color="#F44336"
+                  style={{ marginBottom: 8 }}
+                />
                 <Text style={styles.rejectionText}>
-                  {(application as any).rejection_reason || 'No specific reason provided by the owner.'}
+                  {(application as any).rejection_reason ||
+                    'No specific reason provided by the owner.'}
                 </Text>
               </View>
             </View>
@@ -226,7 +242,11 @@ export default function TenantApplicationDetailScreen() {
         {/* Action Button */}
         {(application.status === 'submitted' || application.status === 'under_review') && (
           <View style={styles.actionBar}>
-            <TouchableOpacity style={styles.withdrawButton} onPress={handleWithdraw}>
+            <TouchableOpacity
+              testID="tenant-application-withdraw"
+              style={styles.withdrawButton}
+              onPress={handleWithdraw}
+            >
               <Text style={styles.withdrawButtonText}>Withdraw Application</Text>
             </TouchableOpacity>
           </View>

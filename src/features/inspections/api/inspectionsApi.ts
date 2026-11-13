@@ -9,7 +9,9 @@ import type {
   DepositDeduction,
   InspectionComparison,
   RoomCondition,
+  TenantInspectionComment,
 } from '../types';
+import { parseInspectionRoomsField, parseTenantComments } from '../utils/normalizeRooms';
 
 export type { InspectionComparison } from '../types';
 
@@ -204,9 +206,13 @@ export const inspectionsApi = {
    * Update inspection rooms data
    */
   async updateInspectionRooms(id: string, rooms: InspectionRooms): Promise<Inspection> {
+    // Tenant comments are append-only and written separately; carry the
+    // stored ones over so saving the checklist never drops them.
+    const tenantComments = await this.getTenantComments(id);
+
     const { data, error } = await supabase
       .from('inspections')
-      .update({ rooms: rooms as any })
+      .update({ rooms: { ...rooms, tenantComments } as any })
       .eq('id', id)
       .select()
       .single();
@@ -217,6 +223,98 @@ export const inspectionsApi = {
     }
 
     return data;
+  },
+
+  /**
+   * Read the tenant comments stored on an inspection
+   */
+  async getTenantComments(id: string): Promise<TenantInspectionComment[]> {
+    const { data, error } = await supabase
+      .from('inspections')
+      .select('rooms')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('Error fetching inspection comments:', error);
+      throw new Error(`Failed to fetch inspection comments: ${error.message}`);
+    }
+
+    return parseInspectionRoomsField(data.rooms).tenantComments ?? [];
+  },
+
+  /**
+   * Write the tenant comments list without touching anything else in the
+   * report (rooms, keys and notes are written back exactly as stored).
+   */
+  async saveTenantComments(
+    id: string,
+    update: (existing: TenantInspectionComment[]) => TenantInspectionComment[]
+  ): Promise<TenantInspectionComment[]> {
+    const { data, error } = await supabase
+      .from('inspections')
+      .select('rooms')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to fetch inspection: ${error.message}`);
+    }
+
+    let stored: unknown = data.rooms;
+    if (typeof stored === 'string') {
+      try {
+        stored = JSON.parse(stored);
+      } catch {
+        stored = null;
+      }
+    }
+    const base: Record<string, unknown> = Array.isArray(stored)
+      ? { rooms: stored }
+      : ((stored as Record<string, unknown>) ?? {});
+    const tenantComments = update(parseTenantComments(base.tenantComments));
+
+    const { error: updateError } = await supabase
+      .from('inspections')
+      .update({ rooms: { ...base, tenantComments } as any })
+      .eq('id', id);
+
+    if (updateError) {
+      console.error('Error saving inspection comment:', updateError);
+      throw new Error(`Failed to save comment: ${updateError.message}`);
+    }
+
+    return tenantComments;
+  },
+
+  /**
+   * Tenant adds a comment to the report (append-only)
+   */
+  async addTenantComment(
+    id: string,
+    room: string,
+    text: string
+  ): Promise<TenantInspectionComment[]> {
+    const comment: TenantInspectionComment = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      room,
+      text: text.trim(),
+      createdAt: new Date().toISOString(),
+    };
+    return this.saveTenantComments(id, (existing) => [...existing, comment]);
+  },
+
+  /**
+   * Record the maintenance request raised from a tenant comment
+   */
+  async linkTenantCommentToRequest(
+    id: string,
+    commentId: string,
+    maintenanceRequestId: string
+  ): Promise<TenantInspectionComment[]> {
+    return this.saveTenantComments(id, (existing) =>
+      existing.map((c) => (c.id === commentId ? { ...c, maintenanceRequestId } : c))
+    );
   },
 
   /**

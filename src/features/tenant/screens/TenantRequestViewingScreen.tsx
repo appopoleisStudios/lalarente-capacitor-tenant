@@ -202,7 +202,11 @@ export default function TenantRequestViewingScreen() {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            testID="viewing-request-back"
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Request Viewing</Text>
@@ -294,6 +298,7 @@ export default function TenantRequestViewingScreen() {
 
               <View style={styles.existingActions}>
                 <TouchableOpacity
+                  testID="viewing-request-existing-details"
                   style={styles.viewDetailsButton}
                   onPress={() => router.push(`/(tenant)/viewings/${existingViewing.id}` as any)}
                 >
@@ -302,6 +307,7 @@ export default function TenantRequestViewingScreen() {
                 </TouchableOpacity>
 
                 <TouchableOpacity
+                  testID="viewing-request-existing-cancel"
                   style={styles.cancelButton}
                   onPress={handleCancelExisting}
                   disabled={cancelling}
@@ -337,6 +343,7 @@ export default function TenantRequestViewingScreen() {
               <View style={styles.section}>
                 <Text style={styles.label}>Preferred Date *</Text>
                 <TouchableOpacity
+                  testID="viewing-request-date"
                   style={styles.dateTimeButton}
                   onPress={() => setShowDatePicker(true)}
                 >
@@ -350,6 +357,7 @@ export default function TenantRequestViewingScreen() {
               <View style={styles.section}>
                 <Text style={styles.label}>Preferred Time *</Text>
                 <TouchableOpacity
+                  testID="viewing-request-time"
                   style={styles.dateTimeButton}
                   onPress={() => setShowTimePicker(true)}
                 >

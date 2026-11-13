@@ -291,7 +291,11 @@ export default function TenantPropertyDetailScreen() {
         <View style={styles.centerContainer}>
           <Ionicons name="alert-circle-outline" size={64} color="#F44336" />
           <Text style={styles.errorText}>{error || 'Property not found'}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadPropertyDetails}>
+          <TouchableOpacity
+            testID="tenant-property-retry"
+            style={styles.retryButton}
+            onPress={loadPropertyDetails}
+          >
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -306,14 +310,26 @@ export default function TenantPropertyDetailScreen() {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
+          <TouchableOpacity
+            testID="tenant-property-back"
+            onPress={() => router.back()}
+            style={styles.headerButton}
+          >
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
           <View style={styles.headerActions}>
-            <TouchableOpacity onPress={handleShare} style={styles.headerButton}>
+            <TouchableOpacity
+              testID="tenant-property-share"
+              onPress={handleShare}
+              style={styles.headerButton}
+            >
               <Ionicons name="share-outline" size={24} color="#333" />
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleToggleFavorite} style={styles.headerButton}>
+            <TouchableOpacity
+              testID="tenant-property-favorite"
+              onPress={handleToggleFavorite}
+              style={styles.headerButton}
+            >
               <Ionicons
                 name={isFavorite ? 'heart' : 'heart-outline'}
                 size={24}
@@ -512,7 +528,11 @@ export default function TenantPropertyDetailScreen() {
                     <Text style={styles.ownerName}>{property.owner.full_name}</Text>
                     <Text style={styles.ownerLabel}>Property Owner</Text>
                   </View>
-                  <TouchableOpacity style={styles.contactButton} onPress={handleContactOwner}>
+                  <TouchableOpacity
+                    testID="tenant-property-contact-owner"
+                    style={styles.contactButton}
+                    onPress={handleContactOwner}
+                  >
                     <Ionicons name="chatbubble-outline" size={20} color={RSA.green} />
                   </TouchableOpacity>
                 </View>
@@ -531,6 +551,7 @@ export default function TenantPropertyDetailScreen() {
             </View>
             {applicationId && (
               <TouchableOpacity
+                testID="tenant-property-view-application"
                 onPress={() => router.push(`/(tenant)/applications/${applicationId}` as any)}
                 style={styles.viewApplicationButton}
               >
@@ -545,6 +566,7 @@ export default function TenantPropertyDetailScreen() {
         {property.status === 'available' && !error && (
           <View style={styles.actionBar}>
             <TouchableOpacity
+              testID="tenant-property-request-viewing"
               style={[styles.viewingButton, isCurrentProperty && styles.disabledButton]}
               onPress={handleRequestViewing}
               disabled={isCurrentProperty}
@@ -561,6 +583,7 @@ export default function TenantPropertyDetailScreen() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
+              testID="tenant-property-apply"
               style={[
                 styles.applyButton,
                 (isCurrentProperty || hasActiveApplication) && styles.disabledButton,

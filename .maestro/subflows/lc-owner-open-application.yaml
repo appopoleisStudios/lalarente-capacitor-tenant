@@ -1,0 +1,29 @@
+# Owner (signed in) opens the application for PROP_TITLE from the
+# Applications list. Env: PROP_TITLE
+appId: com.lalarente.app
+---
+- openLink: lalarenteapp://(owner)/applications
+- extendedWaitUntil:
+    visible: "Applications"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "owner-applications-filter-all"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*${PROP_TITLE}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "owner-application-card"
+    below:
+      text: ".*${PROP_TITLE}.*"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "owner-application-back"
+    timeout: 20000

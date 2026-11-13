@@ -1,0 +1,356 @@
+# Lifecycle stage 1 — Search and property detail (tenant)
+# Covers LC-1-01 to LC-1-14. Every filter is asserted against one known
+# property: with its title in the search box the list holds that card or
+# shows "No properties found".
+# Not automatable: Retry buttons (render only when the load fails).
+# Env: TENANT creds; LC_PROPERTY_ID / LC_PROPERTY_TITLE = an AVAILABLE
+# 2-bedroom townhouse with a 3D tour that the tenant has no viewing or
+# application on; LC_PRICE_MIN / LC_PRICE_MAX = a range containing its rent
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/search
+- extendedWaitUntil:
+    visible:
+      id: "tenant-search-input"
+    timeout: 20000
+
+# ── LC-1-01 search text and clear (x) ─────────────────────────────────────
+- assertNotVisible:
+    id: "tenant-search-clear"
+- tapOn:
+    id: "tenant-search-input"
+- inputText: "zzz-no-such-property"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "No properties found"
+    timeout: 20000
+- assertVisible:
+    id: "tenant-search-clear"
+- tapOn:
+    id: "tenant-search-clear"
+- assertNotVisible:
+    id: "tenant-search-clear"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-card"
+    timeout: 20000
+- tapOn:
+    id: "tenant-search-input"
+- inputText: "${LC_PROPERTY_TITLE}"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-card"
+    timeout: 20000
+- assertVisible: ".*${LC_PROPERTY_TITLE}.*"
+- takeScreenshot: lc01-search-by-title
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── LC-1-02 price range ───────────────────────────────────────────────────
+- assertNotVisible:
+    id: "tenant-search-min-price"
+- tapOn:
+    id: "tenant-search-filters-toggle"
+- assertVisible:
+    id: "tenant-search-min-price"
+- assertVisible:
+    id: "tenant-search-max-price"
+- tapOn:
+    id: "tenant-search-min-price"
+- inputText: "${LC_PRICE_MIN}"
+- tapOn:
+    id: "tenant-search-max-price"
+- inputText: "${LC_PRICE_MAX}"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-card"
+    timeout: 20000
+- assertVisible: ".*${LC_PROPERTY_TITLE}.*"
+- tapOn:
+    id: "tenant-search-max-price"
+- eraseText: 30
+- inputText: "1"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "No properties found"
+    timeout: 20000
+- takeScreenshot: lc01-price-excludes
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── LC-1-05 Clear Filters resets price and search text ────────────────────
+- tapOn:
+    id: "tenant-search-clear-filters"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-card"
+    timeout: 20000
+- assertNotVisible:
+    id: "tenant-search-clear"
+- tapOn:
+    id: "tenant-search-input"
+- inputText: "${LC_PROPERTY_TITLE}"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-card"
+    timeout: 20000
+
+# ── LC-1-03 bedroom chips: "at least N"; tapping the active chip removes it ───
+- tapOn:
+    id: "tenant-search-bedrooms-1"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-card"
+    timeout: 20000
+- tapOn:
+    id: "tenant-search-bedrooms-2"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-card"
+    timeout: 20000
+- tapOn:
+    id: "tenant-search-bedrooms-3"
+- extendedWaitUntil:
+    visible: "No properties found"
+    timeout: 20000
+- tapOn:
+    id: "tenant-search-bedrooms-4"
+- extendedWaitUntil:
+    visible: "No properties found"
+    timeout: 20000
+- takeScreenshot: lc01-bedrooms-excludes
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    id: "tenant-search-bedrooms-4"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-card"
+    timeout: 20000
+
+# ── LC-1-04 property type chips ───────────────────────────────────────────
+- tapOn:
+    id: "tenant-search-type-house"
+- extendedWaitUntil:
+    visible: "No properties found"
+    timeout: 20000
+- tapOn:
+    id: "tenant-search-type-apartment"
+- extendedWaitUntil:
+    visible: "No properties found"
+    timeout: 20000
+- tapOn:
+    id: "tenant-search-type-townhouse"
+- takeScreenshot: lc01-type-townhouse
+- waitForAnimationToEnd:
+    timeout: 1500
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-card"
+    timeout: 8000
+- tapOn:
+    id: "tenant-search-type-townhouse"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-card"
+    timeout: 20000
+- tapOn:
+    id: "tenant-search-filters-toggle"
+- assertNotVisible:
+    id: "tenant-search-min-price"
+
+# ── LC-1-06 pull to refresh ───────────────────────────────────────────────
+- swipe:
+    start: "50%,45%"
+    end: "50%,85%"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-card"
+    timeout: 20000
+
+# ── LC-1-07 card opens the property ───────────────────────────────────────
+- tapOn:
+    id: "tenant-property-card"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-back"
+    timeout: 20000
+- assertVisible: ".*${LC_PROPERTY_TITLE}.*"
+- takeScreenshot: lc01-property-detail
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── LC-1-09 favourite toggles ─────────────────────────────────────────────
+- tapOn:
+    id: "tenant-property-favorite"
+- tapOn:
+    id: "tenant-property-favorite"
+
+# ── results list and 3D badge on search ───────────────────────────────────
+- openLink: lalarenteapp://(tenant)/search
+- extendedWaitUntil:
+    visible:
+      id: "tenant-search-results"
+    timeout: 25000
+- assertVisible:
+    id: "tenant-search-3d-badge"
+- openLink: lalarenteapp://(tenant)/properties/${LC_PROPERTY_ID}
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-back"
+    timeout: 25000
+
+# ── LC-1-08 share sheet ───────────────────────────────────────────────────
+- tapOn:
+    id: "tenant-property-share"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: lc01-share-sheet
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    text: "Close"
+    optional: true
+- openLink: lalarenteapp://(tenant)/properties/${LC_PROPERTY_ID}
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-back"
+    timeout: 25000
+
+# ── LC-1-10 3D tour ───────────────────────────────────────────────────────
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-view-3d"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "tenant-view-3d"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: lc01-3d-tour
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(tenant)/properties/${LC_PROPERTY_ID}
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-back"
+    timeout: 25000
+
+# ── LC-1-11 contact owner ─────────────────────────────────────────────────
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-property-contact-owner"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "tenant-property-contact-owner"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: lc01-contact-owner
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    text: "Cancel"
+    optional: true
+- openLink: lalarenteapp://(tenant)/properties/${LC_PROPERTY_ID}
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-request-viewing"
+    timeout: 25000
+
+# ── LC-1-12 Request Viewing opens the request screen for this property ────
+- tapOn:
+    id: "tenant-property-request-viewing"
+- extendedWaitUntil:
+    visible:
+      id: "viewing-request-back"
+    timeout: 20000
+- assertVisible: ".*${LC_PROPERTY_TITLE}.*"
+- tapOn:
+    id: "viewing-request-back"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-apply"
+    timeout: 20000
+
+# ── LC-1-14 Apply (complete profile) opens the application form ───────────
+- tapOn:
+    id: "tenant-property-apply"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-apply-back"
+    timeout: 20000
+- takeScreenshot: lc01-apply-form
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    id: "tenant-apply-back"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-back"
+    timeout: 20000
+
+# ── LC-1-08 back returns to search ────────────────────────────────────────
+- tapOn:
+    id: "tenant-property-back"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-search-input"
+    timeout: 20000
+
+# ── LC-5-27 before any lease exists: My Lease and Lease Journey offer Search Properties ───
+- openLink: lalarenteapp://(tenant)/lease
+- extendedWaitUntil:
+    visible:
+      id: "tenant-lease-search-properties"
+    timeout: 20000
+- tapOn:
+    id: "tenant-lease-search-properties"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-search-input"
+    timeout: 20000
+- openLink: lalarenteapp://(tenant)/lease-journey
+- extendedWaitUntil:
+    visible:
+      id: "tenant-journey-search-properties"
+    timeout: 20000
+- tapOn:
+    id: "tenant-journey-search-properties"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-search-input"
+    timeout: 20000
+
+# ── no lease yet: Report Issue explains why and Go Back works ─────────────
+- openLink: lalarenteapp://(tenant)/maintenance/report
+- extendedWaitUntil:
+    visible: "No Active Lease"
+    timeout: 25000
+- tapOn:
+    id: "maintenance-report-go-back"
+- waitForAnimationToEnd:
+    timeout: 2000
+- openLink: lalarenteapp://(tenant)/maintenance/report
+- extendedWaitUntil:
+    visible: "No Active Lease"
+    timeout: 25000
+- tapOn:
+    id: "maintenance-report-back"
+- waitForAnimationToEnd:
+    timeout: 2000
+- openLink: lalarenteapp://(tenant)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-tenant.yaml

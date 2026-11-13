@@ -1,0 +1,312 @@
+# Lifecycle stage 3a — Application submitted and reviewed (tenant ↔ owner)
+# Covers LC-1-15, LC-3-01 to 3-09, 3-12, 3-14 to 3-16, 3-22, LC-4-01, 4-09.
+# Tenant submits; owner finds it, runs screening, opens documents, works the
+# verification rows, requests a holding deposit; tenant sees the request.
+# Not covered: Compare / competition screen (needs a second tenant account
+# with an active application on the same property).
+# Env: creds, LC_PROPERTY_ID, LC_PROPERTY_TITLE, LC_HOLDING_DEPOSIT
+appId: com.lalarente.app
+---
+# ── PHASE 1 — tenant applies ──────────────────────────────────────────────
+- runFlow: ../subflows/login-tenant.yaml
+- runFlow:
+    file: ../subflows/lc-tenant-apply.yaml
+    env:
+      PROP_ID: "${LC_PROPERTY_ID}"
+      PROP_TITLE: "${LC_PROPERTY_TITLE}"
+- assertVisible: "(?i).*submitted.*"
+- assertVisible:
+    id: "tenant-applications-withdraw"
+- takeScreenshot: lc03a-tenant-submitted
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── LC-1-15 property now links to the application and blocks a second one ───
+- openLink: lalarenteapp://(tenant)/properties/${LC_PROPERTY_ID}
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-back"
+    timeout: 25000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-property-view-application"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "tenant-property-view-application"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-application-back"
+    timeout: 20000
+- assertVisible: ".*${LC_PROPERTY_TITLE}.*"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-application-withdraw"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "tenant-application-back"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-apply"
+    timeout: 20000
+- tapOn:
+    id: "tenant-property-apply"
+- extendedWaitUntil:
+    visible: ".*already have a pending application.*"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- openLink: lalarenteapp://(tenant)/application-status
+- extendedWaitUntil:
+    visible: "My Applications"
+    timeout: 20000
+- tapOn:
+    id: "tenant-applications-back"
+- waitForAnimationToEnd:
+    timeout: 2000
+- openLink: lalarenteapp://(tenant)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+# ── PHASE 2 — owner list filters and the application ──────────────────────
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/applications
+- extendedWaitUntil:
+    visible: "Applications"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "owner-applications-filter-submitted"
+- waitForAnimationToEnd:
+    timeout: 1000
+- extendedWaitUntil:
+    visible:
+      id: "owner-application-card"
+    timeout: 20000
+- tapOn:
+    id: "owner-applications-property-chip"
+    index: 0
+    optional: true
+- tapOn:
+    id: "owner-applications-property-all"
+    optional: true
+- tapOn:
+    id: "owner-applications-filter-all"
+- tapOn:
+    id: "owner-applications-back"
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow:
+    file: ../subflows/lc-owner-open-application.yaml
+    env:
+      PROP_TITLE: "${LC_PROPERTY_TITLE}"
+- assertVisible: ".*${LC_PROPERTY_TITLE}.*"
+- takeScreenshot: lc03a-owner-application
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── screening ─────────────────────────────────────────────────────────────
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "screening-run-button"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "screening-run-button"
+- extendedWaitUntil:
+    visible: "(Screening complete|Screening failed)"
+    timeout: 60000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "screening-row-background"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "screening-row-background"
+- extendedWaitUntil:
+    visible: ".*Review the applicant.*"
+    timeout: 15000
+- tapOn:
+    text: "Cancel"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "screening-row-credit"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "screening-row-credit"
+- extendedWaitUntil:
+    visible: ".*Review the applicant.*"
+    timeout: 15000
+- tapOn:
+    text: "Cancel"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "screening-row-identity"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "screening-row-identity"
+- extendedWaitUntil:
+    visible: ".*Review the applicant.*"
+    timeout: 15000
+- tapOn:
+    text: "Mark Complete"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# ── documents open ────────────────────────────────────────────────────────
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-application-document-row"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "owner-application-document-row"
+    index: 0
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: lc03a-owner-document-open
+- waitForAnimationToEnd:
+    timeout: 1500
+- runFlow:
+    file: ../subflows/lc-owner-open-application.yaml
+    env:
+      PROP_TITLE: "${LC_PROPERTY_TITLE}"
+
+# ── Reject opens the reason prompt; cancel leaves the application untouched ───
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-application-reject"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "owner-application-reject"
+- extendedWaitUntil:
+    visible:
+      id: "reason-input"
+    timeout: 20000
+- tapOn:
+    id: "reason-cancel"
+- extendedWaitUntil:
+    notVisible:
+      id: "reason-input"
+    timeout: 15000
+
+# ── LC-4-01 request holding deposit: invalid amount, cancel, send ─────────
+- tapOn:
+    id: "owner-application-request-deposit"
+- extendedWaitUntil:
+    visible:
+      id: "owner-application-deposit-amount"
+    timeout: 20000
+- tapOn:
+    id: "owner-application-deposit-send"
+- extendedWaitUntil:
+    visible: "Invalid Amount"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- tapOn:
+    id: "owner-application-deposit-cancel"
+- extendedWaitUntil:
+    notVisible:
+      id: "owner-application-deposit-amount"
+    timeout: 15000
+- tapOn:
+    id: "owner-application-request-deposit"
+- tapOn:
+    id: "owner-application-deposit-amount"
+- inputText: "${LC_HOLDING_DEPOSIT}"
+- tapOn:
+    id: "owner-application-deposit-send"
+- extendedWaitUntil:
+    visible: "Deposit Requested"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# ── approval is blocked until the deposit is paid; reminder goes to the tenant ───
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-application-approve"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "owner-application-approve"
+- extendedWaitUntil:
+    visible: "Holding deposit required"
+    timeout: 15000
+- tapOn:
+    text: "Remind tenant"
+- extendedWaitUntil:
+    visible: "Reminder sent"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- tapOn:
+    id: "owner-application-back"
+- waitForAnimationToEnd:
+    timeout: 2000
+- openLink: lalarenteapp://(owner)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-owner.yaml
+
+# ── PHASE 3 — tenant sees the deposit request ─────────────────────────────
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/application-status
+- extendedWaitUntil:
+    visible: "My Applications"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*Holding deposit required.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- assertVisible:
+    id: "tenant-applications-deposit-banner"
+- takeScreenshot: lc03a-tenant-deposit-banner
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(tenant)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-tenant.yaml

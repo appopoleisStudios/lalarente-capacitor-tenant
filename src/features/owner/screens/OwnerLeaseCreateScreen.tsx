@@ -270,7 +270,11 @@ export default function OwnerLeaseCreateScreen() {
         <View style={styles.centerContainer}>
           <Ionicons name="alert-circle-outline" size={64} color="#F44336" />
           <Text style={styles.errorText}>Application not found</Text>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <TouchableOpacity
+            testID="owner-lease-create-go-back"
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
             <Text style={styles.backButtonText}>Go Back</Text>
           </TouchableOpacity>
         </View>
@@ -284,7 +288,11 @@ export default function OwnerLeaseCreateScreen() {
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.headerBackButton}>
+            <TouchableOpacity
+              testID="owner-lease-create-back"
+              onPress={() => router.back()}
+              style={styles.headerBackButton}
+            >
               <Ionicons name="arrow-back" size={24} color="#333" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Create Lease</Text>
@@ -321,6 +329,7 @@ export default function OwnerLeaseCreateScreen() {
                   <Text style={styles.label}>Lease Type</Text>
                   <View style={styles.radioGroup}>
                     <TouchableOpacity
+                      testID="owner-lease-create-type-fixed"
                       style={styles.radioOption}
                       onPress={() => setLeaseType('fixed')}
                     >
@@ -332,6 +341,7 @@ export default function OwnerLeaseCreateScreen() {
                       <Text style={styles.radioLabel}>Fixed Term</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
+                      testID="owner-lease-create-type-month"
                       style={styles.radioOption}
                       onPress={() => setLeaseType('month_to_month')}
                     >
@@ -350,6 +360,7 @@ export default function OwnerLeaseCreateScreen() {
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>Start Date *</Text>
                   <TouchableOpacity
+                    testID="owner-lease-create-start-date"
                     style={styles.input}
                     onPress={() => setShowStartDatePicker(true)}
                     activeOpacity={0.7}
@@ -369,6 +380,7 @@ export default function OwnerLeaseCreateScreen() {
                       />
                       {Platform.OS === 'ios' && (
                         <TouchableOpacity
+                          testID="owner-lease-create-start-date-done"
                           style={styles.pickerDoneRow}
                           onPress={confirmStartDateIos}
                         >
@@ -382,6 +394,7 @@ export default function OwnerLeaseCreateScreen() {
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>End Date *</Text>
                   <TouchableOpacity
+                    testID="owner-lease-create-end-date"
                     style={styles.input}
                     onPress={() => setShowEndDatePicker(true)}
                     activeOpacity={0.7}
@@ -407,7 +420,11 @@ export default function OwnerLeaseCreateScreen() {
                         onChange={handleEndDateChange}
                       />
                       {Platform.OS === 'ios' && (
-                        <TouchableOpacity style={styles.pickerDoneRow} onPress={confirmEndDateIos}>
+                        <TouchableOpacity
+                          testID="owner-lease-create-end-date-done"
+                          style={styles.pickerDoneRow}
+                          onPress={confirmEndDateIos}
+                        >
                           <Text style={styles.pickerDoneText}>Done</Text>
                         </TouchableOpacity>
                       )}
@@ -424,6 +441,7 @@ export default function OwnerLeaseCreateScreen() {
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>Monthly Rent (R) *</Text>
                   <TextInput
+                    testID="owner-lease-create-rent"
                     style={styles.input}
                     value={monthlyRent}
                     onChangeText={setMonthlyRent}
@@ -436,6 +454,7 @@ export default function OwnerLeaseCreateScreen() {
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>Deposit Amount (R)</Text>
                   <TextInput
+                    testID="owner-lease-create-deposit"
                     style={styles.input}
                     value={depositAmount}
                     onChangeText={setDepositAmount}
@@ -448,6 +467,7 @@ export default function OwnerLeaseCreateScreen() {
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>Payment Due Day (1-31) *</Text>
                   <TextInput
+                    testID="owner-lease-create-due-day"
                     style={styles.input}
                     value={paymentDueDay}
                     onChangeText={setPaymentDueDay}
@@ -460,6 +480,7 @@ export default function OwnerLeaseCreateScreen() {
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>Late Fee Amount (R)</Text>
                   <TextInput
+                    testID="owner-lease-create-late-fee"
                     style={styles.input}
                     value={lateFeeAmount}
                     onChangeText={setLateFeeAmount}
@@ -472,6 +493,7 @@ export default function OwnerLeaseCreateScreen() {
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>Late Fee Grace Days</Text>
                   <TextInput
+                    testID="owner-lease-create-grace-days"
                     style={styles.input}
                     value={lateFeeGraceDays}
                     onChangeText={setLateFeeGraceDays}
@@ -491,6 +513,7 @@ export default function OwnerLeaseCreateScreen() {
                   <Text style={styles.label}>Escalation Type</Text>
                   <View style={styles.radioGroup}>
                     <TouchableOpacity
+                      testID="owner-lease-create-escalation-percentage"
                       style={styles.radioOption}
                       onPress={() => setRentEscalationType('percentage')}
                     >
@@ -506,6 +529,7 @@ export default function OwnerLeaseCreateScreen() {
                       <Text style={styles.radioLabel}>Percentage</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
+                      testID="owner-lease-create-escalation-fixed"
                       style={styles.radioOption}
                       onPress={() => setRentEscalationType('fixed_amount')}
                     >
@@ -528,6 +552,7 @@ export default function OwnerLeaseCreateScreen() {
                     Escalation Value ({rentEscalationType === 'percentage' ? '%' : 'R'})
                   </Text>
                   <TextInput
+                    testID="owner-lease-create-escalation-value"
                     style={styles.input}
                     value={rentEscalationValue}
                     onChangeText={setRentEscalationValue}
@@ -540,6 +565,7 @@ export default function OwnerLeaseCreateScreen() {
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>Escalation Frequency (months)</Text>
                   <TextInput
+                    testID="owner-lease-create-escalation-frequency"
                     style={styles.input}
                     value={rentEscalationFrequency}
                     onChangeText={setRentEscalationFrequency}
@@ -553,7 +579,11 @@ export default function OwnerLeaseCreateScreen() {
 
             {/* Create Button */}
             <View style={styles.section}>
-              <TouchableOpacity style={styles.createButton} onPress={handleCreateLease}>
+              <TouchableOpacity
+                testID="owner-lease-create-review"
+                style={styles.createButton}
+                onPress={handleCreateLease}
+              >
                 <Ionicons name="document-text" size={20} color="#FFF" />
                 <Text style={styles.createButtonText}>Review Lease Agreement</Text>
               </TouchableOpacity>

@@ -1,0 +1,223 @@
+# Lifecycle stage 7c — Owner sends the purchase order; vendor sees it
+# Needs the accepted quote from 07b.
+# F12 fixed: the start date is checked by calendar day, so the default
+# (today, now) is accepted and the vendor can start work at once in 07d.
+# Env: creds incl. VENDOR_*, LC_TOKEN
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/maintenance
+- extendedWaitUntil:
+    visible: "Maintenance"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*inspection issue LC-${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    text: ".*inspection issue LC-${LC_TOKEN}.*"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "owner-maintenance-detail-back"
+    timeout: 25000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: "Send PO to Vendor"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    text: "Send PO to Vendor"
+- extendedWaitUntil:
+    visible:
+      id: "owner-send-po-back"
+    timeout: 25000
+- assertVisible: "Send Purchase Order"
+
+# ── time picker opens (own visit, so only the date wheel is open later) ───
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-send-po-time"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "owner-send-po-time"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: lc07c-po-time-picker
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── header back, then Cancel, both return to the request ──────────────────
+- tapOn:
+    id: "owner-send-po-back"
+- extendedWaitUntil:
+    visible:
+      id: "owner-maintenance-detail-back"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: "Send PO to Vendor"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    text: "Send PO to Vendor"
+- extendedWaitUntil:
+    visible:
+      id: "owner-send-po-back"
+    timeout: 25000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-send-po-cancel"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "owner-send-po-cancel"
+- extendedWaitUntil:
+    visible:
+      id: "owner-maintenance-detail-back"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: "Send PO to Vendor"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    text: "Send PO to Vendor"
+- extendedWaitUntil:
+    visible:
+      id: "owner-send-po-back"
+    timeout: 25000
+
+# ── validation: instructions required ─────────────────────────────────────
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-send-po-send"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "owner-send-po-send"
+- extendedWaitUntil:
+    visible: "Please provide work instructions for the vendor"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-send-po-instructions"
+    direction: UP
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "owner-send-po-instructions"
+- inputText: "LC-po-instructions ${LC_TOKEN}"
+- tapOn:
+    text: "Work Schedule"
+
+# ── date picker opens; default start (today) is kept and accepted (F12 fix) ───
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-send-po-date"
+    direction: UP
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "owner-send-po-date"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: lc07c-po-date-picker
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    text: "Work Schedule"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-send-po-send"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    id: "owner-send-po-send"
+- extendedWaitUntil:
+    visible: "Purchase order sent to vendor"
+    timeout: 30000
+- tapOn:
+    text: "OK"
+- extendedWaitUntil:
+    visible:
+      id: "owner-maintenance-detail-back"
+    timeout: 25000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: "Purchase Order"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- assertVisible: "Issued"
+- assertNotVisible: "Send PO to Vendor"
+- takeScreenshot: lc07c-owner-po-issued
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(owner)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-owner.yaml
+
+# ── vendor sees the job waiting for its scheduled start ───────────────────
+- runFlow: ../subflows/login-vendor.yaml
+- tapOn:
+    id: "tab-vendor-jobs"
+- extendedWaitUntil:
+    visible: "My Jobs"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*inspection issue LC-${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    text: ".*inspection issue LC-${LC_TOKEN}.*"
+    index: 0
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: ".*Ready to (Work|start).*"
+- takeScreenshot: lc07c-vendor-job-ready
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(vendor)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-vendor.yaml

@@ -159,6 +159,7 @@ export default function OwnerApplicationsScreen() {
         <Text style={styles.filterLabel}>Filter by Status:</Text>
         <View style={styles.filterButtons}>
           <TouchableOpacity
+            testID="owner-applications-filter-all"
             style={[styles.filterButton, !selectedStatus && styles.filterButtonActive]}
             onPress={() => setSelectedStatus(null)}
           >
@@ -170,6 +171,7 @@ export default function OwnerApplicationsScreen() {
           </TouchableOpacity>
           {statuses.map((status) => (
             <TouchableOpacity
+              testID={`owner-applications-filter-${status}`}
               key={status}
               style={[styles.filterButton, selectedStatus === status && styles.filterButtonActive]}
               onPress={() => setSelectedStatus(status)}
@@ -191,6 +193,7 @@ export default function OwnerApplicationsScreen() {
             <Text style={styles.filterLabel}>Filter by Property:</Text>
             <View style={styles.filterButtons}>
               <TouchableOpacity
+                testID="owner-applications-property-all"
                 style={[styles.filterButton, !selectedProperty && styles.filterButtonActive]}
                 onPress={() => setSelectedProperty(null)}
               >
@@ -207,6 +210,7 @@ export default function OwnerApplicationsScreen() {
                 (property) =>
                   property && (
                     <TouchableOpacity
+                      testID="owner-applications-property-chip"
                       key={property.id}
                       style={[
                         styles.filterButton,
@@ -250,7 +254,11 @@ export default function OwnerApplicationsScreen() {
         <View style={styles.centerContainer}>
           <Ionicons name="alert-circle-outline" size={64} color="#F44336" />
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadApplications}>
+          <TouchableOpacity
+            testID="owner-applications-retry"
+            style={styles.retryButton}
+            onPress={loadApplications}
+          >
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -267,7 +275,11 @@ export default function OwnerApplicationsScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <TouchableOpacity
+              testID="owner-applications-back"
+              onPress={() => router.back()}
+              style={styles.backButton}
+            >
               <Text style={styles.backIcon}>←</Text>
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Applications</Text>
@@ -311,6 +323,7 @@ export default function OwnerApplicationsScreen() {
                     </Text>
                     {group.activeCount >= 2 && (
                       <TouchableOpacity
+                        testID="owner-applications-compare"
                         style={styles.compareButton}
                         onPress={() =>
                           router.push(
@@ -328,6 +341,7 @@ export default function OwnerApplicationsScreen() {
                 {/* Application Cards */}
                 {group.applications.map((item) => (
                   <TouchableOpacity
+                    testID="owner-application-card"
                     key={item.id}
                     style={styles.card}
                     onPress={() => router.push(`/(owner)/applications/${item.id}` as any)}

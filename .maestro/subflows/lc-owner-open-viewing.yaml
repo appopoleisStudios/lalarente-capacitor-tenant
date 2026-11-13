@@ -1,0 +1,29 @@
+# Owner (already signed in) opens Viewing Requests and the request whose
+# message contains MSG + LC_TOKEN.
+# Env: LC_TOKEN, MSG
+appId: com.lalarente.app
+---
+- openLink: lalarenteapp://(owner)/viewings
+- extendedWaitUntil:
+    visible: "Viewing Requests"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "owner-viewings-filter-all"
+- assertVisible:
+    id: "owner-viewing-card"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*${MSG} ${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+- tapOn:
+    text: ".*${MSG} ${LC_TOKEN}.*"
+- extendedWaitUntil:
+    visible:
+      id: "owner-viewing-detail-back"
+    timeout: 20000

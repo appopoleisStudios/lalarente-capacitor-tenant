@@ -237,6 +237,7 @@ export default function OwnerViewingsScreen() {
 
     return (
       <TouchableOpacity
+        testID="owner-viewing-card"
         style={[
           styles.card,
           upcoming && styles.upcomingCard,
@@ -332,6 +333,7 @@ export default function OwnerViewingsScreen() {
               <Text style={styles.confirmViewingTitle}>Did this viewing happen?</Text>
               <View style={styles.confirmViewingButtons}>
                 <TouchableOpacity
+                  testID="owner-viewing-card-viewed"
                   style={[styles.confirmViewingBtn, styles.confirmViewingBtnYes]}
                   onPress={(e) => {
                     e.stopPropagation?.();
@@ -342,6 +344,7 @@ export default function OwnerViewingsScreen() {
                   <Text style={styles.confirmViewingBtnText}>Yes, viewed</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
+                  testID="owner-viewing-card-noshow"
                   style={[styles.confirmViewingBtn, styles.confirmViewingBtnNo]}
                   onPress={(e) => {
                     e.stopPropagation?.();
@@ -386,7 +389,11 @@ export default function OwnerViewingsScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.container}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <TouchableOpacity
+              testID="owner-viewings-back"
+              onPress={() => router.back()}
+              style={styles.backButton}
+            >
               <Ionicons name="arrow-back" size={24} color="#333" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Viewing Requests</Text>
@@ -405,7 +412,11 @@ export default function OwnerViewingsScreen() {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            testID="owner-viewings-back"
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Viewing Requests</Text>
@@ -417,6 +428,7 @@ export default function OwnerViewingsScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filters}>
             {STATUS_FILTERS.map((filter) => (
               <TouchableOpacity
+                testID={`owner-viewings-filter-${filter.value}`}
                 key={filter.value}
                 style={[
                   styles.filterChip,
