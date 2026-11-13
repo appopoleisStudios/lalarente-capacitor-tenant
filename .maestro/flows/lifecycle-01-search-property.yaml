@@ -4,7 +4,7 @@
 # shows "No properties found".
 # Not automatable: Retry buttons (render only when the load fails).
 # Env: TENANT creds; LC_PROPERTY_ID / LC_PROPERTY_TITLE = an AVAILABLE
-# 2-bedroom townhouse with a 3D tour that the tenant has no viewing or
+# 2-bedroom townhouse with NO 3D tour (View in 3D shows "Feature coming soon") that the tenant has no viewing or
 # application on; LC_PRICE_MIN / LC_PRICE_MAX = a range containing its rent
 appId: com.lalarente.app
 ---
@@ -191,14 +191,12 @@ appId: com.lalarente.app
 - tapOn:
     id: "tenant-property-favorite"
 
-# ── results list and 3D badge on search ───────────────────────────────────
+# ── results list on search ────────────────────────────────────────────────
 - openLink: lalarenteapp://(tenant)/search
 - extendedWaitUntil:
     visible:
       id: "tenant-search-results"
     timeout: 25000
-- assertVisible:
-    id: "tenant-search-3d-badge"
 - openLink: lalarenteapp://(tenant)/properties/${LC_PROPERTY_ID}
 - extendedWaitUntil:
     visible:
@@ -214,15 +212,16 @@ appId: com.lalarente.app
 - waitForAnimationToEnd:
     timeout: 1500
 - tapOn:
-    text: "Close"
-    optional: true
+    point: "50%,25%"
+- waitForAnimationToEnd:
+    timeout: 1500
 - openLink: lalarenteapp://(tenant)/properties/${LC_PROPERTY_ID}
 - extendedWaitUntil:
     visible:
       id: "tenant-property-back"
     timeout: 25000
 
-# ── LC-1-10 3D tour ───────────────────────────────────────────────────────
+# ── LC-1-10 3D tour not attached: coming soon popup ───────────────────────
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -231,11 +230,15 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-view-3d"
-- waitForAnimationToEnd:
-    timeout: 4000
-- takeScreenshot: lc01-3d-tour
+- extendedWaitUntil:
+    visible: "Feature coming soon"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- takeScreenshot: lc01-3d-coming-soon
 - waitForAnimationToEnd:
     timeout: 1500
 - openLink: lalarenteapp://(tenant)/properties/${LC_PROPERTY_ID}
@@ -253,6 +256,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-property-contact-owner"
 - waitForAnimationToEnd:

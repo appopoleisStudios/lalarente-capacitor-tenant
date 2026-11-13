@@ -59,6 +59,10 @@ export const styles = StyleSheet.create({
     fontSize: 15,
     color: '#111827',
   },
+  dateFieldText: {
+    fontSize: 15,
+    color: '#111827',
+  },
   textArea: { minHeight: 80, textAlignVertical: 'top' },
   row: { flexDirection: 'row', gap: 12 },
   checkboxGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },

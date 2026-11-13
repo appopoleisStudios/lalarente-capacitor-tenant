@@ -15,6 +15,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - takeScreenshot: lc08-tenant-dashboard
 - waitForAnimationToEnd:
     timeout: 1500
@@ -62,6 +63,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-property-apply"
 - extendedWaitUntil:
@@ -91,6 +93,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - takeScreenshot: lc08-owner-tenants
 - waitForAnimationToEnd:
     timeout: 1500
@@ -106,6 +109,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - takeScreenshot: lc08-owner-properties
 - waitForAnimationToEnd:
     timeout: 1500

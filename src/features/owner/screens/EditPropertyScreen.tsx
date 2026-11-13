@@ -20,6 +20,8 @@ import { supabase } from '../../../lib/supabase';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { styles } from './EditPropertyScreen.styles';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { validate3dTourUrl } from '@/src/features/properties/utils/validate3dTourUrl';
+import { DateField } from '@/src/shared/components/ui/DateField';
 
 interface PropertyForm {
   title: string;
@@ -260,6 +262,13 @@ export default function EditPropertyScreen() {
       return;
     }
 
+    const tourError = await validate3dTourUrl(form.media_3d_url);
+    if (tourError) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('3D tour link', tourError);
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -353,6 +362,7 @@ export default function EditPropertyScreen() {
               onPress={handleSubmit}
               hapticType="medium"
               disabled={!isDirty || saving}
+              testID="owner-edit-property-save"
             >
               <View
                 style={[
@@ -395,7 +405,7 @@ export default function EditPropertyScreen() {
               <Text style={styles.label}>Property Photos</Text>
               <Text style={styles.helperText}>Add up to 10 photos</Text>
 
-              <AnimatedButton onPress={pickImages}>
+              <AnimatedButton onPress={pickImages} testID="owner-edit-property-select-photos">
                 <View style={styles.uploadButton}>
                   <Text style={styles.uploadButtonText}>📷 Select Photos</Text>
                 </View>
@@ -409,8 +419,15 @@ export default function EditPropertyScreen() {
                 >
                   {form.photos.map((photo, index) => (
                     <View key={index} style={styles.photoContainer}>
-                      <Image source={{ uri: photo }} style={styles.photoPreview} />
-                      <AnimatedButton onPress={() => removePhoto(index)}>
+                      <Image
+                        source={{ uri: photo }}
+                        style={styles.photoPreview}
+                        testID="owner-edit-property-photo"
+                      />
+                      <AnimatedButton
+                        onPress={() => removePhoto(index)}
+                        testID="owner-edit-property-photo-remove"
+                      >
                         <View style={styles.photoRemove}>
                           <Text style={styles.photoRemoveText}>×</Text>
                         </View>
@@ -430,6 +447,7 @@ export default function EditPropertyScreen() {
               </Text>
               <TextInput
                 style={styles.input}
+                testID="owner-edit-property-3d-url"
                 placeholder="https://my.matterport.com/show/?m=…"
                 placeholderTextColor="#9ca3af"
                 autoCapitalize="none"
@@ -682,12 +700,14 @@ export default function EditPropertyScreen() {
               <View style={styles.row}>
                 <View style={[styles.section, { flex: 1 }]}>
                   <Text style={styles.label}>Available From</Text>
-                  <TextInput
+                  <DateField
+                    testID="owner-edit-property-available-from"
                     style={styles.input}
-                    placeholder="YYYY-MM-DD"
+                    textStyle={styles.dateFieldText}
+                    placeholder="Select date"
                     placeholderTextColor="#9ca3af"
                     value={form.available_from}
-                    onChangeText={(text) => setForm({ ...form, available_from: text })}
+                    onChange={(text) => setForm({ ...form, available_from: text })}
                   />
                 </View>
                 <View style={[styles.section, { flex: 1 }]}>

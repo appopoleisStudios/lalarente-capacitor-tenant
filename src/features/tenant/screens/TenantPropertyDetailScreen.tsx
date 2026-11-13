@@ -354,7 +354,12 @@ export default function TenantPropertyDetailScreen() {
                 scrollEventThrottle={16}
               >
                 {images.map((image, index) => (
-                  <Image key={index} source={{ uri: image }} style={styles.propertyImage} />
+                  <Image
+                    key={index}
+                    testID="tenant-property-photo"
+                    source={{ uri: image }}
+                    style={styles.propertyImage}
+                  />
                 ))}
               </ScrollView>
               <View style={styles.imageCounter}>
@@ -369,31 +374,33 @@ export default function TenantPropertyDetailScreen() {
             </View>
           )}
 
-          {/* View in 3D CTA (Plane #92 Phase 1) — only when a tour is attached */}
-          {property.media_3d_url ? (
-            <TouchableOpacity
-              style={styles.view3dButton}
-              activeOpacity={0.85}
-              onPress={() => {
-                // backTo = role property tab root: lets the viewer close land on
-                // the detail (hidden-tab stack), never the Dashboard (#74/#143).
-                router.push({
-                  pathname: '/(tenant)/properties/[id]/view3d',
-                  params: { id, backTo: '/(tenant)/properties' },
-                } as never);
-              }}
-              testID="tenant-view-3d"
-              accessibilityRole="button"
-              accessibilityLabel="View this property in 3D"
-            >
-              <Ionicons name="cube-outline" size={22} color="#FFF" />
-              <View style={styles.view3dTextWrap}>
-                <Text style={styles.view3dTitle}>View in 3D</Text>
-                <Text style={styles.view3dSub}>Walk the property before you visit</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.75)" />
-            </TouchableOpacity>
-          ) : null}
+          {/* View in 3D CTA (Plane #92 Phase 1) — no tour attached shows "coming soon" */}
+          <TouchableOpacity
+            style={styles.view3dButton}
+            activeOpacity={0.85}
+            onPress={() => {
+              if (!property.media_3d_url) {
+                Alert.alert('Feature coming soon', '3D tours for this property are coming soon.');
+                return;
+              }
+              // backTo = role property tab root: lets the viewer close land on
+              // the detail (hidden-tab stack), never the Dashboard (#74/#143).
+              router.push({
+                pathname: '/(tenant)/properties/[id]/view3d',
+                params: { id, backTo: '/(tenant)/properties' },
+              } as never);
+            }}
+            testID="tenant-view-3d"
+            accessibilityRole="button"
+            accessibilityLabel="View this property in 3D"
+          >
+            <Ionicons name="cube-outline" size={22} color="#FFF" />
+            <View style={styles.view3dTextWrap}>
+              <Text style={styles.view3dTitle}>View in 3D</Text>
+              <Text style={styles.view3dSub}>Walk the property before you visit</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.75)" />
+          </TouchableOpacity>
 
           {/* Property Info */}
           <View style={styles.content}>

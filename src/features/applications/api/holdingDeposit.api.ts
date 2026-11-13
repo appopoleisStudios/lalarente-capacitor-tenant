@@ -99,12 +99,13 @@ export const holdingDepositApi = {
    * hold the property — the owner must confirm receipt first.
    */
   async claimPayment(depositId: string, paymentMethod: string): Promise<HoldingDeposit> {
-    const { data, error } = await supabase
-      .from('holding_deposits')
-      .update({ payment_method: paymentMethod })
-      .eq('id', depositId)
-      .eq('status', 'pending')
-      .select()
+    // RPC: tenants have no UPDATE on holding_deposits; the function only sets
+    // payment_method on the caller's own pending deposit.
+    const { data, error } = await (supabase as any)
+      .rpc('claim_holding_deposit_payment', {
+        p_deposit_id: depositId,
+        p_payment_method: paymentMethod,
+      })
       .single();
 
     if (error) {

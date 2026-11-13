@@ -22,6 +22,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-applications-deposit-banner"
 - extendedWaitUntil:
@@ -35,6 +36,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -43,6 +45,7 @@ appId: com.lalarente.app
     direction: UP
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-holding-deposit-reference-show"
 - extendedWaitUntil:
@@ -58,6 +61,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-holding-deposit-i-have-paid"
 - extendedWaitUntil:
@@ -103,6 +107,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - openLink: lalarenteapp://(tenant)/
 - waitForAnimationToEnd:
     timeout: 2000
@@ -136,6 +141,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - assertVisible: ".*Tenant reports payment made.*"
 - takeScreenshot: lc04-owner-sees-report
 - waitForAnimationToEnd:
@@ -187,6 +193,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-applications-deposit-banner"
 - extendedWaitUntil:
@@ -200,6 +207,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-holding-deposit-i-have-paid"
 - extendedWaitUntil:
@@ -236,6 +244,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-application-deposit-claimed"
 - extendedWaitUntil:
@@ -249,6 +258,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-holding-deposit-confirm-receipt"
 - extendedWaitUntil:
@@ -284,6 +294,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - assertVisible:
     id: "owner-holding-deposit-refund"
 - takeScreenshot: lc04-owner-paid
@@ -343,6 +354,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-application-approve"
 - extendedWaitUntil:
@@ -378,6 +390,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-application-deposit-apply-to-lease"
 - extendedWaitUntil:
@@ -395,6 +408,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - takeScreenshot: lc04-owner-approved
 - waitForAnimationToEnd:
     timeout: 1500
@@ -417,6 +431,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - assertNotVisible:
     id: "tenant-holding-deposit-awaiting-owner"
 - takeScreenshot: lc04-tenant-paid
@@ -434,6 +449,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - assertVisible: "(?i).*approved.*"
 - openLink: lalarenteapp://(tenant)/search
 - extendedWaitUntil:

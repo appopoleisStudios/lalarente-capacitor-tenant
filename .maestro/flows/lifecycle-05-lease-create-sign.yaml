@@ -21,6 +21,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-application-create-lease"
 - extendedWaitUntil:
@@ -44,6 +45,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-application-create-lease"
 - extendedWaitUntil:
@@ -72,6 +74,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-lease-create-end-date"
 - extendedWaitUntil:
@@ -90,6 +93,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-lease-create-rent"
 - eraseText: 30
@@ -103,6 +107,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-lease-create-review"
 - extendedWaitUntil:
@@ -118,6 +123,7 @@ appId: com.lalarente.app
     direction: UP
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-lease-create-rent"
 - inputText: "${LC_RENT}"
@@ -131,6 +137,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-lease-create-deposit"
 - eraseText: 30
@@ -147,6 +154,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-lease-create-due-day"
 - eraseText: 30
@@ -161,6 +169,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-lease-create-review"
 - extendedWaitUntil:
@@ -176,6 +185,7 @@ appId: com.lalarente.app
     direction: UP
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-lease-create-due-day"
 - eraseText: 30
@@ -190,6 +200,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-lease-create-late-fee"
 - inputText: "250"
@@ -203,6 +214,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-lease-create-grace-days"
 - inputText: "5"
@@ -216,6 +228,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-lease-create-escalation-fixed"
 - tapOn:
@@ -228,6 +241,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-lease-create-escalation-value"
 - inputText: "8"
@@ -241,6 +255,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-lease-create-escalation-frequency"
 - eraseText: 30
@@ -258,6 +273,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-lease-create-review"
 - extendedWaitUntil:
@@ -286,6 +302,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-lease-create-review"
 - extendedWaitUntil:
@@ -338,6 +355,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-application-view-lease"
 - extendedWaitUntil:
@@ -376,6 +394,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - takeScreenshot: lc05-tenant-lease-pending
 - waitForAnimationToEnd:
     timeout: 1500
@@ -387,6 +406,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-lease-sign"
 
@@ -460,6 +480,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-application-view-lease"
 - extendedWaitUntil:
@@ -474,6 +495,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - assertVisible: ".*Tenant has signed.*"
 - tapOn:
     id: "owner-lease-sign"
@@ -521,6 +543,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-lease-regenerate-pdf"
 - extendedWaitUntil:
@@ -536,6 +559,7 @@ appId: com.lalarente.app
     direction: UP
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-lease-download-pdf"
 - waitForAnimationToEnd:
@@ -551,6 +575,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-lease-contact-tenant"
 - extendedWaitUntil:
@@ -566,6 +591,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - assertVisible:
     id: "owner-lease-view-inspections"
 - tapOn:
@@ -601,6 +627,7 @@ appId: com.lalarente.app
     direction: UP
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-lease-view-document"
 - waitForAnimationToEnd:
@@ -624,6 +651,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-holding-deposit-apply"
 - extendedWaitUntil:
@@ -661,6 +689,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - takeScreenshot: lc05-owner-rent-roll
 - waitForAnimationToEnd:
     timeout: 1500
@@ -676,6 +705,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - takeScreenshot: lc05-owner-deposit
 - waitForAnimationToEnd:
     timeout: 1500
@@ -705,6 +735,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-lease-generate-pdf"
 - waitForAnimationToEnd:
@@ -720,6 +751,7 @@ appId: com.lalarente.app
     direction: UP
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-lease-download-pdf"
 - waitForAnimationToEnd:
@@ -735,6 +767,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-lease-contact-owner"
 - extendedWaitUntil:
@@ -750,6 +783,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-lease-early-termination"
 - extendedWaitUntil:
@@ -767,6 +801,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-lease-view-document"
 - waitForAnimationToEnd:
@@ -788,6 +823,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -796,6 +832,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -804,6 +841,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -812,6 +850,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -820,6 +859,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -828,6 +868,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -836,6 +877,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - takeScreenshot: lc05-tenant-journey
 - waitForAnimationToEnd:
     timeout: 1500
@@ -847,6 +889,7 @@ appId: com.lalarente.app
     direction: UP
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-journey-open-lease"
 - extendedWaitUntil:
@@ -877,6 +920,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - openLink: lalarenteapp://(tenant)/payments
 - extendedWaitUntil:
     visible: "Payments"
@@ -889,6 +933,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - takeScreenshot: lc05-tenant-payments
 - waitForAnimationToEnd:
     timeout: 1500

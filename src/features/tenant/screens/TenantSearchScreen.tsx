@@ -128,7 +128,11 @@ export default function TenantSearchScreen() {
         onPress={() => router.push(`/(tenant)/properties/${item.id}` as any)}
       >
         {mainImage ? (
-          <Image source={{ uri: mainImage }} style={styles.propertyImage} />
+          <Image
+            testID="tenant-search-card-image"
+            source={{ uri: mainImage }}
+            style={styles.propertyImage}
+          />
         ) : (
           <View style={[styles.propertyImage, styles.noImage]}>
             <Ionicons name="home-outline" size={48} color="#CCC" />

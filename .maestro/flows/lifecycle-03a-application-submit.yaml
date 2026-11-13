@@ -35,6 +35,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-property-view-application"
 - extendedWaitUntil:
@@ -50,6 +51,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-application-back"
 - extendedWaitUntil:
@@ -123,6 +125,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "screening-run-button"
 - extendedWaitUntil:
@@ -138,6 +141,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "screening-row-background"
 - extendedWaitUntil:
@@ -153,6 +157,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "screening-row-credit"
 - extendedWaitUntil:
@@ -168,6 +173,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "screening-row-identity"
 - extendedWaitUntil:
@@ -187,6 +193,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-application-document-row"
     index: 0
@@ -209,6 +216,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-application-reject"
 - extendedWaitUntil:
@@ -266,6 +274,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-application-approve"
 - extendedWaitUntil:
@@ -301,6 +310,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - assertVisible:
     id: "tenant-applications-deposit-banner"
 - takeScreenshot: lc03a-tenant-deposit-banner

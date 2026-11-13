@@ -34,6 +34,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-viewing-modal-confirm"
 - extendedWaitUntil:
@@ -51,6 +52,7 @@ appId: com.lalarente.app
     direction: UP
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-viewing-modal-decline-reason"
 - inputText: "LC-decline-reason ${LC_TOKEN}"
@@ -64,6 +66,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-viewing-modal-slot-add"
 - waitForAnimationToEnd:
@@ -89,6 +92,7 @@ appId: com.lalarente.app
     direction: UP
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-viewing-modal-slot-date"
     index: 0
@@ -107,6 +111,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-viewing-modal-slot-remove"
     index: 2
@@ -118,6 +123,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -126,6 +132,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-viewing-modal-confirm"
 - extendedWaitUntil:
@@ -156,6 +163,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: ".*${LC_BRANCH_PROPERTY_TITLE}.*"
     index: 0
@@ -172,6 +180,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - assertNotVisible:
     id: "tenant-viewing-detail-cancel"
 - waitForAnimationToEnd:
@@ -182,6 +191,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - takeScreenshot: lc02b-tenant-declined-alternatives
 - waitForAnimationToEnd:
     timeout: 1500

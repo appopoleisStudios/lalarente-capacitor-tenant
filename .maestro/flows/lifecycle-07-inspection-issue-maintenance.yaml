@@ -23,6 +23,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: ".*inspection issue LC-${LC_TOKEN}.*"
     index: 0
@@ -40,6 +41,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - assertVisible: ".*Raised from the move-in inspection.*"
 - takeScreenshot: lc07-owner-request
 - waitForAnimationToEnd:
@@ -54,6 +56,7 @@ appId: com.lalarente.app
     direction: UP
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-maintenance-detail-actions"
 - extendedWaitUntil:
@@ -69,6 +72,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-maintenance-detail-chat-tenant"
 - extendedWaitUntil:
@@ -86,6 +90,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: ".*inspection issue LC-${LC_TOKEN}.*"
     index: 0
@@ -108,6 +113,7 @@ appId: com.lalarente.app
           direction: DOWN
           timeout: 20000
           visibilityPercentage: 60
+          centerElement: true
       - tapOn:
           id: "owner-maintenance-detail-acknowledge"
       - extendedWaitUntil:
@@ -132,6 +138,7 @@ appId: com.lalarente.app
           direction: DOWN
           timeout: 20000
           visibilityPercentage: 60
+          centerElement: true
       - tapOn:
           id: "owner-maintenance-detail-release-tenant"
       - extendedWaitUntil:
@@ -156,6 +163,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-maintenance-detail-push-vendors"
 - extendedWaitUntil:
@@ -232,6 +240,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "vendor-selection-submit"
 - waitForAnimationToEnd:
@@ -247,6 +256,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "vendor-selection-open-market"
 - extendedWaitUntil:
@@ -270,6 +280,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-maintenance-detail-push-vendors"
 - extendedWaitUntil:
@@ -296,6 +307,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-maintenance-detail-dedicated-vendors"
 - extendedWaitUntil:
@@ -332,6 +344,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-maintenance-chat-owner"
     index: 0
@@ -364,6 +377,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - assertVisible:
     id: "maintenance-card-.*"
 - tapOn:
@@ -382,6 +396,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-maintenance-detail-message-owner"
 - waitForAnimationToEnd:
@@ -401,6 +416,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 
 # ── tenant attaches a vendor to a new report, then clears it (no report is submitted) ───
 - openLink: lalarenteapp://(tenant)/maintenance/report
@@ -428,6 +444,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "maintenance-priority-low"
 - waitForAnimationToEnd:
@@ -438,6 +455,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "maintenance-priority-medium"
 - waitForAnimationToEnd:
@@ -448,6 +466,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "maintenance-priority-high"
 - waitForAnimationToEnd:
@@ -458,6 +477,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "maintenance-category-plumbing"
 - waitForAnimationToEnd:
@@ -468,6 +488,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "maintenance-add-camera"
 - waitForAnimationToEnd:
@@ -483,6 +504,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: "Gallery"
 - waitForAnimationToEnd:
@@ -504,6 +526,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "maintenance-report-remove-media"
     index: 0
@@ -519,6 +542,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-choose-vendor"
 - extendedWaitUntil:
@@ -567,6 +591,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: "Use on new report"
 - extendedWaitUntil:
@@ -581,6 +606,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - takeScreenshot: lc07-tenant-vendor-attached
 - waitForAnimationToEnd:
     timeout: 1500
@@ -599,6 +625,7 @@ appId: com.lalarente.app
     direction: UP
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "maintenance-report-back"
 - waitForAnimationToEnd:

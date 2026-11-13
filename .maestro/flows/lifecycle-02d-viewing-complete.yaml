@@ -25,6 +25,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - assertVisible:
     id: "owner-viewing-card-noshow"
 - takeScreenshot: lc02d-owner-awaiting-confirmation
@@ -44,6 +45,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - assertVisible:
     id: "owner-viewing-detail-cancel"
 - tapOn:
@@ -74,6 +76,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-viewing-modal-confirm"
 - extendedWaitUntil:

@@ -34,6 +34,7 @@ import {
 import { colors } from '@/src/shared/theme/colors';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { DateField } from '@/src/shared/components/ui/DateField';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -649,12 +650,15 @@ export default function OwnerInsuranceClaimScreen() {
             <Text style={styles.sectionTitle}>Incident Details</Text>
 
             <Text style={styles.fieldLabel}>Incident Date *</Text>
-            <TextInput
+            <DateField
+              testID="insurance-incident-date"
               style={styles.input}
+              textStyle={styles.dateFieldText}
               value={incidentDate}
-              onChangeText={setIncidentDate}
-              placeholder="YYYY-MM-DD"
+              onChange={setIncidentDate}
+              placeholder="Select incident date"
               placeholderTextColor={colors.gray[400]}
+              maximumDate={new Date()}
             />
 
             <Text style={styles.fieldLabel}>Description * (min 20 characters)</Text>
@@ -863,6 +867,10 @@ const styles = StyleSheet.create({
     borderColor: colors.border.default,
     borderRadius: 8,
     padding: 12,
+    fontSize: 15,
+    color: colors.text.primary,
+  },
+  dateFieldText: {
     fontSize: 15,
     color: colors.text.primary,
   },

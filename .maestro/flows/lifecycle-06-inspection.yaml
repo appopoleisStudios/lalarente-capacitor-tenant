@@ -92,6 +92,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-application-view-lease"
 - extendedWaitUntil:
@@ -106,6 +107,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-lease-schedule-inspection"
 - extendedWaitUntil:
@@ -125,6 +127,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-schedule-inspection-lease"
     index: 0
@@ -136,6 +139,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-schedule-inspection-date"
 - tapOn:
@@ -149,6 +153,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-schedule-inspection-notes"
 - inputText: "LC-insp-note ${LC_TOKEN}"
@@ -163,6 +168,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-schedule-inspection-submit"
 - extendedWaitUntil:
@@ -236,6 +242,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "inspection-room-take-photo"
 - waitForAnimationToEnd:
@@ -251,6 +258,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "inspection-room-notes"
 - inputText: "LC-room-note ${LC_TOKEN}"
@@ -268,6 +276,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "inspection-complete"
 - extendedWaitUntil:
@@ -296,6 +305,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "inspection-next"
 - tapOn:
@@ -339,6 +349,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "inspection-keys-physical-plus"
 - tapOn:
@@ -353,6 +364,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "inspection-keys-cards-plus"
 - tapOn:
@@ -367,6 +379,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "inspection-keys-remotes-plus"
 - tapOn:
@@ -385,6 +398,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "inspection-general-notes"
 - inputText: "LC-general ${LC_TOKEN}"
@@ -410,6 +424,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "inspection-complete"
 - extendedWaitUntil:
@@ -443,6 +458,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "inspection-sign"
 - extendedWaitUntil:
@@ -510,6 +526,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - assertVisible: ".*Needs Signature.*"
 - tapOn:
     id: "tenant-report-inspection-row"
@@ -527,6 +544,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -535,6 +553,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 
 # ── LC-6-14 read-only: no owner controls, tapping a condition changes nothing ───
 - assertNotVisible:
@@ -553,6 +572,7 @@ appId: com.lalarente.app
     direction: UP
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "inspection-item-0-condition-excellent"
 - takeScreenshot: lc06-tenant-readonly
@@ -568,6 +588,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "inspection-tenant-comment-add"
 - assertNotVisible: ".*LC-comment.*"
@@ -586,6 +607,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -594,6 +616,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "inspection-tenant-comment-input"
 - inputText: "LC-comment-2 ${LC_TOKEN}"
@@ -609,6 +632,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - assertNotVisible: "(?i)(delete|remove|edit)"
 - takeScreenshot: lc06-tenant-comments
 - waitForAnimationToEnd:
@@ -623,6 +647,7 @@ appId: com.lalarente.app
     direction: UP
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "inspection-comment-raise-issue"
     index: 0
@@ -637,6 +662,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - assertVisible: ".*inspection issue LC-${LC_TOKEN}.*"
 
 # ── add the run token to the title so every role can find this request ────
@@ -653,6 +679,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - takeScreenshot: lc06-tenant-raise-issue-prefilled
 - waitForAnimationToEnd:
     timeout: 1500
@@ -664,6 +691,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "maintenance-category-plumbing"
 - waitForAnimationToEnd:
@@ -674,6 +702,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "maintenance-submit"
     index: 0
@@ -693,6 +722,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "inspection-comment-view-request"
     index: 0
@@ -730,6 +760,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "inspection-sign"
 - extendedWaitUntil:
@@ -771,6 +802,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "inspection-export"
 - extendedWaitUntil:
@@ -800,6 +832,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-reports-back"
 - waitForAnimationToEnd:
@@ -816,6 +849,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - openLink: lalarenteapp://(tenant)/
 - waitForAnimationToEnd:
     timeout: 2000
@@ -860,6 +894,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-inspection-room-1"
 - tapOn:
@@ -872,6 +907,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 
 # ── LC-6-14c / 6-14d tenant comments survived and link to the request ─────
 - waitForAnimationToEnd:
@@ -882,6 +918,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -890,6 +927,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - takeScreenshot: lc06-owner-sees-comments
 - waitForAnimationToEnd:
     timeout: 1500
@@ -901,6 +939,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-inspection-comment-view-request"
     index: 0
@@ -937,6 +976,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-inspection-export"
 - extendedWaitUntil:

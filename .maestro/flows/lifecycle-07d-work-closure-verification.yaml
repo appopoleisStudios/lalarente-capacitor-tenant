@@ -26,6 +26,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: ".*inspection issue LC-${LC_TOKEN}.*"
     index: 0
@@ -39,6 +40,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "vendor-start-work"
 - extendedWaitUntil:
@@ -70,6 +72,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "vendor-daily-update"
 - extendedWaitUntil:
@@ -83,6 +86,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: "Submit Progress Update"
 - extendedWaitUntil:
@@ -98,6 +102,7 @@ appId: com.lalarente.app
     direction: UP
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: ".*Completed tiling.*"
 - inputText: "LC-progress ${LC_TOKEN}"
@@ -111,6 +116,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: "Gallery"
 - waitForAnimationToEnd:
@@ -132,6 +138,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: "Submit Progress Update"
 - extendedWaitUntil:
@@ -149,6 +156,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "vendor-request-closure"
 - extendedWaitUntil:
@@ -163,6 +171,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "closure-submit"
 - extendedWaitUntil:
@@ -178,6 +187,7 @@ appId: com.lalarente.app
     direction: UP
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "closure-notes"
 - inputText: "LC-closure ${LC_TOKEN}"
@@ -191,6 +201,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: "Gallery"
 - waitForAnimationToEnd:
@@ -212,6 +223,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: "Gallery"
 - waitForAnimationToEnd:
@@ -233,6 +245,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "closure-submit"
 - extendedWaitUntil:
@@ -263,6 +276,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: ".*inspection issue LC-${LC_TOKEN}.*"
     index: 0
@@ -278,6 +292,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-maintenance-detail-progress"
 - waitForAnimationToEnd:
@@ -298,6 +313,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: ".*inspection issue LC-${LC_TOKEN}.*"
     index: 0
@@ -313,6 +329,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-maintenance-detail-review-closure"
 - extendedWaitUntil:
@@ -327,6 +344,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 
 # ── Request Changes modal: send disabled while empty, type reason, Cancel ───
 - waitForAnimationToEnd:
@@ -337,6 +355,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "closure-reject-button"
 - extendedWaitUntil:
@@ -389,6 +408,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "closure-forward-button"
 - extendedWaitUntil:
@@ -432,6 +452,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-report-closure-row"
     index: 0
@@ -461,6 +482,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: ".*inspection issue LC-${LC_TOKEN}.*"
     index: 0
@@ -476,6 +498,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - assertVisible: ".*LC-progress ${LC_TOKEN}.*"
 - assertVisible:
     id: "maintenance-progress-update-photos"
@@ -487,6 +510,7 @@ appId: com.lalarente.app
     direction: UP
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "maintenance-verify-work"
 - extendedWaitUntil:
@@ -514,6 +538,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-verify-reject-submit"
 - extendedWaitUntil:
@@ -529,6 +554,7 @@ appId: com.lalarente.app
     direction: UP
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-verify-reject-reason"
 - inputText: " - LC-fix-reason ${LC_TOKEN}"
@@ -542,6 +568,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-verify-reject-add-photo"
 - waitForAnimationToEnd:
@@ -563,6 +590,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-verify-reject-remove-photo"
     index: 0
@@ -578,6 +606,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-verify-reject-submit"
 - extendedWaitUntil:
@@ -593,6 +622,7 @@ appId: com.lalarente.app
     direction: UP
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-verify-reject-back"
 - extendedWaitUntil:
@@ -628,6 +658,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-verify-approve-add-photo"
 - waitForAnimationToEnd:
@@ -649,6 +680,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-verify-approve-remove-photo"
     index: 0
@@ -664,6 +696,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-verify-approve-add-photo"
 - waitForAnimationToEnd:
@@ -685,6 +718,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-verify-approve-submit"
 - extendedWaitUntil:
@@ -734,6 +768,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: ".*inspection issue LC-${LC_TOKEN}.*"
     index: 0
@@ -758,6 +793,7 @@ appId: com.lalarente.app
           direction: DOWN
           timeout: 20000
           visibilityPercentage: 60
+          centerElement: true
       - tapOn:
           id: "owner-maintenance-detail-work-order"
       - waitForAnimationToEnd:

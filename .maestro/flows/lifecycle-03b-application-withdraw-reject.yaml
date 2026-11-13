@@ -19,6 +19,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-applications-withdraw"
     index: 0
@@ -44,6 +45,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-property-view-application"
 - extendedWaitUntil:
@@ -58,6 +60,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-application-withdraw"
 - extendedWaitUntil:
@@ -84,6 +87,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - takeScreenshot: lc03b-tenant-withdrawn
 - waitForAnimationToEnd:
     timeout: 1500
@@ -132,6 +136,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-application-reject"
 - extendedWaitUntil:
@@ -167,6 +172,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - takeScreenshot: lc03b-tenant-rejected
 - waitForAnimationToEnd:
     timeout: 1500

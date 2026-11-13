@@ -21,6 +21,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: ".*inspection issue LC-${LC_TOKEN}.*"
     index: 0
@@ -78,6 +79,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "quote-duration-picker"
 - extendedWaitUntil:
@@ -95,6 +97,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "quote-notes"
 - inputText: "LC-quote-note ${LC_TOKEN}"
@@ -110,6 +113,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "quote-save-draft"
 - extendedWaitUntil:
@@ -125,6 +129,7 @@ appId: com.lalarente.app
     direction: UP
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "quote-back"
 - extendedWaitUntil:
@@ -151,6 +156,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "quote-submit"
 - extendedWaitUntil:
@@ -189,6 +195,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: ".*inspection issue LC-${LC_TOKEN}.*"
     index: 0
@@ -204,6 +211,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - takeScreenshot: lc07b-owner-sees-quote
 - waitForAnimationToEnd:
     timeout: 1500
@@ -217,6 +225,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "quote-reject"
 - extendedWaitUntil:
@@ -256,6 +265,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: "View Full Details"
 - extendedWaitUntil:
@@ -288,6 +298,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: "View Full Details"
 - extendedWaitUntil:
@@ -304,6 +315,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-quote-reject"
 - extendedWaitUntil:
@@ -365,6 +377,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - assertVisible: "Awaiting send"
 - takeScreenshot: lc07b-owner-po-awaiting-send
 - waitForAnimationToEnd:
@@ -388,6 +401,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: ".*inspection issue LC-${LC_TOKEN}.*"
     index: 0
@@ -411,6 +425,7 @@ appId: com.lalarente.app
           direction: DOWN
           timeout: 20000
           visibilityPercentage: 60
+          centerElement: true
       - assertVisible: ".*LC-quote ${LC_TOKEN}.*|.*500.*"
 - openLink: lalarenteapp://(tenant)/
 - waitForAnimationToEnd:

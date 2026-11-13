@@ -18,6 +18,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: ".*inspection issue LC-${LC_TOKEN}.*"
     index: 0
@@ -33,6 +34,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: "Send PO to Vendor"
 - extendedWaitUntil:
@@ -50,6 +52,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-send-po-time"
 - waitForAnimationToEnd:
@@ -73,6 +76,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: "Send PO to Vendor"
 - extendedWaitUntil:
@@ -87,6 +91,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-send-po-cancel"
 - extendedWaitUntil:
@@ -101,6 +106,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: "Send PO to Vendor"
 - extendedWaitUntil:
@@ -117,6 +123,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-send-po-send"
 - extendedWaitUntil:
@@ -132,6 +139,7 @@ appId: com.lalarente.app
     direction: UP
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-send-po-instructions"
 - inputText: "LC-po-instructions ${LC_TOKEN}"
@@ -147,6 +155,7 @@ appId: com.lalarente.app
     direction: UP
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-send-po-date"
 - waitForAnimationToEnd:
@@ -164,6 +173,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-send-po-send"
 - extendedWaitUntil:
@@ -183,6 +193,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - assertVisible: "Issued"
 - assertNotVisible: "Send PO to Vendor"
 - takeScreenshot: lc07c-owner-po-issued
@@ -208,6 +219,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: ".*inspection issue LC-${LC_TOKEN}.*"
     index: 0

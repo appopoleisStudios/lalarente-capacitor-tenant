@@ -81,6 +81,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-viewing-detail-chat"
 - extendedWaitUntil:
@@ -198,6 +199,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-viewing-modal-notes"
 - inputText: "LC-approve-note ${LC_TOKEN}"
@@ -211,6 +213,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-viewing-modal-confirm"
 - extendedWaitUntil:
@@ -238,6 +241,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - takeScreenshot: lc02a-owner-detail-approved
 - waitForAnimationToEnd:
     timeout: 1500
@@ -249,6 +253,7 @@ appId: com.lalarente.app
     direction: UP
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-viewing-detail-chat"
 - extendedWaitUntil:
@@ -297,6 +302,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - takeScreenshot: lc02a-tenant-detail-approved
 - waitForAnimationToEnd:
     timeout: 1500

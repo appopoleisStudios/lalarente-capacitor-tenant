@@ -25,7 +25,8 @@ if (!OWNER_EMAIL || !OWNER_PASSWORD) {
 
 // Deterministic public 3D tour URL (Matterport sample) used only for the E2E
 // gate; owners paste their real tour URL in production.
-const TOUR_URL = 'https://my.matterport.com/show/?m=EjJbLb4oBbA';
+// Matterport's public sample tour (live; the old model id returned 404).
+const TOUR_URL = 'https://my.matterport.com/show/?m=SxQL3iGyoDo';
 
 async function main() {
   // 1. Login as owner

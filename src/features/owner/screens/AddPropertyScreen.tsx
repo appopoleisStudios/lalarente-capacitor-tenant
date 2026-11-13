@@ -21,6 +21,7 @@ import { supabase } from '../../../lib/supabase';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { styles } from './AddPropertyScreen.styles';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { validate3dTourUrl } from '@/src/features/properties/utils/validate3dTourUrl';
 
 interface PropertyForm {
   title: string;
@@ -201,6 +202,13 @@ export default function AddPropertyScreen() {
 
     if (!userId) {
       Alert.alert('Error', 'You must be logged in to create a property');
+      return;
+    }
+
+    const tourError = await validate3dTourUrl(form.media_3d_url);
+    if (tourError) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('3D tour link', tourError);
       return;
     }
 

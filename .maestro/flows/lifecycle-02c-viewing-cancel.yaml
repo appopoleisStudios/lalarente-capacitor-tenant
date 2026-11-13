@@ -78,6 +78,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: ".*${LC_BRANCH_PROPERTY_TITLE}.*"
     index: 0
@@ -93,6 +94,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-viewing-detail-cancel"
 - extendedWaitUntil:
@@ -155,6 +157,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-viewing-modal-confirm"
 - extendedWaitUntil:
@@ -176,6 +179,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "owner-viewing-detail-cancel-approved"
 - extendedWaitUntil:
@@ -218,6 +222,7 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     text: ".*${LC_BRANCH_PROPERTY_TITLE}.*"
     index: 0

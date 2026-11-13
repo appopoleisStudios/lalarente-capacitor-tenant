@@ -22,6 +22,7 @@ import { applicationsApi } from '../../properties/api/applicationsApi';
 import { propertiesApi } from '../../properties/api/propertiesApi';
 import { uploadFile } from '../../../lib/storage';
 import type { PropertyWithRelations } from '../../properties/api/propertiesApi';
+import { DateField } from '@/src/shared/components/ui/DateField';
 
 const RSA = { green: '#007A4D', blue: '#002395' };
 
@@ -723,15 +724,17 @@ export default function TenantApplicationScreen() {
               {!dateOfBirth && (
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Date of Birth *</Text>
-                  <TextInput
+                  <DateField
                     testID="tenant-apply-dob"
                     style={styles.input}
+                    textStyle={styles.dateFieldText}
                     value={dateOfBirth}
-                    onChangeText={setDateOfBirth}
-                    placeholder="YYYY-MM-DD (e.g., 1990-05-15)"
+                    onChange={setDateOfBirth}
+                    placeholder="Select date of birth"
                     placeholderTextColor="#999"
+                    initialDate={new Date(1990, 0, 1)}
+                    maximumDate={new Date()}
                   />
-                  <Text style={styles.helperText}>Format: Year-Month-Day (e.g., 1990-05-15)</Text>
                 </View>
               )}
             </View>
@@ -820,15 +823,16 @@ export default function TenantApplicationScreen() {
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Employment Start Date</Text>
-                <TextInput
+                <DateField
                   testID="tenant-apply-employment-start"
                   style={styles.input}
+                  textStyle={styles.dateFieldText}
                   value={employmentStartDate}
-                  onChangeText={setEmploymentStartDate}
-                  placeholder="YYYY-MM-DD (e.g., 2020-01-15)"
+                  onChange={setEmploymentStartDate}
+                  placeholder="Select start date"
                   placeholderTextColor="#999"
+                  maximumDate={new Date()}
                 />
-                <Text style={styles.helperText}>Format: Year-Month-Day (e.g., 2020-01-15)</Text>
               </View>
 
               <View style={styles.inputGroup}>
@@ -1302,6 +1306,10 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
     borderRadius: 8,
     padding: 12,
+    fontSize: 16,
+    color: '#333',
+  },
+  dateFieldText: {
     fontSize: 16,
     color: '#333',
   },
