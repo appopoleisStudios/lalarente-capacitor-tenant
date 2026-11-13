@@ -16,8 +16,13 @@ import { inspectionsApi } from '../api/inspectionsApi';
 import { supabase } from '../../../lib/supabase';
 import { exportInspectionReportPdf } from '../../owner/utils/pdfReports';
 import { reportApiError } from '@/src/core/observability/sentry';
-import type { InspectionWithRelations, InspectionRooms, RoomInspection } from '../types';
-import { normalizeRoomList } from '../utils/normalizeRooms';
+import type {
+  InspectionWithRelations,
+  InspectionRooms,
+  RoomInspection,
+  TenantInspectionComment,
+} from '../types';
+import { normalizeRoomList, parseTenantComments } from '../utils/normalizeRooms';
 
 const RSA = { blue: '#002395', gold: '#FFB81C' };
 
@@ -68,6 +73,7 @@ export default function OwnerInspectionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [inspection, setInspection] = useState<InspectionWithRelations | null>(null);
   const [rooms, setRooms] = useState<RoomInspection[]>([]);
+  const [tenantComments, setTenantComments] = useState<TenantInspectionComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [expandedRoom, setExpandedRoom] = useState<number | null>(0);
@@ -87,6 +93,7 @@ export default function OwnerInspectionDetailScreen() {
       setInspection(data);
       const roomsData = data.rooms as InspectionRooms;
       setRooms(normalizeRoomList(roomsData?.rooms));
+      setTenantComments(parseTenantComments(roomsData?.tenantComments));
     } catch (err) {
       reportApiError(err, 'inspections', 'select');
       console.error('Inspection load error:', err);
@@ -132,7 +139,7 @@ export default function OwnerInspectionDetailScreen() {
         <View style={styles.center}>
           <Ionicons name="alert-circle-outline" size={56} color="#EF4444" />
           <Text style={styles.errorText}>Inspection not found</Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={load}>
+          <TouchableOpacity testID="owner-inspection-retry" style={styles.retryBtn} onPress={load}>
             <Text style={styles.retryBtnText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -149,7 +156,11 @@ export default function OwnerInspectionDetailScreen() {
     <SafeAreaView style={styles.safe}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity
+          testID="owner-inspection-back"
+          onPress={() => router.back()}
+          style={styles.backBtn}
+        >
           <Ionicons name="arrow-back" size={24} color="#111827" />
         </TouchableOpacity>
         <View style={{ flex: 1, marginHorizontal: 12 }}>
@@ -162,6 +173,7 @@ export default function OwnerInspectionDetailScreen() {
         </View>
         {inspection.status === 'completed' && (
           <TouchableOpacity
+            testID="owner-inspection-export-header"
             style={[styles.exportBtn, exporting && { opacity: 0.6 }]}
             onPress={handleExport}
             disabled={exporting}
@@ -270,6 +282,7 @@ export default function OwnerInspectionDetailScreen() {
             {rooms.map((room, idx) => (
               <View key={idx}>
                 <TouchableOpacity
+                  testID={`owner-inspection-room-${idx}`}
                   style={styles.roomRow}
                   onPress={() => setExpandedRoom(expandedRoom === idx ? null : idx)}
                   activeOpacity={0.7}
@@ -329,6 +342,36 @@ export default function OwnerInspectionDetailScreen() {
           </View>
         )}
 
+        {/* Tenant Comments */}
+        {tenantComments.length > 0 && (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Tenant Comments ({tenantComments.length})</Text>
+            {tenantComments.map((comment) => (
+              <View key={comment.id} style={{ marginBottom: 12 }}>
+                <View style={styles.itemRow}>
+                  <Text style={styles.itemName}>{comment.room}</Text>
+                  <Text style={styles.itemNotes}>
+                    {new Date(comment.createdAt).toLocaleDateString('en-ZA')}
+                  </Text>
+                </View>
+                <Text style={styles.generalNotes}>{comment.text}</Text>
+                {comment.maintenanceRequestId && (
+                  <TouchableOpacity
+                    testID="owner-inspection-comment-view-request"
+                    onPress={() =>
+                      router.push(`/(owner)/maintenance/${comment.maintenanceRequestId}` as any)
+                    }
+                  >
+                    <Text style={[styles.itemName, { color: RSA.blue, marginTop: 4 }]}>
+                      View maintenance request
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ))}
+          </View>
+        )}
+
         {/* Key Handover */}
         {keys && (
           <View style={styles.card}>
@@ -373,6 +416,7 @@ export default function OwnerInspectionDetailScreen() {
         {/* Export CTA for completed */}
         {inspection.status === 'completed' && (
           <TouchableOpacity
+            testID="owner-inspection-export"
             style={[styles.exportCta, exporting && { opacity: 0.6 }]}
             onPress={handleExport}
             disabled={exporting}

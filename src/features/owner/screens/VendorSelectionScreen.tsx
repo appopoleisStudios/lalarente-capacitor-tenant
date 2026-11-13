@@ -353,6 +353,7 @@ export default function VendorSelectionScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
+          testID="vendor-selection-back"
           accessibilityLabel="Go back"
           accessibilityRole="button"
           onPress={() => router.back()}
@@ -371,6 +372,7 @@ export default function VendorSelectionScreen() {
       {/* Tab selector */}
       <View style={styles.tabRow}>
         <TouchableOpacity
+          testID="vendor-selection-tab-browse"
           accessibilityLabel="Browse vendors tab"
           accessibilityRole="tab"
           style={[styles.tab, activeTab === 'browse' && styles.tabActive]}
@@ -386,6 +388,7 @@ export default function VendorSelectionScreen() {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
+          testID="vendor-selection-tab-invite"
           accessibilityLabel="Invite by email tab"
           accessibilityRole="tab"
           style={[styles.tab, activeTab === 'invite' && styles.tabActive]}
@@ -408,6 +411,7 @@ export default function VendorSelectionScreen() {
           <View style={styles.searchContainer}>
             <Ionicons name="search" size={18} color={colors.gray[400]} />
             <TextInput
+              testID="vendor-selection-search"
               style={styles.searchInput}
               placeholder="Search by name, trade or city..."
               placeholderTextColor={colors.gray[400]}
@@ -417,7 +421,10 @@ export default function VendorSelectionScreen() {
               autoCapitalize="none"
             />
             {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <TouchableOpacity
+                testID="vendor-selection-search-clear"
+                onPress={() => setSearchQuery('')}
+              >
                 <Ionicons name="close-circle" size={18} color={colors.gray[400]} />
               </TouchableOpacity>
             )}
@@ -465,6 +472,7 @@ export default function VendorSelectionScreen() {
 
             <View style={styles.emailInputRow}>
               <TextInput
+                testID="vendor-selection-invite-email"
                 style={styles.emailInput}
                 placeholder="vendor@example.com"
                 placeholderTextColor={colors.gray[400]}
@@ -478,6 +486,7 @@ export default function VendorSelectionScreen() {
                 autoCorrect={false}
               />
               <TouchableOpacity
+                testID="vendor-selection-invite-search"
                 accessibilityLabel="Search vendor by email"
                 accessibilityRole="button"
                 style={[styles.emailSearchButton, inviting && { opacity: 0.6 }]}
@@ -536,6 +545,7 @@ export default function VendorSelectionScreen() {
             <Text style={styles.quickActionsTitle}>Quick Actions</Text>
 
             <TouchableOpacity
+              testID="vendor-selection-open-market"
               accessibilityLabel="Push request to open market"
               accessibilityRole="button"
               style={styles.quickActionCard}
@@ -560,6 +570,7 @@ export default function VendorSelectionScreen() {
       {/* Footer */}
       <View style={styles.footer}>
         <TouchableOpacity
+          testID="vendor-selection-submit"
           accessibilityLabel="Send invitations to selected vendors"
           accessibilityRole="button"
           style={[styles.footerButton, selectedIds.size === 0 && styles.footerButtonDisabled]}

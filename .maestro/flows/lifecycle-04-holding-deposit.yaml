@@ -1,0 +1,474 @@
+# Lifecycle stage 4 — Holding deposit: tenant reports, owner confirms
+# Covers LC-4-02 to 4-10b, 4-13, LC-3-18. Needs the pending deposit from 03a.
+# Tenant reports payment (not yet Paid) → owner says Not Received → tenant
+# reports again → owner confirms receipt (Paid, property held) → owner
+# approves the application → property leaves tenant search.
+# Not covered: Refund and Apply to Lease taps (Apply is in stage 5; Refund
+# would end the chain — run it on a branch deposit), deadline expiry.
+# Env: creds, LC_PROPERTY_TITLE, LC_PROPERTY_ID
+appId: com.lalarente.app
+---
+# ── PHASE 1 — tenant reports payment ──────────────────────────────────────
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/application-status
+- extendedWaitUntil:
+    visible: "My Applications"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-applications-deposit-banner"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "tenant-applications-deposit-banner"
+- extendedWaitUntil:
+    visible: "Holding Deposits"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-holding-deposit-i-have-paid"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-holding-deposit-reference-show"
+    direction: UP
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "tenant-holding-deposit-reference-show"
+- extendedWaitUntil:
+    visible: "EFT Reference"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-holding-deposit-i-have-paid"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "tenant-holding-deposit-i-have-paid"
+- extendedWaitUntil:
+    visible: ".*Tell the owner you have paid.*"
+    timeout: 15000
+- tapOn:
+    text: "Cancel"
+- assertVisible:
+    id: "tenant-holding-deposit-i-have-paid"
+- tapOn:
+    id: "tenant-holding-deposit-i-have-paid"
+- extendedWaitUntil:
+    visible: ".*Tell the owner you have paid.*"
+    timeout: 20000
+- tapOn:
+    text: "Confirm Payment"
+    index: 1
+- extendedWaitUntil:
+    visible: "Payment Reported"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-holding-deposit-awaiting-owner"
+    timeout: 20000
+- assertNotVisible: "Paid:.*"
+- takeScreenshot: lc04-tenant-reported
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── LC-4-10b banner wording after reporting ───────────────────────────────
+- tapOn:
+    id: "tenant-holding-deposit-back"
+- extendedWaitUntil:
+    visible: "My Applications"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*Payment reported, awaiting owner confirmation.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- openLink: lalarenteapp://(tenant)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+# ── PHASE 2 — owner: filters, Not Received ────────────────────────────────
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/holding-deposit
+- extendedWaitUntil:
+    visible: "Holding Deposits"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "owner-holding-deposit-filter-pending"
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    id: "owner-holding-deposit-filter-paid"
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    id: "owner-holding-deposit-filter-all"
+- waitForAnimationToEnd:
+    timeout: 1000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-holding-deposit-not-received"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- assertVisible: ".*Tenant reports payment made.*"
+- takeScreenshot: lc04-owner-sees-report
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    id: "owner-holding-deposit-not-received"
+- extendedWaitUntil:
+    visible: "Payment Not Received"
+    timeout: 15000
+- tapOn:
+    text: "Cancel"
+- assertVisible:
+    id: "owner-holding-deposit-not-received"
+- tapOn:
+    id: "owner-holding-deposit-not-received"
+- extendedWaitUntil:
+    visible: "Payment Not Received"
+    timeout: 15000
+- tapOn:
+    text: "Yes, Not Received"
+- extendedWaitUntil:
+    notVisible:
+      id: "owner-holding-deposit-not-received"
+    timeout: 15000
+
+# ── application detail has no claimed-payment row now ─────────────────────
+- runFlow:
+    file: ../subflows/lc-owner-open-application.yaml
+    env:
+      PROP_TITLE: "${LC_PROPERTY_TITLE}"
+- assertNotVisible:
+    id: "owner-application-deposit-claimed"
+- openLink: lalarenteapp://(owner)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-owner.yaml
+
+# ── PHASE 3 — tenant can report again ─────────────────────────────────────
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/application-status
+- extendedWaitUntil:
+    visible: "My Applications"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-applications-deposit-banner"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "tenant-applications-deposit-banner"
+- extendedWaitUntil:
+    visible: "Holding Deposits"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-holding-deposit-i-have-paid"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "tenant-holding-deposit-i-have-paid"
+- extendedWaitUntil:
+    visible: ".*Tell the owner you have paid.*"
+    timeout: 20000
+- tapOn:
+    text: "Confirm Payment"
+    index: 1
+- extendedWaitUntil:
+    visible: "Payment Reported"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-holding-deposit-awaiting-owner"
+    timeout: 20000
+- openLink: lalarenteapp://(tenant)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+# ── PHASE 4 — owner confirms receipt ──────────────────────────────────────
+- runFlow: ../subflows/login-owner.yaml
+- runFlow:
+    file: ../subflows/lc-owner-open-application.yaml
+    env:
+      PROP_TITLE: "${LC_PROPERTY_TITLE}"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-application-deposit-claimed"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-application-deposit-claimed"
+- extendedWaitUntil:
+    visible: "Holding Deposits"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-holding-deposit-confirm-receipt"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-holding-deposit-confirm-receipt"
+- extendedWaitUntil:
+    visible: "Confirm Receipt"
+    timeout: 15000
+- tapOn:
+    text: "Cancel"
+- assertVisible:
+    id: "owner-holding-deposit-confirm-receipt"
+- tapOn:
+    id: "owner-holding-deposit-confirm-receipt"
+- extendedWaitUntil:
+    visible: "Confirm Receipt"
+    timeout: 15000
+- tapOn:
+    text: "Yes, Received"
+- extendedWaitUntil:
+    visible: "Confirmed"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- extendedWaitUntil:
+    notVisible:
+      id: "owner-holding-deposit-confirm-receipt"
+    timeout: 15000
+- tapOn:
+    id: "owner-holding-deposit-filter-paid"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-holding-deposit-apply"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- assertVisible:
+    id: "owner-holding-deposit-refund"
+- takeScreenshot: lc04-owner-paid
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── LC-4-02 create-deposit modal: property, email, invalid amount, close ───
+- tapOn:
+    id: "owner-holding-deposit-filter-all"
+- tapOn:
+    id: "owner-holding-deposit-create"
+- extendedWaitUntil:
+    visible:
+      id: "owner-holding-deposit-modal-create"
+    timeout: 20000
+- tapOn:
+    id: "owner-holding-deposit-modal-property"
+    index: 0
+    optional: true
+- tapOn:
+    id: "owner-holding-deposit-modal-email"
+- eraseText: 60
+- inputText: "${TENANT_EMAIL}"
+- tapOn:
+    id: "owner-holding-deposit-modal-amount"
+- eraseText: 20
+- inputText: "0"
+- tapOn:
+    text: "Tenant Email"
+    optional: true
+- tapOn:
+    id: "owner-holding-deposit-modal-create"
+- extendedWaitUntil:
+    visible: "Invalid Amount"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- tapOn:
+    id: "owner-holding-deposit-modal-close"
+- extendedWaitUntil:
+    notVisible:
+      id: "owner-holding-deposit-modal-create"
+    timeout: 15000
+- tapOn:
+    id: "owner-holding-deposit-back"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# ── LC-3-18 approve the application now the deposit is paid ───────────────
+- runFlow:
+    file: ../subflows/lc-owner-open-application.yaml
+    env:
+      PROP_TITLE: "${LC_PROPERTY_TITLE}"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-application-approve"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-application-approve"
+- extendedWaitUntil:
+    visible: "Approve Application"
+    timeout: 15000
+- tapOn:
+    text: "Cancel"
+- tapOn:
+    id: "owner-application-approve"
+- extendedWaitUntil:
+    visible: "Approve Application"
+    timeout: 15000
+- tapOn:
+    text: "Approve"
+- extendedWaitUntil:
+    visible: "Success"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 3000
+- runFlow:
+    file: ../subflows/lc-owner-open-application.yaml
+    env:
+      PROP_TITLE: "${LC_PROPERTY_TITLE}"
+
+# ── paid deposit: Apply to Lease offered; Cancel (stage 5 still sees a paid deposit) ───
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-application-deposit-apply-to-lease"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-application-deposit-apply-to-lease"
+- extendedWaitUntil:
+    visible: ".*first month / security deposit.*"
+    timeout: 15000
+- tapOn:
+    text: "Cancel"
+- assertVisible:
+    id: "owner-application-deposit-apply-to-lease"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-application-create-lease"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- takeScreenshot: lc04-owner-approved
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(owner)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-owner.yaml
+
+# ── PHASE 5 — tenant sees Paid and Approved; property is held ─────────────
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/holding-deposit
+- extendedWaitUntil:
+    visible: "Holding Deposits"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: "Paid:.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- assertNotVisible:
+    id: "tenant-holding-deposit-awaiting-owner"
+- takeScreenshot: lc04-tenant-paid
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(tenant)/application-status
+- extendedWaitUntil:
+    visible: "My Applications"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*${LC_PROPERTY_TITLE}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- assertVisible: "(?i).*approved.*"
+- openLink: lalarenteapp://(tenant)/search
+- extendedWaitUntil:
+    visible:
+      id: "tenant-search-input"
+    timeout: 20000
+- tapOn:
+    id: "tenant-search-input"
+- inputText: "${LC_PROPERTY_TITLE}"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "No properties found"
+    timeout: 20000
+- takeScreenshot: lc04-held-property-not-in-search
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(tenant)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-tenant.yaml

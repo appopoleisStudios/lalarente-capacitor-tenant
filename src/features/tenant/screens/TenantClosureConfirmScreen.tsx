@@ -137,7 +137,11 @@ export default function TenantClosureConfirmScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
+          <TouchableOpacity
+            testID="closure-confirm-back"
+            onPress={() => router.back()}
+            style={styles.headerButton}
+          >
             <Ionicons name="arrow-back" size={24} color="#111827" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Confirm Closure</Text>
@@ -148,7 +152,11 @@ export default function TenantClosureConfirmScreen() {
           <Text style={[styles.loadingText, { textAlign: 'center', marginTop: 16 }]}>
             Verification link incomplete — open this from the maintenance screen.
           </Text>
-          <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 24 }}>
+          <TouchableOpacity
+            testID="closure-confirm-go-back"
+            onPress={() => router.back()}
+            style={{ marginTop: 24 }}
+          >
             <Text style={{ color: RSA.blue, fontWeight: '600', fontSize: 15 }}>Go Back</Text>
           </TouchableOpacity>
         </View>
@@ -237,6 +245,7 @@ export default function TenantClosureConfirmScreen() {
                   <View key={index} style={styles.photoItem}>
                     <Image source={{ uri: file.uri }} style={styles.photoThumb} />
                     <TouchableOpacity
+                      testID="closure-confirm-remove-photo"
                       style={styles.removePhotoButton}
                       onPress={() => removeFile(file.uri)}
                     >

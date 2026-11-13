@@ -8,12 +8,11 @@ import {
   ActivityIndicator,
   StyleSheet,
   Alert,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { PickerSheet } from '@/src/shared/components/ui/DateField';
 import { inspectionsApi } from '../api/inspectionsApi';
 import { supabase } from '../../../lib/supabase';
 import type { InspectionType } from '../types';
@@ -116,11 +115,6 @@ export default function OwnerScheduleInspectionScreen() {
     }
   };
 
-  const handleDateChange = (event: any, date?: Date) => {
-    if (Platform.OS === 'android') setShowDatePicker(false);
-    if (date) setScheduledDate(date);
-  };
-
   const handleSubmit = async () => {
     if (!selectedLeaseId) {
       Alert.alert('Required', 'Please select a lease.');
@@ -198,19 +192,29 @@ export default function OwnerScheduleInspectionScreen() {
     <SafeAreaView style={styles.safeArea}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity
+          testID="owner-schedule-inspection-back"
+          onPress={() => router.back()}
+          style={styles.backBtn}
+        >
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Schedule Inspection</Text>
         <View style={{ width: 32 }} />
       </View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         {/* Inspection Type */}
         <Text style={styles.sectionLabel}>Inspection Type</Text>
         <View style={styles.typeGrid}>
           {TYPES.map((t) => (
             <TouchableOpacity
+              testID={`owner-schedule-inspection-type-${t.value}`}
               key={t.value}
               style={[styles.typeCard, selectedType === t.value && styles.typeCardActive]}
               onPress={() => setSelectedType(t.value)}
@@ -240,6 +244,7 @@ export default function OwnerScheduleInspectionScreen() {
           <View style={styles.leaseList}>
             {leases.map((lease) => (
               <TouchableOpacity
+                testID="owner-schedule-inspection-lease"
                 key={lease.id}
                 style={[styles.leaseCard, selectedLeaseId === lease.id && styles.leaseCardActive]}
                 onPress={() => setSelectedLeaseId(lease.id)}
@@ -265,30 +270,33 @@ export default function OwnerScheduleInspectionScreen() {
 
         {/* Date Picker */}
         <Text style={styles.sectionLabel}>Inspection Date</Text>
-        <TouchableOpacity style={styles.dateInput} onPress={() => setShowDatePicker(true)}>
+        <TouchableOpacity
+          testID="owner-schedule-inspection-date"
+          style={styles.dateInput}
+          onPress={() => setShowDatePicker(true)}
+        >
           <Ionicons name="calendar-outline" size={20} color={RSA.blue} />
           <Text style={styles.dateText}>{formatDate(scheduledDate)}</Text>
           <Ionicons name="chevron-down" size={18} color="#9CA3AF" />
         </TouchableOpacity>
 
-        {showDatePicker && (
-          <DateTimePicker
-            value={scheduledDate}
-            mode="date"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            minimumDate={new Date()}
-            onChange={handleDateChange}
-          />
-        )}
-        {Platform.OS === 'ios' && showDatePicker && (
-          <TouchableOpacity style={styles.doneBtn} onPress={() => setShowDatePicker(false)}>
-            <Text style={styles.doneBtnText}>Done</Text>
-          </TouchableOpacity>
-        )}
+        <PickerSheet
+          visible={showDatePicker}
+          value={scheduledDate}
+          mode="date"
+          minimumDate={new Date()}
+          onCancel={() => setShowDatePicker(false)}
+          onDone={(date) => {
+            setShowDatePicker(false);
+            setScheduledDate(date);
+          }}
+          testID="owner-schedule-inspection-date"
+        />
 
         {/* Notes */}
         <Text style={styles.sectionLabel}>Notes (Optional)</Text>
         <TextInput
+          testID="owner-schedule-inspection-notes"
           style={styles.notesInput}
           placeholder="Any special instructions or items to focus on..."
           value={notes}
@@ -309,6 +317,7 @@ export default function OwnerScheduleInspectionScreen() {
 
         {/* Submit */}
         <TouchableOpacity
+          testID="owner-schedule-inspection-submit"
           style={[styles.submitBtn, (!selectedLeaseId || submitting) && styles.submitBtnDisabled]}
           onPress={handleSubmit}
           disabled={!selectedLeaseId || submitting}

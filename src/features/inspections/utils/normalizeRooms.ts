@@ -5,6 +5,7 @@ import {
   type KeyHandover,
   type RoomCondition,
   type RoomInspection,
+  type TenantInspectionComment,
 } from '../types';
 
 const VALID_CONDITIONS: RoomCondition[] = ['excellent', 'good', 'fair', 'poor', 'damaged'];
@@ -37,8 +38,7 @@ export function normalizeRoomList(raw: unknown): RoomInspection[] {
 
   return raw.map((room, index) => {
     const r = room as Record<string, unknown>;
-    const name =
-      typeof r.name === 'string' && r.name.trim() ? r.name.trim() : `Room ${index + 1}`;
+    const name = typeof r.name === 'string' && r.name.trim() ? r.name.trim() : `Room ${index + 1}`;
     const overallCondition = asCondition(r.overallCondition);
 
     let items: RoomInspection['items'] = [];
@@ -82,6 +82,14 @@ const defaultKeys = (): KeyHandover => ({
   accessCodes: [],
 });
 
+export function parseTenantComments(raw: unknown): TenantInspectionComment[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(
+    (c): c is TenantInspectionComment =>
+      !!c && typeof c.id === 'string' && typeof c.room === 'string' && typeof c.text === 'string'
+  );
+}
+
 export function parseInspectionRoomsField(roomsField: unknown): InspectionRooms {
   if (!roomsField) {
     return { rooms: buildDefaultRooms(), keys: defaultKeys(), generalNotes: '' };
@@ -107,6 +115,7 @@ export function parseInspectionRoomsField(roomsField: unknown): InspectionRooms 
   return {
     rooms: normalizeRoomList(rawRooms),
     generalNotes: typeof obj.generalNotes === 'string' ? obj.generalNotes : '',
+    tenantComments: parseTenantComments(obj.tenantComments),
     keys: keysRaw
       ? {
           physicalKeys: Number(keysRaw.physicalKeys) || 0,

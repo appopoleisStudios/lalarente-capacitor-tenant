@@ -1,0 +1,589 @@
+# Tenant (signed in) completes and submits the 4-step application for
+# PROP_ID, exercising each control that is present. Personal and employment
+# inputs only render for fields missing from the tenant's profile, and
+# documents already on file are reused, so those steps are conditional.
+# PRECONDITION: tenant has an ID document and a proof of income on file.
+# Ends on My Applications. Env: PROP_ID, PROP_TITLE
+appId: com.lalarente.app
+---
+- openLink: lalarenteapp://(tenant)/properties/${PROP_ID}
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-apply"
+    timeout: 25000
+- tapOn:
+    id: "tenant-property-apply"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-apply-next"
+    timeout: 20000
+
+# ── Step 1 Personal: Edit opens the profile; the form reopens from the property ───
+- takeScreenshot: lctenant-apply-step1
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    id: "tenant-apply-edit-personal"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: lctenant-apply-edit-profile
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(tenant)/properties/${PROP_ID}
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-apply"
+    timeout: 25000
+- tapOn:
+    id: "tenant-property-apply"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-apply-next"
+    timeout: 20000
+- runFlow:
+    when:
+      visible:
+        id: "tenant-apply-full-name"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            id: "tenant-apply-full-name"
+          direction: DOWN
+          timeout: 20000
+          visibilityPercentage: 60
+          centerElement: true
+      - tapOn:
+          id: "tenant-apply-full-name"
+      - eraseText: 30
+      - inputText: "LC Tenant"
+      - swipe:
+          start: "50%,45%"
+          end: "50%,40%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible:
+        id: "tenant-apply-email"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            id: "tenant-apply-email"
+          direction: DOWN
+          timeout: 20000
+          visibilityPercentage: 60
+          centerElement: true
+      - tapOn:
+          id: "tenant-apply-email"
+      - eraseText: 30
+      - inputText: "lc.tenant@example.com"
+      - swipe:
+          start: "50%,45%"
+          end: "50%,40%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible:
+        id: "tenant-apply-phone"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            id: "tenant-apply-phone"
+          direction: DOWN
+          timeout: 20000
+          visibilityPercentage: 60
+          centerElement: true
+      - tapOn:
+          id: "tenant-apply-phone"
+      - eraseText: 30
+      - inputText: "0821234567"
+      - swipe:
+          start: "50%,45%"
+          end: "50%,40%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible:
+        id: "tenant-apply-id-number"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            id: "tenant-apply-id-number"
+          direction: DOWN
+          timeout: 20000
+          visibilityPercentage: 60
+          centerElement: true
+      - tapOn:
+          id: "tenant-apply-id-number"
+      - eraseText: 30
+      - inputText: "9001015009087"
+      - swipe:
+          start: "50%,45%"
+          end: "50%,40%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible:
+        id: "tenant-apply-dob"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            id: "tenant-apply-dob"
+          direction: DOWN
+          timeout: 20000
+          visibilityPercentage: 60
+          centerElement: true
+      - tapOn:
+          id: "tenant-apply-dob"
+      - extendedWaitUntil:
+          visible:
+            id: "tenant-apply-dob-cancel"
+          timeout: 10000
+      - tapOn:
+          id: "tenant-apply-dob-cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+      - tapOn:
+          id: "tenant-apply-dob"
+      - extendedWaitUntil:
+          visible:
+            id: "tenant-apply-dob-done"
+          timeout: 10000
+      - tapOn:
+          id: "tenant-apply-dob-done"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-apply-next"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "tenant-apply-next"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# ── Step 2 Employment: invalid income is rejected when the field is editable ───
+- takeScreenshot: lctenant-apply-step2
+- waitForAnimationToEnd:
+    timeout: 1500
+- runFlow:
+    when:
+      visible:
+        id: "tenant-apply-income"
+    commands:
+      - tapOn:
+          id: "tenant-apply-income"
+      - inputText: "abc"
+      - swipe:
+          start: "50%,45%"
+          end: "50%,40%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 1000
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            id: "tenant-apply-next"
+          direction: DOWN
+          timeout: 20000
+          visibilityPercentage: 60
+          centerElement: true
+      - tapOn:
+          id: "tenant-apply-next"
+      - extendedWaitUntil:
+          visible: "(Required|Invalid)"
+          timeout: 15000
+      - tapOn:
+          text: "OK"
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            id: "tenant-apply-income"
+          direction: UP
+          timeout: 20000
+          visibilityPercentage: 60
+          centerElement: true
+      - tapOn:
+          id: "tenant-apply-income"
+      - eraseText: 30
+      - inputText: "25000"
+      - swipe:
+          start: "50%,45%"
+          end: "50%,40%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible:
+        id: "tenant-apply-employer"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            id: "tenant-apply-employer"
+          direction: DOWN
+          timeout: 20000
+          visibilityPercentage: 60
+          centerElement: true
+      - tapOn:
+          id: "tenant-apply-employer"
+      - eraseText: 30
+      - inputText: "LC Employer"
+      - swipe:
+          start: "50%,45%"
+          end: "50%,40%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible:
+        id: "tenant-apply-position"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            id: "tenant-apply-position"
+          direction: DOWN
+          timeout: 20000
+          visibilityPercentage: 60
+          centerElement: true
+      - tapOn:
+          id: "tenant-apply-position"
+      - eraseText: 30
+      - inputText: "Tester"
+      - swipe:
+          start: "50%,45%"
+          end: "50%,40%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible:
+        id: "tenant-apply-employer-contact"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            id: "tenant-apply-employer-contact"
+          direction: DOWN
+          timeout: 20000
+          visibilityPercentage: 60
+          centerElement: true
+      - tapOn:
+          id: "tenant-apply-employer-contact"
+      - eraseText: 30
+      - inputText: "0111234567"
+      - swipe:
+          start: "50%,45%"
+          end: "50%,40%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible:
+        id: "tenant-apply-employment-start"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            id: "tenant-apply-employment-start"
+          direction: DOWN
+          timeout: 20000
+          visibilityPercentage: 60
+          centerElement: true
+      - tapOn:
+          id: "tenant-apply-employment-start"
+      - extendedWaitUntil:
+          visible:
+            id: "tenant-apply-employment-start-cancel"
+          timeout: 10000
+      - tapOn:
+          id: "tenant-apply-employment-start-cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+      - tapOn:
+          id: "tenant-apply-employment-start"
+      - extendedWaitUntil:
+          visible:
+            id: "tenant-apply-employment-start-done"
+          timeout: 10000
+      - tapOn:
+          id: "tenant-apply-employment-start-done"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow:
+    when:
+      visible:
+        id: "tenant-apply-edit-employment"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            id: "tenant-apply-edit-employment"
+          direction: UP
+          timeout: 20000
+          visibilityPercentage: 60
+          centerElement: true
+      - tapOn:
+          id: "tenant-apply-edit-employment"
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - openLink: lalarenteapp://(tenant)/properties/${PROP_ID}
+      - extendedWaitUntil:
+          visible:
+            id: "tenant-property-apply"
+          timeout: 25000
+      - tapOn:
+          id: "tenant-property-apply"
+      - extendedWaitUntil:
+          visible:
+            id: "tenant-apply-next"
+          timeout: 20000
+      # the form keeps its step; only advance if it came back on step 1
+      - runFlow:
+          when:
+            visible:
+              id: "tenant-apply-edit-personal"
+          commands:
+            - tapOn:
+                id: "tenant-apply-next"
+            - waitForAnimationToEnd:
+                timeout: 2000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-apply-next"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "tenant-apply-next"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# ── Step 3 Documents: upload dialogs open and cancel; files on record are reused ───
+- takeScreenshot: lctenant-apply-step3
+- waitForAnimationToEnd:
+    timeout: 1500
+- runFlow:
+    when:
+      visible:
+        id: "tenant-apply-id-doc-upload"
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "tenant-apply-id-doc-upload"
+          direction: UP
+          timeout: 20000
+          visibilityPercentage: 100
+          centerElement: true
+      - tapOn:
+          id: "tenant-apply-id-doc-upload"
+      - extendedWaitUntil:
+          visible: "Upload Document"
+          timeout: 15000
+      - tapOn:
+          text: "Cancel"
+- runFlow:
+    when:
+      visible:
+        id: "tenant-apply-id-doc-replace"
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "tenant-apply-id-doc-replace"
+          direction: UP
+          timeout: 20000
+          visibilityPercentage: 100
+          centerElement: true
+      - tapOn:
+          id: "tenant-apply-id-doc-replace"
+      - extendedWaitUntil:
+          visible: "Upload Document"
+          timeout: 15000
+      - tapOn:
+          text: "Cancel"
+- runFlow:
+    when:
+      visible:
+        id: "tenant-apply-income-doc-add-new"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            id: "tenant-apply-income-doc-add-new"
+          direction: DOWN
+          timeout: 20000
+          visibilityPercentage: 60
+          centerElement: true
+      - scrollUntilVisible:
+          element:
+            id: "tenant-apply-income-doc-add-new"
+          direction: UP
+          timeout: 20000
+          visibilityPercentage: 100
+          centerElement: true
+      - tapOn:
+          id: "tenant-apply-income-doc-add-new"
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - tapOn:
+          text: "Cancel"
+          optional: true
+      - waitForAnimationToEnd:
+          timeout: 2000
+- runFlow:
+    when:
+      visible:
+        id: "tenant-apply-income-doc-upload"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            id: "tenant-apply-income-doc-upload"
+          direction: DOWN
+          timeout: 20000
+          visibilityPercentage: 60
+          centerElement: true
+      - scrollUntilVisible:
+          element:
+            id: "tenant-apply-income-doc-upload"
+          direction: UP
+          timeout: 20000
+          visibilityPercentage: 100
+          centerElement: true
+      - tapOn:
+          id: "tenant-apply-income-doc-upload"
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - tapOn:
+          text: "Cancel"
+          optional: true
+      - waitForAnimationToEnd:
+          timeout: 2000
+- runFlow:
+    when:
+      visible:
+        id: "tenant-apply-reference-doc-upload"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            id: "tenant-apply-reference-doc-upload"
+          direction: DOWN
+          timeout: 20000
+          visibilityPercentage: 60
+          centerElement: true
+      - scrollUntilVisible:
+          element:
+            id: "tenant-apply-reference-doc-upload"
+          direction: UP
+          timeout: 20000
+          visibilityPercentage: 100
+          centerElement: true
+      - tapOn:
+          id: "tenant-apply-reference-doc-upload"
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - tapOn:
+          text: "Cancel"
+          optional: true
+      - waitForAnimationToEnd:
+          timeout: 2000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-apply-next"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "tenant-apply-next"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# ── Step 4 Review: header back steps back one step, Next returns ──────────
+- extendedWaitUntil:
+    visible:
+      id: "tenant-apply-submit"
+    timeout: 20000
+- takeScreenshot: lctenant-apply-step4
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    id: "tenant-apply-back"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-apply-next"
+    timeout: 20000
+- tapOn:
+    id: "tenant-apply-next"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-apply-submit"
+    timeout: 20000
+- tapOn:
+    id: "tenant-apply-submit"
+- runFlow:
+    when:
+      visible: "Affordability Warning"
+    commands:
+      - tapOn:
+          text: "Continue"
+- extendedWaitUntil:
+    visible: "Application Submitted"
+    timeout: 60000
+- tapOn:
+    text: "Track Application"
+- extendedWaitUntil:
+    visible: "My Applications"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*${PROP_TITLE}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true

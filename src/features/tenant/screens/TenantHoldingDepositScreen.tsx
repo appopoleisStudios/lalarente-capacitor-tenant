@@ -21,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/src/lib/supabase';
 import {
   holdingDepositApi,
+  isPaymentClaimed,
   HoldingDeposit,
   HoldingDepositStatus,
 } from '@/src/features/applications/api/holdingDeposit.api';
@@ -149,17 +150,17 @@ export default function TenantHoldingDepositScreen() {
   const handleConfirmPayment = (deposit: DepositWithProperty) => {
     Alert.alert(
       'Confirm Payment',
-      `Mark ${formatZAR(deposit.amount)} holding deposit as paid for ${deposit.property?.title}?`,
+      `Tell the owner you have paid the ${formatZAR(deposit.amount)} holding deposit for ${deposit.property?.title}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Confirm Payment',
           onPress: async () => {
             try {
-              await holdingDepositApi.confirmPayment(deposit.id, 'eft');
+              await holdingDepositApi.claimPayment(deposit.id, 'eft');
               Alert.alert(
-                'Payment Confirmed',
-                'Your holding deposit has been recorded. The property is now held for you while your application is reviewed.'
+                'Payment Reported',
+                'The owner has been asked to confirm receipt. The property will be held for you once they confirm.'
               );
               loadDeposits();
             } catch (err: any) {
@@ -177,7 +178,11 @@ export default function TenantHoldingDepositScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            testID="tenant-holding-deposit-back"
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </TouchableOpacity>
           <Text style={styles.title}>Holding Deposits</Text>
@@ -196,7 +201,11 @@ export default function TenantHoldingDepositScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          testID="tenant-holding-deposit-back"
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <View style={styles.headerText}>
@@ -326,6 +335,7 @@ function DepositCard({
                 <Text style={styles.referenceValue}>{deposit.reference}</Text>
               </View>
               <TouchableOpacity
+                testID="tenant-holding-deposit-reference-show"
                 style={styles.referenceCopy}
                 onPress={() => {
                   Alert.alert(
@@ -363,8 +373,17 @@ function DepositCard({
         )}
 
         {/* Action: Confirm payment if pending */}
-        {deposit.status === 'pending' && onConfirmPayment && (
-          <TouchableOpacity style={styles.actionButton} onPress={() => onConfirmPayment(deposit)}>
+        {isPaymentClaimed(deposit) && (
+          <Text style={styles.metaText} testID="tenant-holding-deposit-awaiting-owner">
+            Payment reported — awaiting owner confirmation
+          </Text>
+        )}
+        {deposit.status === 'pending' && !isPaymentClaimed(deposit) && onConfirmPayment && (
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => onConfirmPayment(deposit)}
+            testID="tenant-holding-deposit-i-have-paid"
+          >
             <Ionicons name="checkmark-circle" size={18} color={colors.rsa.white} />
             <Text style={styles.actionButtonText}>I Have Paid</Text>
           </TouchableOpacity>

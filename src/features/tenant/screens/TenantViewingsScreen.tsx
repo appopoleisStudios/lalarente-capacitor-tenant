@@ -114,7 +114,9 @@ export default function TenantViewingsScreen() {
   }, [userId]);
 
   const initUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (user) {
       setUserId(user.id);
     }
@@ -138,7 +140,7 @@ export default function TenantViewingsScreen() {
     if (selectedStatus === 'all') {
       setFilteredViewings(viewings);
     } else {
-      setFilteredViewings(viewings.filter(v => v.status === selectedStatus));
+      setFilteredViewings(viewings.filter((v) => v.status === selectedStatus));
     }
   };
 
@@ -169,6 +171,7 @@ export default function TenantViewingsScreen() {
 
     return (
       <TouchableOpacity
+        testID="tenant-viewing-card"
         style={[styles.card, upcoming && styles.upcomingCard]}
         onPress={() =>
           router.push({
@@ -249,11 +252,12 @@ export default function TenantViewingsScreen() {
       <Text style={styles.emptyTitle}>No Viewing Requests</Text>
       <Text style={styles.emptyText}>
         {selectedStatus === 'all'
-          ? 'You haven\'t requested any property viewings yet'
+          ? "You haven't requested any property viewings yet"
           : `No ${selectedStatus} viewing requests`}
       </Text>
       {selectedStatus === 'all' && (
         <TouchableOpacity
+          testID="tenant-viewings-browse"
           style={styles.browseButton}
           onPress={() => router.push('/(tenant)/search')}
         >
@@ -268,15 +272,15 @@ export default function TenantViewingsScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
           <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backButton}
-            accessibilityLabel="Back"
-            accessibilityRole="button"
-            testID="screen-back"
-          >
-            <Ionicons name="arrow-back" size={24} color="#333" />
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={styles.backButton}
+              accessibilityLabel="Back"
+              accessibilityRole="button"
+              testID="screen-back"
+            >
+              <Ionicons name="arrow-back" size={24} color="#333" />
+            </TouchableOpacity>
             <Text style={styles.headerTitle}>My Viewings</Text>
             <View style={styles.placeholder} />
           </View>
@@ -311,6 +315,7 @@ export default function TenantViewingsScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filters}>
             {STATUS_FILTERS.map((filter) => (
               <TouchableOpacity
+                testID={`tenant-viewings-filter-${filter.value}`}
                 key={filter.value}
                 style={[
                   styles.filterChip,
@@ -345,13 +350,13 @@ export default function TenantViewingsScreen() {
             </View>
             <View style={styles.statItem}>
               <Text style={[styles.statValue, { color: '#FF9800' }]}>
-                {viewings.filter(v => v.status === 'pending').length}
+                {viewings.filter((v) => v.status === 'pending').length}
               </Text>
               <Text style={styles.statLabel}>Pending</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={[styles.statValue, { color: '#4CAF50' }]}>
-                {viewings.filter(v => isUpcoming(v)).length}
+                {viewings.filter((v) => isUpcoming(v)).length}
               </Text>
               <Text style={styles.statLabel}>Upcoming</Text>
             </View>

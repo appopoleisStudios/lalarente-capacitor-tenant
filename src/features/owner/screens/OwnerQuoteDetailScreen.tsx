@@ -209,7 +209,11 @@ export default function OwnerQuoteDetailScreen() {
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle" size={64} color={colors.error[500]} />
           <Text style={styles.errorText}>Quote not found</Text>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <TouchableOpacity
+            testID="owner-quote-go-back"
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
             <Text style={styles.backButtonText}>Go Back</Text>
           </TouchableOpacity>
         </View>
@@ -225,7 +229,11 @@ export default function OwnerQuoteDetailScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
+        <TouchableOpacity
+          testID="owner-quote-back"
+          onPress={() => router.back()}
+          style={styles.headerButton}
+        >
           <Ionicons name="arrow-back" size={24} color="#111827" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Quote Details</Text>
@@ -269,6 +277,7 @@ export default function OwnerQuoteDetailScreen() {
             <Text style={styles.sectionTitle}>Cost Breakdown</Text>
             {hasRevisions && (
               <TouchableOpacity
+                testID="owner-quote-revisions-toggle"
                 onPress={() => setShowRevisions(!showRevisions)}
                 style={styles.revisionToggle}
               >
@@ -472,6 +481,7 @@ export default function OwnerQuoteDetailScreen() {
         <View style={styles.footer}>
           <View style={styles.actionButtons}>
             <TouchableOpacity
+              testID="owner-quote-reject"
               style={[styles.actionButton, styles.rejectButton]}
               onPress={handleRejectQuote}
               disabled={actionLoading}
@@ -487,6 +497,7 @@ export default function OwnerQuoteDetailScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
+              testID="owner-quote-request-changes"
               style={[styles.actionButton, styles.revisionButton]}
               onPress={() => setShowRevisionModal(true)}
               disabled={actionLoading}
@@ -496,6 +507,7 @@ export default function OwnerQuoteDetailScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
+              testID="owner-quote-accept"
               style={[styles.actionButton, styles.acceptButton]}
               onPress={handleAcceptQuote}
               disabled={actionLoading}

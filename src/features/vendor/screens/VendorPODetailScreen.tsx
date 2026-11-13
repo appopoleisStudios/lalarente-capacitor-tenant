@@ -1,19 +1,29 @@
 import { useAuth } from '@/src/contexts/AuthContext';
 import {
-    acceptPO,
-    getPOById,
-    getPORevisions,
-    rejectPO,
-    updatePOStatus,
-    type PORevision,
-    type PurchaseOrder,
+  acceptPO,
+  getPOById,
+  getPORevisions,
+  rejectPO,
+  updatePOStatus,
+  type PORevision,
+  type PurchaseOrder,
 } from '@/src/features/maintenance/api';
 import { colors } from '@/src/shared/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import React, { useState, useCallback } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const RSA = { blue: '#002395' };
@@ -39,11 +49,14 @@ export default function VendorPODetailScreen() {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [updateReason, setUpdateReason] = useState('');
 
-  useEffect(() => {
-    if (poId) {
-      fetchPODetails();
-    }
-  }, [poId]);
+  // Reload on every focus: tab screens stay mounted, so returning to the
+  // same record must not show its old status.
+  useFocusEffect(
+    useCallback(() => {
+      if (poId) fetchPODetails();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [poId])
+  );
 
   const fetchPODetails = async () => {
     try {
@@ -184,7 +197,8 @@ export default function VendorPODetailScreen() {
     );
   }
 
-  const statusConfig = STATUS_CONFIG[po.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.draft;
+  const statusConfig =
+    STATUS_CONFIG[po.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.draft;
   const hasRevisions = revisions.length > 0;
   const canAccept = po.status === 'issued';
 
@@ -209,7 +223,8 @@ export default function VendorPODetailScreen() {
         <View style={styles.section}>
           <Text style={styles.poNumber}>{po.po_number}</Text>
           <Text style={styles.poDate}>
-            Issued: {new Date(po.created_at).toLocaleDateString('en-ZA', {
+            Issued:{' '}
+            {new Date(po.created_at).toLocaleDateString('en-ZA', {
               day: 'numeric',
               month: 'long',
               year: 'numeric',
@@ -261,7 +276,9 @@ export default function VendorPODetailScreen() {
             </View>
             <View style={styles.costRow}>
               <Text style={styles.costLabel}>Platform Fee</Text>
-              <Text style={styles.costValue}>R {po.platform_fee_amount?.toLocaleString() || '0'}</Text>
+              <Text style={styles.costValue}>
+                R {po.platform_fee_amount?.toLocaleString() || '0'}
+              </Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.costRow}>
@@ -283,7 +300,12 @@ export default function VendorPODetailScreen() {
         {po.revision_reason && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Latest Revision Reason</Text>
-            <View style={[styles.notesCard, { backgroundColor: colors.warning[50], borderColor: colors.warning[500] }]}>
+            <View
+              style={[
+                styles.notesCard,
+                { backgroundColor: colors.warning[50], borderColor: colors.warning[500] },
+              ]}
+            >
               <Text style={styles.notesText}>{po.revision_reason}</Text>
             </View>
           </View>
@@ -317,15 +339,33 @@ export default function VendorPODetailScreen() {
                   {index < revisions.length - 1 && (
                     <View style={styles.revisionDiff}>
                       <Ionicons
-                        name={revision.total_amount > revisions[index + 1].total_amount ? 'arrow-up' : 'arrow-down'}
+                        name={
+                          revision.total_amount > revisions[index + 1].total_amount
+                            ? 'arrow-up'
+                            : 'arrow-down'
+                        }
                         size={14}
-                        color={revision.total_amount > revisions[index + 1].total_amount ? colors.error[500] : colors.success[500]}
+                        color={
+                          revision.total_amount > revisions[index + 1].total_amount
+                            ? colors.error[500]
+                            : colors.success[500]
+                        }
                       />
-                      <Text style={[
-                        styles.revisionDiffText,
-                        { color: revision.total_amount > revisions[index + 1].total_amount ? colors.error[500] : colors.success[500] }
-                      ]}>
-                        R {Math.abs(revision.total_amount - revisions[index + 1].total_amount).toLocaleString()}
+                      <Text
+                        style={[
+                          styles.revisionDiffText,
+                          {
+                            color:
+                              revision.total_amount > revisions[index + 1].total_amount
+                                ? colors.error[500]
+                                : colors.success[500],
+                          },
+                        ]}
+                      >
+                        R{' '}
+                        {Math.abs(
+                          revision.total_amount - revisions[index + 1].total_amount
+                        ).toLocaleString()}
                       </Text>
                     </View>
                   )}
@@ -474,7 +514,13 @@ const styles = StyleSheet.create({
   loadingText: { marginTop: 12, fontSize: 16, color: '#6b7280' },
   errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   errorText: { marginTop: 16, fontSize: 18, fontWeight: '600', color: '#111827' },
-  backButton: { marginTop: 24, paddingHorizontal: 24, paddingVertical: 12, backgroundColor: RSA.blue, borderRadius: 8 },
+  backButton: {
+    marginTop: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: RSA.blue,
+    borderRadius: 8,
+  },
   backButtonText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
 
   header: {
@@ -485,9 +531,15 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb'
+    borderBottomColor: '#e5e7eb',
   },
-  headerButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
 
   scrollView: { flex: 1 },
@@ -499,13 +551,18 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 20
+    borderRadius: 20,
   },
   statusText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
 
   section: { marginHorizontal: 16, marginBottom: 24 },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 12 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
 
   poNumber: { fontSize: 24, fontWeight: '700', color: RSA.blue, textAlign: 'center' },
   poDate: { fontSize: 14, color: '#6b7280', textAlign: 'center', marginTop: 4 },
@@ -528,7 +585,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e5e7eb'
+    borderColor: '#e5e7eb',
   },
   costRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   costLabel: { fontSize: 15, color: '#6b7280' },
@@ -558,7 +615,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e5e7eb'
+    borderColor: '#e5e7eb',
   },
   notesText: { fontSize: 15, color: '#374151', lineHeight: 22 },
 
@@ -570,12 +627,17 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
     marginBottom: 12,
   },
-  revisionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  revisionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   revisionNumber: {
     backgroundColor: colors.gray[100],
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12
+    borderRadius: 12,
   },
   revisionNumberText: { fontSize: 13, fontWeight: '700', color: colors.gray[700] },
   revisionDate: { fontSize: 13, color: '#6b7280' },

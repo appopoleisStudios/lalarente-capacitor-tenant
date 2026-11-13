@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
 import { Database } from '@/src/types/database.types';
@@ -31,6 +31,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  // signIn() clears any stale local session first; that SIGNED_OUT event can
+  // arrive after the new session is set and bounce the user back to the
+  // login screen (the "sign-in screen flashes" bug). Ignore it while signing in.
+  const signingInRef = useRef(false);
+  // User whose profile is already loaded/loading — avoids refetching (and
+  // re-rendering the dashboard) on every SIGNED_IN / TOKEN_REFRESHED event.
+  const profileUserIdRef = useRef<string | null>(null);
 
   // Fetch user profile from database — uses REST API directly (not supabase-js)
   // to avoid SDK hangs from SecureStore/keychain contention on simulator/device.
@@ -101,6 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Refreshed successfully — use the new session.
             setSession(refreshed.session);
             setUser(refreshed.session.user);
+            profileUserIdRef.current = refreshed.session.user.id;
             fetchProfile(refreshed.session.user.id, refreshed.session.access_token).then(
               setProfile
             );
@@ -111,6 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
+          profileUserIdRef.current = session.user.id;
           fetchProfile(session.user.id, session.access_token).then(setProfile);
         }
       } catch {
@@ -127,6 +136,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (_event === 'SIGNED_OUT' && signingInRef.current) return;
+      if (_event === 'SIGNED_IN') signingInRef.current = false;
       setSession(session);
       setUser(session?.user ?? null);
 
@@ -135,14 +146,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // database call when SecureStore is contending (not just signIn),
         // so we must NOT block the auth state handler with an await.
         // Pass the session access_token so the REST call is authenticated.
-        fetchProfile(session.user.id, session.access_token)
-          .then(setProfile)
-          .catch(() => {});
+        if (profileUserIdRef.current !== session.user.id) {
+          profileUserIdRef.current = session.user.id;
+          fetchProfile(session.user.id, session.access_token)
+            .then(setProfile)
+            .catch(() => {
+              profileUserIdRef.current = null;
+            });
+        }
         void import('@/src/features/notifications/registerPush')
           .then(({ registerDevicePush }) => registerDevicePush(session.user.id))
           .catch(() => {});
       } else {
         clearPendingVendorSelection();
+        profileUserIdRef.current = null;
         setProfile(null);
       }
 
@@ -220,6 +237,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function signIn(email: string, password: string) {
     try {
       setLoading(true);
+      signingInRef.current = true;
+      // never let the guard stick if SIGNED_IN is somehow missed
+      setTimeout(() => {
+        signingInRef.current = false;
+      }, 20000);
 
       // Purge stale session from SecureStore — fire-and-forget (no await) to
       // avoid a supabase-js hang blocking the REST login that follows.
@@ -264,13 +286,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // The onAuthStateChange handler also fires, but we don't wait for it.
       setSession(data as any);
       setUser(data.user);
+      profileUserIdRef.current = data.user.id;
       fetchProfile(data.user.id, data.access_token)
         .then(setProfile)
-        .catch(() => {});
+        .catch(() => {
+          profileUserIdRef.current = null;
+        });
 
       // Loading stays true until the navigation effect fires (watching profile)
       // or the safety timeout in handleLogin (15s) kicks in.
     } catch (error: any) {
+      signingInRef.current = false;
       if (error.name === 'AbortError') {
         console.error('Sign in timed out (12s)');
         throw new Error('Sign in timed out. Check your network connection.');

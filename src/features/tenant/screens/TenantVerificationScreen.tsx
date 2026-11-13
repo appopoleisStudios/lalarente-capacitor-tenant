@@ -286,12 +286,20 @@ export default function TenantVerificationScreen() {
 
         {/* Decision Buttons */}
         <View style={styles.decisionContainer}>
-          <TouchableOpacity style={styles.approveButton} onPress={() => setMode('approve')}>
+          <TouchableOpacity
+            testID="tenant-verify-satisfactory"
+            style={styles.approveButton}
+            onPress={() => setMode('approve')}
+          >
             <Ionicons name="checkmark-circle" size={24} color="#FFFFFF" />
             <Text style={styles.approveButtonText}>Work is Satisfactory</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.rejectButton} onPress={() => setMode('reject')}>
+          <TouchableOpacity
+            testID="tenant-verify-needs-fixes"
+            style={styles.rejectButton}
+            onPress={() => setMode('reject')}
+          >
             <Ionicons name="close-circle" size={24} color="#DC2626" />
             <Text style={styles.rejectButtonText}>Work Needs Fixes</Text>
           </TouchableOpacity>
@@ -305,7 +313,11 @@ export default function TenantVerificationScreen() {
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => setMode('select')} style={styles.backButton}>
+          <TouchableOpacity
+            testID="tenant-verify-approve-back"
+            onPress={() => setMode('select')}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
           </TouchableOpacity>
           <Text style={styles.title}>Approve Work</Text>
@@ -323,6 +335,7 @@ export default function TenantVerificationScreen() {
             Add any comments about the work quality or vendor professionalism
           </Text>
           <TextInput
+            testID="tenant-verify-approve-notes"
             style={styles.textArea}
             value={notes}
             onChangeText={setNotes}
@@ -348,6 +361,7 @@ export default function TenantVerificationScreen() {
                 <View key={index} style={styles.photoContainer}>
                   <Image source={{ uri: photo }} style={styles.approvePhoto} />
                   <TouchableOpacity
+                    testID="tenant-verify-approve-remove-photo"
                     style={styles.removePhotoButton}
                     onPress={() => handleRemovePhoto('approve', index)}
                   >
@@ -358,7 +372,11 @@ export default function TenantVerificationScreen() {
             </View>
           )}
 
-          <TouchableOpacity style={styles.uploadButton} onPress={() => handlePickImage('approve')}>
+          <TouchableOpacity
+            testID="tenant-verify-approve-add-photo"
+            style={styles.uploadButton}
+            onPress={() => handlePickImage('approve')}
+          >
             <Ionicons name="camera" size={24} color="#10B981" />
             <Text style={[styles.uploadButtonText, { color: '#10B981' }]}>
               {approvePhotos.length > 0 ? 'Add More Photos' : 'Upload After Photos'}
@@ -368,6 +386,7 @@ export default function TenantVerificationScreen() {
 
         {/* Confirm Button */}
         <TouchableOpacity
+          testID="tenant-verify-approve-submit"
           style={[
             styles.submitButton,
             styles.approveButtonSolid,
@@ -391,7 +410,11 @@ export default function TenantVerificationScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => setMode('select')} style={styles.backButton}>
+        <TouchableOpacity
+          testID="tenant-verify-reject-back"
+          onPress={() => setMode('select')}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
         </TouchableOpacity>
         <Text style={styles.title}>Report Issues</Text>
@@ -418,6 +441,7 @@ export default function TenantVerificationScreen() {
           Please describe the issues in detail (minimum 10 characters)
         </Text>
         <TextInput
+          testID="tenant-verify-reject-reason"
           style={styles.textArea}
           value={rejectionReason}
           onChangeText={setRejectionReason}
@@ -443,6 +467,7 @@ export default function TenantVerificationScreen() {
               <View key={index} style={styles.photoContainer}>
                 <Image source={{ uri: photo }} style={styles.rejectionPhoto} />
                 <TouchableOpacity
+                  testID="tenant-verify-reject-remove-photo"
                   style={styles.removePhotoButton}
                   onPress={() => handleRemovePhoto('reject', index)}
                 >
@@ -453,7 +478,11 @@ export default function TenantVerificationScreen() {
           </View>
         )}
 
-        <TouchableOpacity style={styles.uploadButton} onPress={() => handlePickImage('reject')}>
+        <TouchableOpacity
+          testID="tenant-verify-reject-add-photo"
+          style={styles.uploadButton}
+          onPress={() => handlePickImage('reject')}
+        >
           <Ionicons name="camera" size={24} color="#3B82F6" />
           <Text style={styles.uploadButtonText}>
             {rejectionPhotos.length > 0 ? 'Add More Photos' : 'Take / Upload Photo'}
@@ -463,6 +492,7 @@ export default function TenantVerificationScreen() {
 
       {/* Submit Button */}
       <TouchableOpacity
+        testID="tenant-verify-reject-submit"
         style={[
           styles.submitButton,
           styles.rejectButtonSolid,

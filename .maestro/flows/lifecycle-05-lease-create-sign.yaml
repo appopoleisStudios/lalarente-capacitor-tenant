@@ -1,0 +1,975 @@
+# Lifecycle stage 5 — Lease created, reviewed, sent, signed by both, activated
+# Covers LC-5-02 to 5-30 and LC-4-07/4-08 (apply holding deposit to lease).
+# Needs the approved application and paid deposit from stage 4.
+# Needs migration 20261113000001 (F1 fix: lease saved as
+# 'pending_tenant_signature', which the status constraint now allows).
+# Not automatable: picker wheels (defaults are kept), PDF viewer contents.
+# Env: creds, LC_PROPERTY_TITLE, LC_PROPERTY_ID, LC_RENT, LC_DEPOSIT, LC_TOKEN
+appId: com.lalarente.app
+---
+# ── PHASE 1 — owner: Create Lease form, every control ─────────────────────
+- runFlow: ../subflows/login-owner.yaml
+- runFlow:
+    file: ../subflows/lc-owner-open-application.yaml
+    env:
+      PROP_TITLE: "${LC_PROPERTY_TITLE}"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-application-create-lease"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-application-create-lease"
+- extendedWaitUntil:
+    visible: "Create Lease"
+    timeout: 20000
+- extendedWaitUntil:
+    visible:
+      id: "owner-lease-create-type-fixed"
+    timeout: 20000
+- tapOn:
+    id: "owner-lease-create-back"
+- extendedWaitUntil:
+    visible:
+      id: "owner-application-back"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-application-create-lease"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-application-create-lease"
+- extendedWaitUntil:
+    visible:
+      id: "owner-lease-create-type-fixed"
+    timeout: 20000
+- tapOn:
+    id: "owner-lease-create-type-month"
+- tapOn:
+    id: "owner-lease-create-type-fixed"
+
+# ── dates default to next month + 12 months; open each picker and confirm ───
+- tapOn:
+    id: "owner-lease-create-start-date"
+- extendedWaitUntil:
+    visible:
+      id: "owner-lease-create-start-date-done"
+    timeout: 20000
+- tapOn:
+    id: "owner-lease-create-start-date-done"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-lease-create-end-date"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+# bring the field out from under the header (iOS reports clipped rows as visible)
+- swipe:
+    start: "50%,40%"
+    end: "50%,60%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    id: "owner-lease-create-end-date"
+- extendedWaitUntil:
+    visible:
+      id: "owner-lease-create-end-date-done"
+    timeout: 20000
+- tapOn:
+    id: "owner-lease-create-end-date-done"
+
+# ── LC-5-06 validation: rent is required ──────────────────────────────────
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-lease-create-rent"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-lease-create-rent"
+- eraseText: 30
+- swipe:
+    start: "50%,45%"
+    end: "50%,40%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-lease-create-review"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-lease-create-review"
+- extendedWaitUntil:
+    visible: "Validation Error"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-lease-create-rent"
+    direction: UP
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-lease-create-rent"
+- inputText: "${LC_RENT}"
+- swipe:
+    start: "50%,45%"
+    end: "50%,40%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-lease-create-deposit"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-lease-create-deposit"
+- eraseText: 30
+- inputText: "${LC_DEPOSIT}"
+- swipe:
+    start: "50%,45%"
+    end: "50%,40%"
+    duration: 400
+
+# ── validation: payment due day must be 1-31 ──────────────────────────────
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-lease-create-due-day"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-lease-create-due-day"
+- eraseText: 30
+- inputText: "45"
+- swipe:
+    start: "50%,45%"
+    end: "50%,40%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-lease-create-review"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-lease-create-review"
+- extendedWaitUntil:
+    visible: "Validation Error"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-lease-create-due-day"
+    direction: UP
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-lease-create-due-day"
+- eraseText: 30
+- inputText: "1"
+- swipe:
+    start: "50%,45%"
+    end: "50%,40%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-lease-create-escalation-fixed"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-lease-create-escalation-fixed"
+- tapOn:
+    id: "owner-lease-create-escalation-percentage"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-lease-create-escalation-value"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-lease-create-escalation-value"
+- inputText: "8"
+- swipe:
+    start: "50%,45%"
+    end: "50%,40%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-lease-create-escalation-frequency"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-lease-create-escalation-frequency"
+- eraseText: 30
+- inputText: "12"
+- swipe:
+    start: "50%,45%"
+    end: "50%,40%"
+    duration: 400
+- takeScreenshot: lc05-owner-lease-form
+- waitForAnimationToEnd:
+    timeout: 1500
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-lease-create-review"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-lease-create-review"
+- extendedWaitUntil:
+    visible:
+      id: "owner-lease-review-send"
+    timeout: 30000
+- extendedWaitUntil:
+    visible: "Review Lease"
+    timeout: 20000
+- takeScreenshot: lc05-owner-lease-review
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── Review: back keeps the form, clauses modal (close, save), send ────────
+- tapOn:
+    id: "owner-lease-review-back"
+# back to the form, still scrolled where the owner left it
+- extendedWaitUntil:
+    visible:
+      id: "owner-lease-create-review"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-lease-create-review"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-lease-create-review"
+- extendedWaitUntil:
+    visible:
+      id: "owner-lease-review-send"
+    timeout: 30000
+- tapOn:
+    id: "owner-lease-review-clauses-open"
+- extendedWaitUntil:
+    visible:
+      id: "owner-lease-review-clauses-input"
+    timeout: 20000
+- tapOn:
+    id: "owner-lease-review-clauses-close"
+- extendedWaitUntil:
+    notVisible:
+      id: "owner-lease-review-clauses-input"
+    timeout: 15000
+- tapOn:
+    id: "owner-lease-review-clauses-open"
+- tapOn:
+    id: "owner-lease-review-clauses-input"
+- inputText: "LC-clause ${LC_TOKEN}"
+- tapOn:
+    id: "owner-lease-review-clauses-save"
+- extendedWaitUntil:
+    notVisible:
+      id: "owner-lease-review-clauses-input"
+    timeout: 15000
+- tapOn:
+    id: "owner-lease-review-send"
+- extendedWaitUntil:
+    visible: "Lease Sent"
+    timeout: 60000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# ── owner lease detail while waiting for the tenant: no owner sign button yet ───
+- runFlow:
+    file: ../subflows/lc-owner-open-application.yaml
+    env:
+      PROP_TITLE: "${LC_PROPERTY_TITLE}"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-application-view-lease"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-application-view-lease"
+- extendedWaitUntil:
+    visible:
+      id: "owner-lease-back"
+    timeout: 25000
+- extendedWaitUntil:
+    visible: "Lease Details"
+    timeout: 20000
+- assertNotVisible:
+    id: "owner-lease-sign"
+- takeScreenshot: lc05-owner-lease-awaiting-tenant
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(owner)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-owner.yaml
+
+# ── PHASE 2 — tenant sees the lease with the same terms and signs ─────────
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/lease
+- extendedWaitUntil:
+    visible: "My Lease"
+    timeout: 20000
+- assertVisible: ".*${LC_PROPERTY_TITLE}.*"
+# the Sign button sits below the lease summary
+- scrollUntilVisible:
+    element:
+      id: "tenant-lease-sign"
+    direction: DOWN
+    timeout: 30000
+    visibilityPercentage: 60
+    centerElement: true
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*LC-clause ${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- takeScreenshot: lc05-tenant-lease-pending
+- waitForAnimationToEnd:
+    timeout: 1500
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-lease-sign"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "tenant-lease-sign"
+
+# ── LC-5-14 signature modal: close (x) leaves it unsigned; clear; confirm ───
+- extendedWaitUntil:
+    visible:
+      id: "signature-modal-confirm"
+    timeout: 20000
+- tapOn:
+    id: "signature-modal-close"
+- extendedWaitUntil:
+    notVisible:
+      id: "signature-modal-confirm"
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      id: "tenant-lease-sign"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "tenant-lease-sign"
+- extendedWaitUntil:
+    visible:
+      id: "signature-modal-confirm"
+    timeout: 20000
+- swipe:
+    start: "30%,45%"
+    end: "70%,55%"
+    duration: 600
+- swipe:
+    start: "70%,45%"
+    end: "30%,55%"
+    duration: 600
+- tapOn:
+    id: "signature-modal-clear"
+- swipe:
+    start: "30%,45%"
+    end: "70%,55%"
+    duration: 600
+- swipe:
+    start: "70%,45%"
+    end: "30%,55%"
+    duration: 600
+- tapOn:
+    id: "signature-modal-confirm"
+- extendedWaitUntil:
+    visible: ".*Waiting for owner to sign.*"
+    timeout: 60000
+- tapOn:
+    text: "OK"
+- extendedWaitUntil:
+    notVisible:
+      id: "tenant-lease-sign"
+    timeout: 15000
+- takeScreenshot: lc05-tenant-signed
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(tenant)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+# ── PHASE 3 — owner signs to activate ─────────────────────────────────────
+- runFlow: ../subflows/login-owner.yaml
+- runFlow:
+    file: ../subflows/lc-owner-open-application.yaml
+    env:
+      PROP_TITLE: "${LC_PROPERTY_TITLE}"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-application-view-lease"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-application-view-lease"
+- extendedWaitUntil:
+    visible:
+      id: "owner-lease-back"
+    timeout: 25000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-lease-sign"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- assertVisible: ".*Tenant has signed.*"
+- tapOn:
+    id: "owner-lease-sign"
+- extendedWaitUntil:
+    visible:
+      id: "signature-modal-confirm"
+    timeout: 20000
+- swipe:
+    start: "30%,45%"
+    end: "70%,55%"
+    duration: 600
+- swipe:
+    start: "70%,45%"
+    end: "30%,55%"
+    duration: 600
+- tapOn:
+    id: "signature-modal-clear"
+- swipe:
+    start: "30%,45%"
+    end: "70%,55%"
+    duration: 600
+- swipe:
+    start: "70%,45%"
+    end: "30%,55%"
+    duration: 600
+- tapOn:
+    id: "signature-modal-confirm"
+- extendedWaitUntil:
+    visible: ".*signed and activated.*"
+    timeout: 90000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# ── active lease controls: document, PDF, regenerate, contact, inspections ───
+# status badge is at the top; the screen may be scrolled down after signing
+- scrollUntilVisible:
+    element:
+      text: "(?i).*active.*"
+    direction: UP
+    timeout: 20000
+- assertNotVisible:
+    id: "owner-lease-sign"
+- waitForAnimationToEnd:
+    timeout: 1500
+# Regenerate only shows when the PDF failed to generate on activation
+- runFlow:
+    when:
+      visible:
+        id: "owner-lease-regenerate-pdf"
+    commands:
+      - tapOn:
+          id: "owner-lease-regenerate-pdf"
+      - extendedWaitUntil:
+          visible: "(Regenerate PDF|Notice)"
+          timeout: 15000
+      - tapOn:
+          text: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-lease-download-pdf"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-lease-download-pdf"
+- waitForAnimationToEnd:
+    timeout: 6000
+- tapOn:
+    text: "(Close|Cancel|Done)"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-lease-contact-tenant"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-lease-contact-tenant"
+- extendedWaitUntil:
+    visible: "Contact Tenant"
+    timeout: 15000
+- tapOn:
+    text: "Cancel"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-lease-schedule-inspection"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- assertVisible:
+    id: "owner-lease-view-inspections"
+- tapOn:
+    id: "owner-lease-view-inspections"
+- extendedWaitUntil:
+    visible: "Inspections"
+    timeout: 20000
+- tapOn:
+    id: "owner-inspections-back"
+- extendedWaitUntil:
+    visible:
+      id: "owner-lease-back"
+    timeout: 20000
+
+# ── header back returns to the application, then reopen the lease ─────────
+- tapOn:
+    id: "owner-lease-back"
+- extendedWaitUntil:
+    visible:
+      id: "owner-application-view-lease"
+    timeout: 25000
+- tapOn:
+    id: "owner-application-view-lease"
+- extendedWaitUntil:
+    visible:
+      id: "owner-lease-back"
+    timeout: 25000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-lease-view-document"
+    direction: UP
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-lease-view-document"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: lc05-owner-lease-document
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── LC-4-07 / 4-08 apply the holding deposit to the lease ─────────────────
+- openLink: lalarenteapp://(owner)/holding-deposit
+- extendedWaitUntil:
+    visible: "Holding Deposits"
+    timeout: 20000
+- tapOn:
+    id: "owner-holding-deposit-filter-paid"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-holding-deposit-apply"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-holding-deposit-apply"
+- extendedWaitUntil:
+    visible: "Apply to Lease"
+    timeout: 15000
+- tapOn:
+    text: "Cancel"
+- tapOn:
+    id: "owner-holding-deposit-apply"
+- extendedWaitUntil:
+    visible: "Apply to Lease"
+    timeout: 15000
+- tapOn:
+    text: "Apply"
+- extendedWaitUntil:
+    visible: "Applied"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- extendedWaitUntil:
+    notVisible:
+      id: "owner-holding-deposit-apply"
+    timeout: 15000
+
+# ── LC-5-24 / 5-25 owner money screens show the new lease ─────────────────
+- openLink: lalarenteapp://(owner)/rent-roll
+- extendedWaitUntil:
+    visible: "Rent Roll"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*${LC_PROPERTY_TITLE}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- takeScreenshot: lc05-owner-rent-roll
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(owner)/deposits
+- extendedWaitUntil:
+    visible: "Deposit Management"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*${LC_PROPERTY_TITLE}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- takeScreenshot: lc05-owner-deposit
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(owner)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-owner.yaml
+
+# ── PHASE 4 — tenant: active lease, every control, journey, money, search ───
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/lease
+- extendedWaitUntil:
+    visible: "My Lease"
+    timeout: 20000
+# status badge is at the top; the screen may be scrolled down after signing
+- scrollUntilVisible:
+    element:
+      text: "(?i).*active.*"
+    direction: UP
+    timeout: 20000
+- assertVisible: ".*${LC_PROPERTY_TITLE}.*"
+- assertNotVisible:
+    id: "tenant-lease-sign"
+- takeScreenshot: lc05-tenant-lease-active
+- waitForAnimationToEnd:
+    timeout: 1500
+- waitForAnimationToEnd:
+    timeout: 1500
+# Generate only shows when the PDF is missing
+- runFlow:
+    when:
+      visible:
+        id: "tenant-lease-generate-pdf"
+    commands:
+      - tapOn:
+          id: "tenant-lease-generate-pdf"
+      - waitForAnimationToEnd:
+          timeout: 8000
+      - tapOn:
+          text: "(OK|Cancel)"
+          optional: true
+      - waitForAnimationToEnd:
+          timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-lease-download-pdf"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "tenant-lease-download-pdf"
+- waitForAnimationToEnd:
+    timeout: 6000
+- tapOn:
+    text: "(Close|Cancel|Done)"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-lease-contact-owner"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "tenant-lease-contact-owner"
+- extendedWaitUntil:
+    visible: "Contact Owner"
+    timeout: 15000
+- tapOn:
+    text: "Cancel"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-lease-early-termination"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "tenant-lease-early-termination"
+- extendedWaitUntil:
+    visible: ".*Early Termination.*"
+    timeout: 20000
+- openLink: lalarenteapp://(tenant)/lease
+- extendedWaitUntil:
+    visible: "My Lease"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-lease-view-document"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "tenant-lease-view-document"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: lc05-tenant-lease-document
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── LC-5-26 / 5-27 lease journey lists every step ─────────────────────────
+- openLink: lalarenteapp://(tenant)/lease-journey
+- extendedWaitUntil:
+    visible: "Lease Journey"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: "Application Submitted"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: "Application Approved"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: "Holding Deposit Paid"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: "You Signed Lease"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: "Owner Signed Lease"
+    direction: UP
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: "Lease Executed"
+    direction: UP
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: "Lease Started"
+    direction: UP
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- takeScreenshot: lc05-tenant-journey
+- waitForAnimationToEnd:
+    timeout: 1500
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-journey-open-lease"
+    direction: UP
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "tenant-journey-open-lease"
+- extendedWaitUntil:
+    visible: "My Lease"
+    timeout: 20000
+- openLink: lalarenteapp://(tenant)/lease-journey
+- extendedWaitUntil:
+    visible: "Lease Journey"
+    timeout: 20000
+- swipe:
+    start: "50%,40%"
+    end: "50%,80%"
+- tapOn:
+    id: "tenant-journey-back"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# ── holding deposit shows Applied; first rent and deposit are on the tenant side ───
+- openLink: lalarenteapp://(tenant)/holding-deposit
+- extendedWaitUntil:
+    visible: "Holding Deposits"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: "(?i).*applied.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- openLink: lalarenteapp://(tenant)/payments
+- extendedWaitUntil:
+    visible: "Payments"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: "Payment History"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- takeScreenshot: lc05-tenant-payments
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(tenant)/deposit
+- extendedWaitUntil:
+    visible: "Deposit Status"
+    timeout: 20000
+- takeScreenshot: lc05-tenant-deposit
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── LC-5-23 rented property is not in search ──────────────────────────────
+- openLink: lalarenteapp://(tenant)/search
+- extendedWaitUntil:
+    visible:
+      id: "tenant-search-input"
+    timeout: 20000
+- tapOn:
+    id: "tenant-search-input"
+- inputText: "${LC_PROPERTY_TITLE}"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "No properties found"
+    timeout: 20000
+- openLink: lalarenteapp://(tenant)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-tenant.yaml

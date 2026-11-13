@@ -22,7 +22,7 @@ async function saveReportToDocuments(
     lease_id?: string;
     tenant_id?: string;
     access_level?: 'owner_only' | 'tenant_only' | 'both' | 'admin_only';
-  },
+  }
 ): Promise<string> {
   const fileInfo = await FileSystem.getInfoAsync(uri);
   const size = fileInfo.exists && 'size' in fileInfo ? (fileInfo as any).size : 0;
@@ -43,7 +43,7 @@ async function saveReportToDocuments(
       lease_id: opts?.lease_id,
       tenant_id: opts?.tenant_id,
     },
-    ownerId,
+    ownerId
   );
 
   return doc.id;
@@ -123,33 +123,34 @@ interface PropertyStatementSection {
 function buildOwnerStatementHtml(
   ownerName: string,
   period: string,
-  properties: PropertyStatementSection[],
+  properties: PropertyStatementSection[]
 ): string {
   const today = fmtDate(new Date().toISOString());
 
-  const propertySections = properties.map((prop, idx) => {
-    const isLast = idx === properties.length - 1;
+  const propertySections = properties
+    .map((prop, idx) => {
+      const isLast = idx === properties.length - 1;
 
-    // Income & Expenses rows
-    const expenseRows = prop.expenseItems
-      .map(
-        e => `
+      // Income & Expenses rows
+      const expenseRows = prop.expenseItems
+        .map(
+          (e) => `
       <tr>
         <td>${fmtDate(e.date)}</td>
         <td>${e.description}</td>
         <td class="right"></td>
         <td class="right">R ${fmtZAR(e.amount)}</td>
-      </tr>`,
-      )
-      .join('');
+      </tr>`
+        )
+        .join('');
 
-    const totalIncome = prop.rentCollected;
-    const totalExpenses = prop.totalExpenses;
+      const totalIncome = prop.rentCollected;
+      const totalExpenses = prop.totalExpenses;
 
-    // Invoice rows
-    const invoiceRows = prop.invoiceItems
-      .map(
-        i => `
+      // Invoice rows
+      const invoiceRows = prop.invoiceItems
+        .map(
+          (i) => `
       <tr>
         <td>${fmtDate(i.date)}</td>
         <td>${i.ref}</td>
@@ -157,15 +158,15 @@ function buildOwnerStatementHtml(
         <td class="right">R ${fmtZAR(i.amountExcl)}</td>
         <td class="right">R ${fmtZAR(i.vat)}</td>
         <td class="right">R ${fmtZAR(i.total)}</td>
-      </tr>`,
-      )
-      .join('');
+      </tr>`
+        )
+        .join('');
 
-    const invTotal = prop.invoiceItems.reduce((s, i) => s + i.total, 0);
-    const invExcl = prop.invoiceItems.reduce((s, i) => s + i.amountExcl, 0);
-    const invVat = prop.invoiceItems.reduce((s, i) => s + i.vat, 0);
+      const invTotal = prop.invoiceItems.reduce((s, i) => s + i.total, 0);
+      const invExcl = prop.invoiceItems.reduce((s, i) => s + i.amountExcl, 0);
+      const invVat = prop.invoiceItems.reduce((s, i) => s + i.vat, 0);
 
-    return `
+      return `
     <!-- ═══ PROPERTY: ${prop.propertyTitle} ═══ -->
     <div style="padding: 28px 32px; ${!isLast ? '' : ''}">
 
@@ -305,7 +306,8 @@ function buildOwnerStatementHtml(
     </div>
     ${!isLast ? '<div class="page-break"></div>' : ''}
   `;
-  }).join('');
+    })
+    .join('');
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -324,9 +326,9 @@ function buildOwnerStatementHtml(
 
 export interface TaxStatementExportData {
   ownerName: string;
-  taxYearLabel: string;  // e.g. "2024/2025"
-  startDate: string;     // "2024-03-01"
-  endDate: string;       // "2025-02-28"
+  taxYearLabel: string; // e.g. "2024/2025"
+  startDate: string; // "2024-03-01"
+  endDate: string; // "2025-02-28"
   grossRentalIncome: number;
   maintenanceDeductions: number;
   netTaxableEstimate: number;
@@ -344,8 +346,9 @@ function buildTaxStatementHtml(data: TaxStatementExportData): string {
   const period = `01 March ${data.taxYearLabel.split('/')[0]} to 28 February ${data.taxYearLabel.split('/')[1]}`;
   const today = fmtDate(new Date().toISOString());
 
-  const breakdownRows = data.propertyBreakdown.map(
-    pb => `
+  const breakdownRows = data.propertyBreakdown
+    .map(
+      (pb) => `
     <tr>
       <td>${pb.propertyTitle}</td>
       <td class="right">R ${fmtZAR(pb.grossIncome)}</td>
@@ -353,8 +356,9 @@ function buildTaxStatementHtml(data: TaxStatementExportData): string {
       <td class="right" style="color: ${pb.net >= 0 ? '#007A4D' : '#DC2626'}; font-weight: 700;">
         R ${fmtZAR(pb.net)}
       </td>
-    </tr>`,
-  ).join('');
+    </tr>`
+    )
+    .join('');
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -449,7 +453,9 @@ function buildTaxStatementHtml(data: TaxStatementExportData): string {
     </div>
 
     <!-- Per-property breakdown -->
-    ${data.propertyBreakdown.length > 0 ? `
+    ${
+      data.propertyBreakdown.length > 0
+        ? `
     <div class="section" style="margin-bottom: 24px;">
       <div class="section-title">Per-Property Breakdown</div>
       <table>
@@ -476,7 +482,9 @@ function buildTaxStatementHtml(data: TaxStatementExportData): string {
         </tfoot>
       </table>
     </div>
-    ` : ''}
+    `
+        : ''
+    }
 
     <!-- Disclaimer -->
     <div style="background: #EFF6FF; border-left: 4px solid #3B82F6; padding: 12px 16px; border-radius: 6px; margin-bottom: 24px;">
@@ -508,14 +516,24 @@ function buildTaxStatementHtml(data: TaxStatementExportData): string {
 export async function exportMonthlyStatementPdf(
   ownerId: string,
   month: number,
-  year: number,
+  year: number
 ): Promise<string> {
   const monthStart = new Date(year, month, 1).toISOString();
   const monthEnd = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
 
   const MONTHS = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
   const period = `01 ${MONTHS[month]} ${year} to ${new Date(year, month + 1, 0).getDate()} ${MONTHS[month]} ${year}`;
 
@@ -530,11 +548,13 @@ export async function exportMonthlyStatementPdf(
   // 2. Active leases with property + tenant details (deposit_amount stored on lease)
   const { data: leases } = await supabase
     .from('leases')
-    .select(`
+    .select(
+      `
       id, monthly_rent, end_date, deposit_amount,
       properties!leases_property_id_fkey(id, title, address, city),
       profiles!leases_tenant_id_fkey(full_name)
-    `)
+    `
+    )
     .eq('owner_id', ownerId)
     .in('status', ['active', 'signed']);
 
@@ -542,7 +562,7 @@ export async function exportMonthlyStatementPdf(
     throw new Error('No active leases found for this period.');
   }
 
-  const propertyIds = leases.map(l => (l as any).properties?.id).filter(Boolean);
+  const propertyIds = leases.map((l) => (l as any).properties?.id).filter(Boolean);
 
   // 3. Payments for this month
   const { data: payments } = await supabase
@@ -560,13 +580,16 @@ export async function exportMonthlyStatementPdf(
     .in('property_id', propertyIds)
     .eq('owner_id', ownerId);
 
-  let posByProperty: Record<string, { date: string; ref: string; description: string; amount: number }[]> = {};
+  let posByProperty: Record<
+    string,
+    { date: string; ref: string; description: string; amount: number }[]
+  > = {};
 
   if (maintenanceRequests?.length) {
-    const requestIds = maintenanceRequests.map(r => r.id);
+    const requestIds = maintenanceRequests.map((r) => r.id);
     const reqPropertyMap: Record<string, string> = {};
     const reqDescMap: Record<string, string> = {};
-    maintenanceRequests.forEach(r => {
+    maintenanceRequests.forEach((r) => {
       if (r.id) {
         reqPropertyMap[r.id] = r.property_id || '';
         reqDescMap[r.id] = r.description || 'Maintenance';
@@ -580,9 +603,11 @@ export async function exportMonthlyStatementPdf(
       .in('maintenance_request_id', requestIds);
 
     if (contracts?.length) {
-      const contractIds = contracts.map(c => c.id);
+      const contractIds = contracts.map((c) => c.id);
       const contractReqMap: Record<string, string> = {};
-      contracts.forEach(c => { if (c.id) contractReqMap[c.id] = c.maintenance_request_id || ''; });
+      contracts.forEach((c) => {
+        if (c.id) contractReqMap[c.id] = c.maintenance_request_id || '';
+      });
 
       const { data: pos } = await supabase
         .from('purchase_orders')
@@ -592,7 +617,7 @@ export async function exportMonthlyStatementPdf(
         .gte('created_at', monthStart)
         .lte('created_at', monthEnd);
 
-      pos?.forEach(po => {
+      pos?.forEach((po) => {
         const reqId = contractReqMap[po.contract_id || ''];
         const propId = reqId ? reqPropertyMap[reqId] : null;
         const desc = reqId ? reqDescMap[reqId] : 'Maintenance';
@@ -610,7 +635,7 @@ export async function exportMonthlyStatementPdf(
   }
 
   // 6. Build per-property sections
-  const propertySections: PropertyStatementSection[] = leases.map(lease => {
+  const propertySections: PropertyStatementSection[] = leases.map((lease) => {
     const prop = (lease as any).properties;
     const tenant = (lease as any).profiles;
     const propId = prop?.id || '';
@@ -618,7 +643,7 @@ export async function exportMonthlyStatementPdf(
     const propAddress = [prop?.address, prop?.city].filter(Boolean).join(', ') || 'Address not set';
 
     const rentCollected = (payments || [])
-      .filter(p => p.property_id === propId)
+      .filter((p) => p.property_id === propId)
       .reduce((s, p) => s + (p.amount || 0), 0);
 
     const depositBalance = (lease as any).deposit_amount || 0;
@@ -629,13 +654,13 @@ export async function exportMonthlyStatementPdf(
     const rentBilled = lease.monthly_rent || 0;
     const tenantOutstanding = Math.max(0, rentBilled - rentCollected);
 
-    const expenseItems: ExpenseItem[] = pos.map(po => ({
+    const expenseItems: ExpenseItem[] = pos.map((po) => ({
       date: po.date,
       description: po.description,
       amount: po.amount,
     }));
 
-    const invoiceItems: InvoiceItem[] = pos.map(po => ({
+    const invoiceItems: InvoiceItem[] = pos.map((po) => ({
       date: po.date,
       ref: po.ref,
       description: po.description,
@@ -676,7 +701,7 @@ export async function exportMonthlyStatementPdf(
  */
 export async function exportTaxStatementPdf(
   data: TaxStatementExportData,
-  ownerId: string,
+  ownerId: string
 ): Promise<string> {
   const html = buildTaxStatementHtml(data);
 
@@ -717,18 +742,20 @@ function buildInvoicesHtml(
   ownerName: string,
   tab: 'rent' | 'vendor',
   rentInvoices: RentInvoiceRow[],
-  vendorInvoices: VendorInvoiceRow[],
+  vendorInvoices: VendorInvoiceRow[]
 ): string {
   const today = fmtDate(new Date().toISOString());
   const isRent = tab === 'rent';
 
   const title = isRent ? 'Rent Invoices' : 'Vendor Invoices';
   const total = isRent
-    ? rentInvoices.filter(i => i.status === 'completed').reduce((s, i) => s + i.amount, 0)
+    ? rentInvoices.filter((i) => i.status === 'completed').reduce((s, i) => s + i.amount, 0)
     : vendorInvoices.reduce((s, i) => s + (i.total_amount || 0), 0);
 
   const rows = isRent
-    ? rentInvoices.map(i => `
+    ? rentInvoices
+        .map(
+          (i) => `
       <tr>
         <td>${i.tenant_name}</td>
         <td>${i.property_title}</td>
@@ -738,8 +765,12 @@ function buildInvoicesHtml(
         <td style="text-align:center;">
           <span style="background:${i.status === 'completed' ? '#dcfce7' : '#fef9c3'};color:${i.status === 'completed' ? '#166534' : '#854d0e'};padding:2px 8px;border-radius:4px;font-size:8.5pt;">${i.status}</span>
         </td>
-      </tr>`).join('')
-    : vendorInvoices.map(po => `
+      </tr>`
+        )
+        .join('')
+    : vendorInvoices
+        .map(
+          (po) => `
       <tr>
         <td>${po.po_number}</td>
         <td>${po.vendor_name}</td>
@@ -751,7 +782,9 @@ function buildInvoicesHtml(
         <td style="text-align:center;">
           <span style="background:#ede9fe;color:#4c1d95;padding:2px 8px;border-radius:4px;font-size:8.5pt;">${po.status}</span>
         </td>
-      </tr>`).join('');
+      </tr>`
+        )
+        .join('');
 
   const thead = isRent
     ? `<tr>
@@ -789,9 +822,11 @@ function buildInvoicesHtml(
     </div>
     <div class="section">
       <div class="section-title">${title}</div>
-      ${(isRent ? rentInvoices.length : vendorInvoices.length) === 0
-        ? '<p style="font-size:9pt;color:#888;padding:8px 0;">No invoices to display.</p>'
-        : `<table><thead>${thead}</thead><tbody>${rows}</tbody></table>`}
+      ${
+        (isRent ? rentInvoices.length : vendorInvoices.length) === 0
+          ? '<p style="font-size:9pt;color:#888;padding:8px 0;">No invoices to display.</p>'
+          : `<table><thead>${thead}</thead><tbody>${rows}</tbody></table>`
+      }
     </div>
     <div style="border-top:1px solid #ddd;padding-top:10px;font-size:8pt;color:#999;text-align:center;">
       Lalarente Property Manager &nbsp;|&nbsp; Generated ${today} &nbsp;|&nbsp; For informational purposes only.
@@ -963,7 +998,7 @@ function buildSingleVendorInvoiceHtml(ownerName: string, po: VendorInvoiceRow): 
 export async function exportSingleRentInvoicePdf(
   ownerName: string,
   ownerId: string,
-  invoice: RentInvoiceRow,
+  invoice: RentInvoiceRow
 ): Promise<string> {
   const html = buildSingleRentInvoiceHtml(ownerName, invoice);
   const { uri } = await Print.printToFileAsync({ html, base64: false });
@@ -978,7 +1013,7 @@ export async function exportSingleRentInvoicePdf(
 export async function exportSingleVendorInvoicePdf(
   ownerName: string,
   ownerId: string,
-  po: VendorInvoiceRow,
+  po: VendorInvoiceRow
 ): Promise<string> {
   const html = buildSingleVendorInvoiceHtml(ownerName, po);
   const { uri } = await Print.printToFileAsync({ html, base64: false });
@@ -995,7 +1030,7 @@ export async function exportInvoicesPdf(
   ownerId: string,
   tab: 'rent' | 'vendor',
   rentInvoices: RentInvoiceRow[],
-  vendorInvoices: VendorInvoiceRow[],
+  vendorInvoices: VendorInvoiceRow[]
 ): Promise<string> {
   const html = buildInvoicesHtml(ownerName, tab, rentInvoices, vendorInvoices);
   const { uri } = await Print.printToFileAsync({ html, base64: false });
@@ -1020,16 +1055,22 @@ interface RoomReportSection {
 
 function conditionColor(c: string): string {
   const m: Record<string, string> = {
-    excellent: '#4CAF50', good: '#8BC34A', fair: '#FFC107',
-    poor: '#FF9800', damaged: '#F44336',
+    excellent: '#4CAF50',
+    good: '#8BC34A',
+    fair: '#FFC107',
+    poor: '#FF9800',
+    damaged: '#F44336',
   };
   return m[c] || '#9CA3AF';
 }
 
 function conditionBg(c: string): string {
   const m: Record<string, string> = {
-    excellent: '#E8F5E9', good: '#F1F8E9', fair: '#FFFDE7',
-    poor: '#FFF3E0', damaged: '#FFEBEE',
+    excellent: '#E8F5E9',
+    good: '#F1F8E9',
+    fair: '#FFFDE7',
+    poor: '#FFF3E0',
+    damaged: '#FFEBEE',
   };
   return m[c] || '#F5F5F5';
 }
@@ -1046,6 +1087,9 @@ async function getPhotoBase64(uri: string | undefined): Promise<string | null> {
   }
 }
 
+const escHtml = (value: string) =>
+  value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
 function buildInspectionReportHtml(
   insp: {
     type: string;
@@ -1060,85 +1104,103 @@ function buildInspectionReportHtml(
   rooms: RoomReportSection[],
   keys: { physicalKeys: number; accessCards: number; remoteControls: number },
   generalNotes: string,
+  tenantComments: { room: string; text: string; createdAt: string }[] = []
 ): string {
   const today = fmtDate(new Date().toISOString());
   const typeLabel =
-    insp.type === 'move_in' ? 'Move-In' :
-    insp.type === 'move_out' ? 'Move-Out' : 'Periodic';
+    insp.type === 'move_in' ? 'Move-In' : insp.type === 'move_out' ? 'Move-Out' : 'Periodic';
   const propertyAddress =
     [insp.property?.address, insp.property?.city].filter(Boolean).join(', ') || '—';
   const inspDate = fmtDate(insp.scheduled_date);
 
   // Assign global sequential Ref numbers to all items
   let refCounter = 1;
-  const roomsWithRefs = rooms.map(room => ({
+  const roomsWithRefs = rooms.map((room) => ({
     ...room,
-    items: room.items.map(item => ({ ...item, ref: refCounter++ })),
+    items: room.items.map((item) => ({ ...item, ref: refCounter++ })),
   }));
 
   // Collect Actions Required — poor/damaged items
-  const actionItems = roomsWithRefs.flatMap(room =>
+  const actionItems = roomsWithRefs.flatMap((room) =>
     room.items
-      .filter(item => item.condition === 'poor' || item.condition === 'damaged')
-      .map(item => ({ ref: item.ref, room: room.name, name: item.name, condition: item.condition, notes: item.notes }))
+      .filter((item) => item.condition === 'poor' || item.condition === 'damaged')
+      .map((item) => ({
+        ref: item.ref,
+        room: room.name,
+        name: item.name,
+        condition: item.condition,
+        notes: item.notes,
+      }))
   );
 
   // Condition → tri-column (Clean | Undamaged | Working)
   function triCol(c: string): [string, string, string] {
     switch (c) {
-      case 'excellent': case 'good': return ['Y', 'Y', 'Y'];
-      case 'fair': return ['Y', 'Y', 'Y'];
-      case 'poor':    return ['N', 'N', 'Y'];
-      case 'damaged': return ['N', 'N', 'N'];
-      default:        return ['Y', 'Y', 'Y'];
+      case 'excellent':
+      case 'good':
+        return ['Y', 'Y', 'Y'];
+      case 'fair':
+        return ['Y', 'Y', 'Y'];
+      case 'poor':
+        return ['N', 'N', 'Y'];
+      case 'damaged':
+        return ['N', 'N', 'N'];
+      default:
+        return ['Y', 'Y', 'Y'];
     }
   }
   function yCell(v: string): string {
-    return v === 'Y'
-      ? `<td class="tri-y">Y</td>`
-      : `<td class="tri-n">N</td>`;
+    return v === 'Y' ? `<td class="tri-y">Y</td>` : `<td class="tri-n">N</td>`;
   }
 
   // Build per-room HTML
-  const roomSections = roomsWithRefs.map((room, rIdx) => {
-    const itemRows = room.items.map(item => {
-      const [cl, un, wk] = triCol(item.condition);
-      const commentText = item.notes || (item.condition === 'fair' ? 'Minor wear' : '');
-      return `<tr>
+  const roomSections = roomsWithRefs
+    .map((room, rIdx) => {
+      const itemRows = room.items
+        .map((item) => {
+          const [cl, un, wk] = triCol(item.condition);
+          const commentText = item.notes || (item.condition === 'fair' ? 'Minor wear' : '');
+          return `<tr>
         <td class="ref-cell">${item.ref}</td>
         <td class="name-cell">${item.name}</td>
         ${yCell(cl)}${yCell(un)}${yCell(wk)}
         <td class="comment-cell">${commentText}</td>
       </tr>`;
-    }).join('');
+        })
+        .join('');
 
-    // All photos for this room: item-level + room-level
-    const allPhotos: { uri: string; ref: number; label: string }[] = [];
-    for (const item of room.items) {
-      for (const uri of item.photoDataUris) {
-        allPhotos.push({ uri, ref: item.ref, label: item.name });
+      // All photos for this room: item-level + room-level
+      const allPhotos: { uri: string; ref: number; label: string }[] = [];
+      for (const item of room.items) {
+        for (const uri of item.photoDataUris) {
+          allPhotos.push({ uri, ref: item.ref, label: item.name });
+        }
       }
-    }
-    for (const uri of room.photoDataUris) {
-      allPhotos.push({ uri, ref: 0, label: room.name });
-    }
+      for (const uri of room.photoDataUris) {
+        allPhotos.push({ uri, ref: 0, label: room.name });
+      }
 
-    const photoGrid = allPhotos.length > 0
-      ? `<div class="photo-section">
+      const photoGrid =
+        allPhotos.length > 0
+          ? `<div class="photo-section">
           <div class="photo-section-label">Photos</div>
           <div class="photo-grid">
-            ${allPhotos.map(p => `
+            ${allPhotos
+              .map(
+                (p) => `
               <div class="photo-cell">
                 <img src="${p.uri}" class="photo-img" />
                 <div class="photo-caption">${p.ref > 0 ? `Ref ${p.ref} — ` : ''}${p.label}</div>
                 <div class="photo-date">${inspDate}</div>
-              </div>`).join('')}
+              </div>`
+              )
+              .join('')}
           </div>
         </div>`
-      : '';
+          : '';
 
-    const isLastRoom = rIdx === rooms.length - 1;
-    return `<div class="room-section${isLastRoom ? '' : ' pbk'}">
+      const isLastRoom = rIdx === rooms.length - 1;
+      return `<div class="room-section${isLastRoom ? '' : ' pbk'}">
       <div class="room-header">
         <span class="room-header-name">${room.name}</span>
         <span class="room-header-badge" style="background:${conditionBg(room.overallCondition)};color:${conditionColor(room.overallCondition)};">${room.overallCondition.toUpperCase()}</span>
@@ -1159,11 +1221,13 @@ function buildInspectionReportHtml(
       ${room.notes ? `<div class="room-notes"><strong>Notes:</strong> ${room.notes}</div>` : ''}
       ${photoGrid}
     </div>`;
-  }).join('');
+    })
+    .join('');
 
   // Actions Required section
-  const actionsSection = actionItems.length > 0
-    ? `<div class="actions-section pbk">
+  const actionsSection =
+    actionItems.length > 0
+      ? `<div class="actions-section pbk">
         <div class="section-header">ACTIONS REQUIRED</div>
         <table class="items-table">
           <thead>
@@ -1177,18 +1241,22 @@ function buildInspectionReportHtml(
             </tr>
           </thead>
           <tbody>
-            ${actionItems.map(a => `<tr>
+            ${actionItems
+              .map(
+                (a) => `<tr>
               <td class="ref-cell">${a.ref}</td>
               <td style="font-size:8.5pt;">${a.room}</td>
               <td style="font-size:8.5pt;">${a.name}</td>
               <td style="font-size:8pt;text-align:center;color:${conditionColor(a.condition)};font-weight:700;">${a.condition.toUpperCase()}</td>
               <td style="font-size:8.5pt;">${a.notes || 'Assess and repair / replace as necessary'}</td>
               <td style="font-size:8pt;text-align:center;color:#555;">Tenant</td>
-            </tr>`).join('')}
+            </tr>`
+              )
+              .join('')}
           </tbody>
         </table>
       </div>`
-    : '';
+      : '';
 
   // Keys + general notes
   const keysSection = `<div class="keys-section">
@@ -1202,6 +1270,16 @@ function buildInspectionReportHtml(
       </tbody>
     </table>
     ${generalNotes ? `<div class="general-notes"><strong>General Notes:</strong> ${generalNotes}</div>` : ''}
+    ${
+      tenantComments.length > 0
+        ? `<div class="general-notes"><strong>Tenant Comments:</strong><ul>${tenantComments
+            .map(
+              (c) =>
+                `<li><strong>${escHtml(c.room)}</strong> (${fmtDate(c.createdAt)}): ${escHtml(c.text)}</li>`
+            )
+            .join('')}</ul></div>`
+        : ''
+    }
   </div>`;
 
   // Signatures
@@ -1347,9 +1425,11 @@ function buildInspectionReportHtml(
         <div class="info-col">
           <div class="info-label">Type</div>
           <div class="info-value">${typeLabel}</div>
-          ${insp.overall_condition
-            ? `<div class="cond-badge" style="background:${conditionBg(insp.overall_condition)};color:${conditionColor(insp.overall_condition)};border:2px solid ${conditionColor(insp.overall_condition)};">${insp.overall_condition.toUpperCase()}</div>`
-            : ''}
+          ${
+            insp.overall_condition
+              ? `<div class="cond-badge" style="background:${conditionBg(insp.overall_condition)};color:${conditionColor(insp.overall_condition)};border:2px solid ${conditionColor(insp.overall_condition)};">${insp.overall_condition.toUpperCase()}</div>`
+              : ''
+          }
         </div>
       </div>
       <div class="cover-meta">
@@ -1366,9 +1446,11 @@ function buildInspectionReportHtml(
         <div class="info-col">
           <div class="info-label">Rooms Inspected</div>
           <div class="info-value">${rooms.length}</div>
-          ${actionItems.length > 0
-            ? `<div style="color:#dc2626;font-size:8.5pt;font-weight:700;margin-top:4px;">${actionItems.length} action(s) required</div>`
-            : `<div style="color:#16a34a;font-size:8.5pt;font-weight:700;margin-top:4px;">No actions required</div>`}
+          ${
+            actionItems.length > 0
+              ? `<div style="color:#dc2626;font-size:8.5pt;font-weight:700;margin-top:4px;">${actionItems.length} action(s) required</div>`
+              : `<div style="color:#16a34a;font-size:8.5pt;font-weight:700;margin-top:4px;">No actions required</div>`
+          }
         </div>
       </div>
     </div>
@@ -1405,12 +1487,13 @@ function buildInspectionReportHtml(
  */
 export async function exportInspectionReportPdf(
   inspectionId: string,
-  userId: string,
+  userId: string
 ): Promise<string> {
   // 1. Fetch inspection with all relations
   const { data: insp, error } = await supabase
     .from('inspections')
-    .select(`
+    .select(
+      `
       id, type, scheduled_date, overall_condition,
       owner_signed_at, tenant_signed_at,
       property_id, lease_id, tenant_id, owner_id,
@@ -1418,7 +1501,8 @@ export async function exportInspectionReportPdf(
       property:properties!property_id(title, address, city),
       owner:profiles!owner_id(full_name, email, phone),
       tenant:profiles!tenant_id(full_name, email, phone)
-    `)
+    `
+    )
     .eq('id', inspectionId)
     .single();
 
@@ -1429,22 +1513,23 @@ export async function exportInspectionReportPdf(
   const roomsList: any[] = roomsData?.rooms || [];
   const keys = roomsData?.keys || { physicalKeys: 0, accessCards: 0, remoteControls: 0 };
   const generalNotes: string = roomsData?.generalNotes || '';
+  const tenantComments = Array.isArray(roomsData?.tenantComments) ? roomsData.tenantComments : [];
 
   // 3. Convert photos to base64 (graceful fallback for missing files)
   const processedRooms: RoomReportSection[] = await Promise.all(
     roomsList.map(async (room: any) => {
-      const roomPhotos = (await Promise.all(
-        (room.photos || []).map((uri: string) => getPhotoBase64(uri))
-      )).filter(Boolean) as string[];
+      const roomPhotos = (
+        await Promise.all((room.photos || []).map((uri: string) => getPhotoBase64(uri)))
+      ).filter(Boolean) as string[];
 
       const items = await Promise.all(
         (room.items || []).map(async (item: any) => ({
           name: item.name || '',
           condition: item.condition || 'good',
           notes: item.notes || '',
-          photoDataUris: (await Promise.all(
-            (item.photos || []).map((uri: string) => getPhotoBase64(uri))
-          )).filter(Boolean) as string[],
+          photoDataUris: (
+            await Promise.all((item.photos || []).map((uri: string) => getPhotoBase64(uri)))
+          ).filter(Boolean) as string[],
         }))
       );
 
@@ -1473,6 +1558,7 @@ export async function exportInspectionReportPdf(
     processedRooms,
     keys,
     generalNotes,
+    tenantComments
   );
 
   // 5. Generate PDF
@@ -1480,8 +1566,7 @@ export async function exportInspectionReportPdf(
 
   // 6. Save to documents (both owner and tenant can view)
   const typeLabel =
-    insp.type === 'move_in' ? 'Move-In' :
-    insp.type === 'move_out' ? 'Move-Out' : 'Periodic';
+    insp.type === 'move_in' ? 'Move-In' : insp.type === 'move_out' ? 'Move-Out' : 'Periodic';
   const propertyTitle = (insp.property as any)?.title || 'Property';
   const title = `${typeLabel} Inspection Report — ${propertyTitle}`;
 

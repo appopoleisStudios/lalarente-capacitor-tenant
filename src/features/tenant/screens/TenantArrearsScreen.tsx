@@ -401,7 +401,7 @@ export default function TenantArrearsScreen() {
         {/* ─── Payment Arrangement Modal ───────────────────────────────────── */}
         <Modal visible={showArrangementModal} transparent animationType="slide">
           <View style={styles.modalOverlay}>
-            <KeyboardAvoidingView>
+            <KeyboardAvoidingView style={{ justifyContent: 'flex-end' }}>
               <View style={styles.modalSheet}>
                 <Text style={styles.modalTitle}>Propose Payment Arrangement</Text>
                 {selectedArrears && (

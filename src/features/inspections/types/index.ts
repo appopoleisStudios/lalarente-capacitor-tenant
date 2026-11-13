@@ -9,7 +9,12 @@ export type InspectionUpdate = Database['public']['Tables']['inspections']['Upda
 export type InspectionType = 'move_in' | 'periodic' | 'move_out';
 
 // Inspection status enum
-export type InspectionStatus = 'scheduled' | 'in_progress' | 'pending_signatures' | 'completed' | 'cancelled';
+export type InspectionStatus =
+  | 'scheduled'
+  | 'in_progress'
+  | 'pending_signatures'
+  | 'completed'
+  | 'cancelled';
 
 // Room condition enum
 export type RoomCondition = 'excellent' | 'good' | 'fair' | 'poor' | 'damaged';
@@ -41,10 +46,22 @@ export interface RoomInspection {
   photos?: string[];
 }
 
+// A comment the tenant adds to the report. Append-only: tenants can add
+// comments but cannot change or remove anything the owner recorded.
+export interface TenantInspectionComment {
+  id: string;
+  room: string;
+  text: string;
+  createdAt: string;
+  // Set once the tenant raises the comment as a maintenance request
+  maintenanceRequestId?: string;
+}
+
 // Complete rooms JSON structure
 export interface InspectionRooms {
   rooms: RoomInspection[];
   generalNotes?: string;
+  tenantComments?: TenantInspectionComment[];
   externalAreas?: RoomInspection[];
   utilities?: {
     electricity: { working: boolean; meterReading?: number; notes?: string };
@@ -151,14 +168,106 @@ export const DEFAULT_ROOMS = [
 
 // Standard items to check in each room
 export const ROOM_ITEMS: Record<string, string[]> = {
-  'Living Room': ['Walls', 'Ceiling', 'Floor/Carpet', 'Windows', 'Doors', 'Light Fixtures', 'Electrical Outlets', 'Curtains/Blinds'],
-  'Kitchen': ['Walls', 'Ceiling', 'Floor', 'Countertops', 'Cabinets', 'Sink', 'Stove/Oven', 'Extractor Fan', 'Windows', 'Electrical Outlets'],
-  'Main Bedroom': ['Walls', 'Ceiling', 'Floor/Carpet', 'Windows', 'Doors', 'Built-in Cupboards', 'Light Fixtures', 'Electrical Outlets'],
-  'Bedroom 2': ['Walls', 'Ceiling', 'Floor/Carpet', 'Windows', 'Doors', 'Built-in Cupboards', 'Light Fixtures', 'Electrical Outlets'],
-  'Bedroom 3': ['Walls', 'Ceiling', 'Floor/Carpet', 'Windows', 'Doors', 'Built-in Cupboards', 'Light Fixtures', 'Electrical Outlets'],
-  'Bathroom 1': ['Walls', 'Ceiling', 'Floor/Tiles', 'Toilet', 'Basin', 'Shower/Bath', 'Taps', 'Mirror', 'Towel Rails', 'Extractor Fan'],
-  'Bathroom 2': ['Walls', 'Ceiling', 'Floor/Tiles', 'Toilet', 'Basin', 'Shower/Bath', 'Taps', 'Mirror', 'Towel Rails', 'Extractor Fan'],
-  'Garage': ['Walls', 'Floor', 'Door', 'Automated Door Opener', 'Light Fixtures', 'Electrical Outlets'],
-  'Garden/Yard': ['Lawn', 'Garden Beds', 'Fencing', 'Gate', 'Paving', 'Pool (if applicable)', 'Borehole (if applicable)'],
-  'Entrance/Hallway': ['Walls', 'Ceiling', 'Floor', 'Front Door', 'Security Gate', 'Intercom', 'Light Fixtures'],
+  'Living Room': [
+    'Walls',
+    'Ceiling',
+    'Floor/Carpet',
+    'Windows',
+    'Doors',
+    'Light Fixtures',
+    'Electrical Outlets',
+    'Curtains/Blinds',
+  ],
+  Kitchen: [
+    'Walls',
+    'Ceiling',
+    'Floor',
+    'Countertops',
+    'Cabinets',
+    'Sink',
+    'Stove/Oven',
+    'Extractor Fan',
+    'Windows',
+    'Electrical Outlets',
+  ],
+  'Main Bedroom': [
+    'Walls',
+    'Ceiling',
+    'Floor/Carpet',
+    'Windows',
+    'Doors',
+    'Built-in Cupboards',
+    'Light Fixtures',
+    'Electrical Outlets',
+  ],
+  'Bedroom 2': [
+    'Walls',
+    'Ceiling',
+    'Floor/Carpet',
+    'Windows',
+    'Doors',
+    'Built-in Cupboards',
+    'Light Fixtures',
+    'Electrical Outlets',
+  ],
+  'Bedroom 3': [
+    'Walls',
+    'Ceiling',
+    'Floor/Carpet',
+    'Windows',
+    'Doors',
+    'Built-in Cupboards',
+    'Light Fixtures',
+    'Electrical Outlets',
+  ],
+  'Bathroom 1': [
+    'Walls',
+    'Ceiling',
+    'Floor/Tiles',
+    'Toilet',
+    'Basin',
+    'Shower/Bath',
+    'Taps',
+    'Mirror',
+    'Towel Rails',
+    'Extractor Fan',
+  ],
+  'Bathroom 2': [
+    'Walls',
+    'Ceiling',
+    'Floor/Tiles',
+    'Toilet',
+    'Basin',
+    'Shower/Bath',
+    'Taps',
+    'Mirror',
+    'Towel Rails',
+    'Extractor Fan',
+  ],
+  Garage: [
+    'Walls',
+    'Floor',
+    'Door',
+    'Automated Door Opener',
+    'Light Fixtures',
+    'Electrical Outlets',
+  ],
+  'Garden/Yard': [
+    'Lawn',
+    'Garden Beds',
+    'Fencing',
+    'Gate',
+    'Paving',
+    'Pool (if applicable)',
+    'Borehole (if applicable)',
+  ],
+  'Entrance/Hallway': [
+    'Walls',
+    'Ceiling',
+    'Floor',
+    'Front Door',
+    'Security Gate',
+    'Intercom',
+    'Light Fixtures',
+  ],
 };

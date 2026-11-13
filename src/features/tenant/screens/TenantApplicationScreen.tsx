@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -22,6 +22,7 @@ import { applicationsApi } from '../../properties/api/applicationsApi';
 import { propertiesApi } from '../../properties/api/propertiesApi';
 import { uploadFile } from '../../../lib/storage';
 import type { PropertyWithRelations } from '../../properties/api/propertiesApi';
+import { DateField } from '@/src/shared/components/ui/DateField';
 
 const RSA = { green: '#007A4D', blue: '#002395' };
 
@@ -36,6 +37,11 @@ export default function TenantApplicationScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [uploadingDocs, setUploadingDocs] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const scrollRef = useRef<ScrollView>(null);
+  // Each step starts at its top — otherwise the next step opens mid-page.
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [currentStep]);
 
   // Personal Information
   const [fullName, setFullName] = useState('');
@@ -554,7 +560,11 @@ export default function TenantApplicationScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+          <TouchableOpacity
+            testID="tenant-apply-back"
+            onPress={handleBack}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Apply for Property</Text>
@@ -602,7 +612,13 @@ export default function TenantApplicationScreen() {
           <Text style={styles.propertyRent}>R {property.rent_amount?.toLocaleString()}/month</Text>
         </View>
 
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          ref={scrollRef}
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
           {/* CT7-016 — "From your profile" summary. Fields that were pre-
               filled from the tenant's profile are shown as a read-only
               summary panel instead of 10 individual inputs. The tenant
@@ -616,7 +632,10 @@ export default function TenantApplicationScreen() {
                   <View style={styles.profilePrefillHeader}>
                     <Ionicons name="person-circle" size={20} color={RSA.green} />
                     <Text style={styles.profilePrefillTitle}>From your profile</Text>
-                    <TouchableOpacity onPress={() => router.push('/(tenant)/profile' as any)}>
+                    <TouchableOpacity
+                      testID="tenant-apply-edit-personal"
+                      onPress={() => router.push('/(tenant)/profile' as any)}
+                    >
                       <Text style={styles.profilePrefillEdit}>Edit</Text>
                     </TouchableOpacity>
                   </View>
@@ -658,6 +677,7 @@ export default function TenantApplicationScreen() {
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Full Name *</Text>
                   <TextInput
+                    testID="tenant-apply-full-name"
                     style={styles.input}
                     value={fullName}
                     onChangeText={setFullName}
@@ -671,6 +691,7 @@ export default function TenantApplicationScreen() {
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Email *</Text>
                   <TextInput
+                    testID="tenant-apply-email"
                     style={styles.input}
                     value={email}
                     onChangeText={setEmail}
@@ -686,6 +707,7 @@ export default function TenantApplicationScreen() {
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Phone Number *</Text>
                   <TextInput
+                    testID="tenant-apply-phone"
                     style={styles.input}
                     value={phone}
                     onChangeText={setPhone}
@@ -700,6 +722,7 @@ export default function TenantApplicationScreen() {
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>ID Number *</Text>
                   <TextInput
+                    testID="tenant-apply-id-number"
                     style={styles.input}
                     value={idNumber}
                     onChangeText={setIdNumber}
@@ -712,14 +735,17 @@ export default function TenantApplicationScreen() {
               {!dateOfBirth && (
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Date of Birth *</Text>
-                  <TextInput
+                  <DateField
+                    testID="tenant-apply-dob"
                     style={styles.input}
+                    textStyle={styles.dateFieldText}
                     value={dateOfBirth}
-                    onChangeText={setDateOfBirth}
-                    placeholder="YYYY-MM-DD (e.g., 1990-05-15)"
+                    onChange={setDateOfBirth}
+                    placeholder="Select date of birth"
                     placeholderTextColor="#999"
+                    initialDate={new Date(1990, 0, 1)}
+                    maximumDate={new Date()}
                   />
-                  <Text style={styles.helperText}>Format: Year-Month-Day (e.g., 1990-05-15)</Text>
                 </View>
               )}
             </View>
@@ -735,7 +761,10 @@ export default function TenantApplicationScreen() {
                   <View style={styles.profilePrefillHeader}>
                     <Ionicons name="briefcase" size={20} color={RSA.green} />
                     <Text style={styles.profilePrefillTitle}>From your profile</Text>
-                    <TouchableOpacity onPress={() => router.push('/(tenant)/profile' as any)}>
+                    <TouchableOpacity
+                      testID="tenant-apply-edit-employment"
+                      onPress={() => router.push('/(tenant)/profile' as any)}
+                    >
                       <Text style={styles.profilePrefillEdit}>Edit</Text>
                     </TouchableOpacity>
                   </View>
@@ -764,6 +793,7 @@ export default function TenantApplicationScreen() {
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Employer *</Text>
                   <TextInput
+                    testID="tenant-apply-employer"
                     style={styles.input}
                     value={employer}
                     onChangeText={setEmployer}
@@ -777,6 +807,7 @@ export default function TenantApplicationScreen() {
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Position *</Text>
                   <TextInput
+                    testID="tenant-apply-position"
                     style={styles.input}
                     value={position}
                     onChangeText={setPosition}
@@ -790,6 +821,7 @@ export default function TenantApplicationScreen() {
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Monthly Income (Gross) *</Text>
                   <TextInput
+                    testID="tenant-apply-income"
                     style={styles.input}
                     value={monthlyIncome}
                     onChangeText={setMonthlyIncome}
@@ -802,19 +834,22 @@ export default function TenantApplicationScreen() {
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Employment Start Date</Text>
-                <TextInput
+                <DateField
+                  testID="tenant-apply-employment-start"
                   style={styles.input}
+                  textStyle={styles.dateFieldText}
                   value={employmentStartDate}
-                  onChangeText={setEmploymentStartDate}
-                  placeholder="YYYY-MM-DD (e.g., 2020-01-15)"
+                  onChange={setEmploymentStartDate}
+                  placeholder="Select start date"
                   placeholderTextColor="#999"
+                  maximumDate={new Date()}
                 />
-                <Text style={styles.helperText}>Format: Year-Month-Day (e.g., 2020-01-15)</Text>
               </View>
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Employer Contact</Text>
                 <TextInput
+                  testID="tenant-apply-employer-contact"
                   style={styles.input}
                   value={employerContact}
                   onChangeText={setEmployerContact}
@@ -866,7 +901,10 @@ export default function TenantApplicationScreen() {
                     <Text style={styles.docFileName} numberOfLines={1}>
                       {idDocFile.name}
                     </Text>
-                    <TouchableOpacity onPress={() => setIdDocFile(null)}>
+                    <TouchableOpacity
+                      testID="tenant-apply-id-doc-remove"
+                      onPress={() => setIdDocFile(null)}
+                    >
                       <Ionicons name="close-circle" size={22} color="#F44336" />
                     </TouchableOpacity>
                   </View>
@@ -876,13 +914,17 @@ export default function TenantApplicationScreen() {
                     <Text style={styles.docExistingText}>
                       Previously uploaded — pending verification
                     </Text>
-                    <TouchableOpacity onPress={pickIdDoc}>
+                    <TouchableOpacity testID="tenant-apply-id-doc-replace" onPress={pickIdDoc}>
                       <Text style={styles.docReplaceText}>Replace</Text>
                     </TouchableOpacity>
                   </View>
                 ) : (
                   <View style={styles.docPickerRow}>
-                    <TouchableOpacity style={styles.docPickerBtn} onPress={pickIdDoc}>
+                    <TouchableOpacity
+                      testID="tenant-apply-id-doc-upload"
+                      style={styles.docPickerBtn}
+                      onPress={pickIdDoc}
+                    >
                       <Ionicons name="cloud-upload-outline" size={20} color={RSA.green} />
                       <Text style={styles.docPickerBtnText}>Upload</Text>
                     </TouchableOpacity>
@@ -905,7 +947,10 @@ export default function TenantApplicationScreen() {
                       {existingIncomeDocUrls.length > 1 ? 's' : ''} previously uploaded — pending
                       verification
                     </Text>
-                    <TouchableOpacity onPress={pickIncomeDoc}>
+                    <TouchableOpacity
+                      testID="tenant-apply-income-doc-add-new"
+                      onPress={pickIncomeDoc}
+                    >
                       <Text style={styles.docReplaceText}>Add New</Text>
                     </TouchableOpacity>
                   </View>
@@ -918,6 +963,7 @@ export default function TenantApplicationScreen() {
                           {file.name}
                         </Text>
                         <TouchableOpacity
+                          testID="tenant-apply-income-doc-remove"
                           onPress={() =>
                             setIncomeDocFiles((prev) => prev.filter((_, idx) => idx !== i))
                           }
@@ -929,7 +975,11 @@ export default function TenantApplicationScreen() {
 
                     {incomeDocFiles.length < 3 && (
                       <View style={styles.docPickerRow}>
-                        <TouchableOpacity style={styles.docPickerBtn} onPress={pickIncomeDoc}>
+                        <TouchableOpacity
+                          testID="tenant-apply-income-doc-upload"
+                          style={styles.docPickerBtn}
+                          onPress={pickIncomeDoc}
+                        >
                           <Ionicons name="add-circle-outline" size={20} color={RSA.green} />
                           <Text style={styles.docPickerBtnText}>
                             {incomeDocFiles.length > 0 ? 'Add More' : 'Upload'}
@@ -955,6 +1005,7 @@ export default function TenantApplicationScreen() {
                       {file.name}
                     </Text>
                     <TouchableOpacity
+                      testID="tenant-apply-reference-doc-remove"
                       onPress={() =>
                         setReferenceDocFiles((prev) => prev.filter((_, idx) => idx !== i))
                       }
@@ -966,7 +1017,11 @@ export default function TenantApplicationScreen() {
 
                 {referenceDocFiles.length < 3 && (
                   <View style={styles.docPickerRow}>
-                    <TouchableOpacity style={styles.docPickerBtn} onPress={pickReferenceDoc}>
+                    <TouchableOpacity
+                      testID="tenant-apply-reference-doc-upload"
+                      style={styles.docPickerBtn}
+                      onPress={pickReferenceDoc}
+                    >
                       <Ionicons name="add-circle-outline" size={20} color={RSA.blue} />
                       <Text style={styles.docPickerBtnText}>
                         {referenceDocFiles.length > 0 ? 'Add More' : 'Upload'}
@@ -1048,12 +1103,17 @@ export default function TenantApplicationScreen() {
         {/* Action Buttons */}
         <View style={styles.actionBar}>
           {currentStep < 4 ? (
-            <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
+            <TouchableOpacity
+              testID="tenant-apply-next"
+              style={styles.nextButton}
+              onPress={handleNext}
+            >
               <Text style={styles.nextButtonText}>Next</Text>
               <Ionicons name="arrow-forward" size={20} color="#FFF" />
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
+              testID="tenant-apply-submit"
               style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
               onPress={handleSubmit}
               disabled={submitting}
@@ -1257,6 +1317,10 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
     borderRadius: 8,
     padding: 12,
+    fontSize: 16,
+    color: '#333',
+  },
+  dateFieldText: {
     fontSize: 16,
     color: '#333',
   },

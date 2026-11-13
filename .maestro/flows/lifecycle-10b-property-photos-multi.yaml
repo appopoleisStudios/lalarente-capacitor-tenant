@@ -1,0 +1,153 @@
+# Multiple listing photos on one property: owner picks 2 photos, removes one
+# with the x, adds another, saves; both photos show for owner (list, detail)
+# and tenant (search card, detail).
+# PRECONDITION: simulator photo library has 4+ photos. Picker taps use screen
+# points (grid tiles at 50/83%x28%, 17%x43%; confirm check at 90%x15%).
+# Env: creds, LC_PROPERTY_ID, LC_PROPERTY_TITLE
+appId: com.lalarente.app
+---
+# ── OWNER ─────────────────────────────────────────────────────────────────
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/properties/${LC_PROPERTY_ID}/edit
+- extendedWaitUntil:
+    visible:
+      id: "owner-edit-property-select-photos"
+    timeout: 25000
+
+# ── start clean: remove any photos already saved on the listing (x on each) ───
+- repeat:
+    while:
+      visible:
+        id: "owner-edit-property-photo-remove"
+    commands:
+      - tapOn:
+          id: "owner-edit-property-photo-remove"
+          index: 0
+      - waitForAnimationToEnd:
+          timeout: 1000
+- assertNotVisible:
+    id: "owner-edit-property-photo"
+
+# ── pick two photos at once ───────────────────────────────────────────────
+- tapOn:
+    id: "owner-edit-property-select-photos"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn:
+    point: "50%,28%"
+- waitForAnimationToEnd:
+    timeout: 800
+- tapOn:
+    point: "83%,28%"
+- waitForAnimationToEnd:
+    timeout: 800
+- tapOn:
+    point: "90%,15%"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible:
+    id: "owner-edit-property-photo"
+    index: 1
+- takeScreenshot: lc10b-two-picked
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── remove one with the x ─────────────────────────────────────────────────
+- tapOn:
+    id: "owner-edit-property-photo-remove"
+    index: 0
+- waitForAnimationToEnd:
+    timeout: 1500
+- assertNotVisible:
+    id: "owner-edit-property-photo"
+    index: 1
+- takeScreenshot: lc10b-one-left
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── add another ───────────────────────────────────────────────────────────
+- tapOn:
+    id: "owner-edit-property-select-photos"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn:
+    point: "17%,43%"
+- waitForAnimationToEnd:
+    timeout: 800
+- tapOn:
+    point: "90%,15%"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible:
+    id: "owner-edit-property-photo"
+    index: 1
+- takeScreenshot: lc10b-two-again
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── save uploads the photos ───────────────────────────────────────────────
+- tapOn:
+    id: "owner-edit-property-save"
+- extendedWaitUntil:
+    visible: "Property updated successfully!"
+    timeout: 90000
+- tapOn:
+    text: "OK"
+
+# ── owner list and detail ─────────────────────────────────────────────────
+- openLink: lalarenteapp://(owner)/properties
+- extendedWaitUntil:
+    visible: "My Properties"
+    timeout: 25000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "property-card-image"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- takeScreenshot: lc10b-owner-list
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(owner)/properties/${LC_PROPERTY_ID}
+- extendedWaitUntil:
+    visible:
+      id: "owner-property-photo"
+    timeout: 25000
+- takeScreenshot: lc10b-owner-detail
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── TENANT search card and detail ─────────────────────────────────────────
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/search
+- extendedWaitUntil:
+    visible:
+      id: "tenant-search-results"
+    timeout: 25000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: "Property photo, ${LC_PROPERTY_TITLE}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- takeScreenshot: lc10b-tenant-search
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(tenant)/properties/${LC_PROPERTY_ID}
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-photo"
+    timeout: 25000
+- takeScreenshot: lc10b-tenant-detail
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(tenant)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-tenant.yaml

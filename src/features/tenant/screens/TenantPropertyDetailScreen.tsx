@@ -291,7 +291,11 @@ export default function TenantPropertyDetailScreen() {
         <View style={styles.centerContainer}>
           <Ionicons name="alert-circle-outline" size={64} color="#F44336" />
           <Text style={styles.errorText}>{error || 'Property not found'}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadPropertyDetails}>
+          <TouchableOpacity
+            testID="tenant-property-retry"
+            style={styles.retryButton}
+            onPress={loadPropertyDetails}
+          >
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -306,14 +310,26 @@ export default function TenantPropertyDetailScreen() {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
+          <TouchableOpacity
+            testID="tenant-property-back"
+            onPress={() => router.back()}
+            style={styles.headerButton}
+          >
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
           <View style={styles.headerActions}>
-            <TouchableOpacity onPress={handleShare} style={styles.headerButton}>
+            <TouchableOpacity
+              testID="tenant-property-share"
+              onPress={handleShare}
+              style={styles.headerButton}
+            >
               <Ionicons name="share-outline" size={24} color="#333" />
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleToggleFavorite} style={styles.headerButton}>
+            <TouchableOpacity
+              testID="tenant-property-favorite"
+              onPress={handleToggleFavorite}
+              style={styles.headerButton}
+            >
               <Ionicons
                 name={isFavorite ? 'heart' : 'heart-outline'}
                 size={24}
@@ -338,7 +354,14 @@ export default function TenantPropertyDetailScreen() {
                 scrollEventThrottle={16}
               >
                 {images.map((image, index) => (
-                  <Image key={index} source={{ uri: image }} style={styles.propertyImage} />
+                  <Image
+                    key={index}
+                    testID="tenant-property-photo"
+                    accessible
+                    accessibilityLabel="Property photo"
+                    source={{ uri: image }}
+                    style={styles.propertyImage}
+                  />
                 ))}
               </ScrollView>
               <View style={styles.imageCounter}>
@@ -353,31 +376,33 @@ export default function TenantPropertyDetailScreen() {
             </View>
           )}
 
-          {/* View in 3D CTA (Plane #92 Phase 1) — only when a tour is attached */}
-          {property.media_3d_url ? (
-            <TouchableOpacity
-              style={styles.view3dButton}
-              activeOpacity={0.85}
-              onPress={() => {
-                // backTo = role property tab root: lets the viewer close land on
-                // the detail (hidden-tab stack), never the Dashboard (#74/#143).
-                router.push({
-                  pathname: '/(tenant)/properties/[id]/view3d',
-                  params: { id, backTo: '/(tenant)/properties' },
-                } as never);
-              }}
-              testID="tenant-view-3d"
-              accessibilityRole="button"
-              accessibilityLabel="View this property in 3D"
-            >
-              <Ionicons name="cube-outline" size={22} color="#FFF" />
-              <View style={styles.view3dTextWrap}>
-                <Text style={styles.view3dTitle}>View in 3D</Text>
-                <Text style={styles.view3dSub}>Walk the property before you visit</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.75)" />
-            </TouchableOpacity>
-          ) : null}
+          {/* View in 3D CTA (Plane #92 Phase 1) — no tour attached shows "coming soon" */}
+          <TouchableOpacity
+            style={styles.view3dButton}
+            activeOpacity={0.85}
+            onPress={() => {
+              if (!property.media_3d_url) {
+                Alert.alert('Feature coming soon', '3D tours for this property are coming soon.');
+                return;
+              }
+              // backTo = role property tab root: lets the viewer close land on
+              // the detail (hidden-tab stack), never the Dashboard (#74/#143).
+              router.push({
+                pathname: '/(tenant)/properties/[id]/view3d',
+                params: { id, backTo: '/(tenant)/properties' },
+              } as never);
+            }}
+            testID="tenant-view-3d"
+            accessibilityRole="button"
+            accessibilityLabel="View this property in 3D"
+          >
+            <Ionicons name="cube-outline" size={22} color="#FFF" />
+            <View style={styles.view3dTextWrap}>
+              <Text style={styles.view3dTitle}>View in 3D</Text>
+              <Text style={styles.view3dSub}>Walk the property before you visit</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.75)" />
+          </TouchableOpacity>
 
           {/* Property Info */}
           <View style={styles.content}>
@@ -512,7 +537,11 @@ export default function TenantPropertyDetailScreen() {
                     <Text style={styles.ownerName}>{property.owner.full_name}</Text>
                     <Text style={styles.ownerLabel}>Property Owner</Text>
                   </View>
-                  <TouchableOpacity style={styles.contactButton} onPress={handleContactOwner}>
+                  <TouchableOpacity
+                    testID="tenant-property-contact-owner"
+                    style={styles.contactButton}
+                    onPress={handleContactOwner}
+                  >
                     <Ionicons name="chatbubble-outline" size={20} color={RSA.green} />
                   </TouchableOpacity>
                 </View>
@@ -531,6 +560,7 @@ export default function TenantPropertyDetailScreen() {
             </View>
             {applicationId && (
               <TouchableOpacity
+                testID="tenant-property-view-application"
                 onPress={() => router.push(`/(tenant)/applications/${applicationId}` as any)}
                 style={styles.viewApplicationButton}
               >
@@ -545,6 +575,7 @@ export default function TenantPropertyDetailScreen() {
         {property.status === 'available' && !error && (
           <View style={styles.actionBar}>
             <TouchableOpacity
+              testID="tenant-property-request-viewing"
               style={[styles.viewingButton, isCurrentProperty && styles.disabledButton]}
               onPress={handleRequestViewing}
               disabled={isCurrentProperty}
@@ -561,6 +592,7 @@ export default function TenantPropertyDetailScreen() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
+              testID="tenant-property-apply"
               style={[
                 styles.applyButton,
                 (isCurrentProperty || hasActiveApplication) && styles.disabledButton,

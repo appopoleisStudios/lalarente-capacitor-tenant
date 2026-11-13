@@ -112,7 +112,11 @@ export default function SignatureModal({
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>{title}</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <TouchableOpacity
+              testID="signature-modal-close"
+              onPress={onClose}
+              style={styles.closeButton}
+            >
               <Ionicons name="close" size={28} color="#333" />
             </TouchableOpacity>
           </View>
@@ -138,12 +142,18 @@ export default function SignatureModal({
 
           {/* Actions */}
           <View style={styles.actions}>
-            <TouchableOpacity style={styles.clearButton} onPress={handleClear} disabled={saving}>
+            <TouchableOpacity
+              testID="signature-modal-clear"
+              style={styles.clearButton}
+              onPress={handleClear}
+              disabled={saving}
+            >
               <Ionicons name="refresh" size={20} color="#666" />
               <Text style={styles.clearButtonText}>Clear</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
+              testID="signature-modal-confirm"
               style={[styles.saveButton, { backgroundColor: primaryColor }]}
               onPress={handleConfirm}
               disabled={saving || !hasSignature}

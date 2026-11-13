@@ -454,6 +454,7 @@ export default function OwnerClosureApprovalScreen() {
             </Text>
 
             <TextInput
+              testID="closure-reject-reason"
               style={styles.modalInput}
               placeholder="Describe what needs to change..."
               placeholderTextColor={colors.gray[400]}
@@ -467,12 +468,14 @@ export default function OwnerClosureApprovalScreen() {
 
             <View style={styles.modalActions}>
               <TouchableOpacity
+                testID="closure-reject-cancel"
                 style={styles.modalCancelButton}
                 onPress={() => setShowRejectModal(false)}
               >
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
+                testID="closure-reject-send"
                 style={[styles.modalSubmitButton, !rejectReason.trim() && { opacity: 0.5 }]}
                 onPress={submitRejection}
                 disabled={!rejectReason.trim()}

@@ -169,8 +169,8 @@ export default function OwnerLeaseReviewScreen() {
           monthly_rent: parseFloat(draft.monthlyRent),
           deposit_amount: draft.depositAmount ? parseFloat(draft.depositAmount) : null,
           payment_due_day: parseInt(draft.paymentDueDay),
-          late_fee_amount: draft.lateFeeAmount ? parseFloat(draft.lateFeeAmount) : null,
-          late_fee_grace_days: draft.lateFeeGraceDays ? parseInt(draft.lateFeeGraceDays) : null,
+          // No late fees: the leases table dropped late_fee_* in favour of
+          // legal interest on arrears (interest_on_arrears_rate).
           rent_escalation_type: draft.rentEscalationValue
             ? draft.rentEscalationType === 'percentage'
               ? 'fixed_percentage'
@@ -183,7 +183,7 @@ export default function OwnerLeaseReviewScreen() {
             ? parseInt(draft.rentEscalationFrequency)
             : null,
           deposit_interest_rate: 5.25,
-          status: 'pending_signatures',
+          status: 'pending_tenant_signature',
           lease_custom_clauses: customClauses.trim() || null,
         })
         .select()
@@ -225,7 +225,11 @@ export default function OwnerLeaseReviewScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
+        <TouchableOpacity
+          testID="owner-lease-review-back"
+          onPress={() => router.back()}
+          style={styles.headerBtn}
+        >
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Review Lease</Text>
@@ -252,7 +256,11 @@ export default function OwnerLeaseReviewScreen() {
 
       {/* Action bar */}
       <View style={styles.actionBar}>
-        <TouchableOpacity style={styles.clausesBtn} onPress={() => setShowClausesModal(true)}>
+        <TouchableOpacity
+          testID="owner-lease-review-clauses-open"
+          style={styles.clausesBtn}
+          onPress={() => setShowClausesModal(true)}
+        >
           <Ionicons name="add-circle-outline" size={18} color={RSA.blue} />
           <Text style={styles.clausesBtnText}>
             {customClauses.trim() ? 'Edit Custom Clauses' : 'Add Custom Clauses'}
@@ -260,6 +268,7 @@ export default function OwnerLeaseReviewScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
+          testID="owner-lease-review-send"
           style={[styles.sendBtn, submitting && styles.btnDisabled]}
           onPress={handleSendToTenant}
           disabled={submitting}
@@ -292,7 +301,10 @@ export default function OwnerLeaseReviewScreen() {
           <View style={styles.modalSheet}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Additional Terms</Text>
-              <TouchableOpacity onPress={() => setShowClausesModal(false)}>
+              <TouchableOpacity
+                testID="owner-lease-review-clauses-close"
+                onPress={() => setShowClausesModal(false)}
+              >
                 <Ionicons name="close" size={24} color="#333" />
               </TouchableOpacity>
             </View>
@@ -301,6 +313,7 @@ export default function OwnerLeaseReviewScreen() {
             </Text>
             <ScrollView style={styles.modalScroll} keyboardShouldPersistTaps="handled">
               <TextInput
+                testID="owner-lease-review-clauses-input"
                 style={styles.clausesInput}
                 multiline
                 placeholder="e.g. Tenant is responsible for pool maintenance. No pets without written consent…"
@@ -311,6 +324,7 @@ export default function OwnerLeaseReviewScreen() {
               />
             </ScrollView>
             <TouchableOpacity
+              testID="owner-lease-review-clauses-save"
               style={styles.doneBtn}
               onPress={() => {
                 const d = leaseDraftStore.get();

@@ -8,19 +8,19 @@ import {
   Switch,
   Image,
   TouchableOpacity,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
-import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { PickerSheet, toDateString } from '@/src/shared/components/ui/DateField';
 import { AnimatedButton } from '@/src/shared/components';
 import { propertiesApi } from '../../properties/api/propertiesApi';
 import { supabase } from '../../../lib/supabase';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { styles } from './AddPropertyScreen.styles';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { validate3dTourUrl } from '@/src/features/properties/utils/validate3dTourUrl';
 
 interface PropertyForm {
   title: string;
@@ -97,16 +97,6 @@ export default function AddPropertyScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   const [showAvailableFromPicker, setShowAvailableFromPicker] = useState(false);
 
-  const handleAvailableFromChange = (event: DateTimePickerEvent, selected?: Date) => {
-    // On Android the picker dismisses itself; on iOS we keep it open until
-    // the user taps Done elsewhere (we close on the first "set" event too).
-    setShowAvailableFromPicker(Platform.OS === 'ios' ? false : false);
-    if (event.type === 'set' && selected) {
-      const iso = selected.toISOString().split('T')[0];
-      setForm((prev) => ({ ...prev, available_from: iso }));
-    }
-  };
-
   React.useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUserId(data.user?.id || null);
@@ -175,7 +165,12 @@ export default function AddPropertyScreen() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
-      quality: 0.8,
+      // Listing photos: re-encode to JPEG (iOS otherwise hands back HEIC, which
+      // other devices can't show) and compress — full camera originals were
+      // 1.5–3 MB each and listings sat blank while they downloaded.
+      quality: 0.5,
+      preferredAssetRepresentationMode:
+        ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
       selectionLimit: 10,
     });
 
@@ -201,6 +196,13 @@ export default function AddPropertyScreen() {
 
     if (!userId) {
       Alert.alert('Error', 'You must be logged in to create a property');
+      return;
+    }
+
+    const tourError = await validate3dTourUrl(form.media_3d_url);
+    if (tourError) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('3D tour link', tourError);
       return;
     }
 
@@ -335,11 +337,19 @@ export default function AddPropertyScreen() {
                   {form.photos.map((photo, index) => (
                     <View key={index} style={styles.photoContainer}>
                       <Image source={{ uri: photo }} style={styles.photoPreview} />
-                      <AnimatedButton onPress={() => removePhoto(index)}>
+                      <TouchableOpacity
+                        onPress={() => removePhoto(index)}
+                        style={styles.photoRemoveWrap}
+                        hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                        activeOpacity={0.7}
+                        accessibilityRole="button"
+                        accessibilityLabel="Remove photo"
+                        testID="owner-add-property-photo-remove"
+                      >
                         <View style={styles.photoRemove}>
                           <Text style={styles.photoRemoveText}>×</Text>
                         </View>
-                      </AnimatedButton>
+                      </TouchableOpacity>
                     </View>
                   ))}
                 </ScrollView>
@@ -649,15 +659,20 @@ export default function AddPropertyScreen() {
                       {form.available_from || 'YYYY-MM-DD'}
                     </Text>
                   </TouchableOpacity>
-                  {showAvailableFromPicker && (
-                    <DateTimePicker
-                      value={form.available_from ? new Date(form.available_from) : new Date()}
-                      mode="date"
-                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                      minimumDate={new Date()}
-                      onChange={handleAvailableFromChange}
-                    />
-                  )}
+                  <PickerSheet
+                    visible={showAvailableFromPicker}
+                    value={
+                      form.available_from ? new Date(`${form.available_from}T00:00:00`) : new Date()
+                    }
+                    mode="date"
+                    minimumDate={new Date()}
+                    onCancel={() => setShowAvailableFromPicker(false)}
+                    onDone={(date) => {
+                      setShowAvailableFromPicker(false);
+                      setForm((prev) => ({ ...prev, available_from: toDateString(date) }));
+                    }}
+                    testID="owner-add-property-available-from"
+                  />
                 </View>
                 <View style={[styles.section, { flex: 1 }]}>
                   <Text style={styles.label}>Min. Lease (months)</Text>

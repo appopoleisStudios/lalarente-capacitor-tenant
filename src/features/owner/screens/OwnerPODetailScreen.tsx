@@ -8,14 +8,13 @@ import {
 } from '@/src/features/maintenance/api';
 import { colors } from '@/src/shared/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { PickerSheet } from '@/src/shared/components/ui/DateField';
 import * as Haptics from 'expo-haptics';
-import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import React, { useState, useCallback } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -61,11 +60,14 @@ export default function OwnerPODetailScreen() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [sendingToVendor, setSendingToVendor] = useState(false);
 
-  useEffect(() => {
-    if (poId) {
-      fetchPODetails();
-    }
-  }, [poId]);
+  // Reload on every focus: tab screens stay mounted, so returning to the
+  // same record must not show its old status.
+  useFocusEffect(
+    useCallback(() => {
+      if (poId) fetchPODetails();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [poId])
+  );
 
   const fetchPODetails = async () => {
     try {
@@ -202,32 +204,6 @@ export default function OwnerPODetailScreen() {
         },
       ]
     );
-  };
-
-  const onDateChange = (event: any, selectedDate?: Date) => {
-    const currentDate = selectedDate || scheduledDate;
-
-    // Always close on Android (dialog dismissed)
-    // On iOS, only close if user cancelled
-    if (Platform.OS === 'android' || event.type === 'dismissed') {
-      setShowDatePicker(false);
-    }
-
-    // Update date if user selected one
-    if (event.type === 'set' && selectedDate) {
-      setScheduledDate(selectedDate);
-      setShowDatePicker(false); // Close after selection
-    }
-  };
-
-  const onTimeChange = (event: any, selectedTime?: Date) => {
-    if (Platform.OS === 'android' || event.type === 'dismissed') {
-      setShowTimePicker(false);
-    }
-    if (event.type === 'set' && selectedTime) {
-      setScheduledTime(selectedTime);
-      setShowTimePicker(false);
-    }
   };
 
   if (loading) {
@@ -678,26 +654,30 @@ export default function OwnerPODetailScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Date Picker Modal */}
-      {showDatePicker && (
-        <DateTimePicker
-          value={scheduledDate}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={onDateChange}
-          minimumDate={new Date()}
-        />
-      )}
-
-      {/* Time Picker Modal */}
-      {showTimePicker && (
-        <DateTimePicker
-          value={scheduledTime}
-          mode="time"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={onTimeChange}
-        />
-      )}
+      {/* Date / time pickers — bottom sheet with Done on iOS, dialog on Android */}
+      <PickerSheet
+        visible={showDatePicker}
+        value={scheduledDate}
+        mode="date"
+        minimumDate={new Date()}
+        onCancel={() => setShowDatePicker(false)}
+        onDone={(date) => {
+          setShowDatePicker(false);
+          setScheduledDate(date);
+        }}
+        testID="po-reschedule-date"
+      />
+      <PickerSheet
+        visible={showTimePicker}
+        value={scheduledTime}
+        mode="time"
+        onCancel={() => setShowTimePicker(false)}
+        onDone={(time) => {
+          setShowTimePicker(false);
+          setScheduledTime(time);
+        }}
+        testID="po-reschedule-time"
+      />
     </SafeAreaView>
   );
 }

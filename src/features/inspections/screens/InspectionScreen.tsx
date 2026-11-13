@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { inspectionsApi } from '../api/inspectionsApi';
@@ -27,6 +27,7 @@ import {
   RoomCondition,
   InspectionRooms,
   KeyHandover,
+  TenantInspectionComment,
 } from '../types';
 import { parseInspectionRoomsField } from '../utils/normalizeRooms';
 
@@ -64,6 +65,12 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
     accessCodes: [],
   });
   const [generalNotes, setGeneralNotes] = useState('');
+  const [tenantComments, setTenantComments] = useState<TenantInspectionComment[]>([]);
+  const [commentDraft, setCommentDraft] = useState('');
+  const [addingComment, setAddingComment] = useState(false);
+  // Tenants review the report: they can add comments and raise issues but
+  // cannot change or remove anything the owner recorded.
+  const readOnly = role === 'tenant';
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
@@ -92,6 +99,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
         }
       );
       setGeneralNotes(roomsPayload.generalNotes ?? '');
+      setTenantComments(roomsPayload.tenantComments ?? []);
       setCurrentRoomIndex(0);
     } catch (err) {
       reportApiError(err, 'inspections', 'select');
@@ -100,6 +108,49 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Pick up comments and maintenance links added while this screen was in
+  // the background, without resetting the room being viewed.
+  useFocusEffect(
+    useCallback(() => {
+      const inspectionId = Array.isArray(id) ? id[0] : id;
+      if (!inspectionId) return;
+      inspectionsApi
+        .getTenantComments(inspectionId)
+        .then(setTenantComments)
+        .catch(() => {});
+    }, [id])
+  );
+
+  const addComment = async (roomName: string) => {
+    if (!inspection || !commentDraft.trim()) return;
+    try {
+      setAddingComment(true);
+      const updated = await inspectionsApi.addTenantComment(inspection.id, roomName, commentDraft);
+      setTenantComments(updated);
+      setCommentDraft('');
+    } catch (err) {
+      reportApiError(err, 'inspections', 'update');
+      Alert.alert('Error', 'Failed to add comment');
+    } finally {
+      setAddingComment(false);
+    }
+  };
+
+  const raiseIssue = (comment: TenantInspectionComment) => {
+    if (!inspection) return;
+    router.push({
+      pathname: '/(tenant)/maintenance/report',
+      params: {
+        inspectionId: inspection.id,
+        inspectionCommentId: comment.id,
+        prefillTitle: `${comment.room}: inspection issue`,
+        prefillDescription: `Raised from the ${
+          inspection.type === 'move_in' ? 'move-in' : inspection.type.replace('_', '-')
+        } inspection (${comment.room}).\n\n${comment.text}`,
+      },
+    } as any);
   };
 
   const updateItemCondition = (itemIndex: number, condition: RoomCondition) => {
@@ -324,7 +375,9 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
   const currentRoom = roomCount > 0 ? rooms[safeRoomIndex] : undefined;
   const isLastRoom = roomCount > 0 && safeRoomIndex === roomCount - 1;
   const isFirstRoom = safeRoomIndex === 0;
-  const canComplete = inspection?.status === 'in_progress' || inspection?.status === 'scheduled';
+  const roomComments = tenantComments.filter((c) => c.room === currentRoom?.name);
+  const canComplete =
+    !readOnly && (inspection?.status === 'in_progress' || inspection?.status === 'scheduled');
   const canSign = inspection?.status === 'pending_signatures';
   const hasSigned =
     role === 'owner' ? !!inspection?.owner_signed_at : !!inspection?.tenant_signed_at;
@@ -385,7 +438,11 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
         <View style={styles.centerContainer}>
           <Ionicons name="alert-circle-outline" size={64} color="#F44336" />
           <Text style={styles.errorText}>{error || 'Inspection not found'}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadInspection}>
+          <TouchableOpacity
+            testID="inspection-retry"
+            style={styles.retryButton}
+            onPress={loadInspection}
+          >
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -410,7 +467,11 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <TouchableOpacity
+              testID="inspection-back"
+              onPress={() => router.back()}
+              style={styles.backButton}
+            >
               <Ionicons name="arrow-back" size={24} color="#333" />
             </TouchableOpacity>
             <View style={styles.headerCenter}>
@@ -421,6 +482,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
             </View>
             {inspection?.status === 'completed' ? (
               <TouchableOpacity
+                testID="inspection-export-header"
                 onPress={handleExportReport}
                 disabled={exporting}
                 style={[styles.headerExportBtn, { backgroundColor: colors.primary }]}
@@ -434,8 +496,10 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                   </>
                 )}
               </TouchableOpacity>
+            ) : readOnly ? (
+              <View style={{ width: 24 }} />
             ) : (
-              <TouchableOpacity onPress={saveProgress} disabled={saving}>
+              <TouchableOpacity testID="inspection-save" onPress={saveProgress} disabled={saving}>
                 {saving ? (
                   <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
@@ -468,6 +532,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                 const isCurrent = idx === safeRoomIndex;
                 return (
                   <TouchableOpacity
+                    testID={`inspection-room-tab-${idx}`}
                     key={idx}
                     style={[
                       styles.roomDot,
@@ -497,6 +562,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
               <View style={styles.conditionSelector}>
                 {CONDITIONS.map((cond) => (
                   <TouchableOpacity
+                    testID={`inspection-room-condition-${cond.value}`}
                     key={cond.value}
                     style={[
                       styles.conditionChip,
@@ -505,6 +571,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                       },
                     ]}
                     onPress={() => updateRoomCondition(cond.value)}
+                    disabled={readOnly}
                   >
                     <Text
                       style={[
@@ -548,20 +615,31 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                         </View>
                       )}
                     </View>
-                    <View style={styles.photoButtons}>
-                      <TouchableOpacity style={styles.photoButton} onPress={() => takePhoto(index)}>
-                        <Ionicons name="camera" size={20} color={colors.primary} />
-                      </TouchableOpacity>
-                      <TouchableOpacity style={styles.photoButton} onPress={() => pickImage(index)}>
-                        <Ionicons name="image" size={20} color={colors.primary} />
-                      </TouchableOpacity>
-                    </View>
+                    {!readOnly && (
+                      <View style={styles.photoButtons}>
+                        <TouchableOpacity
+                          testID={`inspection-item-${index}-camera`}
+                          style={styles.photoButton}
+                          onPress={() => takePhoto(index)}
+                        >
+                          <Ionicons name="camera" size={20} color={colors.primary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          testID={`inspection-item-${index}-gallery`}
+                          style={styles.photoButton}
+                          onPress={() => pickImage(index)}
+                        >
+                          <Ionicons name="image" size={20} color={colors.primary} />
+                        </TouchableOpacity>
+                      </View>
+                    )}
                   </View>
 
                   {/* Condition Buttons */}
                   <View style={styles.conditionButtons}>
                     {CONDITIONS.map((cond) => (
                       <TouchableOpacity
+                        testID={`inspection-item-${index}-condition-${cond.value}`}
                         key={cond.value}
                         style={[
                           styles.conditionButton,
@@ -571,14 +649,19 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                           },
                         ]}
                         onPress={() => updateItemCondition(index, cond.value)}
+                        disabled={readOnly}
                       >
+                        {/* Full word, not the initial — "E G F P D" meant nothing */}
                         <Text
                           style={[
                             styles.conditionButtonText,
                             item.condition === cond.value && { color: '#FFF' },
                           ]}
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
+                          minimumFontScale={0.7}
                         >
-                          {cond.label[0]}
+                          {cond.label}
                         </Text>
                       </TouchableOpacity>
                     ))}
@@ -586,10 +669,12 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
 
                   {/* Notes */}
                   <TextInput
+                    testID={`inspection-item-${index}-notes`}
                     style={styles.notesInput}
-                    placeholder="Add notes..."
+                    placeholder={readOnly ? 'No notes' : 'Add notes...'}
                     value={item.notes}
                     onChangeText={(text) => updateItemNotes(index, text)}
+                    editable={!readOnly}
                     multiline
                   />
 
@@ -612,8 +697,9 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
             {/* Room Photos */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Room Photos</Text>
-              <View style={styles.roomPhotoActions}>
+              <View style={[styles.roomPhotoActions, readOnly && { display: 'none' }]}>
                 <TouchableOpacity
+                  testID="inspection-room-take-photo"
                   style={[styles.roomPhotoButton, { borderColor: colors.primary }]}
                   onPress={() => takePhoto()}
                 >
@@ -623,6 +709,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
+                  testID="inspection-room-gallery"
                   style={[styles.roomPhotoButton, { borderColor: colors.primary }]}
                   onPress={() => pickImage()}
                 >
@@ -656,14 +743,89 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Room Notes</Text>
               <TextInput
+                testID="inspection-room-notes"
                 style={[styles.notesInput, styles.roomNotes]}
-                placeholder="Additional notes for this room..."
+                placeholder={readOnly ? 'No notes' : 'Additional notes for this room...'}
                 value={currentRoom?.notes}
                 onChangeText={updateRoomNotes}
+                editable={!readOnly}
                 multiline
                 numberOfLines={4}
               />
             </View>
+
+            {/* Tenant Comments (append-only; visible to both parties) */}
+            {currentRoom && (readOnly || roomComments.length > 0) && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Tenant Comments</Text>
+                {roomComments.map((comment) => (
+                  <View
+                    key={comment.id}
+                    style={styles.itemCard}
+                    testID={`inspection-tenant-comment-${comment.id}`}
+                  >
+                    <Text style={styles.itemName}>{comment.text}</Text>
+                    <Text style={styles.pendingText}>
+                      {new Date(comment.createdAt).toLocaleDateString('en-ZA')}
+                    </Text>
+                    {comment.maintenanceRequestId ? (
+                      <TouchableOpacity
+                        testID="inspection-comment-view-request"
+                        onPress={() =>
+                          router.push(
+                            `/(${role})/maintenance/${comment.maintenanceRequestId}` as any
+                          )
+                        }
+                      >
+                        <Text style={[styles.navButtonText, { color: colors.primary }]}>
+                          View maintenance request
+                        </Text>
+                      </TouchableOpacity>
+                    ) : readOnly ? (
+                      <TouchableOpacity
+                        testID="inspection-comment-raise-issue"
+                        onPress={() => raiseIssue(comment)}
+                      >
+                        <Text style={[styles.navButtonText, { color: colors.primary }]}>
+                          Raise as maintenance issue
+                        </Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                ))}
+                {readOnly && inspection.status !== 'cancelled' && (
+                  <>
+                    <TextInput
+                      testID="inspection-tenant-comment-input"
+                      style={[styles.notesInput, styles.roomNotes]}
+                      placeholder="Something missing or not right in this room? Describe it here..."
+                      value={commentDraft}
+                      onChangeText={setCommentDraft}
+                      multiline
+                      numberOfLines={3}
+                    />
+                    <TouchableOpacity
+                      testID="inspection-tenant-comment-add"
+                      style={[
+                        styles.roomPhotoButton,
+                        { borderColor: colors.primary, marginTop: 8, flex: 0 },
+                        (!commentDraft.trim() || addingComment) && { opacity: 0.5 },
+                      ]}
+                      onPress={() => addComment(currentRoom.name)}
+                      disabled={!commentDraft.trim() || addingComment}
+                    >
+                      {addingComment ? (
+                        <ActivityIndicator size="small" color={colors.primary} />
+                      ) : (
+                        <Text style={[styles.roomPhotoButtonText, { color: colors.primary }]}>
+                          Add Comment
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
+            )}
 
             {/* Key Handover (only on last room) */}
             {isLastRoom && (
@@ -673,7 +835,9 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                   <Text style={styles.keyLabel}>Physical Keys</Text>
                   <View style={styles.keyCounter}>
                     <TouchableOpacity
+                      testID="inspection-keys-physical-minus"
                       style={styles.counterButton}
+                      disabled={readOnly}
                       onPress={() =>
                         setKeys({ ...keys, physicalKeys: Math.max(0, keys.physicalKeys - 1) })
                       }
@@ -682,7 +846,9 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                     </TouchableOpacity>
                     <Text style={styles.counterValue}>{keys.physicalKeys}</Text>
                     <TouchableOpacity
+                      testID="inspection-keys-physical-plus"
                       style={styles.counterButton}
+                      disabled={readOnly}
                       onPress={() => setKeys({ ...keys, physicalKeys: keys.physicalKeys + 1 })}
                     >
                       <Ionicons name="add" size={20} color={colors.primary} />
@@ -693,7 +859,9 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                   <Text style={styles.keyLabel}>Access Cards</Text>
                   <View style={styles.keyCounter}>
                     <TouchableOpacity
+                      testID="inspection-keys-cards-minus"
                       style={styles.counterButton}
+                      disabled={readOnly}
                       onPress={() =>
                         setKeys({ ...keys, accessCards: Math.max(0, keys.accessCards - 1) })
                       }
@@ -702,7 +870,9 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                     </TouchableOpacity>
                     <Text style={styles.counterValue}>{keys.accessCards}</Text>
                     <TouchableOpacity
+                      testID="inspection-keys-cards-plus"
                       style={styles.counterButton}
+                      disabled={readOnly}
                       onPress={() => setKeys({ ...keys, accessCards: keys.accessCards + 1 })}
                     >
                       <Ionicons name="add" size={20} color={colors.primary} />
@@ -713,7 +883,9 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                   <Text style={styles.keyLabel}>Remote Controls</Text>
                   <View style={styles.keyCounter}>
                     <TouchableOpacity
+                      testID="inspection-keys-remotes-minus"
                       style={styles.counterButton}
+                      disabled={readOnly}
                       onPress={() =>
                         setKeys({ ...keys, remoteControls: Math.max(0, keys.remoteControls - 1) })
                       }
@@ -722,7 +894,9 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                     </TouchableOpacity>
                     <Text style={styles.counterValue}>{keys.remoteControls}</Text>
                     <TouchableOpacity
+                      testID="inspection-keys-remotes-plus"
                       style={styles.counterButton}
+                      disabled={readOnly}
                       onPress={() => setKeys({ ...keys, remoteControls: keys.remoteControls + 1 })}
                     >
                       <Ionicons name="add" size={20} color={colors.primary} />
@@ -737,10 +911,12 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>General Notes</Text>
                 <TextInput
+                  testID="inspection-general-notes"
                   style={[styles.notesInput, styles.roomNotes]}
                   placeholder="Overall inspection notes..."
                   value={generalNotes}
                   onChangeText={setGeneralNotes}
+                  editable={!readOnly}
                   multiline
                   numberOfLines={4}
                 />
@@ -784,6 +960,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
           {/* Navigation Buttons */}
           <View style={styles.navigationButtons}>
             <TouchableOpacity
+              testID="inspection-previous"
               style={[styles.navButton, isFirstRoom && styles.navButtonDisabled]}
               onPress={() => setCurrentRoomIndex(safeRoomIndex - 1)}
               disabled={isFirstRoom}
@@ -811,6 +988,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                   </View>
                 ) : (
                   <TouchableOpacity
+                    testID="inspection-sign"
                     style={[
                       styles.navButton,
                       styles.navButtonPrimary,
@@ -825,6 +1003,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                 )
               ) : canComplete ? (
                 <TouchableOpacity
+                  testID="inspection-complete"
                   style={[
                     styles.navButton,
                     styles.navButtonPrimary,
@@ -844,6 +1023,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                 </TouchableOpacity>
               ) : inspection?.status === 'completed' ? (
                 <TouchableOpacity
+                  testID="inspection-export"
                   style={[
                     styles.navButton,
                     styles.navButtonPrimary,
@@ -864,11 +1044,17 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
               ) : (
                 <View style={[styles.navButton, styles.navButtonDisabled]}>
                   <Ionicons name="checkmark-done" size={24} color="#CCC" />
-                  <Text style={[styles.navButtonText, { color: '#CCC' }]}>Completed</Text>
+                  <Text style={[styles.navButtonText, { color: '#CCC' }]}>
+                    {readOnly &&
+                    (inspection?.status === 'scheduled' || inspection?.status === 'in_progress')
+                      ? 'Awaiting owner'
+                      : 'Completed'}
+                  </Text>
                 </View>
               )
             ) : (
               <TouchableOpacity
+                testID="inspection-next"
                 style={[styles.navButton, { borderColor: colors.primary }]}
                 onPress={() => setCurrentRoomIndex(safeRoomIndex + 1)}
               >
@@ -1046,6 +1232,7 @@ const styles = StyleSheet.create({
   conditionButton: {
     flex: 1,
     paddingVertical: 8,
+    paddingHorizontal: 2,
     alignItems: 'center',
     borderRadius: 8,
     backgroundColor: '#F0F0F0',
@@ -1053,7 +1240,7 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
   },
   conditionButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: '#666',
   },

@@ -1,0 +1,37 @@
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner-robust.yaml
+- takeScreenshot: ct7-01-owner-dashboard
+
+# CT7-003: Edit property header save button
+- openLink: "lalarenteapp:///(owner)/properties"
+- extendedWaitUntil:
+    visible: ".*[Pp]ropert.*"
+    timeout: 20000
+- takeScreenshot: ct7-03-properties
+
+# CT7-015: Viewing outcome
+- openLink: "lalarenteapp:///(owner)/viewings"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: ct7-15-viewings
+
+# CT7-019 + CT7-021: Applications
+- openLink: "lalarenteapp:///(owner)/applications"
+- extendedWaitUntil:
+    visible: ".*[Aa]pplication.*"
+    timeout: 20000
+- takeScreenshot: ct7-19-21-applications
+
+# CT7-024: Tax screen
+- openLink: "lalarenteapp:///(owner)/tax"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: ct7-24-tax
+
+# CT7-023: Maintenance
+- openLink: "lalarenteapp:///(owner)/maintenance"
+- extendedWaitUntil:
+    visible: ".*[Mm]aintenance.*"
+    timeout: 20000
+- takeScreenshot: ct7-23-maintenance

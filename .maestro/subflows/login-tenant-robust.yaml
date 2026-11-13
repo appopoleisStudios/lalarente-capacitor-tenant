@@ -1,0 +1,41 @@
+# Robust iOS-sim tenant login. Mirror of login-owner-robust.yaml.
+appId: com.lalarente.app
+---
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+
+- tapOn:
+    id: "email-input"
+- waitForAnimationToEnd:
+    timeout: 3000
+- eraseText
+- inputText: ${TENANT_EMAIL}
+- waitForAnimationToEnd:
+    timeout: 1500
+
+- tapOn:
+    text: "Welcome back"
+- waitForAnimationToEnd:
+    timeout: 1500
+
+- tapOn:
+    id: "password-input"
+- waitForAnimationToEnd:
+    timeout: 3000
+- eraseText
+- inputText: ${TENANT_PASSWORD}
+- waitForAnimationToEnd:
+    timeout: 1500
+
+- tapOn:
+    text: "Welcome back"
+- waitForAnimationToEnd:
+    timeout: 1500
+
+- tapOn:
+    id: "sign-in-button"
+
+- waitForAnimationToEnd:
+    timeout: 5000

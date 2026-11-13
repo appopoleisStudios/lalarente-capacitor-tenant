@@ -11,12 +11,11 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  Platform,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { PickerSheet } from '@/src/shared/components/ui/DateField';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/src/lib/supabase';
 import { sendPOToVendor } from '@/src/features/maintenance/api/purchase-orders/poActions.api';
@@ -60,20 +59,6 @@ export default function OwnerSendPOScreen() {
 
   if (!poId) return null;
 
-  const handleDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      setStartDate(selectedDate);
-    }
-  };
-
-  const handleTimeChange = (event: any, selectedTime?: Date) => {
-    setShowTimePicker(Platform.OS === 'ios');
-    if (selectedTime) {
-      setStartTime(selectedTime);
-    }
-  };
-
   const formatDate = (date: Date): string => {
     return date.toLocaleDateString('en-ZA', {
       year: 'numeric',
@@ -101,7 +86,11 @@ export default function OwnerSendPOScreen() {
       return;
     }
 
-    if (startDate < new Date()) {
+    // Compare calendar days only: today is valid (a time already passed just
+    // means the vendor can start immediately).
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    if (startDate < startOfToday) {
       Alert.alert('Invalid Date', 'Work start date cannot be in the past');
       return;
     }
@@ -109,8 +98,8 @@ export default function OwnerSendPOScreen() {
     try {
       setIsSubmitting(true);
 
-      // Format date and time for database (ISO format for date, HH:MM for time)
-      const scheduledDate = startDate.toISOString().split('T')[0];
+      // Format date and time for database (local YYYY-MM-DD, HH:MM for time)
+      const scheduledDate = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
       const scheduledTime = startTime.toTimeString().split(' ')[0].substring(0, 5); // HH:MM
 
       await sendPOToVendor(poId, scheduledDate, scheduledTime, workInstructions.trim(), userId!);
@@ -138,6 +127,7 @@ export default function OwnerSendPOScreen() {
       {/* Header — back chevron + centered title (parity with sibling owner screens) */}
       <View style={styles.header}>
         <TouchableOpacity
+          testID="owner-send-po-back"
           accessibilityLabel="Go back"
           accessibilityRole="button"
           onPress={() => router.back()}
@@ -153,6 +143,7 @@ export default function OwnerSendPOScreen() {
         style={styles.container}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         {/* Intro — no duplicate H1: the nav header already titles this screen. */}
         <View style={styles.intro}>
@@ -189,37 +180,51 @@ export default function OwnerSendPOScreen() {
           {/* Start Date */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Start Date *</Text>
-            <TouchableOpacity style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
+            <TouchableOpacity
+              testID="owner-send-po-date"
+              style={styles.dateButton}
+              onPress={() => setShowDatePicker(true)}
+            >
               <Text style={styles.dateButtonText}>{formatDate(startDate)}</Text>
             </TouchableOpacity>
           </View>
 
-          {showDatePicker && (
-            <DateTimePicker
-              value={startDate}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={handleDateChange}
-              minimumDate={new Date()}
-            />
-          )}
+          <PickerSheet
+            visible={showDatePicker}
+            value={startDate}
+            mode="date"
+            minimumDate={new Date()}
+            onCancel={() => setShowDatePicker(false)}
+            onDone={(date) => {
+              setShowDatePicker(false);
+              setStartDate(date);
+            }}
+            testID="owner-send-po-date"
+          />
 
           {/* Start Time */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Start Time *</Text>
-            <TouchableOpacity style={styles.dateButton} onPress={() => setShowTimePicker(true)}>
+            <TouchableOpacity
+              testID="owner-send-po-time"
+              style={styles.dateButton}
+              onPress={() => setShowTimePicker(true)}
+            >
               <Text style={styles.dateButtonText}>{formatTime(startTime)}</Text>
             </TouchableOpacity>
           </View>
 
-          {showTimePicker && (
-            <DateTimePicker
-              value={startTime}
-              mode="time"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={handleTimeChange}
-            />
-          )}
+          <PickerSheet
+            visible={showTimePicker}
+            value={startTime}
+            mode="time"
+            onCancel={() => setShowTimePicker(false)}
+            onDone={(time) => {
+              setShowTimePicker(false);
+              setStartTime(time);
+            }}
+            testID="owner-send-po-time"
+          />
         </View>
 
         {/* Work Instructions */}
@@ -230,6 +235,7 @@ export default function OwnerSendPOScreen() {
             instructions, or specific work details.
           </Text>
           <TextInput
+            testID="owner-send-po-instructions"
             style={styles.textArea}
             value={workInstructions}
             onChangeText={setWorkInstructions}
@@ -243,6 +249,7 @@ export default function OwnerSendPOScreen() {
 
         {/* Send Button */}
         <TouchableOpacity
+          testID="owner-send-po-send"
           style={[styles.sendButton, isSubmitting && styles.sendButtonDisabled]}
           onPress={handleSendPO}
           disabled={isSubmitting}
@@ -253,7 +260,11 @@ export default function OwnerSendPOScreen() {
         </TouchableOpacity>
 
         {/* Cancel Button */}
-        <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
+        <TouchableOpacity
+          testID="owner-send-po-cancel"
+          style={styles.cancelButton}
+          onPress={() => router.back()}
+        >
           <Text style={styles.cancelButtonText}>Cancel</Text>
         </TouchableOpacity>
       </ScrollView>

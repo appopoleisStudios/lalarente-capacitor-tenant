@@ -1,0 +1,642 @@
+# Lifecycle stage 7 — Issue raised from the inspection enters maintenance
+# Covers LC-7-02, 7-03, 7-07, 7-10: owner reviews the tenant's inspection
+# issue and routes it to vendors; tenant follows it and can attach a vendor to
+# a new report. Needs the request raised in stage 6.
+# Routing order matters: Cancel and "Select Specific Vendors" first (no state
+# change), then Open Market, which makes "Send to Dedicated Vendors" appear and
+# lets the vendor see the request in 07b.
+# Conditional (only shown for some request states, driven when present):
+# acknowledge, Assign Vendor / Release to Tenant.
+# Env: creds, LC_TOKEN
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/maintenance
+- extendedWaitUntil:
+    visible: "Maintenance"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*inspection issue LC-${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    text: ".*inspection issue LC-${LC_TOKEN}.*"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "owner-maintenance-detail-back"
+    timeout: 25000
+
+# ── LC-7-07 owner sees the tenant comment text and the inspection reference ───
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*LC-comment-1 ${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- assertVisible: ".*Raised from the move-in inspection.*"
+- takeScreenshot: lc07-owner-request
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── header actions menu opens and cancels; chat opens messages ────────────
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-maintenance-detail-actions"
+    direction: UP
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-maintenance-detail-actions"
+- extendedWaitUntil:
+    visible: "Choose an action"
+    timeout: 15000
+- tapOn:
+    text: "Cancel"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-maintenance-detail-chat-tenant"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-maintenance-detail-chat-tenant"
+- extendedWaitUntil:
+    visible: "Messages"
+    timeout: 20000
+- openLink: lalarenteapp://(owner)/maintenance
+- extendedWaitUntil:
+    visible: "Maintenance"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*inspection issue LC-${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    text: ".*inspection issue LC-${LC_TOKEN}.*"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "owner-maintenance-detail-back"
+    timeout: 25000
+
+# ── acknowledge (when the request is still a notification) ────────────────
+- runFlow:
+    when:
+      visible:
+        id: "owner-maintenance-detail-acknowledge"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            id: "owner-maintenance-detail-acknowledge"
+          direction: DOWN
+          timeout: 20000
+          visibilityPercentage: 60
+          centerElement: true
+      - tapOn:
+          id: "owner-maintenance-detail-acknowledge"
+      - extendedWaitUntil:
+          visible: "Request acknowledged"
+          timeout: 15000
+      - tapOn:
+          text: "OK"
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# ── Release to Tenant / Assign Vendor (only for awaiting_owner_dispatch): cancel both ───
+- runFlow:
+    when:
+      visible:
+        id: "owner-maintenance-detail-release-tenant"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            id: "owner-maintenance-detail-release-tenant"
+          direction: DOWN
+          timeout: 20000
+          visibilityPercentage: 60
+          centerElement: true
+      - tapOn:
+          id: "owner-maintenance-detail-release-tenant"
+      - extendedWaitUntil:
+          visible: ".*hire their own vendor.*"
+          timeout: 15000
+      - tapOn:
+          text: "Cancel"
+      - tapOn:
+          id: "owner-maintenance-detail-assign-vendor"
+      - extendedWaitUntil:
+          visible: ".*route this request.*"
+          timeout: 15000
+      - tapOn:
+          text: "Cancel"
+
+# ── Push to Vendors: Cancel ───────────────────────────────────────────────
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-maintenance-detail-push-vendors"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-maintenance-detail-push-vendors"
+- extendedWaitUntil:
+    visible: ".*route this request.*"
+    timeout: 15000
+- tapOn:
+    text: "Cancel"
+- assertVisible:
+    id: "owner-maintenance-detail-push-vendors"
+
+# ── Push to Vendors → Select Specific Vendors: every control on the vendor selection screen ───
+- tapOn:
+    id: "owner-maintenance-detail-push-vendors"
+- extendedWaitUntil:
+    visible: ".*route this request.*"
+    timeout: 15000
+- tapOn:
+    text: "Select Specific Vendors"
+- extendedWaitUntil:
+    visible:
+      id: "vendor-selection-back"
+    timeout: 25000
+- tapOn:
+    id: "vendor-selection-tab-invite"
+- extendedWaitUntil:
+    visible:
+      id: "vendor-selection-invite-email"
+    timeout: 20000
+- tapOn:
+    id: "vendor-selection-invite-search"
+- extendedWaitUntil:
+    visible: "Enter Email"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- tapOn:
+    id: "vendor-selection-invite-email"
+- inputText: "not-an-email"
+- tapOn:
+    id: "vendor-selection-invite-search"
+- extendedWaitUntil:
+    visible: "Invalid Email"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- tapOn:
+    id: "vendor-selection-invite-email"
+- eraseText: 30
+- inputText: "nobody-${LC_TOKEN}@example.com"
+- tapOn:
+    id: "vendor-selection-invite-search"
+- extendedWaitUntil:
+    visible: "Vendor Not Found"
+    timeout: 15000
+- tapOn:
+    text: "Cancel"
+- tapOn:
+    id: "vendor-selection-tab-browse"
+- tapOn:
+    id: "vendor-selection-search"
+- inputText: "zzz"
+- tapOn:
+    id: "vendor-selection-search-clear"
+- takeScreenshot: lc07-owner-vendor-selection
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── Send is disabled with no vendor selected ──────────────────────────────
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "vendor-selection-submit"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "vendor-selection-submit"
+- waitForAnimationToEnd:
+    timeout: 1500
+- assertNotVisible: "Send Invitations"
+
+# ── Push to Open Market quick action: Cancel ──────────────────────────────
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "vendor-selection-open-market"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "vendor-selection-open-market"
+- extendedWaitUntil:
+    visible: "Push to Open Market"
+    timeout: 15000
+- tapOn:
+    text: "Cancel"
+- tapOn:
+    id: "vendor-selection-back"
+- extendedWaitUntil:
+    visible:
+      id: "owner-maintenance-detail-back"
+    timeout: 20000
+
+# ── Push to Vendors → Open Market ─────────────────────────────────────────
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-maintenance-detail-push-vendors"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-maintenance-detail-push-vendors"
+- extendedWaitUntil:
+    visible: ".*route this request.*"
+    timeout: 15000
+- tapOn:
+    text: "Open Market"
+- extendedWaitUntil:
+    visible: ".*pushed to open market.*"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertNotVisible:
+    id: "owner-maintenance-detail-push-vendors"
+
+# ── no quotes yet on the open market: Send to Dedicated Vendors appears; Cancel ───
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-maintenance-detail-dedicated-vendors"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-maintenance-detail-dedicated-vendors"
+- extendedWaitUntil:
+    visible: "Send to Dedicated Vendors"
+    timeout: 15000
+- tapOn:
+    text: "Cancel"
+- takeScreenshot: lc07-owner-open-market
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    id: "owner-maintenance-detail-back"
+- extendedWaitUntil:
+    visible: "Maintenance"
+    timeout: 20000
+- openLink: lalarenteapp://(owner)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-owner.yaml
+
+# ── tenant: list (FAB, Chat with Owner, card), detail, message owner ──────
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/maintenance
+- extendedWaitUntil:
+    visible: "Maintenance"
+    timeout: 20000
+- assertVisible:
+    id: "maintenance-report-fab"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*inspection issue LC-${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "tenant-maintenance-chat-owner"
+    index: 0
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: lc07-tenant-list-chat-owner
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(tenant)/maintenance
+- extendedWaitUntil:
+    visible: "Maintenance"
+    timeout: 20000
+- tapOn:
+    id: "maintenance-report-fab"
+- extendedWaitUntil:
+    visible:
+      id: "maintenance-title-input"
+    timeout: 25000
+- tapOn:
+    id: "maintenance-report-back"
+- openLink: lalarenteapp://(tenant)/maintenance
+- extendedWaitUntil:
+    visible: "Maintenance"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*inspection issue LC-${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- assertVisible:
+    id: "maintenance-card-.*"
+- tapOn:
+    text: ".*inspection issue LC-${LC_TOKEN}.*"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "tenant-maintenance-detail-back"
+    timeout: 25000
+- assertVisible: ".*inspection issue LC-${LC_TOKEN}.*"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-maintenance-detail-message-owner"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "tenant-maintenance-detail-message-owner"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: lc07-tenant-message-owner
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(tenant)/lease-journey
+- extendedWaitUntil:
+    visible: "Lease Journey"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*inspection issue LC-${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+
+# ── tenant attaches a vendor to a new report, then clears it (no report is submitted) ───
+- openLink: lalarenteapp://(tenant)/maintenance/report
+- extendedWaitUntil:
+    visible:
+      id: "maintenance-title-input"
+    timeout: 25000
+
+# ── report form controls (not submitted): description, priority, category, camera, gallery + remove ───
+- tapOn:
+    id: "maintenance-title-input"
+- inputText: "LC-unsent ${LC_TOKEN}"
+- tapOn:
+    text: "Report Issue"
+- tapOn:
+    id: "maintenance-description-input"
+- inputText: "LC-unsent description ${LC_TOKEN}"
+- tapOn:
+    text: "Report Issue"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "maintenance-priority-low"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "maintenance-priority-low"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "maintenance-priority-medium"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "maintenance-priority-medium"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "maintenance-priority-high"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "maintenance-priority-high"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "maintenance-category-plumbing"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "maintenance-category-plumbing"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "maintenance-add-camera"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "maintenance-add-camera"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn:
+    text: "(OK|Cancel|Don.t Allow|Allow)"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: "Gallery"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    text: "Gallery"
+- waitForAnimationToEnd:
+    timeout: 2500
+# picker can ignore the first tap while it is still presenting; retry
+- repeat:
+    times: 3
+    while:
+      visible: "Collections"
+    commands:
+      - tapOn:
+          point: "50%,28%"
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - tapOn:
+          text: "(Add|Done|Choose)"
+          optional: true
+- waitForAnimationToEnd:
+    timeout: 2500
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "maintenance-report-remove-media"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "maintenance-report-remove-media"
+    index: 0
+- extendedWaitUntil:
+    notVisible:
+      id: "maintenance-report-remove-media"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-choose-vendor"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "tenant-choose-vendor"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-vendor-card"
+    timeout: 25000
+- tapOn:
+    id: "tenant-vendor-card"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "tenant-vendor-search"
+    timeout: 25000
+- assertVisible:
+    id: "vendor-directory-title"
+- tapOn:
+    id: "tenant-vendor-search"
+- inputText: "a"
+- tapOn:
+    id: "vendor-directory-title"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    id: "tenant-vendor-search"
+- eraseText: 30
+- tapOn:
+    id: "vendor-directory-title"
+- waitForAnimationToEnd:
+    timeout: 1500
+- extendedWaitUntil:
+    visible:
+      id: "tenant-vendor-card"
+    timeout: 25000
+- tapOn:
+    id: "tenant-vendor-card"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "vendor-detail-title"
+    timeout: 25000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: "Use on new report"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    text: "Use on new report"
+- extendedWaitUntil:
+    visible:
+      id: "maintenance-title-input"
+    timeout: 25000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "maintenance-report-clear-vendor"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- takeScreenshot: lc07-tenant-vendor-attached
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    id: "maintenance-report-clear-vendor"
+- extendedWaitUntil:
+    notVisible:
+      id: "maintenance-report-clear-vendor"
+    timeout: 15000
+- assertVisible: "Browse Vendors"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "maintenance-report-back"
+    direction: UP
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "maintenance-report-back"
+- waitForAnimationToEnd:
+    timeout: 2000
+- openLink: lalarenteapp://(tenant)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-tenant.yaml

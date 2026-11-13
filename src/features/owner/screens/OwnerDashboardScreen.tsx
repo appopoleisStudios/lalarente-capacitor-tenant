@@ -99,9 +99,16 @@ export default function OwnerDashboardScreen() {
   };
 
   const initOwner = async () => {
+    // The signed-in user is in the local session; getUser() is a network
+    // round-trip, and one dropped request used to leave ownerId null and the
+    // owner stuck on "add your first property". RLS still checks every query.
     const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      data: { session },
+    } = await supabase.auth.getSession();
+    let user = session?.user ?? null;
+    if (!user) {
+      user = (await supabase.auth.getUser()).data.user;
+    }
     if (user) {
       ownerIdRef.current = user.id;
       setOwnerId(user.id);
@@ -262,6 +269,14 @@ export default function OwnerDashboardScreen() {
           <Ionicons name="home-outline" size={64} color="#9CA3AF" />
           <Text style={styles.emptyTitle}>Welcome to LaLarente</Text>
           <Text style={styles.emptyMessage}>Start by adding your first property</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => (ownerId ? refetch() : initOwner())}
+            testID="owner-dashboard-empty-retry"
+          >
+            <Ionicons name="refresh" size={20} color="#FFF" />
+            <Text style={styles.retryButtonText}>Refresh</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );

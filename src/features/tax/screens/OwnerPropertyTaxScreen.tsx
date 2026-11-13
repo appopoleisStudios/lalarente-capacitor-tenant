@@ -28,6 +28,7 @@ import {
   DEDUCTIBILITY_LABELS,
   CreateTaxPaymentInput,
 } from '../api/propertyTaxPayments.api';
+import { DateField } from '@/src/shared/components/ui/DateField';
 
 const CATEGORIES: TaxCategory[] = [
   'municipal_rates',
@@ -378,12 +379,14 @@ export default function OwnerPropertyTaxScreen() {
 
               {/* Date */}
               <Text style={styles.fieldLabel}>Date Paid</Text>
-              <TextInput
+              <DateField
                 style={styles.input}
-                placeholder="YYYY-MM-DD"
+                textStyle={styles.dateFieldText}
+                placeholder="Select date"
                 placeholderTextColor={colors.text.tertiary}
                 value={form.paid_on}
-                onChangeText={(v) => setForm((f) => ({ ...f, paid_on: v }))}
+                onChange={(v) => setForm((f) => ({ ...f, paid_on: v }))}
+                maximumDate={new Date()}
                 testID="tax-date-input"
               />
 
@@ -582,6 +585,10 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     marginBottom: 14,
     backgroundColor: colors.background.secondary,
+  },
+  dateFieldText: {
+    fontSize: 15,
+    color: colors.text.primary,
   },
   chip: {
     paddingHorizontal: 12,

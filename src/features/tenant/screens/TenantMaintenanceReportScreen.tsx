@@ -10,7 +10,8 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { inspectionsApi } from '@/src/features/inspections/api/inspectionsApi';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -47,8 +48,17 @@ export default function TenantMaintenanceReportScreen() {
     canAddMore,
   } = useMediaUpload(10);
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  // Set when the request is raised from a comment on an inspection report
+  const { inspectionId, inspectionCommentId, prefillTitle, prefillDescription } =
+    useLocalSearchParams<{
+      inspectionId?: string;
+      inspectionCommentId?: string;
+      prefillTitle?: string;
+      prefillDescription?: string;
+    }>();
+
+  const [title, setTitle] = useState(prefillTitle ?? '');
+  const [description, setDescription] = useState(prefillDescription ?? '');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -216,6 +226,13 @@ export default function TenantMaintenanceReportScreen() {
         }
       }
 
+      if (inspectionId && inspectionCommentId) {
+        // Non-blocking: the request exists either way
+        await inspectionsApi
+          .linkTenantCommentToRequest(inspectionId, inspectionCommentId, request.id)
+          .catch((err) => console.error('Failed to link request to inspection:', err));
+      }
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert(
         'Success! 🎉',
@@ -238,7 +255,11 @@ export default function TenantMaintenanceReportScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            testID="maintenance-report-back"
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color="#111827" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Report Issue</Text>
@@ -256,7 +277,11 @@ export default function TenantMaintenanceReportScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            testID="maintenance-report-back"
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color="#111827" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Report Issue</Text>
@@ -268,7 +293,11 @@ export default function TenantMaintenanceReportScreen() {
           <Text style={styles.errorMessage}>
             You need an active lease to report maintenance issues. Please contact your landlord.
           </Text>
-          <TouchableOpacity style={styles.retryButton} onPress={() => router.back()}>
+          <TouchableOpacity
+            testID="maintenance-report-go-back"
+            style={styles.retryButton}
+            onPress={() => router.back()}
+          >
             <Text style={styles.retryButtonText}>Go Back</Text>
           </TouchableOpacity>
         </View>
@@ -282,7 +311,11 @@ export default function TenantMaintenanceReportScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          testID="maintenance-report-back"
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color="#111827" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Report Issue</Text>
@@ -316,6 +349,7 @@ export default function TenantMaintenanceReportScreen() {
               <Text style={styles.helperText}>Select which property needs maintenance</Text>
               {activeLeases.map((lease) => (
                 <TouchableOpacity
+                  testID="maintenance-report-lease"
                   key={lease.id}
                   style={[
                     styles.propertySelectCard,
@@ -409,6 +443,7 @@ export default function TenantMaintenanceReportScreen() {
               const isSelected = selectedServiceItemId === item.id;
               return (
                 <TouchableOpacity
+                  testID="maintenance-report-service-item"
                   key={item.id}
                   style={[
                     styles.serviceItemCard,
@@ -444,6 +479,7 @@ export default function TenantMaintenanceReportScreen() {
               );
             })}
             <TouchableOpacity
+              testID="maintenance-report-service-item-other"
               style={[
                 styles.serviceItemCard,
                 selectedServiceItemId === 'other' && styles.serviceItemCardActive,
@@ -621,6 +657,7 @@ export default function TenantMaintenanceReportScreen() {
           </TouchableOpacity>
           {selectedVendor && (
             <TouchableOpacity
+              testID="maintenance-report-clear-vendor"
               onPress={() => setSelectedVendor(null)}
               style={{ marginTop: 8, alignSelf: 'flex-start' }}
               accessibilityRole="button"
@@ -644,6 +681,7 @@ export default function TenantMaintenanceReportScreen() {
               <View key={index} style={styles.mediaWrapper}>
                 <Image source={{ uri: file.uri }} style={styles.media} />
                 <TouchableOpacity
+                  testID="maintenance-report-remove-media"
                   style={styles.removeMedia}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

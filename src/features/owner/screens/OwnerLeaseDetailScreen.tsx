@@ -424,7 +424,11 @@ export default function OwnerLeaseDetailScreen() {
         <View style={styles.centerContainer}>
           <Ionicons name="alert-circle-outline" size={64} color="#F44336" />
           <Text style={styles.errorText}>{error || 'Failed to load lease'}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadLease}>
+          <TouchableOpacity
+            testID="owner-lease-retry"
+            style={styles.retryButton}
+            onPress={loadLease}
+          >
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -442,7 +446,11 @@ export default function OwnerLeaseDetailScreen() {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            testID="owner-lease-back"
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Lease Details</Text>
@@ -464,6 +472,22 @@ export default function OwnerLeaseDetailScreen() {
               <Text style={[styles.warningText, { color: '#F44336' }]}>Lease has expired</Text>
             </View>
           )}
+
+          {/* Lease status — the owner otherwise had no way to tell an active
+              lease from one still waiting on signatures. */}
+          <View style={styles.statusRow} testID="owner-lease-status">
+            <Text style={styles.statusLabel}>Status</Text>
+            <Text
+              style={[
+                styles.statusValue,
+                lease.status === 'active' || lease.status === 'month_to_month'
+                  ? { color: '#2E7D32', backgroundColor: '#E8F5E9' }
+                  : { color: '#B26A00', backgroundColor: '#FFF4E5' },
+              ]}
+            >
+              {LEASE_STATUS_LABEL[lease.status ?? ''] ?? lease.status}
+            </Text>
+          </View>
 
           {/* Tenant Info */}
           <View style={styles.section}>
@@ -587,7 +611,8 @@ export default function OwnerLeaseDetailScreen() {
                   icon="trending-up"
                   label="Rent Escalation"
                   value={`${
-                    lease.rent_escalation_type === 'percentage'
+                    lease.rent_escalation_type === 'percentage' ||
+                    lease.rent_escalation_type === 'fixed_percentage'
                       ? `${lease.rent_escalation_value}%`
                       : `R ${lease.rent_escalation_value}`
                   }${
@@ -605,7 +630,11 @@ export default function OwnerLeaseDetailScreen() {
             <Text style={styles.sectionTitle}>Lease Document</Text>
             {lease.lease_document_url ? (
               <View>
-                <TouchableOpacity style={styles.documentCard} onPress={handleViewDocument}>
+                <TouchableOpacity
+                  testID="owner-lease-view-document"
+                  style={styles.documentCard}
+                  onPress={handleViewDocument}
+                >
                   <View style={styles.documentIcon}>
                     <Ionicons name="document-text" size={32} color={RSA.blue} />
                   </View>
@@ -618,6 +647,7 @@ export default function OwnerLeaseDetailScreen() {
 
                 {/* Download Button */}
                 <TouchableOpacity
+                  testID="owner-lease-download-pdf"
                   style={[styles.downloadButton, actionLoading && styles.buttonDisabled]}
                   onPress={handleDownloadDocument}
                   disabled={actionLoading}
@@ -651,6 +681,7 @@ export default function OwnerLeaseDetailScreen() {
                 {/* Temporary button to regenerate PDF for old leases */}
                 {lease.status === 'active' && (
                   <TouchableOpacity
+                    testID="owner-lease-regenerate-pdf"
                     style={[
                       styles.downloadButton,
                       { borderColor: '#FF9800' },
@@ -698,6 +729,7 @@ export default function OwnerLeaseDetailScreen() {
           {lease.status === 'draft' && (
             <View style={styles.section}>
               <TouchableOpacity
+                testID="owner-lease-send-to-tenant"
                 style={[styles.primaryButton, actionLoading && styles.buttonDisabled]}
                 onPress={handleSendToTenant}
                 disabled={actionLoading}
@@ -723,6 +755,7 @@ export default function OwnerLeaseDetailScreen() {
                 </Text>
               </View>
               <TouchableOpacity
+                testID="owner-lease-sign"
                 style={[styles.primaryButton, actionLoading && styles.buttonDisabled]}
                 onPress={handleSignLease}
                 disabled={actionLoading}
@@ -753,6 +786,7 @@ export default function OwnerLeaseDetailScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Inspections</Text>
               <TouchableOpacity
+                testID="owner-lease-schedule-inspection"
                 style={styles.inspectionButton}
                 onPress={() =>
                   router.push({
@@ -766,6 +800,7 @@ export default function OwnerLeaseDetailScreen() {
                 <Ionicons name="chevron-forward" size={18} color={RSA.blue} />
               </TouchableOpacity>
               <TouchableOpacity
+                testID="owner-lease-view-inspections"
                 style={[styles.inspectionButton, { marginTop: 8 }]}
                 onPress={() => router.push('/(owner)/inspections' as any)}
               >
@@ -780,7 +815,11 @@ export default function OwnerLeaseDetailScreen() {
 
           {/* Contact Tenant */}
           <View style={styles.section}>
-            <TouchableOpacity style={styles.contactButton} onPress={handleContactTenant}>
+            <TouchableOpacity
+              testID="owner-lease-contact-tenant"
+              style={styles.contactButton}
+              onPress={handleContactTenant}
+            >
               <Ionicons name="chatbubble-outline" size={20} color={RSA.blue} />
               <Text style={styles.contactButtonText}>Contact Tenant</Text>
             </TouchableOpacity>
@@ -861,7 +900,36 @@ const getDaySuffix = (day: number) => {
   }
 };
 
+const LEASE_STATUS_LABEL: Record<string, string> = {
+  draft: 'Draft',
+  pending_signatures: 'Awaiting signatures',
+  pending_tenant_signature: 'Awaiting tenant signature',
+  pending_owner_signature: 'Awaiting your signature',
+  active: 'Active',
+  month_to_month: 'Active (month-to-month)',
+  renewal_pending: 'Renewal pending',
+  expired: 'Expired',
+  terminated: 'Terminated',
+  early_terminated: 'Terminated early',
+};
+
 const styles = StyleSheet.create({
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
+    marginTop: 16,
+  },
+  statusLabel: { fontSize: 14, color: '#666', fontWeight: '600' },
+  statusValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
   safeArea: {
     flex: 1,
     backgroundColor: '#FFF',

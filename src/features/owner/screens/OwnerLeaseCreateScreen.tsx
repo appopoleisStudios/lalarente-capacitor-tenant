@@ -8,9 +8,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  Platform,
 } from 'react-native';
-import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { PickerSheet } from '@/src/shared/components/ui/DateField';
 import {
   addOneCalendarMonth,
   fromLocalIsoDate,
@@ -56,21 +55,13 @@ export default function OwnerLeaseCreateScreen() {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
-  // iOS inline spinner holds a DRAFT value that's only committed when
-  // the user taps Done. This covers the "open picker and tap Done
-  // without scrolling" case where the native `set` event never fires —
-  // previously the field would remain empty despite the picker showing
-  // a sensible default (today for start, start+1month for end).
-  const [iosStartDraft, setIosStartDraft] = useState<Date | null>(null);
-  const [iosEndDraft, setIosEndDraft] = useState<Date | null>(null);
-
   // CT7-020 — lease date pickers. Same pattern as Add Property CT7-008,
   // hardened per PR #196 SA review:
   //   - toLocalIsoDate() preserves local calendar day (no UTC round-trip).
   //   - addOneCalendarMonth() clamps Jan 31 -> Feb 28/29 instead of
   //     overflowing to March.
-  //   - iOS keeps the spinner open until the owner taps Done; Android
-  //     dismisses on first change (native dialog behaviour).
+  //   - PickerSheet: iOS bottom sheet with Cancel / Done (an inline spinner
+  //     pushed its Done row under the tab bar); Android native dialog.
 
   const applyStartDate = (iso: string) => {
     setStartDate(iso);
@@ -79,46 +70,6 @@ export default function OwnerLeaseCreateScreen() {
       const requiredMin = addOneCalendarMonth(fromLocalIsoDate(iso));
       if (isDateBefore(endDate, requiredMin)) setEndDate('');
     }
-  };
-
-  const handleStartDateChange = (event: DateTimePickerEvent, selected?: Date) => {
-    if (Platform.OS === 'ios') {
-      // Buffer the selection; Done commits.
-      if (selected) setIosStartDraft(selected);
-      return;
-    }
-    // Android closes on every event.
-    setShowStartDatePicker(false);
-    if (event.type === 'set' && selected) {
-      applyStartDate(toLocalIsoDate(selected));
-    }
-  };
-
-  const confirmStartDateIos = () => {
-    // Fall back to the picker's visible default (today or current
-    // startDate) if the user opened and tapped Done without scrolling.
-    const committed = iosStartDraft ?? (startDate ? fromLocalIsoDate(startDate) : new Date());
-    applyStartDate(toLocalIsoDate(committed));
-    setIosStartDraft(null);
-    setShowStartDatePicker(false);
-  };
-
-  const handleEndDateChange = (event: DateTimePickerEvent, selected?: Date) => {
-    if (Platform.OS === 'ios') {
-      if (selected) setIosEndDraft(selected);
-      return;
-    }
-    setShowEndDatePicker(false);
-    if (event.type === 'set' && selected) {
-      setEndDate(toLocalIsoDate(selected));
-    }
-  };
-
-  const confirmEndDateIos = () => {
-    const committed = iosEndDraft ?? (endDate ? fromLocalIsoDate(endDate) : minEndDate);
-    setEndDate(toLocalIsoDate(committed));
-    setIosEndDraft(null);
-    setShowEndDatePicker(false);
   };
 
   const minEndDate = startDate ? addOneCalendarMonth(fromLocalIsoDate(startDate)) : new Date();
@@ -185,8 +136,8 @@ export default function OwnerLeaseCreateScreen() {
       const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
       const oneYearLater = new Date(nextMonth.getFullYear() + 1, nextMonth.getMonth(), 0);
 
-      setStartDate(nextMonth.toISOString().split('T')[0]);
-      setEndDate(oneYearLater.toISOString().split('T')[0]);
+      setStartDate(toLocalIsoDate(nextMonth));
+      setEndDate(toLocalIsoDate(oneYearLater));
     } catch (error) {
       reportApiError(error, 'rental_applications', 'select');
       console.error('Error loading application:', error);
@@ -270,7 +221,11 @@ export default function OwnerLeaseCreateScreen() {
         <View style={styles.centerContainer}>
           <Ionicons name="alert-circle-outline" size={64} color="#F44336" />
           <Text style={styles.errorText}>Application not found</Text>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <TouchableOpacity
+            testID="owner-lease-create-go-back"
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
             <Text style={styles.backButtonText}>Go Back</Text>
           </TouchableOpacity>
         </View>
@@ -284,14 +239,22 @@ export default function OwnerLeaseCreateScreen() {
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.headerBackButton}>
+            <TouchableOpacity
+              testID="owner-lease-create-back"
+              onPress={() => router.back()}
+              style={styles.headerBackButton}
+            >
               <Ionicons name="arrow-back" size={24} color="#333" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Create Lease</Text>
             <View style={{ width: 24 }} />
           </View>
 
-          <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            style={styles.scrollView}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+          >
             {/* Application Info */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Application Details</Text>
@@ -321,6 +284,7 @@ export default function OwnerLeaseCreateScreen() {
                   <Text style={styles.label}>Lease Type</Text>
                   <View style={styles.radioGroup}>
                     <TouchableOpacity
+                      testID="owner-lease-create-type-fixed"
                       style={styles.radioOption}
                       onPress={() => setLeaseType('fixed')}
                     >
@@ -332,6 +296,7 @@ export default function OwnerLeaseCreateScreen() {
                       <Text style={styles.radioLabel}>Fixed Term</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
+                      testID="owner-lease-create-type-month"
                       style={styles.radioOption}
                       onPress={() => setLeaseType('month_to_month')}
                     >
@@ -350,6 +315,7 @@ export default function OwnerLeaseCreateScreen() {
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>Start Date *</Text>
                   <TouchableOpacity
+                    testID="owner-lease-create-start-date"
                     style={styles.input}
                     onPress={() => setShowStartDatePicker(true)}
                     activeOpacity={0.7}
@@ -358,30 +324,24 @@ export default function OwnerLeaseCreateScreen() {
                       {startDate || 'YYYY-MM-DD'}
                     </Text>
                   </TouchableOpacity>
-                  {showStartDatePicker && (
-                    <>
-                      <DateTimePicker
-                        value={startDate ? fromLocalIsoDate(startDate) : new Date()}
-                        mode="date"
-                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                        minimumDate={new Date()}
-                        onChange={handleStartDateChange}
-                      />
-                      {Platform.OS === 'ios' && (
-                        <TouchableOpacity
-                          style={styles.pickerDoneRow}
-                          onPress={confirmStartDateIos}
-                        >
-                          <Text style={styles.pickerDoneText}>Done</Text>
-                        </TouchableOpacity>
-                      )}
-                    </>
-                  )}
+                  <PickerSheet
+                    visible={showStartDatePicker}
+                    value={startDate ? fromLocalIsoDate(startDate) : new Date()}
+                    mode="date"
+                    minimumDate={new Date()}
+                    onCancel={() => setShowStartDatePicker(false)}
+                    onDone={(d) => {
+                      setShowStartDatePicker(false);
+                      applyStartDate(toLocalIsoDate(d));
+                    }}
+                    testID="owner-lease-create-start-date"
+                  />
                 </View>
 
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>End Date *</Text>
                   <TouchableOpacity
+                    testID="owner-lease-create-end-date"
                     style={styles.input}
                     onPress={() => setShowEndDatePicker(true)}
                     activeOpacity={0.7}
@@ -397,22 +357,18 @@ export default function OwnerLeaseCreateScreen() {
                       {endDate || (startDate ? 'YYYY-MM-DD' : 'Pick start date first')}
                     </Text>
                   </TouchableOpacity>
-                  {showEndDatePicker && (
-                    <>
-                      <DateTimePicker
-                        value={endDate ? fromLocalIsoDate(endDate) : minEndDate}
-                        mode="date"
-                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                        minimumDate={minEndDate}
-                        onChange={handleEndDateChange}
-                      />
-                      {Platform.OS === 'ios' && (
-                        <TouchableOpacity style={styles.pickerDoneRow} onPress={confirmEndDateIos}>
-                          <Text style={styles.pickerDoneText}>Done</Text>
-                        </TouchableOpacity>
-                      )}
-                    </>
-                  )}
+                  <PickerSheet
+                    visible={showEndDatePicker}
+                    value={endDate ? fromLocalIsoDate(endDate) : minEndDate}
+                    mode="date"
+                    minimumDate={minEndDate}
+                    onCancel={() => setShowEndDatePicker(false)}
+                    onDone={(d) => {
+                      setShowEndDatePicker(false);
+                      setEndDate(toLocalIsoDate(d));
+                    }}
+                    testID="owner-lease-create-end-date"
+                  />
                 </View>
               </View>
             </View>
@@ -424,6 +380,7 @@ export default function OwnerLeaseCreateScreen() {
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>Monthly Rent (R) *</Text>
                   <TextInput
+                    testID="owner-lease-create-rent"
                     style={styles.input}
                     value={monthlyRent}
                     onChangeText={setMonthlyRent}
@@ -436,6 +393,7 @@ export default function OwnerLeaseCreateScreen() {
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>Deposit Amount (R)</Text>
                   <TextInput
+                    testID="owner-lease-create-deposit"
                     style={styles.input}
                     value={depositAmount}
                     onChangeText={setDepositAmount}
@@ -448,34 +406,11 @@ export default function OwnerLeaseCreateScreen() {
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>Payment Due Day (1-31) *</Text>
                   <TextInput
+                    testID="owner-lease-create-due-day"
                     style={styles.input}
                     value={paymentDueDay}
                     onChangeText={setPaymentDueDay}
                     placeholder="1"
-                    keyboardType="numeric"
-                    placeholderTextColor="#999"
-                  />
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>Late Fee Amount (R)</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={lateFeeAmount}
-                    onChangeText={setLateFeeAmount}
-                    placeholder="500"
-                    keyboardType="numeric"
-                    placeholderTextColor="#999"
-                  />
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>Late Fee Grace Days</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={lateFeeGraceDays}
-                    onChangeText={setLateFeeGraceDays}
-                    placeholder="3"
                     keyboardType="numeric"
                     placeholderTextColor="#999"
                   />
@@ -491,6 +426,7 @@ export default function OwnerLeaseCreateScreen() {
                   <Text style={styles.label}>Escalation Type</Text>
                   <View style={styles.radioGroup}>
                     <TouchableOpacity
+                      testID="owner-lease-create-escalation-percentage"
                       style={styles.radioOption}
                       onPress={() => setRentEscalationType('percentage')}
                     >
@@ -506,6 +442,7 @@ export default function OwnerLeaseCreateScreen() {
                       <Text style={styles.radioLabel}>Percentage</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
+                      testID="owner-lease-create-escalation-fixed"
                       style={styles.radioOption}
                       onPress={() => setRentEscalationType('fixed_amount')}
                     >
@@ -528,6 +465,7 @@ export default function OwnerLeaseCreateScreen() {
                     Escalation Value ({rentEscalationType === 'percentage' ? '%' : 'R'})
                   </Text>
                   <TextInput
+                    testID="owner-lease-create-escalation-value"
                     style={styles.input}
                     value={rentEscalationValue}
                     onChangeText={setRentEscalationValue}
@@ -540,6 +478,7 @@ export default function OwnerLeaseCreateScreen() {
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>Escalation Frequency (months)</Text>
                   <TextInput
+                    testID="owner-lease-create-escalation-frequency"
                     style={styles.input}
                     value={rentEscalationFrequency}
                     onChangeText={setRentEscalationFrequency}
@@ -553,7 +492,11 @@ export default function OwnerLeaseCreateScreen() {
 
             {/* Create Button */}
             <View style={styles.section}>
-              <TouchableOpacity style={styles.createButton} onPress={handleCreateLease}>
+              <TouchableOpacity
+                testID="owner-lease-create-review"
+                style={styles.createButton}
+                onPress={handleCreateLease}
+              >
                 <Ionicons name="document-text" size={20} color="#FFF" />
                 <Text style={styles.createButtonText}>Review Lease Agreement</Text>
               </TouchableOpacity>

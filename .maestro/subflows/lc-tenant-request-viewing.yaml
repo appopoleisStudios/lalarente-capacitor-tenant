@@ -1,0 +1,81 @@
+# Tenant (already signed in) sends a viewing request for PROP_ID with a
+# message containing LC_TOKEN. Cancels an existing active request first so
+# the flow can be re-run. Ends on the tenant property screen.
+# Env: PROP_ID, PROP_TITLE, LC_TOKEN, MSG
+appId: com.lalarente.app
+---
+- openLink: lalarenteapp://(tenant)/properties/${PROP_ID}
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-request-viewing"
+    timeout: 25000
+- tapOn:
+    id: "tenant-property-request-viewing"
+- extendedWaitUntil:
+    visible:
+      id: "viewing-request-back"
+    timeout: 20000
+- runFlow:
+    when:
+      visible:
+        id: "viewing-request-existing-cancel"
+    commands:
+      - tapOn:
+          id: "viewing-request-existing-cancel"
+      - extendedWaitUntil:
+          visible: "Cancel Viewing Request"
+          timeout: 15000
+      - tapOn:
+          text: "Yes, Cancel"
+      - waitForAnimationToEnd:
+          timeout: 4000
+- extendedWaitUntil:
+    visible:
+      id: "viewing-request-message"
+    timeout: 20000
+- assertVisible: ".*${PROP_TITLE}.*"
+
+# ── date and time buttons open their pickers ──────────────────────────────
+- tapOn:
+    id: "viewing-request-date"
+- extendedWaitUntil:
+    visible:
+      id: "viewing-request-date-done"
+    timeout: 10000
+- tapOn:
+    id: "viewing-request-date-done"
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "viewing-request-time"
+- extendedWaitUntil:
+    visible:
+      id: "viewing-request-time-done"
+    timeout: 10000
+- tapOn:
+    id: "viewing-request-time-done"
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "viewing-request-message"
+- inputText: "${MSG} ${LC_TOKEN}"
+- tapOn:
+    text: "Message \\(Optional\\)"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "viewing-request-submit"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "viewing-request-submit"
+- extendedWaitUntil:
+    visible: "Request Sent"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 2000

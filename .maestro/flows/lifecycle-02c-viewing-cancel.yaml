@@ -1,0 +1,242 @@
+# Lifecycle stage 2c — Viewing cancelled by each side
+# Covers LC-2-04, 2-07, 2-13, 2-19. Uses the branch property.
+# Env: creds, LC_BRANCH_PROPERTY_ID, LC_BRANCH_PROPERTY_TITLE, LC_TOKEN
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-tenant.yaml
+- runFlow:
+    file: ../subflows/lc-tenant-request-viewing.yaml
+    env:
+      PROP_ID: "${LC_BRANCH_PROPERTY_ID}"
+      PROP_TITLE: "${LC_BRANCH_PROPERTY_TITLE}"
+      MSG: "LC-cancel1"
+
+# ── request screen shows the existing request: View Details, Cancel (No / Yes) ───
+- openLink: lalarenteapp://(tenant)/properties/${LC_BRANCH_PROPERTY_ID}
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-request-viewing"
+    timeout: 25000
+- tapOn:
+    id: "tenant-property-request-viewing"
+- extendedWaitUntil:
+    visible:
+      id: "viewing-request-existing-details"
+    timeout: 20000
+- assertVisible: ".*Viewing Request Pending.*"
+- tapOn:
+    id: "viewing-request-existing-details"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-viewing-detail-back"
+    timeout: 20000
+- tapOn:
+    id: "tenant-viewing-detail-back"
+- extendedWaitUntil:
+    visible:
+      id: "viewing-request-existing-cancel"
+    timeout: 20000
+- tapOn:
+    id: "viewing-request-existing-cancel"
+- extendedWaitUntil:
+    visible: "Cancel Viewing Request"
+    timeout: 15000
+- tapOn:
+    text: "No"
+- assertVisible:
+    id: "viewing-request-existing-cancel"
+- tapOn:
+    id: "viewing-request-existing-cancel"
+- extendedWaitUntil:
+    visible: "Cancel Viewing Request"
+    timeout: 15000
+- tapOn:
+    text: "Yes, Cancel"
+- extendedWaitUntil:
+    visible:
+      id: "viewing-request-message"
+    timeout: 20000
+
+# ── cancel from the viewing detail screen (No / Yes, Cancel) ──────────────
+- runFlow:
+    file: ../subflows/lc-tenant-request-viewing.yaml
+    env:
+      PROP_ID: "${LC_BRANCH_PROPERTY_ID}"
+      PROP_TITLE: "${LC_BRANCH_PROPERTY_TITLE}"
+      MSG: "LC-cancel2"
+- openLink: lalarenteapp://(tenant)/viewings
+- extendedWaitUntil:
+    visible: "My Viewings"
+    timeout: 20000
+- tapOn:
+    id: "tenant-viewings-filter-pending"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*${LC_BRANCH_PROPERTY_TITLE}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    text: ".*${LC_BRANCH_PROPERTY_TITLE}.*"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "tenant-viewing-detail-back"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-viewing-detail-cancel"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "tenant-viewing-detail-cancel"
+- extendedWaitUntil:
+    visible: "Cancel Viewing"
+    timeout: 15000
+- tapOn:
+    text: "No"
+- assertVisible:
+    id: "tenant-viewing-detail-cancel"
+- tapOn:
+    id: "tenant-viewing-detail-cancel"
+- extendedWaitUntil:
+    visible: "Cancel Viewing"
+    timeout: 15000
+- tapOn:
+    text: "Yes, Cancel"
+- extendedWaitUntil:
+    visible: "Cancelled"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# ── third request, to be approved then cancelled by the owner ─────────────
+- runFlow:
+    file: ../subflows/lc-tenant-request-viewing.yaml
+    env:
+      PROP_ID: "${LC_BRANCH_PROPERTY_ID}"
+      PROP_TITLE: "${LC_BRANCH_PROPERTY_TITLE}"
+      MSG: "LC-cancel3"
+- openLink: lalarenteapp://(tenant)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-tenant.yaml
+- runFlow: ../subflows/login-owner.yaml
+
+# ── parity: the request the tenant cancelled shows as cancelled for the owner ───
+- runFlow:
+    file: ../subflows/lc-owner-open-viewing.yaml
+    env:
+      MSG: "LC-cancel2"
+- assertVisible: "(?i).*cancelled.*"
+- assertNotVisible:
+    id: "owner-viewing-detail-approve"
+- runFlow:
+    file: ../subflows/lc-owner-open-viewing.yaml
+    env:
+      MSG: "LC-cancel3"
+- tapOn:
+    id: "owner-viewing-detail-approve"
+- extendedWaitUntil:
+    visible: "Approve Viewing"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-viewing-modal-confirm"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-viewing-modal-confirm"
+- extendedWaitUntil:
+    visible: "Approved"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 3000
+- runFlow:
+    file: ../subflows/lc-owner-open-viewing.yaml
+    env:
+      MSG: "LC-cancel3"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-viewing-detail-cancel-approved"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-viewing-detail-cancel-approved"
+- extendedWaitUntil:
+    visible: "Cancel Viewing"
+    timeout: 15000
+- tapOn:
+    text: "No"
+- assertVisible:
+    id: "owner-viewing-detail-cancel-approved"
+- tapOn:
+    id: "owner-viewing-detail-cancel-approved"
+- extendedWaitUntil:
+    visible: "Cancel Viewing"
+    timeout: 15000
+- tapOn:
+    text: "Yes, Cancel"
+- extendedWaitUntil:
+    visible: "Cancelled"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 3000
+- openLink: lalarenteapp://(owner)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-owner.yaml
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/viewings
+- extendedWaitUntil:
+    visible: "My Viewings"
+    timeout: 20000
+- tapOn:
+    id: "tenant-viewings-filter-all"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*${LC_BRANCH_PROPERTY_TITLE}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    text: ".*${LC_BRANCH_PROPERTY_TITLE}.*"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "tenant-viewing-detail-back"
+    timeout: 20000
+- assertVisible: "(?i).*cancelled.*"
+- assertNotVisible:
+    id: "tenant-viewing-detail-cancel"
+- takeScreenshot: lc02c-tenant-sees-owner-cancel
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(tenant)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-tenant.yaml

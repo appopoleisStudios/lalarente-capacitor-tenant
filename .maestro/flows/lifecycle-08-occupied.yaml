@@ -1,0 +1,119 @@
+# Lifecycle stage 8 — Tenant in occupation (end state)
+# Covers LC-8-01 to 8-05. Needs the active lease from stage 5.
+# Env: creds, LC_PROPERTY_ID, LC_PROPERTY_TITLE
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-tenant.yaml
+- extendedWaitUntil:
+    visible: "Welcome back,"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*${LC_PROPERTY_TITLE}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- takeScreenshot: lc08-tenant-dashboard
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── LC-8-05 navbar is exactly the 5 canonical tabs ────────────────────────
+- assertVisible:
+    id: "tab-home"
+- assertVisible:
+    id: "tab-search"
+- assertVisible:
+    id: "tab-payments"
+- assertVisible:
+    id: "tab-profile"
+- assertVisible:
+    id: "tab-lala-ai"
+- assertNotVisible: ".*Vendor Payments.*"
+
+# ── LC-8-03 the let property is not in search ─────────────────────────────
+- openLink: lalarenteapp://(tenant)/search
+- extendedWaitUntil:
+    visible:
+      id: "tenant-search-input"
+    timeout: 20000
+- tapOn:
+    id: "tenant-search-input"
+- inputText: "${LC_PROPERTY_TITLE}"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "No properties found"
+    timeout: 20000
+
+# ── LC-8-04 on the let property the occupant cannot request a viewing or apply ───
+- openLink: lalarenteapp://(tenant)/properties/${LC_PROPERTY_ID}
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-back"
+    timeout: 25000
+- assertNotVisible:
+    id: "tenant-property-request-viewing"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-property-apply"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "tenant-property-apply"
+- extendedWaitUntil:
+    visible: ".*your current property.*"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- takeScreenshot: lc08-tenant-current-property
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(tenant)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+# ── LC-8-02 owner sees the tenant against the property ────────────────────
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/tenants
+- extendedWaitUntil:
+    visible: "Tenants & Leases"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*${LC_PROPERTY_TITLE}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- takeScreenshot: lc08-owner-tenants
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(owner)/properties
+- extendedWaitUntil:
+    visible: "My Properties"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*${LC_PROPERTY_TITLE}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- takeScreenshot: lc08-owner-properties
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(owner)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-owner.yaml

@@ -199,6 +199,7 @@ export default function TenantLeaseJourneyScreen() {
             You need an active lease to view your journey timeline.
           </Text>
           <TouchableOpacity
+            testID="tenant-journey-search-properties"
             style={styles.searchButton}
             onPress={() => router.push('/(tenant)/search')}
           >
@@ -215,7 +216,11 @@ export default function TenantLeaseJourneyScreen() {
         <View style={styles.centerContainer}>
           <Ionicons name="alert-circle-outline" size={64} color="#DC2626" />
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadTimeline}>
+          <TouchableOpacity
+            testID="tenant-journey-retry"
+            style={styles.retryButton}
+            onPress={loadTimeline}
+          >
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -228,7 +233,11 @@ export default function TenantLeaseJourneyScreen() {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            testID="tenant-journey-back"
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
           <View style={styles.headerInfo}>
@@ -236,6 +245,7 @@ export default function TenantLeaseJourneyScreen() {
             <Text style={styles.headerSubtitle}>{propertyName}</Text>
           </View>
           <TouchableOpacity
+            testID="tenant-journey-open-lease"
             style={styles.leaseButton}
             onPress={() => router.push('/(tenant)/lease')}
           >

@@ -1,0 +1,121 @@
+# Lifecycle stage 2d — Viewing completed (owner) → tenant sees Completed
+# Covers LC-2-09, 2-12, 2-20.
+# PRECONDITION: run only AFTER the viewing approved in 02a has passed its
+# date/time. Requests default to tomorrow 10:00 and the app refuses past
+# dates, so this cannot run in the same session as 02a.
+# Env: creds, LC_PROPERTY_TITLE, LC_TOKEN (the same token 02a ran with)
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/viewings
+- extendedWaitUntil:
+    visible: "Viewing Requests"
+    timeout: 20000
+- tapOn:
+    id: "owner-viewings-filter-approved"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# ── list card shows Yes, viewed / No-show once the slot has passed ────────
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-viewing-card-viewed"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- assertVisible:
+    id: "owner-viewing-card-noshow"
+- takeScreenshot: lc02d-owner-awaiting-confirmation
+- waitForAnimationToEnd:
+    timeout: 1500
+- runFlow:
+    file: ../subflows/lc-owner-open-viewing.yaml
+    env:
+      MSG: "LC-view"
+
+# ── Mark Complete modal: cancel, notes, confirm ───────────────────────────
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-viewing-detail-complete"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- assertVisible:
+    id: "owner-viewing-detail-cancel"
+- tapOn:
+    id: "owner-viewing-detail-complete"
+- extendedWaitUntil:
+    visible: "Complete Viewing"
+    timeout: 20000
+- tapOn:
+    id: "owner-viewing-modal-cancel"
+- extendedWaitUntil:
+    notVisible: "Complete Viewing"
+    timeout: 15000
+- tapOn:
+    id: "owner-viewing-detail-complete"
+- extendedWaitUntil:
+    visible: "Complete Viewing"
+    timeout: 20000
+- tapOn:
+    id: "owner-viewing-modal-complete-notes"
+- inputText: "LC-complete-note ${LC_TOKEN}"
+- tapOn:
+    text: "Complete Viewing"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-viewing-modal-confirm"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-viewing-modal-confirm"
+- extendedWaitUntil:
+    visible: "Completed"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 3000
+- openLink: lalarenteapp://(owner)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-owner.yaml
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/viewings
+- extendedWaitUntil:
+    visible: "My Viewings"
+    timeout: 20000
+- tapOn:
+    id: "tenant-viewings-filter-completed"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-viewing-card"
+    timeout: 20000
+- tapOn:
+    id: "tenant-viewing-card"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "tenant-viewing-detail-back"
+    timeout: 20000
+- assertVisible: ".*${LC_PROPERTY_TITLE}.*"
+- assertVisible: "(?i).*completed.*"
+- assertNotVisible:
+    id: "tenant-viewing-detail-cancel"
+- takeScreenshot: lc02d-tenant-completed
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(tenant)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-tenant.yaml

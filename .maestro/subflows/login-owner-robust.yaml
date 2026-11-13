@@ -1,0 +1,48 @@
+# Robust iOS-sim-friendly owner login. Explicit focus + per-char input +
+# long waits around the native keyboard animation. Used by visual
+# verification runs where the standard login-owner.yaml is too flaky.
+appId: com.lalarente.app
+---
+- launchApp:
+    clearKeychain: true
+
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 30000
+
+- tapOn:
+    id: "email-input"
+- waitForAnimationToEnd:
+    timeout: 3000
+- eraseText
+- inputText: ${OWNER_EMAIL}
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# Hide keyboard before the password tap by tapping an off-field area.
+- tapOn:
+    text: "Welcome back"
+- waitForAnimationToEnd:
+    timeout: 1500
+
+- tapOn:
+    id: "password-input"
+- waitForAnimationToEnd:
+    timeout: 3000
+- eraseText
+- inputText: ${OWNER_PASSWORD}
+- waitForAnimationToEnd:
+    timeout: 1500
+
+- tapOn:
+    text: "Welcome back"
+- waitForAnimationToEnd:
+    timeout: 1500
+
+- tapOn:
+    id: "sign-in-button"
+
+- extendedWaitUntil:
+    visible: ".*Portfolio Dashboard.*"
+    timeout: 60000

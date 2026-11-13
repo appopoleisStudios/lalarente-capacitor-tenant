@@ -1,0 +1,1104 @@
+# Lifecycle stage 6 — Move-in inspection: schedule, conduct, tenant review,
+# comments, raise issue, both sign, report
+# Covers LC-6-01 to 6-22. Needs the active lease from stage 5.
+# Needs migration 20261113000002 (F10 fix: the status constraint now allows
+# 'pending_signatures' and 'cancelled').
+# PRECONDITION: the simulator photo library has at least one photo
+# (xcrun simctl addmedia <udid> <image>). The photo-picker taps use screen
+# positions and have not been verified on a device.
+# Not automatable: camera capture (no camera on the simulator).
+# Env: creds, LC_PROPERTY_TITLE, LC_TOKEN
+appId: com.lalarente.app
+---
+# ── PHASE 1 — owner: inspections list, every control ──────────────────────
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/inspections
+- extendedWaitUntil:
+    visible: "Inspections"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "owner-inspections-filter-scheduled"
+- waitForAnimationToEnd:
+    timeout: 800
+- tapOn:
+    id: "owner-inspections-filter-in_progress"
+- waitForAnimationToEnd:
+    timeout: 800
+- tapOn:
+    id: "owner-inspections-filter-pending_signatures"
+- waitForAnimationToEnd:
+    timeout: 800
+# filter chips scroll sideways; Completed starts off-screen
+- swipe:
+    start: "85%,17%"
+    end: "15%,17%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 800
+- tapOn:
+    id: "owner-inspections-filter-completed"
+- waitForAnimationToEnd:
+    timeout: 800
+- swipe:
+    start: "15%,17%"
+    end: "85%,17%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 800
+- tapOn:
+    id: "owner-inspections-filter-all"
+- waitForAnimationToEnd:
+    timeout: 800
+- tapOn:
+    id: "owner-inspections-add"
+- extendedWaitUntil:
+    visible: "Schedule Inspection"
+    timeout: 20000
+- tapOn:
+    id: "owner-schedule-inspection-back"
+- extendedWaitUntil:
+    visible: "Inspections"
+    timeout: 20000
+- tapOn:
+    id: "owner-inspections-empty-schedule"
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: "owner-schedule-inspection-back"
+    commands:
+      - tapOn:
+          id: "owner-schedule-inspection-back"
+      - extendedWaitUntil:
+          visible: "Inspections"
+          timeout: 20000
+- tapOn:
+    id: "owner-inspections-fab"
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: "owner-schedule-inspection-back"
+    commands:
+      - tapOn:
+          id: "owner-schedule-inspection-back"
+      - extendedWaitUntil:
+          visible: "Inspections"
+          timeout: 20000
+- tapOn:
+    id: "owner-inspections-back"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# ── schedule from the lease (LC-5-28), every control on the schedule screen ───
+- runFlow:
+    file: ../subflows/lc-owner-open-application.yaml
+    env:
+      PROP_TITLE: "${LC_PROPERTY_TITLE}"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-application-view-lease"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-application-view-lease"
+- extendedWaitUntil:
+    visible:
+      id: "owner-lease-back"
+    timeout: 25000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-lease-schedule-inspection"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-lease-schedule-inspection"
+- extendedWaitUntil:
+    visible: "Schedule Inspection"
+    timeout: 20000
+- tapOn:
+    id: "owner-schedule-inspection-type-periodic"
+- tapOn:
+    id: "owner-schedule-inspection-type-move_out"
+- tapOn:
+    id: "owner-schedule-inspection-type-move_in"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-schedule-inspection-lease"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-schedule-inspection-lease"
+    index: 0
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-schedule-inspection-date"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-schedule-inspection-date"
+- extendedWaitUntil:
+    visible:
+      id: "owner-schedule-inspection-date-done"
+    timeout: 10000
+- tapOn:
+    id: "owner-schedule-inspection-date-done"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-schedule-inspection-notes"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-schedule-inspection-notes"
+- inputText: "LC-insp-note ${LC_TOKEN}"
+- swipe:
+    start: "50%,45%"
+    end: "50%,40%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-schedule-inspection-submit"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-schedule-inspection-submit"
+- extendedWaitUntil:
+    visible: "Inspection Scheduled"
+    timeout: 30000
+- tapOn:
+    text: "Open Inspection"
+
+# ── conduct: room 1 — room condition chips, item controls, notes ──────────
+- extendedWaitUntil:
+    visible: "Move-In Inspection"
+    timeout: 30000
+- extendedWaitUntil:
+    visible: "Move-In Inspection"
+    timeout: 20000
+- takeScreenshot: lc06-owner-inspection-room1
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    id: "inspection-room-condition-excellent"
+- tapOn:
+    id: "inspection-room-condition-fair"
+- tapOn:
+    id: "inspection-room-condition-poor"
+- tapOn:
+    id: "inspection-room-condition-damaged"
+- tapOn:
+    id: "inspection-room-condition-good"
+- tapOn:
+    id: "inspection-item-0-condition-excellent"
+- tapOn:
+    id: "inspection-item-0-condition-good"
+- tapOn:
+    id: "inspection-item-0-condition-fair"
+- tapOn:
+    id: "inspection-item-0-condition-damaged"
+- tapOn:
+    id: "inspection-item-0-condition-poor"
+- tapOn:
+    id: "inspection-item-0-notes"
+- inputText: "LC-item-poor ${LC_TOKEN}"
+- tapOn:
+    text: "Items to Inspect"
+- tapOn:
+    id: "inspection-item-0-gallery"
+- waitForAnimationToEnd:
+    timeout: 2500
+# picker can ignore the first tap while it is still presenting; retry
+- repeat:
+    times: 3
+    while:
+      visible: "Collections"
+    commands:
+      - tapOn:
+          point: "50%,28%"
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - tapOn:
+          text: "(Add|Done|Choose)"
+          optional: true
+- waitForAnimationToEnd:
+    timeout: 2500
+
+# ── camera buttons respond (simulator has no camera: expect a permission or unavailable alert) ───
+- tapOn:
+    id: "inspection-item-0-camera"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn:
+    text: "(OK|Cancel|Don.t Allow|Allow)"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "inspection-room-take-photo"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "inspection-room-take-photo"
+- waitForAnimationToEnd:
+    timeout: 2500
+- tapOn:
+    text: "(OK|Cancel|Don.t Allow|Allow)"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "inspection-room-notes"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "inspection-room-notes"
+- inputText: "LC-room-note ${LC_TOKEN}"
+- tapOn:
+    text: "Room Notes"
+
+# ── LC-6-10 Complete is blocked while rooms have no photos ────────────────
+# room tabs scroll sideways; bring tab 9 into view
+- repeat:
+    times: 6
+    while:
+      notVisible:
+        id: "inspection-room-tab-9"
+    commands:
+      - swipe:
+          start: "85%,22%"
+          end: "15%,22%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 600
+- tapOn:
+    id: "inspection-room-tab-9"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "inspection-complete"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "inspection-complete"
+- extendedWaitUntil:
+    visible: "Cannot Complete"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+
+# ── save, then previous/next and one gallery photo in every room ──────────
+- tapOn:
+    id: "inspection-save"
+- extendedWaitUntil:
+    visible: "Saved"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+# room tabs scroll sideways; bring tab 0 into view
+- repeat:
+    times: 6
+    while:
+      notVisible:
+        id: "inspection-room-tab-0"
+    commands:
+      - swipe:
+          start: "15%,22%"
+          end: "85%,22%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 600
+- tapOn:
+    id: "inspection-room-tab-0"
+- waitForAnimationToEnd:
+    timeout: 2000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "inspection-previous"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "inspection-next"
+- tapOn:
+    id: "inspection-previous"
+- repeat:
+    times: 10
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            id: "inspection-room-gallery"
+          direction: DOWN
+          timeout: 15000
+      - tapOn:
+          id: "inspection-room-gallery"
+      - waitForAnimationToEnd:
+          timeout: 2500
+      # picker can ignore the first tap while it is still presenting; retry
+      - repeat:
+          times: 3
+          while:
+            visible: "Collections"
+          commands:
+            - tapOn:
+                point: "50%,28%"
+            - waitForAnimationToEnd:
+                timeout: 2000
+            - tapOn:
+                text: "(Add|Done|Choose)"
+                optional: true
+      - waitForAnimationToEnd:
+          timeout: 2500
+      - scrollUntilVisible:
+          element:
+            id: "inspection-previous"
+          direction: DOWN
+          timeout: 15000
+      - tapOn:
+          id: "inspection-next"
+          optional: true
+
+# ── last room: key counters (6 buttons) and general notes ─────────────────
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "inspection-keys-physical-plus"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "inspection-keys-physical-plus"
+- tapOn:
+    id: "inspection-keys-physical-plus"
+- tapOn:
+    id: "inspection-keys-physical-minus"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "inspection-keys-cards-plus"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "inspection-keys-cards-plus"
+- tapOn:
+    id: "inspection-keys-cards-plus"
+- tapOn:
+    id: "inspection-keys-cards-minus"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "inspection-keys-remotes-plus"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "inspection-keys-remotes-plus"
+- tapOn:
+    id: "inspection-keys-remotes-plus"
+- tapOn:
+    id: "inspection-keys-remotes-minus"
+- tapOn:
+    id: "inspection-keys-remotes-minus"
+- tapOn:
+    id: "inspection-keys-remotes-minus"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "inspection-general-notes"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "inspection-general-notes"
+- inputText: "LC-general ${LC_TOKEN}"
+- tapOn:
+    text: "General Notes"
+- takeScreenshot: lc06-owner-inspection-last-room
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    id: "inspection-save"
+- extendedWaitUntil:
+    visible: "Saved"
+    timeout: 15000
+- tapOn:
+    text: "OK"
+
+# ── LC-6-11 Complete: Cancel keeps it open; Complete asks for signatures ───
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "inspection-complete"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "inspection-complete"
+- extendedWaitUntil:
+    visible: "Complete Inspection"
+    timeout: 15000
+- tapOn:
+    text: "Cancel"
+- assertVisible:
+    id: "inspection-complete"
+- tapOn:
+    id: "inspection-complete"
+- extendedWaitUntil:
+    visible: "Complete Inspection"
+    timeout: 15000
+- tapOn:
+    text: "Complete"
+- extendedWaitUntil:
+    visible: ".*Waiting for signatures.*"
+    timeout: 60000
+- tapOn:
+    text: "OK"
+
+# ── LC-6-12 owner signs ───────────────────────────────────────────────────
+# room tabs scroll sideways; bring tab 9 into view
+- repeat:
+    times: 6
+    while:
+      notVisible:
+        id: "inspection-room-tab-9"
+    commands:
+      - swipe:
+          start: "85%,22%"
+          end: "15%,22%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 600
+- tapOn:
+    id: "inspection-room-tab-9"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "inspection-sign"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "inspection-sign"
+- extendedWaitUntil:
+    visible:
+      id: "signature-modal-confirm"
+    timeout: 20000
+- swipe:
+    start: "30%,45%"
+    end: "70%,55%"
+    duration: 600
+- swipe:
+    start: "70%,45%"
+    end: "30%,55%"
+    duration: 600
+- tapOn:
+    id: "signature-modal-clear"
+- swipe:
+    start: "30%,45%"
+    end: "70%,55%"
+    duration: 600
+- swipe:
+    start: "70%,45%"
+    end: "30%,55%"
+    duration: 600
+- tapOn:
+    id: "signature-modal-confirm"
+- extendedWaitUntil:
+    visible: "Inspection signed successfully!"
+    timeout: 60000
+- tapOn:
+    text: "OK"
+- tapOn:
+    id: "inspection-back"
+- waitForAnimationToEnd:
+    timeout: 2000
+- openLink: lalarenteapp://(owner)/inspections
+- extendedWaitUntil:
+    visible: "Inspections"
+    timeout: 20000
+- tapOn:
+    id: "owner-inspections-filter-pending_signatures"
+- extendedWaitUntil:
+    visible:
+      id: "owner-inspection-card"
+    timeout: 20000
+- takeScreenshot: lc06-owner-pending-signature
+- waitForAnimationToEnd:
+    timeout: 1500
+- openLink: lalarenteapp://(owner)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-owner.yaml
+
+# ── PHASE 2 — tenant: report is read-only, comment, raise issue, sign ─────
+- runFlow: ../subflows/login-tenant.yaml
+- openLink: lalarenteapp://(tenant)/reports
+- extendedWaitUntil:
+    visible: "Reports"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "tenant-report-inspection-sign"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- assertVisible: ".*Needs Signature.*"
+- tapOn:
+    id: "tenant-report-inspection-row"
+    index: 0
+- extendedWaitUntil:
+    visible: "Move-In Inspection"
+    timeout: 30000
+
+# ── LC-6-20 tenant sees exactly what the owner recorded ───────────────────
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*LC-item-poor ${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*LC-room-note ${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+
+# ── LC-6-14 read-only: no owner controls, tapping a condition changes nothing ───
+- assertNotVisible:
+    id: "inspection-save"
+- assertNotVisible:
+    id: "inspection-item-0-camera"
+- assertNotVisible:
+    id: "inspection-item-0-gallery"
+- assertNotVisible: "Take Photo"
+- assertNotVisible: "Gallery"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "inspection-item-0-condition-excellent"
+    direction: UP
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "inspection-item-0-condition-excellent"
+- takeScreenshot: lc06-tenant-readonly
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── LC-6-14a comments: empty is blocked, add two, no delete ───────────────
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "inspection-tenant-comment-input"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "inspection-tenant-comment-add"
+- assertNotVisible: ".*LC-comment.*"
+- tapOn:
+    id: "inspection-tenant-comment-input"
+- inputText: "LC-comment-1 ${LC_TOKEN}"
+- tapOn:
+    text: "Tenant Comments"
+- tapOn:
+    id: "inspection-tenant-comment-add"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*LC-comment-1 ${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "inspection-tenant-comment-input"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "inspection-tenant-comment-input"
+- inputText: "LC-comment-2 ${LC_TOKEN}"
+- tapOn:
+    text: "Tenant Comments"
+- tapOn:
+    id: "inspection-tenant-comment-add"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*LC-comment-2 ${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- assertNotVisible: "(?i)(delete|remove|edit)"
+- takeScreenshot: lc06-tenant-comments
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── LC-6-14b raise the first comment as a maintenance request (pre-filled) ───
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*LC-comment-1 ${LC_TOKEN}.*"
+    direction: UP
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+# keep the button clear of the tab bar before tapping
+- scrollUntilVisible:
+    element:
+      id: "inspection-comment-raise-issue"
+    direction: DOWN
+    timeout: 10000
+    visibilityPercentage: 100
+    centerElement: true
+- tapOn:
+    id: "inspection-comment-raise-issue"
+    index: 0
+- extendedWaitUntil:
+    visible: "Report Issue"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "maintenance-title-input"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+# title is pre-filled from the comment's room
+- assertVisible: ".*: inspection issue"
+
+# ── add the run token to the title so every role can find this request ────
+- tapOn:
+    id: "maintenance-title-input"
+# the tap lands the cursor mid-text; retype the whole title
+- eraseText: 80
+- inputText: "Living Room: inspection issue LC-${LC_TOKEN}"
+- swipe:
+    start: "50%,45%"
+    end: "50%,40%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*LC-comment-1 ${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- takeScreenshot: lc06-tenant-raise-issue-prefilled
+- waitForAnimationToEnd:
+    timeout: 1500
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "maintenance-category-plumbing"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "maintenance-category-plumbing"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "maintenance-submit"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "maintenance-submit"
+    index: 0
+- extendedWaitUntil:
+    visible: "Success.*"
+    timeout: 60000
+- tapOn:
+    text: "OK"
+# back on the inspection, still scrolled to the comments
+- extendedWaitUntil:
+    visible: "Move-In Inspection"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "inspection-comment-view-request"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "inspection-comment-view-request"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "tenant-maintenance-detail-back"
+    timeout: 25000
+- assertVisible: ".*inspection issue LC-${LC_TOKEN}.*"
+- tapOn:
+    id: "tenant-maintenance-detail-back"
+    index: 0
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# ── LC-6-15 tenant signs on the last room ─────────────────────────────────
+- openLink: lalarenteapp://(tenant)/reports
+- extendedWaitUntil:
+    visible: "Reports"
+    timeout: 20000
+- tapOn:
+    id: "tenant-report-inspection-sign"
+    index: 0
+- extendedWaitUntil:
+    visible: "Move-In Inspection"
+    timeout: 30000
+# room tabs scroll sideways; bring tab 9 into view
+- repeat:
+    times: 6
+    while:
+      notVisible:
+        id: "inspection-room-tab-9"
+    commands:
+      - swipe:
+          start: "85%,22%"
+          end: "15%,22%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 600
+- tapOn:
+    id: "inspection-room-tab-9"
+- assertNotVisible:
+    id: "inspection-complete"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "inspection-sign"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "inspection-sign"
+- extendedWaitUntil:
+    visible:
+      id: "signature-modal-confirm"
+    timeout: 20000
+- swipe:
+    start: "30%,45%"
+    end: "70%,55%"
+    duration: 600
+- swipe:
+    start: "70%,45%"
+    end: "30%,55%"
+    duration: 600
+- tapOn:
+    id: "signature-modal-clear"
+- swipe:
+    start: "30%,45%"
+    end: "70%,55%"
+    duration: 600
+- swipe:
+    start: "70%,45%"
+    end: "30%,55%"
+    duration: 600
+- tapOn:
+    id: "signature-modal-confirm"
+- extendedWaitUntil:
+    visible: "Inspection signed successfully!"
+    timeout: 60000
+- tapOn:
+    text: "OK"
+
+# ── LC-6-17 completed: export the report ──────────────────────────────────
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "inspection-export"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "inspection-export"
+- extendedWaitUntil:
+    visible: "Report Saved"
+    timeout: 120000
+- tapOn:
+    text: "Done"
+- tapOn:
+    id: "inspection-export-header"
+- extendedWaitUntil:
+    visible: "Report Saved"
+    timeout: 120000
+- tapOn:
+    text: "View Documents"
+- extendedWaitUntil:
+    visible: ".*Documents.*"
+    timeout: 20000
+- openLink: lalarenteapp://(tenant)/reports
+- extendedWaitUntil:
+    visible: "Reports"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: "(?i).*completed.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "tenant-reports-back"
+- waitForAnimationToEnd:
+    timeout: 2000
+- openLink: lalarenteapp://(tenant)/lease-journey
+- extendedWaitUntil:
+    visible: "Lease Journey"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*Move-In Inspection.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- openLink: lalarenteapp://(tenant)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-tenant.yaml
+
+# ── PHASE 3 — owner: completed read-only view, tenant comments, export ────
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/inspections
+- extendedWaitUntil:
+    visible: "Inspections"
+    timeout: 20000
+# filter chips scroll sideways; Completed starts off-screen
+- swipe:
+    start: "85%,17%"
+    end: "15%,17%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 800
+- tapOn:
+    id: "owner-inspections-filter-completed"
+- extendedWaitUntil:
+    visible:
+      id: "owner-inspection-card"
+    timeout: 20000
+- tapOn:
+    id: "owner-inspection-card"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "owner-inspection-back"
+    timeout: 25000
+- tapOn:
+    id: "owner-inspection-back"
+- extendedWaitUntil:
+    visible: "Inspections"
+    timeout: 20000
+- tapOn:
+    id: "owner-inspection-card"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "owner-inspection-back"
+    timeout: 25000
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-inspection-room-1"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-inspection-room-1"
+- tapOn:
+    id: "owner-inspection-room-0"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*LC-item-poor ${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+
+# ── LC-6-14c / 6-14d tenant comments survived and link to the request ─────
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*LC-comment-1 ${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      text: ".*LC-comment-2 ${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- takeScreenshot: lc06-owner-sees-comments
+- waitForAnimationToEnd:
+    timeout: 1500
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-inspection-comment-view-request"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-inspection-comment-view-request"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "owner-maintenance-detail-back"
+    timeout: 25000
+- assertVisible: ".*inspection issue LC-${LC_TOKEN}.*"
+- openLink: lalarenteapp://(owner)/inspections
+- extendedWaitUntil:
+    visible: "Inspections"
+    timeout: 20000
+# filter chips scroll sideways; Completed starts off-screen
+- swipe:
+    start: "85%,17%"
+    end: "15%,17%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 800
+- tapOn:
+    id: "owner-inspections-filter-completed"
+- tapOn:
+    id: "owner-inspection-card"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "owner-inspection-back"
+    timeout: 25000
+- tapOn:
+    id: "owner-inspection-export-header"
+- extendedWaitUntil:
+    visible: "Report Saved"
+    timeout: 120000
+- tapOn:
+    text: "OK"
+- waitForAnimationToEnd:
+    timeout: 1500
+- scrollUntilVisible:
+    element:
+      id: "owner-inspection-export"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "owner-inspection-export"
+- extendedWaitUntil:
+    visible: "Report Saved"
+    timeout: 120000
+- tapOn:
+    text: "View Documents"
+- extendedWaitUntil:
+    visible: ".*Documents.*"
+    timeout: 20000
+- openLink: lalarenteapp://(owner)/
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow: ../subflows/sign-out-owner.yaml

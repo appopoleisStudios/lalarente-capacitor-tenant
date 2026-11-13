@@ -38,7 +38,14 @@ export const PropertyCard = ({ property, onView, onEdit }: PropertyCardProps) =>
       {/* Image */}
       <View style={styles.imageContainer}>
         {property.images && property.images.length > 0 ? (
-          <Image source={{ uri: property.images[0] }} style={styles.image} resizeMode="cover" />
+          <Image
+            testID="property-card-image"
+            accessible
+            accessibilityLabel="Property photo"
+            source={{ uri: property.images[0] }}
+            style={styles.image}
+            resizeMode="cover"
+          />
         ) : (
           <View style={styles.placeholder}>
             <Text style={styles.placeholderText}>No photos</Text>

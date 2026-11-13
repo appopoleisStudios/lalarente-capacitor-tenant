@@ -90,11 +90,16 @@ export default function OwnerInspectionsListScreen() {
     <SafeAreaView style={styles.safeArea}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity
+          testID="owner-inspections-back"
+          onPress={() => router.back()}
+          style={styles.backBtn}
+        >
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Inspections</Text>
         <TouchableOpacity
+          testID="owner-inspections-add"
           style={styles.scheduleBtn}
           onPress={() => router.push('/(owner)/inspections/new' as any)}
         >
@@ -111,6 +116,7 @@ export default function OwnerInspectionsListScreen() {
       >
         {FILTERS.map((f) => (
           <TouchableOpacity
+            testID={`owner-inspections-filter-${f.value}`}
             key={f.value}
             style={[styles.chip, filter === f.value && styles.chipActive]}
             onPress={() => setFilter(f.value)}
@@ -134,6 +140,7 @@ export default function OwnerInspectionsListScreen() {
             Schedule a move-in inspection after a lease is signed.
           </Text>
           <TouchableOpacity
+            testID="owner-inspections-empty-schedule"
             style={styles.scheduleEmptyBtn}
             onPress={() => router.push('/(owner)/inspections/new' as any)}
           >
@@ -145,6 +152,7 @@ export default function OwnerInspectionsListScreen() {
         <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
           {filtered.map((inspection) => (
             <TouchableOpacity
+              testID="owner-inspection-card"
               key={inspection.id}
               style={styles.card}
               onPress={() => router.push(`/(owner)/inspections/${inspection.id}` as any)}
@@ -222,6 +230,7 @@ export default function OwnerInspectionsListScreen() {
       {/* FAB */}
       {!loading && filtered.length > 0 && (
         <TouchableOpacity
+          testID="owner-inspections-fab"
           style={styles.fab}
           onPress={() => router.push('/(owner)/inspections/new' as any)}
         >

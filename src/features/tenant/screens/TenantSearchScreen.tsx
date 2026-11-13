@@ -98,7 +98,7 @@ export default function TenantSearchScreen() {
 
     // Property type
     if (propertyType) {
-      filtered = filtered.filter((p) => p.property_type === propertyType);
+      filtered = filtered.filter((p) => p.property_type?.toLowerCase() === propertyType);
     }
 
     filtered.sort((a, b) => Number(Boolean(b.media_3d_url)) - Number(Boolean(a.media_3d_url)));
@@ -128,7 +128,13 @@ export default function TenantSearchScreen() {
         onPress={() => router.push(`/(tenant)/properties/${item.id}` as any)}
       >
         {mainImage ? (
-          <Image source={{ uri: mainImage }} style={styles.propertyImage} />
+          <Image
+            testID="tenant-search-card-image"
+            accessible
+            accessibilityLabel="Property photo"
+            source={{ uri: mainImage }}
+            style={styles.propertyImage}
+          />
         ) : (
           <View style={[styles.propertyImage, styles.noImage]}>
             <Ionicons name="home-outline" size={48} color="#CCC" />
@@ -193,7 +199,11 @@ export default function TenantSearchScreen() {
         <View style={styles.centerContainer}>
           <Ionicons name="alert-circle-outline" size={64} color="#F44336" />
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadProperties}>
+          <TouchableOpacity
+            testID="tenant-search-retry"
+            style={styles.retryButton}
+            onPress={loadProperties}
+          >
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -217,12 +227,13 @@ export default function TenantSearchScreen() {
               testID="tenant-search-input"
             />
             {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <TouchableOpacity testID="tenant-search-clear" onPress={() => setSearchQuery('')}>
                 <Ionicons name="close-circle" size={20} color="#666" />
               </TouchableOpacity>
             )}
           </View>
           <TouchableOpacity
+            testID="tenant-search-filters-toggle"
             style={styles.filterButton}
             onPress={() => setShowFilters(!showFilters)}
           >
@@ -237,6 +248,7 @@ export default function TenantSearchScreen() {
               <Text style={styles.filterLabel}>Price Range</Text>
               <View style={styles.priceInputs}>
                 <TextInput
+                  testID="tenant-search-min-price"
                   style={styles.priceInput}
                   placeholder="Min"
                   placeholderTextColor="#999"
@@ -246,6 +258,7 @@ export default function TenantSearchScreen() {
                 />
                 <Text style={styles.priceSeparator}>-</Text>
                 <TextInput
+                  testID="tenant-search-max-price"
                   style={styles.priceInput}
                   placeholder="Max"
                   placeholderTextColor="#999"
@@ -261,6 +274,7 @@ export default function TenantSearchScreen() {
               <View style={styles.optionButtons}>
                 {[1, 2, 3, 4].map((num) => (
                   <TouchableOpacity
+                    testID={`tenant-search-bedrooms-${num}`}
                     key={num}
                     style={[styles.optionButton, bedrooms === num && styles.optionButtonActive]}
                     onPress={() => setBedrooms(bedrooms === num ? null : num)}
@@ -283,6 +297,7 @@ export default function TenantSearchScreen() {
               <View style={styles.optionButtons}>
                 {['house', 'apartment', 'townhouse'].map((type) => (
                   <TouchableOpacity
+                    testID={`tenant-search-type-${type}`}
                     key={type}
                     style={[
                       styles.optionButton,
@@ -303,7 +318,11 @@ export default function TenantSearchScreen() {
               </View>
             </View>
 
-            <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
+            <TouchableOpacity
+              testID="tenant-search-clear-filters"
+              style={styles.clearButton}
+              onPress={clearFilters}
+            >
               <Text style={styles.clearButtonText}>Clear Filters</Text>
             </TouchableOpacity>
           </View>

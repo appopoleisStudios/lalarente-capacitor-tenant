@@ -1,7 +1,29 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { supabase, STORAGE_BUCKETS } from '@/src/lib/supabase';
 import type { Database } from '@/src/types/database.types';
+
+/** Longest side of an uploaded listing photo — big enough for a full-screen gallery. */
+const LISTING_PHOTO_MAX_PX = 1280;
+
+/**
+ * Shrinks a picked photo to at most LISTING_PHOTO_MAX_PX on its longer side and
+ * re-encodes it as JPEG. Camera originals (4032×3024, 1–3 MB) took ~20 s to load
+ * on listing screens; this brings them to a few hundred KB.
+ */
+async function prepareListingPhoto(uri: string): Promise<string> {
+  const probe = await manipulateAsync(uri, []);
+  const longest = Math.max(probe.width, probe.height);
+  const resize =
+    longest > LISTING_PHOTO_MAX_PX
+      ? probe.width >= probe.height
+        ? [{ resize: { width: LISTING_PHOTO_MAX_PX } }]
+        : [{ resize: { height: LISTING_PHOTO_MAX_PX } }]
+      : [];
+  const out = await manipulateAsync(uri, resize, { compress: 0.6, format: SaveFormat.JPEG });
+  return out.uri;
+}
 
 // Type aliases for cleaner code
 type Property = Database['public']['Tables']['properties']['Row'];
@@ -675,14 +697,15 @@ export const propertiesApi = {
         // Generate unique filename
         const timestamp = Date.now();
         const randomString = Math.random().toString(36).substring(7);
-        const fileExt = file.name.split('.').pop() || 'jpg';
-        const fileName = `${propertyId}/${timestamp}-${randomString}.${fileExt}`;
+        // Always a resized JPEG, whatever the picker handed back.
+        const fileName = `${propertyId}/${timestamp}-${randomString}.jpg`;
+        const photoUri = await prepareListingPhoto(file.uri);
 
         // Read as base64 then decode to ArrayBuffer.
         // On React Native + Hermes, `fetch(uri).blob()` returns an empty Blob
         // and the Supabase upload fails with "Network request failed".
         // Base64 → ArrayBuffer is the supported RN path.
-        const base64 = await FileSystem.readAsStringAsync(file.uri, {
+        const base64 = await FileSystem.readAsStringAsync(photoUri, {
           encoding: FileSystem.EncodingType.Base64,
         });
         const arrayBuffer = decode(base64);
@@ -691,7 +714,7 @@ export const propertiesApi = {
         const { data, error } = await supabase.storage
           .from(STORAGE_BUCKETS.PROPERTY_IMAGES)
           .upload(fileName, arrayBuffer, {
-            contentType: file.type,
+            contentType: 'image/jpeg',
             cacheControl: '3600',
             upsert: false,
           });
