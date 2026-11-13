@@ -34,11 +34,14 @@ export default function SubmitProgressUpdateScreen() {
 
   const handleSubmit = async () => {
     if (!notes.trim()) {
-      Alert.alert('Notes Required', 'Please describe the progress you\'ve made today.');
+      Alert.alert('Notes Required', "Please describe the progress you've made today.");
       return;
     }
     if (!hasMinPhotos) {
-      Alert.alert('Photo Required', `Please upload at least ${minPhotosRequired} photo showing today's work.`);
+      Alert.alert(
+        'Photo Required',
+        `Please upload at least ${minPhotosRequired} photo showing today's work.`
+      );
       return;
     }
     if (!user?.id) {
@@ -58,11 +61,9 @@ export default function SubmitProgressUpdateScreen() {
       // Submit progress update
       await submitProgressUpdate(id, user.id, notes.trim(), photoUrls);
 
-      Alert.alert(
-        '✅ Update Submitted',
-        'Your progress update has been recorded.',
-        [{ text: 'OK', onPress: () => router.back() }]
-      );
+      Alert.alert('✅ Update Submitted', 'Your progress update has been recorded.', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
     } catch (error: any) {
       console.error('❌ Error submitting update:', error);
       Alert.alert('Error', error.message || 'Failed to submit progress update');
@@ -86,7 +87,13 @@ export default function SubmitProgressUpdateScreen() {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          // after typing notes, the first tap on Camera/Gallery used to only close the keyboard
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
           {/* Instructions */}
           <View style={styles.instructionCard}>
             <Ionicons name="information-circle" size={24} color={RSA.blue} />
@@ -120,7 +127,7 @@ export default function SubmitProgressUpdateScreen() {
                 ? '✅ Photo evidence captured'
                 : files.length > 0
                   ? `⚠️ Need ${minPhotosRequired - files.length} more photo${minPhotosRequired - files.length > 1 ? 's' : ''}`
-                  : 'Upload at least 1 photo showing today\'s progress'}
+                  : "Upload at least 1 photo showing today's progress"}
             </Text>
 
             {files.length > 0 && (
@@ -141,11 +148,19 @@ export default function SubmitProgressUpdateScreen() {
 
             {canAddMore && (
               <View style={styles.addPhotoRow}>
-                <TouchableOpacity style={styles.addPhotoButton} onPress={takePhoto}>
+                <TouchableOpacity
+                  style={styles.addPhotoButton}
+                  onPress={takePhoto}
+                  testID="media-add-camera"
+                >
                   <Ionicons name="camera" size={24} color={RSA.blue} />
                   <Text style={styles.addPhotoText}>Camera</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.addPhotoButton} onPress={pickMedia}>
+                <TouchableOpacity
+                  style={styles.addPhotoButton}
+                  onPress={pickMedia}
+                  testID="media-add-gallery"
+                >
                   <Ionicons name="images" size={24} color={RSA.blue} />
                   <Text style={styles.addPhotoText}>Gallery</Text>
                 </TouchableOpacity>
@@ -160,7 +175,10 @@ export default function SubmitProgressUpdateScreen() {
       {/* Submit Button */}
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.submitButton, (!notes.trim() || !hasMinPhotos || submitting) && styles.submitButtonDisabled]}
+          style={[
+            styles.submitButton,
+            (!notes.trim() || !hasMinPhotos || submitting) && styles.submitButtonDisabled,
+          ]}
           onPress={handleSubmit}
           disabled={!notes.trim() || !hasMinPhotos || submitting}
         >
@@ -190,7 +208,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
-  headerButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
   scrollView: { flex: 1 },
   instructionCard: {

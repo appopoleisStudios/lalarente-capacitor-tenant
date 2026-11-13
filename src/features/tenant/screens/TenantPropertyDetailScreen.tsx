@@ -81,8 +81,43 @@ export default function TenantPropertyDetailScreen() {
       setError(null);
       const data = await propertiesApi.getProperty(id);
 
+      // A tenant who rents or has a live application/deposit on this property
+      // must still be able to open it once it leaves the listing — they used to
+      // hit "This property is no longer available" for their own home.
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const uid = session?.user?.id;
+      let isRelated = false;
+      if (uid) {
+        const [{ data: myLease }, { data: myApp }] = await Promise.all([
+          supabase
+            .from('leases')
+            .select('id')
+            .eq('property_id', id)
+            .eq('tenant_id', uid)
+            .in('status', [
+              'active',
+              'month_to_month',
+              'pending_tenant_signature',
+              'pending_owner_signature',
+            ])
+            .limit(1)
+            .maybeSingle(),
+          supabase
+            .from('rental_applications')
+            .select('id')
+            .eq('property_id', id)
+            .eq('tenant_id', uid)
+            .not('status', 'in', '(withdrawn,rejected)')
+            .limit(1)
+            .maybeSingle(),
+        ]);
+        isRelated = !!myLease || !!myApp;
+      }
+
       // Business Logic: Check if property is actually available
-      if (data.status !== 'available') {
+      if (data.status !== 'available' && !isRelated) {
         setError('This property is no longer available');
         setProperty(data);
         setLoading(false);
@@ -97,7 +132,7 @@ export default function TenantPropertyDetailScreen() {
         .eq('status', 'active')
         .single();
 
-      if (activeLeases) {
+      if (activeLeases && !isRelated) {
         // Property has an active lease - should not be available
         setError('This property is currently occupied');
         setProperty(data);
@@ -297,6 +332,13 @@ export default function TenantPropertyDetailScreen() {
             onPress={loadPropertyDetails}
           >
             <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            testID="tenant-property-error-back"
+            style={[styles.retryButton, { marginTop: 12, backgroundColor: '#E5E7EB' }]}
+            onPress={() => router.back()}
+          >
+            <Text style={[styles.retryButtonText, { color: '#333' }]}>Go Back</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -625,7 +667,10 @@ export default function TenantPropertyDetailScreen() {
           <View style={styles.unavailableBar}>
             <Ionicons name="information-circle" size={20} color="#F44336" />
             <Text style={styles.unavailableText}>
-              {error || 'This property is not available for rent'}
+              {error ||
+                (isCurrentProperty
+                  ? 'You are renting this property'
+                  : 'This property is not available for rent')}
             </Text>
           </View>
         )}

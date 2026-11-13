@@ -9,6 +9,8 @@ import {
   Dimensions,
   ScrollView,
   ViewStyle,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -34,47 +36,55 @@ export function ModalSheet({
   style,
 }: ModalSheetProps) {
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent
-      onRequestClose={onClose}
-    >
-      <SafeAreaView style={styles.safeArea}>
-        <TouchableOpacity style={styles.backdrop} onPress={onClose} activeOpacity={1} />
-        <View style={[styles.sheet, { maxHeight }, style]}>
-          {/* Handle */}
-          <View style={styles.handleContainer}>
-            <View style={styles.handle} />
-          </View>
-
-          {/* Header */}
-          {(title || showCloseButton) && (
-            <View style={styles.header}>
-              {title && <Text style={styles.title}>{title}</Text>}
-              {showCloseButton && (
-                <TouchableOpacity onPress={onClose} style={styles.closeButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                  <Ionicons name="close" size={24} color="#525252" />
-                </TouchableOpacity>
-              )}
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      {/* Lift the sheet above the keyboard — text inputs (e.g. "Request
+          Revision") and their buttons were hidden behind it on iOS. */}
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <SafeAreaView style={styles.safeArea}>
+          <TouchableOpacity style={styles.backdrop} onPress={onClose} activeOpacity={1} />
+          <View style={[styles.sheet, { maxHeight }, style]}>
+            {/* Handle */}
+            <View style={styles.handleContainer}>
+              <View style={styles.handle} />
             </View>
-          )}
 
-          {/* Content */}
-          <ScrollView
-            style={styles.content}
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-          >
-            {children}
-          </ScrollView>
-        </View>
-      </SafeAreaView>
+            {/* Header */}
+            {(title || showCloseButton) && (
+              <View style={styles.header}>
+                {title && <Text style={styles.title}>{title}</Text>}
+                {showCloseButton && (
+                  <TouchableOpacity
+                    onPress={onClose}
+                    style={styles.closeButton}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Ionicons name="close" size={24} color="#525252" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+
+            {/* Content */}
+            <ScrollView
+              style={styles.content}
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {children}
+            </ScrollView>
+          </View>
+        </SafeAreaView>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   safeArea: {
     flex: 1,
     justifyContent: 'flex-end',

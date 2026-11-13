@@ -172,7 +172,9 @@ export async function fetchMaintenance(
 ): Promise<MaintenanceSummary[]> {
   const { data } = await supabase
     .from('maintenance_requests')
-    .select('id, title, status, created_at, updated_at')
+    // maintenance_requests has no updated_at column — selecting it made the
+    // whole query fail, so the journey never showed any maintenance.
+    .select('id, title, status, created_at, updated_at:completed_date')
     .eq('tenant_id', userId)
     .eq('property_id', propertyId)
     .order('created_at', { ascending: false });

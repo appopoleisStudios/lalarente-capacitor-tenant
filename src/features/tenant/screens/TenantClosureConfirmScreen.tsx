@@ -189,7 +189,13 @@ export default function TenantClosureConfirmScreen() {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          // after typing notes, the first tap on Camera/Gallery used to only close the keyboard
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
           {/* Instruction card */}
           <View style={styles.instructionCard} testID={CLOSURE_CONFIRM_TEST_IDS.instruction}>
             <Ionicons name="checkmark-done-circle" size={28} color={RSA.green} />

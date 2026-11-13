@@ -14,13 +14,13 @@ appId: com.lalarente.app
     timeout: 1500
 - scrollUntilVisible:
     element:
-      text: ".*inspection issue LC-${LC_TOKEN}.*"
+      text: ".*inspection.*LC-${LC_TOKEN}.*"
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
 - tapOn:
-    text: ".*inspection issue LC-${LC_TOKEN}.*"
+    text: ".*inspection.*LC-${LC_TOKEN}.*"
     index: 0
 - extendedWaitUntil:
     visible:
@@ -28,181 +28,193 @@ appId: com.lalarente.app
     timeout: 25000
 - waitForAnimationToEnd:
     timeout: 1500
+# accepting a quote now issues + sends the PO (LAL-120); the Send PO screen
+# (F12 start-date fix) only appears for a PO that has not been sent yet
 - scrollUntilVisible:
     element:
       text: "Send PO to Vendor"
     direction: DOWN
-    timeout: 20000
-    visibilityPercentage: 60
-    centerElement: true
-- tapOn:
-    text: "Send PO to Vendor"
-- extendedWaitUntil:
-    visible:
-      id: "owner-send-po-back"
-    timeout: 25000
-- assertVisible: "Send Purchase Order"
-
-# ── time picker opens (own visit, so only the date wheel is open later) ───
-- waitForAnimationToEnd:
-    timeout: 1500
-- scrollUntilVisible:
-    element:
-      id: "owner-send-po-time"
-    direction: DOWN
-    timeout: 20000
-    visibilityPercentage: 60
-    centerElement: true
-- tapOn:
-    id: "owner-send-po-time"
-- extendedWaitUntil:
-    visible:
-      id: "owner-send-po-time-cancel"
-    timeout: 10000
-- takeScreenshot: lc07c-po-time-picker
-- tapOn:
-    id: "owner-send-po-time-cancel"
-- waitForAnimationToEnd:
-    timeout: 1000
-
-# ── header back, then Cancel, both return to the request ──────────────────
-- tapOn:
-    id: "owner-send-po-back"
-- extendedWaitUntil:
-    visible:
-      id: "owner-maintenance-detail-back"
-    timeout: 20000
-- waitForAnimationToEnd:
-    timeout: 1500
-- scrollUntilVisible:
-    element:
-      text: "Send PO to Vendor"
-    direction: DOWN
-    timeout: 20000
-    visibilityPercentage: 60
-    centerElement: true
-- tapOn:
-    text: "Send PO to Vendor"
-- extendedWaitUntil:
-    visible:
-      id: "owner-send-po-back"
-    timeout: 25000
-- waitForAnimationToEnd:
-    timeout: 1500
-- scrollUntilVisible:
-    element:
-      id: "owner-send-po-cancel"
-    direction: DOWN
-    timeout: 20000
-    visibilityPercentage: 60
-    centerElement: true
-- tapOn:
-    id: "owner-send-po-cancel"
-- extendedWaitUntil:
-    visible:
-      id: "owner-maintenance-detail-back"
-    timeout: 20000
-- waitForAnimationToEnd:
-    timeout: 1500
-- scrollUntilVisible:
-    element:
-      text: "Send PO to Vendor"
-    direction: DOWN
-    timeout: 20000
-    visibilityPercentage: 60
-    centerElement: true
-- tapOn:
-    text: "Send PO to Vendor"
-- extendedWaitUntil:
-    visible:
-      id: "owner-send-po-back"
-    timeout: 25000
-
-# ── validation: instructions required ─────────────────────────────────────
-- waitForAnimationToEnd:
-    timeout: 1500
-- scrollUntilVisible:
-    element:
-      id: "owner-send-po-send"
-    direction: DOWN
-    timeout: 20000
-    visibilityPercentage: 60
-    centerElement: true
-- tapOn:
-    id: "owner-send-po-send"
-- extendedWaitUntil:
-    visible: "Please provide work instructions for the vendor"
     timeout: 15000
-- tapOn:
-    text: "OK"
-- waitForAnimationToEnd:
-    timeout: 1500
-- scrollUntilVisible:
-    element:
-      id: "owner-send-po-instructions"
-    direction: UP
-    timeout: 20000
-    visibilityPercentage: 60
-    centerElement: true
-- tapOn:
-    id: "owner-send-po-instructions"
-- inputText: "LC-po-instructions ${LC_TOKEN}"
-- tapOn:
-    text: "Work Schedule"
+    optional: true
+- runFlow:
+    when:
+      visible: "Send PO to Vendor"
+    commands:
+      - tapOn:
+          text: "Send PO to Vendor"
+      - extendedWaitUntil:
+          visible:
+            id: "owner-send-po-back"
+          timeout: 25000
+      - assertVisible: "Send Purchase Order"
 
-# ── date picker opens; default start (today) is kept and accepted (F12 fix) ───
-- waitForAnimationToEnd:
-    timeout: 1500
-- scrollUntilVisible:
-    element:
-      id: "owner-send-po-date"
-    direction: UP
-    timeout: 20000
-    visibilityPercentage: 60
-    centerElement: true
-- tapOn:
-    id: "owner-send-po-date"
-- extendedWaitUntil:
-    visible:
-      id: "owner-send-po-date-done"
-    timeout: 10000
-- takeScreenshot: lc07c-po-date-picker
-- tapOn:
-    id: "owner-send-po-date-done"
-- waitForAnimationToEnd:
-    timeout: 1000
-- scrollUntilVisible:
-    element:
-      id: "owner-send-po-send"
-    direction: DOWN
-    timeout: 20000
-    visibilityPercentage: 60
-    centerElement: true
-- tapOn:
-    id: "owner-send-po-send"
-- extendedWaitUntil:
-    visible: "Purchase order sent to vendor"
-    timeout: 30000
-- tapOn:
-    text: "OK"
-- extendedWaitUntil:
-    visible:
-      id: "owner-maintenance-detail-back"
-    timeout: 25000
-- waitForAnimationToEnd:
-    timeout: 1500
+      # ── time picker opens (own visit, so only the date wheel is open later) ───
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            id: "owner-send-po-time"
+          direction: DOWN
+          timeout: 20000
+          visibilityPercentage: 60
+          centerElement: true
+      - tapOn:
+          id: "owner-send-po-time"
+      - extendedWaitUntil:
+          visible:
+            id: "owner-send-po-time-cancel"
+          timeout: 10000
+      - takeScreenshot: lc07c-po-time-picker
+      - tapOn:
+          id: "owner-send-po-time-cancel"
+      - waitForAnimationToEnd:
+          timeout: 1000
+
+      # ── header back, then Cancel, both return to the request ──────────────────
+      - tapOn:
+          id: "owner-send-po-back"
+      - extendedWaitUntil:
+          visible:
+            id: "owner-maintenance-detail-back"
+          timeout: 20000
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            text: "Send PO to Vendor"
+          direction: DOWN
+          timeout: 20000
+          visibilityPercentage: 60
+          centerElement: true
+      - tapOn:
+          text: "Send PO to Vendor"
+      - extendedWaitUntil:
+          visible:
+            id: "owner-send-po-back"
+          timeout: 25000
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            id: "owner-send-po-cancel"
+          direction: DOWN
+          timeout: 20000
+          visibilityPercentage: 60
+          centerElement: true
+      - tapOn:
+          id: "owner-send-po-cancel"
+      - extendedWaitUntil:
+          visible:
+            id: "owner-maintenance-detail-back"
+          timeout: 20000
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            text: "Send PO to Vendor"
+          direction: DOWN
+          timeout: 20000
+          visibilityPercentage: 60
+          centerElement: true
+      - tapOn:
+          text: "Send PO to Vendor"
+      - extendedWaitUntil:
+          visible:
+            id: "owner-send-po-back"
+          timeout: 25000
+
+      # ── validation: instructions required ─────────────────────────────────────
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            id: "owner-send-po-send"
+          direction: DOWN
+          timeout: 20000
+          visibilityPercentage: 60
+          centerElement: true
+      - tapOn:
+          id: "owner-send-po-send"
+      - extendedWaitUntil:
+          visible: "Please provide work instructions for the vendor"
+          timeout: 15000
+      - tapOn:
+          text: "OK"
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            id: "owner-send-po-instructions"
+          direction: UP
+          timeout: 20000
+          visibilityPercentage: 60
+          centerElement: true
+      - tapOn:
+          id: "owner-send-po-instructions"
+      - inputText: "LC-po-instructions ${LC_TOKEN}"
+      - tapOn:
+          text: "Work Schedule"
+
+      # ── date picker opens; default start (today) is kept and accepted (F12 fix) ───
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            id: "owner-send-po-date"
+          direction: UP
+          timeout: 20000
+          visibilityPercentage: 60
+          centerElement: true
+      - tapOn:
+          id: "owner-send-po-date"
+      - extendedWaitUntil:
+          visible:
+            id: "owner-send-po-date-done"
+          timeout: 10000
+      - takeScreenshot: lc07c-po-date-picker
+      - tapOn:
+          id: "owner-send-po-date-done"
+      - waitForAnimationToEnd:
+          timeout: 1000
+      - scrollUntilVisible:
+          element:
+            id: "owner-send-po-send"
+          direction: DOWN
+          timeout: 20000
+          visibilityPercentage: 60
+          centerElement: true
+      - tapOn:
+          id: "owner-send-po-send"
+      - extendedWaitUntil:
+          visible: "Purchase order sent to vendor"
+          timeout: 30000
+      - tapOn:
+          text: "OK"
+      - extendedWaitUntil:
+          visible:
+            id: "owner-maintenance-detail-back"
+          timeout: 25000
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - scrollUntilVisible:
+          element:
+            text: "Purchase Order"
+          direction: DOWN
+          timeout: 20000
+          visibilityPercentage: 60
+          centerElement: true
+      - assertVisible: "Issued"
+      - assertNotVisible: "Send PO to Vendor"
+      - takeScreenshot: lc07c-owner-po-issued
+      - waitForAnimationToEnd:
+          timeout: 1500
 - scrollUntilVisible:
     element:
       text: "Purchase Order"
     direction: DOWN
     timeout: 20000
-    visibilityPercentage: 60
-    centerElement: true
 - assertVisible: "Issued"
 - assertNotVisible: "Send PO to Vendor"
-- takeScreenshot: lc07c-owner-po-issued
-- waitForAnimationToEnd:
-    timeout: 1500
 - openLink: lalarenteapp://(owner)/
 - waitForAnimationToEnd:
     timeout: 2000
@@ -219,13 +231,13 @@ appId: com.lalarente.app
     timeout: 1500
 - scrollUntilVisible:
     element:
-      text: ".*inspection issue LC-${LC_TOKEN}.*"
+      text: ".*inspection.*LC-${LC_TOKEN}.*"
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
 - tapOn:
-    text: ".*inspection issue LC-${LC_TOKEN}.*"
+    text: ".*inspection.*LC-${LC_TOKEN}.*"
     index: 0
 - waitForAnimationToEnd:
     timeout: 3000

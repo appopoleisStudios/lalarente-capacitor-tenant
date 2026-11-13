@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import {
@@ -167,9 +167,13 @@ export default function TenantLeaseJourneyScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    loadTimeline();
-  }, [loadTimeline]);
+  // Reload on focus — the tab screen stays mounted, so new maintenance
+  // requests, payments etc. never appeared until the app restarted.
+  useFocusEffect(
+    useCallback(() => {
+      loadTimeline();
+    }, [loadTimeline])
+  );
 
   const handleRefresh = async () => {
     setRefreshing(true);

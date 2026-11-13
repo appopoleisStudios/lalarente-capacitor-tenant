@@ -89,7 +89,13 @@ export default function RequestClosureScreen() {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          // after typing notes, the first tap on Camera/Gallery used to only close the keyboard
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
           {/* Instructions */}
           <View style={styles.instructionCard}>
             <Ionicons name="checkmark-done-circle" size={28} color={RSA.green} />
@@ -149,11 +155,19 @@ export default function RequestClosureScreen() {
 
             {canAddMore && (
               <View style={styles.addPhotoRow}>
-                <TouchableOpacity style={styles.addPhotoButton} onPress={takePhoto}>
+                <TouchableOpacity
+                  style={styles.addPhotoButton}
+                  onPress={takePhoto}
+                  testID="media-add-camera"
+                >
                   <Ionicons name="camera" size={24} color={RSA.blue} />
                   <Text style={styles.addPhotoText}>Camera</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.addPhotoButton} onPress={pickMedia}>
+                <TouchableOpacity
+                  style={styles.addPhotoButton}
+                  onPress={pickMedia}
+                  testID="media-add-gallery"
+                >
                   <Ionicons name="images" size={24} color={RSA.blue} />
                   <Text style={styles.addPhotoText}>Gallery</Text>
                 </TouchableOpacity>

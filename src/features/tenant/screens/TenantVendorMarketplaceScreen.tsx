@@ -202,6 +202,9 @@ export default function TenantVendorMarketplaceScreen() {
       ) : (
         <FlatList
           data={filteredVendors}
+          // after searching, the first tap on a vendor used to only close the keyboard
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           keyExtractor={(item) => item.id}
           renderItem={renderVendorCard}
           ListEmptyComponent={renderEmpty}

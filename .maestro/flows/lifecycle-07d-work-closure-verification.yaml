@@ -22,13 +22,13 @@ appId: com.lalarente.app
     timeout: 1500
 - scrollUntilVisible:
     element:
-      text: ".*inspection issue LC-${LC_TOKEN}.*"
+      text: ".*inspection.*LC-${LC_TOKEN}.*"
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
 - tapOn:
-    text: ".*inspection issue LC-${LC_TOKEN}.*"
+    text: ".*inspection.*LC-${LC_TOKEN}.*"
     index: 0
 - waitForAnimationToEnd:
     timeout: 3000
@@ -47,7 +47,7 @@ appId: com.lalarente.app
     visible: ".*Start Work"
     timeout: 15000
 - tapOn:
-    text: "Not Yet"
+    text: ".*Not Yet.*"
 - assertVisible:
     id: "vendor-start-work"
 - tapOn:
@@ -56,12 +56,12 @@ appId: com.lalarente.app
     visible: ".*Start Work"
     timeout: 15000
 - tapOn:
-    text: "Start Now"
+    text: ".*Start Now.*"
 - extendedWaitUntil:
     visible: ".*Work started.*"
     timeout: 30000
 - tapOn:
-    text: "OK"
+    text: "(OK|Got it!?)"
 
 # ── daily progress update: notes + 1 photo ────────────────────────────────
 - waitForAnimationToEnd:
@@ -82,18 +82,15 @@ appId: com.lalarente.app
     timeout: 1500
 - scrollUntilVisible:
     element:
-      text: "Submit Progress Update"
+      text: ".*Submit Progress Update.*"
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
-- tapOn:
-    text: "Submit Progress Update"
-- extendedWaitUntil:
-    visible: "Notes Required"
-    timeout: 15000
-- tapOn:
-    text: "OK"
+# Submit stays disabled until notes and a photo are added (no alert)
+- assertVisible:
+    text: ".*Submit Progress Update.*"
+    enabled: false
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -107,21 +104,39 @@ appId: com.lalarente.app
     text: ".*Completed tiling.*"
 - inputText: "LC-progress ${LC_TOKEN}"
 - tapOn:
-    text: "Daily Progress Update"
+    text: ".*Daily Progress Update.*"
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
     element:
-      text: "Gallery"
+      id: "(media-add-gallery|closure-confirm-gallery)"
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
 - tapOn:
-    text: "Gallery"
+    id: "(media-add-gallery|closure-confirm-gallery)"
 - waitForAnimationToEnd:
     timeout: 2500
-# picker can ignore the first tap while it is still presenting; retry
+# multi-select picker (out-of-process — Maestro cannot see inside it):
+# wait for it, tap the first tile, confirm with ✓
+- waitForAnimationToEnd:
+    timeout: 4000
+- tapOn:
+    point: "50%,28%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    point: "90%,15%"
+- waitForAnimationToEnd:
+    timeout: 3000
+# single-select pickers with editing show a crop screen instead
+- tapOn:
+    text: "Choose"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+# single-select picker still open (it can ignore the first tap): retry
 - repeat:
     times: 3
     while:
@@ -132,21 +147,23 @@ appId: com.lalarente.app
       - waitForAnimationToEnd:
           timeout: 2000
       - tapOn:
-          text: "(Add|Done|Choose)"
+          text: "Choose"
           optional: true
+      - waitForAnimationToEnd:
+          timeout: 1500
 - waitForAnimationToEnd:
     timeout: 2500
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
     element:
-      text: "Submit Progress Update"
+      text: ".*Submit Progress Update.*"
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
 - tapOn:
-    text: "Submit Progress Update"
+    text: ".*Submit Progress Update.*"
 - extendedWaitUntil:
     visible: ".*Update Submitted"
     timeout: 60000
@@ -178,13 +195,10 @@ appId: com.lalarente.app
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
-- tapOn:
+# Submit stays disabled until notes and a photo are added (no alert)
+- assertVisible:
     id: "closure-submit"
-- extendedWaitUntil:
-    visible: "Notes Required"
-    timeout: 15000
-- tapOn:
-    text: "OK"
+    enabled: false
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -203,16 +217,34 @@ appId: com.lalarente.app
     timeout: 1500
 - scrollUntilVisible:
     element:
-      text: "Gallery"
+      id: "(media-add-gallery|closure-confirm-gallery)"
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
 - tapOn:
-    text: "Gallery"
+    id: "(media-add-gallery|closure-confirm-gallery)"
 - waitForAnimationToEnd:
     timeout: 2500
-# picker can ignore the first tap while it is still presenting; retry
+# multi-select picker (out-of-process — Maestro cannot see inside it):
+# wait for it, tap the first tile, confirm with ✓
+- waitForAnimationToEnd:
+    timeout: 4000
+- tapOn:
+    point: "50%,28%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    point: "90%,15%"
+- waitForAnimationToEnd:
+    timeout: 3000
+# single-select pickers with editing show a crop screen instead
+- tapOn:
+    text: "Choose"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+# single-select picker still open (it can ignore the first tap): retry
 - repeat:
     times: 3
     while:
@@ -223,24 +255,44 @@ appId: com.lalarente.app
       - waitForAnimationToEnd:
           timeout: 2000
       - tapOn:
-          text: "(Add|Done|Choose)"
+          text: "Choose"
           optional: true
+      - waitForAnimationToEnd:
+          timeout: 1500
 - waitForAnimationToEnd:
     timeout: 2500
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
     element:
-      text: "Gallery"
+      id: "(media-add-gallery|closure-confirm-gallery)"
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
 - tapOn:
-    text: "Gallery"
+    id: "(media-add-gallery|closure-confirm-gallery)"
 - waitForAnimationToEnd:
     timeout: 2500
-# picker can ignore the first tap while it is still presenting; retry
+# multi-select picker (out-of-process — Maestro cannot see inside it):
+# wait for it, tap the first tile, confirm with ✓
+- waitForAnimationToEnd:
+    timeout: 4000
+- tapOn:
+    point: "50%,28%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    point: "90%,15%"
+- waitForAnimationToEnd:
+    timeout: 3000
+# single-select pickers with editing show a crop screen instead
+- tapOn:
+    text: "Choose"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+# single-select picker still open (it can ignore the first tap): retry
 - repeat:
     times: 3
     while:
@@ -251,8 +303,10 @@ appId: com.lalarente.app
       - waitForAnimationToEnd:
           timeout: 2000
       - tapOn:
-          text: "(Add|Done|Choose)"
+          text: "Choose"
           optional: true
+      - waitForAnimationToEnd:
+          timeout: 1500
 - waitForAnimationToEnd:
     timeout: 2500
 - waitForAnimationToEnd:
@@ -290,13 +344,13 @@ appId: com.lalarente.app
     timeout: 1500
 - scrollUntilVisible:
     element:
-      text: ".*inspection issue LC-${LC_TOKEN}.*"
+      text: ".*inspection.*LC-${LC_TOKEN}.*"
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
 - tapOn:
-    text: ".*inspection issue LC-${LC_TOKEN}.*"
+    text: ".*inspection.*LC-${LC_TOKEN}.*"
     index: 0
 - extendedWaitUntil:
     visible:
@@ -327,13 +381,13 @@ appId: com.lalarente.app
     timeout: 1500
 - scrollUntilVisible:
     element:
-      text: ".*inspection issue LC-${LC_TOKEN}.*"
+      text: ".*inspection.*LC-${LC_TOKEN}.*"
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
 - tapOn:
-    text: ".*inspection issue LC-${LC_TOKEN}.*"
+    text: ".*inspection.*LC-${LC_TOKEN}.*"
     index: 0
 - extendedWaitUntil:
     visible:
@@ -442,7 +496,7 @@ appId: com.lalarente.app
     visible: "Forward to Tenant"
     timeout: 15000
 - tapOn:
-    text: "Forward for Verification"
+    text: ".*Forward for Verification.*"
 - extendedWaitUntil:
     visible: "Forwarded"
     timeout: 30000
@@ -496,13 +550,13 @@ appId: com.lalarente.app
     timeout: 1500
 - scrollUntilVisible:
     element:
-      text: ".*inspection issue LC-${LC_TOKEN}.*"
+      text: ".*inspection.*LC-${LC_TOKEN}.*"
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
 - tapOn:
-    text: ".*inspection issue LC-${LC_TOKEN}.*"
+    text: ".*inspection.*LC-${LC_TOKEN}.*"
     index: 0
 - extendedWaitUntil:
     visible:
@@ -591,7 +645,25 @@ appId: com.lalarente.app
     id: "tenant-verify-reject-add-photo"
 - waitForAnimationToEnd:
     timeout: 2500
-# picker can ignore the first tap while it is still presenting; retry
+# multi-select picker (out-of-process — Maestro cannot see inside it):
+# wait for it, tap the first tile, confirm with ✓
+- waitForAnimationToEnd:
+    timeout: 4000
+- tapOn:
+    point: "50%,28%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    point: "90%,15%"
+- waitForAnimationToEnd:
+    timeout: 3000
+# single-select pickers with editing show a crop screen instead
+- tapOn:
+    text: "Choose"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+# single-select picker still open (it can ignore the first tap): retry
 - repeat:
     times: 3
     while:
@@ -602,8 +674,10 @@ appId: com.lalarente.app
       - waitForAnimationToEnd:
           timeout: 2000
       - tapOn:
-          text: "(Add|Done|Choose)"
+          text: "Choose"
           optional: true
+      - waitForAnimationToEnd:
+          timeout: 1500
 - waitForAnimationToEnd:
     timeout: 2500
 - waitForAnimationToEnd:
@@ -687,7 +761,25 @@ appId: com.lalarente.app
     id: "tenant-verify-approve-add-photo"
 - waitForAnimationToEnd:
     timeout: 2500
-# picker can ignore the first tap while it is still presenting; retry
+# multi-select picker (out-of-process — Maestro cannot see inside it):
+# wait for it, tap the first tile, confirm with ✓
+- waitForAnimationToEnd:
+    timeout: 4000
+- tapOn:
+    point: "50%,28%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    point: "90%,15%"
+- waitForAnimationToEnd:
+    timeout: 3000
+# single-select pickers with editing show a crop screen instead
+- tapOn:
+    text: "Choose"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+# single-select picker still open (it can ignore the first tap): retry
 - repeat:
     times: 3
     while:
@@ -698,8 +790,10 @@ appId: com.lalarente.app
       - waitForAnimationToEnd:
           timeout: 2000
       - tapOn:
-          text: "(Add|Done|Choose)"
+          text: "Choose"
           optional: true
+      - waitForAnimationToEnd:
+          timeout: 1500
 - waitForAnimationToEnd:
     timeout: 2500
 - waitForAnimationToEnd:
@@ -731,7 +825,25 @@ appId: com.lalarente.app
     id: "tenant-verify-approve-add-photo"
 - waitForAnimationToEnd:
     timeout: 2500
-# picker can ignore the first tap while it is still presenting; retry
+# multi-select picker (out-of-process — Maestro cannot see inside it):
+# wait for it, tap the first tile, confirm with ✓
+- waitForAnimationToEnd:
+    timeout: 4000
+- tapOn:
+    point: "50%,28%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- tapOn:
+    point: "90%,15%"
+- waitForAnimationToEnd:
+    timeout: 3000
+# single-select pickers with editing show a crop screen instead
+- tapOn:
+    text: "Choose"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+# single-select picker still open (it can ignore the first tap): retry
 - repeat:
     times: 3
     while:
@@ -742,8 +854,10 @@ appId: com.lalarente.app
       - waitForAnimationToEnd:
           timeout: 2000
       - tapOn:
-          text: "(Add|Done|Choose)"
+          text: "Choose"
           optional: true
+      - waitForAnimationToEnd:
+          timeout: 1500
 - waitForAnimationToEnd:
     timeout: 2500
 - waitForAnimationToEnd:
@@ -800,13 +914,13 @@ appId: com.lalarente.app
     timeout: 1500
 - scrollUntilVisible:
     element:
-      text: ".*inspection issue LC-${LC_TOKEN}.*"
+      text: ".*inspection.*LC-${LC_TOKEN}.*"
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
 - tapOn:
-    text: ".*inspection issue LC-${LC_TOKEN}.*"
+    text: ".*inspection.*LC-${LC_TOKEN}.*"
     index: 0
 - extendedWaitUntil:
     visible:
