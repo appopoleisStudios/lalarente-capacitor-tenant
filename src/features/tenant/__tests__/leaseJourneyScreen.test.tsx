@@ -1,6 +1,13 @@
 // Mock external modules BEFORE any imports
+import React from 'react';
+import { render } from '@testing-library/react-native';
+import TenantLeaseJourneyScreen from '../screens/TenantLeaseJourneyScreen';
+
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), back: jest.fn() }),
+  // the screen reloads on focus; in tests, run it like a mount effect
+
+  useFocusEffect: (cb: () => void) => require('react').useEffect(cb, [cb]),
 }));
 
 jest.mock('react-native-safe-area-context', () => ({
@@ -21,10 +28,6 @@ jest.mock('../../../lib/supabase', () => ({
   supabase: { from: mockFrom },
 }));
 
-import React from 'react';
-import { render } from '@testing-library/react-native';
-import TenantLeaseJourneyScreen from '../screens/TenantLeaseJourneyScreen';
-
 describe('TenantLeaseJourneyScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -35,16 +38,12 @@ describe('TenantLeaseJourneyScreen', () => {
           in: jest.fn(() => ({
             order: jest.fn(() => ({
               limit: jest.fn(() => ({
-                maybeSingle: jest.fn(() =>
-                  Promise.resolve({ data: null, error: null })
-                ),
+                maybeSingle: jest.fn(() => Promise.resolve({ data: null, error: null })),
               })),
             })),
           })),
           order: jest.fn(() => ({
-            limit: jest.fn(() =>
-              Promise.resolve({ data: [], error: null })
-            ),
+            limit: jest.fn(() => Promise.resolve({ data: [], error: null })),
           })),
         })),
       })),
