@@ -55,11 +55,15 @@ appId: com.lalarente.app
     centerElement: true
 - tapOn:
     id: "owner-send-po-time"
-- waitForAnimationToEnd:
-    timeout: 1500
+- extendedWaitUntil:
+    visible:
+      id: "owner-send-po-time-cancel"
+    timeout: 10000
 - takeScreenshot: lc07c-po-time-picker
+- tapOn:
+    id: "owner-send-po-time-cancel"
 - waitForAnimationToEnd:
-    timeout: 1500
+    timeout: 1000
 
 # ── header back, then Cancel, both return to the request ──────────────────
 - tapOn:
@@ -158,15 +162,15 @@ appId: com.lalarente.app
     centerElement: true
 - tapOn:
     id: "owner-send-po-date"
-- waitForAnimationToEnd:
-    timeout: 1500
+- extendedWaitUntil:
+    visible:
+      id: "owner-send-po-date-done"
+    timeout: 10000
 - takeScreenshot: lc07c-po-date-picker
-- waitForAnimationToEnd:
-    timeout: 1500
 - tapOn:
-    text: "Work Schedule"
+    id: "owner-send-po-date-done"
 - waitForAnimationToEnd:
-    timeout: 1500
+    timeout: 1000
 - scrollUntilVisible:
     element:
       id: "owner-send-po-send"

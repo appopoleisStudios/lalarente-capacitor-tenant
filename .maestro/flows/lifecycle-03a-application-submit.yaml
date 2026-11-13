@@ -58,13 +58,13 @@ appId: com.lalarente.app
     visible:
       id: "tenant-property-apply"
     timeout: 20000
+# Apply is replaced by a disabled "Application Pending" button; tapping it does nothing
+- assertVisible:
+    text: "Application Pending"
+    enabled: false
 - tapOn:
     id: "tenant-property-apply"
-- extendedWaitUntil:
-    visible: ".*already have a pending application.*"
-    timeout: 15000
-- tapOn:
-    text: "OK"
+- assertNotVisible: "Apply for Property"
 - openLink: lalarenteapp://(tenant)/application-status
 - extendedWaitUntil:
     visible: "My Applications"
@@ -144,11 +144,13 @@ appId: com.lalarente.app
     centerElement: true
 - tapOn:
     id: "screening-row-background"
-- extendedWaitUntil:
-    visible: ".*Review the applicant.*"
-    timeout: 15000
-- tapOn:
-    text: "Cancel"
+# completed rows are locked; pending or failed rows open the review dialog
+- runFlow:
+    when:
+      visible: ".*Review the applicant.*"
+    commands:
+      - tapOn:
+          text: "Mark Complete"
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -160,11 +162,13 @@ appId: com.lalarente.app
     centerElement: true
 - tapOn:
     id: "screening-row-credit"
-- extendedWaitUntil:
-    visible: ".*Review the applicant.*"
-    timeout: 15000
-- tapOn:
-    text: "Cancel"
+# completed rows are locked; pending or failed rows open the review dialog
+- runFlow:
+    when:
+      visible: ".*Review the applicant.*"
+    commands:
+      - tapOn:
+          text: "Cancel"
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -176,11 +180,13 @@ appId: com.lalarente.app
     centerElement: true
 - tapOn:
     id: "screening-row-identity"
-- extendedWaitUntil:
-    visible: ".*Review the applicant.*"
-    timeout: 15000
-- tapOn:
-    text: "Mark Complete"
+# completed rows are locked; pending or failed rows open the review dialog
+- runFlow:
+    when:
+      visible: ".*Review the applicant.*"
+    commands:
+      - tapOn:
+          text: "Mark Complete"
 - waitForAnimationToEnd:
     timeout: 2000
 
@@ -237,6 +243,10 @@ appId: com.lalarente.app
     visible:
       id: "owner-application-deposit-amount"
     timeout: 20000
+# amount is pre-filled with one month's rent; clear it to test validation
+- tapOn:
+    id: "owner-application-deposit-amount"
+- eraseText: 20
 - tapOn:
     id: "owner-application-deposit-send"
 - extendedWaitUntil:
@@ -254,6 +264,7 @@ appId: com.lalarente.app
     id: "owner-application-request-deposit"
 - tapOn:
     id: "owner-application-deposit-amount"
+- eraseText: 20
 - inputText: "${LC_HOLDING_DEPOSIT}"
 - tapOn:
     id: "owner-application-deposit-send"

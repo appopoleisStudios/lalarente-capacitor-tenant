@@ -6,7 +6,9 @@ import { reportApiError } from '@/src/core/observability/sentry';
  * Calculate the next payment date based on start date and payment due day
  */
 function calculateNextPaymentDate(startDate: string, paymentDueDay: number): string {
-  const start = new Date(startDate);
+  // 'YYYY-MM-DD' parses as UTC midnight; read it as a local date instead.
+  const [sy, sm, sd] = startDate.split('-').map(Number);
+  const start = new Date(sy, sm - 1, sd);
   const today = new Date();
 
   // If start date is in the future, use start date's month
@@ -20,7 +22,12 @@ function calculateNextPaymentDate(startDate: string, paymentDueDay: number): str
     paymentDate.setMonth(paymentDate.getMonth() + 1);
   }
 
-  return paymentDate.toISOString().split('T')[0];
+  // Local calendar date — toISOString() shifts to UTC and lands a day early
+  // in South Africa (UTC+2): a 1 December due date was saved as 30 November.
+  const y = paymentDate.getFullYear();
+  const m = String(paymentDate.getMonth() + 1).padStart(2, '0');
+  const d = String(paymentDate.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 /**
@@ -141,7 +148,11 @@ export async function executeLease(leaseId: string): Promise<void> {
       const { error: appError } = await supabase
         .from('rental_applications')
         .update({ status: 'approved' })
-        .eq('id', lease.application_id);
+        .eq('id', lease.application_id)
+        // A lease sent from the review screen already moved the application
+        // to 'lease_offered'; the status trigger only allows approve from
+        // submitted / under_review, so leave later states alone.
+        .in('status', ['submitted', 'under_review']);
 
       if (appError) {
         console.error('Error updating application:', appError);

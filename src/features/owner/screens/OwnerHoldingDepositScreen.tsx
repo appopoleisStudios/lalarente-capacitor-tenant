@@ -17,6 +17,7 @@ import {
   Alert,
   TextInput,
   Modal,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -586,7 +587,13 @@ function CreateDepositModal({
           </TouchableOpacity>
         </View>
 
-        <View style={styles.modalBody}>
+        {/* Scrollable so tapping outside a field (or dragging) dismisses the
+            number pad, which has no return key and would cover Create. */}
+        <ScrollView
+          contentContainerStyle={styles.modalBody}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
           {/* Property Selector */}
           <Text style={styles.fieldLabel}>Property</Text>
           <View style={styles.propertyPicker}>
@@ -665,7 +672,7 @@ function CreateDepositModal({
               <Text style={styles.createButtonText}>Create Deposit Request</Text>
             )}
           </TouchableOpacity>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </Modal>
   );

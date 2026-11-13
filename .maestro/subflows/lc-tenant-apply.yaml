@@ -58,8 +58,12 @@ appId: com.lalarente.app
           id: "tenant-apply-full-name"
       - eraseText: 30
       - inputText: "LC Tenant"
-      - tapOn:
-          text: "Apply for Property"
+      - swipe:
+          start: "50%,45%"
+          end: "50%,40%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 1000
 - runFlow:
     when:
       visible:
@@ -78,8 +82,12 @@ appId: com.lalarente.app
           id: "tenant-apply-email"
       - eraseText: 30
       - inputText: "lc.tenant@example.com"
-      - tapOn:
-          text: "Apply for Property"
+      - swipe:
+          start: "50%,45%"
+          end: "50%,40%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 1000
 - runFlow:
     when:
       visible:
@@ -98,8 +106,12 @@ appId: com.lalarente.app
           id: "tenant-apply-phone"
       - eraseText: 30
       - inputText: "0821234567"
-      - tapOn:
-          text: "Apply for Property"
+      - swipe:
+          start: "50%,45%"
+          end: "50%,40%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 1000
 - runFlow:
     when:
       visible:
@@ -118,8 +130,12 @@ appId: com.lalarente.app
           id: "tenant-apply-id-number"
       - eraseText: 30
       - inputText: "9001015009087"
-      - tapOn:
-          text: "Apply for Property"
+      - swipe:
+          start: "50%,45%"
+          end: "50%,40%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 1000
 - runFlow:
     when:
       visible:
@@ -180,8 +196,12 @@ appId: com.lalarente.app
       - tapOn:
           id: "tenant-apply-income"
       - inputText: "abc"
-      - tapOn:
-          text: "Apply for Property"
+      - swipe:
+          start: "50%,45%"
+          end: "50%,40%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 1000
       - waitForAnimationToEnd:
           timeout: 1500
       - scrollUntilVisible:
@@ -211,8 +231,12 @@ appId: com.lalarente.app
           id: "tenant-apply-income"
       - eraseText: 30
       - inputText: "25000"
-      - tapOn:
-          text: "Apply for Property"
+      - swipe:
+          start: "50%,45%"
+          end: "50%,40%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 1000
 - runFlow:
     when:
       visible:
@@ -231,8 +255,12 @@ appId: com.lalarente.app
           id: "tenant-apply-employer"
       - eraseText: 30
       - inputText: "LC Employer"
-      - tapOn:
-          text: "Apply for Property"
+      - swipe:
+          start: "50%,45%"
+          end: "50%,40%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 1000
 - runFlow:
     when:
       visible:
@@ -251,8 +279,12 @@ appId: com.lalarente.app
           id: "tenant-apply-position"
       - eraseText: 30
       - inputText: "Tester"
-      - tapOn:
-          text: "Apply for Property"
+      - swipe:
+          start: "50%,45%"
+          end: "50%,40%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 1000
 - runFlow:
     when:
       visible:
@@ -271,8 +303,12 @@ appId: com.lalarente.app
           id: "tenant-apply-employer-contact"
       - eraseText: 30
       - inputText: "0111234567"
-      - tapOn:
-          text: "Apply for Property"
+      - swipe:
+          start: "50%,45%"
+          end: "50%,40%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 1000
 - runFlow:
     when:
       visible:
@@ -336,10 +372,16 @@ appId: com.lalarente.app
           visible:
             id: "tenant-apply-next"
           timeout: 20000
-      - tapOn:
-          id: "tenant-apply-next"
-      - waitForAnimationToEnd:
-          timeout: 2000
+      # the form keeps its step; only advance if it came back on step 1
+      - runFlow:
+          when:
+            visible:
+              id: "tenant-apply-edit-personal"
+          commands:
+            - tapOn:
+                id: "tenant-apply-next"
+            - waitForAnimationToEnd:
+                timeout: 2000
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -363,6 +405,13 @@ appId: com.lalarente.app
       visible:
         id: "tenant-apply-id-doc-upload"
     commands:
+      - scrollUntilVisible:
+          element:
+            id: "tenant-apply-id-doc-upload"
+          direction: UP
+          timeout: 20000
+          visibilityPercentage: 100
+          centerElement: true
       - tapOn:
           id: "tenant-apply-id-doc-upload"
       - extendedWaitUntil:
@@ -375,6 +424,13 @@ appId: com.lalarente.app
       visible:
         id: "tenant-apply-id-doc-replace"
     commands:
+      - scrollUntilVisible:
+          element:
+            id: "tenant-apply-id-doc-replace"
+          direction: UP
+          timeout: 20000
+          visibilityPercentage: 100
+          centerElement: true
       - tapOn:
           id: "tenant-apply-id-doc-replace"
       - extendedWaitUntil:
@@ -395,6 +451,13 @@ appId: com.lalarente.app
           direction: DOWN
           timeout: 20000
           visibilityPercentage: 60
+          centerElement: true
+      - scrollUntilVisible:
+          element:
+            id: "tenant-apply-income-doc-add-new"
+          direction: UP
+          timeout: 20000
+          visibilityPercentage: 100
           centerElement: true
       - tapOn:
           id: "tenant-apply-income-doc-add-new"
@@ -419,6 +482,13 @@ appId: com.lalarente.app
           timeout: 20000
           visibilityPercentage: 60
           centerElement: true
+      - scrollUntilVisible:
+          element:
+            id: "tenant-apply-income-doc-upload"
+          direction: UP
+          timeout: 20000
+          visibilityPercentage: 100
+          centerElement: true
       - tapOn:
           id: "tenant-apply-income-doc-upload"
       - waitForAnimationToEnd:
@@ -441,6 +511,13 @@ appId: com.lalarente.app
           direction: DOWN
           timeout: 20000
           visibilityPercentage: 60
+          centerElement: true
+      - scrollUntilVisible:
+          element:
+            id: "tenant-apply-reference-doc-upload"
+          direction: UP
+          timeout: 20000
+          visibilityPercentage: 100
           centerElement: true
       - tapOn:
           id: "tenant-apply-reference-doc-upload"

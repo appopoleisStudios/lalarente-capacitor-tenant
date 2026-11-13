@@ -30,8 +30,21 @@ appId: com.lalarente.app
     id: "owner-inspections-filter-pending_signatures"
 - waitForAnimationToEnd:
     timeout: 800
+# filter chips scroll sideways; Completed starts off-screen
+- swipe:
+    start: "85%,17%"
+    end: "15%,17%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 800
 - tapOn:
     id: "owner-inspections-filter-completed"
+- waitForAnimationToEnd:
+    timeout: 800
+- swipe:
+    start: "15%,17%"
+    end: "85%,17%"
+    duration: 500
 - waitForAnimationToEnd:
     timeout: 800
 - tapOn:
@@ -142,9 +155,12 @@ appId: com.lalarente.app
     centerElement: true
 - tapOn:
     id: "owner-schedule-inspection-date"
+- extendedWaitUntil:
+    visible:
+      id: "owner-schedule-inspection-date-done"
+    timeout: 10000
 - tapOn:
     id: "owner-schedule-inspection-date-done"
-    optional: true
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -157,9 +173,10 @@ appId: com.lalarente.app
 - tapOn:
     id: "owner-schedule-inspection-notes"
 - inputText: "LC-insp-note ${LC_TOKEN}"
-- tapOn:
-    text: "Schedule Inspection"
-    index: 0
+- swipe:
+    start: "50%,45%"
+    end: "50%,40%"
+    duration: 400
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -179,7 +196,7 @@ appId: com.lalarente.app
 
 # ── conduct: room 1 — room condition chips, item controls, notes ──────────
 - extendedWaitUntil:
-    visible: "Items to Inspect"
+    visible: "Move-In Inspection"
     timeout: 30000
 - extendedWaitUntil:
     visible: "Move-In Inspection"
@@ -216,13 +233,19 @@ appId: com.lalarente.app
     id: "inspection-item-0-gallery"
 - waitForAnimationToEnd:
     timeout: 2500
-- tapOn:
-    point: "17%,22%"
-- waitForAnimationToEnd:
-    timeout: 1500
-- tapOn:
-    text: "(Add|Done|Choose)"
-    optional: true
+# picker can ignore the first tap while it is still presenting; retry
+- repeat:
+    times: 3
+    while:
+      visible: "Collections"
+    commands:
+      - tapOn:
+          point: "50%,28%"
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - tapOn:
+          text: "(Add|Done|Choose)"
+          optional: true
 - waitForAnimationToEnd:
     timeout: 2500
 
@@ -266,6 +289,19 @@ appId: com.lalarente.app
     text: "Room Notes"
 
 # ── LC-6-10 Complete is blocked while rooms have no photos ────────────────
+# room tabs scroll sideways; bring tab 9 into view
+- repeat:
+    times: 6
+    while:
+      notVisible:
+        id: "inspection-room-tab-9"
+    commands:
+      - swipe:
+          start: "85%,22%"
+          end: "15%,22%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 600
 - tapOn:
     id: "inspection-room-tab-9"
 - waitForAnimationToEnd:
@@ -293,6 +329,19 @@ appId: com.lalarente.app
     timeout: 15000
 - tapOn:
     text: "OK"
+# room tabs scroll sideways; bring tab 0 into view
+- repeat:
+    times: 6
+    while:
+      notVisible:
+        id: "inspection-room-tab-0"
+    commands:
+      - swipe:
+          start: "15%,22%"
+          end: "85%,22%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 600
 - tapOn:
     id: "inspection-room-tab-0"
 - waitForAnimationToEnd:
@@ -324,11 +373,19 @@ appId: com.lalarente.app
           id: "inspection-room-gallery"
       - waitForAnimationToEnd:
           timeout: 2500
-      - tapOn:
-          point: "17%,22%"
-      - tapOn:
-          text: "(Add|Done|Choose)"
-          optional: true
+      # picker can ignore the first tap while it is still presenting; retry
+      - repeat:
+          times: 3
+          while:
+            visible: "Collections"
+          commands:
+            - tapOn:
+                point: "50%,28%"
+            - waitForAnimationToEnd:
+                timeout: 2000
+            - tapOn:
+                text: "(Add|Done|Choose)"
+                optional: true
       - waitForAnimationToEnd:
           timeout: 2500
       - scrollUntilVisible:
@@ -448,6 +505,19 @@ appId: com.lalarente.app
     text: "OK"
 
 # ── LC-6-12 owner signs ───────────────────────────────────────────────────
+# room tabs scroll sideways; bring tab 9 into view
+- repeat:
+    times: 6
+    while:
+      notVisible:
+        id: "inspection-room-tab-9"
+    commands:
+      - swipe:
+          start: "85%,22%"
+          end: "15%,22%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 600
 - tapOn:
     id: "inspection-room-tab-9"
 - waitForAnimationToEnd:
@@ -532,7 +602,7 @@ appId: com.lalarente.app
     id: "tenant-report-inspection-row"
     index: 0
 - extendedWaitUntil:
-    visible: "Items to Inspect"
+    visible: "Move-In Inspection"
     timeout: 30000
 
 # ── LC-6-20 tenant sees exactly what the owner recorded ───────────────────
@@ -648,6 +718,14 @@ appId: com.lalarente.app
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
+# keep the button clear of the tab bar before tapping
+- scrollUntilVisible:
+    element:
+      id: "inspection-comment-raise-issue"
+    direction: DOWN
+    timeout: 10000
+    visibilityPercentage: 100
+    centerElement: true
 - tapOn:
     id: "inspection-comment-raise-issue"
     index: 0
@@ -663,14 +741,19 @@ appId: com.lalarente.app
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
-- assertVisible: ".*inspection issue LC-${LC_TOKEN}.*"
+# title is pre-filled from the comment's room
+- assertVisible: ".*: inspection issue"
 
 # ── add the run token to the title so every role can find this request ────
 - tapOn:
     id: "maintenance-title-input"
-- inputText: " LC-${LC_TOKEN}"
-- tapOn:
-    text: "Report Issue"
+# the tap lands the cursor mid-text; retype the whole title
+- eraseText: 80
+- inputText: "Living Room: inspection issue LC-${LC_TOKEN}"
+- swipe:
+    start: "50%,45%"
+    end: "50%,40%"
+    duration: 400
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -711,8 +794,9 @@ appId: com.lalarente.app
     timeout: 60000
 - tapOn:
     text: "OK"
+# back on the inspection, still scrolled to the comments
 - extendedWaitUntil:
-    visible: "Items to Inspect"
+    visible: "Move-In Inspection"
     timeout: 20000
 - waitForAnimationToEnd:
     timeout: 1500
@@ -746,8 +830,21 @@ appId: com.lalarente.app
     id: "tenant-report-inspection-sign"
     index: 0
 - extendedWaitUntil:
-    visible: "Items to Inspect"
+    visible: "Move-In Inspection"
     timeout: 30000
+# room tabs scroll sideways; bring tab 9 into view
+- repeat:
+    times: 6
+    while:
+      notVisible:
+        id: "inspection-room-tab-9"
+    commands:
+      - swipe:
+          start: "85%,22%"
+          end: "15%,22%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 600
 - tapOn:
     id: "inspection-room-tab-9"
 - assertNotVisible:
@@ -861,6 +958,13 @@ appId: com.lalarente.app
 - extendedWaitUntil:
     visible: "Inspections"
     timeout: 20000
+# filter chips scroll sideways; Completed starts off-screen
+- swipe:
+    start: "85%,17%"
+    end: "15%,17%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 800
 - tapOn:
     id: "owner-inspections-filter-completed"
 - extendedWaitUntil:
@@ -952,6 +1056,13 @@ appId: com.lalarente.app
 - extendedWaitUntil:
     visible: "Inspections"
     timeout: 20000
+# filter chips scroll sideways; Completed starts off-screen
+- swipe:
+    start: "85%,17%"
+    end: "15%,17%"
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 800
 - tapOn:
     id: "owner-inspections-filter-completed"
 - tapOn:

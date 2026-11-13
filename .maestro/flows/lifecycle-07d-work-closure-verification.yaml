@@ -121,13 +121,19 @@ appId: com.lalarente.app
     text: "Gallery"
 - waitForAnimationToEnd:
     timeout: 2500
-- tapOn:
-    point: "17%,22%"
-- waitForAnimationToEnd:
-    timeout: 1500
-- tapOn:
-    text: "(Add|Done|Choose)"
-    optional: true
+# picker can ignore the first tap while it is still presenting; retry
+- repeat:
+    times: 3
+    while:
+      visible: "Collections"
+    commands:
+      - tapOn:
+          point: "50%,28%"
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - tapOn:
+          text: "(Add|Done|Choose)"
+          optional: true
 - waitForAnimationToEnd:
     timeout: 2500
 - waitForAnimationToEnd:
@@ -206,13 +212,19 @@ appId: com.lalarente.app
     text: "Gallery"
 - waitForAnimationToEnd:
     timeout: 2500
-- tapOn:
-    point: "17%,22%"
-- waitForAnimationToEnd:
-    timeout: 1500
-- tapOn:
-    text: "(Add|Done|Choose)"
-    optional: true
+# picker can ignore the first tap while it is still presenting; retry
+- repeat:
+    times: 3
+    while:
+      visible: "Collections"
+    commands:
+      - tapOn:
+          point: "50%,28%"
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - tapOn:
+          text: "(Add|Done|Choose)"
+          optional: true
 - waitForAnimationToEnd:
     timeout: 2500
 - waitForAnimationToEnd:
@@ -228,13 +240,19 @@ appId: com.lalarente.app
     text: "Gallery"
 - waitForAnimationToEnd:
     timeout: 2500
-- tapOn:
-    point: "17%,22%"
-- waitForAnimationToEnd:
-    timeout: 1500
-- tapOn:
-    text: "(Add|Done|Choose)"
-    optional: true
+# picker can ignore the first tap while it is still presenting; retry
+- repeat:
+    times: 3
+    while:
+      visible: "Collections"
+    commands:
+      - tapOn:
+          point: "50%,28%"
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - tapOn:
+          text: "(Add|Done|Choose)"
+          optional: true
 - waitForAnimationToEnd:
     timeout: 2500
 - waitForAnimationToEnd:
@@ -573,13 +591,19 @@ appId: com.lalarente.app
     id: "tenant-verify-reject-add-photo"
 - waitForAnimationToEnd:
     timeout: 2500
-- tapOn:
-    point: "17%,22%"
-- waitForAnimationToEnd:
-    timeout: 1500
-- tapOn:
-    text: "(Add|Done|Choose)"
-    optional: true
+# picker can ignore the first tap while it is still presenting; retry
+- repeat:
+    times: 3
+    while:
+      visible: "Collections"
+    commands:
+      - tapOn:
+          point: "50%,28%"
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - tapOn:
+          text: "(Add|Done|Choose)"
+          optional: true
 - waitForAnimationToEnd:
     timeout: 2500
 - waitForAnimationToEnd:
@@ -663,13 +687,19 @@ appId: com.lalarente.app
     id: "tenant-verify-approve-add-photo"
 - waitForAnimationToEnd:
     timeout: 2500
-- tapOn:
-    point: "17%,22%"
-- waitForAnimationToEnd:
-    timeout: 1500
-- tapOn:
-    text: "(Add|Done|Choose)"
-    optional: true
+# picker can ignore the first tap while it is still presenting; retry
+- repeat:
+    times: 3
+    while:
+      visible: "Collections"
+    commands:
+      - tapOn:
+          point: "50%,28%"
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - tapOn:
+          text: "(Add|Done|Choose)"
+          optional: true
 - waitForAnimationToEnd:
     timeout: 2500
 - waitForAnimationToEnd:
@@ -701,13 +731,19 @@ appId: com.lalarente.app
     id: "tenant-verify-approve-add-photo"
 - waitForAnimationToEnd:
     timeout: 2500
-- tapOn:
-    point: "17%,22%"
-- waitForAnimationToEnd:
-    timeout: 1500
-- tapOn:
-    text: "(Add|Done|Choose)"
-    optional: true
+# picker can ignore the first tap while it is still presenting; retry
+- repeat:
+    times: 3
+    while:
+      visible: "Collections"
+    commands:
+      - tapOn:
+          point: "50%,28%"
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - tapOn:
+          text: "(Add|Done|Choose)"
+          optional: true
 - waitForAnimationToEnd:
     timeout: 2500
 - waitForAnimationToEnd:

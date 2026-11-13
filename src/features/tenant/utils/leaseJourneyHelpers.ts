@@ -204,7 +204,9 @@ export function buildApplicationEvents(apps: ApplicationRow[]): TimelineEvent[] 
     status: 'completed',
   });
 
-  if (app.status === 'approved') {
+  // Sending the lease moves the application on to 'lease_offered'; it was
+  // still approved first, so keep the step on the timeline.
+  if (app.status === 'approved' || app.status === 'lease_offered') {
     events.push({
       id: `app-approved-${app.id}`,
       type: 'application_approved',

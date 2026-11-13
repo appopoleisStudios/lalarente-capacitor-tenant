@@ -11,12 +11,11 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  Platform,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { PickerSheet } from '@/src/shared/components/ui/DateField';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/src/lib/supabase';
 import { sendPOToVendor } from '@/src/features/maintenance/api/purchase-orders/poActions.api';
@@ -59,20 +58,6 @@ export default function OwnerSendPOScreen() {
   }, [poId]);
 
   if (!poId) return null;
-
-  const handleDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      setStartDate(selectedDate);
-    }
-  };
-
-  const handleTimeChange = (event: any, selectedTime?: Date) => {
-    setShowTimePicker(Platform.OS === 'ios');
-    if (selectedTime) {
-      setStartTime(selectedTime);
-    }
-  };
 
   const formatDate = (date: Date): string => {
     return date.toLocaleDateString('en-ZA', {
@@ -158,6 +143,7 @@ export default function OwnerSendPOScreen() {
         style={styles.container}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         {/* Intro — no duplicate H1: the nav header already titles this screen. */}
         <View style={styles.intro}>
@@ -203,15 +189,18 @@ export default function OwnerSendPOScreen() {
             </TouchableOpacity>
           </View>
 
-          {showDatePicker && (
-            <DateTimePicker
-              value={startDate}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={handleDateChange}
-              minimumDate={new Date()}
-            />
-          )}
+          <PickerSheet
+            visible={showDatePicker}
+            value={startDate}
+            mode="date"
+            minimumDate={new Date()}
+            onCancel={() => setShowDatePicker(false)}
+            onDone={(date) => {
+              setShowDatePicker(false);
+              setStartDate(date);
+            }}
+            testID="owner-send-po-date"
+          />
 
           {/* Start Time */}
           <View style={styles.inputGroup}>
@@ -225,14 +214,17 @@ export default function OwnerSendPOScreen() {
             </TouchableOpacity>
           </View>
 
-          {showTimePicker && (
-            <DateTimePicker
-              value={startTime}
-              mode="time"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={handleTimeChange}
-            />
-          )}
+          <PickerSheet
+            visible={showTimePicker}
+            value={startTime}
+            mode="time"
+            onCancel={() => setShowTimePicker(false)}
+            onDone={(time) => {
+              setShowTimePicker(false);
+              setStartTime(time);
+            }}
+            testID="owner-send-po-time"
+          />
         </View>
 
         {/* Work Instructions */}

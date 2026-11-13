@@ -10,8 +10,8 @@
  */
 
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import React, { useState, useCallback } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -57,7 +57,12 @@ interface ContractDetail {
   updated_at: string | null;
   property: { id: string; title: string; address: string } | null;
   maintenance_request: { id: string; title: string; status: string } | null;
-  owner: { id: string; full_name: string | null; phone: string | null; email: string | null } | null;
+  owner: {
+    id: string;
+    full_name: string | null;
+    phone: string | null;
+    email: string | null;
+  } | null;
 }
 
 function formatCurrency(amount: number | null) {
@@ -69,7 +74,9 @@ function formatDate(dateStr: string | null) {
   if (!dateStr) return '—';
   const date = new Date(dateStr);
   return date.toLocaleDateString('en-GB', {
-    day: 'numeric', month: 'short', year: 'numeric',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
   });
 }
 
@@ -98,19 +105,32 @@ function statusColor(status: string): string {
 
 function statusLabel(status: string): string {
   switch (status) {
-    case 'active': return 'Active';
-    case 'in_progress': return 'In Progress';
-    case 'acknowledged': return 'Acknowledged';
-    case 'completed': return 'Completed';
-    case 'expired': return 'Expired';
-    case 'terminated': return 'Terminated';
-    case 'cancelled': return 'Cancelled';
-    case 'draft': return 'Draft';
-    case 'pending_owner': return 'Awaiting Owner';
-    case 'pending_vendor': return 'Awaiting You';
-    case 'pending_tenant': return 'Awaiting Tenant';
-    case 'quoting': return 'Awaiting Quote';
-    default: return status;
+    case 'active':
+      return 'Active';
+    case 'in_progress':
+      return 'In Progress';
+    case 'acknowledged':
+      return 'Acknowledged';
+    case 'completed':
+      return 'Completed';
+    case 'expired':
+      return 'Expired';
+    case 'terminated':
+      return 'Terminated';
+    case 'cancelled':
+      return 'Cancelled';
+    case 'draft':
+      return 'Draft';
+    case 'pending_owner':
+      return 'Awaiting Owner';
+    case 'pending_vendor':
+      return 'Awaiting You';
+    case 'pending_tenant':
+      return 'Awaiting Tenant';
+    case 'quoting':
+      return 'Awaiting Quote';
+    default:
+      return status;
   }
 }
 
@@ -138,15 +158,22 @@ export default function VendorContractDetailScreen() {
   const [contract, setContract] = useState<ContractDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadContract();
-  }, [id]);
+  // Reload on every focus: tab screens stay mounted, so returning to the
+  // same record must not show its old status.
+  useFocusEffect(
+    useCallback(() => {
+      loadContract();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [id])
+  );
 
   const loadContract = async () => {
     if (!id) return;
     try {
       // Get authenticated user for ownership check
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         Alert.alert('Error', 'You must be logged in.');
         setLoading(false);
@@ -155,7 +182,8 @@ export default function VendorContractDetailScreen() {
 
       const { data, error } = await supabase
         .from('service_contracts')
-        .select(`
+        .select(
+          `
           id, title, status, contract_type, contract_value,
           start_date, end_date, completion_date, renewal_date,
           auto_renew, priority, sla_hours,
@@ -168,7 +196,8 @@ export default function VendorContractDetailScreen() {
           property:property_id(id, title, address),
           maintenance_request:maintenance_request_id(id, title, status),
           owner:profiles!owner_id(id, full_name, phone, email)
-        `)
+        `
+        )
         .eq('id', id)
         .eq('vendor_id', user.id)
         .single();
@@ -204,10 +233,15 @@ export default function VendorContractDetailScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerBack} accessibilityLabel="Go back" accessibilityRole="button">
-          <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Contract Not Found</Text>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.headerBack}
+            accessibilityLabel="Go back"
+            accessibilityRole="button"
+          >
+            <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Contract Not Found</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.loadingContainer}>
@@ -222,17 +256,21 @@ export default function VendorContractDetailScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerBack} accessibilityLabel="Go back" accessibilityRole="button">
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.headerBack}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>Contract Details</Text>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          Contract Details
+        </Text>
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-      >
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Hero Card */}
         <View style={styles.heroCard}>
           <View style={styles.heroTop}>
@@ -242,7 +280,9 @@ export default function VendorContractDetailScreen() {
                 <Text style={styles.heroType}>{contract.contract_type}</Text>
               )}
             </View>
-            <View style={[styles.heroBadge, { backgroundColor: statusColor(contract.status) + '15' }]}>
+            <View
+              style={[styles.heroBadge, { backgroundColor: statusColor(contract.status) + '15' }]}
+            >
               <Text style={[styles.heroBadgeText, { color: statusColor(contract.status) }]}>
                 {statusLabel(contract.status)}
               </Text>
@@ -291,8 +331,8 @@ export default function VendorContractDetailScreen() {
           <TouchableOpacity
             style={styles.infoCard}
             onPress={() => router.push(`/(vendor)/maintenance/${contract.maintenance_request!.id}`)}
-          accessibilityLabel={`View maintenance job: ${contract.maintenance_request.title}`}
-          accessibilityRole="button"
+            accessibilityLabel={`View maintenance job: ${contract.maintenance_request.title}`}
+            accessibilityRole="button"
           >
             <View style={styles.infoCardHeader}>
               <Ionicons name="construct-outline" size={18} color={BRAND_BLUE} />
@@ -355,23 +395,23 @@ export default function VendorContractDetailScreen() {
           typeof contract.terms === 'object' &&
           !Array.isArray(contract.terms) &&
           Object.keys(contract.terms).length > 0 && (
-          <View style={styles.sectionCard}>
-            <View style={styles.sectionCardHeader}>
-              <Ionicons name="document-text-outline" size={18} color={colors.text.primary} />
-              <Text style={styles.sectionCardTitle}>Terms & Conditions</Text>
-            </View>
-            {Object.entries(contract.terms).map(([key, value]) => (
-              <View key={key} style={styles.termRow}>
-                <Text style={styles.termKey}>
-                  {key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
-                </Text>
-                <Text style={styles.termValue}>
-                  {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                </Text>
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionCardHeader}>
+                <Ionicons name="document-text-outline" size={18} color={colors.text.primary} />
+                <Text style={styles.sectionCardTitle}>Terms & Conditions</Text>
               </View>
-            ))}
-          </View>
-        )}
+              {Object.entries(contract.terms).map(([key, value]) => (
+                <View key={key} style={styles.termRow}>
+                  <Text style={styles.termKey}>
+                    {key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                  </Text>
+                  <Text style={styles.termValue}>
+                    {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
 
         {/* Contract PDF */}
         {contract.pdf_url && (

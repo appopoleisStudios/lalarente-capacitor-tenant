@@ -8,12 +8,11 @@ import {
   ActivityIndicator,
   StyleSheet,
   Alert,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { PickerSheet, toDateString } from '@/src/shared/components/ui/DateField';
 import { viewingsApi } from '../../properties/api/viewingsApi';
 import { supabase } from '../../../lib/supabase';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
@@ -102,20 +101,6 @@ export default function TenantRequestViewingScreen() {
     ]);
   };
 
-  const handleDateChange = (event: any, date?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios');
-    if (date) {
-      setSelectedDate(date);
-    }
-  };
-
-  const handleTimeChange = (event: any, time?: Date) => {
-    setShowTimePicker(Platform.OS === 'ios');
-    if (time) {
-      setSelectedTime(time);
-    }
-  };
-
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-ZA', {
       weekday: 'short',
@@ -174,7 +159,7 @@ export default function TenantRequestViewingScreen() {
         property_id: propertyId,
         tenant_id: userId,
         owner_id: ownerId,
-        requested_date: selectedDate.toISOString().split('T')[0],
+        requested_date: toDateString(selectedDate),
         requested_time: selectedTime.toTimeString().split(' ')[0].slice(0, 5),
         tenant_notes: message.trim() || undefined,
       });
@@ -327,7 +312,12 @@ export default function TenantRequestViewingScreen() {
         ) : (
           /* Normal Request Form */
           <>
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={styles.content}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+            >
               {/* Property Info */}
               <View style={styles.propertyCard}>
                 <Ionicons name="home" size={24} color={RSA.green} />
@@ -436,26 +426,30 @@ export default function TenantRequestViewingScreen() {
           </>
         )}
 
-        {/* Date Picker */}
-        {showDatePicker && (
-          <DateTimePicker
-            value={selectedDate}
-            mode="date"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={handleDateChange}
-            minimumDate={new Date()}
-          />
-        )}
-
-        {/* Time Picker */}
-        {showTimePicker && (
-          <DateTimePicker
-            value={selectedTime}
-            mode="time"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={handleTimeChange}
-          />
-        )}
+        {/* Date / time pickers — bottom sheet with Done on iOS, dialog on Android */}
+        <PickerSheet
+          visible={showDatePicker}
+          value={selectedDate}
+          mode="date"
+          minimumDate={new Date()}
+          onCancel={() => setShowDatePicker(false)}
+          onDone={(date) => {
+            setShowDatePicker(false);
+            setSelectedDate(date);
+          }}
+          testID="viewing-request-date"
+        />
+        <PickerSheet
+          visible={showTimePicker}
+          value={selectedTime}
+          mode="time"
+          onCancel={() => setShowTimePicker(false)}
+          onDone={(time) => {
+            setShowTimePicker(false);
+            setSelectedTime(time);
+          }}
+          testID="viewing-request-time"
+        />
       </View>
     </SafeAreaView>
   );

@@ -169,8 +169,8 @@ export default function OwnerLeaseReviewScreen() {
           monthly_rent: parseFloat(draft.monthlyRent),
           deposit_amount: draft.depositAmount ? parseFloat(draft.depositAmount) : null,
           payment_due_day: parseInt(draft.paymentDueDay),
-          late_fee_amount: draft.lateFeeAmount ? parseFloat(draft.lateFeeAmount) : null,
-          late_fee_grace_days: draft.lateFeeGraceDays ? parseInt(draft.lateFeeGraceDays) : null,
+          // No late fees: the leases table dropped late_fee_* in favour of
+          // legal interest on arrears (interest_on_arrears_rate).
           rent_escalation_type: draft.rentEscalationValue
             ? draft.rentEscalationType === 'percentage'
               ? 'fixed_percentage'

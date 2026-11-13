@@ -8,13 +8,12 @@ import {
   Switch,
   Image,
   TouchableOpacity,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
-import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { PickerSheet, toDateString } from '@/src/shared/components/ui/DateField';
 import { AnimatedButton } from '@/src/shared/components';
 import { propertiesApi } from '../../properties/api/propertiesApi';
 import { supabase } from '../../../lib/supabase';
@@ -97,16 +96,6 @@ export default function AddPropertyScreen() {
   const [newService, setNewService] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
   const [showAvailableFromPicker, setShowAvailableFromPicker] = useState(false);
-
-  const handleAvailableFromChange = (event: DateTimePickerEvent, selected?: Date) => {
-    // On Android the picker dismisses itself; on iOS we keep it open until
-    // the user taps Done elsewhere (we close on the first "set" event too).
-    setShowAvailableFromPicker(Platform.OS === 'ios' ? false : false);
-    if (event.type === 'set' && selected) {
-      const iso = selected.toISOString().split('T')[0];
-      setForm((prev) => ({ ...prev, available_from: iso }));
-    }
-  };
 
   React.useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -670,15 +659,20 @@ export default function AddPropertyScreen() {
                       {form.available_from || 'YYYY-MM-DD'}
                     </Text>
                   </TouchableOpacity>
-                  {showAvailableFromPicker && (
-                    <DateTimePicker
-                      value={form.available_from ? new Date(form.available_from) : new Date()}
-                      mode="date"
-                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                      minimumDate={new Date()}
-                      onChange={handleAvailableFromChange}
-                    />
-                  )}
+                  <PickerSheet
+                    visible={showAvailableFromPicker}
+                    value={
+                      form.available_from ? new Date(`${form.available_from}T00:00:00`) : new Date()
+                    }
+                    mode="date"
+                    minimumDate={new Date()}
+                    onCancel={() => setShowAvailableFromPicker(false)}
+                    onDone={(date) => {
+                      setShowAvailableFromPicker(false);
+                      setForm((prev) => ({ ...prev, available_from: toDateString(date) }));
+                    }}
+                    testID="owner-add-property-available-from"
+                  />
                 </View>
                 <View style={[styles.section, { flex: 1 }]}>
                   <Text style={styles.label}>Min. Lease (months)</Text>

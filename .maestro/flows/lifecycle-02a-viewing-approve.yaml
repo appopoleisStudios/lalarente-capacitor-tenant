@@ -178,13 +178,25 @@ appId: com.lalarente.app
     id: "owner-viewing-modal-time"
 - tapOn:
     id: "owner-viewing-modal-date"
+- extendedWaitUntil:
+    visible:
+      id: "owner-viewing-modal-date-done"
+    timeout: 10000
+- tapOn:
+    id: "owner-viewing-modal-date-done"
 - waitForAnimationToEnd:
-    timeout: 2000
+    timeout: 1500
 - tapOn:
     id: "owner-viewing-modal-time"
-- waitForAnimationToEnd:
-    timeout: 2000
+- extendedWaitUntil:
+    visible:
+      id: "owner-viewing-modal-time-cancel"
+    timeout: 10000
 - takeScreenshot: lc02a-owner-approve-modal
+- tapOn:
+    id: "owner-viewing-modal-time-cancel"
+- waitForAnimationToEnd:
+    timeout: 1500
 - waitForAnimationToEnd:
     timeout: 1500
 - tapOn:

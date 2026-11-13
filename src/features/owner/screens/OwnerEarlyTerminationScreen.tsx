@@ -352,7 +352,7 @@ export default function OwnerEarlyTerminationScreen() {
         {/* Decline Modal */}
         <Modal visible={showDeclineModal} transparent animationType="slide">
           <View style={styles.modalOverlay}>
-            <KeyboardAvoidingView>
+            <KeyboardAvoidingView style={{ justifyContent: 'flex-end' }}>
               <View style={styles.modalSheet}>
                 <Text style={styles.modalTitle}>Decline Request</Text>
                 <Text style={styles.modalSubtitle}>

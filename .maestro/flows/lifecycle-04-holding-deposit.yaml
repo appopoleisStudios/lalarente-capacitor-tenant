@@ -316,9 +316,11 @@ appId: com.lalarente.app
     optional: true
 - tapOn:
     id: "owner-holding-deposit-modal-email"
+- eraseText: 60
 - inputText: "${TENANT_EMAIL}"
 - tapOn:
     id: "owner-holding-deposit-modal-amount"
+- eraseText: 20
 - inputText: "0"
 - tapOn:
     text: "Tenant Email"

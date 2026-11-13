@@ -8,9 +8,8 @@ import {
   ActivityIndicator,
   StyleSheet,
   Alert,
-  Platform,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { PickerSheet, toDateString } from '@/src/shared/components/ui/DateField';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -590,18 +589,18 @@ export default function TenantProfileScreen() {
                   {dateOfBirth || 'Select date'}
                 </Text>
               </TouchableOpacity>
-              {showDobPicker && (
-                <DateTimePicker
-                  value={dateOfBirth ? new Date(dateOfBirth) : new Date(2000, 0, 1)}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  maximumDate={new Date()}
-                  onChange={(_, date) => {
-                    setShowDobPicker(false);
-                    if (date) setDateOfBirth(date.toISOString().split('T')[0]);
-                  }}
-                />
-              )}
+              <PickerSheet
+                visible={showDobPicker}
+                value={dateOfBirth ? new Date(`${dateOfBirth}T00:00:00`) : new Date(2000, 0, 1)}
+                mode="date"
+                maximumDate={new Date()}
+                onCancel={() => setShowDobPicker(false)}
+                onDone={(date) => {
+                  setShowDobPicker(false);
+                  setDateOfBirth(toDateString(date));
+                }}
+                testID="tenant-profile-dob"
+              />
             </View>
           </View>
 

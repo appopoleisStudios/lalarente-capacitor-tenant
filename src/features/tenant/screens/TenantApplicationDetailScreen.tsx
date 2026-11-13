@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { applicationsApi, ApplicationWithRelations } from '../../properties/api/applicationsApi';
 
@@ -22,11 +22,14 @@ export default function TenantApplicationDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (id) {
-      loadApplication();
-    }
-  }, [id]);
+  // Reload on every focus: tab screens stay mounted, so returning to the
+  // same record must not show its old status.
+  useFocusEffect(
+    useCallback(() => {
+      if (id) loadApplication();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [id])
+  );
 
   const loadApplication = async () => {
     try {

@@ -5,6 +5,7 @@ import { colors } from '@/src/shared/theme/colors';
 export default function OwnerLayout() {
   return (
     <Tabs
+      backBehavior="history"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.role.owner.primary, // RSA Blue - Owner primary

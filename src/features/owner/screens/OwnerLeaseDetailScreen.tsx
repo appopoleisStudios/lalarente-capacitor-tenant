@@ -473,6 +473,22 @@ export default function OwnerLeaseDetailScreen() {
             </View>
           )}
 
+          {/* Lease status — the owner otherwise had no way to tell an active
+              lease from one still waiting on signatures. */}
+          <View style={styles.statusRow} testID="owner-lease-status">
+            <Text style={styles.statusLabel}>Status</Text>
+            <Text
+              style={[
+                styles.statusValue,
+                lease.status === 'active' || lease.status === 'month_to_month'
+                  ? { color: '#2E7D32', backgroundColor: '#E8F5E9' }
+                  : { color: '#B26A00', backgroundColor: '#FFF4E5' },
+              ]}
+            >
+              {LEASE_STATUS_LABEL[lease.status ?? ''] ?? lease.status}
+            </Text>
+          </View>
+
           {/* Tenant Info */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Tenant</Text>
@@ -883,7 +899,36 @@ const getDaySuffix = (day: number) => {
   }
 };
 
+const LEASE_STATUS_LABEL: Record<string, string> = {
+  draft: 'Draft',
+  pending_signatures: 'Awaiting signatures',
+  pending_tenant_signature: 'Awaiting tenant signature',
+  pending_owner_signature: 'Awaiting your signature',
+  active: 'Active',
+  month_to_month: 'Active (month-to-month)',
+  renewal_pending: 'Renewal pending',
+  expired: 'Expired',
+  terminated: 'Terminated',
+  early_terminated: 'Terminated early',
+};
+
 const styles = StyleSheet.create({
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
+    marginTop: 16,
+  },
+  statusLabel: { fontSize: 14, color: '#666', fontWeight: '600' },
+  statusValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
   safeArea: {
     flex: 1,
     backgroundColor: '#FFF',

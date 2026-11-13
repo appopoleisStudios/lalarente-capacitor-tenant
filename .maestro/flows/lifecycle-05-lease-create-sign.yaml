@@ -75,6 +75,13 @@ appId: com.lalarente.app
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
+# bring the field out from under the header (iOS reports clipped rows as visible)
+- swipe:
+    start: "50%,40%"
+    end: "50%,60%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 1000
 - tapOn:
     id: "owner-lease-create-end-date"
 - extendedWaitUntil:
@@ -97,8 +104,10 @@ appId: com.lalarente.app
 - tapOn:
     id: "owner-lease-create-rent"
 - eraseText: 30
-- tapOn:
-    text: "Create Lease"
+- swipe:
+    start: "50%,45%"
+    end: "50%,40%"
+    duration: 400
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -127,8 +136,10 @@ appId: com.lalarente.app
 - tapOn:
     id: "owner-lease-create-rent"
 - inputText: "${LC_RENT}"
-- tapOn:
-    text: "Create Lease"
+- swipe:
+    start: "50%,45%"
+    end: "50%,40%"
+    duration: 400
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -142,8 +153,10 @@ appId: com.lalarente.app
     id: "owner-lease-create-deposit"
 - eraseText: 30
 - inputText: "${LC_DEPOSIT}"
-- tapOn:
-    text: "Create Lease"
+- swipe:
+    start: "50%,45%"
+    end: "50%,40%"
+    duration: 400
 
 # ── validation: payment due day must be 1-31 ──────────────────────────────
 - waitForAnimationToEnd:
@@ -159,8 +172,10 @@ appId: com.lalarente.app
     id: "owner-lease-create-due-day"
 - eraseText: 30
 - inputText: "45"
-- tapOn:
-    text: "Create Lease"
+- swipe:
+    start: "50%,45%"
+    end: "50%,40%"
+    duration: 400
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -190,36 +205,10 @@ appId: com.lalarente.app
     id: "owner-lease-create-due-day"
 - eraseText: 30
 - inputText: "1"
-- tapOn:
-    text: "Create Lease"
-- waitForAnimationToEnd:
-    timeout: 1500
-- scrollUntilVisible:
-    element:
-      id: "owner-lease-create-late-fee"
-    direction: DOWN
-    timeout: 20000
-    visibilityPercentage: 60
-    centerElement: true
-- tapOn:
-    id: "owner-lease-create-late-fee"
-- inputText: "250"
-- tapOn:
-    text: "Create Lease"
-- waitForAnimationToEnd:
-    timeout: 1500
-- scrollUntilVisible:
-    element:
-      id: "owner-lease-create-grace-days"
-    direction: DOWN
-    timeout: 20000
-    visibilityPercentage: 60
-    centerElement: true
-- tapOn:
-    id: "owner-lease-create-grace-days"
-- inputText: "5"
-- tapOn:
-    text: "Create Lease"
+- swipe:
+    start: "50%,45%"
+    end: "50%,40%"
+    duration: 400
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -245,8 +234,10 @@ appId: com.lalarente.app
 - tapOn:
     id: "owner-lease-create-escalation-value"
 - inputText: "8"
-- tapOn:
-    text: "Create Lease"
+- swipe:
+    start: "50%,45%"
+    end: "50%,40%"
+    duration: 400
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -260,8 +251,10 @@ appId: com.lalarente.app
     id: "owner-lease-create-escalation-frequency"
 - eraseText: 30
 - inputText: "12"
-- tapOn:
-    text: "Create Lease"
+- swipe:
+    start: "50%,45%"
+    end: "50%,40%"
+    duration: 400
 - takeScreenshot: lc05-owner-lease-form
 - waitForAnimationToEnd:
     timeout: 1500
@@ -290,9 +283,10 @@ appId: com.lalarente.app
 # ── Review: back keeps the form, clauses modal (close, save), send ────────
 - tapOn:
     id: "owner-lease-review-back"
+# back to the form, still scrolled where the owner left it
 - extendedWaitUntil:
     visible:
-      id: "owner-lease-create-type-fixed"
+      id: "owner-lease-create-review"
     timeout: 20000
 - waitForAnimationToEnd:
     timeout: 1500
@@ -381,11 +375,15 @@ appId: com.lalarente.app
 - extendedWaitUntil:
     visible: "My Lease"
     timeout: 20000
-- extendedWaitUntil:
-    visible:
-      id: "tenant-lease-sign"
-    timeout: 30000
 - assertVisible: ".*${LC_PROPERTY_TITLE}.*"
+# the Sign button sits below the lease summary
+- scrollUntilVisible:
+    element:
+      id: "tenant-lease-sign"
+    direction: DOWN
+    timeout: 30000
+    visibilityPercentage: 60
+    centerElement: true
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -421,8 +419,13 @@ appId: com.lalarente.app
     notVisible:
       id: "signature-modal-confirm"
     timeout: 15000
-- assertVisible:
-    id: "tenant-lease-sign"
+- scrollUntilVisible:
+    element:
+      id: "tenant-lease-sign"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
 - tapOn:
     id: "tenant-lease-sign"
 - extendedWaitUntil:
@@ -532,31 +535,35 @@ appId: com.lalarente.app
     timeout: 3000
 
 # ── active lease controls: document, PDF, regenerate, contact, inspections ───
-- assertVisible: "(?i).*active.*"
+# status badge is at the top; the screen may be scrolled down after signing
+- scrollUntilVisible:
+    element:
+      text: "(?i).*active.*"
+    direction: UP
+    timeout: 20000
 - assertNotVisible:
     id: "owner-lease-sign"
 - waitForAnimationToEnd:
     timeout: 1500
-- scrollUntilVisible:
-    element:
-      id: "owner-lease-regenerate-pdf"
-    direction: DOWN
-    timeout: 20000
-    visibilityPercentage: 60
-    centerElement: true
-- tapOn:
-    id: "owner-lease-regenerate-pdf"
-- extendedWaitUntil:
-    visible: "(Regenerate PDF|Notice)"
-    timeout: 15000
-- tapOn:
-    text: "Cancel"
-- waitForAnimationToEnd:
-    timeout: 1500
+# Regenerate only shows when the PDF failed to generate on activation
+- runFlow:
+    when:
+      visible:
+        id: "owner-lease-regenerate-pdf"
+    commands:
+      - tapOn:
+          id: "owner-lease-regenerate-pdf"
+      - extendedWaitUntil:
+          visible: "(Regenerate PDF|Notice)"
+          timeout: 15000
+      - tapOn:
+          text: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1500
 - scrollUntilVisible:
     element:
       id: "owner-lease-download-pdf"
-    direction: UP
+    direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
@@ -720,7 +727,12 @@ appId: com.lalarente.app
 - extendedWaitUntil:
     visible: "My Lease"
     timeout: 20000
-- assertVisible: "(?i).*active.*"
+# status badge is at the top; the screen may be scrolled down after signing
+- scrollUntilVisible:
+    element:
+      text: "(?i).*active.*"
+    direction: UP
+    timeout: 20000
 - assertVisible: ".*${LC_PROPERTY_TITLE}.*"
 - assertNotVisible:
     id: "tenant-lease-sign"
@@ -729,26 +741,25 @@ appId: com.lalarente.app
     timeout: 1500
 - waitForAnimationToEnd:
     timeout: 1500
-- scrollUntilVisible:
-    element:
-      id: "tenant-lease-generate-pdf"
-    direction: DOWN
-    timeout: 20000
-    visibilityPercentage: 60
-    centerElement: true
-- tapOn:
-    id: "tenant-lease-generate-pdf"
-- waitForAnimationToEnd:
-    timeout: 8000
-- tapOn:
-    text: "(OK|Cancel)"
-    optional: true
-- waitForAnimationToEnd:
-    timeout: 1500
+# Generate only shows when the PDF is missing
+- runFlow:
+    when:
+      visible:
+        id: "tenant-lease-generate-pdf"
+    commands:
+      - tapOn:
+          id: "tenant-lease-generate-pdf"
+      - waitForAnimationToEnd:
+          timeout: 8000
+      - tapOn:
+          text: "(OK|Cancel)"
+          optional: true
+      - waitForAnimationToEnd:
+          timeout: 1500
 - scrollUntilVisible:
     element:
       id: "tenant-lease-download-pdf"
-    direction: UP
+    direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
@@ -856,7 +867,7 @@ appId: com.lalarente.app
 - scrollUntilVisible:
     element:
       text: "Owner Signed Lease"
-    direction: DOWN
+    direction: UP
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
@@ -865,7 +876,7 @@ appId: com.lalarente.app
 - scrollUntilVisible:
     element:
       text: "Lease Executed"
-    direction: DOWN
+    direction: UP
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
@@ -874,7 +885,7 @@ appId: com.lalarente.app
 - scrollUntilVisible:
     element:
       text: "Lease Started"
-    direction: DOWN
+    direction: UP
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true

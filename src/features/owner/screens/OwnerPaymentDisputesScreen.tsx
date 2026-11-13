@@ -357,7 +357,7 @@ export default function OwnerPaymentDisputesScreen() {
         {/* ─── Resolve Modal ────────────────────────────────────────────────── */}
         <Modal visible={showResolveModal} transparent animationType="slide">
           <View style={styles.modalOverlay}>
-            <KeyboardAvoidingView>
+            <KeyboardAvoidingView style={{ justifyContent: 'flex-end' }}>
               <View style={styles.modalSheet}>
                 <Text style={styles.modalTitle}>Accept Dispute</Text>
                 <Text style={styles.modalSub}>
@@ -413,7 +413,7 @@ export default function OwnerPaymentDisputesScreen() {
         {/* ─── Reject Modal ─────────────────────────────────────────────────── */}
         <Modal visible={showRejectModal} transparent animationType="slide">
           <View style={styles.modalOverlay}>
-            <KeyboardAvoidingView>
+            <KeyboardAvoidingView style={{ justifyContent: 'flex-end' }}>
               <View style={styles.modalSheet}>
                 <Text style={styles.modalTitle}>Reject Dispute</Text>
                 <Text style={styles.modalSub}>

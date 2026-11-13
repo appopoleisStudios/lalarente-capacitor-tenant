@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Modal,
   Platform,
@@ -23,6 +23,83 @@ const parseDateString = (s: string): Date | null => {
   return isNaN(d.getTime()) ? null : d;
 };
 
+export interface PickerSheetProps {
+  visible: boolean;
+  value: Date;
+  mode?: 'date' | 'time';
+  minimumDate?: Date;
+  maximumDate?: Date;
+  onCancel: () => void;
+  onDone: (value: Date) => void;
+  /** iOS buttons get `${testID}-done` / `${testID}-cancel` */
+  testID?: string;
+}
+
+/**
+ * Native date/time picker with an explicit confirm step.
+ * iOS: wheel in a bottom sheet with Cancel / Done. Android: system dialog.
+ */
+export function PickerSheet({
+  visible,
+  value,
+  mode = 'date',
+  minimumDate,
+  maximumDate,
+  onCancel,
+  onDone,
+  testID,
+}: PickerSheetProps) {
+  const [draft, setDraft] = useState<Date>(value);
+  const valueMs = value.getTime();
+  // Reset the wheel to the field's value each time the sheet opens.
+  useEffect(() => {
+    if (visible) setDraft(new Date(valueMs));
+  }, [visible, valueMs]);
+
+  if (Platform.OS === 'android') {
+    if (!visible) return null;
+    return (
+      <DateTimePicker
+        value={value}
+        mode={mode}
+        display="default"
+        minimumDate={minimumDate}
+        maximumDate={maximumDate}
+        onChange={(event, d) => {
+          if (event.type === 'set' && d) onDone(d);
+          else onCancel();
+        }}
+      />
+    );
+  }
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onCancel}>
+      <View style={styles.backdrop}>
+        <View style={styles.sheet}>
+          <View style={styles.toolbar}>
+            <TouchableOpacity onPress={onCancel} testID={testID && `${testID}-cancel`}>
+              <Text style={styles.cancel}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => onDone(draft)} testID={testID && `${testID}-done`}>
+              <Text style={styles.done}>Done</Text>
+            </TouchableOpacity>
+          </View>
+          <DateTimePicker
+            value={draft}
+            mode={mode}
+            display="spinner"
+            minimumDate={minimumDate}
+            maximumDate={maximumDate}
+            onChange={(_, d) => d && setDraft(d)}
+            themeVariant="light"
+          />
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 export interface DateFieldProps {
   /** YYYY-MM-DD, or '' when unset */
   value: string;
@@ -40,10 +117,7 @@ export interface DateFieldProps {
   testID?: string;
 }
 
-/**
- * Date input that opens the native date picker instead of free typing.
- * iOS: wheel in a bottom sheet with Cancel / Done. Android: system dialog.
- */
+/** Date input that opens the native date picker instead of free typing. */
 export function DateField({
   value,
   onChange,
@@ -64,19 +138,12 @@ export function DateField({
     if (maximumDate && d > maximumDate) d = maximumDate;
     return d;
   };
-  const [draft, setDraft] = useState<Date>(startDate);
-
-  const show = () => {
-    if (disabled) return;
-    setDraft(startDate());
-    setOpen(true);
-  };
 
   return (
     <>
       <TouchableOpacity
         style={style}
-        onPress={show}
+        onPress={() => !disabled && setOpen(true)}
         activeOpacity={disabled ? 1 : 0.7}
         testID={testID}
         accessibilityRole="button"
@@ -86,60 +153,18 @@ export function DateField({
           {value || placeholder}
         </Text>
       </TouchableOpacity>
-
-      {open && Platform.OS === 'android' && (
-        <DateTimePicker
-          value={draft}
-          mode="date"
-          display="default"
-          minimumDate={minimumDate}
-          maximumDate={maximumDate}
-          onChange={(event, date) => {
-            setOpen(false);
-            if (event.type === 'set' && date) onChange(toDateString(date));
-          }}
-        />
-      )}
-
-      {Platform.OS === 'ios' && (
-        <Modal
-          visible={open}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setOpen(false)}
-        >
-          <View style={styles.backdrop}>
-            <View style={styles.sheet}>
-              <View style={styles.toolbar}>
-                <TouchableOpacity
-                  onPress={() => setOpen(false)}
-                  testID={testID && `${testID}-cancel`}
-                >
-                  <Text style={styles.cancel}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setOpen(false);
-                    onChange(toDateString(draft));
-                  }}
-                  testID={testID && `${testID}-done`}
-                >
-                  <Text style={styles.done}>Done</Text>
-                </TouchableOpacity>
-              </View>
-              <DateTimePicker
-                value={draft}
-                mode="date"
-                display="spinner"
-                minimumDate={minimumDate}
-                maximumDate={maximumDate}
-                onChange={(_, date) => date && setDraft(date)}
-                themeVariant="light"
-              />
-            </View>
-          </View>
-        </Modal>
-      )}
+      <PickerSheet
+        visible={open}
+        value={startDate()}
+        minimumDate={minimumDate}
+        maximumDate={maximumDate}
+        onCancel={() => setOpen(false)}
+        onDone={(d) => {
+          setOpen(false);
+          onChange(toDateString(d));
+        }}
+        testID={testID}
+      />
     </>
   );
 }

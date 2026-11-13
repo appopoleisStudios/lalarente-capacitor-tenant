@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -37,6 +37,11 @@ export default function TenantApplicationScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [uploadingDocs, setUploadingDocs] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const scrollRef = useRef<ScrollView>(null);
+  // Each step starts at its top — otherwise the next step opens mid-page.
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [currentStep]);
 
   // Personal Information
   const [fullName, setFullName] = useState('');
@@ -607,7 +612,13 @@ export default function TenantApplicationScreen() {
           <Text style={styles.propertyRent}>R {property.rent_amount?.toLocaleString()}/month</Text>
         </View>
 
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          ref={scrollRef}
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
           {/* CT7-016 — "From your profile" summary. Fields that were pre-
               filled from the tenant's profile are shown as a read-only
               summary panel instead of 10 individual inputs. The tenant

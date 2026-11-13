@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,13 +10,12 @@ import {
   Alert,
   Linking,
   Modal,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { PickerSheet, toDateString } from '@/src/shared/components/ui/DateField';
 import { Ionicons } from '@expo/vector-icons';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { viewingsApi, ViewingWithRelations } from '../../properties/api/viewingsApi';
 import {
   getViewingActionStatus,
@@ -58,9 +57,14 @@ export default function OwnerViewingDetailScreen() {
   const [activeSlotField, setActiveSlotField] = useState<'date' | 'time'>('date');
   const [showSlotPicker, setShowSlotPicker] = useState(false);
 
-  useEffect(() => {
-    loadViewing();
-  }, [viewingId]);
+  // Reload on every focus: the screen stays mounted between visits, so a
+  // viewing approved/declined here must not show its old status on return.
+  useFocusEffect(
+    useCallback(() => {
+      loadViewing();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [viewingId])
+  );
 
   const loadViewing = async () => {
     try {
@@ -115,9 +119,7 @@ export default function OwnerViewingDetailScreen() {
       if (actionType === 'approve') {
         await viewingsApi.approveViewing({
           viewing_id: viewing.id,
-          confirmed_date: modifyDateTime
-            ? selectedDate.toISOString().split('T')[0]
-            : viewing.requested_date,
+          confirmed_date: modifyDateTime ? toDateString(selectedDate) : viewing.requested_date,
           owner_notes: responseNotes.trim() || undefined,
         });
         Alert.alert('Approved', 'Viewing has been approved. The tenant will be notified.', [
@@ -125,7 +127,7 @@ export default function OwnerViewingDetailScreen() {
         ]);
       } else if (actionType === 'decline') {
         const alternatives = alternativeSlots.map((slot) => {
-          const dateStr = slot.date.toISOString().split('T')[0];
+          const dateStr = toDateString(slot.date);
           const timeStr = slot.time.toLocaleTimeString('en-ZA', {
             hour: '2-digit',
             minute: '2-digit',
@@ -223,20 +225,6 @@ export default function OwnerViewingDetailScreen() {
     });
   };
 
-  const handleDateChange = (event: any, date?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios');
-    if (date) {
-      setSelectedDate(date);
-    }
-  };
-
-  const handleTimeChange = (event: any, time?: Date) => {
-    setShowTimePicker(Platform.OS === 'ios');
-    if (time) {
-      setSelectedTime(time);
-    }
-  };
-
   // Alternative slot helpers
   const addAlternativeSlot = () => {
     if (alternativeSlots.length >= 3) return;
@@ -259,9 +247,9 @@ export default function OwnerViewingDetailScreen() {
     setShowSlotPicker(true);
   };
 
-  const handleSlotPickerChange = (event: any, value?: Date) => {
-    setShowSlotPicker(Platform.OS === 'ios');
-    if (value != null && activeSlotIndex != null) {
+  const handleSlotPickerDone = (value: Date) => {
+    setShowSlotPicker(false);
+    if (activeSlotIndex != null) {
       const updated = [...alternativeSlots];
       if (activeSlotField === 'date') {
         updated[activeSlotIndex] = { ...updated[activeSlotIndex], date: value };
@@ -283,7 +271,7 @@ export default function OwnerViewingDetailScreen() {
         onRequestClose={() => setShowActionModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView>
+          <KeyboardAvoidingView style={{ justifyContent: 'flex-end' }}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>
@@ -488,40 +476,46 @@ export default function OwnerViewingDetailScreen() {
                 </TouchableOpacity>
               </View>
 
-              {/* Date/Time Pickers */}
-              {showDatePicker && (
-                <DateTimePicker
-                  value={selectedDate}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={handleDateChange}
-                  minimumDate={new Date()}
-                />
-              )}
-
-              {showTimePicker && (
-                <DateTimePicker
-                  value={selectedTime}
-                  mode="time"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={handleTimeChange}
-                />
-              )}
-
+              {/* Date/Time pickers — bottom sheet with Done on iOS, dialog on Android */}
+              <PickerSheet
+                visible={showDatePicker}
+                value={selectedDate}
+                mode="date"
+                minimumDate={new Date()}
+                onCancel={() => setShowDatePicker(false)}
+                onDone={(date) => {
+                  setShowDatePicker(false);
+                  setSelectedDate(date);
+                }}
+                testID="owner-viewing-modal-date"
+              />
+              <PickerSheet
+                visible={showTimePicker}
+                value={selectedTime}
+                mode="time"
+                onCancel={() => setShowTimePicker(false)}
+                onDone={(time) => {
+                  setShowTimePicker(false);
+                  setSelectedTime(time);
+                }}
+                testID="owner-viewing-modal-time"
+              />
               {/* Slot picker for decline alternatives */}
-              {showSlotPicker && activeSlotIndex != null && (
-                <DateTimePicker
-                  value={
-                    activeSlotField === 'date'
+              <PickerSheet
+                visible={showSlotPicker && activeSlotIndex != null}
+                value={
+                  activeSlotIndex == null
+                    ? new Date()
+                    : activeSlotField === 'date'
                       ? (alternativeSlots[activeSlotIndex]?.date ?? new Date())
                       : (alternativeSlots[activeSlotIndex]?.time ?? new Date())
-                  }
-                  mode={activeSlotField}
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={handleSlotPickerChange}
-                  minimumDate={activeSlotField === 'date' ? new Date() : undefined}
-                />
-              )}
+                }
+                mode={activeSlotField}
+                minimumDate={activeSlotField === 'date' ? new Date() : undefined}
+                onCancel={() => setShowSlotPicker(false)}
+                onDone={handleSlotPickerDone}
+                testID="owner-viewing-slot"
+              />
             </View>
           </KeyboardAvoidingView>
         </View>

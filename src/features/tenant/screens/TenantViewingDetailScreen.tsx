@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
   viewingsApi,
@@ -82,9 +82,14 @@ export default function TenantViewingDetailScreen() {
   const [acceptedSlot, setAcceptedSlot] = useState<string | null>(null);
   const [hasNewPending, setHasNewPending] = useState(false);
 
-  useEffect(() => {
-    loadViewing();
-  }, [viewingId]);
+  // Reload on every focus: tab screens stay mounted, so returning to the
+  // same record must not show its old status.
+  useFocusEffect(
+    useCallback(() => {
+      loadViewing();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [viewingId])
+  );
 
   const loadViewing = async () => {
     try {

@@ -651,13 +651,17 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                         onPress={() => updateItemCondition(index, cond.value)}
                         disabled={readOnly}
                       >
+                        {/* Full word, not the initial — "E G F P D" meant nothing */}
                         <Text
                           style={[
                             styles.conditionButtonText,
                             item.condition === cond.value && { color: '#FFF' },
                           ]}
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
+                          minimumFontScale={0.7}
                         >
-                          {cond.label[0]}
+                          {cond.label}
                         </Text>
                       </TouchableOpacity>
                     ))}
@@ -1228,6 +1232,7 @@ const styles = StyleSheet.create({
   conditionButton: {
     flex: 1,
     paddingVertical: 8,
+    paddingHorizontal: 2,
     alignItems: 'center',
     borderRadius: 8,
     backgroundColor: '#F0F0F0',
@@ -1235,7 +1240,7 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
   },
   conditionButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: '#666',
   },
