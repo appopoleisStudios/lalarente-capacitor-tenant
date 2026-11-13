@@ -665,10 +665,15 @@ appId: com.lalarente.app
 - tapOn:
     id: "inspection-tenant-comment-input"
 - inputText: "LC-comment-1 ${LC_TOKEN}"
-- tapOn:
-    text: "Tenant Comments"
+# tap Add with the keyboard still up — one tap must post the comment
 - tapOn:
     id: "inspection-tenant-comment-add"
+- waitForAnimationToEnd:
+    timeout: 2000
+# posted: the input is cleared (the text now only appears in the list)
+- assertNotVisible:
+    id: "inspection-tenant-comment-input"
+    text: ".*LC-comment-1.*"
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -690,10 +695,15 @@ appId: com.lalarente.app
 - tapOn:
     id: "inspection-tenant-comment-input"
 - inputText: "LC-comment-2 ${LC_TOKEN}"
-- tapOn:
-    text: "Tenant Comments"
+# tap Add with the keyboard still up — one tap must post the comment
 - tapOn:
     id: "inspection-tenant-comment-add"
+- waitForAnimationToEnd:
+    timeout: 2000
+# posted: the input is cleared (the text now only appears in the list)
+- assertNotVisible:
+    id: "inspection-tenant-comment-input"
+    text: ".*LC-comment-2.*"
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -893,6 +903,23 @@ appId: com.lalarente.app
 # ── LC-6-17 completed: export the report ──────────────────────────────────
 - waitForAnimationToEnd:
     timeout: 1500
+# export lives on the last room; signing reloads the inspection at room 1
+- repeat:
+    times: 6
+    while:
+      notVisible:
+        id: "inspection-room-tab-9"
+    commands:
+      - swipe:
+          start: "85%,22%"
+          end: "15%,22%"
+          duration: 400
+      - waitForAnimationToEnd:
+          timeout: 600
+- tapOn:
+    id: "inspection-room-tab-9"
+- waitForAnimationToEnd:
+    timeout: 1500
 - scrollUntilVisible:
     element:
       id: "inspection-export"
@@ -1001,6 +1028,13 @@ appId: com.lalarente.app
     centerElement: true
 - tapOn:
     id: "owner-inspection-room-1"
+# room 0 is now above the fold — bring it back before tapping
+- scrollUntilVisible:
+    element:
+      id: "owner-inspection-room-0"
+    direction: UP
+    timeout: 20000
+    centerElement: true
 - tapOn:
     id: "owner-inspection-room-0"
 - waitForAnimationToEnd:
@@ -1081,13 +1115,25 @@ appId: com.lalarente.app
     text: "OK"
 - waitForAnimationToEnd:
     timeout: 1500
+# the screen reloads after an export; wait for it before scrolling
+- extendedWaitUntil:
+    visible: "Room Conditions.*"
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 2000
 - scrollUntilVisible:
     element:
       id: "owner-inspection-export"
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
-    centerElement: true
+# reach the very end so the button clears the tab bar
+- swipe:
+    start: "50%,70%"
+    end: "50%,30%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 1000
 - tapOn:
     id: "owner-inspection-export"
 - extendedWaitUntil:

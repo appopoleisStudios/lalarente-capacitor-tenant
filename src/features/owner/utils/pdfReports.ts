@@ -1044,461 +1044,418 @@ export async function exportInvoicesPdf(
 }
 
 // ─── Inspection Report ────────────────────────────────────────────────────────
+// Layout follows the client's move-in inspection template
+// (docs/106 - Flats Cerise … Move In Inspection … FULL.pdf): cover with lead
+// photo, contents, actions required (+ photos), per-area tables with Ref x.y,
+// photo grids captioned "Ref #x.y", keys, declaration, signatures, appendix
+// (comment summary + status overview).
+// One deliberate difference: the app records ONE condition per item, so the
+// table shows that condition instead of inventing Clean/Undamaged/Working.
+
+interface ReportItem {
+  name: string;
+  condition: string;
+  notes: string;
+  photoDataUris: string[];
+}
 
 interface RoomReportSection {
   name: string;
   overallCondition: string;
   notes: string;
-  items: { name: string; condition: string; notes: string; photoDataUris: string[] }[];
+  items: ReportItem[];
   photoDataUris: string[];
 }
 
+const CONDITION_LABEL: Record<string, string> = {
+  excellent: 'Excellent',
+  good: 'Good',
+  fair: 'Fair',
+  poor: 'Poor',
+  damaged: 'Damaged',
+};
+
 function conditionColor(c: string): string {
   const m: Record<string, string> = {
-    excellent: '#4CAF50',
-    good: '#8BC34A',
-    fair: '#FFC107',
-    poor: '#FF9800',
-    damaged: '#F44336',
+    excellent: '#3E8E41',
+    good: '#6AA84F',
+    fair: '#B7950B',
+    poor: '#E07B00',
+    damaged: '#CC0000',
   };
-  return m[c] || '#9CA3AF';
-}
-
-function conditionBg(c: string): string {
-  const m: Record<string, string> = {
-    excellent: '#E8F5E9',
-    good: '#F1F8E9',
-    fair: '#FFFDE7',
-    poor: '#FFF3E0',
-    damaged: '#FFEBEE',
-  };
-  return m[c] || '#F5F5F5';
-}
-
-/** Attempt to read a local file URI as a base64 data URI. Returns null if unavailable. */
-async function getPhotoBase64(uri: string | undefined): Promise<string | null> {
-  if (!uri) return null;
-  try {
-    if (uri.startsWith('http')) return uri; // remote URL — embed directly
-    const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' as any });
-    return `data:image/jpeg;base64,${base64}`;
-  } catch {
-    return null; // file no longer on device — skip gracefully
-  }
+  return m[c] || '#6B7280';
 }
 
 const escHtml = (value: string) =>
   value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+/**
+ * Turns a photo/signature reference into an embeddable data URI. Remote files
+ * are downloaded first — expo-print does not reliably wait for remote <img>s,
+ * so linked photos went missing from the PDF. Returns null when unavailable
+ * (e.g. an old file:// path from another device).
+ */
+async function toDataUri(uri: string | null | undefined): Promise<string | null> {
+  if (!uri) return null;
+  try {
+    let local = uri;
+    if (/^https?:\/\//.test(uri)) {
+      const target = `${FileSystem.cacheDirectory}pdf-${Math.random().toString(36).slice(2)}`;
+      const res = await FileSystem.downloadAsync(uri, target);
+      if (res.status >= 400) return null;
+      local = res.uri;
+    }
+    const base64 = await FileSystem.readAsStringAsync(local, { encoding: 'base64' as any });
+    const mime = /\.png(\?|$)/i.test(uri) ? 'image/png' : 'image/jpeg';
+    return `data:${mime};base64,${base64}`;
+  } catch {
+    return null;
+  }
+}
+
+/** Signatures live in the private `signatures` bucket — sign the URL first. */
+async function signatureDataUri(url: string | null | undefined): Promise<string | null> {
+  if (!url) return null;
+  const m = /\/signatures\/(.+?)(\?|$)/.exec(url);
+  if (!m) return toDataUri(url);
+  const { data } = await supabase.storage.from('signatures').createSignedUrl(m[1], 300);
+  return toDataUri(data?.signedUrl ?? url);
+}
+
+function fmtDateTime(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleString('en-ZA', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+interface InspectionReportInput {
+  type: string;
+  scheduled_date: string;
+  completed_date: string | null;
+  overall_condition: string | null;
+  owner_signed_at: string | null;
+  tenant_signed_at: string | null;
+  property: { title: string; address: string | null; city: string | null } | null;
+  owner: { full_name: string; email: string | null; phone: string | null } | null;
+  tenant: { full_name: string; email: string | null; phone: string | null } | null;
+  coverPhoto: string | null;
+  ownerSignature: string | null;
+  tenantSignature: string | null;
+}
+
 function buildInspectionReportHtml(
-  insp: {
-    type: string;
-    scheduled_date: string;
-    overall_condition: string | null;
-    owner_signed_at: string | null;
-    tenant_signed_at: string | null;
-    property: { title: string; address: string | null; city: string | null } | null;
-    owner: { full_name: string; email: string | null; phone: string | null } | null;
-    tenant: { full_name: string; email: string | null; phone: string | null } | null;
-  },
+  insp: InspectionReportInput,
   rooms: RoomReportSection[],
   keys: { physicalKeys: number; accessCards: number; remoteControls: number },
   generalNotes: string,
   tenantComments: { room: string; text: string; createdAt: string }[] = []
 ): string {
-  const today = fmtDate(new Date().toISOString());
   const typeLabel =
-    insp.type === 'move_in' ? 'Move-In' : insp.type === 'move_out' ? 'Move-Out' : 'Periodic';
-  const propertyAddress =
-    [insp.property?.address, insp.property?.city].filter(Boolean).join(', ') || '—';
-  const inspDate = fmtDate(insp.scheduled_date);
+    insp.type === 'move_in' ? 'Move In' : insp.type === 'move_out' ? 'Move Out' : 'Periodic';
+  // Who usually fixes defects found: landlord at move-in, tenant at move-out.
+  const responsibility =
+    insp.type === 'move_in' ? 'Landlord' : insp.type === 'move_out' ? 'Tenant' : 'Investigate';
+  const address =
+    [insp.property?.title, insp.property?.address, insp.property?.city]
+      .filter(Boolean)
+      .map((v) => escHtml(String(v).trim()))
+      .join(', ') || '—';
+  const inspDateTime = fmtDateTime(insp.completed_date || insp.scheduled_date);
+  const photoStamp = fmtDateTime(insp.completed_date || insp.scheduled_date);
 
-  // Assign global sequential Ref numbers to all items
-  let refCounter = 1;
-  const roomsWithRefs = rooms.map((room) => ({
+  // Ref numbering like the template: area n, items n.1, n.2 …
+  const numbered = rooms.map((room, r) => ({
     ...room,
-    items: room.items.map((item) => ({ ...item, ref: refCounter++ })),
+    ref: `${r + 1}`,
+    items: room.items.map((item, i) => ({ ...item, ref: `${r + 1}.${i + 1}` })),
+    comments: tenantComments.filter((c) => c.room === room.name),
   }));
 
-  // Collect Actions Required — poor/damaged items
-  const actionItems = roomsWithRefs.flatMap((room) =>
+  const actions = numbered.flatMap((room) =>
     room.items
       .filter((item) => item.condition === 'poor' || item.condition === 'damaged')
-      .map((item) => ({
-        ref: item.ref,
-        room: room.name,
-        name: item.name,
-        condition: item.condition,
-        notes: item.notes,
-      }))
+      .map((item) => ({ ...item, room: room.name }))
   );
 
-  // Condition → tri-column (Clean | Undamaged | Working)
-  function triCol(c: string): [string, string, string] {
-    switch (c) {
-      case 'excellent':
-      case 'good':
-        return ['Y', 'Y', 'Y'];
-      case 'fair':
-        return ['Y', 'Y', 'Y'];
-      case 'poor':
-        return ['N', 'N', 'Y'];
-      case 'damaged':
-        return ['N', 'N', 'N'];
-      default:
-        return ['Y', 'Y', 'Y'];
-    }
-  }
-  function yCell(v: string): string {
-    return v === 'Y' ? `<td class="tri-y">Y</td>` : `<td class="tri-n">N</td>`;
-  }
+  const photoGrid = (photos: { uri: string; ref: string }[]) =>
+    photos.length === 0
+      ? ''
+      : `<div class="photo-grid">${photos
+          .map(
+            (p) => `<div class="photo-cell">
+              <div class="photo-frame"><img src="${p.uri}" /><span class="stamp">${photoStamp}</span></div>
+              <div class="photo-ref">Ref #${p.ref}</div>
+            </div>`
+          )
+          .join('')}</div>`;
 
-  // Build per-room HTML
-  const roomSections = roomsWithRefs
-    .map((room, rIdx) => {
-      const itemRows = room.items
-        .map((item) => {
-          const [cl, un, wk] = triCol(item.condition);
-          const commentText = item.notes || (item.condition === 'fair' ? 'Minor wear' : '');
-          return `<tr>
-        <td class="ref-cell">${item.ref}</td>
-        <td class="name-cell">${item.name}</td>
-        ${yCell(cl)}${yCell(un)}${yCell(wk)}
-        <td class="comment-cell">${commentText}</td>
-      </tr>`;
-        })
-        .join('');
+  const bar = `<div class="running">${address}</div>`;
 
-      // All photos for this room: item-level + room-level
-      const allPhotos: { uri: string; ref: number; label: string }[] = [];
-      for (const item of room.items) {
-        for (const uri of item.photoDataUris) {
-          allPhotos.push({ uri, ref: item.ref, label: item.name });
-        }
-      }
-      for (const uri of room.photoDataUris) {
-        allPhotos.push({ uri, ref: 0, label: room.name });
-      }
+  // Contents
+  const contents = `<div class="page">
+    ${bar}
+    <div class="box-title">Contents</div>
+    <div class="toc">
+      ${actions.length ? '<div class="toc-row">Actions</div>' : ''}
+      <div class="toc-row">Areas</div>
+      ${numbered.map((r) => `<div class="toc-row sub">${r.ref}. ${escHtml(r.name)}</div>`).join('')}
+      <div class="toc-row">Keys</div>
+      <div class="toc-row">Declaration</div>
+      <div class="toc-row">Appendix</div>
+      <div class="toc-row sub">Comment Summary</div>
+      <div class="toc-row sub">Status Overview</div>
+    </div>
+  </div>`;
 
-      const photoGrid =
-        allPhotos.length > 0
-          ? `<div class="photo-section">
-          <div class="photo-section-label">Photos</div>
-          <div class="photo-grid">
-            ${allPhotos
-              .map(
-                (p) => `
-              <div class="photo-cell">
-                <img src="${p.uri}" class="photo-img" />
-                <div class="photo-caption">${p.ref > 0 ? `Ref ${p.ref} — ` : ''}${p.label}</div>
-                <div class="photo-date">${inspDate}</div>
-              </div>`
-              )
-              .join('')}
-          </div>
-        </div>`
-          : '';
-
-      const isLastRoom = rIdx === rooms.length - 1;
-      return `<div class="room-section${isLastRoom ? '' : ' pbk'}">
-      <div class="room-header">
-        <span class="room-header-name">${room.name}</span>
-        <span class="room-header-badge" style="background:${conditionBg(room.overallCondition)};color:${conditionColor(room.overallCondition)};">${room.overallCondition.toUpperCase()}</span>
-      </div>
-      <table class="items-table">
+  // Actions required
+  const actionsSection = actions.length
+    ? `<div class="page">
+      ${bar}
+      <table class="grid">
         <thead>
-          <tr>
-            <th class="th-ref">Ref</th>
-            <th class="th-name">Name</th>
-            <th class="th-tri">Clean</th>
-            <th class="th-tri">Undamaged</th>
-            <th class="th-tri">Working</th>
-            <th>Comments</th>
-          </tr>
+          <tr><th colspan="5" class="table-title">Actions Required</th></tr>
+          <tr><th style="width:26%">Ref</th><th style="width:15%">Action Required</th><th style="width:14%">Responsibility</th><th>Comments</th><th style="width:10%">Price</th></tr>
         </thead>
-        <tbody>${itemRows}</tbody>
+        <tbody>
+          ${actions
+            .map(
+              (a) => `<tr>
+                <td><span class="ref-link">${a.ref}</span> ${escHtml(a.room)} » ${escHtml(a.name)}</td>
+                <td>${a.condition === 'damaged' ? 'Repair / Replace' : 'Needs Maintenance'}</td>
+                <td>${responsibility}</td>
+                <td>${escHtml(a.notes || '')}</td>
+                <td></td>
+              </tr>`
+            )
+            .join('')}
+          <tr class="total"><td colspan="4">Total</td><td>R 0,00</td></tr>
+        </tbody>
       </table>
-      ${room.notes ? `<div class="room-notes"><strong>Notes:</strong> ${room.notes}</div>` : ''}
-      ${photoGrid}
-    </div>`;
+      ${photoGrid(actions.flatMap((a) => a.photoDataUris.map((uri) => ({ uri, ref: a.ref }))))}
+    </div>`
+    : '';
+
+  // Areas
+  const areas = numbered
+    .map((room) => {
+      const rows = room.items
+        .map(
+          (item) => `<tr>
+            <td class="ref">${item.ref}</td>
+            <td>${escHtml(item.name)}</td>
+            <td><span style="color:${conditionColor(item.condition)};font-weight:700;">${
+              CONDITION_LABEL[item.condition] || escHtml(item.condition || '—')
+            }</span></td>
+            <td>${escHtml(item.notes || '')}</td>
+          </tr>`
+        )
+        .join('');
+      const photos = [
+        ...room.photoDataUris.map((uri) => ({ uri, ref: room.ref })),
+        ...room.items.flatMap((item) => item.photoDataUris.map((uri) => ({ uri, ref: item.ref }))),
+      ];
+      const extra = [
+        room.notes
+          ? `<div class="note"><strong>Area notes:</strong> ${escHtml(room.notes)}</div>`
+          : '',
+        room.comments.length
+          ? `<div class="note"><strong>Tenant comments:</strong><ul>${room.comments
+              .map(
+                (c) =>
+                  `<li>${escHtml(c.text)} <span class="muted">(${fmtDate(c.createdAt)})</span></li>`
+              )
+              .join('')}</ul></div>`
+          : '',
+      ].join('');
+      return `<div class="page">
+        ${bar}
+        <table class="grid">
+          <thead>
+            <tr><th colspan="4" class="table-title">${room.ref}. ${escHtml(room.name.toUpperCase())}
+              <span class="area-cond" style="color:${conditionColor(room.overallCondition)}">${
+                CONDITION_LABEL[room.overallCondition] || ''
+              }</span></th></tr>
+            <tr><th style="width:7%">Ref</th><th style="width:25%">Name</th><th style="width:16%">Condition</th><th>Comments</th></tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+        ${extra}
+        ${photoGrid(photos)}
+      </div>`;
     })
     .join('');
 
-  // Actions Required section
-  const actionsSection =
-    actionItems.length > 0
-      ? `<div class="actions-section pbk">
-        <div class="section-header">ACTIONS REQUIRED</div>
-        <table class="items-table">
-          <thead>
-            <tr>
-              <th class="th-ref">Ref</th>
-              <th class="th-name">Room</th>
-              <th class="th-name">Item</th>
-              <th class="th-tri">Condition</th>
-              <th>Action Required</th>
-              <th class="th-tri">Responsibility</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${actionItems
-              .map(
-                (a) => `<tr>
-              <td class="ref-cell">${a.ref}</td>
-              <td style="font-size:8.5pt;">${a.room}</td>
-              <td style="font-size:8.5pt;">${a.name}</td>
-              <td style="font-size:8pt;text-align:center;color:${conditionColor(a.condition)};font-weight:700;">${a.condition.toUpperCase()}</td>
-              <td style="font-size:8.5pt;">${a.notes || 'Assess and repair / replace as necessary'}</td>
-              <td style="font-size:8pt;text-align:center;color:#555;">Tenant</td>
-            </tr>`
-              )
-              .join('')}
-          </tbody>
-        </table>
-      </div>`
-      : '';
+  // Keys
+  const keysRef = numbered.length + 1;
+  const keysSection = `<table class="grid keys">
+    <thead>
+      <tr><th colspan="3" class="table-title">${keysRef}. KEYS</th></tr>
+      <tr><th style="width:7%">Ref</th><th style="width:40%">Name</th><th>Quantity</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="ref">${keysRef}.1</td><td>House keys</td><td>${keys.physicalKeys}</td></tr>
+      <tr><td class="ref">${keysRef}.2</td><td>Access cards / tags</td><td>${keys.accessCards}</td></tr>
+      <tr><td class="ref">${keysRef}.3</td><td>Remotes</td><td>${keys.remoteControls}</td></tr>
+    </tbody>
+  </table>
+  ${generalNotes ? `<div class="note"><strong>General notes:</strong> ${escHtml(generalNotes)}</div>` : ''}`;
 
-  // Keys + general notes
-  const keysSection = `<div class="keys-section">
-    <div class="section-header">KEY HANDOVER</div>
-    <table class="keys-table">
-      <thead><tr><th>Item</th><th class="th-count">Quantity</th></tr></thead>
-      <tbody>
-        <tr><td>Physical Keys</td><td class="count-cell">${keys.physicalKeys}</td></tr>
-        <tr><td>Access Cards</td><td class="count-cell">${keys.accessCards}</td></tr>
-        <tr><td>Remote Controls</td><td class="count-cell">${keys.remoteControls}</td></tr>
-      </tbody>
-    </table>
-    ${generalNotes ? `<div class="general-notes"><strong>General Notes:</strong> ${generalNotes}</div>` : ''}
-    ${
-      tenantComments.length > 0
-        ? `<div class="general-notes"><strong>Tenant Comments:</strong><ul>${tenantComments
-            .map(
-              (c) =>
-                `<li><strong>${escHtml(c.room)}</strong> (${fmtDate(c.createdAt)}): ${escHtml(c.text)}</li>`
-            )
-            .join('')}</ul></div>`
-        : ''
-    }
+  const sigBox = (
+    who: string,
+    name: string | undefined,
+    signedAt: string | null,
+    image: string | null
+  ) => `<div class="sig-box">
+      <div class="sig-who">Signed by the ${who}</div>
+      ${
+        signedAt
+          ? `${image ? `<img class="sig-img" src="${image}" />` : '<div class="sig-img-missing">Signed electronically</div>'}
+             <div class="sig-name">${escHtml((name || '').toUpperCase())}</div>
+             <div class="sig-date">${fmtDateTime(signedAt)}</div>`
+          : `<div class="sig-line">Signatures</div><div class="sig-line">Print Name</div><div class="sig-line">Date &nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp; /</div>`
+      }
+    </div>`;
+
+  const declaration = `<div class="page">
+    ${bar}
+    ${keysSection}
+    <div class="box-title">Declaration</div>
+    <p class="declaration">I/We the undersigned, affirm that if I/we do not comment on the Inspection in writing
+    within seven days of receipt of this Inspection then I/we accept the Inspection as being an accurate record
+    of the contents and condition of the property.</p>
+    <p class="declaration muted">Completed in accordance with the Rental Housing Act 50 of 1999, section 5(3)(e)–(f).
+    Both parties are entitled to a signed copy of this report.</p>
+    ${sigBox('Tenant', insp.tenant?.full_name, insp.tenant_signed_at, insp.tenantSignature)}
+    ${sigBox('Landlord', insp.owner?.full_name, insp.owner_signed_at, insp.ownerSignature)}
   </div>`;
 
-  // Signatures
-  const sigOwnerBlock = insp.owner_signed_at
-    ? `<div class="sig-signed">✓ Signed: ${fmtDate(insp.owner_signed_at)}</div>`
-    : `<div class="sig-line"></div><div class="sig-date-label">Date: ____________________________</div>`;
-  const sigTenantBlock = insp.tenant_signed_at
-    ? `<div class="sig-signed">✓ Signed: ${fmtDate(insp.tenant_signed_at)}</div>`
-    : `<div class="sig-line"></div><div class="sig-date-label">Date: ____________________________</div>`;
-
-  const signaturesSection = `<div class="signatures-section">
-    <div class="section-header">DECLARATION &amp; SIGNATURES</div>
-    <div class="legal-note">
-      This inspection report was completed in accordance with the Rental Housing Act 50 of 1999, Section 5(3)(e)–(f).
-      Both parties acknowledge the condition of the property as recorded above and are entitled to a signed copy of this report.
-    </div>
-    <div class="sig-blocks">
-      <div class="sig-block">
-        <div class="sig-party">LANDLORD / OWNER</div>
-        <div class="sig-name">${insp.owner?.full_name || '—'}</div>
-        <div class="sig-contact">${[insp.owner?.email, insp.owner?.phone].filter(Boolean).join(' | ') || ''}</div>
-        ${sigOwnerBlock}
-      </div>
-      <div class="sig-block">
-        <div class="sig-party">TENANT</div>
-        <div class="sig-name">${insp.tenant?.full_name || '—'}</div>
-        <div class="sig-contact">${[insp.tenant?.email, insp.tenant?.phone].filter(Boolean).join(' | ') || ''}</div>
-        ${sigTenantBlock}
-      </div>
-    </div>
+  // Appendix
+  const commentRows = [
+    ...numbered.flatMap((room) =>
+      room.items
+        .filter((i) => i.notes)
+        .map((i) => ({ ref: i.ref, text: `${room.name} » ${i.name}: ${i.notes}` }))
+    ),
+    ...numbered.flatMap((room) =>
+      room.comments.map((c) => ({ ref: room.ref, text: `Tenant (${room.name}): ${c.text}` }))
+    ),
+  ];
+  const appendix = `<div class="page">
+    ${bar}
+    <div class="box-title">Appendix</div>
+    <table class="grid">
+      <thead><tr><th colspan="2" class="table-title">Comment Summary</th></tr>
+      <tr><th style="width:12%">Ref</th><th>Comments</th></tr></thead>
+      <tbody>${
+        commentRows.length
+          ? commentRows
+              .map((c) => `<tr><td class="ref">${c.ref}</td><td>${escHtml(c.text)}</td></tr>`)
+              .join('')
+          : '<tr><td colspan="2" class="muted">No comments recorded.</td></tr>'
+      }</tbody>
+    </table>
+    <table class="grid">
+      <thead><tr><th colspan="5" class="table-title">Status Overview</th></tr>
+      <tr><th style="width:8%">Ref</th><th>Area</th><th style="width:14%">Items</th><th style="width:18%">Needs attention</th><th style="width:12%">Photos</th></tr></thead>
+      <tbody>${numbered
+        .map((r) => {
+          const flagged = r.items.filter(
+            (i) => i.condition === 'poor' || i.condition === 'damaged'
+          ).length;
+          const photos =
+            r.photoDataUris.length + r.items.reduce((n, i) => n + i.photoDataUris.length, 0);
+          return `<tr><td class="ref">${r.ref}</td><td>${escHtml(r.name)}</td><td>${r.items.length}</td>
+            <td style="color:${flagged ? '#CC0000' : '#3E8E41'}">${flagged}</td><td>${photos}</td></tr>`;
+        })
+        .join('')}</tbody>
+    </table>
   </div>`;
 
   const CSS = `
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #1a1a1a; background: #fff; }
-
-    /* ── Cover ── */
-    .cover-header { background: #002395; color: #fff; padding: 28px 32px 20px; }
-    .cover-logo { font-size: 8.5pt; letter-spacing: 2px; text-transform: uppercase; opacity: 0.7; margin-bottom: 6px; }
-    .cover-title { font-size: 22pt; font-weight: 700; line-height: 1.2; }
-    .cover-subtitle { font-size: 11pt; font-weight: 600; margin-top: 4px; color: #FFB81C; }
-    .cover-gold { height: 4px; background: #FFB81C; }
-    .cover-body { padding: 24px 32px; }
-    .info-grid { display: flex; gap: 28px; margin-bottom: 22px; }
-    .info-col { flex: 1; }
-    .info-label { font-size: 7.5pt; font-weight: 700; color: #002395; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
-    .info-value { font-size: 10.5pt; font-weight: 600; color: #111; margin-bottom: 2px; }
-    .info-sub { font-size: 8.5pt; color: #555; }
-    .cover-meta { border-top: 1px solid #E5E7EB; padding-top: 16px; display: flex; gap: 28px; }
-    .cond-badge { display: inline-block; padding: 4px 16px; border-radius: 5px; font-size: 9pt; font-weight: 700; margin-top: 6px; }
-    .cover-footer { background: #F8F9FA; padding: 10px 32px; border-top: 1px solid #E5E7EB; font-size: 7.5pt; color: #666; margin-top: 24px; }
-
-    /* ── Section headers ── */
-    .section-header { background: #002395; color: #fff; padding: 8px 14px; font-size: 10pt; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 0; }
-    .pbk { page-break-after: always; }
-
-    /* ── Room ── */
-    .room-section { margin-bottom: 12px; }
-    .room-header { background: #1a1a2e; color: #fff; padding: 9px 14px; display: flex; justify-content: space-between; align-items: center; }
-    .room-header-name { font-size: 10pt; font-weight: 700; }
-    .room-header-badge { font-size: 8pt; font-weight: 700; padding: 3px 10px; border-radius: 4px; }
-
-    /* ── Tables ── */
-    .items-table { width: 100%; border-collapse: collapse; }
-    .items-table thead th { background: #002395; color: #fff; padding: 6px 8px; font-size: 8.5pt; font-weight: 600; text-align: left; border-right: 1px solid #1a4db5; }
-    .items-table tbody td { padding: 5px 8px; font-size: 8.5pt; border-bottom: 1px solid #E5E7EB; border-right: 1px solid #F3F4F6; vertical-align: middle; }
-    .items-table tbody tr:nth-child(even) { background: #F8F9FA; }
-    .th-ref { width: 36px; text-align: center; }
-    .th-name { width: 22%; }
-    .th-tri { width: 9%; text-align: center; }
-    .th-count { width: 80px; text-align: center; }
-    .ref-cell { text-align: center; font-size: 8pt; color: #6B7280; font-weight: 700; }
-    .name-cell { font-weight: 500; }
-    .comment-cell { font-size: 8pt; color: #555; }
-    .tri-y { text-align: center; color: #16a34a; font-weight: 700; font-size: 9.5pt; }
-    .tri-n { text-align: center; color: #dc2626; font-weight: 700; font-size: 9.5pt; }
-
-    /* ── Photos ── */
-    .photo-section { margin-top: 8px; padding: 8px 4px 4px; border-top: 1px solid #F3F4F6; }
-    .photo-section-label { font-size: 7.5pt; font-weight: 700; color: #002395; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
-    .photo-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-    .photo-cell { width: calc(33.333% - 6px); }
-    .photo-img { width: 100%; height: 110px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; display: block; }
-    .photo-caption { font-size: 7.5pt; font-weight: 600; color: #333; margin-top: 3px; }
-    .photo-date { font-size: 7pt; color: #888; }
-
-    /* ── Room notes ── */
-    .room-notes { background: #F0F4FF; padding: 7px 12px; font-size: 8.5pt; color: #374151; border-left: 3px solid #002395; }
-
-    /* ── Keys ── */
-    .keys-section { margin-bottom: 16px; }
-    .keys-table { width: 40%; border-collapse: collapse; margin-bottom: 0; }
-    .keys-table thead th { background: #002395; color: #fff; padding: 6px 10px; font-size: 8.5pt; text-align: left; }
-    .keys-table tbody td { padding: 7px 10px; font-size: 9pt; border-bottom: 1px solid #E5E7EB; }
-    .keys-table tbody tr:nth-child(even) { background: #F8F9FA; }
-    .count-cell { text-align: center; font-size: 12pt; font-weight: 700; color: #002395; }
-    .general-notes { background: #F9FAFB; border-radius: 4px; padding: 10px 12px; font-size: 8.5pt; color: #374151; line-height: 1.6; margin-top: 10px; }
-
-    /* ── Signatures ── */
-    .signatures-section { margin-top: 8px; }
-    .legal-note { background: #EFF6FF; border-left: 4px solid #3B82F6; padding: 9px 13px; font-size: 8pt; color: #1E40AF; line-height: 1.6; margin: 10px 0 18px; }
-    .sig-blocks { display: flex; gap: 28px; margin-top: 8px; }
-    .sig-block { flex: 1; border: 1px solid #E5E7EB; border-radius: 8px; padding: 16px; }
-    .sig-party { font-size: 7.5pt; font-weight: 700; color: #002395; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-    .sig-name { font-size: 11pt; font-weight: 700; color: #111; }
-    .sig-contact { font-size: 8pt; color: #6B7280; margin-top: 2px; margin-bottom: 16px; }
-    .sig-line { height: 1px; background: #374151; margin: 28px 0 6px; }
-    .sig-date-label { font-size: 8pt; color: #555; }
-    .sig-signed { color: #16a34a; font-weight: 700; font-size: 9pt; margin-top: 12px; }
-
-    .report-footer { border-top: 1px solid #ddd; padding-top: 8px; margin-top: 20px; font-size: 7.5pt; color: #999; text-align: center; }
-    .actions-section { margin-bottom: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { font-family: Arial, Helvetica, sans-serif; font-size: 9.5pt; color: #333; background: #fff; }
+    .page { page-break-after: always; padding: 8px 4px; }
+    .page:last-child { page-break-after: auto; }
+    .running { font-size: 8pt; color: #777; margin-bottom: 12px; }
+    .cover { text-align: center; page-break-after: always; padding-top: 12px; }
+    .cover-photo { width: 78%; height: 330px; object-fit: cover; display: block; margin: 0 auto 26px; }
+    .cover-title { font-size: 21pt; font-weight: 700; color: #444; margin-bottom: 22px; }
+    .cover-address { font-size: 11pt; color: #444; margin-bottom: 22px; }
+    .cover-date { font-size: 11pt; font-weight: 700; color: #444; margin-bottom: 4px; }
+    .cover-by { font-size: 11pt; color: #444; }
+    .cover-brand { margin-top: 160px; font-size: 9pt; color: #777; letter-spacing: 1px; }
+    .box-title { background: #F3F4F8; border: 1px solid #E5E7EB; padding: 10px 12px; font-size: 13pt; font-weight: 700; color: #444; margin: 14px 0 12px; }
+    .toc-row { padding: 6px 4px; border-bottom: 1px dotted #ccc; }
+    .toc-row.sub { padding-left: 22px; }
+    table.grid { width: 100%; border-collapse: collapse; margin-bottom: 14px; border: 1px solid #E5E7EB; }
+    table.grid th { background: #F7F8FB; color: #555; font-weight: 700; text-align: left; padding: 8px; font-size: 9pt; border-bottom: 1px solid #E5E7EB; }
+    table.grid th.table-title { font-size: 9.5pt; color: #333; }
+    table.grid td { padding: 9px 8px; vertical-align: top; border-bottom: 1px solid #F0F0F3; }
+    table.grid tbody tr:nth-child(odd) { background: #FBFBFD; }
+    td.ref { font-weight: 700; font-size: 8pt; color: #555; }
+    .ref-link { color: #1A0DAB; text-decoration: underline; }
+    tr.total td { font-weight: 700; }
+    .area-cond { float: right; font-size: 9pt; }
+    .note { background: #F7F8FB; border-left: 3px solid #C9CDD6; padding: 8px 10px; margin: -6px 0 12px; font-size: 9pt; }
+    .note ul { margin: 4px 0 0 16px; }
+    .muted { color: #888; }
+    .photo-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .photo-cell { width: calc(33.333% - 6px); background: #F7F8FB; padding: 0 0 6px; text-align: center; page-break-inside: avoid; }
+    .photo-frame { position: relative; }
+    .photo-frame img { width: 100%; height: 180px; object-fit: cover; display: block; }
+    .stamp { position: absolute; right: 4px; bottom: 4px; background: #000; color: #fff; font-size: 7pt; font-style: italic; padding: 2px 4px; }
+    .photo-ref { font-size: 8.5pt; font-style: italic; color: #555; margin-top: 4px; }
+    .declaration { font-size: 9pt; line-height: 1.5; margin-bottom: 12px; }
+    .sig-box { border: 1px solid #C9CDD6; padding: 12px; margin-bottom: 14px; page-break-inside: avoid; }
+    .sig-who { font-style: italic; margin-bottom: 8px; }
+    .sig-img { height: 70px; max-width: 260px; object-fit: contain; display: block; margin: 6px 0; }
+    .sig-img-missing { color: #3E8E41; font-weight: 700; margin: 10px 0; }
+    .sig-name { margin-top: 8px; }
+    .sig-date { margin-top: 6px; color: #555; }
+    .sig-line { border-bottom: 1px dotted #bbb; padding: 7px 0; color: #555; }
   `;
 
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <style>${CSS}</style>
-</head>
-<body>
-
-  <!-- COVER PAGE -->
-  <div class="pbk">
-    <div class="cover-header">
-      <div class="cover-logo">Lalarente Property Manager</div>
-      <div class="cover-title">Property Inspection Report</div>
-      <div class="cover-subtitle">${typeLabel} Inspection</div>
-    </div>
-    <div class="cover-gold"></div>
-    <div class="cover-body">
-      <div class="info-grid">
-        <div class="info-col">
-          <div class="info-label">Property</div>
-          <div class="info-value">${insp.property?.title || '—'}</div>
-          <div class="info-sub">${propertyAddress}</div>
-        </div>
-        <div class="info-col">
-          <div class="info-label">Inspection Date</div>
-          <div class="info-value">${inspDate}</div>
-          <div class="info-sub">Generated: ${today}</div>
-        </div>
-        <div class="info-col">
-          <div class="info-label">Type</div>
-          <div class="info-value">${typeLabel}</div>
-          ${
-            insp.overall_condition
-              ? `<div class="cond-badge" style="background:${conditionBg(insp.overall_condition)};color:${conditionColor(insp.overall_condition)};border:2px solid ${conditionColor(insp.overall_condition)};">${insp.overall_condition.toUpperCase()}</div>`
-              : ''
-          }
-        </div>
-      </div>
-      <div class="cover-meta">
-        <div class="info-col">
-          <div class="info-label">Landlord / Owner</div>
-          <div class="info-value">${insp.owner?.full_name || '—'}</div>
-          <div class="info-sub">${[insp.owner?.email, insp.owner?.phone].filter(Boolean).join(' | ') || ''}</div>
-        </div>
-        <div class="info-col">
-          <div class="info-label">Tenant</div>
-          <div class="info-value">${insp.tenant?.full_name || '—'}</div>
-          <div class="info-sub">${[insp.tenant?.email, insp.tenant?.phone].filter(Boolean).join(' | ') || ''}</div>
-        </div>
-        <div class="info-col">
-          <div class="info-label">Rooms Inspected</div>
-          <div class="info-value">${rooms.length}</div>
-          ${
-            actionItems.length > 0
-              ? `<div style="color:#dc2626;font-size:8.5pt;font-weight:700;margin-top:4px;">${actionItems.length} action(s) required</div>`
-              : `<div style="color:#16a34a;font-size:8.5pt;font-weight:700;margin-top:4px;">No actions required</div>`
-          }
-        </div>
-      </div>
-    </div>
-    <div class="cover-footer">
-      This report was prepared in accordance with the Rental Housing Act 50 of 1999. Both parties are entitled to a signed copy.
-    </div>
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8" /><style>${CSS}</style></head><body>
+  <div class="cover">
+    ${insp.coverPhoto ? `<img class="cover-photo" src="${insp.coverPhoto}" />` : ''}
+    <div class="cover-title">${typeLabel} Inspection</div>
+    <div class="cover-address">${address}</div>
+    <div class="cover-date">${inspDateTime}</div>
+    <div class="cover-by">Prepared By ${escHtml(insp.owner?.full_name || '—')}</div>
+    <div class="cover-brand">Property report created with Lalarente</div>
   </div>
-
-  <!-- ACTIONS REQUIRED (only when there are flagged items) -->
+  ${contents}
   ${actionsSection}
-
-  <!-- ROOM-BY-ROOM SECTIONS -->
-  ${roomSections}
-
-  <!-- KEY HANDOVER + GENERAL NOTES -->
-  ${keysSection}
-
-  <!-- DECLARATION & SIGNATURES -->
-  ${signaturesSection}
-
-  <div class="report-footer">
-    Lalarente Property Manager &nbsp;|&nbsp; ${typeLabel} Inspection Report &nbsp;|&nbsp; ${inspDate} &nbsp;|&nbsp; RHA 50 of 1999 Compliant
-  </div>
-
-</body>
-</html>`;
+  ${areas}
+  ${declaration}
+  ${appendix}
+  </body></html>`;
 }
 
 /**
- * Generate and save an inspection report PDF.
- * Fetches inspection data, embeds photos as base64 (gracefully skips missing ones),
- * saves to the documents table with access_level 'both'.
+ * Generate and save an inspection report PDF (both owner and tenant can view).
  * Returns the saved document ID.
  */
 export async function exportInspectionReportPdf(
   inspectionId: string,
   userId: string
 ): Promise<string> {
-  // 1. Fetch inspection with all relations
   const { data: insp, error } = await supabase
     .from('inspections')
     .select(
       `
-      id, type, scheduled_date, overall_condition,
-      owner_signed_at, tenant_signed_at,
+      id, type, scheduled_date, completed_date, overall_condition,
+      owner_signed_at, tenant_signed_at, owner_signature_url, tenant_signature_url,
       property_id, lease_id, tenant_id, owner_id,
       rooms,
-      property:properties!property_id(title, address, city),
+      property:properties!property_id(title, address, city, images),
       owner:profiles!owner_id(full_name, email, phone),
       tenant:profiles!tenant_id(full_name, email, phone)
     `
@@ -1508,52 +1465,54 @@ export async function exportInspectionReportPdf(
 
   if (error || !insp) throw new Error('Failed to load inspection data');
 
-  // 2. Parse rooms
   const roomsData = insp.rooms as any;
   const roomsList: any[] = roomsData?.rooms || [];
   const keys = roomsData?.keys || { physicalKeys: 0, accessCards: 0, remoteControls: 0 };
   const generalNotes: string = roomsData?.generalNotes || '';
   const tenantComments = Array.isArray(roomsData?.tenantComments) ? roomsData.tenantComments : [];
 
-  // 3. Convert photos to base64 (graceful fallback for missing files)
-  const processedRooms: RoomReportSection[] = await Promise.all(
-    roomsList.map(async (room: any) => {
-      const roomPhotos = (
-        await Promise.all((room.photos || []).map((uri: string) => getPhotoBase64(uri)))
-      ).filter(Boolean) as string[];
+  const embedAll = async (uris: string[] | undefined) =>
+    (await Promise.all((uris || []).map((u) => toDataUri(u)))).filter(Boolean) as string[];
 
-      const items = await Promise.all(
+  const processedRooms: RoomReportSection[] = await Promise.all(
+    roomsList.map(async (room: any) => ({
+      name: room.name || '',
+      overallCondition: room.overallCondition || 'good',
+      notes: room.notes || '',
+      photoDataUris: await embedAll(room.photos),
+      items: await Promise.all(
         (room.items || []).map(async (item: any) => ({
           name: item.name || '',
           condition: item.condition || 'good',
           notes: item.notes || '',
-          photoDataUris: (
-            await Promise.all((item.photos || []).map((uri: string) => getPhotoBase64(uri)))
-          ).filter(Boolean) as string[],
+          photoDataUris: await embedAll(item.photos),
         }))
-      );
-
-      return {
-        name: room.name || '',
-        overallCondition: room.overallCondition || 'good',
-        notes: room.notes || '',
-        items,
-        photoDataUris: roomPhotos,
-      };
-    })
+      ),
+    }))
   );
 
-  // 4. Build HTML
+  const property = insp.property as any;
+  const firstRoomPhoto = processedRooms.find((r) => r.photoDataUris.length)?.photoDataUris[0];
+  const [listingCover, ownerSignature, tenantSignature] = await Promise.all([
+    toDataUri(Array.isArray(property?.images) ? property.images[0] : null),
+    signatureDataUri((insp as any).owner_signature_url),
+    signatureDataUri((insp as any).tenant_signature_url),
+  ]);
+
   const html = buildInspectionReportHtml(
     {
       type: insp.type,
       scheduled_date: insp.scheduled_date,
+      completed_date: (insp as any).completed_date ?? null,
       overall_condition: insp.overall_condition,
       owner_signed_at: insp.owner_signed_at,
       tenant_signed_at: insp.tenant_signed_at,
-      property: insp.property as any,
+      property,
       owner: insp.owner as any,
       tenant: insp.tenant as any,
+      coverPhoto: listingCover || firstRoomPhoto || null,
+      ownerSignature,
+      tenantSignature,
     },
     processedRooms,
     keys,
@@ -1561,13 +1520,11 @@ export async function exportInspectionReportPdf(
     tenantComments
   );
 
-  // 5. Generate PDF
   const { uri } = await Print.printToFileAsync({ html, base64: false });
 
-  // 6. Save to documents (both owner and tenant can view)
   const typeLabel =
     insp.type === 'move_in' ? 'Move-In' : insp.type === 'move_out' ? 'Move-Out' : 'Periodic';
-  const propertyTitle = (insp.property as any)?.title || 'Property';
+  const propertyTitle = property?.title || 'Property';
   const title = `${typeLabel} Inspection Report — ${propertyTitle}`;
 
   return saveReportToDocuments(uri, 'inspection_report', title, userId, {

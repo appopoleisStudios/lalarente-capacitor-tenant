@@ -9,6 +9,7 @@ import {
   Alert,
   TextInput,
   Image,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
@@ -16,7 +17,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { inspectionsApi } from '../api/inspectionsApi';
 import { uploadSignature } from '../../leases/api/storageService';
-import { supabase } from '@/src/lib/supabase';
+import { supabase, STORAGE_BUCKETS } from '@/src/lib/supabase';
+import { uploadPhoto } from '@/src/shared/utils/photoUpload';
 import { exportInspectionReportPdf } from '../../owner/utils/pdfReports';
 import SignatureModal from '../../leases/components/SignatureModal';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
@@ -74,6 +76,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -130,6 +133,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
       const updated = await inspectionsApi.addTenantComment(inspection.id, roomName, commentDraft);
       setTenantComments(updated);
       setCommentDraft('');
+      Keyboard.dismiss();
     } catch (err) {
       reportApiError(err, 'inspections', 'update');
       Alert.alert('Error', 'Failed to add comment');
@@ -191,32 +195,45 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
     setRooms(updatedRooms);
   };
 
+  // Photos are uploaded straight away: they used to be stored as file:// paths
+  // on the inspector's phone, so the other party (and the PDF) never saw them.
+  const addPhoto = async (localUri: string, itemIndex?: number) => {
+    if (!inspection || rooms.length === 0) return;
+    const roomIdx = Math.min(Math.max(currentRoomIndex, 0), rooms.length - 1);
+    try {
+      setUploadingPhoto(true);
+      const url = await uploadPhoto(STORAGE_BUCKETS.INSPECTION_PHOTOS, inspection.id, localUri);
+      setRooms((prev) => {
+        const updated = [...prev];
+        const room = updated[roomIdx];
+        if (!room) return prev;
+        if (itemIndex !== undefined && room.items[itemIndex]) {
+          const photos = [...(room.items[itemIndex].photos || []), url];
+          updated[roomIdx] = {
+            ...room,
+            items: room.items.map((item, i) => (i === itemIndex ? { ...item, photos } : item)),
+          };
+        } else {
+          updated[roomIdx] = { ...room, photos: [...(room.photos || []), url] };
+        }
+        return updated;
+      });
+    } catch (err) {
+      reportApiError(err, 'inspections', 'update');
+      Alert.alert('Upload failed', 'The photo could not be uploaded. Please try again.');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   const pickImage = async (itemIndex?: number) => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 0.8,
     });
-
     if (!result.canceled && result.assets[0]) {
-      if (rooms.length === 0) return;
-      const roomIdx = Math.min(Math.max(currentRoomIndex, 0), rooms.length - 1);
-      const updatedRooms = [...rooms];
-      const room = updatedRooms[roomIdx];
-      if (!room) return;
-      if (itemIndex !== undefined && room.items[itemIndex]) {
-        const photos = [...(room.items[itemIndex].photos || []), result.assets[0].uri];
-        updatedRooms[roomIdx] = {
-          ...room,
-          items: room.items.map((item, i) => (i === itemIndex ? { ...item, photos } : item)),
-        };
-      } else {
-        updatedRooms[roomIdx] = {
-          ...room,
-          photos: [...(room.photos || []), result.assets[0].uri],
-        };
-      }
-      setRooms(updatedRooms);
+      await addPhoto(result.assets[0].uri, itemIndex);
     }
   };
 
@@ -231,26 +248,8 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
       allowsEditing: true,
       quality: 0.8,
     });
-
     if (!result.canceled && result.assets[0]) {
-      if (rooms.length === 0) return;
-      const roomIdx = Math.min(Math.max(currentRoomIndex, 0), rooms.length - 1);
-      const updatedRooms = [...rooms];
-      const room = updatedRooms[roomIdx];
-      if (!room) return;
-      if (itemIndex !== undefined && room.items[itemIndex]) {
-        const photos = [...(room.items[itemIndex].photos || []), result.assets[0].uri];
-        updatedRooms[roomIdx] = {
-          ...room,
-          items: room.items.map((item, i) => (i === itemIndex ? { ...item, photos } : item)),
-        };
-      } else {
-        updatedRooms[roomIdx] = {
-          ...room,
-          photos: [...(room.photos || []), result.assets[0].uri],
-        };
-      }
-      setRooms(updatedRooms);
+      await addPhoto(result.assets[0].uri, itemIndex);
     }
   };
 
@@ -555,7 +554,19 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
             </ScrollView>
           </View>
 
-          <ScrollView style={styles.scrollView}>
+          {/* handled: with the keyboard up, the first tap on "Add Comment" used to
+              only dismiss the keyboard, so comments silently weren't posted */}
+          <ScrollView
+            style={styles.scrollView}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+          >
+            {uploadingPhoto && (
+              <View style={styles.uploadBanner} testID="inspection-photo-uploading">
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={styles.uploadBannerText}>Uploading photo…</Text>
+              </View>
+            )}
             {/* Room Header */}
             <View style={styles.roomHeader}>
               <Text style={styles.roomName}>{currentRoom?.name}</Text>
@@ -1080,6 +1091,17 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
 }
 
 const styles = StyleSheet.create({
+  uploadBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: '#EEF2FF',
+  },
+  uploadBannerText: { fontSize: 13, color: '#1E3A8A', fontWeight: '600' },
   safeArea: {
     flex: 1,
     backgroundColor: '#FFF',
