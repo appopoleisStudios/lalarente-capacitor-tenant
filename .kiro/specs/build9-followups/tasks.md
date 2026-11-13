@@ -159,12 +159,16 @@
   - [ ] Lint job loads the config and gates on errors (warnings budget agreed).
   - [ ] The 5 suites run; Tests job green.
 
-## B9-010 🟠 Remove a photo from an inspection before completing it ⬜
+## B9-010 🟠 Remove a photo from an inspection before completing it ✅
 
 - **Request (owner, 2026-11-13):** like listing photos, inspection photos need
   an × to remove them before the report is saved/completed.
 - **Acceptance criteria:**
-  - [ ] × on every room and item photo thumbnail while the inspection is
+  - [x] × on every room and item photo thumbnail while the inspection is
         editable (scheduled / in progress); hidden once completed/signed.
-  - [ ] Removing updates the saved inspection (and deletes the uploaded file).
-  - [ ] Maestro: add 2 photos → remove 1 → save → reopen shows 1.
+  - [x] Removing updates the saved inspection on Save/Complete. The storage
+        file is kept (deleting before Save would break an unsaved inspection
+        that still points at it) — orphan cleanup can be a later job.
+  - [x] Maestro `inspection-photo-remove.yaml`: add 2 → remove 1 → save →
+        reopen shows 1 (passes on iOS sim); completed inspection shows no ×.
+- Also fixed: periodic inspections were titled "Move-Out Inspection".
