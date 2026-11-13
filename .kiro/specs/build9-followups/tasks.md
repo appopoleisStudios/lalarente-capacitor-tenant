@@ -7,25 +7,41 @@
 
 ---
 
-## B9-000 🔴 Merge the build-9 branch into main ⬜
+## B9-000 🔴 Merge the build-9 branch into main ✅
 
 - **Why:** every later task branches from `main`; today's fixes (lease send,
   maintenance RLS recursion, inspection signatures, sign-in flash…) live only on
   `feat/lifecycle-inspection-issues-deposit-confirm`.
 - **Acceptance criteria:**
-  - [ ] PR opened from the feature branch to `main` with the build-9 summary.
-  - [ ] CI green (or failures shown to be pre-existing).
-  - [ ] Merged; `main` builds and the tenant tab-bar guard passes on iOS + Android.
+  - [x] PR #219 opened from the feature branch to `main` with the build-9 summary.
+  - [x] CI: TypeScript green; Lint + Tests red on main already (see B9-009).
+  - [x] Merged 2026-11-13; post-merge: tab-bar guard passes on iOS + Android,
+        Android smoke flow (release APK built from main) passes.
 
-## B9-001 🟠 Finish lifecycle stage 06 (inspection) on device ⬜
+## B9-001 🟠 Finish lifecycle stage 06 (inspection) on device ✅
 
 - **Where it stopped:** after the tenant raises an inspection comment as a
   maintenance request, the flow could not find `inspection-export` (PDF export).
+- **Found while testing (fixed on this branch):**
+  - Inspection photos were saved as `file://` paths on the inspector's phone —
+    never uploaded, so the other party and the PDF never saw them. Now resized
+    (shared `src/shared/utils/photoUpload.ts`) and uploaded to
+    `inspection-photos/{inspection_id}/`.
+  - With the keyboard up, the first tap on "Add Comment" only closed the
+    keyboard — tenant comments silently weren't posted.
+- **Owner request (2026-11-13):** the PDF must be the complete report from the
+  client template (`docs/106 - Flats Cerise … Move In Inspection … FULL.pdf`).
 - **Acceptance criteria:**
-  - [ ] `lifecycle-06-inspection.yaml` passes end to end on a fresh inspection
-        (schedule → rooms/photos → complete → owner + tenant sign → completed).
-  - [ ] Inspection PDF export works for both roles.
-  - [ ] F10 (inspection statuses `pending_signatures` → `completed`) confirmed
+  - [x] `lifecycle-06-inspection.yaml` passes end to end on a fresh inspection
+        (schedule → rooms/photos → complete → owner + tenant sign → completed);
+        all 11 photos stored as uploaded URLs (~85 KB each).
+  - [x] Inspection PDF export works for both roles.
+  - [x] PDF follows the template: cover photo + address + date + prepared by,
+        contents, actions required (+ photos), areas with Ref x.y tables and
+        photo grids, keys, declaration, signature images, appendix (comment
+        summary + status overview). Item rows show the recorded condition —
+        the app does not capture Clean/Undamaged/Working answers.
+  - [x] F10 (inspection statuses `pending_signatures` → `completed`) confirmed
         on device.
 
 ## B9-002 🟠 Run lifecycle 07 → 08 on build 9 and fix what breaks ⬜
@@ -54,7 +70,7 @@
   - [ ] Owner and tenant both see the marked-up photo (and in the PDF).
   - [ ] Works on iOS and Android; Maestro flow covers open → draw → save.
 
-## B9-004 🟡 Inspection photos are uploaded full size ⬜
+## B9-004 🟡 Inspection photos are uploaded full size ✅ (done in B9-001)
 
 - `InspectionScreen.pickImage` / camera use `quality: 0.8` with no resize —
   same slow-loading problem listings had.
@@ -120,3 +136,15 @@
 - **Acceptance criteria:**
   - [ ] A reset script (or migration-free admin steps) recreates the lifecycle
         fixture so the chain can run from 01 cleanly.
+
+## B9-009 🟠 CI is red on main (Lint + Tests) ⬜
+
+- **Lint:** CI's ESLint 9 can't load the `expo` shareable config
+  ("ESLint couldn't find the config \"expo\"") and runs `--max-warnings 0`
+  against ~4.4k existing warnings — fails before checking anything.
+- **Tests:** 5 suites fail to run (Jest transform can't parse an imported
+  module): documentsApi, leasePdfService, OwnerLeaseReviewScreen, poActions,
+  leaseSignGate. Already failing on PRs #209/#210 before build 9.
+- **Acceptance criteria:**
+  - [ ] Lint job loads the config and gates on errors (warnings budget agreed).
+  - [ ] The 5 suites run; Tests job green.
