@@ -83,7 +83,10 @@ function getDaySuffix(day: number): string {
 
 export function generateLeaseHTML(lease: LeaseData, customClauses?: string): string {
   const leaseTypeDisplay = lease.lease_type === 'fixed' ? 'Fixed Term' : 'Month-to-Month';
-  const escalationType = lease.rent_escalation_type === 'percentage' ? '%' : ' (Fixed)';
+  const escalationType =
+    lease.rent_escalation_type === 'percentage' || lease.rent_escalation_type === 'fixed_percentage'
+      ? '%'
+      : ' (Fixed)';
   const escalationValue = lease.rent_escalation_value || 0;
   const escalationFrequency = lease.rent_escalation_frequency_months || 12;
   const interestRate = lease.interest_on_arrears_rate; // from lease terms, undefined if not set

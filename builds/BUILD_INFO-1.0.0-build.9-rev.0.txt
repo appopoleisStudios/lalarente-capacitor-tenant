@@ -1,0 +1,89 @@
+LaLarente App - Build Information
+==================================
+
+Build Date: 2026-11-13
+Build Type: Client Testing (Alpha)
+
+Version Information:
+  Version:      1.0.0
+  Build Number: 9
+  Revision:     0
+  Full Version: 1.0.0-build.9-rev.0
+
+Android Information:
+  Version Code: 9
+  Version Name: 1.0.0
+  Package:      com.lalarente.app
+  SHA-256:      6dfeabd937b81815a767444e00b0de8b0ce11c2cb0d63cb1b29b8a25f8b20d0d
+
+Build Configuration:
+  Platform:     Android
+  Build Type:   APK (Release)
+  Build Method: Local Gradle (assembleRelease)
+  Minify:       Enabled
+  Hermes:       Enabled
+  New native module: expo-image-manipulator 14.0.8 (listing photo resize)
+
+Fixes in Build 9 (found by running the lifecycle E2E chain)
+-----------------------------------------------------------
+Listings & photos
+  ✓ Listing photos resized to 1280px JPEG before upload (were 2-3 MB, ~20 s to show)
+  ✓ HEIC photos converted to JPEG; photo "x" remove button works
+  ✓ Owner navbar: stray "lease…/prop…" tabs removed
+  ✓ 3D tour: dead links rejected on save; "Feature coming soon" when none
+
+Sign-in & dashboard
+  ✓ Sign-in screen no longer flashes back after logging in (auth event race)
+  ✓ Profile fetched once per sign-in (dashboard no longer reloads twice)
+  ✓ Owner dashboard no longer shows "add your first property" when one
+    network call drops; Refresh button on that state
+
+Dates & forms
+  ✓ Every date field uses a picker (Cancel/Done sheet on iOS, dialog on Android)
+  ✓ Dates no longer saved a day early (SAST vs UTC): lease dates, first rent
+    due date, viewing dates
+  ✓ Keyboard can be dismissed on long forms; number pad no longer hides
+    Create/Submit buttons
+  ✓ Pop-up sheets no longer drawn under the status bar
+
+Viewing → application → deposit → lease
+  ✓ Viewing request no longer rejected as "Invalid Date"
+  ✓ Detail screens refresh when reopened (no stale "Action Required")
+  ✓ Back goes to the previous screen, not the dashboard (all roles)
+  ✓ Tenant can re-apply after withdrawing (DB index fix)
+  ✓ Tenant keeps seeing the property after paying the holding deposit (RLS)
+  ✓ Failed screening rows can be overridden after review
+  ✓ Lease "Send to Tenant" works (removed dropped late-fee fields)
+  ✓ Lease status shown to owner and tenant; tenant sees Additional Terms
+    before signing; View Lease available after sending
+  ✓ Rent escalation shows "8%", not "R 8" (screens and lease PDF)
+  ✓ F1 lease signing statuses verified end-to-end (pending → active)
+
+Inspections & maintenance
+  ✓ Owner/tenant can sign inspections (signature storage RLS)
+  ✓ Condition buttons show Excellent/Good/Fair/Poor/Damaged, not E/G/F/P/D
+  ✓ Maintenance requests can be updated again (DB policy recursion fixed);
+    only request parties can edit a request (was: any signed-in user)
+
+Verification
+  iOS simulator (iPhone 16e, Maestro): lifecycle 01, 02a, 03a, 04, 05 passed
+    (04/05 partly via resumed runs); 06 passed up to raise-issue → maintenance;
+    10b multi-photo upload passed; tenant tab-bar guard passed.
+  Android emulator (Pixel 7, this APK): tenant tab-bar guard + smoke flow
+    (owner dashboard, listings with photos, lease status, date dialog, tenant
+    lease/terms/escalation, payments, inspection labels) passed.
+
+Known Limitations / Not yet verified on device
+  - Lifecycle 06 tail (inspection PDF export) and 07-08 (vendor quote, Send PO
+    date fix F12, closure, occupied) not yet re-run on this build
+  - Photo markup (draw on inspection photos) not built yet
+  - ~20 files still format "today" with toISOString (wrong only 00:00-02:00 SAST)
+  - Payment gateway (PayFast/Yoco) not live — mock flows only
+  - Push notifications (FCM) not yet configured
+
+Distribution:
+  Method: Direct APK install
+  Requires: "Install from unknown sources" enabled
+
+Support:
+  Include this build number in bug reports: 1.0.0-build.9-rev.0

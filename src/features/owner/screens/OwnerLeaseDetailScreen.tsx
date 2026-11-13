@@ -611,7 +611,8 @@ export default function OwnerLeaseDetailScreen() {
                   icon="trending-up"
                   label="Rent Escalation"
                   value={`${
-                    lease.rent_escalation_type === 'percentage'
+                    lease.rent_escalation_type === 'percentage' ||
+                    lease.rent_escalation_type === 'fixed_percentage'
                       ? `${lease.rent_escalation_value}%`
                       : `R ${lease.rent_escalation_value}`
                   }${
