@@ -44,18 +44,28 @@
   - [x] F10 (inspection statuses `pending_signatures` → `completed`) confirmed
         on device.
 
-## B9-002 🟠 Run lifecycle 07 → 08 on build 9 and fix what breaks ⬜
+## B9-002 🟠 Run lifecycle 07 → 08 on build 9 and fix what breaks ✅
 
 - **Scope:** 07 issue → maintenance, 07b vendor quote, 07c Send PO
   (**F12 date fix, still unverified on device**), 07d work closure +
   verification, 08 occupied.
 - **Note:** maintenance-request UPDATE was failing for every role until
   migration `20261113000008`; 07–08 have not run since.
+- **Found while testing (fixed):** tenant Lease Journey never showed
+  maintenance (query selected a non-existent `updated_at` → whole query
+  failed); journey didn't refresh on focus; Request Revision sheet and
+  Request Changes dialog hidden behind the keyboard; Report Issues screen under
+  the status bar (back untappable); vendor/tenant Camera/Gallery and vendor list
+  needed two taps after typing (keyboard trap); tenant couldn't open their own
+  rented home ("no longer available", dead end).
+- **Design change noted:** accepting a quote now issues _and sends_ the PO
+  (LAL-120), so the Send PO screen (F12) is only reached for unsent POs.
 - **Acceptance criteria:**
-  - [ ] 07, 07b, 07c, 07d, 08 pass on the iOS simulator.
-  - [ ] F12: Send PO accepts today's date and stores the local date.
-  - [ ] Vendor flows confirmed still allowed by the tightened
-        maintenance_requests UPDATE policy.
+  - [x] 07, 07b, 07c, 07d, 08 pass on the iOS simulator (07/07b/07d in
+        resumed segments after fixes).
+  - [x] F12: Send PO accepts today's date and stored `2026-11-13` (local).
+  - [x] Vendor quote, PO, start work, progress update, closure all work under
+        the tightened maintenance_requests UPDATE policy.
 
 ## B9-003 🟠 Inspection photo markup (draw on a photo to show the issue) ⬜
 
@@ -148,3 +158,13 @@
 - **Acceptance criteria:**
   - [ ] Lint job loads the config and gates on errors (warnings budget agreed).
   - [ ] The 5 suites run; Tests job green.
+
+## B9-010 🟠 Remove a photo from an inspection before completing it ⬜
+
+- **Request (owner, 2026-11-13):** like listing photos, inspection photos need
+  an × to remove them before the report is saved/completed.
+- **Acceptance criteria:**
+  - [ ] × on every room and item photo thumbnail while the inspection is
+        editable (scheduled / in progress); hidden once completed/signed.
+  - [ ] Removing updates the saved inspection (and deletes the uploaded file).
+  - [ ] Maestro: add 2 photos → remove 1 → save → reopen shows 1.

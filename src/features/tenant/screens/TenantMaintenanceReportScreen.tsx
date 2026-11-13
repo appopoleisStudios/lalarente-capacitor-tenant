@@ -705,7 +705,11 @@ export default function TenantMaintenanceReportScreen() {
                   <Ionicons name="camera" size={32} color={RSA.green} />
                   <Text style={styles.addMediaText}>Camera</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.addMediaButton} onPress={pickMedia}>
+                <TouchableOpacity
+                  style={styles.addMediaButton}
+                  onPress={pickMedia}
+                  testID="maintenance-add-gallery"
+                >
                   <Ionicons name="images" size={32} color={RSA.green} />
                   <Text style={styles.addMediaText}>Gallery</Text>
                 </TouchableOpacity>

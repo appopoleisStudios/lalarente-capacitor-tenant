@@ -16,6 +16,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Modal,
   Platform,
   ScrollView,
@@ -442,7 +443,11 @@ export default function OwnerClosureApprovalScreen() {
         animationType="fade"
         onRequestClose={() => setShowRejectModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        {/* keyboard-aware: the Cancel / Send buttons sat under the keyboard */}
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Ionicons name="warning" size={24} color={colors.error[500]} />
@@ -484,7 +489,7 @@ export default function OwnerClosureApprovalScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

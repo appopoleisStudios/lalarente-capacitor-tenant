@@ -233,6 +233,11 @@ appId: com.lalarente.app
     id: "inspection-item-0-gallery"
 - waitForAnimationToEnd:
     timeout: 2500
+# the picker can take a few seconds to present
+- extendedWaitUntil:
+    visible: "Collections"
+    timeout: 10000
+    optional: true
 # picker can ignore the first tap while it is still presenting; retry
 - repeat:
     times: 3
@@ -243,6 +248,13 @@ appId: com.lalarente.app
           point: "50%,28%"
       - waitForAnimationToEnd:
           timeout: 2000
+      # multi-select picker stays open after a tile tap: confirm with ✓
+      - runFlow:
+          when:
+            visible: "Collections"
+          commands:
+            - tapOn:
+                point: "90%,15%"
       - tapOn:
           text: "(Add|Done|Choose)"
           optional: true
@@ -373,6 +385,11 @@ appId: com.lalarente.app
           id: "inspection-room-gallery"
       - waitForAnimationToEnd:
           timeout: 2500
+      # the picker can take a few seconds to present
+      - extendedWaitUntil:
+          visible: "Collections"
+          timeout: 10000
+          optional: true
       # picker can ignore the first tap while it is still presenting; retry
       - repeat:
           times: 3
@@ -383,6 +400,13 @@ appId: com.lalarente.app
                 point: "50%,28%"
             - waitForAnimationToEnd:
                 timeout: 2000
+            # multi-select picker stays open after a tile tap: confirm with ✓
+            - runFlow:
+                when:
+                  visible: "Collections"
+                commands:
+                  - tapOn:
+                      point: "90%,15%"
             - tapOn:
                 text: "(Add|Done|Choose)"
                 optional: true
@@ -757,9 +781,8 @@ appId: com.lalarente.app
 # ── add the run token to the title so every role can find this request ────
 - tapOn:
     id: "maintenance-title-input"
-# the tap lands the cursor mid-text; retype the whole title
-- eraseText: 80
-- inputText: "Living Room: inspection issue LC-${LC_TOKEN}"
+# the tap may land the cursor mid-title; the token only needs to be in it
+- inputText: " LC-${LC_TOKEN}"
 - swipe:
     start: "50%,45%"
     end: "50%,40%"
@@ -824,7 +847,7 @@ appId: com.lalarente.app
     visible:
       id: "tenant-maintenance-detail-back"
     timeout: 25000
-- assertVisible: ".*inspection issue LC-${LC_TOKEN}.*"
+- assertVisible: ".*inspection.*LC-${LC_TOKEN}.*"
 - tapOn:
     id: "tenant-maintenance-detail-back"
     index: 0
@@ -1085,7 +1108,7 @@ appId: com.lalarente.app
     visible:
       id: "owner-maintenance-detail-back"
     timeout: 25000
-- assertVisible: ".*inspection issue LC-${LC_TOKEN}.*"
+- assertVisible: ".*inspection.*LC-${LC_TOKEN}.*"
 - openLink: lalarenteapp://(owner)/inspections
 - extendedWaitUntil:
     visible: "Inspections"

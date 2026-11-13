@@ -19,6 +19,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '@/src/lib/supabase';
@@ -32,6 +33,7 @@ import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAv
 
 export default function TenantVerificationScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -253,7 +255,13 @@ export default function TenantVerificationScreen() {
 
   if (mode === 'select') {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+      <ScrollView
+        style={styles.container}
+        // header used to sit under the status bar (back arrow untappable)
+        contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top }]}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title} testID="tenant-verify-title">
@@ -310,7 +318,13 @@ export default function TenantVerificationScreen() {
 
   if (mode === 'approve') {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+      <ScrollView
+        style={styles.container}
+        // header used to sit under the status bar (back arrow untappable)
+        contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top }]}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
@@ -407,7 +421,13 @@ export default function TenantVerificationScreen() {
 
   // Reject mode
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView
+      style={styles.container}
+      // header used to sit under the status bar (back arrow untappable)
+      contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top }]}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+    >
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity

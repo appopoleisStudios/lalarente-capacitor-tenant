@@ -17,13 +17,13 @@ appId: com.lalarente.app
     timeout: 1500
 - scrollUntilVisible:
     element:
-      text: ".*inspection issue LC-${LC_TOKEN}.*"
+      text: ".*inspection.*LC-${LC_TOKEN}.*"
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
 - tapOn:
-    text: ".*inspection issue LC-${LC_TOKEN}.*"
+    text: ".*inspection.*LC-${LC_TOKEN}.*"
     index: 0
 - extendedWaitUntil:
     visible:
@@ -88,7 +88,7 @@ appId: com.lalarente.app
     timeout: 20000
 - tapOn:
     id: "quote-duration-1-day"
-- assertVisible: "1 day"
+- assertVisible: ".*1 day.*"
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -142,7 +142,7 @@ appId: com.lalarente.app
     visible:
       id: "quote-draft-restored-banner"
     timeout: 25000
-- assertVisible: ".*LC-quote ${LC_TOKEN}.*"
+- assertVisible: ".*LC-quote.*${LC_TOKEN}.*"
 - takeScreenshot: lc07b-vendor-draft-restored
 - waitForAnimationToEnd:
     timeout: 1500
@@ -191,13 +191,13 @@ appId: com.lalarente.app
     timeout: 1500
 - scrollUntilVisible:
     element:
-      text: ".*inspection issue LC-${LC_TOKEN}.*"
+      text: ".*inspection.*LC-${LC_TOKEN}.*"
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
 - tapOn:
-    text: ".*inspection issue LC-${LC_TOKEN}.*"
+    text: ".*inspection.*LC-${LC_TOKEN}.*"
     index: 0
 - extendedWaitUntil:
     visible:
@@ -207,7 +207,7 @@ appId: com.lalarente.app
     timeout: 1500
 - scrollUntilVisible:
     element:
-      text: ".*LC-quote ${LC_TOKEN}.*"
+      text: ".*LC-quote.*${LC_TOKEN}.*"
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
@@ -261,13 +261,13 @@ appId: com.lalarente.app
     timeout: 1500
 - scrollUntilVisible:
     element:
-      text: "View Full Details"
+      text: ".*View Full Details.*"
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
 - tapOn:
-    text: "View Full Details"
+    text: ".*View Full Details.*"
 - extendedWaitUntil:
     visible:
       id: "owner-quote-back"
@@ -294,13 +294,13 @@ appId: com.lalarente.app
     timeout: 1500
 - scrollUntilVisible:
     element:
-      text: "View Full Details"
+      text: ".*View Full Details.*"
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
 - tapOn:
-    text: "View Full Details"
+    text: ".*View Full Details.*"
 - extendedWaitUntil:
     visible:
       id: "owner-quote-back"
@@ -378,7 +378,8 @@ appId: com.lalarente.app
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
-- assertVisible: "Awaiting send"
+# accepting a quote issues and sends the PO in one step (LAL-120)
+- assertVisible: "Issued"
 - takeScreenshot: lc07b-owner-po-awaiting-send
 - waitForAnimationToEnd:
     timeout: 1500
@@ -397,13 +398,13 @@ appId: com.lalarente.app
     timeout: 1500
 - scrollUntilVisible:
     element:
-      text: ".*inspection issue LC-${LC_TOKEN}.*"
+      text: ".*inspection.*LC-${LC_TOKEN}.*"
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
 - tapOn:
-    text: ".*inspection issue LC-${LC_TOKEN}.*"
+    text: ".*inspection.*LC-${LC_TOKEN}.*"
     index: 0
 - extendedWaitUntil:
     visible:

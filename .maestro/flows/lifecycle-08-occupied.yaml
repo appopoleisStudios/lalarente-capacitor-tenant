@@ -57,20 +57,12 @@ appId: com.lalarente.app
     id: "tenant-property-request-viewing"
 - waitForAnimationToEnd:
     timeout: 1500
-- scrollUntilVisible:
-    element:
-      id: "tenant-property-apply"
-    direction: DOWN
-    timeout: 20000
-    visibilityPercentage: 60
-    centerElement: true
-- tapOn:
-    id: "tenant-property-apply"
+# the tenant's own (rented) home opens, with no Apply / Request Viewing
 - extendedWaitUntil:
-    visible: ".*your current property.*"
+    visible: ".*You are renting this property.*"
     timeout: 15000
-- tapOn:
-    text: "OK"
+- assertNotVisible:
+    id: "tenant-property-apply"
 - takeScreenshot: lc08-tenant-current-property
 - waitForAnimationToEnd:
     timeout: 1500

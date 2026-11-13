@@ -181,6 +181,8 @@ export default function ReportMaintenanceScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
       >
         {/* Title */}
         <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.section}>
@@ -392,11 +394,19 @@ export default function ReportMaintenanceScreen() {
             ))}
             {canAddMore && (
               <>
-                <TouchableOpacity style={styles.addMediaButton} onPress={takePhoto}>
+                <TouchableOpacity
+                  style={styles.addMediaButton}
+                  onPress={takePhoto}
+                  testID="media-add-camera"
+                >
                   <Ionicons name="camera" size={32} color={RSA.blue} />
                   <Text style={styles.addMediaText}>Camera</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.addMediaButton} onPress={pickMedia}>
+                <TouchableOpacity
+                  style={styles.addMediaButton}
+                  onPress={pickMedia}
+                  testID="media-add-gallery"
+                >
                   <Ionicons name="images" size={32} color={RSA.blue} />
                   <Text style={styles.addMediaText}>Gallery</Text>
                 </TouchableOpacity>
