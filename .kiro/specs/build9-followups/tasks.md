@@ -145,14 +145,26 @@
         (collapsible sections, sticky step header, bottom sheets).
   - [ ] Applied to the inspection and lease-create screens first.
 
-## B9-007 🟡 Dashboard load time ⬜
+## B9-007 🟡 Dashboard load time ✅
 
 - Build 9 removed the double profile fetch and the sign-in bounce. Still to do:
   measure cold-start → dashboard time on Android release and fix the slowest
   calls (dashboard fires several sequential queries).
 - **Acceptance criteria:**
-  - [ ] Before/after timing recorded for owner and tenant on the release APK.
-  - [ ] Dashboard renders cached/skeleton content immediately.
+  - [x] Before/after timing recorded for owner and tenant on the release APK
+        (Pixel 7 emulator, cold start = logcat "Start proc" → `[perf]` line):
+
+        | | before: cold start → data | after: cached paint | after: fresh data |
+        |---|---|---|---|
+        | Owner  | 4.3–9.0 s (fetch 2.4–5.9 s) | 0.55–1.4 s | 1.2–2.9 s (fetch 0.5–1.5 s) |
+        | Tenant | 3.3–4.9 s (fetch 2.0–3.5 s) | 0.5–1.5 s  | 0.85–2.0 s (fetch 0.3–0.56 s) |
+  - [x] Dashboard renders cached content immediately (`dashboardCache.ts`,
+        AsyncStorage per role+user, cleared on sign-out).
+- Causes fixed: tenant dashboard ran ~11 queries one after another (now one
+  parallel wave + one dependent wave); owner ran 3 waves (now 2); owner
+  fetched twice on mount and twice per focus, and every refocus replaced the
+  dashboard with a full-screen "Loading dashboard..." spinner (now a
+  background refresh; overlapping fetches share one request).
 
 ## B9-008 ⚪ Test-data follow-ups ⬜
 

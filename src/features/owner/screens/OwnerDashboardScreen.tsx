@@ -70,7 +70,7 @@ export default function OwnerDashboardScreen() {
         loadViewingRequests(id);
         loadMessages(id);
         loadRecentCancellations(id);
-        refetch();
+        // Dashboard data refetches itself on focus (useOwnerDashboard).
         // Refresh unread notification count from DB
         (async () => {
           const { count } = await (supabase as any)

@@ -106,6 +106,14 @@ export async function getOwnerDashboardData(ownerId: string): Promise<OwnerDashb
   try {
     // Fetch all data in parallel using existing APIs
     // This is faster than sequential calls and maintains separation of concerns
+    // Everything keyed only by ownerId starts at once; the counts that need
+    // property / request ids follow in a second parallel wave.
+    const ownerCounts = Promise.all([
+      fetchPendingTerminationsCount(ownerId),
+      fetchOpenDisputesCount(ownerId),
+      fetchRecentViewings(ownerId),
+      fetchPendingClosureCount(ownerId),
+    ]);
     const [
       userProfileResult,
       propertiesResult,
@@ -147,39 +155,35 @@ export async function getOwnerDashboardData(ownerId: string): Promise<OwnerDashb
 
     // Fetch holding deposits count for owner's properties (pending + paid = "active")
     const propertyIds = properties.map((p: any) => p.id);
-    const [
-      holdingDepositsActive,
-      pendingTerminations,
-      processingPayments,
-      openDisputes,
-      recentViewings,
-      pendingClosures,
-    ] = await Promise.all([
-      fetchHoldingDepositsCount(propertyIds),
-      fetchPendingTerminationsCount(ownerId),
-      fetchProcessingPaymentsCount(propertyIds),
-      fetchOpenDisputesCount(ownerId),
-      fetchRecentViewings(ownerId),
-      fetchPendingClosureCount(ownerId),
-    ]);
-
-    // Batch-fetch accepted quotes for active maintenance requests (single extra query)
+    // Accepted quotes for active maintenance requests (single batched query)
     const activeIds = maintenanceRequests
       .filter((r) => ['open', 'quote_received', 'in_progress'].includes(r.status))
       .map((r) => r.id);
 
+    const [
+      [pendingTerminations, openDisputes, recentViewings, pendingClosures],
+      holdingDepositsActive,
+      processingPayments,
+      quotesData,
+    ] = await Promise.all([
+      ownerCounts,
+      fetchHoldingDepositsCount(propertyIds),
+      fetchProcessingPaymentsCount(propertyIds),
+      activeIds.length > 0
+        ? supabase
+            .from('quotes')
+            .select('request_id, total_amount')
+            .in('request_id', activeIds)
+            .in('status', ['accepted', 'approved'])
+            .then(({ data }) => data)
+        : Promise.resolve(null),
+    ]);
+
     const quotesMap: Record<string, number> = {};
-    if (activeIds.length > 0) {
-      const { data: quotesData } = await supabase
-        .from('quotes')
-        .select('request_id, total_amount')
-        .in('request_id', activeIds)
-        .in('status', ['accepted', 'approved']);
-      if (quotesData) {
-        quotesData.forEach((q: any) => {
-          quotesMap[q.request_id] = q.total_amount;
-        });
-      }
+    if (quotesData) {
+      quotesData.forEach((q: any) => {
+        quotesMap[q.request_id] = q.total_amount;
+      });
     }
 
     // Transform raw data into dashboard-specific formats
