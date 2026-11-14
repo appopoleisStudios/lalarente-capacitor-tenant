@@ -18,6 +18,7 @@ export async function toDataUri(uri: string | null | undefined): Promise<string 
       local = res.uri;
     }
     const base64 = await FileSystem.readAsStringAsync(local, { encoding: 'base64' as any });
+    if (local !== uri) FileSystem.deleteAsync(local, { idempotent: true }).catch(() => {});
     const mime = /\.png(\?|$)/i.test(uri) ? 'image/png' : 'image/jpeg';
     return `data:${mime};base64,${base64}`;
   } catch {

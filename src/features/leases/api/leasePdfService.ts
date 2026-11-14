@@ -517,11 +517,18 @@ export async function generateAndUploadLeasePDF(
       signatureDataUri(leaseData.owner_signature_url),
       signatureDataUri(leaseData.tenant_signature_url),
     ]);
+    // A signed lease must never be stored with an empty signature box.
+    if (
+      (leaseData.owner_signature_url && !ownerSig) ||
+      (leaseData.tenant_signature_url && !tenantSig)
+    ) {
+      throw new Error('Could not load a signature image for the lease PDF');
+    }
     const html = generateLeaseHTML(
       {
         ...leaseData,
-        owner_signature_url: ownerSig ?? leaseData.owner_signature_url,
-        tenant_signature_url: tenantSig ?? leaseData.tenant_signature_url,
+        owner_signature_url: ownerSig,
+        tenant_signature_url: tenantSig,
       },
       customClauses
     );
