@@ -35,8 +35,9 @@ appId: com.lalarente.app
             text: ".*${MSG} ${LC_TOKEN}.*"
           direction: DOWN
           timeout: 20000
-          visibilityPercentage: 60
-          centerElement: true
+          visibilityPercentage: 100
+          # no centerElement: centring a card near the top of the list
+          # overshoots and pushes it under the header
 - tapOn:
     text: ".*${MSG} ${LC_TOKEN}.*"
 - extendedWaitUntil:
