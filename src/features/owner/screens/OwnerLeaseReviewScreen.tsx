@@ -23,6 +23,7 @@ import {
   type ClauseOverrides,
 } from '../../leases/api/leasePdfService';
 import { leaseDraftStore } from '../../leases/utils/leaseDraftStore';
+import { colors } from '@/src/shared/theme/colors';
 
 const RSA = { blue: '#002395', gold: '#FFB81C' };
 
@@ -353,7 +354,7 @@ export default function OwnerLeaseReviewScreen() {
                         {c.title}
                       </Text>
                       {c.locked ? (
-                        <Ionicons name="lock-closed" size={14} color="#888" />
+                        <Ionicons name="lock-closed" size={14} color={colors.text.tertiary} />
                       ) : removed ? (
                         <Text style={styles.clauseTagRemoved}>Removed</Text>
                       ) : edited ? (
@@ -550,38 +551,38 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 18, fontWeight: '700', color: '#333' },
   modalHint: { fontSize: 13, color: '#777', marginBottom: 12 },
   modalScroll: { flexGrow: 0 },
-  modalSection: { fontSize: 15, fontWeight: '700', color: '#333', marginTop: 8, marginBottom: 4 },
+  modalSection: { fontSize: 15, fontWeight: '700', color: colors.text.primary, marginTop: 8, marginBottom: 4 },
   clauseCard: {
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border.default,
     borderRadius: 8,
     padding: 12,
     marginBottom: 10,
   },
-  clauseCardRemoved: { backgroundColor: '#f9fafb', borderStyle: 'dashed' },
+  clauseCardRemoved: { backgroundColor: colors.background.secondary, borderStyle: 'dashed' },
   clauseHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 4,
   },
-  clauseTitle: { fontSize: 13, fontWeight: '700', color: '#333', flex: 1 },
-  clauseBody: { fontSize: 13, color: '#555', lineHeight: 18 },
-  clauseRemovedText: { color: '#9ca3af', textDecorationLine: 'line-through' },
+  clauseTitle: { fontSize: 13, fontWeight: '700', color: colors.text.primary, flex: 1 },
+  clauseBody: { fontSize: 13, color: colors.text.secondary, lineHeight: 18 },
+  clauseRemovedText: { color: colors.text.tertiary, textDecorationLine: 'line-through' },
   clauseTagEdited: { fontSize: 11, fontWeight: '700', color: RSA.blue },
-  clauseTagRemoved: { fontSize: 11, fontWeight: '700', color: '#b91c1c' },
-  clauseLockReason: { fontSize: 11, color: '#888', marginTop: 6, fontStyle: 'italic' },
+  clauseTagRemoved: { fontSize: 11, fontWeight: '700', color: colors.rsa.red },
+  clauseLockReason: { fontSize: 11, color: colors.text.tertiary, marginTop: 6, fontStyle: 'italic' },
   clauseActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 18, marginTop: 8 },
   clauseAction: { fontSize: 14, fontWeight: '600', color: RSA.blue },
   clauseActionPrimary: { fontWeight: '700' },
-  clauseActionDanger: { color: '#b91c1c' },
+  clauseActionDanger: { color: colors.rsa.red },
   clauseEditInput: {
     borderWidth: 1,
     borderColor: RSA.blue,
     borderRadius: 8,
     padding: 10,
     fontSize: 13,
-    color: '#333',
+    color: colors.text.primary,
     minHeight: 110,
     textAlignVertical: 'top',
   },
