@@ -20,6 +20,9 @@ appId: com.lalarente.app
           start: "50%,45%"
           end: "50%,90%"
           duration: 300
+# a swipe at the top of the list is a pull-to-refresh; let it settle
+- waitForAnimationToEnd:
+    timeout: 3000
 - assertVisible:
     id: "owner-viewing-card"
 - waitForAnimationToEnd:
