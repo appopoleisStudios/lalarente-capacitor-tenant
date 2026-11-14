@@ -140,20 +140,24 @@ export const leaseAutomationApi = {
   /**
    * Check all leases for pending escalations.
    */
-  async checkPendingEscalations(ownerId: string): Promise<Array<{
-    leaseId: string;
-    propertyTitle: string;
-    currentRent: number;
-    nextEscalationDate: string;
-  }>> {
+  async checkPendingEscalations(ownerId: string): Promise<
+    Array<{
+      leaseId: string;
+      propertyTitle: string;
+      currentRent: number;
+      nextEscalationDate: string;
+    }>
+  > {
     const today = toDateString(new Date());
 
     const { data, error } = await supabase
       .from('leases')
-      .select(`
+      .select(
+        `
         id, monthly_rent, next_escalation_date,
         property:properties!property_id(title)
-      `)
+      `
+      )
       .eq('owner_id', ownerId)
       .in('status', ['active', 'month_to_month'])
       .not('rent_escalation_type', 'is', null)

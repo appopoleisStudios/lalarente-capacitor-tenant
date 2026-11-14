@@ -164,7 +164,7 @@ export default function OwnerLeaseDetailScreen() {
       }
 
       // Download and share the file
-      const filename = `Lease_${lease.property?.title.replace(/\s+/g, '_')}_${toLocalIsoDate(new Date())}.pdf`;
+      const filename = `Lease_${(lease.property?.title || 'Lease').replace(/[^A-Za-z0-9-]+/g, '_')}_${toLocalIsoDate(new Date())}.pdf`;
 
       // Private bucket: download through a signed URL straight to a file
       // (fetch().blob() is unreliable on React Native).

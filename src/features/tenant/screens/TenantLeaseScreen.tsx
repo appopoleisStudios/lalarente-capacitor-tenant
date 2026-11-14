@@ -173,7 +173,7 @@ export default function TenantLeaseScreen() {
         return;
       }
 
-      const propertyTitle = (lease.property?.title || 'Lease').replace(/\s+/g, '_');
+      const propertyTitle = (lease.property?.title || 'Lease').replace(/[^A-Za-z0-9-]+/g, '_');
       const filename = `Lease_${propertyTitle}_${toLocalIsoDate(new Date())}.pdf`;
       const docDir = FileSystem.documentDirectory;
       if (!docDir) {

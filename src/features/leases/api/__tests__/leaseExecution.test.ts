@@ -59,5 +59,4 @@ describe('canExecuteLease', () => {
     };
     expect(canExecuteLease(lease)).toBe(false);
   });
-
 });

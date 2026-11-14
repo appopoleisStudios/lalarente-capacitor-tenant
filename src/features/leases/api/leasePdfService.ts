@@ -3,6 +3,7 @@ import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { uploadLeasePDF } from './storageService';
+import { signatureDataUri } from '@/src/shared/utils/storageDataUri';
 import { reportApiError } from '@/src/core/observability/sentry';
 import { toLocalIsoDate } from '../utils/leaseDateMath';
 
@@ -510,7 +511,20 @@ export async function generateAndUploadLeasePDF(
   customClauses?: string
 ): Promise<string> {
   try {
-    const html = generateLeaseHTML(leaseData, customClauses);
+    // Signatures are in the private `signatures` bucket: their stored public
+    // URLs don't load, so embed them as data (same as the inspection PDF).
+    const [ownerSig, tenantSig] = await Promise.all([
+      signatureDataUri(leaseData.owner_signature_url),
+      signatureDataUri(leaseData.tenant_signature_url),
+    ]);
+    const html = generateLeaseHTML(
+      {
+        ...leaseData,
+        owner_signature_url: ownerSig ?? leaseData.owner_signature_url,
+        tenant_signature_url: tenantSig ?? leaseData.tenant_signature_url,
+      },
+      customClauses
+    );
     const { uri } = await Print.printToFileAsync({
       html,
       base64: false,

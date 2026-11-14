@@ -24,6 +24,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/src/shared/theme/colors';
 import { supabase } from '@/src/lib/supabase';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { getLeaseDocumentUrl } from '../../leases/api/storageService';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -431,8 +432,10 @@ export default function OwnerDocumentsHubScreen() {
     await fetchRecentDocuments(ownerId);
   };
 
-  const openDocument = async (url: string) => {
+  const openDocument = async (rawUrl: string) => {
     try {
+      // Signed leases are in the private contracts bucket: open via a signed URL.
+      const url = rawUrl.includes('/contracts/') ? await getLeaseDocumentUrl(rawUrl) : rawUrl;
       const canOpen = await Linking.canOpenURL(url);
       if (canOpen) {
         await Linking.openURL(url);

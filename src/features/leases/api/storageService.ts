@@ -559,10 +559,17 @@ export function getStorageErrorMessage(error: any): string {
  * sign it.
  */
 export async function getLeaseDocumentUrl(storedUrl: string): Promise<string> {
+  // Only ever open our own contracts objects: either party can write
+  // lease_document_url, so an arbitrary link must not be opened as "the lease".
   const marker = '/contracts/';
   const at = storedUrl.indexOf(marker);
-  if (at === -1) return storedUrl;
-  const path = decodeURIComponent(storedUrl.slice(at + marker.length).split('?')[0]);
+  if (at === -1) throw new Error('Could not open the lease document: unexpected link');
+  let path: string;
+  try {
+    path = decodeURIComponent(storedUrl.slice(at + marker.length).split(/[?#]/)[0]);
+  } catch {
+    throw new Error('Could not open the lease document: malformed link');
+  }
   const { data, error } = await supabase.storage.from('contracts').createSignedUrl(path, 600);
   if (error || !data?.signedUrl) {
     throw new Error(`Could not open the lease document: ${error?.message ?? 'no URL'}`);
