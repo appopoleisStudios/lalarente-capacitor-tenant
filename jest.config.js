@@ -1,3 +1,7 @@
+// Tests run in the app's market timezone (SAST, UTC+2) on every machine, so
+// calendar-date tests behave the same locally and on CI (which is UTC).
+process.env.TZ = 'Africa/Johannesburg';
+
 module.exports = {
   preset: 'jest-expo',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
