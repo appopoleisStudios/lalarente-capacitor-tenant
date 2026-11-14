@@ -14,3 +14,17 @@ DROP POLICY IF EXISTS "Public can view lease signatures" ON storage.objects;
 -- without this policy; owner-scoped policies still allow uploads. Making the
 -- bucket private (signed URLs everywhere) is a tracked follow-up.
 DROP POLICY IF EXISTS "Documents are publicly readable" ON storage.objects;
+
+-- Keep owners of documents able to read their own files (needed for
+-- upload(..., { upsert: true }) and remove()), now that the public policy
+-- is gone. Paths are '<kind>/<user id>/...' or '<user id>/...'.
+DROP POLICY IF EXISTS "Users can read their own documents" ON storage.objects;
+CREATE POLICY "Users can read their own documents"
+ON storage.objects FOR SELECT
+TO authenticated
+USING (
+  bucket_id = 'documents' AND (
+    (storage.foldername(name))[1] = auth.uid()::text
+    OR (storage.foldername(name))[2] = auth.uid()::text
+  )
+);
