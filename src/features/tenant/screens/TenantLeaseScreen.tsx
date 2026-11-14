@@ -12,7 +12,7 @@ import {
   Modal,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
@@ -74,6 +74,7 @@ export default function TenantLeaseScreen() {
   const [lease, setLease] = useState<Lease | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const insets = useSafeAreaInsets();
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   // Full lease wording (same render as the signed PDF) so the tenant reads
   // every clause — including ones the owner edited or removed — before signing.
@@ -804,7 +805,13 @@ export default function TenantLeaseScreen() {
           animationType="slide"
           onRequestClose={() => setFullLeaseHtml(null)}
         >
-          <SafeAreaView style={styles.fullLeaseContainer} edges={['top', 'bottom']}>
+          {/* SafeAreaView reports no insets inside a Modal on iOS: pad explicitly. */}
+          <View
+            style={[
+              styles.fullLeaseContainer,
+              { paddingTop: insets.top, paddingBottom: insets.bottom },
+            ]}
+          >
             <View style={styles.fullLeaseHeader}>
               <Text style={styles.fullLeaseTitle}>Lease Agreement</Text>
               <TouchableOpacity
@@ -824,7 +831,7 @@ export default function TenantLeaseScreen() {
                 style={styles.fullLeaseWeb}
               />
             ) : null}
-          </SafeAreaView>
+          </View>
         </Modal>
 
         {/* Signature Modal */}
