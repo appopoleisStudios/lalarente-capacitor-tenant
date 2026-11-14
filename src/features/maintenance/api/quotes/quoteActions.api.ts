@@ -7,6 +7,7 @@ import { supabase } from '@/src/lib/supabase';
 import type { PurchaseOrder } from '../types/po.types';
 import type { Quote } from '../types/quote.types';
 import { getQuoteById } from './quotes.api';
+import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
 
 /**
  * Accept a quote (job owner or job tenant).
@@ -180,7 +181,7 @@ export async function generatePOFromQuote(
   }
 
   // Generate PO number
-  const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
+  const date = toLocalIsoDate(new Date()).replace(/-/g, '');
   const random = Math.floor(Math.random() * 10000)
     .toString()
     .padStart(4, '0');

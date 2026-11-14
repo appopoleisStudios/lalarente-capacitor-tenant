@@ -5,6 +5,7 @@
 
 import { supabase } from '@/src/lib/supabase';
 import type { MaintenanceRequest, ProgressUpdate } from '../types/maintenance.types';
+import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
 
 /**
  * Start work on a maintenance request (Vendor action)
@@ -126,7 +127,7 @@ export async function submitProgressUpdate(
     .insert({
       maintenance_request_id: requestId,
       vendor_id: vendorId,
-      update_date: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+      update_date: toLocalIsoDate(new Date()), // YYYY-MM-DD
       notes: notes,
       photos: photos,
     })

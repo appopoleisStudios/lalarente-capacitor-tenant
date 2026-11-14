@@ -22,6 +22,7 @@ import { regenerateLeasePDF } from '../../leases/api/regenerateLeasePDF';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
 
 const RSA = { blue: '#002395', gold: '#FFB81C' }; // Owner colors
 
@@ -161,7 +162,7 @@ export default function OwnerLeaseDetailScreen() {
       }
 
       // Download and share the file
-      const filename = `Lease_${lease.property?.title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+      const filename = `Lease_${lease.property?.title.replace(/\s+/g, '_')}_${toLocalIsoDate(new Date())}.pdf`;
 
       // Fetch the PDF
       const response = await fetch(lease.lease_document_url);

@@ -6,6 +6,7 @@
  */
 
 import { supabase } from '../../../lib/supabase';
+import { fromLocalIsoDate, toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -186,7 +187,7 @@ export const paymentDisputesApi = {
     proposedBy: string,
     input: ProposeArrangementInput
   ): Promise<PaymentArrangement> {
-    const endDate = new Date(input.startDate);
+    const endDate = fromLocalIsoDate(input.startDate);
     endDate.setMonth(endDate.getMonth() + input.numberOfInstalments);
 
     const { data, error } = await supabase
@@ -199,7 +200,7 @@ export const paymentDisputesApi = {
         monthly_instalment: input.monthlyInstalment,
         number_of_instalments: input.numberOfInstalments,
         start_date: input.startDate,
-        end_date: endDate.toISOString().split('T')[0],
+        end_date: toLocalIsoDate(endDate),
         next_due_date: input.startDate,
         status: 'proposed',
         proposed_by: proposedBy,

@@ -1,6 +1,7 @@
 import { supabase } from '../../../lib/supabase';
 import { notificationsApi } from '../../notifications/api/notificationsApi';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
 
 /**
  * Viewing Reminder System
@@ -71,8 +72,8 @@ export async function sendViewingReminders(): Promise<{
     const dayAfterTomorrow = new Date(tomorrow);
     dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
 
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
-    const dayAfterTomorrowStr = dayAfterTomorrow.toISOString().split('T')[0];
+    const tomorrowStr = toLocalIsoDate(tomorrow);
+    const dayAfterTomorrowStr = toLocalIsoDate(dayAfterTomorrow);
 
     console.log(`Checking for viewings on ${tomorrowStr}`);
 

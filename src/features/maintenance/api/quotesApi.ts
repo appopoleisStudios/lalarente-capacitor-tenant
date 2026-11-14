@@ -1,5 +1,6 @@
 import { supabase } from '@/src/lib/supabase';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
 
 export interface Quote {
   id: string;
@@ -360,7 +361,7 @@ export const quotesApi = {
     }
 
     // Generate PO number (format: PO-YYYYMMDD-XXXX)
-    const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
+    const date = toLocalIsoDate(new Date()).replace(/-/g, '');
     const random = Math.floor(Math.random() * 10000)
       .toString()
       .padStart(4, '0');

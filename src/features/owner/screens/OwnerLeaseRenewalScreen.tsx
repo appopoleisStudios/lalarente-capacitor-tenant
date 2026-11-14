@@ -30,6 +30,7 @@ import { leaseRenewalApi, RenewalNegotiation } from '@/src/features/leases/api/l
 import { colors } from '@/src/shared/theme/colors';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { ReasonPromptModal } from '@/src/shared/components/ui/ReasonPromptModal';
+import { fromLocalIsoDate, toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -130,11 +131,11 @@ export default function OwnerLeaseRenewalScreen() {
       const target = leases.find((l) => l.lease.id === offerModal);
       const startDate = target?.lease.end_date
         ? (() => {
-            const d = new Date(target.lease.end_date);
+            const d = fromLocalIsoDate(target.lease.end_date.slice(0, 10));
             d.setDate(d.getDate() + 1);
-            return d.toISOString().split('T')[0];
+            return toLocalIsoDate(d);
           })()
-        : new Date().toISOString().split('T')[0];
+        : toLocalIsoDate(new Date());
 
       await leaseRenewalApi.proposeRenewal(userId, {
         leaseId: offerModal,

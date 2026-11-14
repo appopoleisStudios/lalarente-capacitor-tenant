@@ -96,7 +96,7 @@
   - [ ] Inspection (and maintenance) photos go through the same 1280 px JPEG
         resize as listing photos (`prepareListingPhoto` → shared helper).
 
-## B9-005 🟡 Remaining `toISOString().split('T')[0]` date formatting ⬜
+## B9-005 🟡 Remaining `toISOString().split('T')[0]` date formatting ✅
 
 - Wrong calendar day between 00:00 and 02:00 SAST. Replace with the local
   `toDateString()` helper (`src/shared/components/ui/DateField.tsx`) where the
@@ -121,8 +121,16 @@
   - `src/features/maintenance/api/work/workProgress.api.ts`
   - `src/features/maintenance/api/work/workExecution.api.ts`
 - **Acceptance criteria:**
-  - [ ] Calendar dates use local formatting; true timestamps keep ISO.
-  - [ ] Unit test pins a 01:00 SAST case.
+  - [x] Calendar dates use local formatting (`toLocalIsoDate` from
+        `leaseDateMath.ts`, which API files can import without UI deps);
+        true timestamps keep ISO. No `toISOString().split('T')[0]` left in src.
+  - [x] Unit test pins a 01:00 SAST case (`leaseDateMath.test.ts`).
+- Where a stored `YYYY-MM-DD` is parsed and shifted (renewal end date,
+  arrangement end date, renewal offer start) parsing is now
+  `fromLocalIsoDate` too, so parse and format agree in every timezone.
+- Real bug fixed on the way: `viewingReminders` built local-midnight
+  "tomorrow" then formatted it in UTC, which in SAST is *today* — reminders
+  queried the wrong day.
 
 ## B9-006 🟡 Long / complex screens — better presentation ⬜ (blocked)
 

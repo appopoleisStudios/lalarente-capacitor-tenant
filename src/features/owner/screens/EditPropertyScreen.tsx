@@ -23,6 +23,7 @@ import { styles } from './EditPropertyScreen.styles';
 import { reportApiError } from '@/src/core/observability/sentry';
 import { validate3dTourUrl } from '@/src/features/properties/utils/validate3dTourUrl';
 import { DateField } from '@/src/shared/components/ui/DateField';
+import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
 
 interface PropertyForm {
   title: string;
@@ -100,7 +101,7 @@ export default function EditPropertyScreen() {
     description: '',
     amenities: [],
     services_provided: [],
-    available_from: new Date().toISOString().split('T')[0],
+    available_from: toLocalIsoDate(new Date()),
     minimum_lease_months: '12',
     pets_allowed: false,
     smoking_allowed: false,
@@ -156,7 +157,7 @@ export default function EditPropertyScreen() {
         description: property.description || '',
         amenities: property.amenities || [],
         services_provided: [],
-        available_from: property.available_from || new Date().toISOString().split('T')[0],
+        available_from: property.available_from || toLocalIsoDate(new Date()),
         minimum_lease_months: property.minimum_lease_months?.toString() || '12',
         pets_allowed: property.pets_allowed || false,
         smoking_allowed: property.smoking_allowed || false,

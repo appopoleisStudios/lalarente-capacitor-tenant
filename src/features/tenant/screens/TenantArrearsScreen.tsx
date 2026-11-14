@@ -30,6 +30,7 @@ import {
 } from '@/src/features/payments/api/paymentDisputes.api';
 import { colors } from '@/src/shared/theme/colors';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
 
 interface ArrearsRecord {
   id: string;
@@ -161,7 +162,7 @@ export default function TenantArrearsScreen() {
         totalOwed: selectedArrears.total_owed,
         monthlyInstalment,
         numberOfInstalments: numInstalments,
-        startDate: startDate.toISOString().split('T')[0],
+        startDate: toLocalIsoDate(startDate),
       };
 
       await paymentDisputesApi.proposeArrangement(userId, input);

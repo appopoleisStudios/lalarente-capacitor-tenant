@@ -4,6 +4,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { uploadLeasePDF } from './storageService';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { toLocalIsoDate } from '../utils/leaseDateMath';
 
 export interface LeaseData {
   id: string;
@@ -238,7 +239,7 @@ export function generateLeaseHTML(lease: LeaseData, customClauses?: string): str
 <div class="header">
   <div class="subtitle">LaLarente &mdash; Powered by Unicity Integrated Realty</div>
   <h1>RESIDENTIAL MANAGEMENT LEASE AGREEMENT</h1>
-  <p>Lease ID: ${lease.id} &nbsp;|&nbsp; Generated: ${new Date().toISOString().split('T')[0]}</p>
+  <p>Lease ID: ${lease.id} &nbsp;|&nbsp; Generated: ${toLocalIsoDate(new Date())}</p>
 </div>
 
 <div class="section">
@@ -496,7 +497,7 @@ ${
 
 <div class="footer">
   <p>This document was electronically generated and executed through LaLarente.</p>
-  <p>Lease ID: ${lease.id} &nbsp;|&nbsp; Generated: ${new Date().toISOString().split('T')[0]}</p>
+  <p>Lease ID: ${lease.id} &nbsp;|&nbsp; Generated: ${toLocalIsoDate(new Date())}</p>
   <p>Page &mdash; Generated electronically</p>
 </div>
 
