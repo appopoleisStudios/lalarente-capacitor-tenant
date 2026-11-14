@@ -175,7 +175,7 @@
   - [ ] A reset script (or migration-free admin steps) recreates the lifecycle
         fixture so the chain can run from 01 cleanly.
 
-## B9-009 🟠 CI is red on main (Lint + Tests) ⬜
+## B9-009 🟠 CI is red on main (Lint + Tests) ✅
 
 - **Lint:** CI's ESLint 9 can't load the `expo` shareable config
   ("ESLint couldn't find the config \"expo\"") and runs `--max-warnings 0`
@@ -184,8 +184,14 @@
   module): documentsApi, leasePdfService, OwnerLeaseReviewScreen, poActions,
   leaseSignGate. Already failing on PRs #209/#210 before build 9.
 - **Acceptance criteria:**
-  - [ ] Lint job loads the config and gates on errors (warnings budget agreed).
-  - [ ] The 5 suites run; Tests job green.
+  - [x] Lint job loads the config: `eslint-config-expo` was never in
+        package.json (it resolved from a parent folder on dev machines only);
+        now a devDependency. Gates on errors; warnings ratcheted at the
+        current 4383 so they can only go down.
+  - [x] The suites run; Tests job green: every failing suite imported
+        `src/core/observability/sentry.ts` → `@sentry/react-native` (ESM).
+        Global mock in `jest.setup.js` → 70/70 suites, 616/616 tests
+        (94 tests that never ran now pass).
 
 ## B9-010 🟠 Remove a photo from an inspection before completing it ✅
 

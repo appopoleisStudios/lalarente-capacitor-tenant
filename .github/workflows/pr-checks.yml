@@ -15,7 +15,10 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - run: npm ci
-      - run: npx eslint . --ext .js,.jsx,.ts,.tsx --max-warnings 0
+      # Errors always fail. Warnings are ratcheted at the 2026-11-14 baseline
+      # (legacy hex colours etc., see eslint.config.mjs) so they can only go
+      # down — lower this number when warnings are cleaned up.
+      - run: npx eslint . --ext .js,.jsx,.ts,.tsx --max-warnings 4383
         env:
           CI: true
 

@@ -107,3 +107,15 @@ jest.setTimeout(10000);
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
+
+// @sentry/react-native ships ESM that Jest does not transform; nothing under
+// test should report to Sentry anyway.
+jest.mock('@sentry/react-native', () => ({
+  init: jest.fn(),
+  wrap: (c) => c,
+  addBreadcrumb: jest.fn(),
+  captureException: jest.fn(),
+  captureMessage: jest.fn(),
+  setUser: jest.fn(),
+  setTag: jest.fn(),
+}));
