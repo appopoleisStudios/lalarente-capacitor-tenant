@@ -434,6 +434,33 @@ appId: com.lalarente.app
     visibilityPercentage: 60
     centerElement: true
 - takeScreenshot: lc05-tenant-lease-pending
+# CT7-022: the tenant reads the full wording (incl. the owner's edited
+# clause) before signing
+- scrollUntilVisible:
+    element:
+      id: "tenant-lease-read-full"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+- tapOn:
+    id: "tenant-lease-read-full"
+- extendedWaitUntil:
+    visible:
+      id: "tenant-lease-full-close"
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      text: ".*LC-maint ${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 40000
+- takeScreenshot: lc05-tenant-full-lease-edited-clause
+- tapOn:
+    id: "tenant-lease-full-close"
+- extendedWaitUntil:
+    notVisible:
+      id: "tenant-lease-full-close"
+    timeout: 10000
 - waitForAnimationToEnd:
     timeout: 1500
 - waitForAnimationToEnd:

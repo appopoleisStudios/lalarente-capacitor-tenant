@@ -165,7 +165,7 @@ export function applyClauseOverrides(
     .filter((c) => c.locked || !overrides?.[c.id]?.removed)
     .map((c) => {
       const body = overrides?.[c.id]?.body;
-      return !c.locked && body && body.trim() ? { ...c, body: body.trim() } : c;
+      return !c.locked && typeof body === 'string' && body.trim() ? { ...c, body: body.trim() } : c;
     });
 }
 

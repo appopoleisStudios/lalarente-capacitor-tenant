@@ -29,10 +29,7 @@ export function calculateResponseDeadline(fromDate: Date): string {
 /**
  * Calculate the renewal lease end date based on start date and duration.
  */
-export function calculateRenewalEndDate(
-  startDate: Date,
-  durationMonths: number | null
-): string {
+export function calculateRenewalEndDate(startDate: Date, durationMonths: number | null): string {
   const end = new Date(startDate);
   if (durationMonths) {
     end.setMonth(end.getMonth() + durationMonths);
@@ -131,10 +128,7 @@ export const leaseRenewalApi = {
     }
 
     // Update lease status
-    await supabase
-      .from('leases')
-      .update({ status: 'renewal_pending' })
-      .eq('id', input.leaseId);
+    await supabase.from('leases').update({ status: 'renewal_pending' }).eq('id', input.leaseId);
 
     return data as RenewalNegotiation;
   },
@@ -142,7 +136,11 @@ export const leaseRenewalApi = {
   /**
    * Accept a renewal proposal.
    */
-  async acceptRenewal(negotiationId: string, userId: string, notes?: string): Promise<RenewalNegotiation> {
+  async acceptRenewal(
+    negotiationId: string,
+    userId: string,
+    notes?: string
+  ): Promise<RenewalNegotiation> {
     const { data, error } = await supabase
       .from('renewal_negotiations')
       .update({
@@ -275,10 +273,7 @@ export const leaseRenewalApi = {
     const endDateStr = calculateRenewalEndDate(startDate, negotiation.proposed_duration_months);
 
     // Mark old lease as expired
-    await supabase
-      .from('leases')
-      .update({ status: 'expired' })
-      .eq('id', negotiation.lease_id);
+    await supabase.from('leases').update({ status: 'expired' }).eq('id', negotiation.lease_id);
 
     // Create new lease
     const { data: newLease, error: createErr } = await supabase
@@ -294,8 +289,11 @@ export const leaseRenewalApi = {
         deposit_amount: originalLease.deposit_amount,
         payment_due_day: originalLease.payment_due_day,
         interest_on_arrears_rate: originalLease.interest_on_arrears_rate,
-        rent_escalation_type: negotiation.proposed_escalation_rate ? 'fixed_percentage' : originalLease.rent_escalation_type,
-        rent_escalation_value: negotiation.proposed_escalation_rate || originalLease.rent_escalation_value,
+        rent_escalation_type: negotiation.proposed_escalation_rate
+          ? 'fixed_percentage'
+          : originalLease.rent_escalation_type,
+        rent_escalation_value:
+          negotiation.proposed_escalation_rate || originalLease.rent_escalation_value,
         rent_escalation_frequency_months: originalLease.rent_escalation_frequency_months,
         status: 'pending_signatures',
         original_lease_id: negotiation.lease_id,

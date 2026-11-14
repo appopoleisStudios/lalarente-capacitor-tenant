@@ -465,7 +465,18 @@ export default function OwnerLeaseReviewScreen() {
               style={styles.doneBtn}
               onPress={() => {
                 const d = leaseDraftStore.get();
-                if (d) leaseDraftStore.set({ ...d, customClauses, clauseOverrides });
+                // A clause still open for editing is saved, not discarded.
+                let overrides = clauseOverrides;
+                if (editing) {
+                  const clause = standardClauses.find((c) => c.id === editing.id);
+                  const text = editing.text.trim();
+                  overrides = { ...clauseOverrides };
+                  if (clause && text && text !== clause.body)
+                    overrides[editing.id] = { body: text };
+                  else delete overrides[editing.id];
+                  setClauseOverrides(overrides);
+                }
+                if (d) leaseDraftStore.set({ ...d, customClauses, clauseOverrides: overrides });
                 setEditing(null);
                 setShowClausesModal(false);
               }}

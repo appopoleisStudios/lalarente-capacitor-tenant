@@ -73,4 +73,28 @@ describe('lease clause overrides', () => {
     expect(html).toContain('2. SECURITY DEPOSIT');
     expect(html).toContain('3. RENT ESCALATION');
   });
+
+  it('ignores malformed stored overrides instead of throwing', () => {
+    const out = applyClauseOverrides(getStandardClauses(lease), {
+      pets: { body: 42 as unknown as string },
+    });
+    expect(out.find((c) => c.id === 'pets')?.body).toContain('No pets');
+  });
+
+  // Overrides on signed leases are keyed by these ids. Renaming one would
+  // silently bring a removed clause back when a PDF is regenerated.
+  it('keeps clause ids stable', () => {
+    expect(getStandardClauses(lease).map((c) => c.id)).toEqual([
+      'use_of_premises',
+      'maintenance',
+      'inspections',
+      'pets',
+      'termination',
+      'deposit_refund',
+      'breach',
+      'domicilium',
+      'governing_law',
+      'entire_agreement',
+    ]);
+  });
 });
