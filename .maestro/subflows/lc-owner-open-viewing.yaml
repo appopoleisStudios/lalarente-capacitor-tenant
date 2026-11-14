@@ -11,6 +11,15 @@ appId: com.lalarente.app
     timeout: 2000
 - tapOn:
     id: "owner-viewings-filter-all"
+# The screen stays mounted and keeps its scroll offset; go back to the top so
+# the newest card isn't hidden under the sticky filter header.
+- repeat:
+    times: 3
+    commands:
+      - swipe:
+          start: "50%,45%"
+          end: "50%,90%"
+          duration: 300
 - assertVisible:
     id: "owner-viewing-card"
 - waitForAnimationToEnd:
