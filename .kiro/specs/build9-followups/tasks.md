@@ -166,14 +166,20 @@
   dashboard with a full-screen "Loading dashboard..." spinner (now a
   background refresh; overlapping fetches share one request).
 
-## B9-008 ⚪ Test-data follow-ups ⬜
+## B9-008 ⚪ Test-data follow-ups ✅
 
 - Test lease `23d25ca6…`: first payment stored as 2026-11-30 (pre-fix; due_date
   is immutable) and its PDF was generated before the escalation fix — tap
   "Regenerate PDF" and reset the lifecycle fixture before the next full chain.
 - **Acceptance criteria:**
-  - [ ] A reset script (or migration-free admin steps) recreates the lifecycle
-        fixture so the chain can run from 01 cleanly.
+  - [x] `node scripts/reset-lifecycle-fixture.mjs [--apply]` (dry run by
+        default): every live viewing / application / holding deposit /
+        inspection / maintenance job / lease on the fixture properties is
+        moved to its terminal status via REST as the owner or tenant (same
+        writes as the app, under RLS — nothing deleted), then the properties
+        go back to `available`. Ran on 2026-11-14: 11 changes, all ✓.
+- Lease `23d25ca6…` is now `terminated` (it was test data with the pre-fix
+  first payment date), so regenerating its PDF is moot.
 
 ## B9-009 🟠 CI is red on main (Lint + Tests) ✅
 
