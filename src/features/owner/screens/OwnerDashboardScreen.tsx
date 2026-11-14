@@ -24,6 +24,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { useAuth } from '@/src/contexts/AuthContext';
 import * as Haptics from 'expo-haptics';
 import { AnimatedButton, FeaturePin } from '@/src/shared/components';
 import { PortfolioCard } from '../components/PortfolioCard';
@@ -61,6 +62,21 @@ export default function OwnerDashboardScreen() {
   useEffect(() => {
     initOwner();
   }, []);
+
+  // The screen can mount before a new sign-in has produced a session (e.g.
+  // sign out -> sign in without restarting the app), so initOwner finds no
+  // user. Follow the auth context so the dashboard loads once the user is
+  // known instead of waiting forever.
+  const { user: authUser } = useAuth();
+  useEffect(() => {
+    const id = authUser?.id;
+    if (!id || id === ownerIdRef.current) return;
+    ownerIdRef.current = id;
+    setOwnerId(id);
+    loadViewingRequests(id);
+    loadMessages(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser?.id]);
 
   // Re-load viewings + messages + unread notif count on every screen focus
   useFocusEffect(

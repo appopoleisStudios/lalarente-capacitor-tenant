@@ -31,10 +31,18 @@ export function useOwnerDashboard(ownerId: string | null): UseOwnerDashboardRetu
   const [error, setError] = useState<Error | null>(null);
   const inFlight = useRef<Promise<void> | null>(null);
   const hasData = useRef(false);
+  const ownerRef = useRef<string | null>(null);
 
-  // Paint the cached dashboard while the first fetch is running.
+  // Paint the cached dashboard while the first fetch is running. A different
+  // owner signing in on the same device must never see the previous one's data.
   useEffect(() => {
     if (!ownerId) return;
+    if (ownerRef.current && ownerRef.current !== ownerId) {
+      hasData.current = false;
+      setData(null);
+      setLoading(true);
+    }
+    ownerRef.current = ownerId;
     readDashboardCache<OwnerDashboardData>('owner', ownerId).then((cached) => {
       if (cached && !hasData.current) {
         hasData.current = true;
@@ -58,6 +66,7 @@ export function useOwnerDashboard(ownerId: string | null): UseOwnerDashboardRetu
         const startedAt = Date.now();
         const dashboardData = await getOwnerDashboardData(ownerId);
         console.log(`[perf] owner dashboard data in ${Date.now() - startedAt}ms`);
+        if (ownerRef.current && ownerRef.current !== ownerId) return; // signed-in owner changed
         hasData.current = true;
         setData(dashboardData);
         writeDashboardCache('owner', ownerId, dashboardData);
