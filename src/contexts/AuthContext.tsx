@@ -4,6 +4,7 @@ import Constants from 'expo-constants';
 import { Database } from '@/src/types/database.types';
 import { supabase } from '@/src/lib/supabase';
 import { clearPendingVendorSelection } from '@/src/features/maintenance/api/vendors/pendingVendorSelection';
+import { clearDashboardCaches } from '@/src/shared/utils/dashboardCache';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
@@ -313,6 +314,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       clearPendingVendorSelection();
+      await clearDashboardCaches();
       const { error } = await supabase.auth.signOut();
 
       if (error) {

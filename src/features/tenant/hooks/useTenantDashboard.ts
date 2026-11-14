@@ -1,9 +1,11 @@
+import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/src/lib/supabase';
 import { paymentsApi, PaymentWithRelations } from '../../properties/api/paymentsApi';
 import { messagesApi } from '../../messaging/api/messagesApi';
 import { checkTenantProfileCompleteness } from '../utils/profileCompleteness';
 import { queryKeys } from '@/src/core/query/queryKeys';
+import { readDashboardCache, writeDashboardCache } from '@/src/shared/utils/dashboardCache';
 
 interface ActiveLeaseProperty {
   id: string;
@@ -104,10 +106,29 @@ export interface TenantDashboardData {
 }
 
 export function useTenantDashboard(userId: string | null) {
+  // Last dashboard for this tenant, shown while the first fetch runs.
+  const [cached, setCached] = useState<TenantDashboardData | undefined>(undefined);
+  useEffect(() => {
+    if (!userId) return;
+    readDashboardCache<TenantDashboardData>('tenant', userId).then((c) => {
+      if (c) {
+        console.log('[perf] tenant dashboard cache painted');
+        setCached(c);
+      }
+    });
+  }, [userId]);
+
   return useQuery({
     queryKey: queryKeys.tenant.dashboard(userId ?? undefined),
-    queryFn: () => fetchDashboardData(userId!),
+    queryFn: async () => {
+      const startedAt = Date.now();
+      const data = await fetchDashboardData(userId!);
+      console.log(`[perf] tenant dashboard data in ${Date.now() - startedAt}ms`);
+      writeDashboardCache('tenant', userId!, data);
+      return data;
+    },
     enabled: !!userId,
+    placeholderData: cached,
   });
 }
 
@@ -116,16 +137,25 @@ export function useTenantDashboardQueryClient() {
 }
 
 async function fetchDashboardData(userId: string): Promise<TenantDashboardData> {
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name')
-    .eq('id', userId)
-    .single();
-
   const twoWeeksAgo = new Date();
   twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
 
-  const [leaseResult, payments, maintenanceResult, viewingsResult] = await Promise.all([
+  // One parallel wave for every independent query (these used to run one
+  // after another — ~10 round trips before the dashboard could render).
+  const [
+    { data: profile },
+    leaseResult,
+    payments,
+    maintenanceResult,
+    viewingsResult,
+    { data: recentDeclined, error: declinedError },
+    { data: unreadNotifs },
+    { data: apps },
+    threads,
+    { data: pendingInsp },
+    completeness,
+  ] = await Promise.all([
+    supabase.from('profiles').select('full_name').eq('id', userId).single(),
     supabase
       .from('leases')
       .select(
@@ -152,12 +182,46 @@ async function fetchDashboardData(userId: string): Promise<TenantDashboardData> 
       .eq('tenant_id', userId)
       .in('status', ['approved', 'pending'])
       .order('requested_date', { ascending: true }),
+    supabase
+      .from('viewing_requests')
+      .select(
+        'id, status, requested_date, requested_time, confirmed_date, owner_response, alternative_times, updated_at, created_at, property_id, property:properties!property_id(id, title)'
+      )
+      .eq('tenant_id', userId)
+      .eq('status', 'declined')
+      .gte('created_at', twoWeeksAgo.toISOString())
+      .order('created_at', { ascending: false })
+      .limit(5),
+    (supabase as any)
+      .from('notifications')
+      .select('id, type, title, body, data, created_at')
+      .eq('user_id', userId)
+      .is('read_at', null)
+      .order('created_at', { ascending: false })
+      .limit(5),
+    supabase
+      .from('rental_applications')
+      .select('id, status, created_at, property:properties!property_id(id, title)')
+      .eq('tenant_id', userId)
+      .in('status', ['submitted', 'under_review', 'pending_verification'])
+      .order('created_at', { ascending: false })
+      .limit(3),
+    messagesApi.getUserThreads(userId, 'tenant'),
+    supabase
+      .from('inspections')
+      .select('id, type, scheduled_date, property:properties!property_id(title)')
+      .eq('tenant_id', userId)
+      .eq('status', 'pending_signatures')
+      .limit(1)
+      .maybeSingle(),
+    checkTenantProfileCompleteness(userId),
   ]);
 
   if (leaseResult.error) throw new Error(`leases: ${leaseResult.error.message}`);
   if (maintenanceResult.error)
     throw new Error(`maintenance_requests: ${maintenanceResult.error.message}`);
   if (viewingsResult.error) throw new Error(`viewing_requests: ${viewingsResult.error.message}`);
+  if (declinedError) throw new Error(`viewing_requests (declined): ${declinedError.message}`);
 
   // Filter out past appointments using the effective date (confirmed_date ?? requested_date),
   // then cap to 3. Must filter before limiting: a SQL LIMIT(3) could fill the
@@ -170,45 +234,33 @@ async function fetchDashboardData(userId: string): Promise<TenantDashboardData> 
   const upcoming = payments.find((p) => p.status === 'pending') ?? null;
   const recent = payments.filter((p) => p.status === 'completed').slice(0, 3);
 
-  const { data: recentDeclined, error: declinedError } = await supabase
-    .from('viewing_requests')
-    .select(
-      'id, status, requested_date, requested_time, confirmed_date, owner_response, alternative_times, updated_at, created_at, property_id, property:properties!property_id(id, title)'
-    )
-    .eq('tenant_id', userId)
-    .eq('status', 'declined')
-    .gte('created_at', twoWeeksAgo.toISOString())
-    .order('created_at', { ascending: false })
-    .limit(5);
-
-  if (declinedError) throw new Error(`viewing_requests (declined): ${declinedError.message}`);
-
+  // Declined-viewing alerts: hide ones for properties with a newer live
+  // request, and ones whose notification was already read (both in parallel).
   let filteredAlerts: UpcomingViewing[] = (recentDeclined ?? []) as unknown as UpcomingViewing[];
   if (filteredAlerts.length > 0) {
     const declinedPropertyIds = [
       ...new Set(filteredAlerts.map((v) => v.property_id).filter((id): id is string => !!id)),
     ];
-    const { data: activeForProps } = await supabase
-      .from('viewing_requests')
-      .select('property_id')
-      .eq('tenant_id', userId)
-      .in('status', ['pending', 'approved'])
-      .in('property_id', declinedPropertyIds);
+    const [{ data: activeForProps }, { data: readNotifs }] = await Promise.all([
+      supabase
+        .from('viewing_requests')
+        .select('property_id')
+        .eq('tenant_id', userId)
+        .in('status', ['pending', 'approved'])
+        .in('property_id', declinedPropertyIds),
+      (supabase as any)
+        .from('notifications')
+        .select('data')
+        .eq('user_id', userId)
+        .in('type', ['viewing_declined', 'viewing_approved'])
+        .not('read_at', 'is', null),
+    ]);
     const activePropertyIds = new Set(
       ((activeForProps ?? []) as { property_id: string }[]).map((v) => v.property_id)
     );
     filteredAlerts = filteredAlerts.filter(
       (v) => v.property_id && !activePropertyIds.has(v.property_id)
     );
-  }
-
-  if (filteredAlerts.length > 0) {
-    const { data: readNotifs } = await (supabase as any)
-      .from('notifications')
-      .select('data')
-      .eq('user_id', userId)
-      .in('type', ['viewing_declined', 'viewing_approved'])
-      .not('read_at', 'is', null);
     if (readNotifs && readNotifs.length > 0) {
       const readViewingIds = new Set(
         (readNotifs as { data?: { viewingId?: string } }[])
@@ -219,23 +271,6 @@ async function fetchDashboardData(userId: string): Promise<TenantDashboardData> 
     }
   }
 
-  const { data: unreadNotifs } = await (supabase as any)
-    .from('notifications')
-    .select('id, type, title, body, data, created_at')
-    .eq('user_id', userId)
-    .is('read_at', null)
-    .order('created_at', { ascending: false })
-    .limit(5);
-
-  const { data: apps } = await supabase
-    .from('rental_applications')
-    .select('id, status, created_at, property:properties!property_id(id, title)')
-    .eq('tenant_id', userId)
-    .in('status', ['submitted', 'under_review', 'pending_verification'])
-    .order('created_at', { ascending: false })
-    .limit(3);
-
-  const threads = await messagesApi.getUserThreads(userId, 'tenant');
   const sorted = [...threads].sort((a, b) => {
     const aUnread = a.unread_count_tenant ?? 0;
     const bUnread = b.unread_count_tenant ?? 0;
@@ -244,16 +279,7 @@ async function fetchDashboardData(userId: string): Promise<TenantDashboardData> 
   });
   const unreadTotal = threads.reduce((sum, t) => sum + (t.unread_count_tenant ?? 0), 0);
 
-  const { data: pendingInsp } = await supabase
-    .from('inspections')
-    .select('id, type, scheduled_date, property:properties!property_id(title)')
-    .eq('tenant_id', userId)
-    .eq('status', 'pending_signatures')
-    .limit(1)
-    .maybeSingle();
-
   let profileMissing: string[] | undefined;
-  const completeness = await checkTenantProfileCompleteness(userId);
   if (completeness.status === 'ok') {
     profileMissing = completeness.complete ? [] : completeness.missing;
   }
