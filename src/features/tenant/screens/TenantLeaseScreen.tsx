@@ -9,8 +9,10 @@ import {
   Alert,
   Linking,
   Image,
+  Modal,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { WebView } from 'react-native-webview';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
@@ -18,11 +20,13 @@ import { notificationsApi } from '../../notifications/api/notificationsApi';
 import SignatureModal from '../../leases/components/SignatureModal';
 import { uploadSignature } from '../../leases/api/storageService';
 import { regenerateLeasePDF } from '../../leases/api/regenerateLeasePDF';
+import { generateLeaseHTML } from '../../leases/api/leasePdfService';
 import { evaluateSignLeaseGate } from '../utils/leaseSignGate';
 import { reportApiError } from '@/src/core/observability/sentry';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
 import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
+import { colors } from '@/src/shared/theme/colors';
 
 const RSA = { green: '#007A4D', gold: '#FFB81C' }; // Tenant colors
 
@@ -70,7 +74,46 @@ export default function TenantLeaseScreen() {
   const [lease, setLease] = useState<Lease | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const insets = useSafeAreaInsets();
   const [showSignatureModal, setShowSignatureModal] = useState(false);
+  // Full lease wording (same render as the signed PDF) so the tenant reads
+  // every clause — including ones the owner edited or removed — before signing.
+  const [fullLeaseHtml, setFullLeaseHtml] = useState<string | null>(null);
+  const [openingFullLease, setOpeningFullLease] = useState(false);
+
+  const openFullLease = async () => {
+    if (!lease) return;
+    setOpeningFullLease(true);
+    try {
+      const { data, error: fullError } = await supabase
+        .from('leases')
+        .select(
+          `
+          *,
+          property:properties!property_id(title, address, city, province, postal_code),
+          owner:profiles!owner_id(full_name, email, phone, id_number),
+          tenant:profiles!tenant_id(full_name, email, phone, id_number, date_of_birth)
+        `
+        )
+        .eq('id', lease.id)
+        .single();
+      if (fullError || !data) throw fullError ?? new Error('Lease not found');
+      const row = data as any;
+      setFullLeaseHtml(
+        generateLeaseHTML({
+          ...row,
+          property: unpackRelation(row.property),
+          owner: unpackRelation(row.owner) ?? { full_name: 'Landlord' },
+          tenant: unpackRelation(row.tenant) ?? { full_name: 'Tenant' },
+        })
+      );
+    } catch (err) {
+      reportApiError(err, 'leases', 'select');
+      Alert.alert('Could not open the lease', 'Please try again.');
+    } finally {
+      setOpeningFullLease(false);
+    }
+  };
   const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
@@ -682,6 +725,21 @@ export default function TenantLeaseScreen() {
                 </Text>
               </View>
               <TouchableOpacity
+                testID="tenant-lease-read-full"
+                style={styles.readFullButton}
+                onPress={openFullLease}
+                disabled={openingFullLease}
+              >
+                {openingFullLease ? (
+                  <ActivityIndicator color={RSA.green} />
+                ) : (
+                  <>
+                    <Ionicons name="document-text-outline" size={20} color={RSA.green} />
+                    <Text style={styles.readFullButtonText}>Read Full Lease Agreement</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
                 testID="tenant-lease-sign"
                 style={[styles.primaryButton, actionLoading && styles.buttonDisabled]}
                 onPress={handleSignLease}
@@ -741,6 +799,40 @@ export default function TenantLeaseScreen() {
             </TouchableOpacity>
           </View>
         </ScrollView>
+
+        <Modal
+          visible={fullLeaseHtml !== null}
+          animationType="slide"
+          onRequestClose={() => setFullLeaseHtml(null)}
+        >
+          {/* SafeAreaView reports no insets inside a Modal on iOS: pad explicitly. */}
+          <View
+            style={[
+              styles.fullLeaseContainer,
+              { paddingTop: insets.top, paddingBottom: insets.bottom },
+            ]}
+          >
+            <View style={styles.fullLeaseHeader}>
+              <Text style={styles.fullLeaseTitle}>Lease Agreement</Text>
+              <TouchableOpacity
+                testID="tenant-lease-full-close"
+                onPress={() => setFullLeaseHtml(null)}
+                accessibilityLabel="Close lease"
+              >
+                <Ionicons name="close" size={26} color={colors.text.primary} />
+              </TouchableOpacity>
+            </View>
+            {fullLeaseHtml ? (
+              <WebView
+                testID="tenant-lease-full-doc"
+                source={{ html: fullLeaseHtml }}
+                originWhitelist={['about:blank']}
+                javaScriptEnabled={false}
+                style={styles.fullLeaseWeb}
+              />
+            ) : null}
+          </View>
+        </Modal>
 
         {/* Signature Modal */}
         <SignatureModal
@@ -1156,6 +1248,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  readFullButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: RSA.green,
+    marginBottom: 12,
+  },
+  readFullButtonText: { color: RSA.green, fontSize: 16, fontWeight: '600' },
+  fullLeaseContainer: { flex: 1, backgroundColor: colors.background.default },
+  fullLeaseHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.default,
+  },
+  fullLeaseTitle: { fontSize: 18, fontWeight: '700', color: colors.text.primary },
+  fullLeaseWeb: { flex: 1 },
   primaryButton: {
     flexDirection: 'row',
     alignItems: 'center',

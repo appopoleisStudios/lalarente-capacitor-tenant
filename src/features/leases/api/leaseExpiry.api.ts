@@ -76,7 +76,9 @@ export const leaseExpiryApi = {
   async getLeaseExpiryInfo(leaseId: string): Promise<LeaseExpiryInfo> {
     const { data: lease, error } = await supabase
       .from('leases')
-      .select('id, end_date, notice_80_sent_at, notice_60_sent_at, notice_40_sent_at, tenant_renewal_response')
+      .select(
+        'id, end_date, notice_80_sent_at, notice_60_sent_at, notice_40_sent_at, tenant_renewal_response'
+      )
       .eq('id', leaseId)
       .single();
 
@@ -93,7 +95,12 @@ export const leaseExpiryApi = {
     const notice40Due = calculateExpiryNoticeDate(endDate, 40);
 
     // Determine status
-    const status = determineLeaseStatus(daysUntilExpiry, today, notice80Due, !!lease.notice_80_sent_at);
+    const status = determineLeaseStatus(
+      daysUntilExpiry,
+      today,
+      notice80Due,
+      !!lease.notice_80_sent_at
+    );
 
     return {
       leaseId: lease.id,
@@ -121,12 +128,14 @@ export const leaseExpiryApi = {
 
     const { data, error } = await supabase
       .from('leases')
-      .select(`
+      .select(
+        `
         id, property_id, tenant_id, owner_id, end_date, monthly_rent, status,
         tenant_renewal_response,
         property:properties!property_id(id, title, address),
         tenant:profiles!tenant_id(id, full_name, email)
-      `)
+      `
+      )
       .eq('owner_id', ownerId)
       .in('status', ['active', 'renewal_pending'])
       .gte('end_date', today.toISOString())
@@ -144,10 +153,7 @@ export const leaseExpiryApi = {
   /**
    * Record that an expiry notice was sent.
    */
-  async recordNoticeSent(
-    leaseId: string,
-    noticeType: '80' | '60' | '40'
-  ): Promise<void> {
+  async recordNoticeSent(leaseId: string, noticeType: '80' | '60' | '40'): Promise<void> {
     const field = `notice_${noticeType}_sent_at` as const;
 
     const { error } = await supabase
@@ -192,13 +198,19 @@ export const leaseExpiryApi = {
    * Check all active leases for overdue notices.
    * Returns leases where a notice should have been sent but hasn't.
    */
-  async getOverdueNotices(ownerId: string): Promise<Array<{
-    leaseId: string;
-    overdueNotices: ('80' | '60' | '40')[];
-    endDate: string;
-  }>> {
+  async getOverdueNotices(ownerId: string): Promise<
+    Array<{
+      leaseId: string;
+      overdueNotices: ('80' | '60' | '40')[];
+      endDate: string;
+    }>
+  > {
     const leases = await this.getExpiringLeases(ownerId, 180);
-    const overdueList: Array<{ leaseId: string; overdueNotices: ('80' | '60' | '40')[]; endDate: string }> = [];
+    const overdueList: Array<{
+      leaseId: string;
+      overdueNotices: ('80' | '60' | '40')[];
+      endDate: string;
+    }> = [];
 
     for (const lease of leases) {
       const info = await this.getLeaseExpiryInfo(lease.id);

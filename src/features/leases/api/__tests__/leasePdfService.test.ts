@@ -261,7 +261,11 @@ describe('generateLeaseHTML', () => {
 
     it('renders month-to-month termination wording for month_to_month leases', () => {
       const html = generateLeaseHTML(minimalFixture);
-      assertContains(html, 'month-to-month lease by providing 30 calendar days', 'MTM termination text');
+      assertContains(
+        html,
+        'month-to-month lease by providing 30 calendar days',
+        'MTM termination text'
+      );
     });
 
     it('renders DOMICILIUM clause', () => {

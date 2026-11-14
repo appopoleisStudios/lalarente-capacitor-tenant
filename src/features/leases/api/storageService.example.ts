@@ -1,6 +1,6 @@
 /**
  * Example usage of storage service with comprehensive error handling
- * 
+ *
  * This file demonstrates best practices for handling storage upload errors
  * in the lease signature workflow.
  */
@@ -37,11 +37,9 @@ export async function exampleBasicUpload(
       Alert.alert('Invalid Input', error.message);
     } else if (error instanceof NetworkError) {
       // Network issue - suggest checking connection
-      Alert.alert(
-        'Connection Error',
-        'Please check your internet connection and try again.',
-        [{ text: 'OK' }]
-      );
+      Alert.alert('Connection Error', 'Please check your internet connection and try again.', [
+        { text: 'OK' },
+      ]);
     } else if (error instanceof StorageUploadError) {
       // Storage-specific error - handle based on code
       switch (error.code) {
@@ -60,11 +58,9 @@ export async function exampleBasicUpload(
           );
           break;
         case 'FILE_TOO_LARGE':
-          Alert.alert(
-            'File Too Large',
-            'Signature file is too large. Please try again.',
-            [{ text: 'Try Again' }]
-          );
+          Alert.alert('File Too Large', 'Signature file is too large. Please try again.', [
+            { text: 'Try Again' },
+          ]);
           break;
         default:
           Alert.alert('Upload Error', error.message);
@@ -101,17 +97,14 @@ export async function exampleUploadWithRetry(
 
     // For network errors, offer retry option
     if (error instanceof NetworkError) {
-      Alert.alert(
-        'Connection Error',
-        errorMessage,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Retry',
-            onPress: () => exampleUploadWithRetry(leaseId, party, signatureBase64, setLoading, setError),
-          },
-        ]
-      );
+      Alert.alert('Connection Error', errorMessage, [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Retry',
+          onPress: () =>
+            exampleUploadWithRetry(leaseId, party, signatureBase64, setLoading, setError),
+        },
+      ]);
     } else {
       Alert.alert('Upload Failed', errorMessage);
     }
@@ -183,11 +176,7 @@ export async function exampleCompleteSignatureFlow(
     console.log('✅ Lease record updated');
 
     // Step 3: Show success message
-    Alert.alert(
-      'Success',
-      'Your signature has been saved successfully!',
-      [{ text: 'OK' }]
-    );
+    Alert.alert('Success', 'Your signature has been saved successfully!', [{ text: 'OK' }]);
 
     return true;
   } catch (error) {

@@ -54,6 +54,123 @@ export interface LeaseData {
   agency_reg_no?: string;
   agency_ffc?: string;
   agency_vat?: string;
+  // Owner's lease wording (CT7-022): appended terms + edits/removals of the
+  // standard general clauses. Read from the lease row when not passed in.
+  lease_custom_clauses?: string | null;
+  lease_clause_overrides?: ClauseOverrides | null;
+}
+
+/** Owner edits to a standard clause, keyed by clause id. Only differences
+ *  from the template are stored. */
+export interface ClauseOverride {
+  removed?: boolean;
+  body?: string;
+}
+export type ClauseOverrides = Record<string, ClauseOverride>;
+
+export interface StandardClause {
+  id: string;
+  title: string;
+  /** Default wording (plain text). */
+  body: string;
+  /** Locked clauses can't be edited or removed; `lockReason` says why. */
+  locked: boolean;
+  lockReason?: string;
+}
+
+const LOCK_LAW = 'Required by law (Rental Housing Act / Consumer Protection Act)';
+const LOCK_FORM = 'Set from the lease details (change them on the previous screen)';
+
+/** The "General Terms & Conditions" clauses, in order. */
+export function getStandardClauses(lease: Pick<LeaseData, 'lease_type'>): StandardClause[] {
+  return [
+    {
+      id: 'use_of_premises',
+      title: 'USE OF THE PREMISES',
+      body: "The Tenant shall use the property solely as a private residence and for no other purpose whatsoever without the Landlord's prior written consent. The Tenant shall not carry on any business, trade, or profession from the premises. The Tenant shall comply with all body corporate or homeowners' association rules and regulations.",
+      locked: false,
+    },
+    {
+      id: 'maintenance',
+      title: 'MAINTENANCE AND REPAIRS',
+      body: "The Tenant agrees to maintain the premises in a good and clean condition and to report any defects or maintenance issues promptly through the LaLarente application. The Landlord shall be responsible for structural maintenance and major repairs. The Tenant shall be responsible for routine maintenance including light bulbs, fuses, and garden upkeep (where applicable). The Tenant shall not make any alterations or additions to the premises without the Landlord's written consent.",
+      locked: false,
+    },
+    {
+      id: 'inspections',
+      title: 'INSPECTIONS',
+      body: "A joint ingoing inspection shall be conducted prior to the Tenant taking occupation, and a joint outgoing inspection shall be conducted upon termination of this lease. Both parties shall sign the inspection reports. The Tenant shall allow the Landlord or Agent reasonable access to the premises for inspection purposes, subject to 24 hours' notice except in emergencies.",
+      locked: true,
+      lockReason: LOCK_LAW,
+    },
+    {
+      id: 'pets',
+      title: 'PETS',
+      body: 'No pets shall be kept on the premises without the prior written consent of the Landlord, which consent may be granted subject to reasonable conditions including an additional pet deposit.',
+      locked: false,
+    },
+    {
+      id: 'termination',
+      title: 'TERMINATION',
+      body:
+        lease.lease_type === 'month_to_month'
+          ? "Either party may terminate this month-to-month lease by providing 30 calendar days' written notice in writing. The Tenant shall remain liable for rental during the notice period."
+          : 'This fixed-term lease shall terminate on the end date specified in the schedule without further notice. Early termination by the Tenant prior to the expiry date shall constitute a breach. The Landlord may elect to accept early termination subject to a penalty calculated in accordance with the Consumer Protection Act (CPA s14), limited to a reasonable amount not exceeding the rental for the notice period.',
+      locked: true,
+      lockReason: LOCK_FORM,
+    },
+    {
+      id: 'deposit_refund',
+      title: 'DEPOSIT REFUND',
+      body: 'The deposit, together with any interest accrued, shall be refunded to the Tenant within 14 days of termination of this lease and vacating of the premises, less any amounts lawfully deductible for damages, arrears, or breach. An inspection report and municipal account clearance shall form the basis for any deductions.',
+      locked: true,
+      lockReason: LOCK_LAW,
+    },
+    {
+      id: 'breach',
+      title: 'BREACH',
+      body: 'Should the Tenant fail to pay rental on the due date or commit any other breach of this agreement, the Landlord shall be entitled to demand rectification in writing. If the breach is not remedied within 20 business days (in the case of rental arrears, 20 business days written notice as required by the Consumer Protection Act), the Landlord shall be entitled to cancel this lease and claim damages, including all arrears, legal costs on an attorney-and-own-client scale, and collection charges.',
+      locked: true,
+      lockReason: LOCK_LAW,
+    },
+    {
+      id: 'domicilium',
+      title: 'DOMICILIUM',
+      body: 'The parties choose their respective domicilium citandi et executandi for all purposes under this lease as the addresses reflected in the schedule. Any notice delivered by hand shall be deemed received on the day of delivery. Any notice sent by registered post shall be deemed received 7 days after posting.',
+      locked: false,
+    },
+    {
+      id: 'governing_law',
+      title: 'GOVERNING LAW',
+      body: "This agreement shall be governed by and construed in accordance with the laws of the Republic of South Africa. The Rental Housing Act, 1999 (Act No. 50 of 1999) and the Consumer Protection Act, 2008 (Act No. 68 of 2008) apply to this lease agreement. The parties consent to the jurisdiction of the Magistrates' Court in terms of Section 28 of the Magistrate's Court Act.",
+      locked: true,
+      lockReason: LOCK_LAW,
+    },
+    {
+      id: 'entire_agreement',
+      title: 'ENTIRE AGREEMENT',
+      body: 'This document constitutes the entire agreement between the parties. No variation, amendment, or consensual cancellation of this lease shall be of any force or effect unless reduced to writing and signed by both parties.',
+      locked: false,
+    },
+  ];
+}
+
+/** Standard clauses with the owner's edits applied and removals dropped.
+ *  Overrides on locked clauses are ignored. */
+export function applyClauseOverrides(
+  clauses: StandardClause[],
+  overrides?: ClauseOverrides | null
+): StandardClause[] {
+  return clauses
+    .filter((c) => c.locked || !overrides?.[c.id]?.removed)
+    .map((c) => {
+      const body = overrides?.[c.id]?.body;
+      return !c.locked && typeof body === 'string' && body.trim() ? { ...c, body: body.trim() } : c;
+    });
+}
+
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 function formatCurrency(amount: number): string {
@@ -82,7 +199,18 @@ function getDaySuffix(day: number): string {
   }
 }
 
-export function generateLeaseHTML(lease: LeaseData, customClauses?: string): string {
+export function generateLeaseHTML(
+  lease: LeaseData,
+  customClauses?: string,
+  clauseOverrides?: ClauseOverrides | null
+): string {
+  // Fall back to what is stored on the lease, so every render (review
+  // preview, signing, regeneration) produces the same document.
+  customClauses = customClauses ?? lease.lease_custom_clauses ?? undefined;
+  const generalClauses = applyClauseOverrides(
+    getStandardClauses(lease),
+    clauseOverrides ?? lease.lease_clause_overrides
+  );
   const leaseTypeDisplay = lease.lease_type === 'fixed' ? 'Fixed Term' : 'Month-to-Month';
   const escalationType =
     lease.rent_escalation_type === 'percentage' || lease.rent_escalation_type === 'fixed_percentage'
@@ -93,6 +221,15 @@ export function generateLeaseHTML(lease: LeaseData, customClauses?: string): str
   const interestRate = lease.interest_on_arrears_rate; // from lease terms, undefined if not set
   const dueDay = lease.payment_due_day || 1;
   const dueDaySuffix = getDaySuffix(dueDay);
+
+  // Number the financial clauses in the order they appear (some are optional).
+  let next = 2;
+  const n = {
+    deposit: lease.deposit_amount ? next++ : 0,
+    interest: interestRate ? next++ : 0,
+    escalation: lease.rent_escalation_type ? next++ : 0,
+    lateFee: lease.late_fee_amount ? next++ : 0,
+  };
 
   return `<!DOCTYPE html>
 <html>
@@ -307,7 +444,7 @@ export function generateLeaseHTML(lease: LeaseData, customClauses?: string): str
     lease.deposit_amount
       ? `
   <div class="clause">
-    <div class="clause-number">2. SECURITY DEPOSIT</div>
+    <div class="clause-number">${n.deposit}. SECURITY DEPOSIT</div>
     <div class="clause-text">
       The Tenant has paid a security deposit of ${formatCurrency(lease.deposit_amount)}. The deposit shall be held by the Landlord / Agent in trust in terms of the Rental Housing Act. The deposit will be invested in an interest-bearing account and interest accrued will be paid to the Tenant upon termination of this lease, subject to any lawful deductions for damages, arrears, or breach beyond normal wear and tear. The deposit may not be used for the final month's rental.
     </div>
@@ -319,7 +456,7 @@ export function generateLeaseHTML(lease: LeaseData, customClauses?: string): str
     interestRate
       ? `
   <div class="clause">
-    <div class="clause-number">${lease.deposit_amount ? '3' : '2'}. INTEREST ON ARREARS</div>
+    <div class="clause-number">${n.interest}. INTEREST ON ARREARS</div>
     <div class="clause-text">
       Should the Tenant fail to pay the full monthly rental on or before the due date, interest at a rate of ${interestRate}% per annum (being 2% above the prime lending rate) will be charged on arrears from the due date until the date of full payment, calculated daily and capitalised monthly.
     </div>
@@ -331,7 +468,7 @@ export function generateLeaseHTML(lease: LeaseData, customClauses?: string): str
     lease.rent_escalation_type
       ? `
   <div class="clause">
-    <div class="clause-number">${lease.deposit_amount ? '4' : '3'}. RENT ESCALATION</div>
+    <div class="clause-number">${n.escalation}. RENT ESCALATION</div>
     <div class="clause-text">
       The monthly rental shall escalate by ${escalationValue}${escalationType} every ${escalationFrequency} months, effective from the lease start date. The escalated rental amount will be communicated to the Tenant in writing no less than 30 days prior to the escalation date.
     </div>
@@ -343,7 +480,7 @@ export function generateLeaseHTML(lease: LeaseData, customClauses?: string): str
     lease.late_fee_amount
       ? `
   <div class="clause">
-    <div class="clause-number">${lease.rent_escalation_type ? '5' : '4'}. LATE PAYMENT FEE</div>
+    <div class="clause-number">${n.lateFee}. LATE PAYMENT FEE</div>
     <div class="clause-text">
       If the rental is not received within ${lease.late_fee_grace_days || 3} days of the due date, a late payment administration fee of ${formatCurrency(lease.late_fee_amount)} will be charged.
     </div>
@@ -376,79 +513,15 @@ export function generateLeaseHTML(lease: LeaseData, customClauses?: string): str
 <div class="section">
   <div class="section-title">General Terms &amp; Conditions</div>
 
+${generalClauses
+  .map(
+    (c) => `
   <div class="clause">
-    <div class="clause-number">USE OF THE PREMISES</div>
-    <div class="clause-text">
-      The Tenant shall use the property solely as a private residence and for no other purpose whatsoever without the Landlord's prior written consent. The Tenant shall not carry on any business, trade, or profession from the premises. The Tenant shall comply with all body corporate or homeowners' association rules and regulations.
-    </div>
-  </div>
-
-  <div class="clause">
-    <div class="clause-number">MAINTENANCE AND REPAIRS</div>
-    <div class="clause-text">
-      The Tenant agrees to maintain the premises in a good and clean condition and to report any defects or maintenance issues promptly through the LaLarente application. The Landlord shall be responsible for structural maintenance and major repairs. The Tenant shall be responsible for routine maintenance including light bulbs, fuses, and garden upkeep (where applicable). The Tenant shall not make any alterations or additions to the premises without the Landlord's written consent.
-    </div>
-  </div>
-
-  <div class="clause">
-    <div class="clause-number">INSPECTIONS</div>
-    <div class="clause-text">
-      A joint ingoing inspection shall be conducted prior to the Tenant taking occupation, and a joint outgoing inspection shall be conducted upon termination of this lease. Both parties shall sign the inspection reports. The Tenant shall allow the Landlord or Agent reasonable access to the premises for inspection purposes, subject to 24 hours' notice except in emergencies.
-    </div>
-  </div>
-
-  <div class="clause">
-    <div class="clause-number">PETS</div>
-    <div class="clause-text">
-      No pets shall be kept on the premises without the prior written consent of the Landlord, which consent may be granted subject to reasonable conditions including an additional pet deposit.
-    </div>
-  </div>
-
-  <div class="clause">
-    <div class="clause-number">TERMINATION</div>
-    <div class="clause-text">
-      ${
-        lease.lease_type === 'month_to_month'
-          ? "Either party may terminate this month-to-month lease by providing 30 calendar days' written notice in writing. The Tenant shall remain liable for rental during the notice period."
-          : 'This fixed-term lease shall terminate on the end date specified in the schedule without further notice. Early termination by the Tenant prior to the expiry date shall constitute a breach. The Landlord may elect to accept early termination subject to a penalty calculated in accordance with the Consumer Protection Act (CPA s14), limited to a reasonable amount not exceeding the rental for the notice period.'
-      }
-    </div>
-  </div>
-
-  <div class="clause">
-    <div class="clause-number">DEPOSIT REFUND</div>
-    <div class="clause-text">
-      The deposit, together with any interest accrued, shall be refunded to the Tenant within 14 days of termination of this lease and vacating of the premises, less any amounts lawfully deductible for damages, arrears, or breach. An inspection report and municipal account clearance shall form the basis for any deductions.
-    </div>
-  </div>
-
-  <div class="clause">
-    <div class="clause-number">BREACH</div>
-    <div class="clause-text">
-      Should the Tenant fail to pay rental on the due date or commit any other breach of this agreement, the Landlord shall be entitled to demand rectification in writing. If the breach is not remedied within 20 business days (in the case of rental arrears, 20 business days written notice as required by the Consumer Protection Act), the Landlord shall be entitled to cancel this lease and claim damages, including all arrears, legal costs on an attorney-and-own-client scale, and collection charges.
-    </div>
-  </div>
-
-  <div class="clause">
-    <div class="clause-number">DOMICILIUM</div>
-    <div class="clause-text">
-      The parties choose their respective domicilium citandi et executandi for all purposes under this lease as the addresses reflected in the schedule. Any notice delivered by hand shall be deemed received on the day of delivery. Any notice sent by registered post shall be deemed received 7 days after posting.
-    </div>
-  </div>
-
-  <div class="clause">
-    <div class="clause-number">GOVERNING LAW</div>
-    <div class="clause-text">
-      This agreement shall be governed by and construed in accordance with the laws of the Republic of South Africa. The Rental Housing Act, 1999 (Act No. 50 of 1999) and the Consumer Protection Act, 2008 (Act No. 68 of 2008) apply to this lease agreement. The parties consent to the jurisdiction of the Magistrates' Court in terms of Section 28 of the Magistrate's Court Act.
-    </div>
-  </div>
-
-  <div class="clause">
-    <div class="clause-number">ENTIRE AGREEMENT</div>
-    <div class="clause-text">
-      This document constitutes the entire agreement between the parties. No variation, amendment, or consensual cancellation of this lease shall be of any force or effect unless reduced to writing and signed by both parties.
-    </div>
-  </div>
+    <div class="clause-number">${c.title}</div>
+    <div class="clause-text" style="white-space:pre-wrap;">${escapeHtml(c.body)}</div>
+  </div>`
+  )
+  .join('')}
 </div>
 
 ${
@@ -457,7 +530,7 @@ ${
 <div class="section">
   <div class="section-title">Additional Terms</div>
   <div class="clause">
-    <div class="clause-text" style="white-space:pre-wrap;">${customClauses.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+    <div class="clause-text" style="white-space:pre-wrap;">${escapeHtml(customClauses)}</div>
   </div>
 </div>`
     : ''

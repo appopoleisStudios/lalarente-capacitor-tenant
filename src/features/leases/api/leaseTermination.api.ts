@@ -23,10 +23,7 @@ export function calculateRemainingMonths(endDate: Date, today: Date): number {
  * Calculate early termination penalty capped at 2 months rent.
  * CPA s14: Penalty must be reasonable — 2 months is standard SA practice.
  */
-export function calculatePenaltyAmount(
-  remainingMonths: number,
-  monthlyRent: number
-): number {
+export function calculatePenaltyAmount(remainingMonths: number, monthlyRent: number): number {
   const penaltyMonths = Math.min(2, remainingMonths);
   return penaltyMonths * monthlyRent;
 }
@@ -34,9 +31,7 @@ export function calculatePenaltyAmount(
 /**
  * Determine notice period days from lease config, defaulting to 30.
  */
-export function calculateNoticeDays(
-  leaseNoticePeriod: number | null
-): number {
+export function calculateNoticeDays(leaseNoticePeriod: number | null): number {
   return leaseNoticePeriod || 30;
 }
 
@@ -141,7 +136,8 @@ export const leaseTerminationApi = {
   async getPendingTerminations(ownerId: string): Promise<Record<string, unknown>[]> {
     const { data, error } = await supabase
       .from('leases')
-      .select(`
+      .select(
+        `
         id,
         status,
         monthly_rent,
@@ -152,7 +148,8 @@ export const leaseTerminationApi = {
         early_termination_effective_date,
         property:properties!property_id(id, title, address),
         tenant:profiles!tenant_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('owner_id', ownerId)
       .eq('status', 'active')
       .not('early_termination_requested_at', 'is', null)
@@ -197,9 +194,7 @@ export const leaseTerminationApi = {
       .update({
         early_termination_requested_at: null,
         early_termination_requested_by: null,
-        early_termination_reason: declineReason
-          ? `DECLINED: ${declineReason}`
-          : null,
+        early_termination_reason: declineReason ? `DECLINED: ${declineReason}` : null,
         early_termination_penalty: null,
         early_termination_effective_date: null,
       })
@@ -220,13 +215,15 @@ export const leaseTerminationApi = {
   }> {
     const { data, error } = await supabase
       .from('leases')
-      .select(`
+      .select(
+        `
         early_termination_requested_at,
         early_termination_requested_by,
         early_termination_reason,
         early_termination_penalty,
         early_termination_effective_date
-      `)
+      `
+      )
       .eq('id', leaseId)
       .single();
 
@@ -251,11 +248,13 @@ export const leaseTerminationApi = {
   async getTerminatedLeases(ownerId: string): Promise<Record<string, unknown>[]> {
     const { data, error } = await supabase
       .from('leases')
-      .select(`
+      .select(
+        `
         *,
         property:properties!property_id(id, title, address),
         tenant:profiles!tenant_id(id, full_name, email)
-      `)
+      `
+      )
       .eq('owner_id', ownerId)
       .eq('status', 'early_terminated')
       .order('terminated_at', { ascending: false });

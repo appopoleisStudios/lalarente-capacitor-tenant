@@ -7,7 +7,9 @@ The storage service now includes comprehensive error handling for signature and 
 ## Error Types
 
 ### 1. ValidationError
+
 Thrown when input data is invalid:
+
 - Empty or missing lease ID
 - Invalid party type (must be 'owner' or 'tenant')
 - Empty signature data
@@ -18,7 +20,9 @@ Thrown when input data is invalid:
 **User Action**: Fix the input and try again. No retry needed.
 
 ### 2. NetworkError
+
 Thrown when network connectivity issues occur:
+
 - Connection timeout
 - DNS resolution failure
 - Network unreachable
@@ -27,7 +31,9 @@ Thrown when network connectivity issues occur:
 **User Action**: Check internet connection and try again. Automatic retry is attempted.
 
 ### 3. StorageUploadError
+
 Thrown when storage operations fail:
+
 - `BUCKET_NOT_FOUND`: Storage bucket not configured
 - `PERMISSION_DENIED`: User lacks upload permissions
 - `FILE_TOO_LARGE`: File exceeds size limits
@@ -41,16 +47,18 @@ Thrown when storage operations fail:
 ## Retry Logic
 
 ### Configuration
+
 ```typescript
 const RETRY_CONFIG = {
-  maxRetries: 3,           // Maximum number of retry attempts
-  initialDelayMs: 1000,    // Initial delay before first retry (1 second)
-  maxDelayMs: 5000,        // Maximum delay between retries (5 seconds)
-  backoffMultiplier: 2,    // Exponential backoff multiplier
+  maxRetries: 3, // Maximum number of retry attempts
+  initialDelayMs: 1000, // Initial delay before first retry (1 second)
+  maxDelayMs: 5000, // Maximum delay between retries (5 seconds)
+  backoffMultiplier: 2, // Exponential backoff multiplier
 };
 ```
 
 ### Retry Strategy
+
 1. **Attempt 1**: Immediate upload
 2. **Attempt 2**: Wait 1 second, retry
 3. **Attempt 3**: Wait 2 seconds, retry
@@ -58,14 +66,18 @@ const RETRY_CONFIG = {
 5. **Failure**: Throw NetworkError or StorageUploadError
 
 ### Retryable Errors
+
 Only network-related errors are retried:
+
 - Network timeouts
 - Connection refused
 - DNS failures
 - Fetch failures
 
 ### Non-Retryable Errors
+
 These fail immediately without retry:
+
 - Validation errors (bad input)
 - Permission errors (access denied)
 - Bucket not found (configuration issue)
@@ -74,9 +86,11 @@ These fail immediately without retry:
 ## Functions
 
 ### uploadSignature(leaseId, party, base64Signature)
+
 Uploads a signature image with validation and retry logic.
 
 **Validations**:
+
 - Lease ID is required and non-empty
 - Party must be 'owner' or 'tenant'
 - Signature data must be valid base64
@@ -88,9 +102,11 @@ Uploads a signature image with validation and retry logic.
 **Throws**: ValidationError, NetworkError, or StorageUploadError
 
 ### uploadLeasePDF(leaseId, pdfData)
+
 Uploads a lease PDF document with validation and retry logic.
 
 **Validations**:
+
 - Lease ID is required and non-empty
 - PDF data is required
 - PDF size must be > 0 bytes
@@ -101,9 +117,11 @@ Uploads a lease PDF document with validation and retry logic.
 **Throws**: ValidationError, NetworkError, or StorageUploadError
 
 ### deleteSignature(leaseId, party)
+
 Deletes a signature from storage with retry logic.
 
 **Validations**:
+
 - Lease ID is required and non-empty
 - Party must be 'owner' or 'tenant'
 
@@ -112,11 +130,13 @@ Deletes a signature from storage with retry logic.
 **Throws**: ValidationError, NetworkError, or StorageUploadError
 
 ### checkBucketExists(bucketName)
+
 Checks if a storage bucket exists and is accessible.
 
 **Returns**: boolean (true if bucket exists)
 
 ### getStorageErrorMessage(error)
+
 Converts error objects to user-friendly messages.
 
 **Returns**: string with user-friendly error message
@@ -126,12 +146,12 @@ Converts error objects to user-friendly messages.
 ### Basic Upload with Error Handling
 
 ```typescript
-import { 
-  uploadSignature, 
-  ValidationError, 
-  NetworkError, 
+import {
+  uploadSignature,
+  ValidationError,
+  NetworkError,
   StorageUploadError,
-  getStorageErrorMessage 
+  getStorageErrorMessage,
 } from './storageService';
 
 try {
@@ -143,10 +163,7 @@ try {
     Alert.alert('Invalid Input', error.message);
   } else if (error instanceof NetworkError) {
     // Show network error with retry option
-    Alert.alert(
-      'Connection Error',
-      'Please check your internet connection and try again.'
-    );
+    Alert.alert('Connection Error', 'Please check your internet connection and try again.');
   } else if (error instanceof StorageUploadError) {
     // Show storage error based on code
     if (error.code === 'BUCKET_NOT_FOUND') {
@@ -170,7 +187,7 @@ const [error, setError] = useState<string | null>(null);
 const handleUpload = async (signature: string) => {
   setUploading(true);
   setError(null);
-  
+
   try {
     const url = await uploadSignature(leaseId, 'owner', signature);
     // Update lease record with signature URL
@@ -194,7 +211,7 @@ import { checkBucketExists, uploadSignature } from './storageService';
 const handleUpload = async (signature: string) => {
   // Check if bucket exists first
   const bucketExists = await checkBucketExists('lease-signatures');
-  
+
   if (!bucketExists) {
     Alert.alert(
       'Configuration Error',
@@ -202,7 +219,7 @@ const handleUpload = async (signature: string) => {
     );
     return;
   }
-  
+
   // Proceed with upload
   try {
     const url = await uploadSignature(leaseId, 'tenant', signature);
@@ -231,6 +248,7 @@ The SignatureModal component automatically handles errors from the storage servi
 ```
 
 The modal will display appropriate error messages based on the error type:
+
 - **ValidationError**: "Invalid Signature - Please draw your signature and try again."
 - **NetworkError**: "Connection Error - Please check your internet connection and try again."
 - **StorageUploadError**: Specific message based on error code
@@ -238,31 +256,37 @@ The modal will display appropriate error messages based on the error type:
 ## Testing Error Scenarios
 
 ### Test Network Failure
+
 1. Turn off internet connection
 2. Try to upload signature
 3. Should see "Connection Error" after retry attempts
 4. Turn on internet and retry - should succeed
 
 ### Test Invalid Signature
+
 1. Try to save without drawing anything
 2. Should see "Invalid Signature" immediately (no retry)
 
 ### Test Bucket Not Found
+
 1. Use incorrect bucket name in storage service
 2. Should see "Configuration Error" immediately (no retry)
 
 ### Test Large File
+
 1. Try to upload PDF > 10MB
 2. Should see "File too large" immediately (no retry)
 
 ## Monitoring and Logging
 
 All errors are logged to console with context:
+
 - Upload attempts and retry count
 - Error type and message
 - Original error object for debugging
 
 Example logs:
+
 ```
 Upload attempt 1 failed, retrying... [NetworkError]
 Upload attempt 2 failed, retrying... [NetworkError]

@@ -1,3 +1,5 @@
+import type { ClauseOverrides } from '../api/leasePdfService';
+
 // Module-level store: holds the in-flight lease draft while the owner
 // navigates create → review → (back to create).
 // Cleared by the review screen after a successful insert.
@@ -17,6 +19,8 @@ export interface LeaseDraft {
   rentEscalationFrequency: string;
   // Populated after the owner types in the review screen.
   customClauses: string;
+  // Owner edits/removals of standard clauses (review screen).
+  clauseOverrides?: ClauseOverrides;
   // Pre-generated UUID so the HTML preview shows a real ID.
   draftLeaseId: string;
 }

@@ -17,8 +17,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
-import { generateLeaseHTML } from '../../leases/api/leasePdfService';
+import {
+  generateLeaseHTML,
+  getStandardClauses,
+  type ClauseOverrides,
+} from '../../leases/api/leasePdfService';
 import { leaseDraftStore } from '../../leases/utils/leaseDraftStore';
+import { colors } from '@/src/shared/theme/colors';
 
 const RSA = { blue: '#002395', gold: '#FFB81C' };
 
@@ -51,7 +56,23 @@ export default function OwnerLeaseReviewScreen() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [customClauses, setCustomClauses] = useState(draft?.customClauses ?? '');
+  const [clauseOverrides, setClauseOverrides] = useState<ClauseOverrides>(
+    draft?.clauseOverrides ?? {}
+  );
+  const [editing, setEditing] = useState<{ id: string; text: string } | null>(null);
   const [showClausesModal, setShowClausesModal] = useState(false);
+  const standardClauses = draft ? getStandardClauses({ lease_type: draft.leaseType }) : [];
+
+  // Update one clause's override; an empty override is dropped so only real
+  // differences from the template are stored.
+  const setOverride = (id: string, next: { removed?: boolean; body?: string } | null) => {
+    setClauseOverrides((prev) => {
+      const updated = { ...prev };
+      if (next && (next.removed || next.body)) updated[id] = next;
+      else delete updated[id];
+      return updated;
+    });
+  };
   const [html, setHtml] = useState('');
 
   useEffect(() => {
@@ -63,11 +84,11 @@ export default function OwnerLeaseReviewScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Regenerate preview whenever custom clauses change.
+  // Regenerate preview whenever the clauses change.
   useEffect(() => {
     if (app) buildHtml(app, customClauses);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customClauses, app]);
+  }, [customClauses, clauseOverrides, app]);
 
   const loadData = async () => {
     try {
@@ -143,7 +164,7 @@ export default function OwnerLeaseReviewScreen() {
       tenant_signed_at: null,
       executed_at: null,
     };
-    setHtml(generateLeaseHTML(leaseData, clauses || undefined));
+    setHtml(generateLeaseHTML(leaseData, clauses || undefined, clauseOverrides));
   };
 
   const handleSendToTenant = async () => {
@@ -185,6 +206,7 @@ export default function OwnerLeaseReviewScreen() {
           deposit_interest_rate: 5.25,
           status: 'pending_tenant_signature',
           lease_custom_clauses: customClauses.trim() || null,
+          lease_clause_overrides: Object.keys(clauseOverrides).length ? clauseOverrides : null,
         })
         .select()
         .single();
@@ -261,10 +283,8 @@ export default function OwnerLeaseReviewScreen() {
           style={styles.clausesBtn}
           onPress={() => setShowClausesModal(true)}
         >
-          <Ionicons name="add-circle-outline" size={18} color={RSA.blue} />
-          <Text style={styles.clausesBtnText}>
-            {customClauses.trim() ? 'Edit Custom Clauses' : 'Add Custom Clauses'}
-          </Text>
+          <Ionicons name="create-outline" size={18} color={RSA.blue} />
+          <Text style={styles.clausesBtnText}>Edit Clauses</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -300,7 +320,7 @@ export default function OwnerLeaseReviewScreen() {
         >
           <View style={styles.modalSheet}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Additional Terms</Text>
+              <Text style={styles.modalTitle}>Lease Clauses</Text>
               <TouchableOpacity
                 testID="owner-lease-review-clauses-close"
                 onPress={() => setShowClausesModal(false)}
@@ -308,19 +328,136 @@ export default function OwnerLeaseReviewScreen() {
                 <Ionicons name="close" size={24} color="#333" />
               </TouchableOpacity>
             </View>
-            <Text style={styles.modalHint}>
-              These clauses will be appended as "Additional Terms" at the end of the lease.
-            </Text>
-            <ScrollView style={styles.modalScroll} keyboardShouldPersistTaps="handled">
+            <ScrollView
+              style={styles.modalScroll}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+            >
+              <Text style={styles.modalSection}>Standard clauses</Text>
+              <Text style={styles.modalHint}>
+                Edit or remove the standard wording. Clauses required by law or set from the lease
+                details are locked.
+              </Text>
+              {standardClauses.map((c) => {
+                const o = clauseOverrides[c.id];
+                const removed = !!o?.removed;
+                const edited = !!o?.body;
+                const isEditing = editing?.id === c.id;
+                return (
+                  <View
+                    key={c.id}
+                    testID={`lease-clause-${c.id}`}
+                    style={[styles.clauseCard, removed && styles.clauseCardRemoved]}
+                  >
+                    <View style={styles.clauseHeader}>
+                      <Text style={[styles.clauseTitle, removed && styles.clauseRemovedText]}>
+                        {c.title}
+                      </Text>
+                      {isEditing ? (
+                        <View style={[styles.clauseActions, styles.clauseHeaderActions]}>
+                          <TouchableOpacity
+                            testID="lease-clause-edit-cancel"
+                            onPress={() => setEditing(null)}
+                          >
+                            <Text style={styles.clauseAction}>Cancel</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            testID="lease-clause-edit-save"
+                            onPress={() => {
+                              const text = editing.text.trim();
+                              setOverride(c.id, text && text !== c.body ? { body: text } : null);
+                              setEditing(null);
+                            }}
+                          >
+                            <Text style={[styles.clauseAction, styles.clauseActionPrimary]}>
+                              Save
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      ) : c.locked ? (
+                        <Ionicons name="lock-closed" size={14} color={colors.text.tertiary} />
+                      ) : removed ? (
+                        <Text style={styles.clauseTagRemoved}>Removed</Text>
+                      ) : edited ? (
+                        <Text style={styles.clauseTagEdited}>Edited</Text>
+                      ) : null}
+                    </View>
+                    {isEditing ? (
+                      <>
+                        <TextInput
+                          testID="lease-clause-edit-input"
+                          style={styles.clauseEditInput}
+                          multiline
+                          value={editing.text}
+                          onChangeText={(text) => setEditing({ id: c.id, text })}
+                          autoFocus
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <Text
+                          style={[styles.clauseBody, removed && styles.clauseRemovedText]}
+                          numberOfLines={3}
+                        >
+                          {o?.body ?? c.body}
+                        </Text>
+                        {c.locked ? (
+                          <Text style={styles.clauseLockReason}>{c.lockReason}</Text>
+                        ) : (
+                          <View style={styles.clauseActions}>
+                            {removed ? (
+                              <TouchableOpacity
+                                testID={`lease-clause-${c.id}-restore`}
+                                onPress={() => setOverride(c.id, null)}
+                              >
+                                <Text style={styles.clauseAction}>Restore</Text>
+                              </TouchableOpacity>
+                            ) : (
+                              <>
+                                {edited && (
+                                  <TouchableOpacity
+                                    testID={`lease-clause-${c.id}-reset`}
+                                    onPress={() => setOverride(c.id, null)}
+                                  >
+                                    <Text style={styles.clauseAction}>Reset</Text>
+                                  </TouchableOpacity>
+                                )}
+                                <TouchableOpacity
+                                  testID={`lease-clause-${c.id}-edit`}
+                                  onPress={() => setEditing({ id: c.id, text: o?.body ?? c.body })}
+                                >
+                                  <Text style={styles.clauseAction}>Edit</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                  testID={`lease-clause-${c.id}-remove`}
+                                  onPress={() => setOverride(c.id, { removed: true })}
+                                >
+                                  <Text style={[styles.clauseAction, styles.clauseActionDanger]}>
+                                    Remove
+                                  </Text>
+                                </TouchableOpacity>
+                              </>
+                            )}
+                          </View>
+                        )}
+                      </>
+                    )}
+                  </View>
+                );
+              })}
+
+              <Text style={styles.modalSection}>Additional terms</Text>
+              <Text style={styles.modalHint}>
+                Appended as "Additional Terms" at the end of the lease.
+              </Text>
               <TextInput
                 testID="owner-lease-review-clauses-input"
                 style={styles.clausesInput}
                 multiline
-                placeholder="e.g. Tenant is responsible for pool maintenance. No pets without written consent…"
+                placeholder="e.g. Tenant is responsible for pool maintenance."
                 placeholderTextColor="#aaa"
                 value={customClauses}
                 onChangeText={setCustomClauses}
-                autoFocus
               />
             </ScrollView>
             <TouchableOpacity
@@ -328,7 +465,19 @@ export default function OwnerLeaseReviewScreen() {
               style={styles.doneBtn}
               onPress={() => {
                 const d = leaseDraftStore.get();
-                if (d) leaseDraftStore.set({ ...d, customClauses });
+                // A clause still open for editing is saved, not discarded.
+                let overrides = clauseOverrides;
+                if (editing) {
+                  const clause = standardClauses.find((c) => c.id === editing.id);
+                  const text = editing.text.trim();
+                  overrides = { ...clauseOverrides };
+                  if (clause && text && text !== clause.body)
+                    overrides[editing.id] = { body: text };
+                  else delete overrides[editing.id];
+                  setClauseOverrides(overrides);
+                }
+                if (d) leaseDraftStore.set({ ...d, customClauses, clauseOverrides: overrides });
+                setEditing(null);
                 setShowClausesModal(false);
               }}
             >
@@ -403,7 +552,7 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingHorizontal: 20,
     paddingBottom: 32,
-    maxHeight: '75%',
+    maxHeight: '88%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -413,7 +562,54 @@ const styles = StyleSheet.create({
   },
   modalTitle: { fontSize: 18, fontWeight: '700', color: '#333' },
   modalHint: { fontSize: 13, color: '#777', marginBottom: 12 },
-  modalScroll: { flexGrow: 0, maxHeight: 220 },
+  modalScroll: { flexGrow: 0 },
+  modalSection: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text.primary,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  clauseCard: {
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 10,
+  },
+  clauseCardRemoved: { backgroundColor: colors.background.secondary, borderStyle: 'dashed' },
+  clauseHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  clauseTitle: { fontSize: 13, fontWeight: '700', color: colors.text.primary, flex: 1 },
+  clauseBody: { fontSize: 13, color: colors.text.secondary, lineHeight: 18 },
+  clauseRemovedText: { color: colors.text.tertiary, textDecorationLine: 'line-through' },
+  clauseTagEdited: { fontSize: 11, fontWeight: '700', color: RSA.blue },
+  clauseTagRemoved: { fontSize: 11, fontWeight: '700', color: colors.rsa.red },
+  clauseLockReason: {
+    fontSize: 11,
+    color: colors.text.tertiary,
+    marginTop: 6,
+    fontStyle: 'italic',
+  },
+  clauseActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 18, marginTop: 8 },
+  clauseAction: { fontSize: 14, fontWeight: '600', color: RSA.blue },
+  clauseActionPrimary: { fontWeight: '700' },
+  clauseHeaderActions: { marginTop: 0 },
+  clauseActionDanger: { color: colors.rsa.red },
+  clauseEditInput: {
+    borderWidth: 1,
+    borderColor: RSA.blue,
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 13,
+    color: colors.text.primary,
+    minHeight: 110,
+    textAlignVertical: 'top',
+  },
   clausesInput: {
     borderWidth: 1,
     borderColor: '#ddd',

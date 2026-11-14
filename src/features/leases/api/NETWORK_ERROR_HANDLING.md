@@ -15,9 +15,11 @@ The network error handling is implemented at **three levels**:
 ## 1. Storage Layer Error Handling
 
 ### Location
+
 `src/features/leases/api/storageService.ts`
 
 ### Features
+
 - **Automatic retry logic** with exponential backoff (3 retries)
 - **Network error detection** via `isRetryableError()` function
 - **Custom error types**:
@@ -26,6 +28,7 @@ The network error handling is implemented at **three levels**:
   - `StorageUploadError` - Storage-specific errors with error codes
 
 ### Retry Configuration
+
 ```typescript
 const RETRY_CONFIG = {
   maxRetries: 3,
@@ -36,7 +39,9 @@ const RETRY_CONFIG = {
 ```
 
 ### Retryable Errors
+
 The following error patterns trigger automatic retry:
+
 - `network`
 - `timeout`
 - `ECONNREFUSED`
@@ -46,6 +51,7 @@ The following error patterns trigger automatic retry:
 - `Failed to fetch`
 
 ### Error Codes
+
 - `BUCKET_NOT_FOUND` - Storage bucket not configured
 - `PERMISSION_DENIED` - Insufficient permissions
 - `FILE_TOO_LARGE` - File exceeds size limit
@@ -54,7 +60,9 @@ The following error patterns trigger automatic retry:
 - `UNKNOWN_ERROR` - Unexpected error
 
 ### User-Friendly Messages
+
 The `SignatureModal` component displays specific error messages based on error type:
+
 - **ValidationError**: "Invalid Signature - Please draw your signature and try again."
 - **NetworkError**: "Connection Error - Please check your internet connection and try again."
 - **StorageUploadError**: Context-specific messages based on error code
@@ -62,16 +70,19 @@ The `SignatureModal` component displays specific error messages based on error t
 ## 2. Database Layer Error Handling
 
 ### Location
+
 - `src/features/owner/screens/OwnerLeaseDetailScreen.tsx` - `handleSignatureSave()`
 - `src/features/tenant/screens/TenantLeaseScreen.tsx` - `handleSignatureSave()`
 
 ### Features
+
 - **Retry logic for database updates** (3 attempts)
 - **Network error detection** in Supabase operations
 - **Exponential backoff** between retries (1s, 2s, 3s)
 - **User-friendly error messages**
 
 ### Implementation
+
 ```typescript
 // Update lease with signature (with retry logic for network errors)
 let updateSuccess = false;
@@ -93,7 +104,7 @@ for (let attempt = 0; attempt < maxRetries; attempt++) {
     if (updateError) {
       // Check if it's a network error
       const errorMessage = updateError.message?.toLowerCase() || '';
-      const isNetworkError = 
+      const isNetworkError =
         errorMessage.includes('network') ||
         errorMessage.includes('timeout') ||
         errorMessage.includes('fetch failed') ||
@@ -102,7 +113,7 @@ for (let attempt = 0; attempt < maxRetries; attempt++) {
       if (isNetworkError && attempt < maxRetries - 1) {
         console.warn(`Database update attempt ${attempt + 1} failed, retrying...`);
         lastError = updateError;
-        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+        await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
         continue;
       }
       throw updateError;
@@ -120,7 +131,9 @@ for (let attempt = 0; attempt < maxRetries; attempt++) {
 ```
 
 ### Network Error Detection
+
 Database operations are checked for network-related errors:
+
 - `network`
 - `timeout`
 - `fetch failed`
@@ -129,15 +142,18 @@ Database operations are checked for network-related errors:
 ## 3. Business Logic Layer Error Handling
 
 ### Location
+
 - `src/features/owner/screens/OwnerLeaseDetailScreen.tsx` - Lease execution
 - `src/features/tenant/screens/TenantLeaseScreen.tsx` - N/A (tenant doesn't execute)
 
 ### Features
+
 - **Retry logic for lease execution** (3 attempts)
 - **Graceful degradation** - Lease remains signed even if execution partially fails
 - **Non-critical failure handling** - Alerts user but doesn't fail the entire operation
 
 ### Implementation
+
 ```typescript
 // Execute lease (update property, create payment, notify) with retry logic
 let executeSuccess = false;
@@ -148,7 +164,7 @@ for (let attempt = 0; attempt < maxRetries; attempt++) {
     break;
   } catch (error: any) {
     const errorMessage = error?.message?.toLowerCase() || '';
-    const isNetworkError = 
+    const isNetworkError =
       errorMessage.includes('network') ||
       errorMessage.includes('timeout') ||
       errorMessage.includes('fetch failed') ||
@@ -156,10 +172,10 @@ for (let attempt = 0; attempt < maxRetries; attempt++) {
 
     if (isNetworkError && attempt < maxRetries - 1) {
       console.warn(`Lease execution attempt ${attempt + 1} failed, retrying...`);
-      await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+      await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
       continue;
     }
-    
+
     // If lease execution fails, log but don't fail the whole operation
     // The lease is already signed and active
     console.error('Error executing lease (non-critical):', error);
@@ -174,7 +190,9 @@ for (let attempt = 0; attempt < maxRetries; attempt++) {
 ```
 
 ### Graceful Degradation
+
 If lease execution fails after retries:
+
 1. The lease signature is **already saved** and **status is active**
 2. User is notified of **partial success**
 3. Manual intervention may be needed for:
@@ -217,12 +235,14 @@ User Signs Lease
 ## User Experience
 
 ### Successful Signing
+
 1. User draws signature
 2. Taps "Confirm Signature"
 3. Loading indicator shows
 4. Success message: "Lease agreement signed and activated!" (Owner) or "Lease agreement signed! Waiting for owner to sign." (Tenant)
 
 ### Network Error During Upload
+
 1. User draws signature
 2. Taps "Confirm Signature"
 3. Loading indicator shows
@@ -233,6 +253,7 @@ User Signs Lease
    - User can try again
 
 ### Network Error During Database Update
+
 1. Signature uploaded successfully
 2. Database update fails
 3. Automatic retry (3 attempts)
@@ -242,6 +263,7 @@ User Signs Lease
    - User can try signing again (signature will be overwritten)
 
 ### Network Error During Lease Execution (Owner only)
+
 1. Signature uploaded successfully
 2. Database updated successfully
 3. Lease execution fails
@@ -254,6 +276,7 @@ User Signs Lease
 ## Testing Scenarios
 
 ### Manual Testing
+
 1. **Airplane Mode Test**
    - Enable airplane mode
    - Try to sign lease
@@ -276,12 +299,14 @@ User Signs Lease
    - Should show "Storage is not properly configured"
 
 ### Automated Testing
+
 ```typescript
 // Test retry logic
 it('should retry on network error', async () => {
   // Mock network failure twice, then success
-  mockSupabase.storage.from().upload
-    .mockRejectedValueOnce(new Error('network error'))
+  mockSupabase.storage
+    .from()
+    .upload.mockRejectedValueOnce(new Error('network error'))
     .mockRejectedValueOnce(new Error('network error'))
     .mockResolvedValueOnce({ data: { path: 'test.png' }, error: null });
 
@@ -293,9 +318,9 @@ it('should retry on network error', async () => {
 // Test graceful degradation
 it('should succeed even if lease execution fails', async () => {
   mockExecuteLease.mockRejectedValue(new Error('network error'));
-  
+
   await handleSignatureSave('base64data');
-  
+
   // Lease should still be signed
   expect(mockSupabase.from('leases').update).toHaveBeenCalled();
   expect(Alert.alert).toHaveBeenCalledWith(
@@ -308,18 +333,22 @@ it('should succeed even if lease execution fails', async () => {
 ## Configuration
 
 ### Retry Settings
+
 To adjust retry behavior, modify `RETRY_CONFIG` in `storageService.ts`:
+
 ```typescript
 const RETRY_CONFIG = {
-  maxRetries: 3,              // Number of retry attempts
-  initialDelayMs: 1000,       // Initial delay (1 second)
-  maxDelayMs: 5000,           // Maximum delay (5 seconds)
-  backoffMultiplier: 2,       // Exponential backoff multiplier
+  maxRetries: 3, // Number of retry attempts
+  initialDelayMs: 1000, // Initial delay (1 second)
+  maxDelayMs: 5000, // Maximum delay (5 seconds)
+  backoffMultiplier: 2, // Exponential backoff multiplier
 };
 ```
 
 ### Network Error Patterns
+
 To add more retryable error patterns, update `isRetryableError()`:
+
 ```typescript
 const retryableMessages = [
   'network',
@@ -347,12 +376,14 @@ const retryableMessages = [
 ## Monitoring
 
 ### Logs to Monitor
+
 - `Upload attempt X failed, retrying...` - Storage retry
 - `Database update attempt X failed, retrying...` - Database retry
 - `Lease execution attempt X failed, retrying...` - Execution retry
 - `Error executing lease (non-critical)` - Graceful degradation triggered
 
 ### Metrics to Track
+
 - Signature upload success rate
 - Average retry count per upload
 - Database update success rate
@@ -386,4 +417,3 @@ const retryableMessages = [
 - [Storage Error Handling](./STORAGE_ERROR_HANDLING.md)
 - [Signature Implementation Summary](../../../.kiro/specs/property-rental-management/SIGNATURE_IMPLEMENTATION_SUMMARY.md)
 - [Implementation Checklist](../../../.kiro/specs/property-rental-management/IMPLEMENTATION_CHECKLIST.md)
-
