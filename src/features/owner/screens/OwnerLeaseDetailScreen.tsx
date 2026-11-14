@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { notificationsApi } from '../../notifications/api/notificationsApi';
 import SignatureModal from '../../leases/components/SignatureModal';
-import { uploadSignature } from '../../leases/api/storageService';
+import { uploadSignature, getLeaseDocumentUrl } from '../../leases/api/storageService';
 import { executeLease } from '../../leases/api/leaseExecutionService';
 import { regenerateLeasePDF } from '../../leases/api/regenerateLeasePDF';
 import * as Sharing from 'expo-sharing';
@@ -112,9 +112,11 @@ export default function OwnerLeaseDetailScreen() {
 
   const handleViewDocument = () => {
     if (lease?.lease_document_url) {
-      Linking.openURL(lease.lease_document_url).catch(() => {
-        Alert.alert('Error', 'Could not open lease document');
-      });
+      getLeaseDocumentUrl(lease.lease_document_url)
+        .then((url) => Linking.openURL(url))
+        .catch(() => {
+          Alert.alert('Error', 'Could not open lease document');
+        });
     } else {
       Alert.alert('Notice', 'Lease document is not available yet');
     }
@@ -164,33 +166,17 @@ export default function OwnerLeaseDetailScreen() {
       // Download and share the file
       const filename = `Lease_${lease.property?.title.replace(/\s+/g, '_')}_${toLocalIsoDate(new Date())}.pdf`;
 
-      // Fetch the PDF
-      const response = await fetch(lease.lease_document_url);
-      const blob = await response.blob();
-      const reader = new FileReader();
-
-      reader.onloadend = async () => {
-        const base64data = reader.result as string;
-        // Use Paths.document for newer expo-file-system or fallback
-        const docDir =
-          (FileSystem as any).documentDirectory ||
-          new (FileSystem as any).Directory((FileSystem as any).Paths?.document).uri;
-        const localUri = `${docDir}${filename}`;
-
-        // Write to local file
-        await FileSystem.writeAsStringAsync(localUri, base64data.split(',')[1], {
-          encoding: 'base64',
-        });
-
-        // Share the file
-        await Sharing.shareAsync(localUri, {
-          mimeType: 'application/pdf',
-          dialogTitle: 'Download Lease Agreement',
-          UTI: 'com.adobe.pdf',
-        });
-      };
-
-      reader.readAsDataURL(blob);
+      // Private bucket: download through a signed URL straight to a file
+      // (fetch().blob() is unreliable on React Native).
+      const signedUrl = await getLeaseDocumentUrl(lease.lease_document_url);
+      const localUri = `${FileSystem.documentDirectory}${filename}`;
+      const download = await FileSystem.downloadAsync(signedUrl, localUri);
+      if (download.status !== 200) throw new Error(`Download failed (${download.status})`);
+      await Sharing.shareAsync(download.uri, {
+        mimeType: 'application/pdf',
+        dialogTitle: 'Download Lease Agreement',
+        UTI: 'com.adobe.pdf',
+      });
     } catch (error) {
       console.error('Error downloading lease document:', error);
       Alert.alert('Error', 'Failed to download lease document. Please try again.');
