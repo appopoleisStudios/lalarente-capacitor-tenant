@@ -136,21 +136,31 @@ appId: com.lalarente.app
     optional: true
 - waitForAnimationToEnd:
     timeout: 2000
-# single-select picker still open (it can ignore the first tap): retry
+# picker still open (it can ignore a tap while loading): retry. Confirm with
+# ✓ first — re-tapping the tile in the multi-select picker would deselect
+# it — and only pick a tile if the picker is still open after that.
 - repeat:
     times: 3
     while:
       visible: "Collections"
     commands:
       - tapOn:
-          point: "50%,28%"
+          point: "90%,15%"
       - waitForAnimationToEnd:
           timeout: 2000
-      - tapOn:
-          text: "Choose"
-          optional: true
-      - waitForAnimationToEnd:
-          timeout: 1500
+      - runFlow:
+          when:
+            visible: "Collections"
+          commands:
+            - tapOn:
+                point: "50%,28%"
+            - waitForAnimationToEnd:
+                timeout: 2000
+            - tapOn:
+                text: "Choose"
+                optional: true
+            - waitForAnimationToEnd:
+                timeout: 1500
 - waitForAnimationToEnd:
     timeout: 2500
 - waitForAnimationToEnd:
@@ -244,21 +254,31 @@ appId: com.lalarente.app
     optional: true
 - waitForAnimationToEnd:
     timeout: 2000
-# single-select picker still open (it can ignore the first tap): retry
+# picker still open (it can ignore a tap while loading): retry. Confirm with
+# ✓ first — re-tapping the tile in the multi-select picker would deselect
+# it — and only pick a tile if the picker is still open after that.
 - repeat:
     times: 3
     while:
       visible: "Collections"
     commands:
       - tapOn:
-          point: "50%,28%"
+          point: "90%,15%"
       - waitForAnimationToEnd:
           timeout: 2000
-      - tapOn:
-          text: "Choose"
-          optional: true
-      - waitForAnimationToEnd:
-          timeout: 1500
+      - runFlow:
+          when:
+            visible: "Collections"
+          commands:
+            - tapOn:
+                point: "50%,28%"
+            - waitForAnimationToEnd:
+                timeout: 2000
+            - tapOn:
+                text: "Choose"
+                optional: true
+            - waitForAnimationToEnd:
+                timeout: 1500
 - waitForAnimationToEnd:
     timeout: 2500
 - waitForAnimationToEnd:
@@ -292,21 +312,31 @@ appId: com.lalarente.app
     optional: true
 - waitForAnimationToEnd:
     timeout: 2000
-# single-select picker still open (it can ignore the first tap): retry
+# picker still open (it can ignore a tap while loading): retry. Confirm with
+# ✓ first — re-tapping the tile in the multi-select picker would deselect
+# it — and only pick a tile if the picker is still open after that.
 - repeat:
     times: 3
     while:
       visible: "Collections"
     commands:
       - tapOn:
-          point: "50%,28%"
+          point: "90%,15%"
       - waitForAnimationToEnd:
           timeout: 2000
-      - tapOn:
-          text: "Choose"
-          optional: true
-      - waitForAnimationToEnd:
-          timeout: 1500
+      - runFlow:
+          when:
+            visible: "Collections"
+          commands:
+            - tapOn:
+                point: "50%,28%"
+            - waitForAnimationToEnd:
+                timeout: 2000
+            - tapOn:
+                text: "Choose"
+                optional: true
+            - waitForAnimationToEnd:
+                timeout: 1500
 - waitForAnimationToEnd:
     timeout: 2500
 - waitForAnimationToEnd:
@@ -663,21 +693,31 @@ appId: com.lalarente.app
     optional: true
 - waitForAnimationToEnd:
     timeout: 2000
-# single-select picker still open (it can ignore the first tap): retry
+# picker still open (it can ignore a tap while loading): retry. Confirm with
+# ✓ first — re-tapping the tile in the multi-select picker would deselect
+# it — and only pick a tile if the picker is still open after that.
 - repeat:
     times: 3
     while:
       visible: "Collections"
     commands:
       - tapOn:
-          point: "50%,28%"
+          point: "90%,15%"
       - waitForAnimationToEnd:
           timeout: 2000
-      - tapOn:
-          text: "Choose"
-          optional: true
-      - waitForAnimationToEnd:
-          timeout: 1500
+      - runFlow:
+          when:
+            visible: "Collections"
+          commands:
+            - tapOn:
+                point: "50%,28%"
+            - waitForAnimationToEnd:
+                timeout: 2000
+            - tapOn:
+                text: "Choose"
+                optional: true
+            - waitForAnimationToEnd:
+                timeout: 1500
 - waitForAnimationToEnd:
     timeout: 2500
 - waitForAnimationToEnd:
@@ -779,21 +819,31 @@ appId: com.lalarente.app
     optional: true
 - waitForAnimationToEnd:
     timeout: 2000
-# single-select picker still open (it can ignore the first tap): retry
+# picker still open (it can ignore a tap while loading): retry. Confirm with
+# ✓ first — re-tapping the tile in the multi-select picker would deselect
+# it — and only pick a tile if the picker is still open after that.
 - repeat:
     times: 3
     while:
       visible: "Collections"
     commands:
       - tapOn:
-          point: "50%,28%"
+          point: "90%,15%"
       - waitForAnimationToEnd:
           timeout: 2000
-      - tapOn:
-          text: "Choose"
-          optional: true
-      - waitForAnimationToEnd:
-          timeout: 1500
+      - runFlow:
+          when:
+            visible: "Collections"
+          commands:
+            - tapOn:
+                point: "50%,28%"
+            - waitForAnimationToEnd:
+                timeout: 2000
+            - tapOn:
+                text: "Choose"
+                optional: true
+            - waitForAnimationToEnd:
+                timeout: 1500
 - waitForAnimationToEnd:
     timeout: 2500
 - waitForAnimationToEnd:
@@ -843,21 +893,31 @@ appId: com.lalarente.app
     optional: true
 - waitForAnimationToEnd:
     timeout: 2000
-# single-select picker still open (it can ignore the first tap): retry
+# picker still open (it can ignore a tap while loading): retry. Confirm with
+# ✓ first — re-tapping the tile in the multi-select picker would deselect
+# it — and only pick a tile if the picker is still open after that.
 - repeat:
     times: 3
     while:
       visible: "Collections"
     commands:
       - tapOn:
-          point: "50%,28%"
+          point: "90%,15%"
       - waitForAnimationToEnd:
           timeout: 2000
-      - tapOn:
-          text: "Choose"
-          optional: true
-      - waitForAnimationToEnd:
-          timeout: 1500
+      - runFlow:
+          when:
+            visible: "Collections"
+          commands:
+            - tapOn:
+                point: "50%,28%"
+            - waitForAnimationToEnd:
+                timeout: 2000
+            - tapOn:
+                text: "Choose"
+                optional: true
+            - waitForAnimationToEnd:
+                timeout: 1500
 - waitForAnimationToEnd:
     timeout: 2500
 - waitForAnimationToEnd:
