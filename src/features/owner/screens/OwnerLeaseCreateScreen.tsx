@@ -199,6 +199,7 @@ export default function OwnerLeaseCreateScreen() {
       rentEscalationValue,
       rentEscalationFrequency,
       customClauses: preservedClauses,
+      clauseOverrides: existing?.applicationId === appId ? existing.clauseOverrides : undefined,
       draftLeaseId,
     });
 
