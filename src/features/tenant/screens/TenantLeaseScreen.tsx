@@ -90,7 +90,7 @@ export default function TenantLeaseScreen() {
           `
           *,
           property:properties!property_id(title, address, city, province, postal_code),
-          owner:profiles!owner_id(full_name, email, phone),
+          owner:profiles!owner_id(full_name, email, phone, id_number),
           tenant:profiles!tenant_id(full_name, email, phone, id_number, date_of_birth)
         `
         )
