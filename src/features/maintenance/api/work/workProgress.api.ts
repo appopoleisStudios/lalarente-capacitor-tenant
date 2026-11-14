@@ -5,6 +5,7 @@
 
 import { supabase } from '@/src/lib/supabase';
 import type { ProgressEvent, ProgressNote } from '../types/maintenance.types';
+import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
 
 /**
  * Get progress timeline for a maintenance request
@@ -78,7 +79,7 @@ export async function addProgressNote(
     .insert({
       maintenance_request_id: requestId,
       vendor_id: vendorId,
-      update_date: new Date().toISOString().split('T')[0],
+      update_date: toLocalIsoDate(new Date()),
       notes: note,
       photos: [],
     })

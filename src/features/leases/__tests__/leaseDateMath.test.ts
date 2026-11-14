@@ -19,6 +19,15 @@ describe('toLocalIsoDate', () => {
     expect(toLocalIsoDate(new Date(2026, 11, 31))).toBe('2026-12-31');
   });
 
+  it('keeps the SAST calendar day between 00:00 and 02:00 (B9-005)', () => {
+    // jest.config.js pins TZ to Africa/Johannesburg.
+    // 01:00 SAST on 14 Nov is still 13 Nov in UTC.
+    const oneAm = new Date('2026-11-13T23:00:00Z');
+    expect(oneAm.getTimezoneOffset()).toBe(-120);
+    expect(oneAm.toISOString().split('T')[0]).toBe('2026-11-13');
+    expect(toLocalIsoDate(oneAm)).toBe('2026-11-14');
+  });
+
   it('pads single-digit months and days', () => {
     expect(toLocalIsoDate(new Date(2026, 2, 5))).toBe('2026-03-05');
     expect(toLocalIsoDate(new Date(2026, 8, 9))).toBe('2026-09-09');

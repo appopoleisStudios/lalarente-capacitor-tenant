@@ -2,6 +2,7 @@ import { supabase } from '@/src/lib/supabase';
 import type { MaintenanceRequest, ServiceCategory } from '@/src/types/maintenance.types';
 import { createQuoteRequests } from './vendors/vendorQuoteRequests.api';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
 
 // Feature flag for mock mode
 const USE_MOCK_DATA = false; // ✅ Changed to false - using real data now
@@ -738,7 +739,7 @@ export const maintenanceApi = {
       .insert({
         maintenance_request_id: requestId,
         vendor_id: vendorId,
-        update_date: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+        update_date: toLocalIsoDate(new Date()), // YYYY-MM-DD
         notes: notes,
         photos: photos,
       })

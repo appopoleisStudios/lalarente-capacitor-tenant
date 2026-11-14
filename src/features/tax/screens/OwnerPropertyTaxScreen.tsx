@@ -29,6 +29,7 @@ import {
   CreateTaxPaymentInput,
 } from '../api/propertyTaxPayments.api';
 import { DateField } from '@/src/shared/components/ui/DateField';
+import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
 
 const CATEGORIES: TaxCategory[] = [
   'municipal_rates',
@@ -71,7 +72,7 @@ const EMPTY_FORM: FormState = {
   category: 'municipal_rates',
   description: '',
   amount: '',
-  paid_on: new Date().toISOString().split('T')[0],
+  paid_on: toLocalIsoDate(new Date()),
   deductibility: 'uncertain',
   apportionment_pct: '',
 };

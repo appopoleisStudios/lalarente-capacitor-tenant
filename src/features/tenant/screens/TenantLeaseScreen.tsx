@@ -22,6 +22,7 @@ import { evaluateSignLeaseGate } from '../utils/leaseSignGate';
 import { reportApiError } from '@/src/core/observability/sentry';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
+import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
 
 const RSA = { green: '#007A4D', gold: '#FFB81C' }; // Tenant colors
 
@@ -171,7 +172,7 @@ export default function TenantLeaseScreen() {
       }
 
       const propertyTitle = (lease.property?.title || 'Lease').replace(/\s+/g, '_');
-      const filename = `Lease_${propertyTitle}_${new Date().toISOString().split('T')[0]}.pdf`;
+      const filename = `Lease_${propertyTitle}_${toLocalIsoDate(new Date())}.pdf`;
       const docDir = FileSystem.documentDirectory;
       if (!docDir) {
         throw new Error('Document directory unavailable');

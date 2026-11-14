@@ -12,6 +12,7 @@
 import { supabase } from '@/src/lib/supabase';
 import { notificationsApi } from '@/src/features/notifications/api/notificationsApi';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
 
 // ============================================
 // Constants
@@ -156,7 +157,7 @@ const ACTIONABLE_STATUSES = ['submitted'] as const;
  * Format: INV-YYYYMMDD-XXXX
  */
 function generateInvoiceNumber(): string {
-  const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
+  const date = toLocalIsoDate(new Date()).replace(/-/g, '');
   const random = Math.floor(Math.random() * 10000)
     .toString()
     .padStart(4, '0');

@@ -6,6 +6,7 @@
  */
 
 import { supabase } from '../../../lib/supabase';
+import { fromLocalIsoDate, toLocalIsoDate } from '../utils/leaseDateMath';
 
 // ─── Pure Calculation Helpers ────────────────────────────────────────────────
 
@@ -39,7 +40,7 @@ export function calculateRenewalEndDate(
     // Month-to-month: 1 month
     end.setMonth(end.getMonth() + 1);
   }
-  return end.toISOString().split('T')[0];
+  return toLocalIsoDate(end);
 }
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -270,7 +271,7 @@ export const leaseRenewalApi = {
     }
 
     // Calculate end date
-    const startDate = new Date(negotiation.proposed_start_date);
+    const startDate = fromLocalIsoDate(negotiation.proposed_start_date);
     const endDateStr = calculateRenewalEndDate(startDate, negotiation.proposed_duration_months);
 
     // Mark old lease as expired

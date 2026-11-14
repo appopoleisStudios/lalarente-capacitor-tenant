@@ -35,6 +35,7 @@ import { colors } from '@/src/shared/theme/colors';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { reportApiError } from '@/src/core/observability/sentry';
 import { DateField } from '@/src/shared/components/ui/DateField';
+import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -103,7 +104,7 @@ export default function OwnerInsuranceClaimScreen() {
   const [selectedPolicy, setSelectedPolicy] = useState<InsurancePolicy | null>(null);
   const [claimType, setClaimType] = useState<ClaimType>('fire_damage');
   const [description, setDescription] = useState('');
-  const [incidentDate, setIncidentDate] = useState(new Date().toISOString().split('T')[0]);
+  const [incidentDate, setIncidentDate] = useState(toLocalIsoDate(new Date()));
   const [estimatedCost, setEstimatedCost] = useState('');
   const [claimedAmount, setClaimedAmount] = useState('');
 

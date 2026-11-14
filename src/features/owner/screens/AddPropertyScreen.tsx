@@ -21,6 +21,7 @@ import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAv
 import { styles } from './AddPropertyScreen.styles';
 import { reportApiError } from '@/src/core/observability/sentry';
 import { validate3dTourUrl } from '@/src/features/properties/utils/validate3dTourUrl';
+import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
 
 interface PropertyForm {
   title: string;
@@ -83,7 +84,7 @@ export default function AddPropertyScreen() {
     description: '',
     amenities: [],
     services_provided: [],
-    available_from: new Date().toISOString().split('T')[0],
+    available_from: toLocalIsoDate(new Date()),
     minimum_lease_months: '12',
     pets_allowed: false,
     smoking_allowed: false,
