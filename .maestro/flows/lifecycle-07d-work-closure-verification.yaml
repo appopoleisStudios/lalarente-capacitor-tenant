@@ -546,15 +546,12 @@ appId: com.lalarente.app
 - extendedWaitUntil:
     visible: "Reports"
     timeout: 20000
-- waitForAnimationToEnd:
-    timeout: 1500
-- scrollUntilVisible:
-    element:
+# The pending-verification row renders at the top once data loads; wait for
+# it instead of scrolling down past it before it appears.
+- extendedWaitUntil:
+    visible:
       id: "tenant-report-closure-row"
-    direction: DOWN
-    timeout: 20000
-    visibilityPercentage: 60
-    centerElement: true
+    timeout: 25000
 - tapOn:
     id: "tenant-report-closure-row"
     index: 0
