@@ -1,0 +1,90 @@
+# Inspection photos can be marked up to show where the issue is (B9-003).
+# Owner opens an in-progress inspection that already has a room photo, taps the
+# brush on it, draws a stroke, undoes it, draws again and saves. The marked-up
+# copy replaces the photo; Save persists it.
+# PRECONDITION: INSPECTION_ID is an in-progress inspection owned by OWNER with
+# at least one room photo on its first room.
+# Env: OWNER_EMAIL, OWNER_PASSWORD, INSPECTION_ID
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/inspections/${INSPECTION_ID}
+- extendedWaitUntil:
+    visible:
+      id: "inspection-save"
+    timeout: 30000
+- scrollUntilVisible:
+    element:
+      id: "inspection-room-photo-markup"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- tapOn:
+    id: "inspection-room-photo-markup"
+- extendedWaitUntil:
+    visible:
+      id: "photo-markup-save"
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# ── draw, undo, draw again ────────────────────────────────────────────────
+- swipe:
+    start: "30%,45%"
+    end: "70%,55%"
+    duration: 600
+- swipe:
+    start: "35%,55%"
+    end: "65%,40%"
+    duration: 600
+- tapOn:
+    id: "photo-markup-undo"
+- swipe:
+    start: "40%,35%"
+    end: "60%,60%"
+    duration: 600
+- takeScreenshot: inspection-markup-drawn
+- tapOn:
+    id: "photo-markup-save"
+- extendedWaitUntil:
+    notVisible:
+      id: "photo-markup-save"
+    timeout: 20000
+- extendedWaitUntil:
+    notVisible:
+      id: "inspection-photo-uploading"
+    timeout: 30000
+- scrollUntilVisible:
+    element:
+      id: "inspection-room-photo-markup"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- takeScreenshot: inspection-markup-saved
+- tapOn:
+    id: "inspection-save"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    text: "OK"
+    optional: true
+
+# ── cancel leaves the photo untouched ─────────────────────────────────────
+- scrollUntilVisible:
+    element:
+      id: "inspection-room-photo-markup"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- tapOn:
+    id: "inspection-room-photo-markup"
+- extendedWaitUntil:
+    visible:
+      id: "photo-markup-save"
+    timeout: 10000
+- tapOn:
+    id: "photo-markup-cancel"
+- extendedWaitUntil:
+    notVisible:
+      id: "photo-markup-save"
+    timeout: 10000
