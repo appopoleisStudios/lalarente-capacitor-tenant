@@ -102,6 +102,27 @@ Before building APK:
 4. ✅ Test on emulator first
 5. ✅ Use `preview` profile for APK builds
 
+## ⛔ RELEASE GATE — no APK goes to the client unless all of these pass
+
+Bugs kept reappearing because fixes were checked by hand once and nothing
+re-checked them. Every APK handed to the client (or anyone testing for them)
+MUST satisfy, in order:
+
+1. **Built from `main` only**, after every PR in it was merged with CI green
+   (Lint, Tests, TypeScript). Never from a feature branch or a dirty tree.
+2. **Every bug fix in it ships with a regression test** that fails without the
+   fix (Jest unit test or Maestro flow). No test → not done.
+3. **Full lifecycle chain passes on a device** from a clean fixture:
+   `node scripts/reset-lifecycle-fixture.mjs --apply` then
+   `scripts/run-lifecycle-e2e.sh` (01 → 08).
+4. **Android release APK smoke-tested on the emulator** (owner, tenant, vendor
+   dashboards; sign-out → sign-in) plus `tenant-tabbar-guard.yaml`.
+5. **Recorded**: `builds/lalarente-<version>-build.<n>-rev.<r>.apk` +
+   `builds/BUILD_INFO-…txt` with the exact commit SHA, SHA-256 of the APK,
+   what changed, and which checks passed. Testers report the build number.
+
+If any step fails, the APK is not sent — fix, add the test, start again.
+
 ## Code Quality Guidelines
 
 1. **Avoid duplication**: Check for existing implementations before creating new files
