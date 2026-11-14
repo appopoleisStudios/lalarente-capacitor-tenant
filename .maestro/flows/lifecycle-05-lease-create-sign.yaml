@@ -307,16 +307,55 @@ appId: com.lalarente.app
     id: "owner-lease-review-clauses-open"
 - extendedWaitUntil:
     visible:
-      id: "owner-lease-review-clauses-input"
+      id: "lease-clause-use_of_premises"
     timeout: 20000
 - tapOn:
     id: "owner-lease-review-clauses-close"
 - extendedWaitUntil:
     notVisible:
-      id: "owner-lease-review-clauses-input"
+      id: "lease-clause-use_of_premises"
     timeout: 15000
 - tapOn:
     id: "owner-lease-review-clauses-open"
+- extendedWaitUntil:
+    visible:
+      id: "lease-clause-use_of_premises"
+    timeout: 20000
+# CT7-022 v2: edit one standard clause, remove another; locked ones have no
+# edit/remove buttons
+- assertNotVisible:
+    id: "lease-clause-inspections-remove"
+- tapOn:
+    id: "lease-clause-maintenance-edit"
+- extendedWaitUntil:
+    visible:
+      id: "lease-clause-edit-input"
+    timeout: 10000
+- eraseText: 1200
+- inputText: "LC-maint ${LC_TOKEN} tenant maintains the garden"
+- tapOn:
+    id: "lease-clause-edit-save"
+- extendedWaitUntil:
+    visible: "Edited"
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: "lease-clause-pets-remove"
+    direction: DOWN
+    timeout: 15000
+- tapOn:
+    id: "lease-clause-pets-remove"
+- extendedWaitUntil:
+    visible:
+      id: "lease-clause-pets-restore"
+    timeout: 10000
+- takeScreenshot: lc05-owner-lease-clauses
+# additional terms (unchanged v1 behaviour)
+- scrollUntilVisible:
+    element:
+      id: "owner-lease-review-clauses-input"
+    direction: DOWN
+    timeout: 15000
 - tapOn:
     id: "owner-lease-review-clauses-input"
 - inputText: "LC-clause ${LC_TOKEN}"
@@ -326,6 +365,7 @@ appId: com.lalarente.app
     notVisible:
       id: "owner-lease-review-clauses-input"
     timeout: 15000
+- takeScreenshot: lc05-owner-lease-review-edited
 - tapOn:
     id: "owner-lease-review-send"
 - extendedWaitUntil:
