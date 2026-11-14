@@ -21,6 +21,7 @@ import { supabase, STORAGE_BUCKETS } from '@/src/lib/supabase';
 import { uploadPhoto } from '@/src/shared/utils/photoUpload';
 import { exportInspectionReportPdf } from '../../owner/utils/pdfReports';
 import SignatureModal from '../../leases/components/SignatureModal';
+import PhotoMarkupModal from '../components/PhotoMarkupModal';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { reportApiError } from '@/src/core/observability/sentry';
 import {
@@ -77,6 +78,11 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [markupTarget, setMarkupTarget] = useState<{
+    url: string;
+    photoIndex: number;
+    itemIndex?: number;
+  } | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -251,6 +257,42 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
       }
       return updated;
     });
+  };
+
+  // The marked-up copy is uploaded as a new file and replaces the original in
+  // place; the original stays in storage until the inspection is saved.
+  const saveMarkup = async (localUri: string) => {
+    const target = markupTarget;
+    setMarkupTarget(null);
+    if (!inspection || !target) return;
+    const roomIdx = Math.min(Math.max(currentRoomIndex, 0), rooms.length - 1);
+    try {
+      setUploadingPhoto(true);
+      const url = await uploadPhoto(STORAGE_BUCKETS.INSPECTION_PHOTOS, inspection.id, localUri);
+      const swap = (photos: string[] = []) =>
+        photos.map((p, i) => (i === target.photoIndex ? url : p));
+      setRooms((prev) => {
+        const updated = [...prev];
+        const room = updated[roomIdx];
+        if (!room) return prev;
+        if (target.itemIndex !== undefined && room.items[target.itemIndex]) {
+          updated[roomIdx] = {
+            ...room,
+            items: room.items.map((item, i) =>
+              i === target.itemIndex ? { ...item, photos: swap(item.photos) } : item
+            ),
+          };
+        } else {
+          updated[roomIdx] = { ...room, photos: swap(room.photos) };
+        }
+        return updated;
+      });
+    } catch (err) {
+      reportApiError(err, 'inspections', 'update');
+      Alert.alert('Upload failed', 'The marked-up photo could not be saved. Please try again.');
+    } finally {
+      setUploadingPhoto(false);
+    }
   };
 
   const pickImage = async (itemIndex?: number) => {
@@ -729,6 +771,20 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                           <Image source={{ uri: photo }} style={styles.photoThumbnail} />
                           {canComplete && (
                             <TouchableOpacity
+                              testID={`inspection-item-${index}-photo-markup`}
+                              style={styles.photoMarkupWrap}
+                              onPress={() =>
+                                setMarkupTarget({ url: photo, photoIndex, itemIndex: index })
+                              }
+                              hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+                              accessibilityRole="button"
+                              accessibilityLabel="Mark up photo"
+                            >
+                              <Ionicons name="brush" size={13} color="#FFF" />
+                            </TouchableOpacity>
+                          )}
+                          {canComplete && (
+                            <TouchableOpacity
                               testID={`inspection-item-${index}-photo-remove`}
                               style={styles.photoRemoveWrap}
                               onPress={() => removePhoto(photoIndex, index)}
@@ -783,6 +839,18 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                   {currentRoom.photos.map((photo, photoIndex) => (
                     <View key={photoIndex} style={styles.photoThumbWrap}>
                       <Image source={{ uri: photo }} style={styles.photoThumbnail} />
+                      {canComplete && (
+                        <TouchableOpacity
+                          testID="inspection-room-photo-markup"
+                          style={styles.photoMarkupWrap}
+                          onPress={() => setMarkupTarget({ url: photo, photoIndex })}
+                          hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+                          accessibilityRole="button"
+                          accessibilityLabel="Mark up photo"
+                        >
+                          <Ionicons name="brush" size={13} color="#FFF" />
+                        </TouchableOpacity>
+                      )}
                       {canComplete && (
                         <TouchableOpacity
                           testID="inspection-room-photo-remove"
@@ -1135,6 +1203,13 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
             )}
           </View>
 
+          <PhotoMarkupModal
+            visible={markupTarget !== null}
+            photoUrl={markupTarget?.url ?? null}
+            onCancel={() => setMarkupTarget(null)}
+            onSave={saveMarkup}
+          />
+
           {/* Signature Modal */}
           <SignatureModal
             visible={showSignatureModal}
@@ -1348,6 +1423,18 @@ const styles = StyleSheet.create({
   },
   photoThumbWrap: { marginRight: 8, paddingTop: 6, paddingRight: 6 },
   photoRemoveWrap: { position: 'absolute', top: 0, right: 0, zIndex: 2 },
+  photoMarkupWrap: {
+    position: 'absolute',
+    left: 4,
+    bottom: 4,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(17,24,39,0.75)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+  },
   photoRemove: {
     width: 22,
     height: 22,

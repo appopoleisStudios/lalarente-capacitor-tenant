@@ -67,7 +67,7 @@
   - [x] Vendor quote, PO, start work, progress update, closure all work under
         the tightened maintenance_requests UPDATE policy.
 
-## B9-003 🟠 Inspection photo markup (draw on a photo to show the issue) ⬜
+## B9-003 🟠 Inspection photo markup (draw on a photo to show the issue) ✅
 
 - **Request (owner, 2026-11-13):** "editing on image to show the issues on
   location".
@@ -76,9 +76,17 @@
   WebView-based → no native rebuild) with the photo as background; red
   pen + undo + clear; save the flattened image as the inspection photo.
 - **Acceptance criteria:**
-  - [ ] Every inspection photo has "Mark up"; drawing is saved with the photo.
-  - [ ] Owner and tenant both see the marked-up photo (and in the PDF).
-  - [ ] Works on iOS and Android; Maestro flow covers open → draw → save.
+  - [x] Every inspection photo has a brush button while the inspection is
+        editable; drawing is saved with the photo.
+  - [x] The flattened JPEG replaces the photo URL in place, so owner, tenant
+        and the PDF all show the marked-up version.
+  - [x] Maestro `inspection-photo-markup.yaml`: open → draw → undo → draw →
+        save → Save inspection; cancel leaves the photo unchanged.
+- **Implementation note:** signature-canvas draws `bgSrc` as a CSS
+  background, so it is not in the exported image. `PhotoMarkupModal` uses a
+  small WebView canvas instead: the photo is drawn into the canvas as a data
+  URI (no CORS taint), undo redraws photo + strokes, export is at the
+  photo's own resolution.
 
 ## B9-004 🟡 Inspection photos are uploaded full size ✅ (done in B9-001)
 
