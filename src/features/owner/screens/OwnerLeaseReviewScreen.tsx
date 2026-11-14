@@ -353,25 +353,8 @@ export default function OwnerLeaseReviewScreen() {
                       <Text style={[styles.clauseTitle, removed && styles.clauseRemovedText]}>
                         {c.title}
                       </Text>
-                      {c.locked ? (
-                        <Ionicons name="lock-closed" size={14} color={colors.text.tertiary} />
-                      ) : removed ? (
-                        <Text style={styles.clauseTagRemoved}>Removed</Text>
-                      ) : edited ? (
-                        <Text style={styles.clauseTagEdited}>Edited</Text>
-                      ) : null}
-                    </View>
-                    {isEditing ? (
-                      <>
-                        <TextInput
-                          testID="lease-clause-edit-input"
-                          style={styles.clauseEditInput}
-                          multiline
-                          value={editing.text}
-                          onChangeText={(text) => setEditing({ id: c.id, text })}
-                          autoFocus
-                        />
-                        <View style={styles.clauseActions}>
+                      {isEditing ? (
+                        <View style={[styles.clauseActions, styles.clauseHeaderActions]}>
                           <TouchableOpacity
                             testID="lease-clause-edit-cancel"
                             onPress={() => setEditing(null)}
@@ -391,6 +374,24 @@ export default function OwnerLeaseReviewScreen() {
                             </Text>
                           </TouchableOpacity>
                         </View>
+                      ) : c.locked ? (
+                        <Ionicons name="lock-closed" size={14} color={colors.text.tertiary} />
+                      ) : removed ? (
+                        <Text style={styles.clauseTagRemoved}>Removed</Text>
+                      ) : edited ? (
+                        <Text style={styles.clauseTagEdited}>Edited</Text>
+                      ) : null}
+                    </View>
+                    {isEditing ? (
+                      <>
+                        <TextInput
+                          testID="lease-clause-edit-input"
+                          style={styles.clauseEditInput}
+                          multiline
+                          value={editing.text}
+                          onChangeText={(text) => setEditing({ id: c.id, text })}
+                          autoFocus
+                        />
                       </>
                     ) : (
                       <>
@@ -551,7 +552,13 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 18, fontWeight: '700', color: '#333' },
   modalHint: { fontSize: 13, color: '#777', marginBottom: 12 },
   modalScroll: { flexGrow: 0 },
-  modalSection: { fontSize: 15, fontWeight: '700', color: colors.text.primary, marginTop: 8, marginBottom: 4 },
+  modalSection: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text.primary,
+    marginTop: 8,
+    marginBottom: 4,
+  },
   clauseCard: {
     borderWidth: 1,
     borderColor: colors.border.default,
@@ -571,10 +578,16 @@ const styles = StyleSheet.create({
   clauseRemovedText: { color: colors.text.tertiary, textDecorationLine: 'line-through' },
   clauseTagEdited: { fontSize: 11, fontWeight: '700', color: RSA.blue },
   clauseTagRemoved: { fontSize: 11, fontWeight: '700', color: colors.rsa.red },
-  clauseLockReason: { fontSize: 11, color: colors.text.tertiary, marginTop: 6, fontStyle: 'italic' },
+  clauseLockReason: {
+    fontSize: 11,
+    color: colors.text.tertiary,
+    marginTop: 6,
+    fontStyle: 'italic',
+  },
   clauseActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 18, marginTop: 8 },
   clauseAction: { fontSize: 14, fontWeight: '600', color: RSA.blue },
   clauseActionPrimary: { fontWeight: '700' },
+  clauseHeaderActions: { marginTop: 0 },
   clauseActionDanger: { color: colors.rsa.red },
   clauseEditInput: {
     borderWidth: 1,
