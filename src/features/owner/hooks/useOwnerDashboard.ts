@@ -29,14 +29,23 @@ export function useOwnerDashboard(ownerId: string | null): UseOwnerDashboardRetu
   const [data, setData] = useState<OwnerDashboardData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
-  const inFlight = useRef<Promise<void> | null>(null);
+  // One shared request per owner (mount + focus + pull-to-refresh overlap).
+  const inFlight = useRef<{ ownerId: string; promise: Promise<void> } | null>(null);
   const hasData = useRef(false);
+  const ownerRef = useRef<string | null>(null);
 
-  // Paint the cached dashboard while the first fetch is running.
+  // Paint the cached dashboard while the first fetch is running. A different
+  // owner signing in on the same device must never see the previous one's data.
   useEffect(() => {
     if (!ownerId) return;
+    if (ownerRef.current && ownerRef.current !== ownerId) {
+      hasData.current = false;
+      setData(null);
+      setLoading(true);
+    }
+    ownerRef.current = ownerId;
     readDashboardCache<OwnerDashboardData>('owner', ownerId).then((cached) => {
-      if (cached && !hasData.current) {
+      if (cached && !hasData.current && ownerRef.current === ownerId) {
         hasData.current = true;
         console.log('[perf] owner dashboard cache painted');
         setData(cached);
@@ -50,14 +59,17 @@ export function useOwnerDashboard(ownerId: string | null): UseOwnerDashboardRetu
       setLoading(false);
       return Promise.resolve();
     }
-    if (inFlight.current) return inFlight.current;
+    if (inFlight.current?.ownerId === ownerId) return inFlight.current.promise;
 
-    inFlight.current = (async () => {
+    // A different owner's results must never land on this owner's screen.
+    const isStale = () => !!ownerRef.current && ownerRef.current !== ownerId;
+    const promise = (async () => {
       try {
         setError(null);
         const startedAt = Date.now();
         const dashboardData = await getOwnerDashboardData(ownerId);
         console.log(`[perf] owner dashboard data in ${Date.now() - startedAt}ms`);
+        if (isStale()) return;
         hasData.current = true;
         setData(dashboardData);
         writeDashboardCache('owner', ownerId, dashboardData);
@@ -66,15 +78,16 @@ export function useOwnerDashboard(ownerId: string | null): UseOwnerDashboardRetu
         console.error('[useOwnerDashboard] Error fetching dashboard data:', err);
         // Keep showing the last dashboard if we have one; only a first load
         // with nothing to show becomes an error screen.
-        if (!hasData.current) {
+        if (!hasData.current && !isStale()) {
           setError(err instanceof Error ? err : new Error('Failed to load dashboard'));
         }
       } finally {
-        setLoading(false);
-        inFlight.current = null;
+        if (!isStale()) setLoading(false);
+        if (inFlight.current?.ownerId === ownerId) inFlight.current = null;
       }
     })();
-    return inFlight.current;
+    inFlight.current = { ownerId, promise };
+    return promise;
   }, [ownerId]);
 
   // Fires on mount and every time the screen regains focus.
