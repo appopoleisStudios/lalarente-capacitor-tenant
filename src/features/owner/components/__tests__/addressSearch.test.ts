@@ -37,3 +37,19 @@ it('falls back to the formatted address when there is no street number', () => {
 it('ignores a selection without details', () => {
   expect(parsePlace(null)).toBeNull();
 });
+
+it('uses the wider area as city when Google has no locality', () => {
+  const p = {
+    ...place,
+    address_components: [
+      { long_name: 'Farm 12', types: ['route'] },
+      { long_name: 'eThekwini', types: ['administrative_area_level_2'] },
+      { long_name: 'KwaZulu-Natal', types: ['administrative_area_level_1'] },
+    ],
+  };
+  expect(parsePlace(p)).toMatchObject({
+    address: 'Farm 12',
+    city: 'eThekwini',
+    province: 'KwaZulu-Natal',
+  });
+});

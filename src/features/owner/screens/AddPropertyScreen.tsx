@@ -524,9 +524,9 @@ export default function AddPropertyScreen() {
                   setForm((f) => ({
                     ...f,
                     address: a.address,
-                    city: a.city || f.city,
-                    province: a.province || f.province,
-                    postal_code: a.postalCode || f.postal_code,
+                    city: a.city,
+                    province: a.province,
+                    postal_code: a.postalCode,
                     latitude: a.latitude,
                     longitude: a.longitude,
                   }))
@@ -540,7 +540,10 @@ export default function AddPropertyScreen() {
                 placeholder="e.g., 12 Main Street, Rosebank"
                 placeholderTextColor="#9ca3af"
                 value={form.address}
-                onChangeText={(text) => setForm({ ...form, address: text })}
+                onChangeText={(text) =>
+                  // typing a different street invalidates the searched pin
+                  setForm({ ...form, address: text, latitude: null, longitude: null })
+                }
               />
             </View>
 
