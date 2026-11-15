@@ -23,6 +23,8 @@ SIM_UDID="${SIM_UDID:-F40A74AA-78B1-4B57-BDFE-108149D0D6B7}"
 : "${LC_RENT:=5500}"
 : "${LC_DEPOSIT:=5500}"
 : "${LC_HOLDING_DEPOSIT:=2000}"
+# how the amount appears in dialogs (en-ZA: "R 2 000,00")
+: "${LC_HOLDING_DEPOSIT_TEXT:=2.000}"
 LC_TOKEN="${LC_TOKEN:-$(date +%m%d%H%M)}"
 
 OUT=".maestro/lifecycle-$(date +%Y%m%d-%H%M%S)"
@@ -57,7 +59,7 @@ for name in "$@"; do
         --env LC_BRANCH_PROPERTY_ID="$LC_BRANCH_PROPERTY_ID" \
         --env LC_BRANCH_PROPERTY_TITLE="$LC_BRANCH_PROPERTY_TITLE" \
         --env LC_RENT="$LC_RENT" --env LC_DEPOSIT="$LC_DEPOSIT" \
-        --env LC_HOLDING_DEPOSIT="$LC_HOLDING_DEPOSIT" 2>&1 | tee "log-$attempt.txt" | tee log.txt )
+        --env LC_HOLDING_DEPOSIT="$LC_HOLDING_DEPOSIT" --env LC_HOLDING_DEPOSIT_TEXT="$LC_HOLDING_DEPOSIT_TEXT" 2>&1 | tee "log-$attempt.txt" | tee log.txt )
     status=$?
     if grep -q "Exception in thread" "$OUT/$name/log.txt" && ! grep -q "\.\.\. FAILED" "$OUT/$name/log.txt"; then
       echo "↻ $name: Maestro driver crashed (attempt $attempt) — retrying"
