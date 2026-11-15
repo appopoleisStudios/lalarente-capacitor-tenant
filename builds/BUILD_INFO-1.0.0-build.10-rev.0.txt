@@ -1,0 +1,70 @@
+LaLarente App - Build Information
+==================================
+
+Build Date: 2026-11-15
+Build Type: Client Testing (Alpha)
+
+Version Information:
+  Version:      1.0.0
+  Build Number: 10
+  Revision:     0
+  Full Version: 1.0.0-build.10-rev.0
+
+Android Information:
+  Version Code: 10
+  Version Name: 1.0.0
+  Package:      com.lalarente.app
+  SHA-256:      b6064862bbc44029e8d3a051ae3d873a704f3cfb322db5786f7dcf2e3b352f34
+  Source:       main @ 9c2a8bd (PRs #219-#232 merged)
+
+Build Configuration:
+  Platform:     Android
+  Build Type:   APK (Release)
+  Build Method: Local Gradle (assembleRelease)
+  Minify:       Enabled
+  Hermes:       Enabled
+
+Release gate (CLAUDE.md) — checks passed on this build
+------------------------------------------------------
+  ✓ CI green on every PR (Lint, Tests 631/631, TypeScript)
+  ✓ Senior Auditor (Fable) APPROVE on every PR
+  ✓ Full lifecycle chain 01 → 08 on device (iOS sim) from a clean fixture,
+    on main @ 9c2a8bd. Resumed once from lifecycle 05's tenant phase after a
+    Maestro driver crash (kAXErrorInvalidUIElement) — not an app failure.
+  ✓ Signed lease PDF from that run: signature images embedded, edited
+    clause + Additional Terms present, removed clause absent
+  ✓ Android release APK: smoke (owner/tenant/vendor), CT7 checks,
+    owner sign-out → sign-in in one session, tenant opens and downloads
+    the signed lease
+
+Fixes since build 9
+-------------------
+Inspections
+  ✓ Draw on inspection photos to mark the issue (B9-003)
+Leases (CT7-022)
+  ✓ Owner can edit or remove standard clauses before sending; statutory
+    clauses (inspections, deposit refund, breach, governing law) and
+    termination are locked with the reason shown
+  ✓ Tenant can read the full lease (same as the signed PDF) before signing
+  ✓ Owner's review preview matches the signed document
+  ✓ Additional Terms no longer dropped from the PDF regenerated at signing
+  ✓ Signature images appear in the signed lease PDF (were blank)
+  ✓ Signed lease can be opened and downloaded by owner and tenant
+    (was "Bucket not found")
+  ✓ Lease states arrears interest exactly as charged (2% p.a., simple)
+  ✓ Lease wording, parties and signatures can't be altered after the fact
+    (database guards)
+Dashboards
+  ✓ Owner/tenant dashboards load in ~1 s (were 4-9 s), no spinner on refocus
+  ✓ Owner dashboard loads after sign-out -> sign-in without restarting
+Dates
+  ✓ Calendar dates no longer a day out between 00:00 and 02:00 SAST
+Security (POPIA)
+  ✓ Signed leases, signatures and the documents bucket can no longer be
+    listed or read anonymously; a non-party can't open someone's lease
+
+Known open items (not in this build)
+------------------------------------
+  - documents bucket is public-flagged: an ID document is readable by anyone
+    who has its exact link (listing is closed). Fix: private + signed URLs.
+  - Sign-out is global: signing out on one device signs the user out on all.
