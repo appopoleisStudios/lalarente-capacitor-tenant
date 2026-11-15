@@ -622,9 +622,10 @@ appId: com.lalarente.app
     visibilityPercentage: 60
     centerElement: true
 - assertVisible: ".*Needs Signature.*"
+# tap the signature prompt (just scrolled into view) — row index 0 can be
+# scrolled up under the header by the centring above
 - tapOn:
-    id: "tenant-report-inspection-row"
-    index: 0
+    id: "tenant-report-inspection-sign"
 - extendedWaitUntil:
     visible: "Move-In Inspection"
     timeout: 30000
