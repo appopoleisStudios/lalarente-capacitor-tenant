@@ -232,7 +232,7 @@ describe('generateLeaseHTML', () => {
     it('renders interest on arrears clause when rate is set', () => {
       const html = generateLeaseHTML(fullFixture);
       assertContains(html, 'INTEREST ON ARREARS', 'Arrears clause');
-      assertContains(html, 'prime lending rate', 'Prime rate reference');
+      expect(html).not.toMatch(/prime/i); // rate is stated exactly as charged (CPA s41)
     });
 
     it('hides interest on arrears clause when rate is not set', () => {
