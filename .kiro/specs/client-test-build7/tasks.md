@@ -1583,3 +1583,14 @@ created_at timestamp)`.
   - [ ] Enabled again once the owner declines (or the viewing is
         cancelled / completed).
   - [ ] Enforced in the database too (no duplicate open request).
+
+## CT7-031 🟠 Opened notifications still count on the bell
+
+- **Role:** all · **Screen:** header bell → Notifications
+- **Today:** after tapping a notification and viewing it, it still shows as
+  unread and the bell's number doesn't go down.
+- **Acceptance criteria:**
+  - [ ] Opening a notification marks it read (read_at set) in the database.
+  - [ ] The bell count drops immediately and stays dropped after leaving
+        and returning to the screen / restarting the app.
+  - [ ] Works for owner, tenant and vendor; Maestro flow covers it.
