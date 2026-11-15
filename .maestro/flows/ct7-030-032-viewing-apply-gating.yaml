@@ -1,0 +1,29 @@
+# CT7-030 / CT7-032: after requesting a viewing, the tenant can't request
+# another or apply until the viewing has happened or is cancelled.
+# Env: TENANT_*, PROP_ID, PROP_TITLE, LC_TOKEN
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-tenant.yaml
+- runFlow:
+    file: ../subflows/lc-tenant-request-viewing.yaml
+    env:
+      MSG: "LC-gate"
+- openLink: lalarenteapp://(tenant)/properties/${PROP_ID}
+- extendedWaitUntil:
+    visible:
+      id: "tenant-property-request-viewing"
+    timeout: 25000
+- assertVisible: ".*Viewing Requested.*"
+- assertVisible: ".*Apply After Viewing.*"
+- takeScreenshot: ct7-030-032-gated
+# tapping either explains why instead of opening the form
+- tapOn:
+    id: "tenant-property-request-viewing"
+- assertVisible: "Viewing already requested"
+- tapOn: "OK"
+- tapOn:
+    id: "tenant-property-apply"
+- assertVisible: "View the property first"
+- tapOn: "OK"
+- assertNotVisible:
+    id: "viewing-request-submit"

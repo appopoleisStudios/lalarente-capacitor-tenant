@@ -11,6 +11,14 @@ appId: com.lalarente.app
     timeout: 25000
 - tapOn:
     id: "tenant-property-request-viewing"
+# an open viewing blocks a new request (CT7-030): manage (cancel) it first
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow:
+    when:
+      visible: "Viewing already requested"
+    commands:
+      - tapOn: "Manage Viewing"
 - extendedWaitUntil:
     visible:
       id: "viewing-request-back"

@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { propertiesApi } from '../../properties/api/propertiesApi';
 import type { PropertyWithRelations } from '../../properties/api/propertiesApi';
+import { viewingGate, OPEN_VIEWING_STATUSES, type OpenViewing } from '../utils/viewingGate';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const RSA = { green: '#007A4D', blue: '#002395' };
@@ -57,7 +58,11 @@ export default function TenantPropertyDetailScreen() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
   const [hasActiveApplication, setHasActiveApplication] = useState(false);
+  const [openViewing, setOpenViewing] = useState<OpenViewing | null>(null);
   const [isCurrentProperty, setIsCurrentProperty] = useState(false);
+  const gate = viewingGate(openViewing);
+  const viewingBlocked = isCurrentProperty || !gate.canRequestViewing;
+  const applyBlocked = isCurrentProperty || hasActiveApplication || !gate.canApply;
   const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
   const [applicationId, setApplicationId] = useState<string | null>(null);
 
@@ -200,6 +205,18 @@ export default function TenantPropertyDetailScreen() {
           setHasActiveApplication(false);
         }
 
+        // CT7-030 / CT7-032: the tenant's open viewing for this property
+        const { data: viewing } = await supabase
+          .from('viewing_requests')
+          .select('status, requested_date, confirmed_date')
+          .eq('property_id', id)
+          .eq('tenant_id', user.id)
+          .in('status', [...OPEN_VIEWING_STATUSES])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        setOpenViewing((viewing as OpenViewing | null) ?? null);
+
         // TODO: Check favorites table when implemented
       }
     } catch (err) {
@@ -216,6 +233,28 @@ export default function TenantPropertyDetailScreen() {
     }
     if (!property) {
       Alert.alert('Error', 'Property information not available');
+      return;
+    }
+    const openRequestScreen = () =>
+      router.push({
+        pathname: '/(tenant)/viewings/request',
+        params: {
+          propertyId: property.id,
+          propertyTitle: property.title,
+          ownerId: property.owner_id,
+        },
+      });
+    if (!gate.canRequestViewing) {
+      // The request screen shows the existing request and lets the tenant
+      // cancel it — offer that instead of a dead end.
+      Alert.alert(
+        'Viewing already requested',
+        'You already have a viewing for this property. You can request another one if the owner declines it or it is cancelled.',
+        [
+          { text: 'OK', style: 'cancel' },
+          { text: 'Manage Viewing', onPress: openRequestScreen },
+        ]
+      );
       return;
     }
     router.push({
@@ -235,6 +274,13 @@ export default function TenantPropertyDetailScreen() {
     }
     if (hasActiveApplication) {
       Alert.alert('Notice', 'You already have a pending application for this property.');
+      return;
+    }
+    if (!gate.canApply) {
+      Alert.alert(
+        'View the property first',
+        'You can apply once your scheduled viewing has taken place, or if it is cancelled.'
+      );
       return;
     }
 
@@ -618,35 +664,38 @@ export default function TenantPropertyDetailScreen() {
           <View style={styles.actionBar}>
             <TouchableOpacity
               testID="tenant-property-request-viewing"
-              style={[styles.viewingButton, isCurrentProperty && styles.disabledButton]}
+              style={[styles.viewingButton, viewingBlocked && styles.disabledButton]}
               onPress={handleRequestViewing}
-              disabled={isCurrentProperty}
+              // greyed but tappable: the handler explains why it's blocked
+              // accessibilityState.disabled would make TouchableOpacity ignore taps
+              accessibilityHint={
+                viewingBlocked ? 'Unavailable: explains why when tapped' : undefined
+              }
             >
               <Ionicons
                 name="calendar-outline"
                 size={20}
-                color={isCurrentProperty ? '#999' : RSA.green}
+                color={viewingBlocked ? '#999' : RSA.green}
               />
               <Text
-                style={[styles.viewingButtonText, isCurrentProperty && styles.disabledButtonText]}
+                style={[styles.viewingButtonText, viewingBlocked && styles.disabledButtonText]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
               >
-                Request Viewing
+                {gate.requestLabel}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               testID="tenant-property-apply"
-              style={[
-                styles.applyButton,
-                (isCurrentProperty || hasActiveApplication) && styles.disabledButton,
-              ]}
+              style={[styles.applyButton, applyBlocked && styles.disabledButton]}
               onPress={handleApply}
-              disabled={isCurrentProperty || hasActiveApplication}
+              // greyed but tappable: the handler explains why it's blocked
+              accessibilityHint={applyBlocked ? 'Unavailable: explains why when tapped' : undefined}
             >
               <Text
-                style={[
-                  styles.applyButtonText,
-                  (isCurrentProperty || hasActiveApplication) && styles.disabledButtonText,
-                ]}
+                style={[styles.applyButtonText, applyBlocked && styles.disabledButtonText]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
               >
                 {isCurrentProperty
                   ? 'Current Property'
@@ -656,7 +705,9 @@ export default function TenantPropertyDetailScreen() {
                       : applicationStatus === 'approved'
                         ? 'Already Approved'
                         : 'Application Pending'
-                    : 'Apply Now'}
+                    : !gate.canApply
+                      ? 'Apply After Viewing'
+                      : 'Apply Now'}
               </Text>
             </TouchableOpacity>
           </View>
