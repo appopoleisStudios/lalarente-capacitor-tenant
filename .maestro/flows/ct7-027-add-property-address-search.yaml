@@ -1,0 +1,30 @@
+# CT7-027: Add Property has Google address search that fills the fields.
+# Env: OWNER_EMAIL, OWNER_PASSWORD
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+- openLink: lalarenteapp://(owner)/add-property
+- extendedWaitUntil:
+    visible: "Add Property"
+    timeout: 25000
+- scrollUntilVisible:
+    element:
+      id: "address-search-input"
+    direction: DOWN
+    timeout: 25000
+    centerElement: true
+- tapOn:
+    id: "address-search-input"
+- inputText: "24 Fricker Road Illovo"
+- extendedWaitUntil:
+    visible: "24 Fricker Road, Illovo, Sandton, South Africa"
+    timeout: 15000
+- takeScreenshot: ct7-027-suggestions
+- tapOn: "24 Fricker Road, Illovo, Sandton, South Africa"
+- waitForAnimationToEnd:
+    timeout: 3000
+- hideKeyboard
+# fields filled from Google
+- assertVisible: "24 Fricker Road"
+- assertVisible: ".*Gauteng.*"
+- takeScreenshot: ct7-027-filled

@@ -298,12 +298,12 @@ export default function OwnerDashboardScreen() {
     );
   }
 
-  const notificationCount =
-    unreadNotifCount +
-    pendingViewingsCount +
-    dashboardData.pendingTerminations +
-    dashboardData.openDisputes +
-    dashboardData.pendingClosures;
+  // CT7-031: the bell counts notifications the owner hasn't seen yet, so it
+  // drops once they're opened. Outstanding work (viewings to approve,
+  // closures, disputes, terminations) stays in "Needs Attention" below — new
+  // viewing requests already arrive as notifications, so adding the queue
+  // counts both double-counted and kept the bell lit after checking.
+  const notificationCount = unreadNotifCount;
 
   // Dynamic documents from real data. Docs with actionable counts are flagged
   // `attention` — DocumentsSection renders them as Needs-attention rows (Plane #81),

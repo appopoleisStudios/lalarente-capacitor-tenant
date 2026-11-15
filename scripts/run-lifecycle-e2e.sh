@@ -27,9 +27,20 @@ LC_TOKEN="${LC_TOKEN:-$(date +%m%d%H%M)}"
 
 OUT=".maestro/lifecycle-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$OUT"
-[[ $# -eq 0 ]] && set -- lifecycle-00-full-chain
+# Full chain. The viewing must have happened before the tenant can apply
+# (CT7-032), so 02a is followed by moving it into the past and 02d.
+[[ $# -eq 0 ]] && set -- lifecycle-01-search-property lifecycle-02a-viewing-approve \
+  script:scripts/e2e/viewing-happened.mjs lifecycle-02d-viewing-complete \
+  lifecycle-03a-application-submit lifecycle-04-holding-deposit lifecycle-05-lease-create-sign \
+  lifecycle-06-inspection lifecycle-07-inspection-issue-maintenance lifecycle-07b-issue-vendor-quote \
+  lifecycle-07c-send-po lifecycle-07d-work-closure-verification lifecycle-08-occupied
 PASS=(); FAIL=()
 for name in "$@"; do
+  # "script:<path>" runs a Node helper (e.g. moving a viewing into the past)
+  if [[ "$name" == script:* ]]; then
+    if LC_PROPERTY_ID="$LC_PROPERTY_ID" node "${name#script:}"; then PASS+=("$name"); else FAIL+=("$name"); fi
+    continue
+  fi
   mkdir -p "$OUT/$name"
   ( set -o pipefail; cd "$OUT/$name" && maestro --device "$SIM_UDID" test "$ROOT/.maestro/flows/${name}.yaml" \
       --env TENANT_EMAIL="$TENANT_EMAIL" --env TENANT_PASSWORD="$TENANT_PASSWORD" \
