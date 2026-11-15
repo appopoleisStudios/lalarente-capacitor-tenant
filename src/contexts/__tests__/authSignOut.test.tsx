@@ -4,6 +4,7 @@
  */
 import React from 'react';
 import { renderHook, act, waitFor } from '@testing-library/react-native';
+import { AuthProvider, useAuth } from '../AuthContext';
 
 const mockSignOut = jest.fn().mockResolvedValue({ error: null });
 jest.mock('@/src/lib/supabase', () => ({
@@ -29,7 +30,6 @@ jest.mock('@/src/features/notifications/registerPush', () => ({
   unregisterDevicePush: () => mockUnregister(),
 }));
 
-import { AuthProvider, useAuth } from '../AuthContext';
 
 it('signs out of this device only and clears cached dashboards', async () => {
   const wrapper = ({ children }: { children: React.ReactNode }) => (
