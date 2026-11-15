@@ -53,8 +53,8 @@ for name in "$@"; do
     # kill it once the log mentions the exception so the retry can run.
     ( while sleep 10; do
         [[ -f "$OUT/$name/log.txt" ]] && grep -q "Exception in thread" "$OUT/$name/log.txt" && {
-          sleep 20; pkill -f "maestro --device $SIM_UDID test" ; break; }
-        pgrep -f "maestro --device $SIM_UDID test" >/dev/null || break
+          sleep 20; pkill -f "maestro.cli.AppKt" ; break; }
+        pgrep -f "maestro.cli.AppKt" >/dev/null || break
       done ) &
     watchdog=$!
     ( set -o pipefail; cd "$OUT/$name" && maestro --device "$SIM_UDID" test "$ROOT/.maestro/flows/${name}.yaml" \
