@@ -27,6 +27,7 @@ import {
 } from '@/src/features/payments/api/arrearsEscalation.api';
 import { paymentDisputesApi } from '@/src/features/payments/api/paymentDisputes.api';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { goBack } from '@/src/shared/navigation/goBack';
 
 const STAGE_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
   friendly_reminder: {
@@ -190,7 +191,7 @@ export default function OwnerArrearsManagementScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.navigate('/(owner)/dashboard')}
+          onPress={() => goBack(router, '/(owner)/dashboard')}
           style={styles.backButton}
         >
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />

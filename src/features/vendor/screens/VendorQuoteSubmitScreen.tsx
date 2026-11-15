@@ -19,6 +19,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { goBack } from '@/src/shared/navigation/goBack';
 
 const RSA = { blue: '#002395', green: '#007A4D', gold: '#FFB81C', red: '#DE3831' };
 
@@ -565,13 +566,11 @@ export default function VendorQuoteSubmitScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        {/* Back: router.back() on these hidden-tab routes pops to the tab ROOT
-            (vendor dashboard) instead of the previous screen — same class of
-            bug as the tenant/owner back-nav fixes. Navigate explicitly to the
-            request detail, which is where the quote form is always entered
-            from (list → detail → quote). */}
+        {/* Back: returns to the request detail it was opened from (tabs use
+            backBehavior='history'); the detail is also the fallback when
+            there is no history (CT7-033). */}
         <TouchableOpacity
-          onPress={() => router.replace(`/(vendor)/maintenance/${id}` as any)}
+          onPress={() => goBack(router, `/(vendor)/maintenance/${id}`)}
           style={styles.headerButton}
           testID="quote-back"
         >

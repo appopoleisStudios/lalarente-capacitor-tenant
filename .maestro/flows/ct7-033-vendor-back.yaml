@@ -1,0 +1,25 @@
+# CT7-033 (SA check): vendor profile → notifications → back lands on profile.
+# Env: VENDOR_EMAIL, VENDOR_PASSWORD
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-vendor.yaml
+- tapOn:
+    id: "tab-vendor-profile"
+- scrollUntilVisible:
+    element:
+      id: "vendor-profile-notifications"
+    direction: DOWN
+    timeout: 15000
+- tapOn:
+    id: "vendor-profile-notifications"
+- extendedWaitUntil:
+    visible:
+      id: "notification-back"
+    timeout: 15000
+- tapOn:
+    id: "notification-back"
+- extendedWaitUntil:
+    visible:
+      id: "vendor-profile-notifications"
+    timeout: 15000
+- takeScreenshot: ct7-033-vendor-back-profile

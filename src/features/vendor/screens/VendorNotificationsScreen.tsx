@@ -13,6 +13,7 @@ import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { colors } from '@/src/shared/theme/colors';
+import { goBack } from '@/src/shared/navigation/goBack';
 
 type AlertItem = {
   id: string;
@@ -266,11 +267,7 @@ export default function VendorNotificationsScreen() {
   };
 
   const handleBack = () => {
-    if (from === 'profile') {
-      router.navigate('/(vendor)/profile' as never);
-    } else {
-      router.back(); // dashboard bell / other entries
-    }
+    goBack(router, from === 'profile' ? '/(vendor)/profile' : '/(vendor)/dashboard');
   };
 
   const formatTimeAgo = (ts: string) => {

@@ -30,6 +30,7 @@ import {
 } from '@/src/features/maintenance/api/work/tenantVerification.api';
 import { ErrorState } from '@/src/shared/components/ui/ErrorState';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { goBack } from '@/src/shared/navigation/goBack';
 
 export default function TenantVerificationScreen() {
   const router = useRouter();
@@ -62,13 +63,7 @@ export default function TenantVerificationScreen() {
 
   // Deep links land here with no back stack, so router.back() can no-op and
   // strand the tenant on the error state. Fall back to the tenant home tab.
-  const handleGoBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace('/(tenant)');
-    }
-  };
+  const handleGoBack = () => goBack(router, '/(tenant)');
 
   // State
   const [mode, setMode] = useState<'select' | 'approve' | 'reject'>('select');
