@@ -1538,7 +1538,7 @@ created_at timestamp)`.
 
 - **Role:** owner · **Screen:** Add Property → Street Address
 - **Cause:** commit 97786bb ("Fix white screen on Add Property") removed the
-  whole LocationPicker — map *and* Google Places search — because the map
+  whole LocationPicker — map _and_ Google Places search — because the map
   (react-native-maps) crashed. Only Edit Property kept the search.
 - **Acceptance criteria:**
   - [ ] Add Property has Google Places address search (SA only) that fills
@@ -1620,8 +1620,8 @@ created_at timestamp)`.
   - [ ] Audit every route for all three roles; Maestro regression flow per
         role covering deep navigation → back → back.
 
-
 ### Also fixed during the build-10 client test (not raised by the client)
+
 - Sign-out now ends only this device's session; it used to sign the user
   out on every device (PR #237).
 - Push notifications never worked: the push_tokens table had never been
@@ -1629,3 +1629,84 @@ created_at timestamp)`.
   and is removed on sign-out (PR #237).
 - Security: a tenant could end their own lease with a back-dated date and
   wipe rent already owed; only the landlord can end a lease now (PR #240).
+
+## Known open issues in build 11 (2026-11-15)
+
+Found by us while fixing and testing build 11 (CT7-034, 036–039 are listed in
+`builds/BUILD_INFO-1.0.0-build.11-rev.0.txt`; CT7-035 found during testing).
+Not raised by the client.
+
+## CT7-034 🔴 ID documents readable by anyone holding the link (POPIA)
+
+- **Role:** tenant (data owner) · **Area:** Supabase storage `documents` bucket
+- **Today:** the bucket was found public on the live project (set outside
+  migrations) and the app stores public URLs. Listing is closed (PR #232), but
+  anyone with a file's exact URL can open a tenant's ID document or payslip.
+  Vendor documents share the bucket.
+- **Acceptance criteria:**
+  - [ ] `documents` bucket set to private via a migration.
+  - [ ] Every place that shows or downloads a document uses a short-lived
+        signed URL (same pattern as `getLeaseDocumentUrl` in `storageService`).
+  - [ ] Owner can still view their applicants'/tenants' documents; a
+        non-party gets 400/403. Test for both.
+
+## CT7-035 🔴 Lease rent and deposit can still be changed by either party
+
+- **Role:** owner + tenant · **Area:** `leases` table guards
+- **Today:** wording, parties and signatures are locked (PR #229) and only
+  the owner can end a lease (PR #240), but `leases.monthly_rent` and
+  `leases.deposit_amount` can still be updated by the tenant or the owner after signing.
+- **Acceptance criteria:**
+  - [ ] Database trigger rejects changes to rent/deposit once the lease is
+        signed by either party (changes go through a renewal/addendum).
+  - [ ] Tenant can never change them, before or after signing.
+  - [ ] Regression test: REST update as tenant and as owner on a signed
+        lease is rejected.
+
+## CT7-036 🟠 Early termination and payment disputes don't notify the other party
+
+- **Role:** owner + tenant · **Area:** notifications
+- **Today:** when a tenant requests early termination or disputes a payment
+  (or the owner responds), no in-app or push notification is created; the
+  other party only sees it if they open that screen.
+- **Acceptance criteria:**
+  - [ ] Request, accept and reject of early termination notify the other
+        party (bell + push).
+  - [ ] Dispute opened / under review / resolved notifies the other party.
+  - [ ] Tapping the notification opens the right screen; Maestro flow.
+
+## CT7-037 🟠 Push notifications are sent from the phone, not the server
+
+- **Area:** push delivery
+- **Today:** for in-app actions the phone sends the push itself
+  (`notificationsApi.ts`). If the sender's app closes or loses connection,
+  the push is lost. Only `process-lease-automation` sends server-side
+  (`_shared/expoPush.ts`).
+- **Acceptance criteria:**
+  - [ ] A database trigger / edge function sends the push when a
+        notification row is inserted.
+  - [ ] App-side sending removed; no duplicate pushes.
+  - [ ] Test: notification inserted server-side reaches the device.
+
+## CT7-038 🟡 Owner rent roll doesn't label voided rent as cancelled
+
+- **Role:** owner · **Screen:** Rent Roll
+- **Today:** rent voided because a lease ended (CT7-029, status
+  `cancelled`) has no proper label on the owner's rent roll; the tenant
+  side already shows "Not due — lease ended".
+- **Acceptance criteria:**
+  - [ ] Rent roll shows a grey "Cancelled — lease ended" status and leaves
+        these amounts out of due/arrears totals.
+  - [ ] Unit test for the status mapping.
+
+## CT7-039 🟡 Client and automated tests share the same accounts
+
+- **Area:** test process
+- **Today:** the client (Navin) tests with the same owner/tenant accounts
+  the E2E suite uses. The suite has touched his real records (96 De Waal
+  holding deposit, restored), and his data makes test results noisy.
+- **Acceptance criteria:**
+  - [ ] Separate owner, tenant and vendor accounts created for the client.
+  - [ ] E2E fixture accounts are used only by the suite; lifecycle flows
+        refuse to act on records outside the fixture, with a test that a
+        non-fixture record is rejected.
