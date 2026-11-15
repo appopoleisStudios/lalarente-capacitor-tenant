@@ -5,11 +5,11 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect, type Href } from 'expo-router';
+import { DashboardSkeleton } from '@/src/shared/components/ui/DashboardSkeleton';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { focusManager } from '@tanstack/react-query';
@@ -180,9 +180,7 @@ export default function TenantDashboardScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={colors.rsa.green} />
-        </View>
+        <DashboardSkeleton title="Welcome back" />
       </SafeAreaView>
     );
   }
