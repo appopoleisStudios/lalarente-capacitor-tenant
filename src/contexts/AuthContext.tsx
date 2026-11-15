@@ -5,6 +5,7 @@ import { Database } from '@/src/types/database.types';
 import { supabase } from '@/src/lib/supabase';
 import { clearPendingVendorSelection } from '@/src/features/maintenance/api/vendors/pendingVendorSelection';
 import { clearDashboardCaches } from '@/src/shared/utils/dashboardCache';
+import { unregisterDevicePush } from '@/src/features/notifications/registerPush';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
@@ -315,7 +316,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       clearPendingVendorSelection();
       await clearDashboardCaches();
-      const { error } = await supabase.auth.signOut();
+      // Stop this phone receiving this user's push notifications (needs the
+      // session, so before signing out).
+      await unregisterDevicePush();
+      // Sign out of THIS device only. The default ('global') revoked the
+      // user's sessions on every phone, so signing out on one device
+      // logged them out everywhere.
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
 
       if (error) {
         throw error;
