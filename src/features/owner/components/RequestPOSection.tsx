@@ -12,7 +12,12 @@ interface RequestPOSectionProps {
   onSendPO?: () => void;
 }
 
-export function RequestPOSection({ purchaseOrder, requestId, onPress, onSendPO }: RequestPOSectionProps) {
+export function RequestPOSection({
+  purchaseOrder,
+  requestId,
+  onPress,
+  onSendPO,
+}: RequestPOSectionProps) {
   if (!purchaseOrder) return null;
 
   const awaitingSend = !purchaseOrder.sent_to_vendor_at;
@@ -37,7 +42,9 @@ export function RequestPOSection({ purchaseOrder, requestId, onPress, onSendPO }
           <Ionicons name="document-text" size={32} color={RSA.blue} />
           <View style={styles.poInfo}>
             <Text style={styles.poNumber}>{purchaseOrder.po_number}</Text>
-            <Text style={styles.poAmount}>R {purchaseOrder.total_amount?.toLocaleString() || '0'}</Text>
+            <Text style={styles.poAmount}>
+              R {purchaseOrder.total_amount?.toLocaleString() || '0'}
+            </Text>
 
             {purchaseOrder.contract && (
               <View style={styles.poContractRef}>

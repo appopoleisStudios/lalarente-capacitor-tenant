@@ -15,13 +15,30 @@ export const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  backButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' },
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   backIcon: { fontSize: 20, color: '#6b7280' },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
-  addButton: { backgroundColor: RSA.blue, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
+  addButton: {
+    backgroundColor: RSA.blue,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
   addButtonText: { fontSize: 13, fontWeight: '600', color: '#ffffff' },
-  
-  filtersContainer: { padding: 12, backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
+
+  filtersContainer: {
+    padding: 12,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
   searchInput: {
     backgroundColor: '#f9fafb',
     borderWidth: 1,
@@ -38,75 +55,86 @@ export const styles = StyleSheet.create({
   pickerWrapper: { marginBottom: 6 },
   pickerLabel: { fontSize: 11, fontWeight: '600', color: '#6b7280', marginBottom: 4 },
   pickerButtons: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  filterChip: { 
-    paddingHorizontal: 10, 
-    paddingVertical: 5, 
-    borderRadius: 16, 
-    backgroundColor: '#f3f4f6', 
-    borderWidth: 1, 
-    borderColor: '#e5e7eb' 
+  filterChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 16,
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   filterChipActive: { backgroundColor: RSA.blue, borderColor: RSA.blue },
   filterChipText: { fontSize: 11, fontWeight: '600', color: '#6b7280' },
   filterChipTextActive: { color: '#ffffff' },
-  
+
   listContent: { padding: 16, paddingBottom: 100 },
-  emptyState: { 
-    alignItems: 'center', 
-    paddingVertical: 40, 
-    paddingHorizontal: 24, 
-    backgroundColor: '#f9fafb', 
-    borderRadius: 12, 
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 24,
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
     marginTop: 20,
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
   emptyTitle: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 8 },
-  emptyText: { fontSize: 14, color: '#6b7280', textAlign: 'center', marginBottom: 16, lineHeight: 20 },
-  emptyButton: { backgroundColor: RSA.blue, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },
+  emptyText: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  emptyButton: {
+    backgroundColor: RSA.blue,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
   emptyButtonText: { fontSize: 14, fontWeight: '600', color: '#ffffff' },
-  
-  loadingContainer: { 
-    flex: 1, 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    paddingVertical: 60 
+
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
   },
-  loadingText: { 
-    fontSize: 14, 
-    color: '#6b7280', 
-    marginTop: 12 
+  loadingText: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginTop: 12,
   },
-  
-  errorContainer: { 
-    flex: 1, 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    paddingHorizontal: 24, 
-    paddingVertical: 40 
+
+  errorContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 40,
   },
-  errorTitle: { 
-    fontSize: 16, 
-    fontWeight: '700', 
-    color: '#dc2626', 
-    marginBottom: 8 
+  errorTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#dc2626',
+    marginBottom: 8,
   },
-  errorText: { 
-    fontSize: 14, 
-    color: '#6b7280', 
-    textAlign: 'center', 
-    marginBottom: 16, 
-    lineHeight: 20 
+  errorText: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 20,
   },
-  retryButton: { 
-    backgroundColor: RSA.blue, 
-    paddingHorizontal: 16, 
-    paddingVertical: 10, 
-    borderRadius: 8 
+  retryButton: {
+    backgroundColor: RSA.blue,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
   },
-  retryButtonText: { 
-    fontSize: 14, 
-    fontWeight: '600', 
-    color: '#ffffff' 
+  retryButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#ffffff',
   },
 });

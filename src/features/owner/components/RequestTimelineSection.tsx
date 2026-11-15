@@ -32,7 +32,11 @@ interface RequestTimelineSectionProps {
   purchaseOrder: any;
 }
 
-export function RequestTimelineSection({ request, quotes, purchaseOrder }: RequestTimelineSectionProps) {
+export function RequestTimelineSection({
+  request,
+  quotes,
+  purchaseOrder,
+}: RequestTimelineSectionProps) {
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Timeline</Text>
