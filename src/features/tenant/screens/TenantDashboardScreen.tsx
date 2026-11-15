@@ -1,12 +1,5 @@
 import React, { useCallback, useEffect } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  RefreshControl,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect, type Href } from 'expo-router';
 import { DashboardSkeleton } from '@/src/shared/components/ui/DashboardSkeleton';
@@ -180,7 +173,7 @@ export default function TenantDashboardScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <DashboardSkeleton title="Welcome back" />
+        <DashboardSkeleton title="Welcome back," variant="tenant" />
       </SafeAreaView>
     );
   }
