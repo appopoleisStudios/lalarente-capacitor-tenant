@@ -28,8 +28,8 @@ export function RequestInfoSection({ request }: RequestInfoSectionProps) {
           {daysSinceCreated === 0
             ? 'Created today'
             : daysSinceCreated === 1
-              ? 'Created 1 day ago'
-              : `Created ${daysSinceCreated} days ago`}
+            ? 'Created 1 day ago'
+            : `Created ${daysSinceCreated} days ago`}
         </Text>
         {completionDays !== null && (
           <Text style={styles.daysSubtext}>
