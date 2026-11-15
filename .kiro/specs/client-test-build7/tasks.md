@@ -1520,3 +1520,102 @@ created_at timestamp)`.
         state (not green "complete").
   - [ ] Uploading the missing docs flips both surfaces to complete
         on the next render.
+
+## Client test of build 10 (2026-11-15)
+
+## CT7-026 🟡 Dashboard still takes ~1 s to appear
+
+- **Role:** owner + tenant · **Reported:** client test of build 10
+- **Today:** after sign-in the cached dashboard is gone (cleared on sign-out
+  for privacy), so the first screen is a full-page "Loading dashboard…"
+  spinner until the data arrives (~0.5–1.5 s on the emulator).
+- **Acceptance criteria:**
+  - [ ] The dashboard layout (header, sections) paints immediately after
+        sign-in with skeleton placeholders; no full-screen spinner.
+  - [ ] Data fills in as it arrives; measured on the Android release APK.
+
+## CT7-027 🟠 Google address search missing on Add Property (regression)
+
+- **Role:** owner · **Screen:** Add Property → Street Address
+- **Cause:** commit 97786bb ("Fix white screen on Add Property") removed the
+  whole LocationPicker — map *and* Google Places search — because the map
+  (react-native-maps) crashed. Only Edit Property kept the search.
+- **Acceptance criteria:**
+  - [ ] Add Property has Google Places address search (SA only) that fills
+        street, city, province, postal code — without the map component.
+  - [ ] Edit Property search verified on the release APK.
+  - [ ] Maestro flow types an address and picks a suggestion.
+
+## CT7-028 🟠 Sign-in errors should say what went wrong
+
+- **Role:** all · **Screen:** Sign in
+- **Today:** a generic failure message.
+- **Note (security/POPIA):** telling a stranger "no account with this
+  email" lets anyone discover who uses the app (account enumeration,
+  OWASP ASVS 2.x). The safe pattern: one message for wrong email-or-password,
+  plus specific messages for everything else that is safe to reveal.
+- **Acceptance criteria:**
+  - [ ] Specific messages: empty field, invalid email format, wrong email or
+        password, email not confirmed, too many attempts, no connection.
+  - [ ] Unit tests map each Supabase auth error to its message.
+
+## CT7-029 🟠 Ending a lease leaves future rent "due"
+
+- **Role:** tenant + owner · **Found:** resetting test data for the client
+- **Today:** when a lease is terminated or ended early, its pending rent
+  payments stay pending, so the tenant still sees rent due on a lease that
+  has ended. Payments have no void status; the owner may only set `failed`.
+- **Acceptance criteria:**
+  - [ ] Ending a lease (terminate / early termination / expiry) voids its
+        future unpaid rent; paid and past-due amounts are untouched.
+  - [ ] Tenant dashboard/Payments no longer show rent for an ended lease.
+  - [ ] Database-level so every path (app, automation) is covered; test.
+
+## CT7-030 🟠 Tenant can request a viewing again while one is open
+
+- **Role:** tenant · **Screen:** Property detail → Request Viewing
+- **Today:** nothing stops a tenant from requesting another viewing of the
+  same property while a request is pending or approved (test data shows
+  many duplicates).
+- **Acceptance criteria:**
+  - [ ] While the tenant has a pending or approved viewing for that
+        property, "Request Viewing" is greyed out with the reason shown.
+  - [ ] Enabled again once the owner declines (or the viewing is
+        cancelled / completed).
+  - [ ] Enforced in the database too (no duplicate open request).
+
+## CT7-031 🟠 Opened notifications still count on the bell
+
+- **Role:** all · **Screen:** header bell → Notifications
+- **Today:** after tapping a notification and viewing it, it still shows as
+  unread and the bell's number doesn't go down.
+- **Acceptance criteria:**
+  - [ ] Opening a notification marks it read (read_at set) in the database.
+  - [ ] The bell count drops immediately and stays dropped after leaving
+        and returning to the screen / restarting the app.
+  - [ ] Works for owner, tenant and vendor; Maestro flow covers it.
+
+## CT7-032 🟠 "Apply Now" works while a viewing is still upcoming
+
+- **Role:** tenant · **Screen:** Property detail → Apply Now
+- **Today:** a tenant with a scheduled (pending/approved) viewing can apply
+  before the viewing has happened.
+- **Acceptance criteria:**
+  - [ ] While the tenant's viewing for that property is pending or approved
+        and its date hasn't passed, "Apply Now" is disabled with the reason.
+  - [ ] Enabled once the viewing date has passed, the viewing is marked
+        viewed/completed, or it is cancelled/declined.
+  - [ ] Enforced server-side too (application insert rejected), with test.
+
+## CT7-033 🟠 Back must go to the previous screen, everywhere, every role
+
+- **Role:** owner, tenant, vendor · **Platforms:** Android + iOS
+- **Today:** some screens' back arrow (and Android system back) jump to the
+  dashboard instead of the screen the user came from.
+- **Acceptance criteria:**
+  - [ ] Header back arrow returns to the previous screen on every screen.
+  - [ ] Android: system back button / gesture does the same; on a tab root
+        it follows Android convention (previous tab history, then exit).
+  - [ ] iOS: back arrow and edge swipe-back return to the previous screen.
+  - [ ] Audit every route for all three roles; Maestro regression flow per
+        role covering deep navigation → back → back.
