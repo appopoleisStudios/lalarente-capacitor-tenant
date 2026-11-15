@@ -61,7 +61,8 @@ Fixes since build 10
 Security / sign-out
   ✓ Sign-out is per device (signing out on the phone no longer signs out
     the tablet); push notifications stop going to a signed-out device
-  ✓ A vendor or non-party can no longer open someone else's lease
+  (Carried over from build 10: a vendor or non-party can't open someone
+   else's lease.)
 
 Known open items (not in this build)
 ------------------------------------
