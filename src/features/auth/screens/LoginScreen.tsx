@@ -23,6 +23,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { getDashboardRouteForRole } from '@/src/core/navigation/roleRoutes';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { emailFormatError, signInErrorMessage } from '../utils/signInErrors';
 
 // South African flag colors
 const RSA_COLORS = {
@@ -84,8 +85,9 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     // Inline validation — no alert()
     let hasError = false;
-    if (!email.trim()) {
-      setEmailError('Email is required');
+    const emailProblem = emailFormatError(email);
+    if (emailProblem) {
+      setEmailError(emailProblem);
       hasError = true;
     } else {
       setEmailError('');
@@ -111,7 +113,7 @@ export default function LoginScreen() {
     } catch (error: any) {
       reportApiError(error, 'auth', 'select');
       console.error('Login error:', error);
-      setFormError(error.message || 'Login failed. Please check your credentials.');
+      setFormError(signInErrorMessage(error));
       setLoading(false);
     } finally {
       clearTimeout(timeout);

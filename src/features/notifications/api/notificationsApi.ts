@@ -585,15 +585,13 @@ export const notificationsApi = {
     token: string,
     platform: 'ios' | 'android' | 'web'
   ): Promise<void> {
-    const { error } = await (supabase as any).from('push_tokens').upsert(
-      {
-        user_id: userId,
-        token,
-        platform,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'token' }
-    );
+    // Server-side claim: moves this device's token to the signed-in user even
+    // if a previous user's row was left behind (RLS blocks a plain upsert).
+    void userId;
+    const { error } = await (supabase as any).rpc('claim_push_token', {
+      p_token: token,
+      p_platform: platform,
+    });
 
     if (error) {
       console.warn('Failed to register push token:', error.message);

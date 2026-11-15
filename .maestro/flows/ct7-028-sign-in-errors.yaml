@@ -1,0 +1,51 @@
+# CT7-028: sign-in explains what went wrong.
+# Env: OWNER_EMAIL
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/sign-out.yaml
+- tapOn:
+    id: "email-input"
+- inputText: "navin@yahoo"
+- tapOn:
+    text: "Sign in to your account"
+    optional: true
+- tapOn:
+    id: "password-input"
+- inputText: "whatever"
+- tapOn:
+    text: "Sign in to your account"
+    optional: true
+- tapOn:
+    id: "sign-in-button"
+- assertVisible: ".*valid email address.*"
+- takeScreenshot: ct7-028-bad-email
+# fresh screen for the second case (eraseText only deletes before the cursor)
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
+    timeout: 20000
+- tapOn:
+    id: "email-input"
+- inputText: ${OWNER_EMAIL}
+- tapOn:
+    text: "Sign in to your account"
+    optional: true
+- tapOn:
+    id: "password-input"
+- inputText: "WrongPassword1!"
+- tapOn:
+    text: "Sign in to your account"
+    optional: true
+- tapOn:
+    id: "sign-in-button"
+- extendedWaitUntil:
+    visible: ".*Incorrect email or password.*"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 3000
+# the message stays and the typed email is kept (no screen reset)
+- assertVisible: ".*Incorrect email or password.*"
+- assertVisible: ${OWNER_EMAIL}
+- takeScreenshot: ct7-028-wrong-password

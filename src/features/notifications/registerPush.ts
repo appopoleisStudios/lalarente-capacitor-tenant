@@ -25,3 +25,21 @@ export async function registerDevicePush(userId: string): Promise<void> {
     // Native module missing until the next APK / dev-client rebuild.
   }
 }
+
+/**
+ * Stop this device receiving the signed-out user's push notifications:
+ * delete its token row. Must run while the session is still valid (RLS).
+ * Never prompts for permission; safe no-op when push isn't available.
+ */
+export async function unregisterDevicePush(): Promise<void> {
+  if (Platform.OS === 'web' || !NativeModules.ExpoPushTokenManager) return;
+  try {
+    const Notifications = await import('expo-notifications');
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted') return;
+    const token = (await Notifications.getExpoPushTokenAsync())?.data;
+    if (token) await notificationsApi.removePushToken(token);
+  } catch {
+    // best effort — sign-out must still succeed
+  }
+}

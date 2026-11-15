@@ -5,6 +5,7 @@ import { Database } from '@/src/types/database.types';
 import { supabase } from '@/src/lib/supabase';
 import { clearPendingVendorSelection } from '@/src/features/maintenance/api/vendors/pendingVendorSelection';
 import { clearDashboardCaches } from '@/src/shared/utils/dashboardCache';
+import { unregisterDevicePush } from '@/src/features/notifications/registerPush';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
@@ -269,7 +270,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error_description || body.error || `Auth failed (${res.status})`);
+        // GoTrue returns { error_code, msg } (newer) or { error, error_description }
+        const err = new Error(
+          body.msg ||
+            body.error_description ||
+            body.message ||
+            body.error ||
+            `Auth failed (${res.status})`
+        );
+        (err as any).code = body.error_code || body.code || body.error;
+        throw err;
       }
 
       const data = await res.json();
@@ -303,7 +313,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Sign in timed out. Check your network connection.');
       }
       console.error('Sign in error:', error);
-      throw new Error(error.message || 'Failed to sign in');
+      const wrapped = new Error(error.message || 'Failed to sign in');
+      (wrapped as any).code = error.code; // keep the auth error code for the message
+      throw wrapped;
     } finally {
       setLoading(false);
     }
@@ -315,7 +327,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       clearPendingVendorSelection();
       await clearDashboardCaches();
-      const { error } = await supabase.auth.signOut();
+      // Stop this phone receiving this user's push notifications (needs the
+      // session, so before signing out).
+      await unregisterDevicePush();
+      // Sign out of THIS device only. The default ('global') revoked the
+      // user's sessions on every phone, so signing out on one device
+      // logged them out everywhere.
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
 
       if (error) {
         throw error;
