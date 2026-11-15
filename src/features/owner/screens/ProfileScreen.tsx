@@ -90,8 +90,12 @@ export default function ProfileScreen() {
         style: 'destructive',
         onPress: async () => {
           // Shared sign-out: this device only, and clears cached dashboards
-          await signOut();
-          router.replace('/auth/login');
+          try {
+            await signOut();
+            router.replace('/auth/login');
+          } catch {
+            Alert.alert('Could not sign out', 'Check your internet connection and try again.');
+          }
         },
       },
     ]);

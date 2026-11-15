@@ -24,6 +24,11 @@ jest.mock('@/src/shared/utils/dashboardCache', () => ({
   clearDashboardCaches: () => mockClearCaches(),
 }));
 
+const mockUnregister = jest.fn().mockResolvedValue(undefined);
+jest.mock('@/src/features/notifications/registerPush', () => ({
+  unregisterDevicePush: () => mockUnregister(),
+}));
+
 import { AuthProvider, useAuth } from '../AuthContext';
 
 it('signs out of this device only and clears cached dashboards', async () => {
@@ -36,5 +41,10 @@ it('signs out of this device only and clears cached dashboards', async () => {
     await result.current.signOut();
   });
   expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
+  // push token removed while the session still existed
+  expect(mockUnregister).toHaveBeenCalled();
+  expect(mockUnregister.mock.invocationCallOrder[0]).toBeLessThan(
+    mockSignOut.mock.invocationCallOrder[0]
+  );
   expect(mockClearCaches).toHaveBeenCalled();
 });
