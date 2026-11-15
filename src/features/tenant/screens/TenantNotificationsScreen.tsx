@@ -13,6 +13,8 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { colors } from '@/src/shared/theme/colors';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/src/core/query/queryKeys';
 
 type AlertItem = {
   id: string;
@@ -29,6 +31,11 @@ type AlertItem = {
 };
 
 export default function TenantNotificationsScreen() {
+  // CT7-031: the dashboard bell is served from the cached dashboard query;
+  // refresh it once notifications are marked read so the count drops now.
+  const queryClient = useQueryClient();
+  const refreshBell = () =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.tenant.dashboard(undefined).slice(0, 2) });
   const router = useRouter();
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,6 +62,7 @@ export default function TenantNotificationsScreen() {
         .update({ read_at: new Date().toISOString() })
         .eq('user_id', user.id)
         .is('read_at', null);
+      refreshBell();
     } catch (err) {
       // Non-critical
     }
@@ -258,6 +266,7 @@ export default function TenantNotificationsScreen() {
         .from('notifications')
         .update({ read_at: new Date().toISOString() })
         .eq('id', item.notificationDbId);
+      refreshBell();
     }
     router.push(item.route as any);
   };
