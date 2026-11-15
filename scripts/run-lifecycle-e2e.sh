@@ -48,6 +48,15 @@ for name in "$@"; do
   # "kAXErrorInvalidUIElement" while a sheet animates) — never when an app
   # check failed. Flows are written to be re-runnable from their start.
   for attempt in 1 2 3; do
+    rm -f "$OUT/$name/log.txt"
+    # Watchdog: after a driver exception Maestro can hang instead of exiting;
+    # kill it once the log mentions the exception so the retry can run.
+    ( while sleep 10; do
+        [[ -f "$OUT/$name/log.txt" ]] && grep -q "Exception in thread" "$OUT/$name/log.txt" && {
+          sleep 20; pkill -f "maestro --device $SIM_UDID test" ; break; }
+        pgrep -f "maestro --device $SIM_UDID test" >/dev/null || break
+      done ) &
+    watchdog=$!
     ( set -o pipefail; cd "$OUT/$name" && maestro --device "$SIM_UDID" test "$ROOT/.maestro/flows/${name}.yaml" \
         --env TENANT_EMAIL="$TENANT_EMAIL" --env TENANT_PASSWORD="$TENANT_PASSWORD" \
         --env OWNER_EMAIL="$OWNER_EMAIL" --env OWNER_PASSWORD="$OWNER_PASSWORD" \
@@ -61,6 +70,7 @@ for name in "$@"; do
         --env LC_RENT="$LC_RENT" --env LC_DEPOSIT="$LC_DEPOSIT" \
         --env LC_HOLDING_DEPOSIT="$LC_HOLDING_DEPOSIT" --env LC_HOLDING_DEPOSIT_TEXT="$LC_HOLDING_DEPOSIT_TEXT" 2>&1 | tee "log-$attempt.txt" | tee log.txt )
     status=$?
+    kill "$watchdog" 2>/dev/null
     if grep -q "Exception in thread" "$OUT/$name/log.txt" && ! grep -q "\.\.\. FAILED" "$OUT/$name/log.txt"; then
       echo "↻ $name: Maestro driver crashed (attempt $attempt) — retrying"
       xcrun simctl terminate "$SIM_UDID" com.lalarente.app 2>/dev/null
