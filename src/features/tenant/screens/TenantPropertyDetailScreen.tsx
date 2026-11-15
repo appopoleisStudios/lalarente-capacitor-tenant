@@ -231,15 +231,30 @@ export default function TenantPropertyDetailScreen() {
       Alert.alert('Notice', 'This is your current property. You are already living here.');
       return;
     }
-    if (!gate.canRequestViewing) {
-      Alert.alert(
-        'Viewing already requested',
-        'You already have a viewing for this property. You can request another one if the owner declines it or it is cancelled.'
-      );
-      return;
-    }
     if (!property) {
       Alert.alert('Error', 'Property information not available');
+      return;
+    }
+    const openRequestScreen = () =>
+      router.push({
+        pathname: '/(tenant)/viewings/request',
+        params: {
+          propertyId: property.id,
+          propertyTitle: property.title,
+          ownerId: property.owner_id,
+        },
+      });
+    if (!gate.canRequestViewing) {
+      // The request screen shows the existing request and lets the tenant
+      // cancel it — offer that instead of a dead end.
+      Alert.alert(
+        'Viewing already requested',
+        'You already have a viewing for this property. You can request another one if the owner declines it or it is cancelled.',
+        [
+          { text: 'OK', style: 'cancel' },
+          { text: 'Manage Viewing', onPress: openRequestScreen },
+        ]
+      );
       return;
     }
     router.push({
@@ -651,8 +666,11 @@ export default function TenantPropertyDetailScreen() {
               testID="tenant-property-request-viewing"
               style={[styles.viewingButton, viewingBlocked && styles.disabledButton]}
               onPress={handleRequestViewing}
-              disabled={viewingBlocked}
-              accessibilityState={{ disabled: viewingBlocked }}
+              // greyed but tappable: the handler explains why it's blocked
+              // accessibilityState.disabled would make TouchableOpacity ignore taps
+              accessibilityHint={
+                viewingBlocked ? 'Unavailable: explains why when tapped' : undefined
+              }
             >
               <Ionicons
                 name="calendar-outline"
@@ -671,8 +689,8 @@ export default function TenantPropertyDetailScreen() {
               testID="tenant-property-apply"
               style={[styles.applyButton, applyBlocked && styles.disabledButton]}
               onPress={handleApply}
-              disabled={applyBlocked}
-              accessibilityState={{ disabled: applyBlocked }}
+              // greyed but tappable: the handler explains why it's blocked
+              accessibilityHint={applyBlocked ? 'Unavailable: explains why when tapped' : undefined}
             >
               <Text
                 style={[styles.applyButtonText, applyBlocked && styles.disabledButtonText]}

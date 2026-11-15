@@ -19,8 +19,11 @@ appId: com.lalarente.app
 # tapping either explains why instead of opening the form
 - tapOn:
     id: "tenant-property-request-viewing"
-- assertNotVisible:
-    id: "viewing-request-submit"
+- assertVisible: "Viewing already requested"
+- tapOn: "OK"
 - tapOn:
     id: "tenant-property-apply"
-- assertNotVisible: ".*Step 1.*"
+- assertVisible: "View the property first"
+- tapOn: "OK"
+- assertNotVisible:
+    id: "viewing-request-submit"

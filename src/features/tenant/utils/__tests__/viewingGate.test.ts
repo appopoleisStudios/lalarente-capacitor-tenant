@@ -1,6 +1,6 @@
 import { viewingGate, isViewingUpcoming } from '../viewingGate';
 
-const now = new Date(2026, 10, 15, 12, 0); // 15 Nov 2026 12:00 local
+const now = new Date('2026-11-15T10:00:00Z'); // 15 Nov 2026 12:00 SAST
 
 it('allows requesting and applying when there is no open viewing', () => {
   expect(viewingGate(null, now)).toMatchObject({ canRequestViewing: true, canApply: true });
@@ -53,4 +53,10 @@ it('re-enables everything once the viewing is declined, cancelled or completed',
       canApply: true,
     });
   }
+});
+
+it('ends an unconfirmed day at midnight SAST, matching the database', () => {
+  const v = { status: 'pending', requested_date: '2026-11-15', confirmed_date: null };
+  expect(isViewingUpcoming(v, new Date('2026-11-15T21:59:00Z'))).toBe(true); // 23:59 SAST
+  expect(isViewingUpcoming(v, new Date('2026-11-15T22:00:00Z'))).toBe(false); // 00:00 SAST
 });
