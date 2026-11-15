@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { PickerSheet, toDateString } from '@/src/shared/components/ui/DateField';
+import { AddressSearch } from '../components/AddressSearch';
 import { AnimatedButton } from '@/src/shared/components';
 import { propertiesApi } from '../../properties/api/propertiesApi';
 import { supabase } from '../../../lib/supabase';
@@ -97,6 +98,8 @@ export default function AddPropertyScreen() {
   const [newService, setNewService] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
   const [showAvailableFromPicker, setShowAvailableFromPicker] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+  const addressSearchY = useRef(0);
 
   React.useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -301,6 +304,7 @@ export default function AddPropertyScreen() {
           </View>
 
           <ScrollView
+            ref={scrollRef}
             style={styles.scrollView}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
@@ -503,7 +507,32 @@ export default function AddPropertyScreen() {
               />
             </View>
 
-            {/* Address Fields */}
+            {/* Address Fields — Google search fills them; all stay editable */}
+            <View onLayout={(e) => (addressSearchY.current = e.nativeEvent.layout.y)}>
+              <AddressSearch
+                onFocus={() =>
+                  setTimeout(
+                    () =>
+                      scrollRef.current?.scrollTo({
+                        y: Math.max(addressSearchY.current - 12, 0),
+                        animated: true,
+                      }),
+                    250
+                  )
+                }
+                onSelect={(a) =>
+                  setForm((f) => ({
+                    ...f,
+                    address: a.address,
+                    city: a.city,
+                    province: a.province,
+                    postal_code: a.postalCode,
+                    latitude: a.latitude,
+                    longitude: a.longitude,
+                  }))
+                }
+              />
+            </View>
             <View style={styles.section}>
               <Text style={styles.label}>Street Address *</Text>
               <TextInput
@@ -511,7 +540,10 @@ export default function AddPropertyScreen() {
                 placeholder="e.g., 12 Main Street, Rosebank"
                 placeholderTextColor="#9ca3af"
                 value={form.address}
-                onChangeText={(text) => setForm({ ...form, address: text })}
+                onChangeText={(text) =>
+                  // typing a different street invalidates the searched pin
+                  setForm({ ...form, address: text, latitude: null, longitude: null })
+                }
               />
             </View>
 
