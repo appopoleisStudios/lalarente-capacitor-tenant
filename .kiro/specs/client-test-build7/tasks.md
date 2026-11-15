@@ -1523,7 +1523,7 @@ created_at timestamp)`.
 
 ## Client test of build 10 (2026-11-15)
 
-## CT7-026 🟡 Dashboard still takes ~1 s to appear
+## CT7-026 🟡 Dashboard still takes ~1 s to appear ✅ (PR #241)
 
 - **Role:** owner + tenant · **Reported:** client test of build 10
 - **Today:** after sign-in the cached dashboard is gone (cleared on sign-out
@@ -1534,7 +1534,7 @@ created_at timestamp)`.
         sign-in with skeleton placeholders; no full-screen spinner.
   - [ ] Data fills in as it arrives; measured on the Android release APK.
 
-## CT7-027 🟠 Google address search missing on Add Property (regression)
+## CT7-027 🟠 Google address search missing on Add Property (regression) ✅ (PR #235)
 
 - **Role:** owner · **Screen:** Add Property → Street Address
 - **Cause:** commit 97786bb ("Fix white screen on Add Property") removed the
@@ -1546,7 +1546,7 @@ created_at timestamp)`.
   - [ ] Edit Property search verified on the release APK.
   - [ ] Maestro flow types an address and picks a suggestion.
 
-## CT7-028 🟠 Sign-in errors should say what went wrong
+## CT7-028 🟠 Sign-in errors should say what went wrong ✅ (PR #239)
 
 - **Role:** all · **Screen:** Sign in
 - **Today:** a generic failure message.
@@ -1559,7 +1559,7 @@ created_at timestamp)`.
         password, email not confirmed, too many attempts, no connection.
   - [ ] Unit tests map each Supabase auth error to its message.
 
-## CT7-029 🟠 Ending a lease leaves future rent "due"
+## CT7-029 🟠 Ending a lease leaves future rent "due" ✅ (PR #240)
 
 - **Role:** tenant + owner · **Found:** resetting test data for the client
 - **Today:** when a lease is terminated or ended early, its pending rent
@@ -1571,7 +1571,7 @@ created_at timestamp)`.
   - [ ] Tenant dashboard/Payments no longer show rent for an ended lease.
   - [ ] Database-level so every path (app, automation) is covered; test.
 
-## CT7-030 🟠 Tenant can request a viewing again while one is open
+## CT7-030 🟠 Tenant can request a viewing again while one is open ✅ (PR #236)
 
 - **Role:** tenant · **Screen:** Property detail → Request Viewing
 - **Today:** nothing stops a tenant from requesting another viewing of the
@@ -1584,7 +1584,7 @@ created_at timestamp)`.
         cancelled / completed).
   - [ ] Enforced in the database too (no duplicate open request).
 
-## CT7-031 🟠 Opened notifications still count on the bell
+## CT7-031 🟠 Opened notifications still count on the bell ✅ (PR #238)
 
 - **Role:** all · **Screen:** header bell → Notifications
 - **Today:** after tapping a notification and viewing it, it still shows as
@@ -1595,7 +1595,7 @@ created_at timestamp)`.
         and returning to the screen / restarting the app.
   - [ ] Works for owner, tenant and vendor; Maestro flow covers it.
 
-## CT7-032 🟠 "Apply Now" works while a viewing is still upcoming
+## CT7-032 🟠 "Apply Now" works while a viewing is still upcoming ✅ (PR #236)
 
 - **Role:** tenant · **Screen:** Property detail → Apply Now
 - **Today:** a tenant with a scheduled (pending/approved) viewing can apply
@@ -1607,7 +1607,7 @@ created_at timestamp)`.
         viewed/completed, or it is cancelled/declined.
   - [ ] Enforced server-side too (application insert rejected), with test.
 
-## CT7-033 🟠 Back must go to the previous screen, everywhere, every role
+## CT7-033 🟠 Back must go to the previous screen, everywhere, every role ✅ (PR #242)
 
 - **Role:** owner, tenant, vendor · **Platforms:** Android + iOS
 - **Today:** some screens' back arrow (and Android system back) jump to the
@@ -1619,3 +1619,13 @@ created_at timestamp)`.
   - [ ] iOS: back arrow and edge swipe-back return to the previous screen.
   - [ ] Audit every route for all three roles; Maestro regression flow per
         role covering deep navigation → back → back.
+
+
+### Also fixed during the build-10 client test (not raised by the client)
+- Sign-out now ends only this device's session; it used to sign the user
+  out on every device (PR #237).
+- Push notifications never worked: the push_tokens table had never been
+  created live. Created, and a device's token now follows whoever signs in
+  and is removed on sign-out (PR #237).
+- Security: a tenant could end their own lease with a back-dated date and
+  wipe rent already owed; only the landlord can end a lease now (PR #240).
