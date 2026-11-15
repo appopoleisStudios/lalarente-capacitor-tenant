@@ -26,6 +26,7 @@ import {
   type TerminationEstimate,
 } from '@/src/features/leases/api/leaseTermination.api';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { goBack } from '@/src/shared/navigation/goBack';
 
 export default function TenantEarlyTerminationScreen() {
   const router = useRouter();
@@ -118,7 +119,7 @@ export default function TenantEarlyTerminationScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity
-            onPress={() => router.navigate('/(tenant)/lease')}
+            onPress={() => goBack(router, '/(tenant)/lease')}
             style={styles.backButton}
           >
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
@@ -137,7 +138,7 @@ export default function TenantEarlyTerminationScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.navigate('/(tenant)/lease')}
+          onPress={() => goBack(router, '/(tenant)/lease')}
           style={styles.backButton}
         >
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />

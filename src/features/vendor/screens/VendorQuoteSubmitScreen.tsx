@@ -19,6 +19,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { goBack } from '@/src/shared/navigation/goBack';
 
 const RSA = { blue: '#002395', green: '#007A4D', gold: '#FFB81C', red: '#DE3831' };
 
@@ -571,7 +572,7 @@ export default function VendorQuoteSubmitScreen() {
             request detail, which is where the quote form is always entered
             from (list → detail → quote). */}
         <TouchableOpacity
-          onPress={() => router.replace(`/(vendor)/maintenance/${id}` as any)}
+          onPress={() => goBack(router, `/(vendor)/maintenance/${id}`)}
           style={styles.headerButton}
           testID="quote-back"
         >

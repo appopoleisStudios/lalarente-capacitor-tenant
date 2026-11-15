@@ -26,6 +26,7 @@ import {
   type LeaseExpiryInfo,
 } from '@/src/features/leases/api/leaseExpiry.api';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { goBack } from '@/src/shared/navigation/goBack';
 
 interface LeaseWithExpiry extends ExpiringLease {
   expiryInfo?: LeaseExpiryInfo;
@@ -138,7 +139,7 @@ export default function OwnerRenewalsDashboardScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.navigate('/(owner)/dashboard')}
+          onPress={() => goBack(router, '/(owner)/dashboard')}
           style={styles.backButton}
         >
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />

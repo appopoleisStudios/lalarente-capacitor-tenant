@@ -1,0 +1,36 @@
+# CT7-033: back returns to the screen you came from, not the dashboard.
+# Owner: Properties tab → Profile tab → Arrears Management → back = Profile;
+# Profile → Privacy & POPIA → back = Profile; tab back history.
+# Env: OWNER_EMAIL, OWNER_PASSWORD
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+- tapOn:
+    id: "tab-owner-properties"
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "tab-owner-profile"
+- scrollUntilVisible:
+    element: ".*Arrears Management.*"
+    direction: DOWN
+    timeout: 15000
+- tapOn: ".*Arrears Management.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    point: "8%,9%"
+- extendedWaitUntil:
+    visible: ".*Arrears Management.*"
+    timeout: 10000
+- assertNotVisible: ".*Portfolio Dashboard.*"
+- tapOn: ".*Privacy & POPIA.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    point: "8%,9%"
+- extendedWaitUntil:
+    visible: ".*Privacy & POPIA.*"
+    timeout: 10000
+- assertNotVisible: ".*Portfolio Dashboard.*"
+- takeScreenshot: ct7-033-back-to-profile

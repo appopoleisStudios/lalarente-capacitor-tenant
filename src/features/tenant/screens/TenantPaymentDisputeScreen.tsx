@@ -26,6 +26,7 @@ import {
   type DisputeReason,
 } from '@/src/features/payments/api/paymentDisputes.api';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { goBack } from '@/src/shared/navigation/goBack';
 
 const DISPUTE_REASONS: { value: DisputeReason; label: string; icon: string }[] = [
   { value: 'incorrect_amount', label: 'Incorrect Amount', icon: 'calculator-outline' },
@@ -155,7 +156,7 @@ export default function TenantPaymentDisputeScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.navigate('/(tenant)/payments')} style={styles.backButton}>
+          <TouchableOpacity onPress={() => goBack(router, '/(tenant)/payments')} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle} testID="payment-disputes-title">
@@ -172,7 +173,7 @@ export default function TenantPaymentDisputeScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.navigate('/(tenant)/payments')} style={styles.backButton}>
+        <TouchableOpacity onPress={() => goBack(router, '/(tenant)/payments')} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} testID="payment-disputes-title">

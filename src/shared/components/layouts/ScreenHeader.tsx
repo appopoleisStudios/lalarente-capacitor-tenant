@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { colors } from '@/src/shared/theme/colors';
+import { goBack } from '@/src/shared/navigation/goBack';
 
 export interface ScreenHeaderProps {
   title: string;
@@ -13,7 +14,7 @@ export interface ScreenHeaderProps {
 
 export function ScreenHeader({ title, subtitle, onBack, rightAction }: ScreenHeaderProps) {
   const router = useRouter();
-  const handleBack = onBack ?? (() => router.back());
+  const handleBack = onBack ?? (() => goBack(router, '/'));
 
   return (
     <View style={styles.header}>

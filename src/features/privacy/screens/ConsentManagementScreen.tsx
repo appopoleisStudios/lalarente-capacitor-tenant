@@ -23,6 +23,7 @@ import { colors } from '@/src/shared/theme/colors';
 import { supabase } from '@/src/lib/supabase';
 import { consentApi, OPTIONAL_CONSENTS, type ConsentRecord, type ConsentType } from '../api';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { goBack } from '@/src/shared/navigation/goBack';
 
 export default function ConsentManagementScreen() {
   const router = useRouter();
@@ -134,10 +135,7 @@ export default function ConsentManagementScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.navigate(profilePath as never)}
-          style={styles.backButton}
-        >
+        <TouchableOpacity onPress={() => goBack(router, profilePath)} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Privacy & Consent</Text>
