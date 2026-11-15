@@ -261,6 +261,9 @@ export default function TenantPaymentScreen() {
         return 'alert-circle';
       case 'failed':
         return 'close-circle';
+      case 'cancelled':
+        // lease ended before this rent fell due (CT7-029)
+        return 'remove-circle-outline';
       default:
         return 'help-circle';
     }
@@ -555,7 +558,9 @@ export default function TenantPaymentScreen() {
                         <Text
                           style={[styles.statusText, { color: getStatusColor(payment.status) }]}
                         >
-                          {payment.status}
+                          {payment.status === 'cancelled'
+                            ? 'Not due — lease ended'
+                            : payment.status}
                         </Text>
                       </View>
                       {payment.status === 'pending' && (
