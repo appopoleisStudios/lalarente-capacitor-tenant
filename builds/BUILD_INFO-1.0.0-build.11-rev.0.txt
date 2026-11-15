@@ -1,0 +1,74 @@
+LaLarente App - Build Information
+==================================
+
+Build Date: 2026-11-15
+Build Type: Client Testing (Alpha)
+
+Version Information:
+  Version:      1.0.0
+  Build Number: 11
+  Revision:     0
+  Full Version: 1.0.0-build.11-rev.0
+
+Android Information:
+  Version Code: 11
+  Version Name: 1.0.0
+  Package:      com.lalarente.app
+  SHA-256:      446872860c08a2ced4de85842b091b93ddf94c001f5c0184e3c54473bfa18ce0
+  Source:       main @ 763bd02 (PRs #233-#245 merged)
+                JS bundle in the APK is byte-identical to a fresh bundle of
+                763bd02 (verified by rebuilding).
+
+Build Configuration:
+  Platform:     Android
+  Build Type:   APK (Release)
+  Build Method: Local Gradle (assembleRelease)
+  Minify:       Enabled
+  Hermes:       Enabled
+
+Release gate (CLAUDE.md) — checks passed on this build
+------------------------------------------------------
+  ✓ CI green on every PR (Lint, Tests 655/655, TypeScript)
+  ✓ Senior Auditor (Fable) review on every code PR; blockers fixed before merge
+  ✓ Full lifecycle chain 01 → 08 on device (iOS sim) from a clean fixture
+    (dataset 11151716). Resumed from the failing phase after Maestro driver
+    crashes (kAXErrorInvalidUIElement) — not app failures. Final segment:
+    Passed (6), Failed (0).
+  ✓ Signed lease PDF from that run: real signatures embedded, edited clause
+    + Additional Terms present, removed clause absent, arrears interest
+    worded as charged
+  ✓ Android release APK (this exact file, verified by SHA-256 on the
+    emulator): smoke (owner/tenant/vendor dashboards, sign-out → sign-in),
+    CT7 checks, hardware back returns to the previous screen,
+    tenant-tabbar-guard (5 tabs, no Vendor Payments)
+
+Fixes since build 10
+--------------------
+  ✓ CT7-026 Dashboards show their layout instantly while data loads
+    (no blank spinner)
+  ✓ CT7-027 Google address search on Add Property works again (South Africa)
+  ✓ CT7-028 Sign-in says what went wrong (wrong email/password, unconfirmed
+    email, invalid email format, no connection)
+  ✓ CT7-029 Rent after a lease ends is no longer due ("Not due — lease ended");
+    only the owner can end a lease or change its end date
+  ✓ CT7-030 A tenant can't request a second viewing while one is open
+    (button greyed, "Manage Viewing" offered)
+  ✓ CT7-031 Bell count drops after a notification is read
+  ✓ CT7-032 "Apply Now" blocked until the viewing has passed or is cancelled
+    (explains why)
+  ✓ CT7-033 Back returns to the previous screen everywhere, all roles;
+    Android hardware back and iOS swipe follow the OS
+Security / sign-out
+  ✓ Sign-out is per device (signing out on the phone no longer signs out
+    the tablet); push notifications stop going to a signed-out device
+  ✓ A vendor or non-party can no longer open someone else's lease
+
+Known open items (not in this build)
+------------------------------------
+  - documents bucket is public-flagged: a file is readable by anyone who has
+    its exact link (listing is closed). Fix: private + signed URLs.
+  - Owner rent roll shows voided post-lease rent without a "cancelled" label.
+  - Lease terminations and payment disputes don't send notifications yet.
+  - Push notifications are sent from the app, not the server.
+  - Client and automated tests share the same test accounts — recommend
+    separate accounts for the client.
