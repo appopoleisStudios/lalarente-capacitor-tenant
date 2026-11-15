@@ -58,12 +58,13 @@ appId: com.lalarente.app
     visible:
       id: "tenant-property-apply"
     timeout: 20000
-# Apply is replaced by a disabled "Application Pending" button; tapping it does nothing
-- assertVisible:
-    text: "Application Pending"
-    enabled: false
+# Apply is replaced by a greyed "Application Pending" button; tapping it
+# explains why instead of opening the form (CT7-032: blocked buttons say why)
+- assertVisible: ".*Application Pending.*"
 - tapOn:
     id: "tenant-property-apply"
+- assertVisible: ".*already have a pending application.*"
+- tapOn: "OK"
 - assertNotVisible: "Apply for Property"
 - openLink: lalarenteapp://(tenant)/application-status
 - extendedWaitUntil:
