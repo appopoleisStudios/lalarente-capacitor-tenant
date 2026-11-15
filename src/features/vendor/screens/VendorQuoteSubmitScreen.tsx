@@ -566,11 +566,9 @@ export default function VendorQuoteSubmitScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        {/* Back: router.back() on these hidden-tab routes pops to the tab ROOT
-            (vendor dashboard) instead of the previous screen — same class of
-            bug as the tenant/owner back-nav fixes. Navigate explicitly to the
-            request detail, which is where the quote form is always entered
-            from (list → detail → quote). */}
+        {/* Back: returns to the request detail it was opened from (tabs use
+            backBehavior='history'); the detail is also the fallback when
+            there is no history (CT7-033). */}
         <TouchableOpacity
           onPress={() => goBack(router, `/(vendor)/maintenance/${id}`)}
           style={styles.headerButton}

@@ -9,12 +9,20 @@ export interface ScreenHeaderProps {
   title: string;
   subtitle?: string;
   onBack?: () => void;
+  /** Where back goes when there is no history (e.g. '/(owner)/dashboard'). */
+  backFallback?: string;
   rightAction?: React.ReactNode;
 }
 
-export function ScreenHeader({ title, subtitle, onBack, rightAction }: ScreenHeaderProps) {
+export function ScreenHeader({
+  title,
+  subtitle,
+  onBack,
+  backFallback = '/',
+  rightAction,
+}: ScreenHeaderProps) {
   const router = useRouter();
-  const handleBack = onBack ?? (() => goBack(router, '/'));
+  const handleBack = onBack ?? (() => goBack(router, backFallback));
 
   return (
     <View style={styles.header}>

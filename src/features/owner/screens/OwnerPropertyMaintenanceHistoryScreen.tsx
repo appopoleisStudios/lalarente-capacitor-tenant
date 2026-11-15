@@ -8,6 +8,7 @@ import { AnimatedButton } from '@/src/shared/components';
 import { StatusBadge, PriorityIndicator } from '@/src/features/maintenance/components';
 import { useMaintenanceRequests } from '@/src/features/maintenance/hooks';
 import { styles } from './OwnerMaintenanceListScreen.styles';
+import { goBack } from '@/src/shared/navigation/goBack';
 
 /**
  * Property-scoped maintenance history (Plane #85).
@@ -71,10 +72,9 @@ export default function OwnerPropertyMaintenanceHistoryScreen() {
       <AnimatedButton
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          // Deterministic return to the property detail — router.back() from a
-          // hidden-tab pushed route can pop to the tab root instead (same
-          // pattern as #74/#134/#143 back-stack fixes).
-          router.navigate(`/(owner)/properties/${propertyId}` as never);
+          // Back to where the owner came from; property detail only when
+          // there is no history (CT7-033).
+          goBack(router, `/(owner)/properties/${propertyId}`);
         }}
         testID="owner-maintenance-history-back"
         accessibilityRole="button"
