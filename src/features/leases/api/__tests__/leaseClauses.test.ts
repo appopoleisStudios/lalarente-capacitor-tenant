@@ -105,5 +105,8 @@ describe('lease clause overrides', () => {
     const html = generateLeaseHTML({ ...lease, interest_on_arrears_rate: 2 });
     expect(html).toContain('2% per annum');
     expect(html).not.toMatch(/prime/i);
+    // the app charges simple interest (calculateLegalInterest)
+    expect(html).toContain('simple interest');
+    expect(html).not.toContain('capitalised');
   });
 });

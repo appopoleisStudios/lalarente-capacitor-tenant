@@ -459,7 +459,7 @@ export function generateLeaseHTML(
   <div class="clause">
     <div class="clause-number">${n.interest}. INTEREST ON ARREARS</div>
     <div class="clause-text">
-      Should the Tenant fail to pay the full monthly rental on or before the due date, interest at a rate of ${interestRate}% per annum will be charged on arrears from the due date until the date of full payment, calculated daily and capitalised monthly.
+      Should the Tenant fail to pay the full monthly rental on or before the due date, interest at a rate of ${interestRate}% per annum will be charged on arrears from the due date until the date of full payment, calculated daily as simple interest (not compounded).
     </div>
   </div>`
       : ''
