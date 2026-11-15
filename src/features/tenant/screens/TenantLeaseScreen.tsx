@@ -18,7 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { notificationsApi } from '../../notifications/api/notificationsApi';
 import SignatureModal from '../../leases/components/SignatureModal';
-import { uploadSignature } from '../../leases/api/storageService';
+import { uploadSignature, getLeaseDocumentUrl } from '../../leases/api/storageService';
 import { regenerateLeasePDF } from '../../leases/api/regenerateLeasePDF';
 import { generateLeaseHTML } from '../../leases/api/leasePdfService';
 import { evaluateSignLeaseGate } from '../utils/leaseSignGate';
@@ -172,9 +172,11 @@ export default function TenantLeaseScreen() {
 
   const handleViewDocument = () => {
     if (lease?.lease_document_url) {
-      Linking.openURL(lease.lease_document_url).catch(() => {
-        Alert.alert('Error', 'Could not open lease document');
-      });
+      getLeaseDocumentUrl(lease.lease_document_url)
+        .then((url) => Linking.openURL(url))
+        .catch(() => {
+          Alert.alert('Error', 'Could not open lease document');
+        });
     } else if (lease?.status === 'active') {
       handleGeneratePDF();
     } else {
@@ -214,7 +216,7 @@ export default function TenantLeaseScreen() {
         return;
       }
 
-      const propertyTitle = (lease.property?.title || 'Lease').replace(/\s+/g, '_');
+      const propertyTitle = (lease.property?.title || 'Lease').replace(/[^A-Za-z0-9-]+/g, '_');
       const filename = `Lease_${propertyTitle}_${toLocalIsoDate(new Date())}.pdf`;
       const docDir = FileSystem.documentDirectory;
       if (!docDir) {
@@ -222,7 +224,9 @@ export default function TenantLeaseScreen() {
       }
       const localUri = `${docDir}${filename}`;
 
-      const download = await FileSystem.downloadAsync(lease.lease_document_url, localUri);
+      const signedUrl = await getLeaseDocumentUrl(lease.lease_document_url);
+      const download = await FileSystem.downloadAsync(signedUrl, localUri);
+      if (download.status !== 200) throw new Error(`Download failed (${download.status})`);
       await Sharing.shareAsync(download.uri, {
         mimeType: 'application/pdf',
         dialogTitle: 'Download Lease Agreement',

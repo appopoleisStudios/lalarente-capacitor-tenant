@@ -3,6 +3,7 @@ import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { uploadLeasePDF } from './storageService';
+import { signatureDataUri } from '@/src/shared/utils/storageDataUri';
 import { reportApiError } from '@/src/core/observability/sentry';
 import { toLocalIsoDate } from '../utils/leaseDateMath';
 
@@ -424,7 +425,7 @@ export function generateLeaseHTML(
     <tr><td class="label">Lease Period</td><td class="value">${formatDate(lease.start_date)} to ${formatDate(lease.end_date)}</td></tr>
     ${lease.deposit_amount ? `<tr><td class="label">Security Deposit</td><td class="value">${formatCurrency(lease.deposit_amount)}</td></tr>` : ''}
     ${lease.rent_escalation_type ? `<tr><td class="label">Annual Escalation</td><td class="value">${escalationValue}${escalationType} every ${escalationFrequency} months</td></tr>` : ''}
-    ${interestRate ? `<tr><td class="label">Interest on arrears</td><td class="value">${interestRate}% per annum (prime + 2%)</td></tr>` : ''}
+    ${interestRate ? `<tr><td class="label">Interest on arrears</td><td class="value">${interestRate}% per annum</td></tr>` : ''}
   </table>
 </div>
 
@@ -458,7 +459,7 @@ export function generateLeaseHTML(
   <div class="clause">
     <div class="clause-number">${n.interest}. INTEREST ON ARREARS</div>
     <div class="clause-text">
-      Should the Tenant fail to pay the full monthly rental on or before the due date, interest at a rate of ${interestRate}% per annum (being 2% above the prime lending rate) will be charged on arrears from the due date until the date of full payment, calculated daily and capitalised monthly.
+      Should the Tenant fail to pay the full monthly rental on or before the due date, interest at a rate of ${interestRate}% per annum will be charged on arrears from the due date until the date of full payment, calculated daily as simple interest (not compounded).
     </div>
   </div>`
       : ''
@@ -583,7 +584,27 @@ export async function generateAndUploadLeasePDF(
   customClauses?: string
 ): Promise<string> {
   try {
-    const html = generateLeaseHTML(leaseData, customClauses);
+    // Signatures are in the private `signatures` bucket: their stored public
+    // URLs don't load, so embed them as data (same as the inspection PDF).
+    const [ownerSig, tenantSig] = await Promise.all([
+      signatureDataUri(leaseData.owner_signature_url),
+      signatureDataUri(leaseData.tenant_signature_url),
+    ]);
+    // A signed lease must never be stored with an empty signature box.
+    if (
+      (leaseData.owner_signature_url && !ownerSig) ||
+      (leaseData.tenant_signature_url && !tenantSig)
+    ) {
+      throw new Error('Could not load a signature image for the lease PDF');
+    }
+    const html = generateLeaseHTML(
+      {
+        ...leaseData,
+        owner_signature_url: ownerSig,
+        tenant_signature_url: tenantSig,
+      },
+      customClauses
+    );
     const { uri } = await Print.printToFileAsync({
       html,
       base64: false,

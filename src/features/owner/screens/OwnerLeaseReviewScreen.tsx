@@ -158,6 +158,9 @@ export default function OwnerLeaseReviewScreen() {
       rent_escalation_frequency_months: d.rentEscalationValue
         ? parseInt(d.rentEscalationFrequency)
         : null,
+      // New leases get the database default arrears rate (leases column
+      // default 2.00); include it so the preview matches the signed PDF.
+      interest_on_arrears_rate: 2,
       owner_signature_url: null,
       tenant_signature_url: null,
       owner_signed_at: null,

@@ -97,4 +97,16 @@ describe('lease clause overrides', () => {
       'entire_agreement',
     ]);
   });
+
+  // The lease must state the rate the app actually charges (CPA s41: no
+  // misrepresented charges). Arrears interest is charged at the stored rate
+  // per annum, not prime-linked.
+  it('states the arrears interest rate exactly as charged', () => {
+    const html = generateLeaseHTML({ ...lease, interest_on_arrears_rate: 2 });
+    expect(html).toContain('2% per annum');
+    expect(html).not.toMatch(/prime/i);
+    // the app charges simple interest (calculateLegalInterest)
+    expect(html).toContain('simple interest');
+    expect(html).not.toContain('capitalised');
+  });
 });
