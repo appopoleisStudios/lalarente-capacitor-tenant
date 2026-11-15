@@ -27,20 +27,24 @@ appId: com.lalarente.app
     id: "owner-viewing-card"
 - waitForAnimationToEnd:
     timeout: 1500
-# Scroll only when needed: centering a card that is already first in the
-# list pushes it under the sticky header and the tap misses.
-- runFlow:
-    when:
-      notVisible: ".*${MSG} ${LC_TOKEN}.*"
-    commands:
-      - scrollUntilVisible:
-          element:
-            text: ".*${MSG} ${LC_TOKEN}.*"
-          direction: DOWN
-          timeout: 20000
-          visibilityPercentage: 100
-          # no centerElement: centring a card near the top of the list
-          # overshoots and pushes it under the header
+# The card can be just above or below the viewport (pull-to-refresh offset):
+# look up first, then down. Both optional; the tap below is the real check.
+- scrollUntilVisible:
+    element:
+      text: ".*${MSG} ${LC_TOKEN}.*"
+    direction: UP
+    timeout: 6000
+    visibilityPercentage: 100
+    optional: true
+- scrollUntilVisible:
+    element:
+      text: ".*${MSG} ${LC_TOKEN}.*"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 100
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 1500
 - tapOn:
     text: ".*${MSG} ${LC_TOKEN}.*"
 - extendedWaitUntil:

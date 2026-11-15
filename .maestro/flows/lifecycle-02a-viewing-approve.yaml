@@ -193,8 +193,13 @@ appId: com.lalarente.app
       id: "owner-viewing-modal-time-cancel"
     timeout: 10000
 - takeScreenshot: lc02a-owner-approve-modal
+# let the native time wheel finish sliding in: looking the button up mid-
+# animation crashes the iOS 26 XCUITest driver (kAXErrorInvalidUIElement)
+- waitForAnimationToEnd:
+    timeout: 3000
 - tapOn:
     id: "owner-viewing-modal-time-cancel"
+    retryTapIfNoChange: false
 - waitForAnimationToEnd:
     timeout: 1500
 - waitForAnimationToEnd:

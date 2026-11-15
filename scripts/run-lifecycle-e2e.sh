@@ -23,6 +23,8 @@ SIM_UDID="${SIM_UDID:-F40A74AA-78B1-4B57-BDFE-108149D0D6B7}"
 : "${LC_RENT:=5500}"
 : "${LC_DEPOSIT:=5500}"
 : "${LC_HOLDING_DEPOSIT:=2000}"
+# how the amount appears in dialogs (en-ZA: "R 2 000,00")
+: "${LC_HOLDING_DEPOSIT_TEXT:=2.000}"
 LC_TOKEN="${LC_TOKEN:-$(date +%m%d%H%M)}"
 
 OUT=".maestro/lifecycle-$(date +%Y%m%d-%H%M%S)"
@@ -42,19 +44,42 @@ for name in "$@"; do
     continue
   fi
   mkdir -p "$OUT/$name"
-  ( set -o pipefail; cd "$OUT/$name" && maestro --device "$SIM_UDID" test "$ROOT/.maestro/flows/${name}.yaml" \
-      --env TENANT_EMAIL="$TENANT_EMAIL" --env TENANT_PASSWORD="$TENANT_PASSWORD" \
-      --env OWNER_EMAIL="$OWNER_EMAIL" --env OWNER_PASSWORD="$OWNER_PASSWORD" \
-      --env VENDOR_EMAIL="${VENDOR_EMAIL:-}" --env VENDOR_PASSWORD="${VENDOR_PASSWORD:-}" \
-      --env LC_TOKEN="$LC_TOKEN" \
-      --env LC_PROPERTY_ID="$LC_PROPERTY_ID" --env LC_PROPERTY_TITLE="$LC_PROPERTY_TITLE" \
-      --env LC_OWNER_ID="$LC_OWNER_ID" --env LC_OTHER_TITLE="$LC_OTHER_TITLE" \
-      --env LC_PRICE_MIN="$LC_PRICE_MIN" --env LC_PRICE_MAX="$LC_PRICE_MAX" \
-      --env LC_BRANCH_PROPERTY_ID="$LC_BRANCH_PROPERTY_ID" \
-      --env LC_BRANCH_PROPERTY_TITLE="$LC_BRANCH_PROPERTY_TITLE" \
-      --env LC_RENT="$LC_RENT" --env LC_DEPOSIT="$LC_DEPOSIT" \
-      --env LC_HOLDING_DEPOSIT="$LC_HOLDING_DEPOSIT" 2>&1 | tee log.txt )
-  if [[ $? -ne 0 ]] || grep -q "FAILED" "$OUT/$name/log.txt"; then FAIL+=("$name"); else PASS+=("$name"); fi
+  # Retry ONLY when the Maestro driver itself crashed (iOS 26 XCUITest
+  # "kAXErrorInvalidUIElement" while a sheet animates) — never when an app
+  # check failed. Flows are written to be re-runnable from their start.
+  for attempt in 1 2 3; do
+    rm -f "$OUT/$name/log.txt"
+    # Watchdog: after a driver exception Maestro can hang instead of exiting;
+    # kill it once the log mentions the exception so the retry can run.
+    ( while sleep 10; do
+        [[ -f "$OUT/$name/log.txt" ]] && grep -q "Exception in thread" "$OUT/$name/log.txt" && {
+          sleep 20; pkill -f "maestro.cli.AppKt" ; break; }
+        pgrep -f "maestro.cli.AppKt" >/dev/null || break
+      done ) &
+    watchdog=$!
+    ( set -o pipefail; cd "$OUT/$name" && maestro --device "$SIM_UDID" test "$ROOT/.maestro/flows/${name}.yaml" \
+        --env TENANT_EMAIL="$TENANT_EMAIL" --env TENANT_PASSWORD="$TENANT_PASSWORD" \
+        --env OWNER_EMAIL="$OWNER_EMAIL" --env OWNER_PASSWORD="$OWNER_PASSWORD" \
+        --env VENDOR_EMAIL="${VENDOR_EMAIL:-}" --env VENDOR_PASSWORD="${VENDOR_PASSWORD:-}" \
+        --env LC_TOKEN="$LC_TOKEN" \
+        --env LC_PROPERTY_ID="$LC_PROPERTY_ID" --env LC_PROPERTY_TITLE="$LC_PROPERTY_TITLE" \
+        --env LC_OWNER_ID="$LC_OWNER_ID" --env LC_OTHER_TITLE="$LC_OTHER_TITLE" \
+        --env LC_PRICE_MIN="$LC_PRICE_MIN" --env LC_PRICE_MAX="$LC_PRICE_MAX" \
+        --env LC_BRANCH_PROPERTY_ID="$LC_BRANCH_PROPERTY_ID" \
+        --env LC_BRANCH_PROPERTY_TITLE="$LC_BRANCH_PROPERTY_TITLE" \
+        --env LC_RENT="$LC_RENT" --env LC_DEPOSIT="$LC_DEPOSIT" \
+        --env LC_HOLDING_DEPOSIT="$LC_HOLDING_DEPOSIT" --env LC_HOLDING_DEPOSIT_TEXT="$LC_HOLDING_DEPOSIT_TEXT" 2>&1 | tee "log-$attempt.txt" | tee log.txt )
+    status=$?
+    kill "$watchdog" 2>/dev/null
+    if grep -q "Exception in thread" "$OUT/$name/log.txt" && ! grep -q "\.\.\. FAILED" "$OUT/$name/log.txt"; then
+      echo "↻ $name: Maestro driver crashed (attempt $attempt) — retrying"
+      xcrun simctl terminate "$SIM_UDID" com.lalarente.app 2>/dev/null
+      sleep 3
+      continue
+    fi
+    break
+  done
+  if [[ $status -ne 0 ]] || grep -q "FAILED\|Exception in thread" "$OUT/$name/log.txt"; then FAIL+=("$name"); else PASS+=("$name"); fi
 done
 echo; echo "Passed (${#PASS[@]}): ${PASS[*]:-}"; echo "Failed (${#FAIL[@]}): ${FAIL[*]:-}"
 echo "Output: $OUT"

@@ -1,3 +1,5 @@
+# SAFETY: the confirmation dialogs below must name the fixture property /
+# amount, so this flow can never act on another (e.g. a client's) deposit.
 # Lifecycle stage 4 — Holding deposit: tenant reports, owner confirms
 # Covers LC-4-02 to 4-10b, 4-13, LC-3-18. Needs the pending deposit from 03a.
 # Tenant reports payment (not yet Paid) → owner says Not Received → tenant
@@ -65,7 +67,7 @@ appId: com.lalarente.app
 - tapOn:
     id: "tenant-holding-deposit-i-have-paid"
 - extendedWaitUntil:
-    visible: ".*Tell the owner you have paid.*"
+    visible: ".*Tell the owner you have paid.*${LC_PROPERTY_TITLE}.*"
     timeout: 15000
 - tapOn:
     text: "Cancel"
@@ -74,7 +76,7 @@ appId: com.lalarente.app
 - tapOn:
     id: "tenant-holding-deposit-i-have-paid"
 - extendedWaitUntil:
-    visible: ".*Tell the owner you have paid.*"
+    visible: ".*Tell the owner you have paid.*${LC_PROPERTY_TITLE}.*"
     timeout: 20000
 - tapOn:
     text: "Confirm Payment"
@@ -149,7 +151,7 @@ appId: com.lalarente.app
 - tapOn:
     id: "owner-holding-deposit-not-received"
 - extendedWaitUntil:
-    visible: "Payment Not Received"
+    visible: ".*${LC_HOLDING_DEPOSIT_TEXT}.*has not arrived.*"
     timeout: 15000
 - tapOn:
     text: "Cancel"
@@ -158,7 +160,7 @@ appId: com.lalarente.app
 - tapOn:
     id: "owner-holding-deposit-not-received"
 - extendedWaitUntil:
-    visible: "Payment Not Received"
+    visible: ".*${LC_HOLDING_DEPOSIT_TEXT}.*has not arrived.*"
     timeout: 15000
 - tapOn:
     text: "Yes, Not Received"
@@ -211,7 +213,7 @@ appId: com.lalarente.app
 - tapOn:
     id: "tenant-holding-deposit-i-have-paid"
 - extendedWaitUntil:
-    visible: ".*Tell the owner you have paid.*"
+    visible: ".*Tell the owner you have paid.*${LC_PROPERTY_TITLE}.*"
     timeout: 20000
 - tapOn:
     text: "Confirm Payment"
