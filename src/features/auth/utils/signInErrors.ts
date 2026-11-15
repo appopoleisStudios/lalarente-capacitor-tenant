@@ -29,8 +29,10 @@ export function signInErrorMessage(error: unknown): string {
   if (code === 'over_request_rate_limit' || m.includes('rate limit') || m.includes('too many')) {
     return 'Too many sign-in attempts. Please wait a few minutes and try again.';
   }
-  if (code === 'user_banned' || m.includes('banned') || m.includes('disabled')) {
-    return 'This account has been disabled. Please contact support.';
+  // A banned-account message could confirm the email exists even with a wrong
+  // password, so it gets a neutral message (SA review).
+  if (code === 'user_banned' || m.includes('banned')) {
+    return 'Sign-in is not possible for this account. Please contact support.';
   }
   if (
     m.includes('timed out') ||
