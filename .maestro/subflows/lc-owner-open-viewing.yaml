@@ -34,14 +34,14 @@ appId: com.lalarente.app
       text: ".*${MSG} ${LC_TOKEN}.*"
     direction: UP
     timeout: 6000
-    visibilityPercentage: 50
+    visibilityPercentage: 100
     optional: true
 - scrollUntilVisible:
     element:
       text: ".*${MSG} ${LC_TOKEN}.*"
     direction: DOWN
     timeout: 20000
-    visibilityPercentage: 50
+    visibilityPercentage: 100
     optional: true
 - waitForAnimationToEnd:
     timeout: 1500
