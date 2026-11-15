@@ -315,7 +315,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       clearPendingVendorSelection();
       await clearDashboardCaches();
-      const { error } = await supabase.auth.signOut();
+      // Sign out of THIS device only. The default ('global') revoked the
+      // user's sessions on every phone, so signing out on one device
+      // logged them out everywhere.
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
 
       if (error) {
         throw error;

@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import { useAuth } from '@/src/contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 import { persistFicaDocField } from '../utils/persistFicaDoc';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
@@ -27,6 +28,7 @@ function proofOfAddressUploadError(err: unknown): string {
 }
 
 export default function TenantProfileScreen() {
+  const { signOut } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -436,7 +438,8 @@ export default function TenantProfileScreen() {
         text: 'Sign Out',
         style: 'destructive',
         onPress: async () => {
-          await supabase.auth.signOut();
+          // Shared sign-out: this device only, and clears cached dashboards
+          await signOut();
           router.replace('/auth/login');
         },
       },

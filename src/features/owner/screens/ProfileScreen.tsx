@@ -13,11 +13,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { useAuth } from '@/src/contexts/AuthContext';
 import { supabase } from '@/src/lib/supabase';
 
 const RSA = { blue: '#002395', red: '#DE3831' };
 
 export default function ProfileScreen() {
+  const { signOut } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -87,7 +89,8 @@ export default function ProfileScreen() {
         text: 'Logout',
         style: 'destructive',
         onPress: async () => {
-          await supabase.auth.signOut();
+          // Shared sign-out: this device only, and clears cached dashboards
+          await signOut();
           router.replace('/auth/login');
         },
       },
