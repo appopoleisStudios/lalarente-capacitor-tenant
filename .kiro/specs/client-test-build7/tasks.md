@@ -1632,18 +1632,21 @@ created_at timestamp)`.
 
 ## Known open issues in build 11 (2026-11-15)
 
-Found by us while fixing and testing build 11 and listed in
-`builds/BUILD_INFO-1.0.0-build.11-rev.0.txt`. Not raised by the client.
+Found by us while fixing and testing build 11 (CT7-034, 036–039 are listed in
+`builds/BUILD_INFO-1.0.0-build.11-rev.0.txt`; CT7-035 found during testing).
+Not raised by the client.
 
 ## CT7-034 🔴 ID documents readable by anyone holding the link (POPIA)
 
 - **Role:** tenant (data owner) · **Area:** Supabase storage `documents` bucket
-- **Today:** the bucket is flagged public. Listing is closed (PR #232), but
+- **Today:** the bucket was found public on the live project (set outside
+  migrations) and the app stores public URLs. Listing is closed (PR #232), but
   anyone with a file's exact URL can open a tenant's ID document or payslip.
+  Vendor documents share the bucket.
 - **Acceptance criteria:**
   - [ ] `documents` bucket set to private via a migration.
   - [ ] Every place that shows or downloads a document uses a short-lived
-        signed URL (same pattern as `storageService.getLeaseDocumentUrl`).
+        signed URL (same pattern as `getLeaseDocumentUrl` in `storageService`).
   - [ ] Owner can still view their applicants'/tenants' documents; a
         non-party gets 400/403. Test for both.
 
@@ -1651,8 +1654,8 @@ Found by us while fixing and testing build 11 and listed in
 
 - **Role:** owner + tenant · **Area:** `leases` table guards
 - **Today:** wording, parties and signatures are locked (PR #229) and only
-  the owner can end a lease (PR #240), but `monthly_rent` and the deposit
-  columns can still be updated by the tenant or the owner after signing.
+  the owner can end a lease (PR #240), but `leases.monthly_rent` and
+  `leases.deposit_amount` can still be updated by the tenant or the owner after signing.
 - **Acceptance criteria:**
   - [ ] Database trigger rejects changes to rent/deposit once the lease is
         signed by either party (changes go through a renewal/addendum).
@@ -1675,9 +1678,10 @@ Found by us while fixing and testing build 11 and listed in
 ## CT7-037 🟠 Push notifications are sent from the phone, not the server
 
 - **Area:** push delivery
-- **Today:** the app sends pushes itself after an action. If the sender's
-  app closes or loses connection, the push is lost, and automation
-  (autopilot, scheduled reminders) can't send pushes at all.
+- **Today:** for in-app actions the phone sends the push itself
+  (`notificationsApi.ts`). If the sender's app closes or loses connection,
+  the push is lost. Only `process-lease-automation` sends server-side
+  (`_shared/expoPush.ts`).
 - **Acceptance criteria:**
   - [ ] A database trigger / edge function sends the push when a
         notification row is inserted.
@@ -1704,4 +1708,5 @@ Found by us while fixing and testing build 11 and listed in
 - **Acceptance criteria:**
   - [ ] Separate owner, tenant and vendor accounts created for the client.
   - [ ] E2E fixture accounts are used only by the suite; lifecycle flows
-        refuse to act on records outside the fixture.
+        refuse to act on records outside the fixture, with a test that a
+        non-fixture record is rejected.
