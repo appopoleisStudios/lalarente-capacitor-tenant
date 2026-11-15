@@ -1,0 +1,26 @@
+# CT7-031: the owner's bell count drops once notifications are opened.
+# PRECONDITION: owner has unread notifications. Env: OWNER_EMAIL, OWNER_PASSWORD
+appId: com.lalarente.app
+---
+- runFlow: ../subflows/login-owner.yaml
+- extendedWaitUntil:
+    visible: ".*Portfolio Dashboard.*"
+    timeout: 25000
+- extendedWaitUntil:
+    visible:
+      id: "notification-bell"
+    timeout: 10000
+- takeScreenshot: ct7-031-before
+- tapOn:
+    id: "notification-bell"
+- waitForAnimationToEnd:
+    timeout: 4000
+# header back arrow (Maestro's `back` is Android-only)
+- tapOn:
+    point: "8%,9%"
+- extendedWaitUntil:
+    visible: ".*Portfolio Dashboard.*"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: ct7-031-after
