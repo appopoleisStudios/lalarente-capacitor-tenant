@@ -270,7 +270,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error_description || body.error || `Auth failed (${res.status})`);
+        // GoTrue returns { error_code, msg } (newer) or { error, error_description }
+        const err = new Error(
+          body.msg ||
+            body.error_description ||
+            body.message ||
+            body.error ||
+            `Auth failed (${res.status})`
+        );
+        (err as any).code = body.error_code || body.code || body.error;
+        throw err;
       }
 
       const data = await res.json();
@@ -304,7 +313,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Sign in timed out. Check your network connection.');
       }
       console.error('Sign in error:', error);
-      throw new Error(error.message || 'Failed to sign in');
+      const wrapped = new Error(error.message || 'Failed to sign in');
+      (wrapped as any).code = error.code; // keep the auth error code for the message
+      throw wrapped;
     } finally {
       setLoading(false);
     }

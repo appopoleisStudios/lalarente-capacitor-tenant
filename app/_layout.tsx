@@ -1,4 +1,4 @@
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 import * as Sentry from '@sentry/react-native';
 import { AuthProvider, useAuth } from '@/src/contexts/AuthContext';
@@ -29,13 +29,18 @@ if (env.sentry.dsn) {
 function RootLayoutNav() {
   const { session, loading } = useAuth();
   const router = useRouter();
+  const segments = useSegments();
+  const onAuthScreen = segments[0] === 'auth';
 
-  // Redirect to login whenever session is lost (sign out, token expiry)
+  // Redirect to login whenever session is lost (sign out, token expiry).
+  // Not when already on an auth screen: a failed sign-in flips `loading`,
+  // and replacing the login screen with a fresh copy wiped the typed email
+  // and the error message (CT7-028).
   useEffect(() => {
-    if (!loading && !session) {
+    if (!loading && !session && !onAuthScreen) {
       router.replace('/auth/login');
     }
-  }, [session, loading]);
+  }, [session, loading, onAuthScreen]);
 
   // Stack is always rendered — never conditionally unmount it, as doing so
   // destroys the navigator context and breaks any in-flight router.replace calls
