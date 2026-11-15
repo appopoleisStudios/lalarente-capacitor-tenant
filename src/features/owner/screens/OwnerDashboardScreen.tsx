@@ -17,13 +17,13 @@ import {
   View,
   Text,
   ScrollView,
-  ActivityIndicator,
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { DashboardSkeleton } from '@/src/shared/components/ui/DashboardSkeleton';
 import { useAuth } from '@/src/contexts/AuthContext';
 import * as Haptics from 'expo-haptics';
 import { AnimatedButton, FeaturePin } from '@/src/shared/components';
@@ -252,10 +252,7 @@ export default function OwnerDashboardScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <View style={[styles.container, styles.centerContent]}>
-          <ActivityIndicator size="large" color="#002395" />
-          <Text style={styles.loadingText}>Loading dashboard...</Text>
-        </View>
+        <DashboardSkeleton title="Portfolio Dashboard" />
       </SafeAreaView>
     );
   }
