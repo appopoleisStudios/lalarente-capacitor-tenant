@@ -425,7 +425,7 @@ export function generateLeaseHTML(
     <tr><td class="label">Lease Period</td><td class="value">${formatDate(lease.start_date)} to ${formatDate(lease.end_date)}</td></tr>
     ${lease.deposit_amount ? `<tr><td class="label">Security Deposit</td><td class="value">${formatCurrency(lease.deposit_amount)}</td></tr>` : ''}
     ${lease.rent_escalation_type ? `<tr><td class="label">Annual Escalation</td><td class="value">${escalationValue}${escalationType} every ${escalationFrequency} months</td></tr>` : ''}
-    ${interestRate ? `<tr><td class="label">Interest on arrears</td><td class="value">${interestRate}% per annum (prime + 2%)</td></tr>` : ''}
+    ${interestRate ? `<tr><td class="label">Interest on arrears</td><td class="value">${interestRate}% per annum</td></tr>` : ''}
   </table>
 </div>
 
@@ -459,7 +459,7 @@ export function generateLeaseHTML(
   <div class="clause">
     <div class="clause-number">${n.interest}. INTEREST ON ARREARS</div>
     <div class="clause-text">
-      Should the Tenant fail to pay the full monthly rental on or before the due date, interest at a rate of ${interestRate}% per annum (being 2% above the prime lending rate) will be charged on arrears from the due date until the date of full payment, calculated daily and capitalised monthly.
+      Should the Tenant fail to pay the full monthly rental on or before the due date, interest at a rate of ${interestRate}% per annum will be charged on arrears from the due date until the date of full payment, calculated daily and capitalised monthly.
     </div>
   </div>`
       : ''
