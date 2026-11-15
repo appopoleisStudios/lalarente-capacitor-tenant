@@ -1594,3 +1594,28 @@ created_at timestamp)`.
   - [ ] The bell count drops immediately and stays dropped after leaving
         and returning to the screen / restarting the app.
   - [ ] Works for owner, tenant and vendor; Maestro flow covers it.
+
+## CT7-032 🟠 "Apply Now" works while a viewing is still upcoming
+
+- **Role:** tenant · **Screen:** Property detail → Apply Now
+- **Today:** a tenant with a scheduled (pending/approved) viewing can apply
+  before the viewing has happened.
+- **Acceptance criteria:**
+  - [ ] While the tenant's viewing for that property is pending or approved
+        and its date hasn't passed, "Apply Now" is disabled with the reason.
+  - [ ] Enabled once the viewing date has passed, the viewing is marked
+        viewed/completed, or it is cancelled/declined.
+  - [ ] Enforced server-side too (application insert rejected), with test.
+
+## CT7-033 🟠 Back must go to the previous screen, everywhere, every role
+
+- **Role:** owner, tenant, vendor · **Platforms:** Android + iOS
+- **Today:** some screens' back arrow (and Android system back) jump to the
+  dashboard instead of the screen the user came from.
+- **Acceptance criteria:**
+  - [ ] Header back arrow returns to the previous screen on every screen.
+  - [ ] Android: system back button / gesture does the same; on a tab root
+        it follows Android convention (previous tab history, then exit).
+  - [ ] iOS: back arrow and edge swipe-back return to the previous screen.
+  - [ ] Audit every route for all three roles; Maestro regression flow per
+        role covering deep navigation → back → back.
