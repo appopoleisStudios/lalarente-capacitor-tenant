@@ -1710,3 +1710,65 @@ Not raised by the client.
   - [ ] E2E fixture accounts are used only by the suite; lifecycle flows
         refuse to act on records outside the fixture, with a test that a
         non-fixture record is rejected.
+
+## Client test of build 11 (2026-11-16)
+
+Navin terminated the one active lease from the tenant app. The termination
+itself worked; the issues below are what followed.
+
+## CT7-040 🟠 Owner can't reduce or waive the early-termination penalty
+
+- **Role:** owner · **Screen:** Early termination (owner side)
+- **Today:** the penalty is fixed at what the lease sets — R11 000 (2 months'
+  rent) in Navin's test. That is correct by default, but the owner has no way
+  to lower it, e.g. to 1 month (R5 500) when a new tenant is found to take
+  over. Under the CPA (s14) the penalty must be reasonable and the landlord
+  must try to re-let, so a reduction or waiver is a normal outcome.
+- **Acceptance criteria:**
+  - [ ] Owner can manually change the penalty to a lower amount (down to R0)
+        before it is settled, with a required reason (e.g. "replacement
+        tenant found from 1 Feb").
+  - [ ] Owner can never raise it above the lease's amount; tenant can never
+        change it (enforced in the database).
+  - [ ] Tenant sees the new amount and the reason, and is notified.
+  - [ ] Change recorded in the termination history (old amount, new amount,
+        who, when).
+  - [ ] Test: owner reduces, tenant sees new amount; tenant update rejected.
+
+## CT7-041 🔴 Move-out inspection doesn't start when a lease ends early
+
+- **Role:** owner + tenant · **Area:** inspections, early termination
+- **Today:** after the termination was accepted, the outgoing (move-out)
+  inspection was not created automatically. The RHA requires a joint
+  inspection with the tenant within 3 days before the tenant moves out.
+- **Acceptance criteria:**
+  - [ ] Accepting an early termination (and any lease end) creates a
+        move-out inspection for that lease, scheduled before the move-out
+        date, linked to the move-in inspection for comparison.
+  - [ ] Owner and tenant are both notified and see it in their inspections.
+  - [ ] Created server-side so every way a lease ends is covered; only one
+        per lease.
+  - [ ] Test: terminate lease → move-out inspection exists.
+
+## CT7-042 🔴 Deposit refunded before the move-out inspection (needs interlock)
+
+- **Role:** owner + tenant · **Area:** deposit refund, inspections
+- **Today:** the deposit was returned in full straight after termination,
+  without waiting for the move-out inspection. Any damage found at the
+  inspection can then no longer be taken from the deposit.
+- **Expected (Navin's example):** deposit R5 500; the inspection finds R1 000
+  of damage that is the tenant's cost → R4 500 is refunded.
+- **Acceptance criteria:**
+  - [ ] Deposit refund is blocked until the move-out inspection is
+        completed and signed (enforced in the database, not just the UI).
+  - [ ] Each issue found at the inspection is marked **owner's cost**
+        (fair wear and tear) or **tenant's cost** (damage), with an amount.
+  - [ ] Tenant's-cost items become deposit deductions automatically; the
+        refund = deposit + interest − tenant's-cost deductions, with an
+        itemised statement for the tenant.
+  - [ ] RHA timelines shown and tracked: full refund within 14 days if no
+        deductions; balance within 21 days of restoration if deductions;
+        if the owner doesn't do the inspection, full refund within 7 days.
+  - [ ] Tenant can dispute a deduction.
+  - [ ] Test: refund attempt before inspection rejected; R5 500 deposit with
+        R1 000 tenant's-cost item refunds R4 500.
