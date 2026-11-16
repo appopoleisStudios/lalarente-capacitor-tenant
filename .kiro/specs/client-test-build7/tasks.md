@@ -1763,15 +1763,19 @@ itself worked; the issues below are what followed.
 - **Today:** accepting the termination starts a refund in
   `pending_inspection` (`OwnerEarlyTerminationScreen.tsx:114-117` →
   `depositRefund.api.ts:44-63`), but nothing enforces it:
-  `processRefund` (`depositRefund.api.ts:126-144`) pays out without any
-  inspection check, so the deposit was returned in full before the move-out
-  inspection. Damage found later can then no longer be deducted.
+  `processRefund` (`depositRefund.api.ts:126-144`) records the refund as
+  done without any inspection check, so the deposit showed as returned in
+  full before the move-out inspection. Damage found later can then no longer be deducted.
 - **Expected (Navin's example):** deposit R5 500; the inspection finds R1 000
   of damage that is the tenant's cost → R4 500 is refunded.
 - **Acceptance criteria:**
   - [ ] Refund can't be processed until the move-out inspection is
         completed and signed — or the tenant failed to attend (see below) —
         enforced in the database, not just the UI.
+  - [ ] The lock can never hold the deposit indefinitely: if the owner
+        hasn't arranged the inspection by the lease end date, the full
+        deposit + interest becomes refundable (RHA s5(3)), and the owner is
+        reminded before that happens. Test for this case.
   - [ ] Each issue on the move-out inspection is marked **owner's cost**
         (fair wear and tear) or **tenant's cost** (damage), with an amount.
   - [ ] Tenant's-cost items become deposit deductions automatically; refund
@@ -1785,5 +1789,6 @@ itself worked; the issues below are what followed.
   - [ ] Tenant can dispute a deduction; a disputed amount isn't paid out to
         the owner until the dispute is resolved.
   - [ ] Tests: `processRefund` before the inspection is signed is rejected;
-        R5 500 deposit with an R1 000 tenant's-cost item refunds R4 500;
+        R5 500 deposit (zero interest) with an R1 000 tenant's-cost item refunds
+        R4 500;
         an owner's-cost item doesn't reduce the refund.
