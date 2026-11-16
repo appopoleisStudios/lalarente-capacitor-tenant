@@ -1710,3 +1710,85 @@ Not raised by the client.
   - [ ] E2E fixture accounts are used only by the suite; lifecycle flows
         refuse to act on records outside the fixture, with a test that a
         non-fixture record is rejected.
+
+## Client test of build 11 (2026-11-16)
+
+Navin terminated the one active lease from the tenant app. The termination
+itself worked; the issues below are what followed.
+
+## CT7-040 🟠 Owner can't reduce or waive the early-termination penalty
+
+- **Role:** owner · **Screen:** Early termination (owner side)
+- **Today:** the penalty is hard-coded as min(2, months remaining) × rent
+  (`calculatePenaltyAmount`, `src/features/leases/api/leaseTermination.api.ts:26`)
+  — R11 000 in Navin's test — and is written to
+  `leases.early_termination_penalty` by the requester's session (the tenant,
+  `:120`). The owner has no way to lower it, e.g. to 1 month (R5 500) when a
+  replacement tenant takes over. CPA s14 requires a reasonable penalty, and
+  under common law the landlord must mitigate (re-let), so a reduction or
+  waiver is a normal outcome.
+- **Acceptance criteria:**
+  - [ ] Owner can lower the penalty (down to R0) while the termination is
+        pending or accepted and the penalty is not yet paid, with a required
+        reason (e.g. "replacement tenant from 1 Feb").
+  - [ ] The penalty is computed server-side; nobody can set it above
+        min(2, months remaining) × monthly rent; the tenant can never set or
+        change it (database guard).
+  - [ ] Tenant sees the new amount and the reason, and is notified.
+  - [ ] Each change recorded (old amount, new amount, reason, who, when).
+  - [ ] Tests: owner lowers R11 000 → R5 500 and tenant sees R5 500; tenant
+        REST update of the penalty rejected; owner raising above the cap
+        rejected.
+
+## CT7-041 🔴 Move-out inspection isn't created when a lease ends early
+
+- **Role:** owner + tenant · **Area:** inspections, early termination
+- **Today:** `acceptTermination` (`leaseTermination.api.ts:166-185`) creates
+  no inspection; a move-out inspection exists only if the owner creates one
+  by hand (`inspectionsApi.ts:663`). RHA s5(3)(e) requires a joint inspection
+  with the tenant within 3 days before the tenant vacates.
+- **Acceptance criteria:**
+  - [ ] Accepting an early termination (and any lease end) creates one
+        move-out inspection for that lease, scheduled within the 3 days
+        before the move-out date, linked to the move-in inspection.
+  - [ ] Owner and tenant are both notified and see it in their inspections.
+  - [ ] Created server-side so every way a lease ends is covered; at most
+        one per lease.
+  - [ ] Test: accept termination → exactly one move-out inspection exists
+        with a date in the 3 days before move-out.
+
+## CT7-042 🔴 Deposit can be refunded before the move-out inspection (needs interlock)
+
+- **Role:** owner + tenant · **Area:** deposit refund, inspections
+- **Today:** accepting the termination starts a refund in
+  `pending_inspection` (`OwnerEarlyTerminationScreen.tsx:114-117` →
+  `depositRefund.api.ts:44-63`), but nothing enforces it:
+  `processRefund` (`depositRefund.api.ts:126-144`) records the refund as
+  done without any inspection check, so the deposit showed as returned in
+  full before the move-out inspection. Damage found later can then no longer be deducted.
+- **Expected (Navin's example):** deposit R5 500; the inspection finds R1 000
+  of damage that is the tenant's cost → R4 500 is refunded.
+- **Acceptance criteria:**
+  - [ ] Refund can't be processed until the move-out inspection is
+        completed and signed — or the tenant failed to attend (see below) —
+        enforced in the database, not just the UI.
+  - [ ] The lock can never hold the deposit indefinitely: if the owner
+        hasn't arranged the inspection by the lease end date, the full
+        deposit + interest becomes refundable (RHA s5(3)), and the owner is
+        reminded before that happens. Test for this case.
+  - [ ] Each issue on the move-out inspection is marked **owner's cost**
+        (fair wear and tear) or **tenant's cost** (damage), with an amount.
+  - [ ] Tenant's-cost items become deposit deductions automatically; refund
+        = deposit + interest − tenant's-cost deductions, with an itemised
+        statement for the tenant.
+  - [ ] RHA s5(3) deadlines shown and tracked from lease end:
+        no deductions → refund within 7 days; deductions → balance within
+        14 days of restoration; tenant didn't attend the inspection → owner
+        inspects within 7 days and refunds the balance within 21 days;
+        owner didn't arrange the inspection → full refund (no deductions).
+  - [ ] Tenant can dispute a deduction; a disputed amount isn't paid out to
+        the owner until the dispute is resolved.
+  - [ ] Tests: `processRefund` before the inspection is signed is rejected;
+        R5 500 deposit (zero interest) with an R1 000 tenant's-cost item refunds
+        R4 500;
+        an owner's-cost item doesn't reduce the refund.
