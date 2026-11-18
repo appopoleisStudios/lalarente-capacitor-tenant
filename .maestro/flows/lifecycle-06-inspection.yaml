@@ -753,10 +753,20 @@ appId: com.lalarente.app
 # ── LC-6-14b raise the first comment as a maintenance request (pre-filled) ───
 - waitForAnimationToEnd:
     timeout: 1500
+# Android: one upward fling on this long page can overshoot to the top, so the
+# UP pass is optional and the DOWN pass (which found it before) is the check.
 - scrollUntilVisible:
     element:
       text: ".*LC-comment-1 ${LC_TOKEN}.*"
     direction: UP
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+    optional: true
+- scrollUntilVisible:
+    element:
+      text: ".*LC-comment-1 ${LC_TOKEN}.*"
+    direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
