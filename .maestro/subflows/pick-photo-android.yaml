@@ -1,6 +1,6 @@
 # Android system photo picker: pick the newest photo. No-op on iOS or when the
 # picker isn't showing (e.g. a permission alert instead). Single-select pickers
-# return on the tap; multi-select shows Done. Needs a photo on the device:
+# return on the tap (or open the cropper: CROP); multi-select shows Done. Needs a photo on the device:
 # scripts/run-lifecycle-e2e.sh pushes one.
 appId: com.lalarente.app
 ---
@@ -29,3 +29,14 @@ appId: com.lalarente.app
             - extendedWaitUntil:
                 notVisible: "Albums"
                 timeout: 10000
+            # pickers with allowsEditing open the image cropper next
+            - waitForAnimationToEnd:
+                timeout: 2000
+            - runFlow:
+                when:
+                  visible: "CROP"
+                commands:
+                  - tapOn: "CROP"
+                  - extendedWaitUntil:
+                      notVisible: "CROP"
+                      timeout: 10000

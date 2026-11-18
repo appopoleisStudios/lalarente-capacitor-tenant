@@ -422,10 +422,12 @@ appId: com.lalarente.app
     centerElement: true
 - waitForAnimationToEnd:
     timeout: 1500
+# the Additional Terms card sits ABOVE the Sign button (on a tall Android
+# screen it's off-screen once Sign is centred)
 - scrollUntilVisible:
     element:
       text: ".*LC-clause ${LC_TOKEN}.*"
-    direction: DOWN
+    direction: UP
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true
