@@ -1,0 +1,176 @@
+Running on Pixel_7
+ > Flow lifecycle-03a-application-submit
+Run ../subflows/login-tenant.yaml...
+  Assert that (Optional) id: email-input is visible... WARNED
+  Run flow when id: email-input is not visible...
+    Stop com.lalarente.app... COMPLETED
+    Launch app "com.lalarente.app" and clear keychain (launch arguments: {EXDevMenuIsOnboardingFinished=true})... COMPLETED
+    Run dismiss-dev-menu.yaml...
+      Run flow when "Open DevTools" is visible...
+      Run flow when "Open DevTools" is visible... SKIPPED
+      Run flow when "Toggle performance monitor" is visible...
+      Run flow when "Toggle performance monitor" is visible... SKIPPED
+      Run flow when "Reload" is visible...
+      Run flow when "Reload" is visible... SKIPPED
+    Run dismiss-dev-menu.yaml... COMPLETED
+    Assert that (Optional) "Welcome back" is visible... WARNED
+    Run flow when "Welcome back," is not visible...
+      Assert that (Optional) id: email-input is visible... WARNED
+    Run flow when "Welcome back," is not visible... COMPLETED
+    Run flow when id: email-input is not visible...
+      Run flow when id: tab-profile is visible...
+      Run flow when id: tab-profile is visible... SKIPPED
+      Run flow when id: tab-vendor-profile is visible...
+      Run flow when id: tab-vendor-profile is visible... SKIPPED
+      Run flow when id: tab-owner-profile is visible...
+        Run sign-out-owner.yaml...
+          Wait for animation to end within 2000 ms... COMPLETED
+          Tap on (Optional) id: tab-owner-home... COMPLETED
+          Wait for animation to end within 2000 ms... COMPLETED
+          Tap on id: tab-owner-profile... COMPLETED
+          Wait for animation to end within 2500 ms... COMPLETED
+          Scrolling DOWN until ".*Logout.*" is visible with speed 40, visibility percentage 100%, timeout 15000 ms, with centering enabled... COMPLETED
+          Wait for animation to end within 1500 ms... COMPLETED
+          Tap on ".*Logout.*"... COMPLETED
+          Assert that ".*Are you sure.*" is visible... COMPLETED
+          Tap on "Logout", Index: 1... COMPLETED
+          Assert that id: email-input is visible... COMPLETED
+          Assert that "Sign in to your account" is visible... COMPLETED
+        Run sign-out-owner.yaml... COMPLETED
+      Run flow when id: tab-owner-profile is visible... COMPLETED
+      Assert that id: email-input is visible... COMPLETED
+    Run flow when id: email-input is not visible... COMPLETED
+  Run flow when id: email-input is not visible... COMPLETED
+  Tap on id: email-input... COMPLETED
+  Erase text... COMPLETED
+  Input text ${TENANT_EMAIL}... COMPLETED
+  Tap on (Optional) "Sign in to your account"... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+  Tap on id: password-input... COMPLETED
+  Wait for animation to end within 1000 ms... COMPLETED
+  Erase text... COMPLETED
+  Input text ${TENANT_PASSWORD}... COMPLETED
+  Tap on (Optional) "Sign in to your account"... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+  Tap on id: sign-in-button... COMPLETED
+  Assert that "Welcome back," is visible... COMPLETED
+Run ../subflows/login-tenant.yaml... COMPLETED
+Run ../subflows/lc-tenant-apply.yaml...
+  Open lalarenteapp://(tenant)/properties/${PROP_ID}... COMPLETED
+  Assert that id: tenant-property-apply is visible... COMPLETED
+  Tap on id: tenant-property-apply... COMPLETED
+  Assert that id: tenant-apply-next is visible... COMPLETED
+  Take screenshot lctenant-apply-step1... COMPLETED
+  Wait for animation to end within 1500 ms... COMPLETED
+  Tap on id: tenant-apply-edit-personal... COMPLETED
+  Wait for animation to end within 3000 ms... COMPLETED
+  Take screenshot lctenant-apply-edit-profile... COMPLETED
+  Wait for animation to end within 1500 ms... COMPLETED
+  Open lalarenteapp://(tenant)/properties/${PROP_ID}... COMPLETED
+  Assert that id: tenant-property-apply is visible... COMPLETED
+  Tap on id: tenant-property-apply... COMPLETED
+  Assert that id: tenant-apply-next is visible... COMPLETED
+  Run flow when id: tenant-apply-full-name is visible...
+  Run flow when id: tenant-apply-full-name is visible... SKIPPED
+  Run flow when id: tenant-apply-email is visible...
+  Run flow when id: tenant-apply-email is visible... SKIPPED
+  Run flow when id: tenant-apply-phone is visible...
+  Run flow when id: tenant-apply-phone is visible... SKIPPED
+  Run flow when id: tenant-apply-id-number is visible...
+  Run flow when id: tenant-apply-id-number is visible... SKIPPED
+  Run flow when id: tenant-apply-dob is visible...
+  Run flow when id: tenant-apply-dob is visible... SKIPPED
+  Wait for animation to end within 1500 ms... COMPLETED
+  Scrolling DOWN until id: tenant-apply-next is visible with speed 40, visibility percentage 60%, timeout 20000 ms, with centering enabled... COMPLETED
+  Tap on id: tenant-apply-next... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+  Take screenshot lctenant-apply-step2... COMPLETED
+  Wait for animation to end within 1500 ms... COMPLETED
+  Run flow when id: tenant-apply-income is visible...
+  Run flow when id: tenant-apply-income is visible... SKIPPED
+  Run flow when id: tenant-apply-employer is visible...
+  Run flow when id: tenant-apply-employer is visible... SKIPPED
+  Run flow when id: tenant-apply-position is visible...
+  Run flow when id: tenant-apply-position is visible... SKIPPED
+  Run flow when id: tenant-apply-employer-contact is visible...
+    Wait for animation to end within 1500 ms... COMPLETED
+    Scrolling DOWN until id: tenant-apply-employer-contact is visible with speed 40, visibility percentage 60%, timeout 20000 ms, with centering enabled... COMPLETED
+    Tap on id: tenant-apply-employer-contact... COMPLETED
+    Erase 30 characters... COMPLETED
+    Input text 0111234567... COMPLETED
+    Swipe from (50%,45%) to (50%,40%) in 400 ms... COMPLETED
+    Wait for animation to end within 1000 ms... COMPLETED
+  Run flow when id: tenant-apply-employer-contact is visible... COMPLETED
+  Run flow when id: tenant-apply-employment-start is visible...
+    Wait for animation to end within 1500 ms... COMPLETED
+    Scrolling DOWN until id: tenant-apply-employment-start is visible with speed 40, visibility percentage 60%, timeout 20000 ms, with centering enabled... COMPLETED
+    Tap on id: tenant-apply-employment-start... COMPLETED
+    Run ../subflows/picker-cancel.yaml...
+      Run flow when Platform is IOS...
+      Run flow when Platform is IOS... SKIPPED
+      Run flow when Platform is ANDROID...
+        Assert that "Cancel" is visible... COMPLETED
+        Tap on "Cancel"... COMPLETED
+        Assert that "Cancel" is not visible... COMPLETED
+      Run flow when Platform is ANDROID... COMPLETED
+    Run ../subflows/picker-cancel.yaml... COMPLETED
+    Wait for animation to end within 1000 ms... COMPLETED
+    Tap on id: tenant-apply-employment-start... COMPLETED
+    Run ../subflows/picker-confirm.yaml...
+      Run flow when Platform is IOS...
+      Run flow when Platform is IOS... SKIPPED
+      Run flow when Platform is ANDROID...
+        Assert that "OK" is visible... COMPLETED
+        Tap on "OK"... COMPLETED
+        Assert that "OK" is not visible... COMPLETED
+      Run flow when Platform is ANDROID... COMPLETED
+    Run ../subflows/picker-confirm.yaml... COMPLETED
+    Wait for animation to end within 1000 ms... COMPLETED
+  Run flow when id: tenant-apply-employment-start is visible... COMPLETED
+  Run flow when id: tenant-apply-edit-employment is visible...
+  Run flow when id: tenant-apply-edit-employment is visible... SKIPPED
+  Wait for animation to end within 1500 ms... COMPLETED
+  Scrolling DOWN until id: tenant-apply-next is visible with speed 40, visibility percentage 60%, timeout 20000 ms, with centering enabled... COMPLETED
+  Tap on id: tenant-apply-next... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+  Take screenshot lctenant-apply-step3... COMPLETED
+  Wait for animation to end within 1500 ms... COMPLETED
+  Run flow when id: tenant-apply-id-doc-upload is visible...
+  Run flow when id: tenant-apply-id-doc-upload is visible... SKIPPED
+  Run flow when id: tenant-apply-id-doc-replace is visible...
+    Scrolling UP until id: tenant-apply-id-doc-replace is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering enabled... COMPLETED
+    Tap on id: tenant-apply-id-doc-replace... COMPLETED
+    Assert that "Upload Document" is visible... COMPLETED
+    Tap on "Cancel"... COMPLETED
+  Run flow when id: tenant-apply-id-doc-replace is visible... COMPLETED
+  Run flow when id: tenant-apply-income-doc-add-new is visible...
+    Wait for animation to end within 1500 ms... COMPLETED
+    Scrolling DOWN until id: tenant-apply-income-doc-add-new is visible with speed 40, visibility percentage 60%, timeout 20000 ms, with centering enabled... COMPLETED
+    Scrolling UP until id: tenant-apply-income-doc-add-new is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering enabled... COMPLETED
+    Tap on id: tenant-apply-income-doc-add-new... COMPLETED
+    Wait for animation to end within 3000 ms... COMPLETED
+    Tap on (Optional) "Cancel"... WARNED
+    Wait for animation to end within 2000 ms... COMPLETED
+  Run flow when id: tenant-apply-income-doc-add-new is visible... COMPLETED
+  Run flow when id: tenant-apply-income-doc-upload is visible...
+  Run flow when id: tenant-apply-income-doc-upload is visible... SKIPPED
+  Run flow when id: tenant-apply-reference-doc-upload is visible...
+  Run flow when id: tenant-apply-reference-doc-upload is visible... SKIPPED
+  Wait for animation to end within 1500 ms... COMPLETED
+  Scrolling DOWN until id: tenant-apply-next is visible with speed 40, visibility percentage 60%, timeout 20000 ms, with centering enabled... FAILED
+Run ../subflows/lc-tenant-apply.yaml... FAILED
+
+No visible element found: id: tenant-apply-next
+
+Could not find a visible element matching selector: id: tenant-apply-next
+Tip: Try adjusting the following settings to improve detection:
+- `timeout`: current = 20000ms → Increase if you need more time to find the element
+- `speed`: current = 40 (0-100 scale) → Increase for faster scrolling if element is far away
+- `waitToSettleTimeoutMs`: current = Not defined → Set this value (e.g., 500ms) if your UI updates frequently between scrolls
+- `visibilityPercentage`: current = 60% → Lower this value if you want to detect partially visible elements
+- `centerElement`: current = true → Disable if you don't need the element to be centered after finding it
+
+
+==== Debug output (logs & screenshots) ====
+
+/Users/appopoleis/.maestro/tests/2026-11-18_125444

@@ -1,0 +1,384 @@
+Running on Pixel_7
+ > Flow lifecycle-02a-viewing-approve
+Run ../subflows/login-tenant.yaml...
+  Assert that (Optional) id: email-input is visible... WARNED
+  Run flow when id: email-input is not visible...
+    Stop com.lalarente.app... COMPLETED
+    Launch app "com.lalarente.app" and clear keychain (launch arguments: {EXDevMenuIsOnboardingFinished=true})... COMPLETED
+    Run dismiss-dev-menu.yaml...
+      Run flow when "Open DevTools" is visible...
+      Run flow when "Open DevTools" is visible... SKIPPED
+      Run flow when "Toggle performance monitor" is visible...
+      Run flow when "Toggle performance monitor" is visible... SKIPPED
+      Run flow when "Reload" is visible...
+      Run flow when "Reload" is visible... SKIPPED
+    Run dismiss-dev-menu.yaml... COMPLETED
+    Assert that (Optional) "Welcome back" is visible... WARNED
+    Run flow when "Welcome back," is not visible...
+    Run flow when "Welcome back," is not visible... SKIPPED
+    Run flow when id: email-input is not visible...
+      Run flow when id: tab-profile is visible...
+        Run sign-out-tenant.yaml...
+          Wait for animation to end within 2000 ms... COMPLETED
+          Tap on (Optional) id: tab-home... COMPLETED
+          Wait for animation to end within 2000 ms... COMPLETED
+          Tap on id: tab-profile... COMPLETED
+          Wait for animation to end within 2500 ms... COMPLETED
+          Scrolling DOWN until ".*Sign Out.*" is visible with speed 40, visibility percentage 100%, timeout 15000 ms, with centering disabled... COMPLETED
+          Tap on ".*Sign Out.*"... COMPLETED
+          Assert that ".*Are you sure.*" is visible... COMPLETED
+          Tap on "Sign Out", Index: 1... COMPLETED
+          Assert that id: email-input is visible... COMPLETED
+          Assert that "Sign in to your account" is visible... COMPLETED
+        Run sign-out-tenant.yaml... COMPLETED
+      Run flow when id: tab-profile is visible... COMPLETED
+      Run flow when id: tab-vendor-profile is visible...
+      Run flow when id: tab-vendor-profile is visible... SKIPPED
+      Run flow when id: tab-owner-profile is visible...
+      Run flow when id: tab-owner-profile is visible... SKIPPED
+      Assert that id: email-input is visible... COMPLETED
+    Run flow when id: email-input is not visible... COMPLETED
+  Run flow when id: email-input is not visible... COMPLETED
+  Tap on id: email-input... COMPLETED
+  Erase text... COMPLETED
+  Input text ${TENANT_EMAIL}... COMPLETED
+  Tap on (Optional) "Sign in to your account"... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+  Tap on id: password-input... COMPLETED
+  Wait for animation to end within 1000 ms... COMPLETED
+  Erase text... COMPLETED
+  Input text ${TENANT_PASSWORD}... COMPLETED
+  Tap on (Optional) "Sign in to your account"... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+  Tap on id: sign-in-button... COMPLETED
+  Assert that "Welcome back," is visible... COMPLETED
+Run ../subflows/login-tenant.yaml... COMPLETED
+Run ../subflows/lc-tenant-request-viewing.yaml...
+  Open lalarenteapp://(tenant)/properties/${PROP_ID}... COMPLETED
+  Assert that id: tenant-property-request-viewing is visible... COMPLETED
+  Tap on id: tenant-property-request-viewing... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+  Run flow when "Viewing already requested" is visible...
+  Run flow when "Viewing already requested" is visible... SKIPPED
+  Assert that id: viewing-request-back is visible... COMPLETED
+  Run flow when id: viewing-request-existing-cancel is visible...
+  Run flow when id: viewing-request-existing-cancel is visible... SKIPPED
+  Assert that id: viewing-request-message is visible... COMPLETED
+  Assert that ".*${PROP_TITLE}.*" is visible... COMPLETED
+  Tap on id: viewing-request-date... COMPLETED
+  Run ../subflows/picker-confirm.yaml...
+    Run flow when Platform is IOS...
+    Run flow when Platform is IOS... SKIPPED
+    Run flow when Platform is ANDROID...
+      Assert that id: android:id/button1 is visible... COMPLETED
+      Wait for animation to end within 2000 ms... COMPLETED
+      Repeat while id: android:id/button1 is visible (up to 3 times)...
+        Tap on id: android:id/button1... COMPLETED
+        Wait for animation to end within 1500 ms... COMPLETED
+      Repeat while id: android:id/button1 is visible (up to 3 times)... COMPLETED
+      Assert that id: android:id/button1 is not visible... COMPLETED
+    Run flow when Platform is ANDROID... COMPLETED
+  Run ../subflows/picker-confirm.yaml... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+  Tap on id: viewing-request-time... COMPLETED
+  Run ../subflows/picker-confirm.yaml...
+    Run flow when Platform is IOS...
+    Run flow when Platform is IOS... SKIPPED
+    Run flow when Platform is ANDROID...
+      Assert that id: android:id/button1 is visible... COMPLETED
+      Wait for animation to end within 2000 ms... COMPLETED
+      Repeat while id: android:id/button1 is visible (up to 3 times)...
+        Tap on id: android:id/button1... COMPLETED
+        Wait for animation to end within 1500 ms... COMPLETED
+      Repeat while id: android:id/button1 is visible (up to 3 times)... COMPLETED
+      Assert that id: android:id/button1 is not visible... COMPLETED
+    Run flow when Platform is ANDROID... COMPLETED
+  Run ../subflows/picker-confirm.yaml... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+  Tap on id: viewing-request-message... COMPLETED
+  Input text ${MSG} ${LC_TOKEN}... COMPLETED
+  Tap on "Message \(Optional\)"... COMPLETED
+  Wait for animation to end within 1500 ms... COMPLETED
+  Scrolling DOWN until id: viewing-request-submit is visible with speed 40, visibility percentage 60%, timeout 20000 ms, with centering enabled... COMPLETED
+  Tap on id: viewing-request-submit... COMPLETED
+  Assert that "Request Sent" is visible... COMPLETED
+  Tap on "OK"... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+Run ../subflows/lc-tenant-request-viewing.yaml... COMPLETED
+Open lalarenteapp://(tenant)/viewings... COMPLETED
+Assert that "My Viewings" is visible... COMPLETED
+Wait for animation to end within 2000 ms... COMPLETED
+Tap on id: tenant-viewings-filter-approved... COMPLETED
+Wait for animation to end within 1000 ms... COMPLETED
+Tap on id: tenant-viewings-filter-completed... COMPLETED
+Wait for animation to end within 1000 ms... COMPLETED
+Tap on id: tenant-viewings-filter-all... COMPLETED
+Wait for animation to end within 1000 ms... COMPLETED
+Tap on id: tenant-viewings-filter-pending... COMPLETED
+Wait for animation to end within 1000 ms... COMPLETED
+Assert that id: tenant-viewing-card is visible... COMPLETED
+Take screenshot lc02a-tenant-list-pending... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Tap on id: tenant-viewing-card, Index: 0... COMPLETED
+Assert that id: tenant-viewing-detail-back is visible... COMPLETED
+Assert that ".*${LC_PROPERTY_TITLE}.*" is visible... COMPLETED
+Assert that "(?i).*pending.*" is visible... COMPLETED
+Assert that id: tenant-viewing-detail-cancel is visible... COMPLETED
+Take screenshot lc02a-tenant-detail-pending... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Tap on id: tenant-viewing-detail-property... COMPLETED
+Assert that id: tenant-property-back is visible... COMPLETED
+Tap on id: tenant-property-back... COMPLETED
+Assert that id: tenant-viewing-detail-back is visible... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Scrolling DOWN until id: tenant-viewing-detail-chat is visible with speed 40, visibility percentage 60%, timeout 20000 ms, with centering enabled... COMPLETED
+Tap on id: tenant-viewing-detail-chat... COMPLETED
+Assert that "Messages" is visible... COMPLETED
+Open lalarenteapp://(tenant)/viewings... COMPLETED
+Assert that "My Viewings" is visible... COMPLETED
+Tap on id: screen-back... COMPLETED
+Wait for animation to end within 2000 ms... COMPLETED
+Open lalarenteapp://(tenant)/... COMPLETED
+Wait for animation to end within 2000 ms... COMPLETED
+Run ../subflows/sign-out-tenant.yaml...
+  Wait for animation to end within 2000 ms... COMPLETED
+  Tap on (Optional) id: tab-home... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+  Tap on id: tab-profile... COMPLETED
+  Wait for animation to end within 2500 ms... COMPLETED
+  Scrolling DOWN until ".*Sign Out.*" is visible with speed 40, visibility percentage 100%, timeout 15000 ms, with centering disabled... COMPLETED
+  Tap on ".*Sign Out.*"... COMPLETED
+  Assert that ".*Are you sure.*" is visible... COMPLETED
+  Tap on "Sign Out", Index: 1... COMPLETED
+  Assert that id: email-input is visible... COMPLETED
+  Assert that "Sign in to your account" is visible... COMPLETED
+Run ../subflows/sign-out-tenant.yaml... COMPLETED
+Run ../subflows/login-owner.yaml...
+  Assert that (Optional) id: email-input is visible... COMPLETED
+  Run flow when ".*Portfolio Dashboard.*" is visible...
+  Run flow when ".*Portfolio Dashboard.*" is visible... SKIPPED
+  Run flow when ".*Portfolio Dashboard.*" is not visible...
+    Run flow when id: email-input is not visible...
+    Run flow when id: email-input is not visible... SKIPPED
+    Run flow when ".*Portfolio Dashboard.*" is not visible...
+      Tap on id: email-input... COMPLETED
+      Erase text... COMPLETED
+      Input text ${OWNER_EMAIL}... COMPLETED
+      Tap on (Optional) "Sign in to your account"... COMPLETED
+      Wait for animation to end within 2000 ms... COMPLETED
+      Tap on id: password-input... COMPLETED
+      Wait for animation to end within 1000 ms... COMPLETED
+      Erase text... COMPLETED
+      Input text ${OWNER_PASSWORD}... COMPLETED
+      Tap on (Optional) "Sign in to your account"... COMPLETED
+      Wait for animation to end within 2000 ms... COMPLETED
+      Tap on id: sign-in-button... COMPLETED
+      Assert that ".*Portfolio Dashboard.*" is visible... COMPLETED
+    Run flow when ".*Portfolio Dashboard.*" is not visible... COMPLETED
+  Run flow when ".*Portfolio Dashboard.*" is not visible... COMPLETED
+Run ../subflows/login-owner.yaml... COMPLETED
+Open lalarenteapp://(owner)/viewings... COMPLETED
+Assert that "Viewing Requests" is visible... COMPLETED
+Wait for animation to end within 2000 ms... COMPLETED
+Tap on id: owner-viewings-filter-approved... COMPLETED
+Wait for animation to end within 1000 ms... COMPLETED
+Tap on id: owner-viewings-filter-completed... COMPLETED
+Wait for animation to end within 1000 ms... COMPLETED
+Tap on id: owner-viewings-filter-pending... COMPLETED
+Wait for animation to end within 1000 ms... COMPLETED
+Tap on id: owner-viewings-filter-all... COMPLETED
+Wait for animation to end within 1000 ms... COMPLETED
+Tap on id: owner-viewings-back... COMPLETED
+Wait for animation to end within 2000 ms... COMPLETED
+Run ../subflows/lc-owner-open-viewing.yaml...
+  Open lalarenteapp://(owner)/viewings... COMPLETED
+  Assert that "Viewing Requests" is visible... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+  Tap on id: owner-viewings-filter-all... COMPLETED
+  Repeat 3 times...
+    Swipe from (50%,45%) to (50%,90%) in 300 ms... COMPLETED
+  Repeat 3 times... COMPLETED
+  Wait for animation to end within 3000 ms... COMPLETED
+  Assert that id: owner-viewing-card is visible... COMPLETED
+  Wait for animation to end within 1500 ms... COMPLETED
+  Scrolling UP until ".*${MSG} ${LC_TOKEN}.*" is visible with speed 40, visibility percentage 100%, timeout 6000 ms, with centering disabled... COMPLETED
+  Scrolling DOWN until ".*${MSG} ${LC_TOKEN}.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Wait for animation to end within 1500 ms... COMPLETED
+  Tap on ".*${MSG} ${LC_TOKEN}.*"... COMPLETED
+  Assert that id: owner-viewing-detail-back is visible... COMPLETED
+Run ../subflows/lc-owner-open-viewing.yaml... COMPLETED
+Assert that ".*${LC_PROPERTY_TITLE}.*" is visible... COMPLETED
+Assert that ".*LC-view ${LC_TOKEN}.*" is visible... COMPLETED
+Assert that id: owner-viewing-detail-approve is visible... COMPLETED
+Assert that id: owner-viewing-detail-decline is visible... COMPLETED
+Take screenshot lc02a-owner-detail-pending... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Tap on id: owner-viewing-detail-approve... COMPLETED
+Assert that "Approve Viewing" is visible... COMPLETED
+Tap on id: owner-viewing-modal-close... COMPLETED
+Assert that "Approve Viewing" is not visible... COMPLETED
+Tap on id: owner-viewing-detail-approve... COMPLETED
+Assert that "Approve Viewing" is visible... COMPLETED
+Tap on id: owner-viewing-modal-cancel... COMPLETED
+Assert that "Approve Viewing" is not visible... COMPLETED
+Tap on id: owner-viewing-detail-approve... COMPLETED
+Assert that "Approve Viewing" is visible... COMPLETED
+Assert that id: owner-viewing-modal-date is not visible... COMPLETED
+Tap on id: owner-viewing-modal-modify-toggle... COMPLETED
+Assert that id: owner-viewing-modal-date is visible... COMPLETED
+Assert that id: owner-viewing-modal-time is visible... COMPLETED
+Tap on id: owner-viewing-modal-date... COMPLETED
+Run ../subflows/picker-confirm.yaml...
+  Run flow when Platform is IOS...
+  Run flow when Platform is IOS... SKIPPED
+  Run flow when Platform is ANDROID...
+    Assert that id: android:id/button1 is visible... COMPLETED
+    Wait for animation to end within 2000 ms... COMPLETED
+    Repeat while id: android:id/button1 is visible (up to 3 times)...
+      Tap on id: android:id/button1... COMPLETED
+      Wait for animation to end within 1500 ms... COMPLETED
+    Repeat while id: android:id/button1 is visible (up to 3 times)... COMPLETED
+    Assert that id: android:id/button1 is not visible... COMPLETED
+  Run flow when Platform is ANDROID... COMPLETED
+Run ../subflows/picker-confirm.yaml... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Tap on id: owner-viewing-modal-time... COMPLETED
+Take screenshot lc02a-owner-approve-modal... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Run ../subflows/picker-cancel.yaml...
+  Run flow when Platform is IOS...
+  Run flow when Platform is IOS... SKIPPED
+  Run flow when Platform is ANDROID...
+    Assert that id: android:id/button2 is visible... COMPLETED
+    Wait for animation to end within 2000 ms... COMPLETED
+    Repeat while id: android:id/button2 is visible (up to 3 times)...
+      Tap on id: android:id/button2... COMPLETED
+      Wait for animation to end within 1500 ms... COMPLETED
+    Repeat while id: android:id/button2 is visible (up to 3 times)... COMPLETED
+    Assert that id: android:id/button2 is not visible... COMPLETED
+  Run flow when Platform is ANDROID... COMPLETED
+Run ../subflows/picker-cancel.yaml... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Tap on id: owner-viewing-modal-modify-toggle... COMPLETED
+Wait for animation to end within 2000 ms... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Scrolling DOWN until id: owner-viewing-modal-notes is visible with speed 40, visibility percentage 60%, timeout 20000 ms, with centering enabled... COMPLETED
+Tap on id: owner-viewing-modal-notes... COMPLETED
+Input text LC-approve-note ${LC_TOKEN}... COMPLETED
+Tap on "Approve Viewing"... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Scrolling DOWN until id: owner-viewing-modal-confirm is visible with speed 40, visibility percentage 60%, timeout 20000 ms, with centering enabled... COMPLETED
+Tap on id: owner-viewing-modal-confirm... COMPLETED
+Assert that "Approved" is visible... COMPLETED
+Tap on "OK"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Run ../subflows/lc-owner-open-viewing.yaml...
+  Open lalarenteapp://(owner)/viewings... COMPLETED
+  Assert that "Viewing Requests" is visible... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+  Tap on id: owner-viewings-filter-all... COMPLETED
+  Repeat 3 times...
+    Swipe from (50%,45%) to (50%,90%) in 300 ms... COMPLETED
+  Repeat 3 times... COMPLETED
+  Wait for animation to end within 3000 ms... COMPLETED
+  Assert that id: owner-viewing-card is visible... COMPLETED
+  Wait for animation to end within 1500 ms... COMPLETED
+  Scrolling UP until ".*${MSG} ${LC_TOKEN}.*" is visible with speed 40, visibility percentage 100%, timeout 6000 ms, with centering disabled... COMPLETED
+  Scrolling DOWN until ".*${MSG} ${LC_TOKEN}.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Wait for animation to end within 1500 ms... COMPLETED
+  Tap on ".*${MSG} ${LC_TOKEN}.*"... COMPLETED
+  Assert that id: owner-viewing-detail-back is visible... COMPLETED
+Run ../subflows/lc-owner-open-viewing.yaml... COMPLETED
+Assert that id: owner-viewing-detail-approve is not visible... COMPLETED
+Assert that id: owner-viewing-detail-decline is not visible... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Scrolling DOWN until id: owner-viewing-detail-cancel-approved is visible with speed 40, visibility percentage 60%, timeout 20000 ms, with centering enabled... COMPLETED
+Take screenshot lc02a-owner-detail-approved... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Scrolling UP until id: owner-viewing-detail-chat is visible with speed 40, visibility percentage 60%, timeout 20000 ms, with centering enabled... COMPLETED
+Tap on id: owner-viewing-detail-chat... COMPLETED
+Assert that "Messages" is visible... COMPLETED
+Run ../subflows/lc-owner-open-viewing.yaml...
+  Open lalarenteapp://(owner)/viewings... COMPLETED
+  Assert that "Viewing Requests" is visible... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+  Tap on id: owner-viewings-filter-all... COMPLETED
+  Repeat 3 times...
+    Swipe from (50%,45%) to (50%,90%) in 300 ms... COMPLETED
+  Repeat 3 times... COMPLETED
+  Wait for animation to end within 3000 ms... COMPLETED
+  Assert that id: owner-viewing-card is visible... COMPLETED
+  Wait for animation to end within 1500 ms... COMPLETED
+  Scrolling UP until ".*${MSG} ${LC_TOKEN}.*" is visible with speed 40, visibility percentage 100%, timeout 6000 ms, with centering disabled... COMPLETED
+  Scrolling DOWN until ".*${MSG} ${LC_TOKEN}.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Wait for animation to end within 1500 ms... COMPLETED
+  Tap on ".*${MSG} ${LC_TOKEN}.*"... COMPLETED
+  Assert that id: owner-viewing-detail-back is visible... COMPLETED
+Run ../subflows/lc-owner-open-viewing.yaml... COMPLETED
+Tap on id: owner-viewing-detail-back... COMPLETED
+Assert that "Viewing Requests" is visible... COMPLETED
+Open lalarenteapp://(owner)/... COMPLETED
+Wait for animation to end within 2000 ms... COMPLETED
+Run ../subflows/sign-out-owner.yaml...
+  Wait for animation to end within 2000 ms... COMPLETED
+  Tap on (Optional) id: tab-owner-home... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+  Tap on id: tab-owner-profile... COMPLETED
+  Wait for animation to end within 2500 ms... COMPLETED
+  Scrolling DOWN until ".*Logout.*" is visible with speed 40, visibility percentage 100%, timeout 15000 ms, with centering enabled... COMPLETED
+  Wait for animation to end within 1500 ms... COMPLETED
+  Tap on ".*Logout.*"... COMPLETED
+  Assert that ".*Are you sure.*" is visible... COMPLETED
+  Tap on "Logout", Index: 1... COMPLETED
+  Assert that id: email-input is visible... COMPLETED
+  Assert that "Sign in to your account" is visible... COMPLETED
+Run ../subflows/sign-out-owner.yaml... COMPLETED
+Run ../subflows/login-tenant.yaml...
+  Assert that (Optional) id: email-input is visible... COMPLETED
+  Run flow when id: email-input is not visible...
+  Run flow when id: email-input is not visible... SKIPPED
+  Tap on id: email-input... COMPLETED
+  Erase text... COMPLETED
+  Input text ${TENANT_EMAIL}... COMPLETED
+  Tap on (Optional) "Sign in to your account"... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+  Tap on id: password-input... COMPLETED
+  Wait for animation to end within 1000 ms... COMPLETED
+  Erase text... COMPLETED
+  Input text ${TENANT_PASSWORD}... COMPLETED
+  Tap on (Optional) "Sign in to your account"... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+  Tap on id: sign-in-button... COMPLETED
+  Assert that "Welcome back," is visible... COMPLETED
+Run ../subflows/login-tenant.yaml... COMPLETED
+Open lalarenteapp://(tenant)/viewings... COMPLETED
+Assert that "My Viewings" is visible... COMPLETED
+Tap on id: tenant-viewings-filter-approved... COMPLETED
+Assert that id: tenant-viewing-card is visible... COMPLETED
+Tap on id: tenant-viewing-card, Index: 0... COMPLETED
+Assert that id: tenant-viewing-detail-back is visible... COMPLETED
+Assert that ".*${LC_PROPERTY_TITLE}.*" is visible... COMPLETED
+Assert that "(?i).*approved.*" is visible... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Scrolling DOWN until ".*LC-approve-note ${LC_TOKEN}.*" is visible with speed 40, visibility percentage 60%, timeout 20000 ms, with centering enabled... COMPLETED
+Take screenshot lc02a-tenant-detail-approved... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Tap on id: tenant-viewing-detail-back... COMPLETED
+Assert that "My Viewings" is visible... COMPLETED
+Open lalarenteapp://(tenant)/... COMPLETED
+Wait for animation to end within 2000 ms... COMPLETED
+Run ../subflows/sign-out-tenant.yaml...
+  Wait for animation to end within 2000 ms... COMPLETED
+  Tap on (Optional) id: tab-home... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+  Tap on id: tab-profile... COMPLETED
+  Wait for animation to end within 2500 ms... COMPLETED
+  Scrolling DOWN until ".*Sign Out.*" is visible with speed 40, visibility percentage 100%, timeout 15000 ms, with centering disabled... COMPLETED
+  Tap on ".*Sign Out.*"... COMPLETED
+  Assert that ".*Are you sure.*" is visible... COMPLETED
+  Tap on "Sign Out", Index: 1... COMPLETED
+  Assert that id: email-input is visible... COMPLETED
+  Assert that "Sign in to your account" is visible... COMPLETED
+Run ../subflows/sign-out-tenant.yaml... COMPLETED

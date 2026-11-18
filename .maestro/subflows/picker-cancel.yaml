@@ -17,10 +17,23 @@ appId: com.lalarente.app
     when:
       platform: Android
     commands:
+      # native dialog: Cancel is android:id/button2. The first open can still be
+      # animating when tapped, so wait, then re-tap until the dialog is gone.
       - extendedWaitUntil:
-          visible: "Cancel"
+          visible:
+            id: "android:id/button2"
           timeout: 10000
-      - tapOn: "Cancel"
-      - extendedWaitUntil:
-          notVisible: "Cancel"
-          timeout: 10000
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - repeat:
+          times: 3
+          while:
+            visible:
+              id: "android:id/button2"
+          commands:
+            - tapOn:
+                id: "android:id/button2"
+            - waitForAnimationToEnd:
+                timeout: 1500
+      - assertNotVisible:
+          id: "android:id/button2"

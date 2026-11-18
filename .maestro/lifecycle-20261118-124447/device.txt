@@ -1,0 +1,4 @@
+device:   emulator-5554 (android)
+apk:      versionCode=11 minSdk=24 targetSdk=36
+apk:      lastUpdateTime=2026-11-18 12:44:39
+commit:   4ed73fc

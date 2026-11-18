@@ -1,0 +1,83 @@
+Running on Pixel_7
+ > Flow lifecycle-02a-viewing-approve
+Run ../subflows/login-tenant.yaml...
+  Assert that (Optional) id: email-input is visible... WARNED
+  Run flow when id: email-input is not visible...
+    Stop com.lalarente.app... COMPLETED
+    Launch app "com.lalarente.app" and clear keychain (launch arguments: {EXDevMenuIsOnboardingFinished=true})... COMPLETED
+    Run dismiss-dev-menu.yaml...
+      Run flow when "Open DevTools" is visible...
+      Run flow when "Open DevTools" is visible... SKIPPED
+      Run flow when "Toggle performance monitor" is visible...
+      Run flow when "Toggle performance monitor" is visible... SKIPPED
+      Run flow when "Reload" is visible...
+      Run flow when "Reload" is visible... SKIPPED
+    Run dismiss-dev-menu.yaml... COMPLETED
+    Assert that (Optional) "Welcome back" is visible... WARNED
+    Run flow when "Welcome back," is not visible...
+    Run flow when "Welcome back," is not visible... SKIPPED
+    Run flow when id: email-input is not visible...
+      Run flow when id: tab-profile is visible...
+        Run sign-out-tenant.yaml...
+          Wait for animation to end within 2000 ms... COMPLETED
+          Tap on (Optional) id: tab-home... COMPLETED
+          Wait for animation to end within 2000 ms... COMPLETED
+          Tap on id: tab-profile... COMPLETED
+          Wait for animation to end within 2500 ms... COMPLETED
+          Scrolling DOWN until ".*Sign Out.*" is visible with speed 40, visibility percentage 100%, timeout 15000 ms, with centering disabled... COMPLETED
+          Tap on ".*Sign Out.*"... COMPLETED
+          Assert that ".*Are you sure.*" is visible... COMPLETED
+          Tap on "Sign Out", Index: 1... COMPLETED
+          Assert that id: email-input is visible... COMPLETED
+          Assert that "Sign in to your account" is visible... COMPLETED
+        Run sign-out-tenant.yaml... COMPLETED
+      Run flow when id: tab-profile is visible... COMPLETED
+      Run flow when id: tab-vendor-profile is visible...
+      Run flow when id: tab-vendor-profile is visible... SKIPPED
+      Run flow when id: tab-owner-profile is visible...
+      Run flow when id: tab-owner-profile is visible... SKIPPED
+      Assert that id: email-input is visible... COMPLETED
+    Run flow when id: email-input is not visible... COMPLETED
+  Run flow when id: email-input is not visible... COMPLETED
+  Tap on id: email-input... COMPLETED
+  Erase text... COMPLETED
+  Input text ${TENANT_EMAIL}... COMPLETED
+  Tap on (Optional) "Sign in to your account"... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+  Tap on id: password-input... COMPLETED
+  Wait for animation to end within 1000 ms... COMPLETED
+  Erase text... COMPLETED
+  Input text ${TENANT_PASSWORD}... COMPLETED
+  Tap on (Optional) "Sign in to your account"... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+  Tap on id: sign-in-button... COMPLETED
+  Assert that "Welcome back," is visible... COMPLETED
+Run ../subflows/login-tenant.yaml... COMPLETED
+Run ../subflows/lc-tenant-request-viewing.yaml...
+  Open lalarenteapp://(tenant)/properties/${PROP_ID}... COMPLETED
+  Assert that id: tenant-property-request-viewing is visible... COMPLETED
+  Tap on id: tenant-property-request-viewing... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+  Run flow when "Viewing already requested" is visible...
+  Run flow when "Viewing already requested" is visible... SKIPPED
+  Assert that id: viewing-request-back is visible... COMPLETED
+  Run flow when id: viewing-request-existing-cancel is visible...
+  Run flow when id: viewing-request-existing-cancel is visible... SKIPPED
+  Assert that id: viewing-request-message is visible... COMPLETED
+  Assert that ".*${PROP_TITLE}.*" is visible... COMPLETED
+  Tap on id: viewing-request-date... COMPLETED
+  Assert that id: viewing-request-date-done is visible... FAILED
+Run ../subflows/lc-tenant-request-viewing.yaml... FAILED
+
+Assertion is false: id: viewing-request-date-done is visible
+
+Assertion 'id: viewing-request-date-done is visible' failed. Check the UI hierarchy in debug artifacts to verify the element state and properties.
+
+Possible causes:
+- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
+- Element may be temporarily unavailable due to loading state
+- This could be a real regression that needs to be addressed
+
+==== Debug output (logs & screenshots) ====
+
+/Users/appopoleis/.maestro/tests/2026-11-18_123353
