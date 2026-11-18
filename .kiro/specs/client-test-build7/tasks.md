@@ -1854,8 +1854,7 @@ then neither the owner nor the tenant could sign.
   - [x] `scripts/run-android-guards.sh` runs every Android guard (3-button
         navigation) — release gate step 4.
   - [x] Jest: `Select` bottom inset, `LeaseSignatureRow` expiry/failure.
-  - [x] Each sheet visually checked on the Android emulator (release APK):
-        `android-keyboard-forms-guard` green; lifecycle 01→05 green.
+  - [ ] Each sheet visually checked on the Android emulator (release APK).
 
 ## CT7-048 🟠 Bottom tab labels under the Android navigation buttons (all roles)
 
@@ -1890,10 +1889,12 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   lease renewal offer, insurance document, invoice approve/reject; tenant
   EFT payment confirm, invoice approve/reject.
 - **Acceptance criteria:**
-  - [ ] Every modal with a text input wraps its content in
+  - [x] Every modal with a text input wraps its content in
         `KeyboardAvoidingView` (`padding` iOS / `height` Android); its
         ScrollViews use `keyboardShouldPersistTaps="handled"`.
-  - [ ] Jest guard `modalKeyboardGuard.test.ts` fails for any modal with a
+  - [x] Jest guard `modalKeyboardGuard.test.ts` fails for any modal with a
         TextInput and no keyboard handling.
-  - [ ] Android emulator (release APK, real keyboard): typing in the lowest
-        field keeps it and the action buttons visible, first tap works.
+  - [x] Android emulator (release APK, real keyboard): typing in the lowest
+        field keeps it and the action buttons visible, first tap works —
+        `android-keyboard-forms-guard` green (in `run-android-guards.sh`);
+        lifecycle 01→05 green.
