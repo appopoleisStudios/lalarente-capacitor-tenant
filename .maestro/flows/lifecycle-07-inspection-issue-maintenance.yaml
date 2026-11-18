@@ -457,11 +457,32 @@ appId: com.lalarente.app
 - tapOn:
     id: "maintenance-title-input"
 - inputText: "LC-unsent ${LC_TOKEN}"
+# CT7-051: with the keyboard up, the field being typed in and Submit stay visible
+- waitForAnimationToEnd:
+    timeout: 1500
+- assertVisible:
+    id: "maintenance-title-input"
+- assertVisible:
+    id: "maintenance-submit"
+- takeScreenshot: lc07-tenant-report-title-keyboard
 - tapOn:
     text: "Report Issue"
+- scrollUntilVisible:
+    element:
+      id: "maintenance-description-input"
+    direction: DOWN
+    timeout: 10000
+    visibilityPercentage: 60
 - tapOn:
     id: "maintenance-description-input"
 - inputText: "LC-unsent description ${LC_TOKEN}"
+- waitForAnimationToEnd:
+    timeout: 1500
+- assertVisible:
+    id: "maintenance-description-input"
+- assertVisible:
+    id: "maintenance-submit"
+- takeScreenshot: lc07-tenant-report-description-keyboard
 - tapOn:
     text: "Report Issue"
 - waitForAnimationToEnd:
