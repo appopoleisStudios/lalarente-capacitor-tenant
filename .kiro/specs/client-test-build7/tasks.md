@@ -1877,7 +1877,7 @@ then neither the owner nor the tenant could sign.
 
 Found while testing on the Android emulator with a real on-screen keyboard.
 
-## CT7-047 🟠 Keyboard covers the fields and buttons of pop-up forms (Android) (PR #PRNUM)
+## CT7-047 🟠 Keyboard covers the fields and buttons of pop-up forms (Android) (PR #252)
 
 - **Role:** all · **Platform:** Android
 - **Today:** an RN `<Modal>` window does not resize for the keyboard on
