@@ -23,6 +23,17 @@ describe('useTabBarStyle (CT7-048)', () => {
     expect(result.current.height).toBe(85);
   });
 
+  it('never goes below the 25 bottom padding for a small inset, and follows inset changes', () => {
+    mockBottom = 16;
+    const { result, rerender } = renderHook(() => useTabBarStyle());
+    expect(result.current.paddingBottom).toBe(25);
+    expect(result.current.height).toBe(85);
+    mockBottom = 48;
+    rerender({});
+    expect(result.current.paddingBottom).toBe(48);
+    expect(result.current.height).toBe(108);
+  });
+
   it.each(['owner', 'tenant', 'vendor'])(
     'the %s layout uses it instead of a fixed height',
     (role) => {
