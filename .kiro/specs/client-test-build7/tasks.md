@@ -1837,7 +1837,7 @@ then neither the owner nor the tenant could sign.
   - [x] ESLint error on importing `SafeAreaView` from `react-native`, so
         pre-commit and CI block the pattern.
 
-## CT7-046 🟠 Bottom sheets and owner modals: last button under the Android nav bar (PR #PRNUM)
+## CT7-046 🟠 Bottom sheets and owner modals: last button under the Android nav bar (PR #251)
 
 - **Role:** all · **Platform:** Android · Found by the SA review of PR #249.
 - **Today:** 14 bottom sheets (EFT payment confirm, arrears plan, early
