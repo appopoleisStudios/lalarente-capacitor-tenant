@@ -1,0 +1,134 @@
+# Android regression guard — CT7-047: with the on-screen keyboard open, a
+# pop-up form's lowest field and its action buttons stay visible and usable.
+# One of each kind: shared reason prompt (ModalSheet), centered dialog,
+# full-screen page sheet, bottom sheet. Opens, types, checks, cancels — never
+# submits. Needs a submitted application on the lifecycle fixture
+# (lifecycle 01 → 03a); the owner parts skip if there is none.
+# Run on the emulator with a real soft keyboard (hw.keyboard=no).
+appId: com.lalarente.app
+---
+- launchApp:
+    clearState: true
+- runFlow: ../subflows/login-owner.yaml
+
+# ── shared reason prompt + centered dialog (owner application) ────────────
+- runFlow:
+    file: ../subflows/lc-owner-open-application.yaml
+    env:
+      PROP_TITLE: "2B Datura"
+- runFlow:
+    when:
+      visible:
+        id: "owner-application-back"
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "owner-application-reject"
+          direction: DOWN
+          timeout: 15000
+          centerElement: true
+      - tapOn:
+          id: "owner-application-reject"
+      - tapOn:
+          id: "reason-input"
+      - inputText: "keyboard check"
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - takeScreenshot: kb-reason-prompt
+      - assertVisible:
+          id: "reason-input"
+      - assertVisible:
+          id: "reason-confirm"
+      - tapOn:
+          id: "reason-cancel"
+      - extendedWaitUntil:
+          notVisible:
+            id: "reason-input"
+          timeout: 10000
+      # only shown while no holding deposit exists yet
+      - scrollUntilVisible:
+          element:
+            id: "owner-application-request-deposit"
+          direction: DOWN
+          timeout: 10000
+          centerElement: true
+          optional: true
+      - runFlow:
+          when:
+            visible:
+              id: "owner-application-request-deposit"
+          commands:
+            - tapOn:
+                id: "owner-application-request-deposit"
+            - tapOn:
+                id: "owner-application-deposit-amount"
+            - inputText: "1"
+            - waitForAnimationToEnd:
+                timeout: 2000
+            - takeScreenshot: kb-deposit-dialog
+            - assertVisible:
+                id: "owner-application-deposit-send"
+            - tapOn:
+                id: "owner-application-deposit-cancel"
+            - extendedWaitUntil:
+                notVisible:
+                  id: "owner-application-deposit-amount"
+                timeout: 10000
+
+# ── full-screen page sheet (owner holding deposits) ───────────────────────
+- openLink: lalarenteapp://(owner)/holding-deposit
+- extendedWaitUntil:
+    visible:
+      id: "owner-holding-deposit-create"
+    timeout: 20000
+- tapOn:
+    id: "owner-holding-deposit-create"
+- tapOn:
+    id: "owner-holding-deposit-modal-amount"
+- inputText: "1"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: kb-holding-deposit-sheet
+- assertVisible:
+    id: "owner-holding-deposit-modal-amount"
+- scrollUntilVisible:
+    element:
+      id: "owner-holding-deposit-modal-create"
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: "owner-holding-deposit-modal-close"
+- extendedWaitUntil:
+    notVisible:
+      id: "owner-holding-deposit-modal-amount"
+    timeout: 10000
+- runFlow: ../subflows/sign-out-owner.yaml
+
+# ── bottom sheet (vendor Add Service) ─────────────────────────────────────
+- runFlow: ../subflows/login-vendor.yaml
+- openLink: lalarenteapp://(vendor)/profile/services
+- extendedWaitUntil:
+    visible: ".*Your Services.*"
+    timeout: 20000
+- tapOn:
+    text: "Add"
+    rightOf: ".*Your Services.*"
+- extendedWaitUntil:
+    visible: "Add Service"
+    timeout: 10000
+- tapOn: "e.g., 500"
+- inputText: "1"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: kb-vendor-add-service
+# the field being typed in and both action buttons sit above the keyboard
+# (the optional fields below scroll inside the sheet)
+- assertVisible: "Base Price.*"
+- assertVisible: "Cancel"
+- assertVisible:
+    text: "Add Service"
+    rightOf: "Cancel"
+- tapOn: "Cancel"
+- extendedWaitUntil:
+    notVisible: "Base Price.*"
+    timeout: 10000
