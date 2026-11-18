@@ -22,6 +22,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 
 const RSA = { blue: '#002395' };
 
@@ -182,292 +183,300 @@ export default function VendorQuoteDetailScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
-          <Ionicons name="arrow-back" size={24} color="#111827" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Quote Details</Text>
-        {canEdit && (
-          <TouchableOpacity
-            onPress={handleEditToggle}
-            style={styles.headerButton}
-            disabled={actionLoading}
-          >
-            <Ionicons
-              name={editMode ? 'close' : 'create-outline'}
-              size={24}
-              color={editMode ? colors.error[500] : RSA.blue}
-            />
+      <KeyboardAvoidingView>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
+            <Ionicons name="arrow-back" size={24} color="#111827" />
           </TouchableOpacity>
-        )}
-        {!canEdit && <View style={styles.headerButton} />}
-      </View>
-
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.statusContainer}>
-          <View style={[styles.statusBadge, { backgroundColor: statusConfig.color }]}>
-            <Ionicons name={statusConfig.icon as any} size={20} color="#FFFFFF" />
-            <Text style={styles.statusText}>{statusConfig.label}</Text>
-          </View>
+          <Text style={styles.headerTitle}>Quote Details</Text>
+          {canEdit && (
+            <TouchableOpacity
+              onPress={handleEditToggle}
+              style={styles.headerButton}
+              disabled={actionLoading}
+            >
+              <Ionicons
+                name={editMode ? 'close' : 'create-outline'}
+                size={24}
+                color={editMode ? colors.error[500] : RSA.blue}
+              />
+            </TouchableOpacity>
+          )}
+          {!canEdit && <View style={styles.headerButton} />}
         </View>
 
-        {quote.contract_id && (
-          <View style={styles.section}>
-            <View style={styles.contractBanner}>
-              <Ionicons name="document-text-outline" size={20} color={colors.info[600]} />
-              <Text style={styles.contractBannerText}>Long-term Contract Quote</Text>
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.statusContainer}>
+            <View style={[styles.statusBadge, { backgroundColor: statusConfig.color }]}>
+              <Ionicons name={statusConfig.icon as any} size={20} color="#FFFFFF" />
+              <Text style={styles.statusText}>{statusConfig.label}</Text>
             </View>
           </View>
-        )}
 
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Cost Breakdown</Text>
-            {hasRevisions && !editMode && (
-              <TouchableOpacity
-                onPress={() => setShowRevisions(!showRevisions)}
-                style={styles.revisionToggle}
-              >
-                <Text style={styles.revisionToggleText}>
-                  {showRevisions ? 'Hide' : 'Show'} History
+          {quote.contract_id && (
+            <View style={styles.section}>
+              <View style={styles.contractBanner}>
+                <Ionicons name="document-text-outline" size={20} color={colors.info[600]} />
+                <Text style={styles.contractBannerText}>Long-term Contract Quote</Text>
+              </View>
+            </View>
+          )}
+
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Cost Breakdown</Text>
+              {hasRevisions && !editMode && (
+                <TouchableOpacity
+                  onPress={() => setShowRevisions(!showRevisions)}
+                  style={styles.revisionToggle}
+                >
+                  <Text style={styles.revisionToggleText}>
+                    {showRevisions ? 'Hide' : 'Show'} History
+                  </Text>
+                  <Ionicons
+                    name={showRevisions ? 'chevron-up' : 'chevron-down'}
+                    size={16}
+                    color={RSA.blue}
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {editMode ? (
+              <View style={styles.editCard}>
+                <View style={styles.editRow}>
+                  <Text style={styles.editLabel}>Subtotal (R)</Text>
+                  <TextInput
+                    style={styles.editInput}
+                    value={editSubtotal}
+                    onChangeText={setEditSubtotal}
+                    keyboardType="numeric"
+                    placeholder="0"
+                  />
+                </View>
+                <View style={styles.editRow}>
+                  <Text style={styles.editLabel}>VAT (R)</Text>
+                  <TextInput
+                    style={styles.editInput}
+                    value={editVAT}
+                    onChangeText={setEditVAT}
+                    keyboardType="numeric"
+                    placeholder="0"
+                  />
+                </View>
+                <View style={styles.editRow}>
+                  <Text style={styles.editLabel}>Discount (R)</Text>
+                  <TextInput
+                    style={styles.editInput}
+                    value={editDiscount}
+                    onChangeText={setEditDiscount}
+                    keyboardType="numeric"
+                    placeholder="0"
+                  />
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.editRow}>
+                  <Text style={styles.totalLabel}>Total (R)</Text>
+                  <TextInput
+                    style={[styles.editInput, styles.totalInput]}
+                    value={editTotal}
+                    onChangeText={setEditTotal}
+                    keyboardType="numeric"
+                    placeholder="0"
+                  />
+                </View>
+
+                <View style={styles.reasonSection}>
+                  <Text style={styles.reasonLabel}>Notes (Optional)</Text>
+                  <TextInput
+                    style={styles.reasonInput}
+                    value={editNotes}
+                    onChangeText={setEditNotes}
+                    placeholder="Add any notes about the work..."
+                    multiline
+                    numberOfLines={3}
+                  />
+                </View>
+
+                <View style={styles.reasonSection}>
+                  <Text style={styles.reasonLabel}>Reason for Revision *</Text>
+                  <TextInput
+                    style={styles.reasonInput}
+                    value={editReason}
+                    onChangeText={setEditReason}
+                    placeholder="Explain what changed..."
+                    multiline
+                    numberOfLines={2}
+                  />
+                </View>
+
+                <View style={styles.editActions}>
+                  <TouchableOpacity
+                    style={[styles.editActionButton, styles.cancelButton]}
+                    onPress={handleEditToggle}
+                    disabled={actionLoading}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.editActionButton, styles.saveButton]}
+                    onPress={handleSaveEdit}
+                    disabled={actionLoading}
+                  >
+                    {actionLoading ? (
+                      <ActivityIndicator color="#FFFFFF" />
+                    ) : (
+                      <Text style={styles.saveButtonText}>Save & Resubmit</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.costCard}>
+                <View style={styles.costRow}>
+                  <Text style={styles.costLabel}>Subtotal</Text>
+                  <Text style={styles.costValue}>R {quote.subtotal?.toLocaleString() || '0'}</Text>
+                </View>
+                <View style={styles.costRow}>
+                  <Text style={styles.costLabel}>VAT (15%)</Text>
+                  <Text style={styles.costValue}>
+                    R {quote.vat_amount?.toLocaleString() || '0'}
+                  </Text>
+                </View>
+                {quote.discount_amount != null && quote.discount_amount > 0 && (
+                  <View style={styles.costRow}>
+                    <Text style={[styles.costLabel, { color: colors.success[600] }]}>Discount</Text>
+                    <Text style={[styles.costValue, { color: colors.success[600] }]}>
+                      -R {quote.discount_amount.toLocaleString()}
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.divider} />
+                <View style={styles.costRow}>
+                  <Text style={styles.totalLabel}>Total</Text>
+                  <Text style={styles.totalValue}>
+                    R {quote.total_amount?.toLocaleString() || '0'}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {quote.revision_number != null && quote.revision_number > 0 && !editMode && (
+              <View style={styles.revisionBadge}>
+                <Ionicons name="refresh" size={16} color={colors.warning[600]} />
+                <Text style={styles.revisionBadgeText}>
+                  Revision {quote.revision_number}{' '}
+                  {hasRevisions ? `(${revisions.length} previous)` : ''}
                 </Text>
-                <Ionicons
-                  name={showRevisions ? 'chevron-up' : 'chevron-down'}
-                  size={16}
-                  color={RSA.blue}
-                />
-              </TouchableOpacity>
+              </View>
             )}
           </View>
 
-          {editMode ? (
-            <View style={styles.editCard}>
-              <View style={styles.editRow}>
-                <Text style={styles.editLabel}>Subtotal (R)</Text>
-                <TextInput
-                  style={styles.editInput}
-                  value={editSubtotal}
-                  onChangeText={setEditSubtotal}
-                  keyboardType="numeric"
-                  placeholder="0"
-                />
-              </View>
-              <View style={styles.editRow}>
-                <Text style={styles.editLabel}>VAT (R)</Text>
-                <TextInput
-                  style={styles.editInput}
-                  value={editVAT}
-                  onChangeText={setEditVAT}
-                  keyboardType="numeric"
-                  placeholder="0"
-                />
-              </View>
-              <View style={styles.editRow}>
-                <Text style={styles.editLabel}>Discount (R)</Text>
-                <TextInput
-                  style={styles.editInput}
-                  value={editDiscount}
-                  onChangeText={setEditDiscount}
-                  keyboardType="numeric"
-                  placeholder="0"
-                />
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.editRow}>
-                <Text style={styles.totalLabel}>Total (R)</Text>
-                <TextInput
-                  style={[styles.editInput, styles.totalInput]}
-                  value={editTotal}
-                  onChangeText={setEditTotal}
-                  keyboardType="numeric"
-                  placeholder="0"
-                />
-              </View>
-
-              <View style={styles.reasonSection}>
-                <Text style={styles.reasonLabel}>Notes (Optional)</Text>
-                <TextInput
-                  style={styles.reasonInput}
-                  value={editNotes}
-                  onChangeText={setEditNotes}
-                  placeholder="Add any notes about the work..."
-                  multiline
-                  numberOfLines={3}
-                />
-              </View>
-
-              <View style={styles.reasonSection}>
-                <Text style={styles.reasonLabel}>Reason for Revision *</Text>
-                <TextInput
-                  style={styles.reasonInput}
-                  value={editReason}
-                  onChangeText={setEditReason}
-                  placeholder="Explain what changed..."
-                  multiline
-                  numberOfLines={2}
-                />
-              </View>
-
-              <View style={styles.editActions}>
-                <TouchableOpacity
-                  style={[styles.editActionButton, styles.cancelButton]}
-                  onPress={handleEditToggle}
-                  disabled={actionLoading}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.editActionButton, styles.saveButton]}
-                  onPress={handleSaveEdit}
-                  disabled={actionLoading}
-                >
-                  {actionLoading ? (
-                    <ActivityIndicator color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.saveButtonText}>Save & Resubmit</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : (
-            <View style={styles.costCard}>
-              <View style={styles.costRow}>
-                <Text style={styles.costLabel}>Subtotal</Text>
-                <Text style={styles.costValue}>R {quote.subtotal?.toLocaleString() || '0'}</Text>
-              </View>
-              <View style={styles.costRow}>
-                <Text style={styles.costLabel}>VAT (15%)</Text>
-                <Text style={styles.costValue}>R {quote.vat_amount?.toLocaleString() || '0'}</Text>
-              </View>
-              {quote.discount_amount != null && quote.discount_amount > 0 && (
-                <View style={styles.costRow}>
-                  <Text style={[styles.costLabel, { color: colors.success[600] }]}>Discount</Text>
-                  <Text style={[styles.costValue, { color: colors.success[600] }]}>
-                    -R {quote.discount_amount.toLocaleString()}
-                  </Text>
-                </View>
-              )}
-              <View style={styles.divider} />
-              <View style={styles.costRow}>
-                <Text style={styles.totalLabel}>Total</Text>
-                <Text style={styles.totalValue}>
-                  R {quote.total_amount?.toLocaleString() || '0'}
-                </Text>
+          {quote.notes && !editMode && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Your Notes</Text>
+              <View style={styles.notesCard}>
+                <Text style={styles.notesText}>{quote.notes}</Text>
               </View>
             </View>
           )}
 
-          {quote.revision_number != null && quote.revision_number > 0 && !editMode && (
-            <View style={styles.revisionBadge}>
-              <Ionicons name="refresh" size={16} color={colors.warning[600]} />
-              <Text style={styles.revisionBadgeText}>
-                Revision {quote.revision_number}{' '}
-                {hasRevisions ? `(${revisions.length} previous)` : ''}
+          {quote.revision_reason && !editMode && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>
+                {quote.status === 'revision_requested'
+                  ? 'Owner Requested Changes'
+                  : 'Your Last Revision'}
               </Text>
+              <View
+                style={[
+                  styles.notesCard,
+                  { backgroundColor: colors.warning[50], borderColor: colors.warning[500] },
+                ]}
+              >
+                <Text style={styles.notesText}>{quote.revision_reason}</Text>
+              </View>
             </View>
           )}
-        </View>
 
-        {quote.notes && !editMode && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Your Notes</Text>
-            <View style={styles.notesCard}>
-              <Text style={styles.notesText}>{quote.notes}</Text>
-            </View>
-          </View>
-        )}
-
-        {quote.revision_reason && !editMode && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              {quote.status === 'revision_requested'
-                ? 'Owner Requested Changes'
-                : 'Your Last Revision'}
-            </Text>
-            <View
-              style={[
-                styles.notesCard,
-                { backgroundColor: colors.warning[50], borderColor: colors.warning[500] },
-              ]}
-            >
-              <Text style={styles.notesText}>{quote.revision_reason}</Text>
-            </View>
-          </View>
-        )}
-
-        {showRevisions && hasRevisions && !editMode && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Revision History</Text>
-            {revisions.map((revision, index) => (
-              <View key={revision.id} style={styles.revisionCard}>
-                <View style={styles.revisionHeader}>
-                  <View style={styles.revisionNumber}>
-                    <Text style={styles.revisionNumberText}>v{revision.revision_number}</Text>
-                  </View>
-                  <Text style={styles.revisionDate}>
-                    {new Date(revision.created_at).toLocaleDateString('en-ZA', {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
-                  </Text>
-                </View>
-
-                <View style={styles.revisionCosts}>
-                  <View style={styles.revisionCostRow}>
-                    <Text style={styles.revisionCostLabel}>Total</Text>
-                    <Text style={styles.revisionCostValue}>
-                      R {revision.total_amount.toLocaleString()}
+          {showRevisions && hasRevisions && !editMode && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Revision History</Text>
+              {revisions.map((revision, index) => (
+                <View key={revision.id} style={styles.revisionCard}>
+                  <View style={styles.revisionHeader}>
+                    <View style={styles.revisionNumber}>
+                      <Text style={styles.revisionNumberText}>v{revision.revision_number}</Text>
+                    </View>
+                    <Text style={styles.revisionDate}>
+                      {new Date(revision.created_at).toLocaleDateString('en-ZA', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
                     </Text>
                   </View>
-                  {index < revisions.length - 1 && (
-                    <View style={styles.revisionDiff}>
-                      <Ionicons
-                        name={
-                          revision.total_amount > revisions[index + 1].total_amount
-                            ? 'arrow-up'
-                            : 'arrow-down'
-                        }
-                        size={14}
-                        color={
-                          revision.total_amount > revisions[index + 1].total_amount
-                            ? colors.error[500]
-                            : colors.success[500]
-                        }
-                      />
-                      <Text
-                        style={[
-                          styles.revisionDiffText,
-                          {
-                            color:
-                              revision.total_amount > revisions[index + 1].total_amount
-                                ? colors.error[500]
-                                : colors.success[500],
-                          },
-                        ]}
-                      >
-                        R{' '}
-                        {Math.abs(
-                          revision.total_amount - revisions[index + 1].total_amount
-                        ).toLocaleString()}
+
+                  <View style={styles.revisionCosts}>
+                    <View style={styles.revisionCostRow}>
+                      <Text style={styles.revisionCostLabel}>Total</Text>
+                      <Text style={styles.revisionCostValue}>
+                        R {revision.total_amount.toLocaleString()}
                       </Text>
+                    </View>
+                    {index < revisions.length - 1 && (
+                      <View style={styles.revisionDiff}>
+                        <Ionicons
+                          name={
+                            revision.total_amount > revisions[index + 1].total_amount
+                              ? 'arrow-up'
+                              : 'arrow-down'
+                          }
+                          size={14}
+                          color={
+                            revision.total_amount > revisions[index + 1].total_amount
+                              ? colors.error[500]
+                              : colors.success[500]
+                          }
+                        />
+                        <Text
+                          style={[
+                            styles.revisionDiffText,
+                            {
+                              color:
+                                revision.total_amount > revisions[index + 1].total_amount
+                                  ? colors.error[500]
+                                  : colors.success[500],
+                            },
+                          ]}
+                        >
+                          R{' '}
+                          {Math.abs(
+                            revision.total_amount - revisions[index + 1].total_amount
+                          ).toLocaleString()}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {revision.revision_reason && (
+                    <View style={styles.revisionReason}>
+                      <Text style={styles.revisionReasonLabel}>Reason:</Text>
+                      <Text style={styles.revisionReasonText}>{revision.revision_reason}</Text>
                     </View>
                   )}
                 </View>
+              ))}
+            </View>
+          )}
 
-                {revision.revision_reason && (
-                  <View style={styles.revisionReason}>
-                    <Text style={styles.revisionReasonLabel}>Reason:</Text>
-                    <Text style={styles.revisionReasonText}>{revision.revision_reason}</Text>
-                  </View>
-                )}
-              </View>
-            ))}
-          </View>
-        )}
-
-        <View style={{ height: 100 }} />
-      </ScrollView>
+          <View style={{ height: 100 }} />
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

@@ -31,6 +31,7 @@ import {
   type UserDataExport,
 } from '../api';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 
 type Tab = 'access' | 'correction' | 'deletion';
 
@@ -384,121 +385,127 @@ export default function DataSubjectRightsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Data Subject Rights</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <KeyboardAvoidingView>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Data Subject Rights</Text>
+          <View style={{ width: 40 }} />
+        </View>
 
-      {/* Tabs */}
-      <View style={styles.tabs}>
-        {(['access', 'correction', 'deletion'] as Tab[]).map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            style={[styles.tab, activeTab === tab && styles.tabActive]}
-            onPress={() => {
-              setActiveTab(tab);
-              setShowForm(false);
-            }}
-          >
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+        {/* Tabs */}
+        <View style={styles.tabs}>
+          {(['access', 'correction', 'deletion'] as Tab[]).map((tab) => (
+            <TouchableOpacity
+              key={tab}
+              style={[styles.tab, activeTab === tab && styles.tabActive]}
+              onPress={() => {
+                setActiveTab(tab);
+                setShowForm(false);
+              }}
+            >
+              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <ScrollView
+          style={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* New Request Button */}
+          <TouchableOpacity style={styles.newRequestButton} onPress={() => setShowForm(!showForm)}>
+            <Ionicons
+              name={showForm ? 'close' : 'add-circle-outline'}
+              size={20}
+              color={colors.primary[500]}
+            />
+            <Text style={styles.newRequestText}>
+              {showForm ? 'Cancel' : `New ${activeTab} request`}
             </Text>
           </TouchableOpacity>
-        ))}
-      </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* New Request Button */}
-        <TouchableOpacity style={styles.newRequestButton} onPress={() => setShowForm(!showForm)}>
-          <Ionicons
-            name={showForm ? 'close' : 'add-circle-outline'}
-            size={20}
-            color={colors.primary[500]}
-          />
-          <Text style={styles.newRequestText}>
-            {showForm ? 'Cancel' : `New ${activeTab} request`}
-          </Text>
-        </TouchableOpacity>
+          {renderForm()}
 
-        {renderForm()}
-
-        {/* Data Export Summary */}
-        {exportedData && activeTab === 'access' && (
-          <View style={styles.exportCard}>
-            <View style={styles.exportHeader}>
-              <Ionicons name="cloud-download-outline" size={22} color={colors.primary[500]} />
-              <Text style={styles.exportTitle}>Your Data Export</Text>
-            </View>
-            <Text style={styles.exportDate}>
-              Generated: {new Date(exportedData.exportedAt).toLocaleString('en-ZA')}
-            </Text>
-            {[
-              {
-                label: 'Profile',
-                icon: 'person-outline' as const,
-                count: exportedData.profile ? 1 : 0,
-              },
-              {
-                label: 'Consents',
-                icon: 'shield-checkmark-outline' as const,
-                count: exportedData.consents.length,
-              },
-              {
-                label: 'Leases',
-                icon: 'document-text-outline' as const,
-                count: exportedData.leases.length,
-              },
-              {
-                label: 'Payments',
-                icon: 'card-outline' as const,
-                count: exportedData.payments.length,
-              },
-              {
-                label: 'Applications',
-                icon: 'paper-plane-outline' as const,
-                count: exportedData.applications.length,
-              },
-              {
-                label: 'Maintenance',
-                icon: 'hammer-outline' as const,
-                count: exportedData.maintenanceRequests.length,
-              },
-              {
-                label: 'Messages',
-                icon: 'chatbubble-outline' as const,
-                count: exportedData.messages.length,
-              },
-              {
-                label: 'Viewings',
-                icon: 'eye-outline' as const,
-                count: exportedData.viewings.length,
-              },
-            ].map((item) => (
-              <View key={item.label} style={styles.exportRow}>
-                <Ionicons name={item.icon} size={16} color={colors.text.secondary} />
-                <Text style={styles.exportRowLabel}>{item.label}</Text>
-                <Text style={styles.exportRowCount}>
-                  {item.count} record{item.count !== 1 ? 's' : ''}
-                </Text>
+          {/* Data Export Summary */}
+          {exportedData && activeTab === 'access' && (
+            <View style={styles.exportCard}>
+              <View style={styles.exportHeader}>
+                <Ionicons name="cloud-download-outline" size={22} color={colors.primary[500]} />
+                <Text style={styles.exportTitle}>Your Data Export</Text>
               </View>
-            ))}
-            <TouchableOpacity style={styles.shareButton} onPress={handleShareExport}>
-              <Ionicons name="share-outline" size={18} color={colors.text.inverse} />
-              <Text style={styles.shareButtonText}>Share as JSON</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+              <Text style={styles.exportDate}>
+                Generated: {new Date(exportedData.exportedAt).toLocaleString('en-ZA')}
+              </Text>
+              {[
+                {
+                  label: 'Profile',
+                  icon: 'person-outline' as const,
+                  count: exportedData.profile ? 1 : 0,
+                },
+                {
+                  label: 'Consents',
+                  icon: 'shield-checkmark-outline' as const,
+                  count: exportedData.consents.length,
+                },
+                {
+                  label: 'Leases',
+                  icon: 'document-text-outline' as const,
+                  count: exportedData.leases.length,
+                },
+                {
+                  label: 'Payments',
+                  icon: 'card-outline' as const,
+                  count: exportedData.payments.length,
+                },
+                {
+                  label: 'Applications',
+                  icon: 'paper-plane-outline' as const,
+                  count: exportedData.applications.length,
+                },
+                {
+                  label: 'Maintenance',
+                  icon: 'hammer-outline' as const,
+                  count: exportedData.maintenanceRequests.length,
+                },
+                {
+                  label: 'Messages',
+                  icon: 'chatbubble-outline' as const,
+                  count: exportedData.messages.length,
+                },
+                {
+                  label: 'Viewings',
+                  icon: 'eye-outline' as const,
+                  count: exportedData.viewings.length,
+                },
+              ].map((item) => (
+                <View key={item.label} style={styles.exportRow}>
+                  <Ionicons name={item.icon} size={16} color={colors.text.secondary} />
+                  <Text style={styles.exportRowLabel}>{item.label}</Text>
+                  <Text style={styles.exportRowCount}>
+                    {item.count} record{item.count !== 1 ? 's' : ''}
+                  </Text>
+                </View>
+              ))}
+              <TouchableOpacity style={styles.shareButton} onPress={handleShareExport}>
+                <Ionicons name="share-outline" size={18} color={colors.text.inverse} />
+                <Text style={styles.shareButtonText}>Share as JSON</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
-        {/* Request History */}
-        <Text style={styles.sectionTitle}>Request History</Text>
-        {renderRequestList()}
+          {/* Request History */}
+          <Text style={styles.sectionTitle}>Request History</Text>
+          {renderRequestList()}
 
-        <View style={{ height: 40 }} />
-      </ScrollView>
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

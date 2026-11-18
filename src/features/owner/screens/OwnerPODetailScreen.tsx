@@ -24,6 +24,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 
 const RSA = { blue: '#002395' };
 
@@ -237,447 +238,455 @@ export default function OwnerPODetailScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
-          <Ionicons name="arrow-back" size={24} color="#111827" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Purchase Order</Text>
-        <TouchableOpacity
-          onPress={handleEditToggle}
-          style={styles.headerButton}
-          disabled={actionLoading}
+      <KeyboardAvoidingView>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
+            <Ionicons name="arrow-back" size={24} color="#111827" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Purchase Order</Text>
+          <TouchableOpacity
+            onPress={handleEditToggle}
+            style={styles.headerButton}
+            disabled={actionLoading}
+          >
+            <Ionicons
+              name={editMode ? 'close' : 'create-outline'}
+              size={24}
+              color={editMode ? colors.error[500] : RSA.blue}
+            />
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          <Ionicons
-            name={editMode ? 'close' : 'create-outline'}
-            size={24}
-            color={editMode ? colors.error[500] : RSA.blue}
-          />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.statusContainer}>
-          <View style={[styles.statusBadge, { backgroundColor: statusConfig.color }]}>
-            <Ionicons name={statusConfig.icon as any} size={20} color="#FFFFFF" />
-            <Text style={styles.statusText}>{statusConfig.label}</Text>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.poNumber}>{po.po_number}</Text>
-          <Text style={styles.poDate}>
-            Issued:{' '}
-            {new Date(po.created_at).toLocaleDateString('en-ZA', {
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-            })}
-          </Text>
-        </View>
-
-        {po.contract && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Contract Reference</Text>
-            <View style={styles.contractCard}>
-              <Ionicons name="document-text" size={24} color={colors.info[500]} />
-              <View style={styles.contractInfo}>
-                <Text style={styles.contractNumber}>
-                  Contract ID: {po.contract.id.substring(0, 8)}...
-                </Text>
-                <Text style={styles.contractStatus}>Status: {po.contract.status}</Text>
-              </View>
+          <View style={styles.statusContainer}>
+            <View style={[styles.statusBadge, { backgroundColor: statusConfig.color }]}>
+              <Ionicons name={statusConfig.icon as any} size={20} color="#FFFFFF" />
+              <Text style={styles.statusText}>{statusConfig.label}</Text>
             </View>
           </View>
-        )}
 
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Cost Breakdown</Text>
-            {hasRevisions && !editMode && (
-              <TouchableOpacity
-                onPress={() => setShowRevisions(!showRevisions)}
-                style={styles.revisionToggle}
-              >
-                <Text style={styles.revisionToggleText}>
-                  {showRevisions ? 'Hide' : 'Show'} History
+          <View style={styles.section}>
+            <Text style={styles.poNumber}>{po.po_number}</Text>
+            <Text style={styles.poDate}>
+              Issued:{' '}
+              {new Date(po.created_at).toLocaleDateString('en-ZA', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+              })}
+            </Text>
+          </View>
+
+          {po.contract && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Contract Reference</Text>
+              <View style={styles.contractCard}>
+                <Ionicons name="document-text" size={24} color={colors.info[500]} />
+                <View style={styles.contractInfo}>
+                  <Text style={styles.contractNumber}>
+                    Contract ID: {po.contract.id.substring(0, 8)}...
+                  </Text>
+                  <Text style={styles.contractStatus}>Status: {po.contract.status}</Text>
+                </View>
+              </View>
+            </View>
+          )}
+
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Cost Breakdown</Text>
+              {hasRevisions && !editMode && (
+                <TouchableOpacity
+                  onPress={() => setShowRevisions(!showRevisions)}
+                  style={styles.revisionToggle}
+                >
+                  <Text style={styles.revisionToggleText}>
+                    {showRevisions ? 'Hide' : 'Show'} History
+                  </Text>
+                  <Ionicons
+                    name={showRevisions ? 'chevron-up' : 'chevron-down'}
+                    size={16}
+                    color={RSA.blue}
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {editMode ? (
+              <View style={styles.editCard}>
+                <View style={styles.editRow}>
+                  <Text style={styles.editLabel}>Subtotal (R)</Text>
+                  <TextInput
+                    style={styles.editInput}
+                    value={editSubtotal}
+                    onChangeText={setEditSubtotal}
+                    keyboardType="numeric"
+                    placeholder="0"
+                  />
+                </View>
+                <View style={styles.editRow}>
+                  <Text style={styles.editLabel}>VAT (R)</Text>
+                  <TextInput
+                    style={styles.editInput}
+                    value={editVAT}
+                    onChangeText={setEditVAT}
+                    keyboardType="numeric"
+                    placeholder="0"
+                  />
+                </View>
+                <View style={styles.editRow}>
+                  <Text style={styles.editLabel}>Platform Fee (R)</Text>
+                  <TextInput
+                    style={styles.editInput}
+                    value={editPlatformFee}
+                    onChangeText={setEditPlatformFee}
+                    keyboardType="numeric"
+                    placeholder="0"
+                  />
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.editRow}>
+                  <Text style={styles.totalLabel}>Total (R)</Text>
+                  <TextInput
+                    style={[styles.editInput, styles.totalInput]}
+                    value={editTotal}
+                    onChangeText={setEditTotal}
+                    keyboardType="numeric"
+                    placeholder="0"
+                  />
+                </View>
+
+                <View style={styles.reasonSection}>
+                  <Text style={styles.reasonLabel}>Reason for Revision *</Text>
+                  <TextInput
+                    style={styles.reasonInput}
+                    value={editReason}
+                    onChangeText={setEditReason}
+                    placeholder="Explain why you're updating this PO..."
+                    multiline
+                    numberOfLines={3}
+                  />
+                </View>
+
+                <View style={styles.editActions}>
+                  <TouchableOpacity
+                    style={[styles.editActionButton, styles.cancelButton]}
+                    onPress={handleEditToggle}
+                    disabled={actionLoading}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.editActionButton, styles.saveButton]}
+                    onPress={handleSaveEdit}
+                    disabled={actionLoading}
+                  >
+                    {actionLoading ? (
+                      <ActivityIndicator color="#FFFFFF" />
+                    ) : (
+                      <Text style={styles.saveButtonText}>Save Changes</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.costCard}>
+                <View style={styles.costRow}>
+                  <Text style={styles.costLabel}>Subtotal</Text>
+                  <Text style={styles.costValue}>R {po.subtotal?.toLocaleString() || '0'}</Text>
+                </View>
+                <View style={styles.costRow}>
+                  <Text style={styles.costLabel}>VAT (15%)</Text>
+                  <Text style={styles.costValue}>R {po.vat_amount?.toLocaleString() || '0'}</Text>
+                </View>
+                <View style={styles.costRow}>
+                  <Text style={styles.costLabel}>Platform Fee</Text>
+                  <Text style={styles.costValue}>
+                    R {po.platform_fee_amount?.toLocaleString() || '0'}
+                  </Text>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.costRow}>
+                  <Text style={styles.totalLabel}>Total</Text>
+                  <Text style={styles.totalValue}>
+                    R {po.total_amount?.toLocaleString() || '0'}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {po.revision_number && po.revision_number > 1 && !editMode && (
+              <View style={styles.revisionBadge}>
+                <Ionicons name="refresh" size={16} color={colors.warning[600]} />
+                <Text style={styles.revisionBadgeText}>
+                  Revision {po.revision_number} {hasRevisions && `(${revisions.length} previous)`}
                 </Text>
-                <Ionicons
-                  name={showRevisions ? 'chevron-up' : 'chevron-down'}
-                  size={16}
-                  color={RSA.blue}
-                />
-              </TouchableOpacity>
+              </View>
             )}
           </View>
 
-          {editMode ? (
-            <View style={styles.editCard}>
-              <View style={styles.editRow}>
-                <Text style={styles.editLabel}>Subtotal (R)</Text>
-                <TextInput
-                  style={styles.editInput}
-                  value={editSubtotal}
-                  onChangeText={setEditSubtotal}
-                  keyboardType="numeric"
-                  placeholder="0"
-                />
-              </View>
-              <View style={styles.editRow}>
-                <Text style={styles.editLabel}>VAT (R)</Text>
-                <TextInput
-                  style={styles.editInput}
-                  value={editVAT}
-                  onChangeText={setEditVAT}
-                  keyboardType="numeric"
-                  placeholder="0"
-                />
-              </View>
-              <View style={styles.editRow}>
-                <Text style={styles.editLabel}>Platform Fee (R)</Text>
-                <TextInput
-                  style={styles.editInput}
-                  value={editPlatformFee}
-                  onChangeText={setEditPlatformFee}
-                  keyboardType="numeric"
-                  placeholder="0"
-                />
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.editRow}>
-                <Text style={styles.totalLabel}>Total (R)</Text>
-                <TextInput
-                  style={[styles.editInput, styles.totalInput]}
-                  value={editTotal}
-                  onChangeText={setEditTotal}
-                  keyboardType="numeric"
-                  placeholder="0"
-                />
-              </View>
-
-              <View style={styles.reasonSection}>
-                <Text style={styles.reasonLabel}>Reason for Revision *</Text>
-                <TextInput
-                  style={styles.reasonInput}
-                  value={editReason}
-                  onChangeText={setEditReason}
-                  placeholder="Explain why you're updating this PO..."
-                  multiline
-                  numberOfLines={3}
-                />
-              </View>
-
-              <View style={styles.editActions}>
-                <TouchableOpacity
-                  style={[styles.editActionButton, styles.cancelButton]}
-                  onPress={handleEditToggle}
-                  disabled={actionLoading}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.editActionButton, styles.saveButton]}
-                  onPress={handleSaveEdit}
-                  disabled={actionLoading}
-                >
-                  {actionLoading ? (
-                    <ActivityIndicator color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.saveButtonText}>Save Changes</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : (
-            <View style={styles.costCard}>
-              <View style={styles.costRow}>
-                <Text style={styles.costLabel}>Subtotal</Text>
-                <Text style={styles.costValue}>R {po.subtotal?.toLocaleString() || '0'}</Text>
-              </View>
-              <View style={styles.costRow}>
-                <Text style={styles.costLabel}>VAT (15%)</Text>
-                <Text style={styles.costValue}>R {po.vat_amount?.toLocaleString() || '0'}</Text>
-              </View>
-              <View style={styles.costRow}>
-                <Text style={styles.costLabel}>Platform Fee</Text>
-                <Text style={styles.costValue}>
-                  R {po.platform_fee_amount?.toLocaleString() || '0'}
-                </Text>
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.costRow}>
-                <Text style={styles.totalLabel}>Total</Text>
-                <Text style={styles.totalValue}>R {po.total_amount?.toLocaleString() || '0'}</Text>
-              </View>
-            </View>
-          )}
-
-          {po.revision_number && po.revision_number > 1 && !editMode && (
-            <View style={styles.revisionBadge}>
-              <Ionicons name="refresh" size={16} color={colors.warning[600]} />
-              <Text style={styles.revisionBadgeText}>
-                Revision {po.revision_number} {hasRevisions && `(${revisions.length} previous)`}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {po.revision_reason && !editMode && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Latest Revision Reason</Text>
-            <View
-              style={[
-                styles.notesCard,
-                { backgroundColor: colors.warning[50], borderColor: colors.warning[500] },
-              ]}
-            >
-              <Text style={styles.notesText}>{po.revision_reason}</Text>
-            </View>
-          </View>
-        )}
-
-        {/* Schedule Work Section */}
-        {!po.sent_to_vendor_at && !editMode && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Schedule Work</Text>
-            <View style={styles.scheduleCard}>
-              <Text style={styles.scheduleDescription}>
-                Set when the vendor should start work and provide any special instructions.
-              </Text>
-
-              {/* Date Picker */}
-              <View style={styles.scheduleField}>
-                <View style={styles.scheduleFieldHeader}>
-                  <Ionicons name="calendar-outline" size={20} color={RSA.blue} />
-                  <Text style={styles.scheduleFieldLabel}>Start Date *</Text>
-                </View>
-                <TouchableOpacity
-                  style={styles.dateTimeButton}
-                  onPress={() => setShowDatePicker(true)}
-                >
-                  <Text style={styles.dateTimeButtonText}>
-                    {scheduledDate.toLocaleDateString('en-ZA', {
-                      weekday: 'short',
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric',
-                    })}
-                  </Text>
-                  <Ionicons name="chevron-down" size={20} color="#6b7280" />
-                </TouchableOpacity>
-              </View>
-
-              {/* Time Picker */}
-              <View style={styles.scheduleField}>
-                <View style={styles.scheduleFieldHeader}>
-                  <Ionicons name="time-outline" size={20} color={RSA.blue} />
-                  <Text style={styles.scheduleFieldLabel}>Start Time *</Text>
-                </View>
-                <TouchableOpacity
-                  style={styles.dateTimeButton}
-                  onPress={() => setShowTimePicker(true)}
-                >
-                  <Text style={styles.dateTimeButtonText}>
-                    {scheduledTime.toLocaleTimeString('en-ZA', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </Text>
-                  <Ionicons name="chevron-down" size={20} color="#6b7280" />
-                </TouchableOpacity>
-              </View>
-
-              {/* Work Instructions */}
-              <View style={styles.scheduleField}>
-                <View style={styles.scheduleFieldHeader}>
-                  <Ionicons name="document-text-outline" size={20} color={RSA.blue} />
-                  <Text style={styles.scheduleFieldLabel}>Work Instructions (Optional)</Text>
-                </View>
-                <TextInput
-                  style={styles.instructionsInput}
-                  value={workInstructions}
-                  onChangeText={setWorkInstructions}
-                  placeholder="Add any special instructions for the vendor..."
-                  multiline
-                  numberOfLines={4}
-                  textAlignVertical="top"
-                />
-              </View>
-
-              {/* Send Button */}
-              <TouchableOpacity
-                style={[styles.sendButton, sendingToVendor && styles.sendButtonDisabled]}
-                onPress={handleSendToVendor}
-                disabled={sendingToVendor}
+          {po.revision_reason && !editMode && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Latest Revision Reason</Text>
+              <View
+                style={[
+                  styles.notesCard,
+                  { backgroundColor: colors.warning[50], borderColor: colors.warning[500] },
+                ]}
               >
-                {sendingToVendor ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <>
-                    <Ionicons name="send" size={20} color="#FFFFFF" />
-                    <Text style={styles.sendButtonText}>Send to Vendor</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-
-              <Text style={styles.scheduleNote}>
-                💡 The vendor can only start work after the scheduled time arrives
-              </Text>
-            </View>
-          </View>
-        )}
-
-        {/* PO Sent Status */}
-        {po.sent_to_vendor_at && !editMode && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Work Schedule</Text>
-            <View style={styles.sentCard}>
-              <View style={styles.sentBadge}>
-                <Ionicons name="checkmark-circle" size={24} color={colors.success[500]} />
-                <Text style={styles.sentBadgeText}>PO Sent to Vendor</Text>
+                <Text style={styles.notesText}>{po.revision_reason}</Text>
               </View>
+            </View>
+          )}
 
-              <View style={styles.sentDetails}>
-                <View style={styles.sentDetailRow}>
-                  <Ionicons name="calendar" size={18} color="#6b7280" />
-                  <Text style={styles.sentDetailLabel}>Scheduled Start:</Text>
-                  <Text style={styles.sentDetailValue}>
-                    {po.scheduled_start_date &&
-                      new Date(po.scheduled_start_date).toLocaleDateString('en-ZA', {
+          {/* Schedule Work Section */}
+          {!po.sent_to_vendor_at && !editMode && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Schedule Work</Text>
+              <View style={styles.scheduleCard}>
+                <Text style={styles.scheduleDescription}>
+                  Set when the vendor should start work and provide any special instructions.
+                </Text>
+
+                {/* Date Picker */}
+                <View style={styles.scheduleField}>
+                  <View style={styles.scheduleFieldHeader}>
+                    <Ionicons name="calendar-outline" size={20} color={RSA.blue} />
+                    <Text style={styles.scheduleFieldLabel}>Start Date *</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.dateTimeButton}
+                    onPress={() => setShowDatePicker(true)}
+                  >
+                    <Text style={styles.dateTimeButtonText}>
+                      {scheduledDate.toLocaleDateString('en-ZA', {
                         weekday: 'short',
                         day: 'numeric',
                         month: 'long',
                         year: 'numeric',
                       })}
-                  </Text>
+                    </Text>
+                    <Ionicons name="chevron-down" size={20} color="#6b7280" />
+                  </TouchableOpacity>
                 </View>
 
-                <View style={styles.sentDetailRow}>
-                  <Ionicons name="time" size={18} color="#6b7280" />
-                  <Text style={styles.sentDetailLabel}>Start Time:</Text>
-                  <Text style={styles.sentDetailValue}>{po.scheduled_start_time}</Text>
-                </View>
-
-                <View style={styles.sentDetailRow}>
-                  <Ionicons name="paper-plane" size={18} color="#6b7280" />
-                  <Text style={styles.sentDetailLabel}>Sent:</Text>
-                  <Text style={styles.sentDetailValue}>
-                    {new Date(po.sent_to_vendor_at).toLocaleDateString('en-ZA', {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
-                  </Text>
-                </View>
-              </View>
-
-              {po.work_instructions && (
-                <View style={styles.instructionsDisplay}>
-                  <Text style={styles.instructionsDisplayLabel}>Work Instructions:</Text>
-                  <Text style={styles.instructionsDisplayText}>{po.work_instructions}</Text>
-                </View>
-              )}
-            </View>
-          </View>
-        )}
-
-        {showRevisions && hasRevisions && !editMode && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Revision History</Text>
-            {revisions.map((revision, index) => (
-              <View key={revision.id} style={styles.revisionCard}>
-                <View style={styles.revisionHeader}>
-                  <View style={styles.revisionNumber}>
-                    <Text style={styles.revisionNumberText}>v{revision.revision_number}</Text>
+                {/* Time Picker */}
+                <View style={styles.scheduleField}>
+                  <View style={styles.scheduleFieldHeader}>
+                    <Ionicons name="time-outline" size={20} color={RSA.blue} />
+                    <Text style={styles.scheduleFieldLabel}>Start Time *</Text>
                   </View>
-                  <Text style={styles.revisionDate}>
-                    {new Date(revision.created_at).toLocaleDateString('en-ZA', {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
-                  </Text>
+                  <TouchableOpacity
+                    style={styles.dateTimeButton}
+                    onPress={() => setShowTimePicker(true)}
+                  >
+                    <Text style={styles.dateTimeButtonText}>
+                      {scheduledTime.toLocaleTimeString('en-ZA', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </Text>
+                    <Ionicons name="chevron-down" size={20} color="#6b7280" />
+                  </TouchableOpacity>
                 </View>
 
-                <View style={styles.revisionCosts}>
-                  <View style={styles.revisionCostRow}>
-                    <Text style={styles.revisionCostLabel}>Total</Text>
-                    <Text style={styles.revisionCostValue}>
-                      R {revision.total_amount.toLocaleString()}
+                {/* Work Instructions */}
+                <View style={styles.scheduleField}>
+                  <View style={styles.scheduleFieldHeader}>
+                    <Ionicons name="document-text-outline" size={20} color={RSA.blue} />
+                    <Text style={styles.scheduleFieldLabel}>Work Instructions (Optional)</Text>
+                  </View>
+                  <TextInput
+                    style={styles.instructionsInput}
+                    value={workInstructions}
+                    onChangeText={setWorkInstructions}
+                    placeholder="Add any special instructions for the vendor..."
+                    multiline
+                    numberOfLines={4}
+                    textAlignVertical="top"
+                  />
+                </View>
+
+                {/* Send Button */}
+                <TouchableOpacity
+                  style={[styles.sendButton, sendingToVendor && styles.sendButtonDisabled]}
+                  onPress={handleSendToVendor}
+                  disabled={sendingToVendor}
+                >
+                  {sendingToVendor ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <Ionicons name="send" size={20} color="#FFFFFF" />
+                      <Text style={styles.sendButtonText}>Send to Vendor</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                <Text style={styles.scheduleNote}>
+                  💡 The vendor can only start work after the scheduled time arrives
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* PO Sent Status */}
+          {po.sent_to_vendor_at && !editMode && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Work Schedule</Text>
+              <View style={styles.sentCard}>
+                <View style={styles.sentBadge}>
+                  <Ionicons name="checkmark-circle" size={24} color={colors.success[500]} />
+                  <Text style={styles.sentBadgeText}>PO Sent to Vendor</Text>
+                </View>
+
+                <View style={styles.sentDetails}>
+                  <View style={styles.sentDetailRow}>
+                    <Ionicons name="calendar" size={18} color="#6b7280" />
+                    <Text style={styles.sentDetailLabel}>Scheduled Start:</Text>
+                    <Text style={styles.sentDetailValue}>
+                      {po.scheduled_start_date &&
+                        new Date(po.scheduled_start_date).toLocaleDateString('en-ZA', {
+                          weekday: 'short',
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                        })}
                     </Text>
                   </View>
-                  {index < revisions.length - 1 && (
-                    <View style={styles.revisionDiff}>
-                      <Ionicons
-                        name={
-                          revision.total_amount > revisions[index + 1].total_amount
-                            ? 'arrow-up'
-                            : 'arrow-down'
-                        }
-                        size={14}
-                        color={
-                          revision.total_amount > revisions[index + 1].total_amount
-                            ? colors.error[500]
-                            : colors.success[500]
-                        }
-                      />
-                      <Text
-                        style={[
-                          styles.revisionDiffText,
-                          {
-                            color:
-                              revision.total_amount > revisions[index + 1].total_amount
-                                ? colors.error[500]
-                                : colors.success[500],
-                          },
-                        ]}
-                      >
-                        R{' '}
-                        {Math.abs(
-                          revision.total_amount - revisions[index + 1].total_amount
-                        ).toLocaleString()}
-                      </Text>
-                    </View>
-                  )}
+
+                  <View style={styles.sentDetailRow}>
+                    <Ionicons name="time" size={18} color="#6b7280" />
+                    <Text style={styles.sentDetailLabel}>Start Time:</Text>
+                    <Text style={styles.sentDetailValue}>{po.scheduled_start_time}</Text>
+                  </View>
+
+                  <View style={styles.sentDetailRow}>
+                    <Ionicons name="paper-plane" size={18} color="#6b7280" />
+                    <Text style={styles.sentDetailLabel}>Sent:</Text>
+                    <Text style={styles.sentDetailValue}>
+                      {new Date(po.sent_to_vendor_at).toLocaleDateString('en-ZA', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </Text>
+                  </View>
                 </View>
 
-                {revision.revision_reason && (
-                  <View style={styles.revisionReason}>
-                    <Text style={styles.revisionReasonLabel}>Reason:</Text>
-                    <Text style={styles.revisionReasonText}>{revision.revision_reason}</Text>
+                {po.work_instructions && (
+                  <View style={styles.instructionsDisplay}>
+                    <Text style={styles.instructionsDisplayLabel}>Work Instructions:</Text>
+                    <Text style={styles.instructionsDisplayText}>{po.work_instructions}</Text>
                   </View>
                 )}
               </View>
-            ))}
-          </View>
-        )}
+            </View>
+          )}
 
-        <View style={{ height: 100 }} />
-      </ScrollView>
+          {showRevisions && hasRevisions && !editMode && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Revision History</Text>
+              {revisions.map((revision, index) => (
+                <View key={revision.id} style={styles.revisionCard}>
+                  <View style={styles.revisionHeader}>
+                    <View style={styles.revisionNumber}>
+                      <Text style={styles.revisionNumberText}>v{revision.revision_number}</Text>
+                    </View>
+                    <Text style={styles.revisionDate}>
+                      {new Date(revision.created_at).toLocaleDateString('en-ZA', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </Text>
+                  </View>
 
-      {/* Date / time pickers — bottom sheet with Done on iOS, dialog on Android */}
-      <PickerSheet
-        visible={showDatePicker}
-        value={scheduledDate}
-        mode="date"
-        minimumDate={new Date()}
-        onCancel={() => setShowDatePicker(false)}
-        onDone={(date) => {
-          setShowDatePicker(false);
-          setScheduledDate(date);
-        }}
-        testID="po-reschedule-date"
-      />
-      <PickerSheet
-        visible={showTimePicker}
-        value={scheduledTime}
-        mode="time"
-        onCancel={() => setShowTimePicker(false)}
-        onDone={(time) => {
-          setShowTimePicker(false);
-          setScheduledTime(time);
-        }}
-        testID="po-reschedule-time"
-      />
+                  <View style={styles.revisionCosts}>
+                    <View style={styles.revisionCostRow}>
+                      <Text style={styles.revisionCostLabel}>Total</Text>
+                      <Text style={styles.revisionCostValue}>
+                        R {revision.total_amount.toLocaleString()}
+                      </Text>
+                    </View>
+                    {index < revisions.length - 1 && (
+                      <View style={styles.revisionDiff}>
+                        <Ionicons
+                          name={
+                            revision.total_amount > revisions[index + 1].total_amount
+                              ? 'arrow-up'
+                              : 'arrow-down'
+                          }
+                          size={14}
+                          color={
+                            revision.total_amount > revisions[index + 1].total_amount
+                              ? colors.error[500]
+                              : colors.success[500]
+                          }
+                        />
+                        <Text
+                          style={[
+                            styles.revisionDiffText,
+                            {
+                              color:
+                                revision.total_amount > revisions[index + 1].total_amount
+                                  ? colors.error[500]
+                                  : colors.success[500],
+                            },
+                          ]}
+                        >
+                          R{' '}
+                          {Math.abs(
+                            revision.total_amount - revisions[index + 1].total_amount
+                          ).toLocaleString()}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {revision.revision_reason && (
+                    <View style={styles.revisionReason}>
+                      <Text style={styles.revisionReasonLabel}>Reason:</Text>
+                      <Text style={styles.revisionReasonText}>{revision.revision_reason}</Text>
+                    </View>
+                  )}
+                </View>
+              ))}
+            </View>
+          )}
+
+          <View style={{ height: 100 }} />
+        </ScrollView>
+
+        {/* Date / time pickers — bottom sheet with Done on iOS, dialog on Android */}
+        <PickerSheet
+          visible={showDatePicker}
+          value={scheduledDate}
+          mode="date"
+          minimumDate={new Date()}
+          onCancel={() => setShowDatePicker(false)}
+          onDone={(date) => {
+            setShowDatePicker(false);
+            setScheduledDate(date);
+          }}
+          testID="po-reschedule-date"
+        />
+        <PickerSheet
+          visible={showTimePicker}
+          value={scheduledTime}
+          mode="time"
+          onCancel={() => setShowTimePicker(false)}
+          onDone={(time) => {
+            setShowTimePicker(false);
+            setScheduledTime(time);
+          }}
+          testID="po-reschedule-time"
+        />
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

@@ -20,6 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/src/lib/supabase';
 import { sendPOToVendor } from '@/src/features/maintenance/api/purchase-orders/poActions.api';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 
 export default function OwnerSendPOScreen() {
   const router = useRouter();
@@ -124,150 +125,152 @@ export default function OwnerSendPOScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      {/* Header — back chevron + centered title (parity with sibling owner screens) */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          testID="owner-send-po-back"
-          accessibilityLabel="Go back"
-          accessibilityRole="button"
-          onPress={() => router.back()}
-          style={styles.headerButton}
+      <KeyboardAvoidingView>
+        {/* Header — back chevron + centered title (parity with sibling owner screens) */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            testID="owner-send-po-back"
+            accessibilityLabel="Go back"
+            accessibilityRole="button"
+            onPress={() => router.back()}
+            style={styles.headerButton}
+          >
+            <Ionicons name="arrow-back" size={24} color="#111827" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Send Purchase Order</Text>
+          <View style={styles.headerButton} />
+        </View>
+
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          <Ionicons name="arrow-back" size={24} color="#111827" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Send Purchase Order</Text>
-        <View style={styles.headerButton} />
-      </View>
-
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Intro — no duplicate H1: the nav header already titles this screen. */}
-        <View style={styles.intro}>
-          <Text style={styles.subtitle}>Schedule work and send PO to vendor</Text>
-        </View>
-
-        {/* PO Summary */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>PO Summary</Text>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Vendor:</Text>
-            <Text style={styles.summaryValue}>{vendorName}</Text>
+          {/* Intro — no duplicate H1: the nav header already titles this screen. */}
+          <View style={styles.intro}>
+            <Text style={styles.subtitle}>Schedule work and send PO to vendor</Text>
           </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Property:</Text>
-            <Text style={styles.summaryValue}>{propertyAddress}</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Amount:</Text>
-            <Text style={styles.summaryValueBold}>
-              R{' '}
-              {Number(totalAmount).toLocaleString('en-ZA', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </Text>
-          </View>
-        </View>
 
-        {/* Work Schedule */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Work Schedule</Text>
+          {/* PO Summary */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>PO Summary</Text>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Vendor:</Text>
+              <Text style={styles.summaryValue}>{vendorName}</Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Property:</Text>
+              <Text style={styles.summaryValue}>{propertyAddress}</Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Amount:</Text>
+              <Text style={styles.summaryValueBold}>
+                R{' '}
+                {Number(totalAmount).toLocaleString('en-ZA', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </Text>
+            </View>
+          </View>
 
-          {/* Start Date */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Start Date *</Text>
-            <TouchableOpacity
+          {/* Work Schedule */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Work Schedule</Text>
+
+            {/* Start Date */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Start Date *</Text>
+              <TouchableOpacity
+                testID="owner-send-po-date"
+                style={styles.dateButton}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Text style={styles.dateButtonText}>{formatDate(startDate)}</Text>
+              </TouchableOpacity>
+            </View>
+
+            <PickerSheet
+              visible={showDatePicker}
+              value={startDate}
+              mode="date"
+              minimumDate={new Date()}
+              onCancel={() => setShowDatePicker(false)}
+              onDone={(date) => {
+                setShowDatePicker(false);
+                setStartDate(date);
+              }}
               testID="owner-send-po-date"
-              style={styles.dateButton}
-              onPress={() => setShowDatePicker(true)}
-            >
-              <Text style={styles.dateButtonText}>{formatDate(startDate)}</Text>
-            </TouchableOpacity>
-          </View>
+            />
 
-          <PickerSheet
-            visible={showDatePicker}
-            value={startDate}
-            mode="date"
-            minimumDate={new Date()}
-            onCancel={() => setShowDatePicker(false)}
-            onDone={(date) => {
-              setShowDatePicker(false);
-              setStartDate(date);
-            }}
-            testID="owner-send-po-date"
-          />
+            {/* Start Time */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Start Time *</Text>
+              <TouchableOpacity
+                testID="owner-send-po-time"
+                style={styles.dateButton}
+                onPress={() => setShowTimePicker(true)}
+              >
+                <Text style={styles.dateButtonText}>{formatTime(startTime)}</Text>
+              </TouchableOpacity>
+            </View>
 
-          {/* Start Time */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Start Time *</Text>
-            <TouchableOpacity
+            <PickerSheet
+              visible={showTimePicker}
+              value={startTime}
+              mode="time"
+              onCancel={() => setShowTimePicker(false)}
+              onDone={(time) => {
+                setShowTimePicker(false);
+                setStartTime(time);
+              }}
               testID="owner-send-po-time"
-              style={styles.dateButton}
-              onPress={() => setShowTimePicker(true)}
-            >
-              <Text style={styles.dateButtonText}>{formatTime(startTime)}</Text>
-            </TouchableOpacity>
+            />
           </View>
 
-          <PickerSheet
-            visible={showTimePicker}
-            value={startTime}
-            mode="time"
-            onCancel={() => setShowTimePicker(false)}
-            onDone={(time) => {
-              setShowTimePicker(false);
-              setStartTime(time);
-            }}
-            testID="owner-send-po-time"
-          />
-        </View>
+          {/* Work Instructions */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Work Instructions *</Text>
+            <Text style={styles.helperText}>
+              Provide detailed instructions for the vendor. Include any special requirements, access
+              instructions, or specific work details.
+            </Text>
+            <TextInput
+              testID="owner-send-po-instructions"
+              style={styles.textArea}
+              value={workInstructions}
+              onChangeText={setWorkInstructions}
+              placeholder="Enter work instructions for the vendor..."
+              placeholderTextColor="#999"
+              multiline
+              numberOfLines={6}
+              textAlignVertical="top"
+            />
+          </View>
 
-        {/* Work Instructions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Work Instructions *</Text>
-          <Text style={styles.helperText}>
-            Provide detailed instructions for the vendor. Include any special requirements, access
-            instructions, or specific work details.
-          </Text>
-          <TextInput
-            testID="owner-send-po-instructions"
-            style={styles.textArea}
-            value={workInstructions}
-            onChangeText={setWorkInstructions}
-            placeholder="Enter work instructions for the vendor..."
-            placeholderTextColor="#999"
-            multiline
-            numberOfLines={6}
-            textAlignVertical="top"
-          />
-        </View>
+          {/* Send Button */}
+          <TouchableOpacity
+            testID="owner-send-po-send"
+            style={[styles.sendButton, isSubmitting && styles.sendButtonDisabled]}
+            onPress={handleSendPO}
+            disabled={isSubmitting}
+          >
+            <Text style={styles.sendButtonText}>
+              {isSubmitting ? 'Sending...' : 'Send Purchase Order'}
+            </Text>
+          </TouchableOpacity>
 
-        {/* Send Button */}
-        <TouchableOpacity
-          testID="owner-send-po-send"
-          style={[styles.sendButton, isSubmitting && styles.sendButtonDisabled]}
-          onPress={handleSendPO}
-          disabled={isSubmitting}
-        >
-          <Text style={styles.sendButtonText}>
-            {isSubmitting ? 'Sending...' : 'Send Purchase Order'}
-          </Text>
-        </TouchableOpacity>
-
-        {/* Cancel Button */}
-        <TouchableOpacity
-          testID="owner-send-po-cancel"
-          style={styles.cancelButton}
-          onPress={() => router.back()}
-        >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
-      </ScrollView>
+          {/* Cancel Button */}
+          <TouchableOpacity
+            testID="owner-send-po-cancel"
+            style={styles.cancelButton}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

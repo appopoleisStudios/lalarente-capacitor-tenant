@@ -302,29 +302,29 @@ export default function TenantClosureConfirmScreen() {
 
           <View style={{ height: 40 }} />
         </ScrollView>
-      </KeyboardAvoidingView>
 
-      {/* Submit Button */}
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[
-            styles.submitButton,
-            (!hasMinPhotos || submitting) && styles.submitButtonDisabled,
-          ]}
-          onPress={handleSubmit}
-          disabled={!hasMinPhotos || submitting}
-          testID={CLOSURE_CONFIRM_TEST_IDS.submit}
-        >
-          {submitting ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <>
-              <Ionicons name="checkmark-done" size={20} color="#FFFFFF" />
-              <Text style={styles.submitButtonText}>Confirm Completed Work</Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
+        {/* Submit Button */}
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[
+              styles.submitButton,
+              (!hasMinPhotos || submitting) && styles.submitButtonDisabled,
+            ]}
+            onPress={handleSubmit}
+            disabled={!hasMinPhotos || submitting}
+            testID={CLOSURE_CONFIRM_TEST_IDS.submit}
+          >
+            {submitting ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <>
+                <Ionicons name="checkmark-done" size={20} color="#FFFFFF" />
+                <Text style={styles.submitButtonText}>Confirm Completed Work</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

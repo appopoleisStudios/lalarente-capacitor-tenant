@@ -313,6 +313,112 @@ export default function TenantVerificationScreen() {
 
   if (mode === 'approve') {
     return (
+      <KeyboardAvoidingView>
+        <ScrollView
+          style={styles.container}
+          // header used to sit under the status bar (back arrow untappable)
+          contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top }]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity
+              testID="tenant-verify-approve-back"
+              onPress={() => setMode('select')}
+              style={styles.backButton}
+            >
+              <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
+            </TouchableOpacity>
+            <Text style={styles.title}>Approve Work</Text>
+          </View>
+
+          {/* Icon */}
+          <View style={styles.iconContainer}>
+            <Ionicons name="checkmark-circle" size={80} color="#10B981" />
+          </View>
+
+          {/* Optional Notes */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Feedback (Optional)</Text>
+            <Text style={styles.helperText}>
+              Add any comments about the work quality or vendor professionalism
+            </Text>
+            <TextInput
+              testID="tenant-verify-approve-notes"
+              style={styles.textArea}
+              value={notes}
+              onChangeText={setNotes}
+              placeholder="E.g., Work completed quickly and professionally..."
+              placeholderTextColor="#999"
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+          </View>
+
+          {/* Optional After-Photos (evidence) */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>After Photos (Optional)</Text>
+            <Text style={styles.helperText}>
+              Upload photos showing the completed work as evidence. This helps document the final
+              result.
+            </Text>
+
+            {approvePhotos.length > 0 && (
+              <View style={styles.photoGridApprove}>
+                {approvePhotos.map((photo, index) => (
+                  <View key={index} style={styles.photoContainer}>
+                    <Image source={{ uri: photo }} style={styles.approvePhoto} />
+                    <TouchableOpacity
+                      testID="tenant-verify-approve-remove-photo"
+                      style={styles.removePhotoButton}
+                      onPress={() => handleRemovePhoto('approve', index)}
+                    >
+                      <Ionicons name="close-circle" size={24} color="#DC2626" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            <TouchableOpacity
+              testID="tenant-verify-approve-add-photo"
+              style={styles.uploadButton}
+              onPress={() => handlePickImage('approve')}
+            >
+              <Ionicons name="camera" size={24} color="#10B981" />
+              <Text style={[styles.uploadButtonText, { color: '#10B981' }]}>
+                {approvePhotos.length > 0 ? 'Add More Photos' : 'Upload After Photos'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Confirm Button */}
+          <TouchableOpacity
+            testID="tenant-verify-approve-submit"
+            style={[
+              styles.submitButton,
+              styles.approveButtonSolid,
+              isSubmitting && styles.submitButtonDisabled,
+            ]}
+            onPress={handleApprove}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.submitButtonText}>Confirm - Work is Complete</Text>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
+
+  // Reject mode
+  return (
+    <KeyboardAvoidingView>
       <ScrollView
         style={styles.container}
         // header used to sit under the status bar (back arrow untappable)
@@ -323,56 +429,65 @@ export default function TenantVerificationScreen() {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
-            testID="tenant-verify-approve-back"
+            testID="tenant-verify-reject-back"
             onPress={() => setMode('select')}
             style={styles.backButton}
           >
             <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
           </TouchableOpacity>
-          <Text style={styles.title}>Approve Work</Text>
+          <Text style={styles.title}>Report Issues</Text>
         </View>
 
-        {/* Icon */}
+        {/* Warning Icon */}
         <View style={styles.iconContainer}>
-          <Ionicons name="checkmark-circle" size={80} color="#10B981" />
+          <Ionicons name="alert-circle" size={80} color="#F59E0B" />
         </View>
 
-        {/* Optional Notes */}
+        {/* Warning Message */}
+        <View style={styles.warningCard}>
+          <Ionicons name="information-circle" size={20} color="#D97706" />
+          <Text style={styles.warningText}>
+            The vendor will be asked to return and fix the issues you report. Please be specific
+            about what needs attention.
+          </Text>
+        </View>
+
+        {/* Rejection Reason */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Feedback (Optional)</Text>
+          <Text style={styles.sectionTitle}>What needs to be fixed? *</Text>
           <Text style={styles.helperText}>
-            Add any comments about the work quality or vendor professionalism
+            Please describe the issues in detail (minimum 10 characters)
           </Text>
           <TextInput
-            testID="tenant-verify-approve-notes"
+            testID="tenant-verify-reject-reason"
             style={styles.textArea}
-            value={notes}
-            onChangeText={setNotes}
-            placeholder="E.g., Work completed quickly and professionally..."
+            value={rejectionReason}
+            onChangeText={setRejectionReason}
+            placeholder="E.g., Leak is still present under the sink, water damage not repaired..."
             placeholderTextColor="#999"
             multiline
-            numberOfLines={4}
+            numberOfLines={6}
             textAlignVertical="top"
           />
+          <Text style={styles.charCount}>{rejectionReason.length}/10 characters</Text>
         </View>
 
-        {/* Optional After-Photos (evidence) */}
+        {/* Photo Upload */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>After Photos (Optional)</Text>
+          <Text style={styles.sectionTitle}>Upload Photos of Issues *</Text>
           <Text style={styles.helperText}>
-            Upload photos showing the completed work as evidence. This helps document the final
-            result.
+            Take photos showing what needs to be fixed (minimum 1 photo required)
           </Text>
 
-          {approvePhotos.length > 0 && (
-            <View style={styles.photoGridApprove}>
-              {approvePhotos.map((photo, index) => (
+          {rejectionPhotos.length > 0 && (
+            <View style={styles.photoGrid}>
+              {rejectionPhotos.map((photo, index) => (
                 <View key={index} style={styles.photoContainer}>
-                  <Image source={{ uri: photo }} style={styles.approvePhoto} />
+                  <Image source={{ uri: photo }} style={styles.rejectionPhoto} />
                   <TouchableOpacity
-                    testID="tenant-verify-approve-remove-photo"
+                    testID="tenant-verify-reject-remove-photo"
                     style={styles.removePhotoButton}
-                    onPress={() => handleRemovePhoto('approve', index)}
+                    onPress={() => handleRemovePhoto('reject', index)}
                   >
                     <Ionicons name="close-circle" size={24} color="#DC2626" />
                   </TouchableOpacity>
@@ -382,147 +497,36 @@ export default function TenantVerificationScreen() {
           )}
 
           <TouchableOpacity
-            testID="tenant-verify-approve-add-photo"
+            testID="tenant-verify-reject-add-photo"
             style={styles.uploadButton}
-            onPress={() => handlePickImage('approve')}
+            onPress={() => handlePickImage('reject')}
           >
-            <Ionicons name="camera" size={24} color="#10B981" />
-            <Text style={[styles.uploadButtonText, { color: '#10B981' }]}>
-              {approvePhotos.length > 0 ? 'Add More Photos' : 'Upload After Photos'}
+            <Ionicons name="camera" size={24} color="#3B82F6" />
+            <Text style={styles.uploadButtonText}>
+              {rejectionPhotos.length > 0 ? 'Add More Photos' : 'Take / Upload Photo'}
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Confirm Button */}
+        {/* Submit Button */}
         <TouchableOpacity
-          testID="tenant-verify-approve-submit"
+          testID="tenant-verify-reject-submit"
           style={[
             styles.submitButton,
-            styles.approveButtonSolid,
+            styles.rejectButtonSolid,
             isSubmitting && styles.submitButtonDisabled,
           ]}
-          onPress={handleApprove}
+          onPress={handleReject}
           disabled={isSubmitting}
         >
           {isSubmitting ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.submitButtonText}>Confirm - Work is Complete</Text>
+            <Text style={styles.submitButtonText}>Submit Issues for Vendor</Text>
           )}
         </TouchableOpacity>
       </ScrollView>
-    );
-  }
-
-  // Reject mode
-  return (
-    <ScrollView
-      style={styles.container}
-      // header used to sit under the status bar (back arrow untappable)
-      contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top }]}
-      keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="on-drag"
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          testID="tenant-verify-reject-back"
-          onPress={() => setMode('select')}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Report Issues</Text>
-      </View>
-
-      {/* Warning Icon */}
-      <View style={styles.iconContainer}>
-        <Ionicons name="alert-circle" size={80} color="#F59E0B" />
-      </View>
-
-      {/* Warning Message */}
-      <View style={styles.warningCard}>
-        <Ionicons name="information-circle" size={20} color="#D97706" />
-        <Text style={styles.warningText}>
-          The vendor will be asked to return and fix the issues you report. Please be specific about
-          what needs attention.
-        </Text>
-      </View>
-
-      {/* Rejection Reason */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>What needs to be fixed? *</Text>
-        <Text style={styles.helperText}>
-          Please describe the issues in detail (minimum 10 characters)
-        </Text>
-        <TextInput
-          testID="tenant-verify-reject-reason"
-          style={styles.textArea}
-          value={rejectionReason}
-          onChangeText={setRejectionReason}
-          placeholder="E.g., Leak is still present under the sink, water damage not repaired..."
-          placeholderTextColor="#999"
-          multiline
-          numberOfLines={6}
-          textAlignVertical="top"
-        />
-        <Text style={styles.charCount}>{rejectionReason.length}/10 characters</Text>
-      </View>
-
-      {/* Photo Upload */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Upload Photos of Issues *</Text>
-        <Text style={styles.helperText}>
-          Take photos showing what needs to be fixed (minimum 1 photo required)
-        </Text>
-
-        {rejectionPhotos.length > 0 && (
-          <View style={styles.photoGrid}>
-            {rejectionPhotos.map((photo, index) => (
-              <View key={index} style={styles.photoContainer}>
-                <Image source={{ uri: photo }} style={styles.rejectionPhoto} />
-                <TouchableOpacity
-                  testID="tenant-verify-reject-remove-photo"
-                  style={styles.removePhotoButton}
-                  onPress={() => handleRemovePhoto('reject', index)}
-                >
-                  <Ionicons name="close-circle" size={24} color="#DC2626" />
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-        )}
-
-        <TouchableOpacity
-          testID="tenant-verify-reject-add-photo"
-          style={styles.uploadButton}
-          onPress={() => handlePickImage('reject')}
-        >
-          <Ionicons name="camera" size={24} color="#3B82F6" />
-          <Text style={styles.uploadButtonText}>
-            {rejectionPhotos.length > 0 ? 'Add More Photos' : 'Take / Upload Photo'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Submit Button */}
-      <TouchableOpacity
-        testID="tenant-verify-reject-submit"
-        style={[
-          styles.submitButton,
-          styles.rejectButtonSolid,
-          isSubmitting && styles.submitButtonDisabled,
-        ]}
-        onPress={handleReject}
-        disabled={isSubmitting}
-      >
-        {isSubmitting ? (
-          <ActivityIndicator color="#FFFFFF" />
-        ) : (
-          <Text style={styles.submitButtonText}>Submit Issues for Vendor</Text>
-        )}
-      </TouchableOpacity>
-    </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

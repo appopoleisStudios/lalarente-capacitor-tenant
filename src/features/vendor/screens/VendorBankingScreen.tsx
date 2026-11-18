@@ -393,28 +393,28 @@ export default function VendorBankingScreen() {
             </Text>
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
 
-      {/* Footer */}
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.saveButton, saving && { opacity: 0.6 }]}
-          onPress={handleSave}
-          disabled={saving}
-          testID={VENDOR_BANKING_TEST_IDS.saveButton}
-        >
-          {saving ? (
-            <ActivityIndicator color={colors.text.inverse} />
-          ) : (
-            <>
-              <Ionicons name="save-outline" size={18} color={colors.text.inverse} />
-              <Text style={styles.saveButtonText}>
-                {hasExistingData ? 'Update Preferences' : 'Save Preferences'}
-              </Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
+        {/* Footer */}
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[styles.saveButton, saving && { opacity: 0.6 }]}
+            onPress={handleSave}
+            disabled={saving}
+            testID={VENDOR_BANKING_TEST_IDS.saveButton}
+          >
+            {saving ? (
+              <ActivityIndicator color={colors.text.inverse} />
+            ) : (
+              <>
+                <Ionicons name="save-outline" size={18} color={colors.text.inverse} />
+                <Text style={styles.saveButtonText}>
+                  {hasExistingData ? 'Update Preferences' : 'Save Preferences'}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

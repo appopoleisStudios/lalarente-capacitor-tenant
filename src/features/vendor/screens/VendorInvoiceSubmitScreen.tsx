@@ -467,29 +467,29 @@ export default function VendorInvoiceSubmitScreen() {
 
           <View style={{ height: 120 }} />
         </ScrollView>
-      </KeyboardAvoidingView>
 
-      {/* Footer */}
-      <View style={styles.footer}>
-        <TouchableOpacity
-          accessibilityLabel="Submit invoice for approval"
-          accessibilityRole="button"
-          style={[styles.submitButton, submitting && { opacity: 0.6 }]}
-          onPress={handleSubmit}
-          disabled={submitting}
-        >
-          {submitting ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <>
-              <Ionicons name="send" size={18} color="#FFFFFF" />
-              <Text style={styles.submitButtonText}>
-                {isResubmit ? 'Resubmit' : 'Submit Invoice'} — {formatCurrency(totals.total)}
-              </Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
+        {/* Footer */}
+        <View style={styles.footer}>
+          <TouchableOpacity
+            accessibilityLabel="Submit invoice for approval"
+            accessibilityRole="button"
+            style={[styles.submitButton, submitting && { opacity: 0.6 }]}
+            onPress={handleSubmit}
+            disabled={submitting}
+          >
+            {submitting ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <>
+                <Ionicons name="send" size={18} color="#FFFFFF" />
+                <Text style={styles.submitButtonText}>
+                  {isResubmit ? 'Resubmit' : 'Submit Invoice'} — {formatCurrency(totals.total)}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

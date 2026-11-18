@@ -177,29 +177,30 @@ export default function RequestClosureScreen() {
 
           <View style={{ height: 40 }} />
         </ScrollView>
-      </KeyboardAvoidingView>
 
-      {/* Submit Button */}
-      <View style={styles.footer}>
-        <TouchableOpacity
-          testID="closure-submit"
-          style={[
-            styles.submitButton,
-            (!completionNotes.trim() || !hasMinPhotos || submitting) && styles.submitButtonDisabled,
-          ]}
-          onPress={handleSubmit}
-          disabled={!completionNotes.trim() || !hasMinPhotos || submitting}
-        >
-          {submitting ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <>
-              <Ionicons name="checkmark-done" size={20} color="#FFFFFF" />
-              <Text style={styles.submitButtonText}>Submit Closure Request</Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
+        {/* Submit Button */}
+        <View style={styles.footer}>
+          <TouchableOpacity
+            testID="closure-submit"
+            style={[
+              styles.submitButton,
+              (!completionNotes.trim() || !hasMinPhotos || submitting) &&
+                styles.submitButtonDisabled,
+            ]}
+            onPress={handleSubmit}
+            disabled={!completionNotes.trim() || !hasMinPhotos || submitting}
+          >
+            {submitting ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <>
+                <Ionicons name="checkmark-done" size={20} color="#FFFFFF" />
+                <Text style={styles.submitButtonText}>Submit Closure Request</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

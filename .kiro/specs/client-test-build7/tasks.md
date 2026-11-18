@@ -1954,7 +1954,15 @@ Found while testing on the Android emulator with a real on-screen keyboard.
 - **Acceptance criteria:**
   - [x] Shared `KeyboardAvoidingView` defaults to `height` on Android
         (`padding` on iOS unchanged); the 7 direct uses set `height` too.
+  - [x] 16 form screens that rendered no KeyboardAvoidingView at all (Report
+        Issue, report maintenance, schedule inspection, PO detail / send PO,
+        owner + tenant profile, data-subject rights, early termination, lease
+        renewal, payment dispute, request viewing, verification, vendor quote
+        detail / submit, search filters) now wrap header, form and footer.
+  - [x] 5 screens whose KAV closed before the submit footer now enclose it.
   - [x] Jest `androidKeyboardBehavior.test.tsx`: shared default on Android and
-        iOS; no `KeyboardAvoidingView` in the app is iOS-only (fails without the fix).
+        iOS, caller override; no `KeyboardAvoidingView` in the app is iOS-only;
+        every screen with an input outside a modal renders one (allowlist for
+        top-only search bars); Report Issue wraps description + submit.
   - [ ] Android emulator (release APK): Report Issue, chat thread and a long
         form keep the field being typed in and the buttons reachable; lifecycle 01→08 green.

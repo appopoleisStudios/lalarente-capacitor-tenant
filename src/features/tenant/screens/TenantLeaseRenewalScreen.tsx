@@ -23,6 +23,7 @@ import { supabase } from '@/src/lib/supabase';
 import { leaseExpiryApi, LeaseExpiryInfo } from '@/src/features/leases/api/leaseExpiry.api';
 import { leaseRenewalApi, RenewalNegotiation } from '@/src/features/leases/api/leaseRenewal.api';
 import { colors } from '@/src/shared/theme/colors';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -272,358 +273,364 @@ export default function TenantLeaseRenewalScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
-        </TouchableOpacity>
-        <View style={styles.headerText}>
-          <Text style={styles.title}>Lease Renewal</Text>
-          <Text style={styles.subtitle}>{propertyTitle}</Text>
-        </View>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Expiry Countdown */}
-        <View
-          style={[
-            styles.expiryCard,
-            expiryInfo.daysUntilExpiry <= 40 && { borderColor: colors.rsa.red, borderWidth: 2 },
-            expiryInfo.daysUntilExpiry <= 60 &&
-              expiryInfo.daysUntilExpiry > 40 && { borderColor: '#F59E0B', borderWidth: 2 },
-          ]}
-        >
-          <View style={styles.expiryTop}>
-            <Ionicons
-              name="calendar"
-              size={28}
-              color={expiryInfo.daysUntilExpiry <= 40 ? colors.rsa.red : colors.rsa.green}
-            />
-            <View style={styles.expiryText}>
-              <Text style={styles.expiryDays}>
-                {expiryInfo.daysUntilExpiry > 0 ? `${expiryInfo.daysUntilExpiry} days` : 'EXPIRED'}
-              </Text>
-              <Text style={styles.expiryLabel}>
-                until lease expires on {new Date(leaseEndDate).toLocaleDateString('en-ZA')}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.rentRow}>
-            <Text style={styles.rentLabel}>Current rent</Text>
-            <Text style={styles.rentAmount}>{formatZAR(monthlyRent)}/mo</Text>
+      <KeyboardAvoidingView>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+          </TouchableOpacity>
+          <View style={styles.headerText}>
+            <Text style={styles.title}>Lease Renewal</Text>
+            <Text style={styles.subtitle}>{propertyTitle}</Text>
           </View>
         </View>
 
-        {/* CPA Notice Timeline */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>CPA Notice Timeline</Text>
-          <Text style={styles.sectionSubtitle}>
-            Your landlord is legally required to notify you at these milestones (CPA s14(2)(c))
-          </Text>
-          {[
-            {
-              label: '80 business days',
-              date: expiryInfo.notice80Due,
-              sent: expiryInfo.notice80Sent,
-            },
-            {
-              label: '60 business days',
-              date: expiryInfo.notice60Due,
-              sent: expiryInfo.notice60Sent,
-            },
-            {
-              label: '40 business days',
-              date: expiryInfo.notice40Due,
-              sent: expiryInfo.notice40Sent,
-            },
-          ].map((notice, i) => (
-            <View key={i} style={styles.noticeRow}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          {/* Expiry Countdown */}
+          <View
+            style={[
+              styles.expiryCard,
+              expiryInfo.daysUntilExpiry <= 40 && { borderColor: colors.rsa.red, borderWidth: 2 },
+              expiryInfo.daysUntilExpiry <= 60 &&
+                expiryInfo.daysUntilExpiry > 40 && { borderColor: '#F59E0B', borderWidth: 2 },
+            ]}
+          >
+            <View style={styles.expiryTop}>
               <Ionicons
-                name={notice.sent ? 'checkmark-circle' : 'ellipse-outline'}
-                size={20}
-                color={notice.sent ? colors.rsa.green : colors.gray[300]}
+                name="calendar"
+                size={28}
+                color={expiryInfo.daysUntilExpiry <= 40 ? colors.rsa.red : colors.rsa.green}
               />
-              <View style={styles.noticeInfo}>
-                <Text style={styles.noticeLabel}>Notice at {notice.label}</Text>
-                <Text style={styles.noticeDate}>
-                  Due: {new Date(notice.date).toLocaleDateString('en-ZA')}
+              <View style={styles.expiryText}>
+                <Text style={styles.expiryDays}>
+                  {expiryInfo.daysUntilExpiry > 0
+                    ? `${expiryInfo.daysUntilExpiry} days`
+                    : 'EXPIRED'}
+                </Text>
+                <Text style={styles.expiryLabel}>
+                  until lease expires on {new Date(leaseEndDate).toLocaleDateString('en-ZA')}
                 </Text>
               </View>
-              {notice.sent && (
-                <View style={styles.sentBadge}>
-                  <Text style={styles.sentBadgeText}>Sent</Text>
-                </View>
-              )}
             </View>
-          ))}
-        </View>
-
-        {/* Active Offer from Owner */}
-        {pendingOwnerOffer && responseMode === 'none' && (
-          <View style={styles.offerCard}>
-            <View style={styles.offerHeader}>
-              <Ionicons name="mail" size={22} color={colors.rsa.blue} />
-              <Text style={styles.offerTitle}>Renewal Offer from Your Landlord</Text>
-            </View>
-            <View style={styles.offerTerms}>
-              <View style={styles.offerRow}>
-                <Text style={styles.offerLabel}>Proposed Rent</Text>
-                <Text style={styles.offerValue}>
-                  {formatZAR(latestNegotiation!.proposed_monthly_rent)}/mo
-                </Text>
-              </View>
-              <View style={styles.offerRow}>
-                <Text style={styles.offerLabel}>Lease Type</Text>
-                <Text style={styles.offerValue}>
-                  {latestNegotiation!.proposed_lease_type === 'fixed'
-                    ? `Fixed ${latestNegotiation!.proposed_duration_months}mo`
-                    : 'Month-to-Month'}
-                </Text>
-              </View>
-              <View style={styles.offerRow}>
-                <Text style={styles.offerLabel}>Start Date</Text>
-                <Text style={styles.offerValue}>
-                  {new Date(latestNegotiation!.proposed_start_date).toLocaleDateString('en-ZA')}
-                </Text>
-              </View>
-              {latestNegotiation!.proposed_terms_notes && (
-                <Text style={styles.offerNotes}>{latestNegotiation!.proposed_terms_notes}</Text>
-              )}
-            </View>
-            {latestNegotiation!.response_deadline && (
-              <Text style={styles.deadlineText}>
-                Respond by:{' '}
-                {new Date(latestNegotiation!.response_deadline).toLocaleDateString('en-ZA')}
-              </Text>
-            )}
-            <View style={styles.offerActions}>
-              <TouchableOpacity
-                style={[styles.offerAction, styles.acceptAction]}
-                onPress={handleAcceptOffer}
-                disabled={submitting}
-              >
-                <Ionicons name="checkmark" size={18} color={colors.rsa.white} />
-                <Text style={styles.offerActionText}>Accept</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.offerAction, styles.counterAction]}
-                onPress={() => setResponseMode('negotiate')}
-                disabled={submitting}
-              >
-                <Ionicons name="swap-horizontal" size={18} color={colors.rsa.blue} />
-                <Text style={[styles.offerActionText, { color: colors.rsa.blue }]}>Counter</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.offerAction, styles.rejectAction]}
-                onPress={handleRejectOffer}
-                disabled={submitting}
-              >
-                <Ionicons name="close" size={18} color={colors.rsa.red} />
-                <Text style={[styles.offerActionText, { color: colors.rsa.red }]}>Decline</Text>
-              </TouchableOpacity>
+            <View style={styles.rentRow}>
+              <Text style={styles.rentLabel}>Current rent</Text>
+              <Text style={styles.rentAmount}>{formatZAR(monthlyRent)}/mo</Text>
             </View>
           </View>
-        )}
 
-        {/* Counter-Offer Form */}
-        {responseMode === 'negotiate' && (
+          {/* CPA Notice Timeline */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Submit Counter-Offer</Text>
-
-            <Text style={styles.fieldLabel}>Lease Type</Text>
-            <View style={styles.segmentRow}>
-              <TouchableOpacity
-                style={[styles.segment, counterLeaseType === 'fixed' && styles.segmentActive]}
-                onPress={() => setCounterLeaseType('fixed')}
-              >
-                <Text
-                  style={[
-                    styles.segmentText,
-                    counterLeaseType === 'fixed' && styles.segmentTextActive,
-                  ]}
-                >
-                  Fixed-Term
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.segment,
-                  counterLeaseType === 'month_to_month' && styles.segmentActive,
-                ]}
-                onPress={() => setCounterLeaseType('month_to_month')}
-              >
-                <Text
-                  style={[
-                    styles.segmentText,
-                    counterLeaseType === 'month_to_month' && styles.segmentTextActive,
-                  ]}
-                >
-                  Month-to-Month
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {counterLeaseType === 'fixed' && (
-              <>
-                <Text style={styles.fieldLabel}>Duration (Months) *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={counterDuration}
-                  onChangeText={setCounterDuration}
-                  placeholder="e.g. 12"
-                  placeholderTextColor={colors.gray[400]}
-                  keyboardType="numeric"
-                />
-              </>
-            )}
-
-            <Text style={styles.fieldLabel}>Your Proposed Monthly Rent *</Text>
-            <TextInput
-              style={styles.input}
-              value={counterRent}
-              onChangeText={setCounterRent}
-              placeholder="e.g. 8500"
-              placeholderTextColor={colors.gray[400]}
-              keyboardType="numeric"
-            />
-
-            <Text style={styles.fieldLabel}>Annual Escalation Rate % (Optional)</Text>
-            <TextInput
-              style={styles.input}
-              value={counterEscalationRate}
-              onChangeText={setCounterEscalationRate}
-              placeholder="e.g. 5 (for 5%)"
-              placeholderTextColor={colors.gray[400]}
-              keyboardType="numeric"
-            />
-
-            <Text style={styles.fieldLabel}>Notes (Optional)</Text>
-            <TextInput
-              style={[styles.input, styles.inputMulti]}
-              value={counterNotes}
-              onChangeText={setCounterNotes}
-              placeholder="Reason for counter-offer..."
-              placeholderTextColor={colors.gray[400]}
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-            />
-            <View style={styles.formActions}>
-              <TouchableOpacity
-                style={[styles.formAction, styles.formActionSecondary]}
-                onPress={() => setResponseMode('none')}
-              >
-                <Text style={styles.formActionSecondaryText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.formAction, styles.formActionPrimary]}
-                onPress={handleSubmitCounter}
-                disabled={submitting}
-              >
-                {submitting ? (
-                  <ActivityIndicator size="small" color={colors.rsa.white} />
-                ) : (
-                  <Text style={styles.formActionPrimaryText}>Send Counter-Offer</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
-        {/* Your Response Options (no active offer) */}
-        {!pendingOwnerOffer && responseMode === 'none' && !expiryInfo.tenantResponse && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Your Intention</Text>
+            <Text style={styles.sectionTitle}>CPA Notice Timeline</Text>
             <Text style={styles.sectionSubtitle}>
-              Let your landlord know your plans for when the lease expires
+              Your landlord is legally required to notify you at these milestones (CPA s14(2)(c))
             </Text>
-            <View style={styles.responseOptions}>
-              <TouchableOpacity
-                style={[styles.responseOption, { borderColor: colors.rsa.green }]}
-                onPress={() => handleRecordResponse('renew')}
-                disabled={submitting}
-              >
-                <Ionicons name="refresh-circle" size={28} color={colors.rsa.green} />
-                <Text style={[styles.responseOptionTitle, { color: colors.rsa.green }]}>
-                  Renew Lease
-                </Text>
-                <Text style={styles.responseOptionDesc}>I want to stay</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.responseOption, { borderColor: '#D97706' }]}
-                onPress={() => handleRecordResponse('negotiate')}
-                disabled={submitting}
-              >
-                <Ionicons name="chatbubbles" size={28} color="#D97706" />
-                <Text style={[styles.responseOptionTitle, { color: '#D97706' }]}>Negotiate</Text>
-                <Text style={styles.responseOptionDesc}>Discuss new terms</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.responseOption, { borderColor: colors.rsa.red }]}
-                onPress={() => handleRecordResponse('terminate')}
-                disabled={submitting}
-              >
-                <Ionicons name="exit" size={28} color={colors.rsa.red} />
-                <Text style={[styles.responseOptionTitle, { color: colors.rsa.red }]}>
-                  Not Renewing
-                </Text>
-                <Text style={styles.responseOptionDesc}>I will be leaving</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
-        {/* Recorded Response */}
-        {expiryInfo.tenantResponse && !pendingOwnerOffer && (
-          <View style={[styles.section, { borderLeftWidth: 4, borderLeftColor: colors.rsa.green }]}>
-            <Text style={styles.sectionTitle}>Your Recorded Response</Text>
-            <Text style={styles.recordedResponse}>
-              {expiryInfo.tenantResponse === 'renew' &&
-                'You have indicated you wish to renew your lease.'}
-              {expiryInfo.tenantResponse === 'terminate' &&
-                'You have indicated you will not be renewing.'}
-              {expiryInfo.tenantResponse === 'negotiate' &&
-                'You have indicated you wish to negotiate new terms.'}
-            </Text>
-          </View>
-        )}
-
-        {/* Negotiation History */}
-        {negotiations.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Negotiation History</Text>
-            {negotiations.map((n) => {
-              const statusInfo =
-                NEGOTIATION_STATUS_INFO[n.status] || NEGOTIATION_STATUS_INFO.expired;
-              const isMyProposal = n.initiated_by === userId;
-              return (
-                <View key={n.id} style={styles.negotiationItem}>
-                  <View style={styles.negotiationTop}>
-                    <Text style={styles.negotiationRound}>Round {n.round}</Text>
-                    <Text style={styles.negotiationFrom}>
-                      {isMyProposal ? 'Your Offer' : 'Owner Offer'}
-                    </Text>
-                    <View style={[styles.negoStatusBadge, { backgroundColor: statusInfo.bg }]}>
-                      <Text style={[styles.negoStatusText, { color: statusInfo.color }]}>
-                        {statusInfo.label}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={styles.negotiationRent}>
-                    {formatZAR(n.proposed_monthly_rent)}/mo ·{' '}
-                    {n.proposed_lease_type === 'fixed'
-                      ? `${n.proposed_duration_months}mo fixed`
-                      : 'Month-to-month'}
+            {[
+              {
+                label: '80 business days',
+                date: expiryInfo.notice80Due,
+                sent: expiryInfo.notice80Sent,
+              },
+              {
+                label: '60 business days',
+                date: expiryInfo.notice60Due,
+                sent: expiryInfo.notice60Sent,
+              },
+              {
+                label: '40 business days',
+                date: expiryInfo.notice40Due,
+                sent: expiryInfo.notice40Sent,
+              },
+            ].map((notice, i) => (
+              <View key={i} style={styles.noticeRow}>
+                <Ionicons
+                  name={notice.sent ? 'checkmark-circle' : 'ellipse-outline'}
+                  size={20}
+                  color={notice.sent ? colors.rsa.green : colors.gray[300]}
+                />
+                <View style={styles.noticeInfo}>
+                  <Text style={styles.noticeLabel}>Notice at {notice.label}</Text>
+                  <Text style={styles.noticeDate}>
+                    Due: {new Date(notice.date).toLocaleDateString('en-ZA')}
                   </Text>
-                  {n.response_notes && (
-                    <Text style={styles.negotiationNotes}>{n.response_notes}</Text>
-                  )}
                 </View>
-              );
-            })}
+                {notice.sent && (
+                  <View style={styles.sentBadge}>
+                    <Text style={styles.sentBadgeText}>Sent</Text>
+                  </View>
+                )}
+              </View>
+            ))}
           </View>
-        )}
-      </ScrollView>
+
+          {/* Active Offer from Owner */}
+          {pendingOwnerOffer && responseMode === 'none' && (
+            <View style={styles.offerCard}>
+              <View style={styles.offerHeader}>
+                <Ionicons name="mail" size={22} color={colors.rsa.blue} />
+                <Text style={styles.offerTitle}>Renewal Offer from Your Landlord</Text>
+              </View>
+              <View style={styles.offerTerms}>
+                <View style={styles.offerRow}>
+                  <Text style={styles.offerLabel}>Proposed Rent</Text>
+                  <Text style={styles.offerValue}>
+                    {formatZAR(latestNegotiation!.proposed_monthly_rent)}/mo
+                  </Text>
+                </View>
+                <View style={styles.offerRow}>
+                  <Text style={styles.offerLabel}>Lease Type</Text>
+                  <Text style={styles.offerValue}>
+                    {latestNegotiation!.proposed_lease_type === 'fixed'
+                      ? `Fixed ${latestNegotiation!.proposed_duration_months}mo`
+                      : 'Month-to-Month'}
+                  </Text>
+                </View>
+                <View style={styles.offerRow}>
+                  <Text style={styles.offerLabel}>Start Date</Text>
+                  <Text style={styles.offerValue}>
+                    {new Date(latestNegotiation!.proposed_start_date).toLocaleDateString('en-ZA')}
+                  </Text>
+                </View>
+                {latestNegotiation!.proposed_terms_notes && (
+                  <Text style={styles.offerNotes}>{latestNegotiation!.proposed_terms_notes}</Text>
+                )}
+              </View>
+              {latestNegotiation!.response_deadline && (
+                <Text style={styles.deadlineText}>
+                  Respond by:{' '}
+                  {new Date(latestNegotiation!.response_deadline).toLocaleDateString('en-ZA')}
+                </Text>
+              )}
+              <View style={styles.offerActions}>
+                <TouchableOpacity
+                  style={[styles.offerAction, styles.acceptAction]}
+                  onPress={handleAcceptOffer}
+                  disabled={submitting}
+                >
+                  <Ionicons name="checkmark" size={18} color={colors.rsa.white} />
+                  <Text style={styles.offerActionText}>Accept</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.offerAction, styles.counterAction]}
+                  onPress={() => setResponseMode('negotiate')}
+                  disabled={submitting}
+                >
+                  <Ionicons name="swap-horizontal" size={18} color={colors.rsa.blue} />
+                  <Text style={[styles.offerActionText, { color: colors.rsa.blue }]}>Counter</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.offerAction, styles.rejectAction]}
+                  onPress={handleRejectOffer}
+                  disabled={submitting}
+                >
+                  <Ionicons name="close" size={18} color={colors.rsa.red} />
+                  <Text style={[styles.offerActionText, { color: colors.rsa.red }]}>Decline</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {/* Counter-Offer Form */}
+          {responseMode === 'negotiate' && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Submit Counter-Offer</Text>
+
+              <Text style={styles.fieldLabel}>Lease Type</Text>
+              <View style={styles.segmentRow}>
+                <TouchableOpacity
+                  style={[styles.segment, counterLeaseType === 'fixed' && styles.segmentActive]}
+                  onPress={() => setCounterLeaseType('fixed')}
+                >
+                  <Text
+                    style={[
+                      styles.segmentText,
+                      counterLeaseType === 'fixed' && styles.segmentTextActive,
+                    ]}
+                  >
+                    Fixed-Term
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.segment,
+                    counterLeaseType === 'month_to_month' && styles.segmentActive,
+                  ]}
+                  onPress={() => setCounterLeaseType('month_to_month')}
+                >
+                  <Text
+                    style={[
+                      styles.segmentText,
+                      counterLeaseType === 'month_to_month' && styles.segmentTextActive,
+                    ]}
+                  >
+                    Month-to-Month
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {counterLeaseType === 'fixed' && (
+                <>
+                  <Text style={styles.fieldLabel}>Duration (Months) *</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={counterDuration}
+                    onChangeText={setCounterDuration}
+                    placeholder="e.g. 12"
+                    placeholderTextColor={colors.gray[400]}
+                    keyboardType="numeric"
+                  />
+                </>
+              )}
+
+              <Text style={styles.fieldLabel}>Your Proposed Monthly Rent *</Text>
+              <TextInput
+                style={styles.input}
+                value={counterRent}
+                onChangeText={setCounterRent}
+                placeholder="e.g. 8500"
+                placeholderTextColor={colors.gray[400]}
+                keyboardType="numeric"
+              />
+
+              <Text style={styles.fieldLabel}>Annual Escalation Rate % (Optional)</Text>
+              <TextInput
+                style={styles.input}
+                value={counterEscalationRate}
+                onChangeText={setCounterEscalationRate}
+                placeholder="e.g. 5 (for 5%)"
+                placeholderTextColor={colors.gray[400]}
+                keyboardType="numeric"
+              />
+
+              <Text style={styles.fieldLabel}>Notes (Optional)</Text>
+              <TextInput
+                style={[styles.input, styles.inputMulti]}
+                value={counterNotes}
+                onChangeText={setCounterNotes}
+                placeholder="Reason for counter-offer..."
+                placeholderTextColor={colors.gray[400]}
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+              />
+              <View style={styles.formActions}>
+                <TouchableOpacity
+                  style={[styles.formAction, styles.formActionSecondary]}
+                  onPress={() => setResponseMode('none')}
+                >
+                  <Text style={styles.formActionSecondaryText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.formAction, styles.formActionPrimary]}
+                  onPress={handleSubmitCounter}
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <ActivityIndicator size="small" color={colors.rsa.white} />
+                  ) : (
+                    <Text style={styles.formActionPrimaryText}>Send Counter-Offer</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {/* Your Response Options (no active offer) */}
+          {!pendingOwnerOffer && responseMode === 'none' && !expiryInfo.tenantResponse && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Your Intention</Text>
+              <Text style={styles.sectionSubtitle}>
+                Let your landlord know your plans for when the lease expires
+              </Text>
+              <View style={styles.responseOptions}>
+                <TouchableOpacity
+                  style={[styles.responseOption, { borderColor: colors.rsa.green }]}
+                  onPress={() => handleRecordResponse('renew')}
+                  disabled={submitting}
+                >
+                  <Ionicons name="refresh-circle" size={28} color={colors.rsa.green} />
+                  <Text style={[styles.responseOptionTitle, { color: colors.rsa.green }]}>
+                    Renew Lease
+                  </Text>
+                  <Text style={styles.responseOptionDesc}>I want to stay</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.responseOption, { borderColor: '#D97706' }]}
+                  onPress={() => handleRecordResponse('negotiate')}
+                  disabled={submitting}
+                >
+                  <Ionicons name="chatbubbles" size={28} color="#D97706" />
+                  <Text style={[styles.responseOptionTitle, { color: '#D97706' }]}>Negotiate</Text>
+                  <Text style={styles.responseOptionDesc}>Discuss new terms</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.responseOption, { borderColor: colors.rsa.red }]}
+                  onPress={() => handleRecordResponse('terminate')}
+                  disabled={submitting}
+                >
+                  <Ionicons name="exit" size={28} color={colors.rsa.red} />
+                  <Text style={[styles.responseOptionTitle, { color: colors.rsa.red }]}>
+                    Not Renewing
+                  </Text>
+                  <Text style={styles.responseOptionDesc}>I will be leaving</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {/* Recorded Response */}
+          {expiryInfo.tenantResponse && !pendingOwnerOffer && (
+            <View
+              style={[styles.section, { borderLeftWidth: 4, borderLeftColor: colors.rsa.green }]}
+            >
+              <Text style={styles.sectionTitle}>Your Recorded Response</Text>
+              <Text style={styles.recordedResponse}>
+                {expiryInfo.tenantResponse === 'renew' &&
+                  'You have indicated you wish to renew your lease.'}
+                {expiryInfo.tenantResponse === 'terminate' &&
+                  'You have indicated you will not be renewing.'}
+                {expiryInfo.tenantResponse === 'negotiate' &&
+                  'You have indicated you wish to negotiate new terms.'}
+              </Text>
+            </View>
+          )}
+
+          {/* Negotiation History */}
+          {negotiations.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Negotiation History</Text>
+              {negotiations.map((n) => {
+                const statusInfo =
+                  NEGOTIATION_STATUS_INFO[n.status] || NEGOTIATION_STATUS_INFO.expired;
+                const isMyProposal = n.initiated_by === userId;
+                return (
+                  <View key={n.id} style={styles.negotiationItem}>
+                    <View style={styles.negotiationTop}>
+                      <Text style={styles.negotiationRound}>Round {n.round}</Text>
+                      <Text style={styles.negotiationFrom}>
+                        {isMyProposal ? 'Your Offer' : 'Owner Offer'}
+                      </Text>
+                      <View style={[styles.negoStatusBadge, { backgroundColor: statusInfo.bg }]}>
+                        <Text style={[styles.negoStatusText, { color: statusInfo.color }]}>
+                          {statusInfo.label}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={styles.negotiationRent}>
+                      {formatZAR(n.proposed_monthly_rent)}/mo ·{' '}
+                      {n.proposed_lease_type === 'fixed'
+                        ? `${n.proposed_duration_months}mo fixed`
+                        : 'Month-to-month'}
+                    </Text>
+                    {n.response_notes && (
+                      <Text style={styles.negotiationNotes}>{n.response_notes}</Text>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
