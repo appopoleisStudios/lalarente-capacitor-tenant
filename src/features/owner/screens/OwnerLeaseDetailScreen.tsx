@@ -17,7 +17,7 @@ import { notificationsApi } from '../../notifications/api/notificationsApi';
 import SignatureModal from '../../leases/components/SignatureModal';
 import LeaseSignatureRow from '../../leases/components/LeaseSignatureRow';
 import { uploadSignature, getLeaseDocumentUrl } from '../../leases/api/storageService';
-import { executeLease } from '../../leases/api/leaseExecutionService';
+import { executeLease, LEASE_PDF_MISSING_MESSAGE } from '../../leases/api/leaseExecutionService';
 import { regenerateLeasePDF } from '../../leases/api/regenerateLeasePDF';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -312,9 +312,10 @@ export default function OwnerLeaseDetailScreen() {
 
       // Execute lease (update property, create payment, notify) with retry logic
       let executeSuccess = false;
+      let pdfGenerated = true;
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
-          await executeLease(lease.id);
+          ({ pdfGenerated } = await executeLease(lease.id));
           executeSuccess = true;
           break;
         } catch (error: any) {
@@ -343,9 +344,12 @@ export default function OwnerLeaseDetailScreen() {
         }
       }
 
-      Alert.alert('Success', 'Lease agreement signed and activated!', [
-        { text: 'OK', onPress: () => loadLease() },
-      ]);
+      // CT7-052: the PDF can fail on its own — say so instead of a bare success
+      Alert.alert(
+        'Success',
+        pdfGenerated ? 'Lease agreement signed and activated!' : LEASE_PDF_MISSING_MESSAGE,
+        [{ text: 'OK', onPress: () => loadLease() }]
+      );
     } catch (err: any) {
       console.error('Error signing lease:', err);
 
