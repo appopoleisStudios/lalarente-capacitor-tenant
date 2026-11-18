@@ -1792,3 +1792,47 @@ itself worked; the issues below are what followed.
         R5 500 deposit (zero interest) with an R1 000 tenant's-cost item refunds
         R4 500;
         an owner's-cost item doesn't reduce the refund.
+
+## Client test of build 11 — lease signing (2026-11-17)
+
+Navin (96 De Waal): paid the holding deposit, created and edited the lease,
+then neither the owner nor the tenant could sign.
+
+## CT7-043 🔴 Nobody can sign a lease on Android ✅ (PR #249)
+
+- **Role:** owner + tenant · **Platform:** Android · **Screen:** Sign Lease Agreement
+- **Today:** the signature modal used React Native's `SafeAreaView`, which pads
+  only on iOS. With edge-to-edge on Android the **Clear / Confirm Signature**
+  buttons sat under the system navigation bar; taps went to the OS (recents),
+  so no signature was ever saved. Inspection signatures use the same modal.
+  The edited clause was unrelated. Build 11 shipped with signing verified only
+  on the iOS simulator.
+- **Acceptance criteria:**
+  - [x] Signature modal pads by the device's safe-area insets.
+  - [x] Jest regression test (fails without the fix).
+  - [x] Android Maestro guard `android-lease-sign-guard.yaml`: tenant signs,
+        owner signs, lease goes active — passed on the emulator with the
+        release APK.
+
+## CT7-044 🟠 Signature date runs off the screen; signature images blank ✅ (PR #249)
+
+- **Role:** owner + tenant · **Platform:** Android · **Screen:** My Lease / Lease Details
+- **Today:** "Signed <date>" ran off the right edge on the tenant's My Lease
+  (the tenant's copy of the signature row had lost `flex: 1`), and both
+  screens showed empty signature boxes (private `signatures` bucket read via
+  its public URL).
+- **Acceptance criteria:**
+  - [x] One shared `LeaseSignatureRow` for owner and tenant; date stays on screen.
+  - [x] Thumbnails load through a short-lived signed URL.
+  - [x] Jest test for both; verified on the Android emulator.
+
+## CT7-045 🟠 Other screens slide under the Android system bars ✅ (PR #249)
+
+- **Role:** all · **Platform:** Android
+- **Today:** six more files used React Native's `SafeAreaView` (no-op on
+  Android): shared `ModalSheet`, vendor-payment list / invoice / checkout /
+  result, POPIA data-rights.
+- **Acceptance criteria:**
+  - [x] All moved to `react-native-safe-area-context`.
+  - [x] ESLint error on importing `SafeAreaView` from `react-native`, so
+        pre-commit and CI block the pattern.
