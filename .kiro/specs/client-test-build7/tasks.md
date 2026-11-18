@@ -1933,6 +1933,8 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         reported to Sentry.
   - [x] `executeLease` returns `pdfGenerated`; when false (or the URL could not
         be saved) the owner is told to tap "Generate PDF".
-  - [x] Jest: retry succeeds on a later attempt, gives up after 3 and reports
-        each; the signing alert uses the flag.
-  - [ ] Android lifecycle-05 green (Download PDF shown after signing).
+  - [x] Jest: retry succeeds on a later attempt, gives up after both attempts
+        and reports each; the signing alert uses the flag.
+  - [x] Android lifecycle-05 green (Download PDF shown after signing):
+        emulator run 2026-11-19 (lifecycle-20261119-030736) — lease activated,
+        no "Generate PDF" fallback, Download PDF on owner and tenant.
