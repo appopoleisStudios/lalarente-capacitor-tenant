@@ -87,6 +87,20 @@ appId: com.lalarente.app
                 id: "email-input"
             - eraseText
             - inputText: ${OWNER_EMAIL}
+            # Android keyboards can commit a suggestion on top of the typed text
+            # (seen: "…@yahoo.comcom"); retype until the field holds exactly the email.
+            - repeat:
+                times: 2
+                while:
+                  notVisible:
+                    id: "email-input"
+                    text: "${OWNER_EMAIL}"
+                commands:
+                  - tapOn:
+                      id: "email-input"
+                  - eraseText:
+                      charactersToErase: 80
+                  - inputText: ${OWNER_EMAIL}
 
             # Dismiss the keyboard before switching fields — same pattern as
             # login-tenant/login-vendor. Without this the sign-in tap is swallowed

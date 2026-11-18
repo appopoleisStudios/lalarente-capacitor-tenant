@@ -70,6 +70,20 @@ appId: com.lalarente.app
     id: "email-input"
 - eraseText
 - inputText: ${VENDOR_EMAIL}
+# Android keyboards can commit a suggestion on top of the typed text
+# (seen: "…@yahoo.comcom"); retype until the field holds exactly the email.
+- repeat:
+    times: 2
+    while:
+      notVisible:
+        id: "email-input"
+        text: "${VENDOR_EMAIL}"
+    commands:
+      - tapOn:
+          id: "email-input"
+      - eraseText:
+          charactersToErase: 80
+      - inputText: ${VENDOR_EMAIL}
 
 - tapOn:
     text: "Sign in to your account"
