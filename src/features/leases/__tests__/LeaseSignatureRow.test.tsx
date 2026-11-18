@@ -87,4 +87,50 @@ describe('LeaseSignatureRow', () => {
       expect(UNSAFE_getByType(Image).props.source).toEqual({ uri: 'https://signed/tenant.png?t=2' })
     );
   });
+
+  it('stops re-signing after two failed reloads (no request storm)', async () => {
+    const { UNSAFE_getByType } = render(
+      <LeaseSignatureRow
+        label="Tenant"
+        name="You"
+        signedAt="2026-11-18T06:40:13Z"
+        signatureUrl={PUBLIC_URL}
+        accentColor="#007A4D"
+      />
+    );
+    await waitFor(() => expect(UNSAFE_getByType(Image)).toBeTruthy());
+    for (let i = 0; i < 5; i++) {
+      act(() => UNSAFE_getByType(Image).props.onError());
+      await waitFor(() => expect(UNSAFE_getByType(Image)).toBeTruthy());
+    }
+    // first load + 2 retries, however many times the image errors
+    expect(mockCreateSignedUrl).toHaveBeenCalledTimes(3);
+  });
+
+  it('signs the new file when the signature URL changes', async () => {
+    const { rerender } = render(
+      <LeaseSignatureRow
+        label="Tenant"
+        name="You"
+        signedAt={null}
+        signatureUrl={PUBLIC_URL}
+        accentColor="#007A4D"
+      />
+    );
+    await waitFor(() =>
+      expect(mockCreateSignedUrl).toHaveBeenCalledWith('lease-1/tenant.png', 3600)
+    );
+    rerender(
+      <LeaseSignatureRow
+        label="Tenant"
+        name="You"
+        signedAt={null}
+        signatureUrl={PUBLIC_URL.replace('lease-1', 'lease-2')}
+        accentColor="#007A4D"
+      />
+    );
+    await waitFor(() =>
+      expect(mockCreateSignedUrl).toHaveBeenCalledWith('lease-2/tenant.png', 3600)
+    );
+  });
 });

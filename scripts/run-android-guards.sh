@@ -23,12 +23,15 @@ echo "⚠ clears the app and resets the lifecycle fixture — don't run during a
 
 GUARDS=(
   tenant-tabbar-guard        # 5 canonical tenant tabs, no Vendor Payments tab
+  vendor-tabbar-guard        # 6 canonical vendor tabs, no Contracts tab
   android-lease-sign-guard   # CT7-043: tenant + owner can sign on Android
 )
 
 run_guard() {
   local name="$1" extra=()
-  adb -s "$DEVICE" shell pm clear com.lalarente.app >/dev/null
+  # Clean start: a failed clear would test a stale session, so fail the guard.
+  adb -s "$DEVICE" shell pm clear com.lalarente.app 2>&1 | grep -q Success \
+    || { echo "✗ $name: could not clear app data" >&2; return 1; }
   if [[ "$name" == android-lease-sign-guard ]]; then
     node scripts/reset-lifecycle-fixture.mjs --apply >/dev/null || return 1
     local lease_id
@@ -38,10 +41,15 @@ run_guard() {
   ( cd "$OUT" && maestro --device "$DEVICE" test "$ROOT/.maestro/flows/$name.yaml" \
       --env TENANT_EMAIL="$TENANT_EMAIL" --env TENANT_PASSWORD="$TENANT_PASSWORD" \
       --env OWNER_EMAIL="$OWNER_EMAIL" --env OWNER_PASSWORD="$OWNER_PASSWORD" \
+      --env VENDOR_EMAIL="${VENDOR_EMAIL:-}" --env VENDOR_PASSWORD="${VENDOR_PASSWORD:-}" \
       ${extra[@]+"${extra[@]}"} > "$name.log" 2>&1 )
   local status=$?
   if [[ "$name" == android-lease-sign-guard ]]; then
-    node scripts/reset-lifecycle-fixture.mjs --apply >/dev/null
+    # A failed cleanup leaves a live fixture lease behind: that fails the guard.
+    if ! node scripts/reset-lifecycle-fixture.mjs --apply > "$OUT/$name-reset.log" 2>&1; then
+      echo "✗ $name: fixture reset failed — see $OUT/$name-reset.log" >&2
+      return 1
+    fi
   fi
   return $status
 }
