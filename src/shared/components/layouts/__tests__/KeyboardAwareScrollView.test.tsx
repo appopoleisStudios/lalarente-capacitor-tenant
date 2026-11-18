@@ -100,6 +100,63 @@ describe('KeyboardAwareScrollView (CT7-051)', () => {
     expect(scrollTo).toHaveBeenCalledWith({ y: 250 + OVERFLOW, animated: true });
   });
 
+  it('measures again when the form shrinks after the keyboard event (device: Report Issue title)', () => {
+    const deferred: (() => void)[] = [];
+    focused = input({ deferred, y: 900 }); // 900..1000: above the keyboard, not yet clipped
+    let frame = { y: 300, h: 1900 }; // not shrunk yet when keyboardDidShow fires
+    const ref = React.createRef<ScrollView>();
+    const { getByTestId } = render(
+      <KeyboardAwareScrollView ref={ref} testID="form">
+        <Text>form</Text>
+      </KeyboardAwareScrollView>
+    );
+    const scrollTo = jest.fn();
+    Object.assign(ref.current as object, {
+      scrollTo,
+      measureInWindow: (cb: (...a: number[]) => void) => cb(0, frame.y, 400, frame.h),
+    });
+    keyboardShows();
+    tick();
+    deferred.splice(0).forEach((d) => d());
+    expect(scrollTo).not.toHaveBeenCalled();
+    // the KAV lays out the shrunk form; a footer now sits above the keyboard (300..950)
+    frame = { y: 300, h: 650 };
+    fireEvent(getByTestId('form'), 'layout', { nativeEvent: { layout: { height: 650 } } });
+    tick();
+    deferred.splice(0).forEach((d) => d());
+    expect(scrollTo).toHaveBeenCalledWith({ y: 1000 + REVEAL_MARGIN - 950, animated: true });
+  });
+
+  it('a layout change with the keyboard closed does nothing', () => {
+    focused = input();
+    const { getByTestId, scrollTo } = mount();
+    fireEvent(getByTestId('form'), 'layout', { nativeEvent: { layout: { height: 650 } } });
+    tick();
+    expect(scrollTo).not.toHaveBeenCalled();
+  });
+
+  it('keeps the field above a footer that ends the form above the keyboard', () => {
+    // in-flow footer: the scroll view ends at 950, the keyboard starts at 1100;
+    // a field at 900..1000 is above the keyboard but behind the footer
+    const deferred: (() => void)[] = [];
+    focused = input({ deferred, y: 900 });
+    const ref = React.createRef<ScrollView>();
+    render(
+      <KeyboardAwareScrollView ref={ref}>
+        <Text>form</Text>
+      </KeyboardAwareScrollView>
+    );
+    const scrollTo = jest.fn();
+    Object.assign(ref.current as object, {
+      scrollTo,
+      measureInWindow: (cb: (...a: number[]) => void) => cb(0, 300, 400, 650),
+    });
+    keyboardShows();
+    tick();
+    deferred.forEach((d) => d());
+    expect(scrollTo).toHaveBeenCalledWith({ y: 1000 + REVEAL_MARGIN - 950, animated: true });
+  });
+
   it('leaves a focused input that is already visible alone', () => {
     const deferred: (() => void)[] = [];
     focused = input({ deferred, y: 600 });

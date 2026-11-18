@@ -92,14 +92,23 @@ export function verticalScrollViews(src: string): number {
   ).length;
 }
 
-/** Style names that pin a view to the bottom edge (absolute, bottom: 0, no top). */
+/** Styles (StyleSheet entries or inline objects) that pin a view to the bottom edge. */
 export function pinnedFooters(src: string): string[] {
-  return [...src.matchAll(/\n\s*(\w+): \{([^{}]*)\}/g)]
+  return [...src.matchAll(/(?:\n\s*(\w+): |style=\{\[?)\{([^{}]*)\}/g)]
     .filter(
       ([, , body]) =>
-        /position: 'absolute'/.test(body) && /\bbottom: 0\b/.test(body) && !/\btop: /.test(body)
+        /position:\s*['"]absolute['"]/.test(body) &&
+        /\bbottom:\s*0\b/.test(body) &&
+        !/\btop:/.test(body)
     )
-    .map(([, name]) => name);
+    .map(([, name]) => name ?? 'inline style');
+}
+
+/** The source between the first KeyboardAvoidingView and the last closing tag. */
+export function insideKav(src: string): string {
+  const open = src.indexOf('<KeyboardAvoidingView');
+  const close = src.lastIndexOf('</KeyboardAvoidingView>');
+  return open === -1 || close < open ? '' : src.slice(open, close);
 }
 
 const SCREENS = FILES.filter((f) => rel(f).startsWith('app/') || rel(f).includes('/screens/'));
@@ -202,7 +211,7 @@ describe('keyboard avoidance works on Android (CT7-051)', () => {
     const offenders = FILES.filter((f) => {
       if (rel(f) in OWN_REVEAL) return false;
       const src = fs.readFileSync(f, 'utf8');
-      return /<KeyboardAvoidingView\b/.test(src) && verticalScrollViews(src) > 0;
+      return verticalScrollViews(insideKav(src)) > 0;
     }).map(rel);
     expect(offenders).toEqual([]);
   });
@@ -242,6 +251,12 @@ describe('keyboard avoidance works on Android (CT7-051)', () => {
     const overlay = `  overlay: {\n    position: 'absolute',\n    top: 0,\n    bottom: 0,\n  },`;
     expect(pinnedFooters(`const styles = StyleSheet.create({\n${footer}\n});`)).toEqual(['footer']);
     expect(pinnedFooters(`const styles = StyleSheet.create({\n${overlay}\n});`)).toEqual([]);
+    expect(pinnedFooters(`<View style={{ position: "absolute", bottom: 0 }} />`)).toEqual([
+      'inline style',
+    ]);
+    expect(
+      pinnedFooters(`<View style={[{ position: 'absolute', bottom: 0, left: 0 }, s]} />`)
+    ).toEqual(['inline style']);
   });
 
   it('the scroll checker counts vertical ScrollViews only', () => {
@@ -251,6 +266,9 @@ describe('keyboard avoidance works on Android (CT7-051)', () => {
     ).toBe(0);
     expect(verticalScrollViews('const r = useRef<ScrollView>(null);')).toBe(0);
     expect(verticalScrollViews('<KeyboardAwareScrollView style={s}>')).toBe(0);
+    expect(
+      insideKav('<ScrollView /><KeyboardAvoidingView><X /></KeyboardAvoidingView>')
+    ).not.toContain('ScrollView');
   });
 
   it('the checker itself catches iOS-only and missing behaviors', () => {
