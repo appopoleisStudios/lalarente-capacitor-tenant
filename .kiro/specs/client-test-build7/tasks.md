@@ -1964,5 +1964,13 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         iOS, caller override; no `KeyboardAvoidingView` in the app is iOS-only;
         every screen with an input outside a modal renders one (allowlist for
         top-only search bars); Report Issue wraps description + submit.
+  - [x] Device run 2026-11-19 caught a regression of the first fix: the KAV
+        shrank the form but the ScrollView kept its offset, so the field being
+        typed in went out of view (Report Issue: Issue Title). Fixed with the
+        shared `KeyboardAwareScrollView` (scrolls the focused input above the
+        keyboard after the shrink), used by every vertical ScrollView in a
+        file with a KAV; Jest behaviour test + guard (fails on the old screen).
+  - [ ] lifecycle-07 asserts the title / description field and Submit stay
+        visible with the keyboard up.
   - [ ] Android emulator (release APK): Report Issue, chat thread and a long
         form keep the field being typed in and the buttons reachable; lifecycle 01→08 green.
