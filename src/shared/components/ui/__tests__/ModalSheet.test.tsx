@@ -1,9 +1,22 @@
 import React from 'react';
-import { Text } from 'react-native';
+import { Text, StyleSheet } from 'react-native';
 import { render, fireEvent } from '@testing-library/react-native';
 import { ModalSheet } from '../ModalSheet';
 
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 24, bottom: 48, left: 0, right: 0 }),
+}));
+
 describe('ModalSheet', () => {
+  it('keeps its last row above the Android navigation bar (bottom inset)', () => {
+    const { getByTestId } = render(
+      <ModalSheet visible onClose={jest.fn()} title="Sheet">
+        <Text>Content</Text>
+      </ModalSheet>
+    );
+    expect(StyleSheet.flatten(getByTestId('modal-sheet').props.style).paddingBottom).toBe(48);
+  });
+
   it('renders nothing when not visible', () => {
     const { queryByText } = render(
       <ModalSheet visible={false} onClose={jest.fn()} title="Test">

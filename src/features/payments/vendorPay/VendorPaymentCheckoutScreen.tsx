@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import React, { useRef } from 'react';
-import { View, Text, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView, WebViewNavigation } from 'react-native-webview';
 import { PaymentStepsIndicator } from '@/src/shared/components/ui/PaymentStepsIndicator';
 import { ErrorState, FeaturePin, LoadingSpinner } from '@/src/shared/components';
@@ -47,7 +48,7 @@ export function VendorPaymentCheckoutScreen({ config }: { config: VendorPayConfi
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }} edges={['top']}>
       <View
         style={{
           padding: 16,

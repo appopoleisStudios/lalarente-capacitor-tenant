@@ -1,15 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  SafeAreaView,
-  ActivityIndicator,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '@/src/lib/supabase';
 import { PaymentStepsIndicator } from '@/src/shared/components/ui/PaymentStepsIndicator';
@@ -152,7 +145,7 @@ export function VendorInvoicePayScreen({ config }: { config: VendorPayConfig }) 
 
   if (!invoice) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }} edges={['top']}>
         <EmptyState
           icon="🧾"
           title="Invoice not found"
@@ -169,7 +162,7 @@ export function VendorInvoicePayScreen({ config }: { config: VendorPayConfig }) 
   const canPay = invoice.status === 'approved' && invoice.payer_role === config.role;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }} edges={['top']}>
       <ScrollView style={{ flex: 1, backgroundColor: '#F5F5F5' }}>
         <View
           style={{

@@ -88,4 +88,26 @@ export default [
       ],
     },
   },
+  // ─── Android edge-to-edge: React Native's SafeAreaView pads only on iOS ─────
+  // Content and buttons using it slide under the Android status / navigation
+  // bars (build 11: nobody could tap "Confirm Signature"). An ERROR, so the
+  // pre-commit hook and CI block it from coming back.
+  {
+    files: ['src/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'react-native',
+              importNames: ['SafeAreaView'],
+              message:
+                "React Native's SafeAreaView does nothing on Android. Use SafeAreaView (with edges) or useSafeAreaInsets from 'react-native-safe-area-context'.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ];

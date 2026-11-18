@@ -5,10 +5,10 @@ import {
   Modal,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import SignatureCapture, { SignatureCaptureRef } from './SignatureCapture';
 import { reportApiError } from '@/src/core/observability/sentry';
@@ -31,6 +31,9 @@ export default function SignatureModal({
   primaryColor = '#007A4D',
 }: SignatureModalProps) {
   const signatureRef = useRef<SignatureCaptureRef>(null);
+  // Android draws edge-to-edge: without these insets Clear / Confirm sit
+  // under the system navigation bar and can't be tapped.
+  const insets = useSafeAreaInsets();
   const [saving, setSaving] = useState(false);
   const [hasSignature, setHasSignature] = useState(false);
 
@@ -107,7 +110,10 @@ export default function SignatureModal({
       presentationStyle="fullScreen"
       onRequestClose={onClose}
     >
-      <SafeAreaView style={styles.safeArea}>
+      <View
+        testID="signature-modal-root"
+        style={[styles.safeArea, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
+      >
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.header}>
@@ -169,7 +175,7 @@ export default function SignatureModal({
             </TouchableOpacity>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }

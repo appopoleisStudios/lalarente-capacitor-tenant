@@ -1,14 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import React, { useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  SafeAreaView,
-  RefreshControl,
-  TouchableOpacity,
-} from 'react-native';
+import { View, Text, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '@/src/lib/supabase';
@@ -110,7 +104,7 @@ export default function VendorPaymentsList() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }} edges={['top']}>
       <View style={{ flex: 1, backgroundColor: '#F5F5F5' }}>
         {/* Header */}
         <View
