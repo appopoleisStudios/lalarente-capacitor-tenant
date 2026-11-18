@@ -20,7 +20,7 @@ import {
   Modal,
   TextInput,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/src/lib/supabase';
@@ -74,6 +74,7 @@ const STAGE_CONFIG: Record<
 };
 
 export default function TenantArrearsScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
@@ -403,7 +404,7 @@ export default function TenantArrearsScreen() {
         <Modal visible={showArrangementModal} transparent animationType="slide">
           <View style={styles.modalOverlay}>
             <KeyboardAvoidingView style={{ justifyContent: 'flex-end' }}>
-              <View style={styles.modalSheet}>
+              <View style={[styles.modalSheet, { paddingBottom: Math.max(40, insets.bottom + 8) }]}>
                 <Text style={styles.modalTitle}>Propose Payment Arrangement</Text>
                 {selectedArrears && (
                   <Text style={styles.modalSub}>

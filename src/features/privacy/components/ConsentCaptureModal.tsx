@@ -6,6 +6,7 @@
  */
 
 import React, { useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   View,
   Text,
@@ -42,6 +43,7 @@ export const ConsentCaptureModal: React.FC<ConsentCaptureModalProps> = ({
   onDismiss,
   showOptional = true,
 }) => {
+  const insets = useSafeAreaInsets();
   const [checkedConsents, setCheckedConsents] = useState<Set<ConsentType>>(new Set());
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -92,7 +94,7 @@ export const ConsentCaptureModal: React.FC<ConsentCaptureModalProps> = ({
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
-        <View style={styles.modal}>
+        <View style={[styles.modal, { paddingBottom: Math.max(34, insets.bottom + 8) }]}>
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerIcon}>
@@ -100,8 +102,8 @@ export const ConsentCaptureModal: React.FC<ConsentCaptureModalProps> = ({
             </View>
             <Text style={styles.title}>Your Privacy Matters</Text>
             <Text style={styles.subtitle}>
-              In compliance with the Protection of Personal Information Act (POPIA),
-              we need your consent to process your data.
+              In compliance with the Protection of Personal Information Act (POPIA), we need your
+              consent to process your data.
             </Text>
           </View>
 
@@ -115,10 +117,12 @@ export const ConsentCaptureModal: React.FC<ConsentCaptureModalProps> = ({
                 onPress={() => toggleConsent(consent.type)}
                 activeOpacity={0.7}
               >
-                <View style={[
-                  styles.checkbox,
-                  checkedConsents.has(consent.type) && styles.checkboxChecked,
-                ]}>
+                <View
+                  style={[
+                    styles.checkbox,
+                    checkedConsents.has(consent.type) && styles.checkboxChecked,
+                  ]}
+                >
                   {checkedConsents.has(consent.type) && (
                     <Ionicons name="checkmark" size={16} color={colors.background.default} />
                   )}
@@ -138,10 +142,12 @@ export const ConsentCaptureModal: React.FC<ConsentCaptureModalProps> = ({
                     onPress={() => toggleConsent(consent.type)}
                     activeOpacity={0.7}
                   >
-                    <View style={[
-                      styles.checkbox,
-                      checkedConsents.has(consent.type) && styles.checkboxChecked,
-                    ]}>
+                    <View
+                      style={[
+                        styles.checkbox,
+                        checkedConsents.has(consent.type) && styles.checkboxChecked,
+                      ]}
+                    >
                       {checkedConsents.has(consent.type) && (
                         <Ionicons name="checkmark" size={16} color={colors.background.default} />
                       )}
@@ -171,10 +177,7 @@ export const ConsentCaptureModal: React.FC<ConsentCaptureModalProps> = ({
               </TouchableOpacity>
             )}
             <TouchableOpacity
-              style={[
-                styles.primaryButton,
-                !allRequiredChecked && styles.primaryButtonDisabled,
-              ]}
+              style={[styles.primaryButton, !allRequiredChecked && styles.primaryButtonDisabled]}
               onPress={handleSubmit}
               disabled={!allRequiredChecked || submitting}
             >

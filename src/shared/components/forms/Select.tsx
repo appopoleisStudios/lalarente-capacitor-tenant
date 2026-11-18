@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList, ViewStyle } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 export interface SelectOption {
@@ -15,9 +16,16 @@ export interface SelectProps {
   style?: ViewStyle;
 }
 
-export function Select({ options, value, onSelect, placeholder = 'Select...', style }: SelectProps) {
+export function Select({
+  options,
+  value,
+  onSelect,
+  placeholder = 'Select...',
+  style,
+}: SelectProps) {
+  const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
-  const selectedOption = options.find(opt => opt.value === value);
+  const selectedOption = options.find((opt) => opt.value === value);
   const displayLabel = selectedOption?.label ?? placeholder;
 
   return (
@@ -40,7 +48,10 @@ export function Select({ options, value, onSelect, placeholder = 'Select...', st
           onPress={() => setOpen(false)}
           accessibilityLabel="Close"
         >
-          <View style={styles.sheet}>
+          <View
+            testID="select-sheet"
+            style={[styles.sheet, { paddingBottom: Math.max(32, insets.bottom + 8) }]}
+          >
             <View style={styles.handle} />
             <FlatList
               data={options}
@@ -53,12 +64,12 @@ export function Select({ options, value, onSelect, placeholder = 'Select...', st
                     setOpen(false);
                   }}
                 >
-                  <Text style={[styles.optionText, item.value === value && styles.optionTextSelected]}>
+                  <Text
+                    style={[styles.optionText, item.value === value && styles.optionTextSelected]}
+                  >
                     {item.label}
                   </Text>
-                  {item.value === value && (
-                    <Ionicons name="checkmark" size={20} color="#007A4D" />
-                  )}
+                  {item.value === value && <Ionicons name="checkmark" size={20} color="#007A4D" />}
                 </TouchableOpacity>
               )}
               ItemSeparatorComponent={() => <View style={styles.separator} />}

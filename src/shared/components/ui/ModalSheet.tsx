@@ -49,7 +49,16 @@ export function ModalSheet({
           <TouchableOpacity style={styles.backdrop} onPress={onClose} activeOpacity={1} />
           <View
             testID="modal-sheet"
-            style={[styles.sheet, { maxHeight, paddingBottom: insets.bottom }, style]}
+            style={[
+              styles.sheet,
+              { maxHeight },
+              style,
+              // last, so a caller's style can add to the inset but never drop it
+              {
+                paddingBottom:
+                  (Number(StyleSheet.flatten(style)?.paddingBottom) || 0) + insets.bottom,
+              },
+            ]}
           >
             {/* Handle */}
             <View style={styles.handleContainer}>

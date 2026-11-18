@@ -524,7 +524,7 @@ export default function OwnerInsuranceClaimScreen() {
             presentationStyle="pageSheet"
             onRequestClose={() => setAddDocModal(false)}
           >
-            <SafeAreaView style={styles.modalContainer} edges={['top']}>
+            <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
               <View style={styles.modalHeader}>
                 <TouchableOpacity onPress={() => setAddDocModal(false)}>
                   <Ionicons name="close" size={24} color={colors.text.primary} />
@@ -712,7 +712,7 @@ export default function OwnerInsuranceClaimScreen() {
           presentationStyle="pageSheet"
           onRequestClose={() => setShowPolicyPicker(false)}
         >
-          <SafeAreaView style={styles.modalContainer} edges={['top']}>
+          <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
             <View style={styles.modalHeader}>
               <TouchableOpacity onPress={() => setShowPolicyPicker(false)}>
                 <Ionicons name="close" size={24} color={colors.text.primary} />

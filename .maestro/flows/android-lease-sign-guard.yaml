@@ -6,6 +6,9 @@
 #   maestro --device emulator-5554 test -e LEASE_ID=$LEASE_ID ... this file
 #   node scripts/reset-lifecycle-fixture.mjs --apply
 # Starts signed out, or signed in as the owner or the tenant.
+# Needs 3-button navigation (the tallest nav bar) to catch the bug —
+# scripts/run-android-guards.sh switches the emulator to it. The proof that a
+# tap reached the app is the in-app success alert, not assertVisible.
 appId: com.lalarente.app
 ---
 - launchApp
@@ -51,7 +54,6 @@ appId: com.lalarente.app
     start: "70%,45%"
     end: "30%,55%"
     duration: 600
-# Confirm must be fully on screen (not under the navigation bar)
 - assertVisible:
     id: "signature-modal-confirm"
 - takeScreenshot: android-sign-guard-tenant-modal

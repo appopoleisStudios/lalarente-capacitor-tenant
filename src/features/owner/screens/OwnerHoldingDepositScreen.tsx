@@ -575,7 +575,7 @@ function CreateDepositModal({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <SafeAreaView style={styles.modalContainer} edges={['top']}>
+      <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
         <View style={styles.modalHeader}>
           <Text style={styles.modalTitle}>Request Holding Deposit</Text>
           <TouchableOpacity

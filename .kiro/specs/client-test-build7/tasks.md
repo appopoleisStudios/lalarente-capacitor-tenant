@@ -1836,3 +1836,22 @@ then neither the owner nor the tenant could sign.
   - [x] All moved to `react-native-safe-area-context`.
   - [x] ESLint error on importing `SafeAreaView` from `react-native`, so
         pre-commit and CI block the pattern.
+
+## CT7-046 🟠 Bottom sheets and owner modals: last button under the Android nav bar (PR #251)
+
+- **Role:** all · **Platform:** Android · Found by the SA review of PR #249.
+- **Today:** 14 bottom sheets (EFT payment confirm, arrears plan, early
+  termination, lease review, payment-dispute accept/reject, viewing actions,
+  POPIA consent, property tax, vendor documents/services, shared `Select` and
+  `DateField`) and 5 full-screen owner modals (holding deposit, lease renewal
+  offer, deposit deduction, insurance document / policy picker) drew their
+  last row under the Android navigation bar — same class as CT7-043.
+- **Acceptance criteria:**
+  - [x] Bottom sheets pad the white sheet by the bottom inset; full-screen
+        modals use `edges={['top', 'bottom']}`.
+  - [x] Signature thumbnails re-sign when a link expires; never fall back to
+        the unloadable public URL.
+  - [x] `scripts/run-android-guards.sh` runs every Android guard (3-button
+        navigation) — release gate step 4.
+  - [x] Jest: `Select` bottom inset, `LeaseSignatureRow` expiry/failure.
+  - [ ] Each sheet visually checked on the Android emulator (release APK).

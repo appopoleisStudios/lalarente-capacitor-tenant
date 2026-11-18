@@ -17,6 +17,24 @@ describe('ModalSheet', () => {
     expect(StyleSheet.flatten(getByTestId('modal-sheet').props.style).paddingBottom).toBe(48);
   });
 
+  it("adds a caller's paddingBottom to the inset instead of replacing it", () => {
+    const { getByTestId } = render(
+      <ModalSheet visible onClose={jest.fn()} title="Sheet" style={{ paddingBottom: 16 }}>
+        <Text>Content</Text>
+      </ModalSheet>
+    );
+    expect(StyleSheet.flatten(getByTestId('modal-sheet').props.style).paddingBottom).toBe(64);
+  });
+
+  it('keeps the inset when the caller sets paddingBottom: 0', () => {
+    const { getByTestId } = render(
+      <ModalSheet visible onClose={jest.fn()} title="Sheet" style={{ paddingBottom: 0 }}>
+        <Text>Content</Text>
+      </ModalSheet>
+    );
+    expect(StyleSheet.flatten(getByTestId('modal-sheet').props.style).paddingBottom).toBe(48);
+  });
+
   it('renders nothing when not visible', () => {
     const { queryByText } = render(
       <ModalSheet visible={false} onClose={jest.fn()} title="Test">

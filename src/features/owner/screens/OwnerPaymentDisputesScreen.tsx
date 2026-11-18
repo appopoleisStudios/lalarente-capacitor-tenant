@@ -17,7 +17,7 @@ import {
   Modal,
   TextInput,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/src/lib/supabase';
@@ -49,6 +49,7 @@ const REASON_LABELS: Record<string, string> = {
 };
 
 export default function OwnerPaymentDisputesScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [disputes, setDisputes] = useState<PaymentDispute[]>([]);
@@ -358,7 +359,7 @@ export default function OwnerPaymentDisputesScreen() {
         <Modal visible={showResolveModal} transparent animationType="slide">
           <View style={styles.modalOverlay}>
             <KeyboardAvoidingView style={{ justifyContent: 'flex-end' }}>
-              <View style={styles.modalSheet}>
+              <View style={[styles.modalSheet, { paddingBottom: Math.max(40, insets.bottom + 8) }]}>
                 <Text style={styles.modalTitle}>Accept Dispute</Text>
                 <Text style={styles.modalSub}>
                   Accepting acknowledges the tenant's dispute. Add notes and optionally adjust the
@@ -414,7 +415,7 @@ export default function OwnerPaymentDisputesScreen() {
         <Modal visible={showRejectModal} transparent animationType="slide">
           <View style={styles.modalOverlay}>
             <KeyboardAvoidingView style={{ justifyContent: 'flex-end' }}>
-              <View style={styles.modalSheet}>
+              <View style={[styles.modalSheet, { paddingBottom: Math.max(40, insets.bottom + 8) }]}>
                 <Text style={styles.modalTitle}>Reject Dispute</Text>
                 <Text style={styles.modalSub}>
                   Provide a reason. The tenant retains the right to escalate.

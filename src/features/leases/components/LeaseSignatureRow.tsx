@@ -3,6 +3,8 @@ import { View, Text, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { signedSignatureUrl } from '@/src/shared/utils/storageDataUri';
 
+const SIGNED_URL_TTL_SECONDS = 3600;
+
 /**
  * One signature line on the owner's and tenant's lease screens. Shared so the
  * two screens can't drift apart again (the tenant copy lost `flex: 1` and
@@ -22,20 +24,24 @@ export default function LeaseSignatureRow({
   accentColor: string;
 }) {
   const [imageUri, setImageUri] = useState<string | null>(null);
+  // Bumped when the image fails to load (e.g. the signed URL expired while
+  // the screen stayed open) so a fresh URL is signed — at most twice.
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let live = true;
-    signedSignatureUrl(signatureUrl)
-      .then((uri) => live && setImageUri(uri))
+    signedSignatureUrl(signatureUrl, SIGNED_URL_TTL_SECONDS)
+      // An unsigned (public) URL can't load from the private bucket — show nothing.
+      .then((uri) => live && setImageUri(uri && uri !== signatureUrl ? uri : null))
       .catch(() => live && setImageUri(null));
     return () => {
       live = false;
     };
-  }, [signatureUrl]);
+  }, [signatureUrl, attempt]);
 
   return (
     <View style={styles.row}>
-      <View style={styles.left}>
+      <View testID={`lease-signature-left-${label.toLowerCase()}`} style={styles.left}>
         <Ionicons
           name={signedAt ? 'checkmark-circle' : 'time-outline'}
           size={20}
@@ -47,7 +53,12 @@ export default function LeaseSignatureRow({
             {name}
           </Text>
           {imageUri && (
-            <Image source={{ uri: imageUri }} style={styles.image} resizeMode="contain" />
+            <Image
+              source={{ uri: imageUri }}
+              style={styles.image}
+              resizeMode="contain"
+              onError={() => setAttempt((n) => (n < 2 ? n + 1 : n))}
+            />
           )}
         </View>
       </View>

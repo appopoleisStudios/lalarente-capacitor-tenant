@@ -1,0 +1,90 @@
+# Android visual check (CT7-046): opens each bottom sheet / modal, screenshots it
+# (and with the keyboard up where it has an input), closes it without saving.
+# Run on the emulator with 3-button navigation and the release APK.
+# Nothing is submitted: every modal is closed with Cancel.
+# Env: VENDOR_EMAIL, VENDOR_PASSWORD
+appId: com.lalarente.app
+---
+- launchApp:
+    clearState: true
+- runFlow: ../subflows/login-vendor.yaml
+
+# ── 1. Documents — Upload Document sheet (no text input) ─────────────────────
+- openLink: lalarenteapp://(vendor)/profile/documents
+- extendedWaitUntil:
+    visible:
+      id: "vendor-docs-upload-button"
+    timeout: 20000
+- tapOn:
+    id: "vendor-docs-upload-button"
+- extendedWaitUntil:
+    visible: "Upload Document"
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: sheet-vendor-documents
+# the primary action ("Choose File") must be tappable but is NOT tapped: it
+# would open the system file picker
+- assertVisible:
+    id: "vendor-docs-choose-file"
+- tapOn:
+    text: "Cancel"
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── 2. Services — Add Service sheet (text input) ─────────────────────────────
+- openLink: lalarenteapp://(vendor)/profile/services
+- extendedWaitUntil:
+    visible: ".*Your Services.*"
+    timeout: 20000
+- tapOn:
+    text: "Add"
+    rightOf: ".*Your Services.*"
+- extendedWaitUntil:
+    visible: "Add Service"
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: sheet-vendor-add-service
+- scrollUntilVisible:
+    element:
+      text: "e.g., per hour, per visit"
+    direction: DOWN
+    timeout: 8000
+    centerElement: true
+    optional: true
+- tapOn:
+    text: "e.g., per hour, per visit"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: sheet-vendor-add-service-keyboard
+- hideKeyboard
+- tapOn:
+    text: "Cancel"
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── 3. Services — Add Service Area sheet (text input) ────────────────────────
+- scrollUntilVisible:
+    element:
+      text: ".*Service Areas.*"
+    direction: DOWN
+    timeout: 15000
+    centerElement: true
+- tapOn:
+    text: "Add"
+    rightOf: ".*Service Areas.*"
+- extendedWaitUntil:
+    visible: "Add Service Area"
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: sheet-vendor-add-area
+- tapOn:
+    text: "e.g., Cape Town"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: sheet-vendor-add-area-keyboard
+- hideKeyboard
+- tapOn:
+    text: "Cancel"

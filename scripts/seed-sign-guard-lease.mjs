@@ -27,6 +27,12 @@ async function login(role) {
   return j;
 }
 
+// A 12-month lease starting on the 1st of next month, so it never goes stale.
+const now = new Date();
+const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+const end = new Date(Date.UTC(start.getUTCFullYear() + 1, start.getUTCMonth(), 0));
+const iso = (d) => d.toISOString().slice(0, 10);
+
 const owner = await login('OWNER');
 const tenant = await login('TENANT');
 const r = await fetch(`${URL_}/rest/v1/leases`, {
@@ -41,8 +47,8 @@ const r = await fetch(`${URL_}/rest/v1/leases`, {
     property_id: PROPERTY_ID,
     owner_id: owner.user.id,
     tenant_id: tenant.user.id,
-    start_date: '2026-12-01',
-    end_date: '2027-11-30',
+    start_date: iso(start),
+    end_date: iso(end),
     monthly_rent: 7500,
     deposit_amount: 15000,
     payment_due_day: 1,

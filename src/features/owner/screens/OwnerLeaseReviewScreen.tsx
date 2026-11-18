@@ -13,7 +13,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
@@ -48,6 +48,7 @@ interface FullApplication {
 }
 
 export default function OwnerLeaseReviewScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const draft = leaseDraftStore.get();
 
@@ -321,7 +322,7 @@ export default function OwnerLeaseReviewScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
         >
-          <View style={styles.modalSheet}>
+          <View style={[styles.modalSheet, { paddingBottom: Math.max(32, insets.bottom + 8) }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Lease Clauses</Text>
               <TouchableOpacity

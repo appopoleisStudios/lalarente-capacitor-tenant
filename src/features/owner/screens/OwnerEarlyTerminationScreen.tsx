@@ -22,7 +22,7 @@ import {
   Modal,
   TextInput,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/src/lib/supabase';
@@ -52,6 +52,7 @@ interface TerminationRequest {
 }
 
 export default function OwnerEarlyTerminationScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState<TerminationRequest[]>([]);
@@ -353,7 +354,7 @@ export default function OwnerEarlyTerminationScreen() {
         <Modal visible={showDeclineModal} transparent animationType="slide">
           <View style={styles.modalOverlay}>
             <KeyboardAvoidingView style={{ justifyContent: 'flex-end' }}>
-              <View style={styles.modalSheet}>
+              <View style={[styles.modalSheet, { paddingBottom: Math.max(40, insets.bottom + 8) }]}>
                 <Text style={styles.modalTitle}>Decline Request</Text>
                 <Text style={styles.modalSubtitle}>
                   Provide a reason (optional). The tenant retains the right to re-submit under CPA

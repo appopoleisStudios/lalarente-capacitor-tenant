@@ -12,7 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/src/shared/theme/colors';
@@ -78,6 +78,7 @@ const EMPTY_FORM: FormState = {
 };
 
 export default function OwnerPropertyTaxScreen() {
+  const insets = useSafeAreaInsets();
   const { id: propertyId, title: propertyTitle } = useLocalSearchParams<{
     id: string;
     title: string;
@@ -333,7 +334,7 @@ export default function OwnerPropertyTaxScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
         >
-          <View style={styles.modalSheet}>
+          <View style={[styles.modalSheet, { paddingBottom: Math.max(32, insets.bottom + 8) }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{editingId ? 'Edit Payment' : 'Record Payment'}</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>

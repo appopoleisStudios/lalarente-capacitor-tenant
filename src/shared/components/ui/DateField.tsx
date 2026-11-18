@@ -11,6 +11,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 /** Local calendar date as YYYY-MM-DD (not toISOString, which shifts the day in UTC+ zones). */
 export const toDateString = (d: Date): string =>
@@ -49,6 +50,7 @@ export function PickerSheet({
   onDone,
   testID,
 }: PickerSheetProps) {
+  const insets = useSafeAreaInsets();
   const [draft, setDraft] = useState<Date>(value);
   const valueMs = value.getTime();
   // Reset the wheel to the field's value each time the sheet opens.
@@ -76,7 +78,7 @@ export function PickerSheet({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onCancel}>
       <View style={styles.backdrop}>
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { paddingBottom: Math.max(24, insets.bottom + 8) }]}>
           <View style={styles.toolbar}>
             <TouchableOpacity onPress={onCancel} testID={testID && `${testID}-cancel`}>
               <Text style={styles.cancel}>Cancel</Text>

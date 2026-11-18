@@ -30,11 +30,16 @@ export async function toDataUri(uri: string | null | undefined): Promise<string 
  * Signatures live in the private `signatures` bucket, so their stored public
  * URL can't be loaded — return a short-lived signed URL for it instead.
  */
-export async function signedSignatureUrl(url: string | null | undefined): Promise<string | null> {
+export async function signedSignatureUrl(
+  url: string | null | undefined,
+  expiresInSeconds = 300
+): Promise<string | null> {
   if (!url) return null;
   const m = /\/signatures\/(.+?)(\?|$)/.exec(url);
   if (!m) return url;
-  const { data } = await supabase.storage.from('signatures').createSignedUrl(m[1], 300);
+  const { data } = await supabase.storage
+    .from('signatures')
+    .createSignedUrl(m[1], expiresInSeconds);
   return data?.signedUrl ?? url;
 }
 
