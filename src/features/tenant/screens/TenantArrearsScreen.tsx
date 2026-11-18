@@ -10,6 +10,7 @@
 
 import React, { useState, useCallback } from 'react';
 import {
+  Platform,
   View,
   Text,
   ScrollView,
@@ -402,64 +403,65 @@ export default function TenantArrearsScreen() {
 
         {/* ─── Payment Arrangement Modal ───────────────────────────────────── */}
         <Modal visible={showArrangementModal} transparent animationType="slide">
-          <View style={styles.modalOverlay}>
-            <KeyboardAvoidingView style={{ justifyContent: 'flex-end' }}>
-              <View style={[styles.modalSheet, { paddingBottom: Math.max(40, insets.bottom + 8) }]}>
-                <Text style={styles.modalTitle}>Propose Payment Arrangement</Text>
-                {selectedArrears && (
-                  <Text style={styles.modalSub}>
-                    Total owed: R{' '}
-                    {selectedArrears.total_owed.toLocaleString('en-ZA', {
-                      minimumFractionDigits: 2,
-                    })}
-                    {'\n'}Your landlord must accept this before it takes effect.
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.modalOverlay}
+          >
+            <View style={[styles.modalSheet, { paddingBottom: Math.max(40, insets.bottom + 8) }]}>
+              <Text style={styles.modalTitle}>Propose Payment Arrangement</Text>
+              {selectedArrears && (
+                <Text style={styles.modalSub}>
+                  Total owed: R{' '}
+                  {selectedArrears.total_owed.toLocaleString('en-ZA', {
+                    minimumFractionDigits: 2,
+                  })}
+                  {'\n'}Your landlord must accept this before it takes effect.
+                </Text>
+              )}
+
+              <Text style={styles.modalLabel}>Number of monthly instalments</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={instalments}
+                onChangeText={setInstalments}
+                keyboardType="number-pad"
+                placeholder="e.g. 3"
+                placeholderTextColor="#9CA3AF"
+              />
+              {selectedArrears &&
+                instalments &&
+                !isNaN(parseInt(instalments, 10)) &&
+                parseInt(instalments, 10) > 0 && (
+                  <Text style={styles.modalCalc}>
+                    Monthly instalment: R{' '}
+                    {(selectedArrears.total_owed / parseInt(instalments, 10)).toLocaleString(
+                      'en-ZA',
+                      { minimumFractionDigits: 2 }
+                    )}
                   </Text>
                 )}
 
-                <Text style={styles.modalLabel}>Number of monthly instalments</Text>
-                <TextInput
-                  style={styles.modalInput}
-                  value={instalments}
-                  onChangeText={setInstalments}
-                  keyboardType="number-pad"
-                  placeholder="e.g. 3"
-                  placeholderTextColor="#9CA3AF"
-                />
-                {selectedArrears &&
-                  instalments &&
-                  !isNaN(parseInt(instalments, 10)) &&
-                  parseInt(instalments, 10) > 0 && (
-                    <Text style={styles.modalCalc}>
-                      Monthly instalment: R{' '}
-                      {(selectedArrears.total_owed / parseInt(instalments, 10)).toLocaleString(
-                        'en-ZA',
-                        { minimumFractionDigits: 2 }
-                      )}
-                    </Text>
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.modalCancelBtn}
+                  onPress={() => setShowArrangementModal(false)}
+                >
+                  <Text style={styles.modalCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.modalSubmitBtn}
+                  onPress={handleProposeArrangement}
+                  disabled={proposing}
+                >
+                  {proposing ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <Text style={styles.modalSubmitText}>Send Proposal</Text>
                   )}
-
-                <View style={styles.modalActions}>
-                  <TouchableOpacity
-                    style={styles.modalCancelBtn}
-                    onPress={() => setShowArrangementModal(false)}
-                  >
-                    <Text style={styles.modalCancelText}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.modalSubmitBtn}
-                    onPress={handleProposeArrangement}
-                    disabled={proposing}
-                  >
-                    {proposing ? (
-                      <ActivityIndicator size="small" color="#FFF" />
-                    ) : (
-                      <Text style={styles.modalSubmitText}>Send Proposal</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
+                </TouchableOpacity>
               </View>
-            </KeyboardAvoidingView>
-          </View>
+            </View>
+          </KeyboardAvoidingView>
         </Modal>
       </KeyboardAvoidingView>
     </SafeAreaView>

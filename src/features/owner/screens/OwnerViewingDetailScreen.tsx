@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import {
+  Platform,
   View,
   Text,
   ScrollView,
@@ -271,255 +272,252 @@ export default function OwnerViewingDetailScreen() {
         transparent
         onRequestClose={() => setShowActionModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView style={{ justifyContent: 'flex-end' }}>
-            <View style={[styles.modalContent, { paddingBottom: insets.bottom }]}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>
-                  {actionType === 'approve' && 'Approve Viewing'}
-                  {actionType === 'decline' && 'Decline Viewing'}
-                  {actionType === 'complete' && 'Complete Viewing'}
-                </Text>
-                <TouchableOpacity
-                  testID="owner-viewing-modal-close"
-                  onPress={() => setShowActionModal(false)}
-                  disabled={processing}
-                >
-                  <Ionicons name="close" size={24} color="#333" />
-                </TouchableOpacity>
-              </View>
-
-              <ScrollView
-                style={styles.modalBody}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={[styles.modalContent, { paddingBottom: insets.bottom }]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {actionType === 'approve' && 'Approve Viewing'}
+                {actionType === 'decline' && 'Decline Viewing'}
+                {actionType === 'complete' && 'Complete Viewing'}
+              </Text>
+              <TouchableOpacity
+                testID="owner-viewing-modal-close"
+                onPress={() => setShowActionModal(false)}
+                disabled={processing}
               >
-                {actionType === 'approve' && viewing && (
-                  <>
-                    {/* Show requested date prominently */}
-                    <View style={styles.requestedDateCard}>
-                      <Ionicons name="calendar" size={20} color={RSA.blue} />
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.requestedDateLabel}>Requested date & time</Text>
-                        <Text style={styles.requestedDateValue}>
-                          {formatDate(viewing.requested_date)} at {viewing.requested_time}
-                        </Text>
-                      </View>
-                    </View>
+                <Ionicons name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
 
-                    <View style={styles.dateTimeSection}>
-                      <View style={styles.checkboxRow}>
-                        <TouchableOpacity
-                          testID="owner-viewing-modal-modify-toggle"
-                          style={styles.checkbox}
-                          onPress={() => setModifyDateTime(!modifyDateTime)}
-                        >
-                          {modifyDateTime && (
-                            <Ionicons name="checkmark" size={16} color={RSA.blue} />
-                          )}
-                        </TouchableOpacity>
-                        <Text style={styles.checkboxLabel}>
-                          Suggest a different date/time instead
-                        </Text>
-                      </View>
-
-                      {modifyDateTime && (
-                        <View style={styles.dateTimeInputs}>
-                          <TouchableOpacity
-                            testID="owner-viewing-modal-date"
-                            style={styles.dateTimeButton}
-                            onPress={() => setShowDatePicker(true)}
-                          >
-                            <Ionicons name="calendar-outline" size={20} color={RSA.blue} />
-                            <Text style={styles.dateTimeButtonText}>
-                              {formatDateShort(selectedDate)}
-                            </Text>
-                          </TouchableOpacity>
-
-                          <TouchableOpacity
-                            testID="owner-viewing-modal-time"
-                            style={styles.dateTimeButton}
-                            onPress={() => setShowTimePicker(true)}
-                          >
-                            <Ionicons name="time-outline" size={20} color={RSA.blue} />
-                            <Text style={styles.dateTimeButtonText}>
-                              {formatTime(selectedTime)}
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.inputLabel}>Notes (Optional)</Text>
-                      <TextInput
-                        testID="owner-viewing-modal-notes"
-                        style={styles.textArea}
-                        value={responseNotes}
-                        onChangeText={setResponseNotes}
-                        placeholder="Add any notes for the tenant..."
-                        multiline
-                        numberOfLines={3}
-                        maxLength={500}
-                      />
-                    </View>
-                  </>
-                )}
-
-                {actionType === 'decline' && (
-                  <>
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.inputLabel}>Reason for Declining *</Text>
-                      <TextInput
-                        testID="owner-viewing-modal-decline-reason"
-                        style={styles.textArea}
-                        value={declineReason}
-                        onChangeText={setDeclineReason}
-                        placeholder="Please provide a reason..."
-                        multiline
-                        numberOfLines={3}
-                        maxLength={500}
-                      />
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.inputLabel}>Suggest Alternative Times (Optional)</Text>
-                      <Text style={styles.inputHint}>
-                        Offer up to 3 alternative date & time slots
+            <ScrollView
+              style={styles.modalBody}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {actionType === 'approve' && viewing && (
+                <>
+                  {/* Show requested date prominently */}
+                  <View style={styles.requestedDateCard}>
+                    <Ionicons name="calendar" size={20} color={RSA.blue} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.requestedDateLabel}>Requested date & time</Text>
+                      <Text style={styles.requestedDateValue}>
+                        {formatDate(viewing.requested_date)} at {viewing.requested_time}
                       </Text>
-
-                      {alternativeSlots.map((slot, index) => (
-                        <View key={index} style={styles.slotRow}>
-                          <TouchableOpacity
-                            testID="owner-viewing-modal-slot-date"
-                            style={styles.slotButton}
-                            onPress={() => openSlotPicker(index, 'date')}
-                          >
-                            <Ionicons name="calendar-outline" size={18} color={RSA.blue} />
-                            <Text style={styles.slotButtonText}>{formatDateShort(slot.date)}</Text>
-                          </TouchableOpacity>
-
-                          <TouchableOpacity
-                            testID="owner-viewing-modal-slot-time"
-                            style={styles.slotButton}
-                            onPress={() => openSlotPicker(index, 'time')}
-                          >
-                            <Ionicons name="time-outline" size={18} color={RSA.blue} />
-                            <Text style={styles.slotButtonText}>{formatTime(slot.time)}</Text>
-                          </TouchableOpacity>
-
-                          <TouchableOpacity
-                            testID="owner-viewing-modal-slot-remove"
-                            style={styles.removeSlotButton}
-                            onPress={() => removeAlternativeSlot(index)}
-                          >
-                            <Ionicons name="close-circle" size={22} color="#F44336" />
-                          </TouchableOpacity>
-                        </View>
-                      ))}
-
-                      {alternativeSlots.length < 3 && (
-                        <TouchableOpacity
-                          testID="owner-viewing-modal-slot-add"
-                          style={styles.addSlotButton}
-                          onPress={addAlternativeSlot}
-                        >
-                          <Ionicons name="add-circle-outline" size={20} color={RSA.blue} />
-                          <Text style={styles.addSlotText}>Add Alternative</Text>
-                        </TouchableOpacity>
-                      )}
                     </View>
-                  </>
-                )}
+                  </View>
 
-                {actionType === 'complete' && (
+                  <View style={styles.dateTimeSection}>
+                    <View style={styles.checkboxRow}>
+                      <TouchableOpacity
+                        testID="owner-viewing-modal-modify-toggle"
+                        style={styles.checkbox}
+                        onPress={() => setModifyDateTime(!modifyDateTime)}
+                      >
+                        {modifyDateTime && <Ionicons name="checkmark" size={16} color={RSA.blue} />}
+                      </TouchableOpacity>
+                      <Text style={styles.checkboxLabel}>
+                        Suggest a different date/time instead
+                      </Text>
+                    </View>
+
+                    {modifyDateTime && (
+                      <View style={styles.dateTimeInputs}>
+                        <TouchableOpacity
+                          testID="owner-viewing-modal-date"
+                          style={styles.dateTimeButton}
+                          onPress={() => setShowDatePicker(true)}
+                        >
+                          <Ionicons name="calendar-outline" size={20} color={RSA.blue} />
+                          <Text style={styles.dateTimeButtonText}>
+                            {formatDateShort(selectedDate)}
+                          </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          testID="owner-viewing-modal-time"
+                          style={styles.dateTimeButton}
+                          onPress={() => setShowTimePicker(true)}
+                        >
+                          <Ionicons name="time-outline" size={20} color={RSA.blue} />
+                          <Text style={styles.dateTimeButtonText}>{formatTime(selectedTime)}</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+
                   <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Viewing Notes (Optional)</Text>
+                    <Text style={styles.inputLabel}>Notes (Optional)</Text>
                     <TextInput
-                      testID="owner-viewing-modal-complete-notes"
+                      testID="owner-viewing-modal-notes"
                       style={styles.textArea}
                       value={responseNotes}
                       onChangeText={setResponseNotes}
-                      placeholder="Add notes about the viewing (e.g., tenant feedback, next steps)..."
+                      placeholder="Add any notes for the tenant..."
                       multiline
-                      numberOfLines={4}
+                      numberOfLines={3}
                       maxLength={500}
                     />
                   </View>
-                )}
-              </ScrollView>
+                </>
+              )}
 
-              <View style={styles.modalFooter}>
-                <TouchableOpacity
-                  testID="owner-viewing-modal-cancel"
-                  style={styles.cancelModalButton}
-                  onPress={() => setShowActionModal(false)}
-                  disabled={processing}
-                >
-                  <Text style={styles.cancelModalButtonText}>Cancel</Text>
-                </TouchableOpacity>
+              {actionType === 'decline' && (
+                <>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Reason for Declining *</Text>
+                    <TextInput
+                      testID="owner-viewing-modal-decline-reason"
+                      style={styles.textArea}
+                      value={declineReason}
+                      onChangeText={setDeclineReason}
+                      placeholder="Please provide a reason..."
+                      multiline
+                      numberOfLines={3}
+                      maxLength={500}
+                    />
+                  </View>
 
-                <TouchableOpacity
-                  testID="owner-viewing-modal-confirm"
-                  style={[styles.confirmButton, processing && styles.buttonDisabled]}
-                  onPress={handleConfirmAction}
-                  disabled={processing}
-                >
-                  {processing ? (
-                    <ActivityIndicator size="small" color="#FFF" />
-                  ) : (
-                    <Text style={styles.confirmButtonText}>
-                      {actionType === 'approve' && 'Approve'}
-                      {actionType === 'decline' && 'Decline'}
-                      {actionType === 'complete' && 'Mark Complete'}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Suggest Alternative Times (Optional)</Text>
+                    <Text style={styles.inputHint}>
+                      Offer up to 3 alternative date & time slots
                     </Text>
-                  )}
-                </TouchableOpacity>
-              </View>
 
-              {/* Date/Time pickers — bottom sheet with Done on iOS, dialog on Android */}
-              <PickerSheet
-                visible={showDatePicker}
-                value={selectedDate}
-                mode="date"
-                minimumDate={new Date()}
-                onCancel={() => setShowDatePicker(false)}
-                onDone={(date) => {
-                  setShowDatePicker(false);
-                  setSelectedDate(date);
-                }}
-                testID="owner-viewing-modal-date"
-              />
-              <PickerSheet
-                visible={showTimePicker}
-                value={selectedTime}
-                mode="time"
-                onCancel={() => setShowTimePicker(false)}
-                onDone={(time) => {
-                  setShowTimePicker(false);
-                  setSelectedTime(time);
-                }}
-                testID="owner-viewing-modal-time"
-              />
-              {/* Slot picker for decline alternatives */}
-              <PickerSheet
-                visible={showSlotPicker && activeSlotIndex != null}
-                value={
-                  activeSlotIndex == null
-                    ? new Date()
-                    : activeSlotField === 'date'
-                      ? (alternativeSlots[activeSlotIndex]?.date ?? new Date())
-                      : (alternativeSlots[activeSlotIndex]?.time ?? new Date())
-                }
-                mode={activeSlotField}
-                minimumDate={activeSlotField === 'date' ? new Date() : undefined}
-                onCancel={() => setShowSlotPicker(false)}
-                onDone={handleSlotPickerDone}
-                testID="owner-viewing-slot"
-              />
+                    {alternativeSlots.map((slot, index) => (
+                      <View key={index} style={styles.slotRow}>
+                        <TouchableOpacity
+                          testID="owner-viewing-modal-slot-date"
+                          style={styles.slotButton}
+                          onPress={() => openSlotPicker(index, 'date')}
+                        >
+                          <Ionicons name="calendar-outline" size={18} color={RSA.blue} />
+                          <Text style={styles.slotButtonText}>{formatDateShort(slot.date)}</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          testID="owner-viewing-modal-slot-time"
+                          style={styles.slotButton}
+                          onPress={() => openSlotPicker(index, 'time')}
+                        >
+                          <Ionicons name="time-outline" size={18} color={RSA.blue} />
+                          <Text style={styles.slotButtonText}>{formatTime(slot.time)}</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          testID="owner-viewing-modal-slot-remove"
+                          style={styles.removeSlotButton}
+                          onPress={() => removeAlternativeSlot(index)}
+                        >
+                          <Ionicons name="close-circle" size={22} color="#F44336" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+
+                    {alternativeSlots.length < 3 && (
+                      <TouchableOpacity
+                        testID="owner-viewing-modal-slot-add"
+                        style={styles.addSlotButton}
+                        onPress={addAlternativeSlot}
+                      >
+                        <Ionicons name="add-circle-outline" size={20} color={RSA.blue} />
+                        <Text style={styles.addSlotText}>Add Alternative</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </>
+              )}
+
+              {actionType === 'complete' && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Viewing Notes (Optional)</Text>
+                  <TextInput
+                    testID="owner-viewing-modal-complete-notes"
+                    style={styles.textArea}
+                    value={responseNotes}
+                    onChangeText={setResponseNotes}
+                    placeholder="Add notes about the viewing (e.g., tenant feedback, next steps)..."
+                    multiline
+                    numberOfLines={4}
+                    maxLength={500}
+                  />
+                </View>
+              )}
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                testID="owner-viewing-modal-cancel"
+                style={styles.cancelModalButton}
+                onPress={() => setShowActionModal(false)}
+                disabled={processing}
+              >
+                <Text style={styles.cancelModalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                testID="owner-viewing-modal-confirm"
+                style={[styles.confirmButton, processing && styles.buttonDisabled]}
+                onPress={handleConfirmAction}
+                disabled={processing}
+              >
+                {processing ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <Text style={styles.confirmButtonText}>
+                    {actionType === 'approve' && 'Approve'}
+                    {actionType === 'decline' && 'Decline'}
+                    {actionType === 'complete' && 'Mark Complete'}
+                  </Text>
+                )}
+              </TouchableOpacity>
             </View>
-          </KeyboardAvoidingView>
-        </View>
+
+            {/* Date/Time pickers — bottom sheet with Done on iOS, dialog on Android */}
+            <PickerSheet
+              visible={showDatePicker}
+              value={selectedDate}
+              mode="date"
+              minimumDate={new Date()}
+              onCancel={() => setShowDatePicker(false)}
+              onDone={(date) => {
+                setShowDatePicker(false);
+                setSelectedDate(date);
+              }}
+              testID="owner-viewing-modal-date"
+            />
+            <PickerSheet
+              visible={showTimePicker}
+              value={selectedTime}
+              mode="time"
+              onCancel={() => setShowTimePicker(false)}
+              onDone={(time) => {
+                setShowTimePicker(false);
+                setSelectedTime(time);
+              }}
+              testID="owner-viewing-modal-time"
+            />
+            {/* Slot picker for decline alternatives */}
+            <PickerSheet
+              visible={showSlotPicker && activeSlotIndex != null}
+              value={
+                activeSlotIndex == null
+                  ? new Date()
+                  : activeSlotField === 'date'
+                    ? (alternativeSlots[activeSlotIndex]?.date ?? new Date())
+                    : (alternativeSlots[activeSlotIndex]?.time ?? new Date())
+              }
+              mode={activeSlotField}
+              minimumDate={activeSlotField === 'date' ? new Date() : undefined}
+              onCancel={() => setShowSlotPicker(false)}
+              onDone={handleSlotPickerDone}
+              testID="owner-viewing-slot"
+            />
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     );
   };

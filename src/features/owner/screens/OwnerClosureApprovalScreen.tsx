@@ -446,7 +446,7 @@ export default function OwnerClosureApprovalScreen() {
         {/* keyboard-aware: the Cancel / Send buttons sat under the keyboard */}
         <KeyboardAvoidingView
           style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>

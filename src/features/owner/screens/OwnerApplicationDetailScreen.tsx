@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import {
+  Platform,
   View,
   Text,
   ScrollView,
@@ -754,53 +755,54 @@ export default function OwnerApplicationDetailScreen() {
 
           {/* Request Holding Deposit Modal */}
           <Modal visible={showDepositModal} transparent animationType="fade">
-            <View style={styles.modalOverlay}>
-              <KeyboardAvoidingView style={{ justifyContent: 'center' }}>
-                <View style={styles.modalBox}>
-                  <Text style={styles.modalTitle}>Request Holding Deposit</Text>
-                  <Text style={styles.modalSubtitle}>
-                    The tenant will have 48 hours to pay. The property will be held for 7 days after
-                    payment.
-                  </Text>
-                  <Text style={styles.modalLabel}>Amount (ZAR)</Text>
-                  <TextInput
-                    testID="owner-application-deposit-amount"
-                    style={styles.modalInput}
-                    value={depositAmount}
-                    onChangeText={setDepositAmount}
-                    keyboardType="numeric"
-                    placeholder="e.g. 8500"
-                  />
-                  <Text style={styles.modalHint}>
-                    Typically 1 month's rent · Must be refunded if application is rejected (RHA s5A)
-                  </Text>
-                  <View style={styles.modalActions}>
-                    <TouchableOpacity
-                      testID="owner-application-deposit-cancel"
-                      style={styles.modalCancel}
-                      onPress={() => {
-                        setShowDepositModal(false);
-                        setDepositAmount('');
-                      }}
-                    >
-                      <Text style={styles.modalCancelText}>Cancel</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      testID="owner-application-deposit-send"
-                      style={[styles.modalConfirm, processing && { opacity: 0.7 }]}
-                      onPress={handleRequestDeposit}
-                      disabled={processing}
-                    >
-                      {processing ? (
-                        <ActivityIndicator color="#FFF" size="small" />
-                      ) : (
-                        <Text style={styles.modalConfirmText}>Send Request</Text>
-                      )}
-                    </TouchableOpacity>
-                  </View>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              style={styles.modalOverlay}
+            >
+              <View style={styles.modalBox}>
+                <Text style={styles.modalTitle}>Request Holding Deposit</Text>
+                <Text style={styles.modalSubtitle}>
+                  The tenant will have 48 hours to pay. The property will be held for 7 days after
+                  payment.
+                </Text>
+                <Text style={styles.modalLabel}>Amount (ZAR)</Text>
+                <TextInput
+                  testID="owner-application-deposit-amount"
+                  style={styles.modalInput}
+                  value={depositAmount}
+                  onChangeText={setDepositAmount}
+                  keyboardType="numeric"
+                  placeholder="e.g. 8500"
+                />
+                <Text style={styles.modalHint}>
+                  Typically 1 month's rent · Must be refunded if application is rejected (RHA s5A)
+                </Text>
+                <View style={styles.modalActions}>
+                  <TouchableOpacity
+                    testID="owner-application-deposit-cancel"
+                    style={styles.modalCancel}
+                    onPress={() => {
+                      setShowDepositModal(false);
+                      setDepositAmount('');
+                    }}
+                  >
+                    <Text style={styles.modalCancelText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    testID="owner-application-deposit-send"
+                    style={[styles.modalConfirm, processing && { opacity: 0.7 }]}
+                    onPress={handleRequestDeposit}
+                    disabled={processing}
+                  >
+                    {processing ? (
+                      <ActivityIndicator color="#FFF" size="small" />
+                    ) : (
+                      <Text style={styles.modalConfirmText}>Send Request</Text>
+                    )}
+                  </TouchableOpacity>
                 </View>
-              </KeyboardAvoidingView>
-            </View>
+              </View>
+            </KeyboardAvoidingView>
           </Modal>
 
           {/* Reject Application Modal */}

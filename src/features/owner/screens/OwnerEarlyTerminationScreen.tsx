@@ -12,6 +12,7 @@
 
 import React, { useState, useCallback } from 'react';
 import {
+  Platform,
   View,
   Text,
   ScrollView,
@@ -352,45 +353,46 @@ export default function OwnerEarlyTerminationScreen() {
 
         {/* Decline Modal */}
         <Modal visible={showDeclineModal} transparent animationType="slide">
-          <View style={styles.modalOverlay}>
-            <KeyboardAvoidingView style={{ justifyContent: 'flex-end' }}>
-              <View style={[styles.modalSheet, { paddingBottom: Math.max(40, insets.bottom + 8) }]}>
-                <Text style={styles.modalTitle}>Decline Request</Text>
-                <Text style={styles.modalSubtitle}>
-                  Provide a reason (optional). The tenant retains the right to re-submit under CPA
-                  s14.
-                </Text>
-                <TextInput
-                  style={styles.declineInput}
-                  value={declineReason}
-                  onChangeText={setDeclineReason}
-                  placeholder="Reason for declining (optional)..."
-                  placeholderTextColor="#9CA3AF"
-                  multiline
-                  numberOfLines={3}
-                />
-                <View style={styles.modalActions}>
-                  <TouchableOpacity
-                    style={styles.modalCancelBtn}
-                    onPress={() => setShowDeclineModal(false)}
-                  >
-                    <Text style={styles.modalCancelText}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.modalDeclineBtn}
-                    onPress={handleDecline}
-                    disabled={!!actionLoading}
-                  >
-                    {actionLoading ? (
-                      <ActivityIndicator size="small" color="#FFF" />
-                    ) : (
-                      <Text style={styles.modalDeclineText}>Decline Request</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.modalOverlay}
+          >
+            <View style={[styles.modalSheet, { paddingBottom: Math.max(40, insets.bottom + 8) }]}>
+              <Text style={styles.modalTitle}>Decline Request</Text>
+              <Text style={styles.modalSubtitle}>
+                Provide a reason (optional). The tenant retains the right to re-submit under CPA
+                s14.
+              </Text>
+              <TextInput
+                style={styles.declineInput}
+                value={declineReason}
+                onChangeText={setDeclineReason}
+                placeholder="Reason for declining (optional)..."
+                placeholderTextColor="#9CA3AF"
+                multiline
+                numberOfLines={3}
+              />
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.modalCancelBtn}
+                  onPress={() => setShowDeclineModal(false)}
+                >
+                  <Text style={styles.modalCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.modalDeclineBtn}
+                  onPress={handleDecline}
+                  disabled={!!actionLoading}
+                >
+                  {actionLoading ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <Text style={styles.modalDeclineText}>Decline Request</Text>
+                  )}
+                </TouchableOpacity>
               </View>
-            </KeyboardAvoidingView>
-          </View>
+            </View>
+          </KeyboardAvoidingView>
         </Modal>
       </KeyboardAvoidingView>
     </SafeAreaView>
