@@ -43,7 +43,7 @@ export function ModalSheet({
           Revision") and their buttons were hidden behind it on iOS. */}
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={styles.safeArea}>
           <TouchableOpacity style={styles.backdrop} onPress={onClose} activeOpacity={1} />

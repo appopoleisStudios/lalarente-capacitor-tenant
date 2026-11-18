@@ -1872,3 +1872,29 @@ then neither the owner nor the tenant could sign.
         layout uses the hook and has no fixed `height: 85`.
   - [x] Owner, tenant and vendor tab bars visually checked on the Android
         emulator (release APK, 3-button navigation).
+
+## Android walkthrough of build 11 fixes (2026-11-18)
+
+Found while testing on the Android emulator with a real on-screen keyboard.
+
+## CT7-047 🟠 Keyboard covers the fields and buttons of pop-up forms (Android) (PR #252)
+
+- **Role:** all · **Platform:** Android
+- **Today:** an RN `<Modal>` window does not resize for the keyboard on
+  Android, and 11 pop-up forms had no keyboard handling. While typing, the
+  keyboard hid their lower fields and their buttons — e.g. vendor _Add
+  Service_: Base Price, Pricing Unit and the Add button were unreachable
+  until the keyboard was closed. Also: vendor _Add Service Area_, PO
+  accept/decline notes; owner holding-deposit request, deposit deduction,
+  lease renewal offer, insurance document, invoice approve/reject; tenant
+  EFT payment confirm, invoice approve/reject.
+- **Acceptance criteria:**
+  - [x] Every modal with a text input wraps its content in
+        `KeyboardAvoidingView` (`padding` iOS / `height` Android); its
+        ScrollViews use `keyboardShouldPersistTaps="handled"`.
+  - [x] Jest guard `modalKeyboardGuard.test.ts` fails for any modal with a
+        TextInput and no keyboard handling.
+  - [x] Android emulator (release APK, real keyboard): typing in the lowest
+        field keeps it and the action buttons visible, first tap works —
+        `android-keyboard-forms-guard` green (in `run-android-guards.sh`);
+        lifecycle 01→05 green.

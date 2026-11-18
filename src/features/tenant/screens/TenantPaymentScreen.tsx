@@ -4,7 +4,9 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -589,7 +591,10 @@ export default function TenantPaymentScreen() {
 
       {/* EFT Payment Confirmation Modal */}
       <Modal visible={showPayModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
           <View style={[styles.modalSheet, { paddingBottom: Math.max(40, insets.bottom + 8) }]}>
             <Text style={styles.modalTitle}>Confirm Payment</Text>
             {payingPayment && (
@@ -658,7 +663,7 @@ export default function TenantPaymentScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

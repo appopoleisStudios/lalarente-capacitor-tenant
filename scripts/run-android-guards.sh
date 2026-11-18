@@ -25,6 +25,7 @@ GUARDS=(
   tenant-tabbar-guard        # 5 canonical tenant tabs, no Vendor Payments tab
   vendor-tabbar-guard        # 6 canonical vendor tabs, no Contracts tab
   android-lease-sign-guard   # CT7-043: tenant + owner can sign on Android
+  android-keyboard-forms-guard  # CT7-047: keyboard never covers pop-up form fields/buttons
 )
 
 run_guard() {

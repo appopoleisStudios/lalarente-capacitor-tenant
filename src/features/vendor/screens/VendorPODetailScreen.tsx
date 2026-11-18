@@ -16,7 +16,9 @@ import React, { useState, useCallback } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -392,7 +394,10 @@ export default function VendorPODetailScreen() {
         animationType="fade"
         onRequestClose={() => setShowRejectModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Reject Purchase Order</Text>
             <Text style={styles.modalDescription}>
@@ -423,7 +428,7 @@ export default function VendorPODetailScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Update Request Modal */}
@@ -433,7 +438,10 @@ export default function VendorPODetailScreen() {
         animationType="fade"
         onRequestClose={() => setShowUpdateModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Request PO Update</Text>
             <Text style={styles.modalDescription}>
@@ -464,7 +472,7 @@ export default function VendorPODetailScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {canAccept && (

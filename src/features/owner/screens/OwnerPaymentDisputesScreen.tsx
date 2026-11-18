@@ -7,6 +7,7 @@
 
 import React, { useState, useCallback } from 'react';
 import {
+  Platform,
   View,
   Text,
   ScrollView,
@@ -357,100 +358,102 @@ export default function OwnerPaymentDisputesScreen() {
 
         {/* ─── Resolve Modal ────────────────────────────────────────────────── */}
         <Modal visible={showResolveModal} transparent animationType="slide">
-          <View style={styles.modalOverlay}>
-            <KeyboardAvoidingView style={{ justifyContent: 'flex-end' }}>
-              <View style={[styles.modalSheet, { paddingBottom: Math.max(40, insets.bottom + 8) }]}>
-                <Text style={styles.modalTitle}>Accept Dispute</Text>
-                <Text style={styles.modalSub}>
-                  Accepting acknowledges the tenant's dispute. Add notes and optionally adjust the
-                  resolution amount.
-                </Text>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.modalOverlay}
+          >
+            <View style={[styles.modalSheet, { paddingBottom: Math.max(40, insets.bottom + 8) }]}>
+              <Text style={styles.modalTitle}>Accept Dispute</Text>
+              <Text style={styles.modalSub}>
+                Accepting acknowledges the tenant's dispute. Add notes and optionally adjust the
+                resolution amount.
+              </Text>
 
-                <Text style={styles.modalLabel}>Resolution Amount (R)</Text>
-                <TextInput
-                  style={styles.modalInput}
-                  value={resolutionAmount}
-                  onChangeText={setResolutionAmount}
-                  keyboardType="decimal-pad"
-                  placeholder="0.00"
-                  placeholderTextColor="#9CA3AF"
-                />
+              <Text style={styles.modalLabel}>Resolution Amount (R)</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={resolutionAmount}
+                onChangeText={setResolutionAmount}
+                keyboardType="decimal-pad"
+                placeholder="0.00"
+                placeholderTextColor="#9CA3AF"
+              />
 
-                <Text style={styles.modalLabel}>Resolution Notes</Text>
-                <TextInput
-                  style={[styles.modalInput, styles.modalInputMulti]}
-                  value={resolutionNotes}
-                  onChangeText={setResolutionNotes}
-                  placeholder="Explain how the dispute was resolved..."
-                  placeholderTextColor="#9CA3AF"
-                  multiline
-                  numberOfLines={3}
-                />
+              <Text style={styles.modalLabel}>Resolution Notes</Text>
+              <TextInput
+                style={[styles.modalInput, styles.modalInputMulti]}
+                value={resolutionNotes}
+                onChangeText={setResolutionNotes}
+                placeholder="Explain how the dispute was resolved..."
+                placeholderTextColor="#9CA3AF"
+                multiline
+                numberOfLines={3}
+              />
 
-                <View style={styles.modalActions}>
-                  <TouchableOpacity
-                    style={styles.modalCancelBtn}
-                    onPress={() => setShowResolveModal(false)}
-                  >
-                    <Text style={styles.modalCancelText}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.modalAcceptBtn}
-                    onPress={handleResolve}
-                    disabled={!!actionLoading}
-                  >
-                    {actionLoading ? (
-                      <ActivityIndicator size="small" color="#FFF" />
-                    ) : (
-                      <Text style={styles.modalAcceptText}>Accept Dispute</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.modalCancelBtn}
+                  onPress={() => setShowResolveModal(false)}
+                >
+                  <Text style={styles.modalCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.modalAcceptBtn}
+                  onPress={handleResolve}
+                  disabled={!!actionLoading}
+                >
+                  {actionLoading ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <Text style={styles.modalAcceptText}>Accept Dispute</Text>
+                  )}
+                </TouchableOpacity>
               </View>
-            </KeyboardAvoidingView>
-          </View>
+            </View>
+          </KeyboardAvoidingView>
         </Modal>
 
         {/* ─── Reject Modal ─────────────────────────────────────────────────── */}
         <Modal visible={showRejectModal} transparent animationType="slide">
-          <View style={styles.modalOverlay}>
-            <KeyboardAvoidingView style={{ justifyContent: 'flex-end' }}>
-              <View style={[styles.modalSheet, { paddingBottom: Math.max(40, insets.bottom + 8) }]}>
-                <Text style={styles.modalTitle}>Reject Dispute</Text>
-                <Text style={styles.modalSub}>
-                  Provide a reason. The tenant retains the right to escalate.
-                </Text>
-                <TextInput
-                  style={[styles.modalInput, styles.modalInputMulti]}
-                  value={rejectReason}
-                  onChangeText={setRejectReason}
-                  placeholder="Reason for rejection (optional)..."
-                  placeholderTextColor="#9CA3AF"
-                  multiline
-                  numberOfLines={3}
-                />
-                <View style={styles.modalActions}>
-                  <TouchableOpacity
-                    style={styles.modalCancelBtn}
-                    onPress={() => setShowRejectModal(false)}
-                  >
-                    <Text style={styles.modalCancelText}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.modalRejectBtn}
-                    onPress={handleReject}
-                    disabled={!!actionLoading}
-                  >
-                    {actionLoading ? (
-                      <ActivityIndicator size="small" color="#FFF" />
-                    ) : (
-                      <Text style={styles.modalRejectText}>Reject Dispute</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.modalOverlay}
+          >
+            <View style={[styles.modalSheet, { paddingBottom: Math.max(40, insets.bottom + 8) }]}>
+              <Text style={styles.modalTitle}>Reject Dispute</Text>
+              <Text style={styles.modalSub}>
+                Provide a reason. The tenant retains the right to escalate.
+              </Text>
+              <TextInput
+                style={[styles.modalInput, styles.modalInputMulti]}
+                value={rejectReason}
+                onChangeText={setRejectReason}
+                placeholder="Reason for rejection (optional)..."
+                placeholderTextColor="#9CA3AF"
+                multiline
+                numberOfLines={3}
+              />
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.modalCancelBtn}
+                  onPress={() => setShowRejectModal(false)}
+                >
+                  <Text style={styles.modalCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.modalRejectBtn}
+                  onPress={handleReject}
+                  disabled={!!actionLoading}
+                >
+                  {actionLoading ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <Text style={styles.modalRejectText}>Reject Dispute</Text>
+                  )}
+                </TouchableOpacity>
               </View>
-            </KeyboardAvoidingView>
-          </View>
+            </View>
+          </KeyboardAvoidingView>
         </Modal>
       </KeyboardAvoidingView>
     </SafeAreaView>

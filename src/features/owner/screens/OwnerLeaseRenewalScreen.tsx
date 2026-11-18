@@ -16,6 +16,7 @@ import {
   Alert,
   TextInput,
   Modal,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -518,107 +519,112 @@ export default function OwnerLeaseRenewalScreen() {
           onRequestClose={() => setOfferModal(null)}
         >
           <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
-            <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={() => setOfferModal(null)}>
-                <Ionicons name="close" size={24} color={colors.text.primary} />
-              </TouchableOpacity>
-              <Text style={styles.modalTitle}>Send Renewal Offer</Text>
-              <View style={{ width: 24 }} />
-            </View>
-
-            <ScrollView
-              contentContainerStyle={styles.modalContent}
-              keyboardShouldPersistTaps="handled"
-            >
-              {/* Lease Type */}
-              <Text style={styles.fieldLabel}>Lease Type</Text>
-              <View style={styles.segmentControl}>
-                <TouchableOpacity
-                  style={[styles.segment, leaseType === 'fixed' && styles.segmentActive]}
-                  onPress={() => setLeaseType('fixed')}
-                >
-                  <Text
-                    style={[styles.segmentText, leaseType === 'fixed' && styles.segmentTextActive]}
-                  >
-                    Fixed Term
-                  </Text>
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+              <View style={styles.modalHeader}>
+                <TouchableOpacity onPress={() => setOfferModal(null)}>
+                  <Ionicons name="close" size={24} color={colors.text.primary} />
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.segment, leaseType === 'month_to_month' && styles.segmentActive]}
-                  onPress={() => setLeaseType('month_to_month')}
-                >
-                  <Text
-                    style={[
-                      styles.segmentText,
-                      leaseType === 'month_to_month' && styles.segmentTextActive,
-                    ]}
-                  >
-                    Month-to-Month
-                  </Text>
-                </TouchableOpacity>
+                <Text style={styles.modalTitle}>Send Renewal Offer</Text>
+                <View style={{ width: 24 }} />
               </View>
 
-              {leaseType === 'fixed' && (
-                <>
-                  <Text style={styles.fieldLabel}>Duration (months)</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={durationMonths}
-                    onChangeText={setDurationMonths}
-                    keyboardType="numeric"
-                    placeholder="12"
-                    placeholderTextColor={colors.gray[400]}
-                  />
-                </>
-              )}
-
-              <Text style={styles.fieldLabel}>Proposed Monthly Rent (R) *</Text>
-              <TextInput
-                style={styles.input}
-                value={proposedRent}
-                onChangeText={setProposedRent}
-                keyboardType="numeric"
-                placeholder="e.g. 9500"
-                placeholderTextColor={colors.gray[400]}
-              />
-
-              <Text style={styles.fieldLabel}>Annual Escalation Rate (% — optional)</Text>
-              <TextInput
-                style={styles.input}
-                value={escalationRate}
-                onChangeText={setEscalationRate}
-                keyboardType="numeric"
-                placeholder="e.g. 5"
-                placeholderTextColor={colors.gray[400]}
-              />
-
-              <Text style={styles.fieldLabel}>Notes (Optional)</Text>
-              <TextInput
-                style={[styles.input, styles.inputMulti]}
-                value={offerNotes}
-                onChangeText={setOfferNotes}
-                placeholder="Any terms or conditions to include..."
-                placeholderTextColor={colors.gray[400]}
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
-
-              <TouchableOpacity
-                style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
-                onPress={handleSendOffer}
-                disabled={submitting}
+              <ScrollView
+                contentContainerStyle={styles.modalContent}
+                keyboardShouldPersistTaps="handled"
               >
-                {submitting ? (
-                  <ActivityIndicator size="small" color={colors.rsa.white} />
-                ) : (
+                {/* Lease Type */}
+                <Text style={styles.fieldLabel}>Lease Type</Text>
+                <View style={styles.segmentControl}>
+                  <TouchableOpacity
+                    style={[styles.segment, leaseType === 'fixed' && styles.segmentActive]}
+                    onPress={() => setLeaseType('fixed')}
+                  >
+                    <Text
+                      style={[
+                        styles.segmentText,
+                        leaseType === 'fixed' && styles.segmentTextActive,
+                      ]}
+                    >
+                      Fixed Term
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.segment, leaseType === 'month_to_month' && styles.segmentActive]}
+                    onPress={() => setLeaseType('month_to_month')}
+                  >
+                    <Text
+                      style={[
+                        styles.segmentText,
+                        leaseType === 'month_to_month' && styles.segmentTextActive,
+                      ]}
+                    >
+                      Month-to-Month
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {leaseType === 'fixed' && (
                   <>
-                    <Ionicons name="send" size={18} color={colors.rsa.white} />
-                    <Text style={styles.submitButtonText}>Send Renewal Offer</Text>
+                    <Text style={styles.fieldLabel}>Duration (months)</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={durationMonths}
+                      onChangeText={setDurationMonths}
+                      keyboardType="numeric"
+                      placeholder="12"
+                      placeholderTextColor={colors.gray[400]}
+                    />
                   </>
                 )}
-              </TouchableOpacity>
-            </ScrollView>
+
+                <Text style={styles.fieldLabel}>Proposed Monthly Rent (R) *</Text>
+                <TextInput
+                  style={styles.input}
+                  value={proposedRent}
+                  onChangeText={setProposedRent}
+                  keyboardType="numeric"
+                  placeholder="e.g. 9500"
+                  placeholderTextColor={colors.gray[400]}
+                />
+
+                <Text style={styles.fieldLabel}>Annual Escalation Rate (% — optional)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={escalationRate}
+                  onChangeText={setEscalationRate}
+                  keyboardType="numeric"
+                  placeholder="e.g. 5"
+                  placeholderTextColor={colors.gray[400]}
+                />
+
+                <Text style={styles.fieldLabel}>Notes (Optional)</Text>
+                <TextInput
+                  style={[styles.input, styles.inputMulti]}
+                  value={offerNotes}
+                  onChangeText={setOfferNotes}
+                  placeholder="Any terms or conditions to include..."
+                  placeholderTextColor={colors.gray[400]}
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                />
+
+                <TouchableOpacity
+                  style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+                  onPress={handleSendOffer}
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <ActivityIndicator size="small" color={colors.rsa.white} />
+                  ) : (
+                    <>
+                      <Ionicons name="send" size={18} color={colors.rsa.white} />
+                      <Text style={styles.submitButtonText}>Send Renewal Offer</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </ScrollView>
+            </KeyboardAvoidingView>
           </SafeAreaView>
         </Modal>
 

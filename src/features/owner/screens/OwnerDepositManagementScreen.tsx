@@ -18,6 +18,7 @@ import {
   Alert,
   Modal,
   TextInput,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -618,81 +619,83 @@ export default function OwnerDepositManagementScreen() {
           onRequestClose={() => setDeductionModal(null)}
         >
           <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
-            <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={() => setDeductionModal(null)}>
-                <Ionicons name="close" size={24} color={colors.text.primary} />
-              </TouchableOpacity>
-              <Text style={styles.modalTitle}>Add Deposit Deduction</Text>
-              <View style={{ width: 24 }} />
-            </View>
-            <ScrollView
-              contentContainerStyle={styles.modalContent}
-              keyboardShouldPersistTaps="handled"
-            >
-              <Text style={styles.modalSubtitle}>
-                {deductionModal?.tenantName} · {deductionModal?.propertyTitle}
-              </Text>
-              <Text style={styles.fieldLabel}>Deduction Type</Text>
-              <View style={styles.typeGrid}>
-                {DEDUCTION_TYPES.map((type) => (
-                  <TouchableOpacity
-                    key={type}
-                    style={[styles.typeChip, deductionType === type && styles.typeChipActive]}
-                    onPress={() => setDeductionType(type)}
-                  >
-                    <Text
-                      style={[
-                        styles.typeChipText,
-                        deductionType === type && styles.typeChipTextActive,
-                      ]}
-                    >
-                      {type.replace(/_/g, ' ')}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+              <View style={styles.modalHeader}>
+                <TouchableOpacity onPress={() => setDeductionModal(null)}>
+                  <Ionicons name="close" size={24} color={colors.text.primary} />
+                </TouchableOpacity>
+                <Text style={styles.modalTitle}>Add Deposit Deduction</Text>
+                <View style={{ width: 24 }} />
               </View>
-              <Text style={styles.fieldLabel}>Description *</Text>
-              <TextInput
-                style={[styles.modalInput, styles.modalInputMulti]}
-                value={deductionDesc}
-                onChangeText={setDeductionDesc}
-                placeholder="e.g. Carpet damage in living room — replacement cost"
-                placeholderTextColor={colors.gray[400]}
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
-              <Text style={styles.fieldLabel}>Amount (R) *</Text>
-              <TextInput
-                style={styles.modalInput}
-                value={deductionAmount}
-                onChangeText={setDeductionAmount}
-                keyboardType="numeric"
-                placeholder="e.g. 2500"
-                placeholderTextColor={colors.gray[400]}
-              />
-              <View style={styles.legalNotice}>
-                <Ionicons name="information-circle" size={16} color={colors.rsa.blue} />
-                <Text style={styles.legalText}>
-                  RHA s5(4): Deductions must be for actual damage beyond fair wear and tear. Tenant
-                  has 14 days to respond.
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.actionButton, submitting && { opacity: 0.5 }]}
-                onPress={handleSubmitDeduction}
-                disabled={submitting}
+              <ScrollView
+                contentContainerStyle={styles.modalContent}
+                keyboardShouldPersistTaps="handled"
               >
-                {submitting ? (
-                  <ActivityIndicator size="small" color={colors.rsa.white} />
-                ) : (
-                  <>
-                    <Ionicons name="add-circle" size={18} color={colors.rsa.white} />
-                    <Text style={styles.actionButtonText}>Submit Deduction</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </ScrollView>
+                <Text style={styles.modalSubtitle}>
+                  {deductionModal?.tenantName} · {deductionModal?.propertyTitle}
+                </Text>
+                <Text style={styles.fieldLabel}>Deduction Type</Text>
+                <View style={styles.typeGrid}>
+                  {DEDUCTION_TYPES.map((type) => (
+                    <TouchableOpacity
+                      key={type}
+                      style={[styles.typeChip, deductionType === type && styles.typeChipActive]}
+                      onPress={() => setDeductionType(type)}
+                    >
+                      <Text
+                        style={[
+                          styles.typeChipText,
+                          deductionType === type && styles.typeChipTextActive,
+                        ]}
+                      >
+                        {type.replace(/_/g, ' ')}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <Text style={styles.fieldLabel}>Description *</Text>
+                <TextInput
+                  style={[styles.modalInput, styles.modalInputMulti]}
+                  value={deductionDesc}
+                  onChangeText={setDeductionDesc}
+                  placeholder="e.g. Carpet damage in living room — replacement cost"
+                  placeholderTextColor={colors.gray[400]}
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                />
+                <Text style={styles.fieldLabel}>Amount (R) *</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={deductionAmount}
+                  onChangeText={setDeductionAmount}
+                  keyboardType="numeric"
+                  placeholder="e.g. 2500"
+                  placeholderTextColor={colors.gray[400]}
+                />
+                <View style={styles.legalNotice}>
+                  <Ionicons name="information-circle" size={16} color={colors.rsa.blue} />
+                  <Text style={styles.legalText}>
+                    RHA s5(4): Deductions must be for actual damage beyond fair wear and tear.
+                    Tenant has 14 days to respond.
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.actionButton, submitting && { opacity: 0.5 }]}
+                  onPress={handleSubmitDeduction}
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <ActivityIndicator size="small" color={colors.rsa.white} />
+                  ) : (
+                    <>
+                      <Ionicons name="add-circle" size={18} color={colors.rsa.white} />
+                      <Text style={styles.actionButtonText}>Submit Deduction</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </ScrollView>
+            </KeyboardAvoidingView>
           </SafeAreaView>
         </Modal>
       </KeyboardAvoidingView>
