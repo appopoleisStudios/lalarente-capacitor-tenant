@@ -1,0 +1,117 @@
+# Android visual check (CT7-046): opens each bottom sheet / modal, screenshots it
+# (and with the keyboard up where it has an input), closes it without saving.
+# Run on the emulator with 3-button navigation and the release APK.
+# Nothing is submitted: every modal is closed with Cancel.
+# Modals that need data are wrapped in `when: visible: <opener>` so the flow
+# passes either way (see the `# needs:` comments).
+# Env: TENANT_EMAIL, TENANT_PASSWORD
+appId: com.lalarente.app
+---
+- launchApp:
+    clearState: true
+- runFlow: ../subflows/login-tenant.yaml
+
+# ── 1. Payments — Confirm Payment sheet (text input) ─────────────────────────
+# needs: a pending payment (next-payment card "Record EFT", or a "Pay" row)
+- openLink: lalarenteapp://(tenant)/payments
+- waitForAnimationToEnd:
+    timeout: 3000
+- scrollUntilVisible:
+    element:
+      id: "tenant-pay-now"
+    direction: DOWN
+    timeout: 8000
+    centerElement: true
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: "tenant-pay-now"
+    commands:
+      - tapOn:
+          id: "tenant-pay-now"
+      - extendedWaitUntil:
+          visible: "Confirm Payment"
+          timeout: 10000
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - takeScreenshot: sheet-tenant-payment
+      - tapOn:
+          text: "e.g., RENT-JAN.*"
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - takeScreenshot: sheet-tenant-payment-keyboard
+      - hideKeyboard
+      - tapOn:
+          text: "Cancel"
+# fallback when there is no next-payment card but a pending row has a Pay button
+- scrollUntilVisible:
+    element:
+      id: "tenant-mini-pay"
+    direction: DOWN
+    timeout: 8000
+    centerElement: true
+    optional: true
+- runFlow:
+    when:
+      notVisible:
+        id: "tenant-pay-now"
+    commands:
+      - runFlow:
+          when:
+            visible:
+              id: "tenant-mini-pay"
+          commands:
+            - tapOn:
+                id: "tenant-mini-pay"
+                index: 0
+            - extendedWaitUntil:
+                visible: "Confirm Payment"
+                timeout: 10000
+            - waitForAnimationToEnd:
+                timeout: 1500
+            - takeScreenshot: sheet-tenant-payment
+            - tapOn:
+                text: "e.g., RENT-JAN.*"
+            - waitForAnimationToEnd:
+                timeout: 1500
+            - takeScreenshot: sheet-tenant-payment-keyboard
+            - hideKeyboard
+            - tapOn:
+                text: "Cancel"
+
+# ── 2. Arrears — Propose Payment Arrangement sheet (numeric input) ───────────
+# needs: an arrears record on the tenant's lease (button reads "Arrange")
+- openLink: lalarenteapp://(tenant)/arrears
+- waitForAnimationToEnd:
+    timeout: 3000
+- scrollUntilVisible:
+    element:
+      text: "Arrange"
+    direction: DOWN
+    timeout: 8000
+    centerElement: true
+    optional: true
+- runFlow:
+    when:
+      visible:
+        text: "Arrange"
+    commands:
+      - tapOn:
+          text: "Arrange"
+          index: 0
+      - extendedWaitUntil:
+          visible: "Propose Payment Arrangement"
+          timeout: 10000
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - takeScreenshot: sheet-tenant-arrears
+      - tapOn:
+          text: "3"
+          optional: true
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - takeScreenshot: sheet-tenant-arrears-keyboard
+      - hideKeyboard
+      - tapOn:
+          text: "Cancel"

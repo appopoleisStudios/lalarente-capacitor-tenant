@@ -1,0 +1,468 @@
+# Android visual check (CT7-046): opens each bottom sheet / modal, screenshots it
+# (and with the keyboard up where it has an input), closes it without saving.
+# Run on the emulator with 3-button navigation and the release APK.
+# Nothing is submitted: every modal is closed with Cancel / close / Android back.
+# Modals that need data are wrapped in `when: visible: <opener>` so the flow
+# passes either way (see the `# needs:` comments).
+# Not covered: shared Select and privacy ConsentCaptureModal (no screen renders
+# them), DateField sheet (iOS only).
+# Env: OWNER_EMAIL, OWNER_PASSWORD
+appId: com.lalarente.app
+---
+- launchApp:
+    clearState: true
+- runFlow: ../subflows/login-owner.yaml
+
+# ── 1. Early termination — Decline sheet (bottom sheet, text input) ──────────
+# needs: a tenant early-termination request pending on an owner lease
+- openLink: lalarenteapp://(owner)/early-termination
+- waitForAnimationToEnd:
+    timeout: 3000
+- scrollUntilVisible:
+    element:
+      text: "Decline"
+    direction: DOWN
+    timeout: 8000
+    centerElement: true
+    optional: true
+- runFlow:
+    when:
+      visible:
+        text: "Decline"
+    commands:
+      - tapOn:
+          text: "Decline"
+          index: 0
+      - extendedWaitUntil:
+          visible: "Decline Request"
+          timeout: 10000
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - takeScreenshot: sheet-early-termination
+      - tapOn:
+          text: "Reason for declining.*"
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - takeScreenshot: sheet-early-termination-keyboard
+      - hideKeyboard
+      - tapOn:
+          text: "Cancel"
+
+# ── 2. Payment disputes — Accept sheet and Reject sheet (text inputs) ────────
+# needs: an open or under-review tenant payment dispute
+- openLink: lalarenteapp://(owner)/payment-disputes
+- waitForAnimationToEnd:
+    timeout: 3000
+- scrollUntilVisible:
+    element:
+      text: "Accept"
+    direction: DOWN
+    timeout: 8000
+    centerElement: true
+    optional: true
+- runFlow:
+    when:
+      visible:
+        text: "Accept"
+    commands:
+      - tapOn:
+          text: "Accept"
+          index: 0
+      - extendedWaitUntil:
+          visible: "Accept Dispute"
+          timeout: 10000
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - takeScreenshot: sheet-dispute-accept
+      - tapOn:
+          text: "Explain how the dispute was resolved.*"
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - takeScreenshot: sheet-dispute-accept-keyboard
+      - hideKeyboard
+      - tapOn:
+          text: "Cancel"
+      - waitForAnimationToEnd:
+          timeout: 1500
+- runFlow:
+    when:
+      visible:
+        text: "Reject"
+    commands:
+      - tapOn:
+          text: "Reject"
+          index: 0
+      - extendedWaitUntil:
+          visible: "Reject Dispute"
+          timeout: 10000
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - takeScreenshot: sheet-dispute-reject
+      - tapOn:
+          text: "Reason for rejection.*"
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - takeScreenshot: sheet-dispute-reject-keyboard
+      - hideKeyboard
+      - tapOn:
+          text: "Cancel"
+
+# ── 3. Lease review — Lease Clauses sheet (text input) ───────────────────────
+# needs: an approved application with no lease yet (Create Lease -> Review
+# Lease Agreement builds the in-memory draft this screen requires). Nothing is
+# sent to the tenant.
+- openLink: lalarenteapp://(owner)/applications
+- extendedWaitUntil:
+    visible: "Applications"
+    timeout: 20000
+- tapOn:
+    id: "owner-applications-filter-approved"
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow:
+    when:
+      visible:
+        id: "owner-application-card"
+    commands:
+      - tapOn:
+          id: "owner-application-card"
+          index: 0
+      - extendedWaitUntil:
+          visible:
+            id: "owner-application-back"
+          timeout: 20000
+      - scrollUntilVisible:
+          element:
+            id: "owner-application-create-lease"
+          direction: DOWN
+          timeout: 8000
+          centerElement: true
+          optional: true
+      - runFlow:
+          when:
+            visible:
+              id: "owner-application-create-lease"
+          commands:
+            - tapOn:
+                id: "owner-application-create-lease"
+            - extendedWaitUntil:
+                visible:
+                  id: "owner-lease-create-review"
+                timeout: 20000
+            - scrollUntilVisible:
+                element:
+                  id: "owner-lease-create-review"
+                direction: DOWN
+                timeout: 20000
+                visibilityPercentage: 60
+                centerElement: true
+            - tapOn:
+                id: "owner-lease-create-review"
+            - extendedWaitUntil:
+                visible:
+                  id: "owner-lease-review-clauses-open"
+                timeout: 20000
+            - tapOn:
+                id: "owner-lease-review-clauses-open"
+            - extendedWaitUntil:
+                visible: "Lease Clauses"
+                timeout: 10000
+            - waitForAnimationToEnd:
+                timeout: 1500
+            - takeScreenshot: sheet-lease-clauses
+            - scrollUntilVisible:
+                element:
+                  id: "owner-lease-review-clauses-input"
+                direction: DOWN
+                timeout: 8000
+                centerElement: true
+                optional: true
+            - tapOn:
+                id: "owner-lease-review-clauses-input"
+            - waitForAnimationToEnd:
+                timeout: 1500
+            - takeScreenshot: sheet-lease-clauses-keyboard
+            - hideKeyboard
+            - tapOn:
+                id: "owner-lease-review-clauses-close"
+
+# ── 4. Viewing detail — Decline and Approve sheets (text inputs) ─────────────
+# needs: a pending (not expired) viewing request
+- openLink: lalarenteapp://(owner)/viewings
+- extendedWaitUntil:
+    visible: "Viewing Requests"
+    timeout: 20000
+- tapOn:
+    id: "owner-viewings-filter-pending"
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow:
+    when:
+      visible:
+        id: "owner-viewing-card"
+    commands:
+      - tapOn:
+          id: "owner-viewing-card"
+          index: 0
+      - extendedWaitUntil:
+          visible:
+            id: "owner-viewing-detail-back"
+          timeout: 20000
+      - runFlow:
+          when:
+            visible:
+              id: "owner-viewing-detail-decline"
+          commands:
+            - tapOn:
+                id: "owner-viewing-detail-decline"
+            - extendedWaitUntil:
+                visible:
+                  id: "owner-viewing-modal-cancel"
+                timeout: 10000
+            - waitForAnimationToEnd:
+                timeout: 1500
+            - takeScreenshot: sheet-viewing-decline
+            - tapOn:
+                id: "owner-viewing-modal-decline-reason"
+            - waitForAnimationToEnd:
+                timeout: 1500
+            - takeScreenshot: sheet-viewing-decline-keyboard
+            - hideKeyboard
+            - tapOn:
+                id: "owner-viewing-modal-cancel"
+            - waitForAnimationToEnd:
+                timeout: 1500
+      - runFlow:
+          when:
+            visible:
+              id: "owner-viewing-detail-approve"
+          commands:
+            - tapOn:
+                id: "owner-viewing-detail-approve"
+            - extendedWaitUntil:
+                visible:
+                  id: "owner-viewing-modal-cancel"
+                timeout: 10000
+            - waitForAnimationToEnd:
+                timeout: 1500
+            - takeScreenshot: sheet-viewing-approve
+            - tapOn:
+                id: "owner-viewing-modal-notes"
+            - waitForAnimationToEnd:
+                timeout: 1500
+            - takeScreenshot: sheet-viewing-approve-keyboard
+            - hideKeyboard
+            - tapOn:
+                id: "owner-viewing-modal-cancel"
+
+# ── 5. Property taxes — Record Payment sheet (text inputs) ───────────────────
+- openLink: lalarenteapp://(owner)/properties/2ee8cfaf-f02d-491b-8947-6c49975f5732/taxes
+- extendedWaitUntil:
+    visible:
+      id: "add-tax-payment"
+    timeout: 20000
+- tapOn:
+    id: "add-tax-payment"
+- extendedWaitUntil:
+    visible:
+      id: "save-tax-payment"
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: sheet-property-tax
+- tapOn:
+    id: "tax-amount-input"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: sheet-property-tax-keyboard
+- hideKeyboard
+# the close icon has no testID; the sheet handles Android back (onRequestClose)
+- back
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ── 6. Holding deposit — Request Holding Deposit (pageSheet, text inputs) ────
+- openLink: lalarenteapp://(owner)/holding-deposit
+- extendedWaitUntil:
+    visible:
+      id: "owner-holding-deposit-create"
+    timeout: 20000
+- tapOn:
+    id: "owner-holding-deposit-create"
+- extendedWaitUntil:
+    visible:
+      id: "owner-holding-deposit-modal-close"
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: sheet-holding-deposit
+- scrollUntilVisible:
+    element:
+      id: "owner-holding-deposit-modal-email"
+    direction: DOWN
+    timeout: 8000
+    centerElement: true
+    optional: true
+- tapOn:
+    id: "owner-holding-deposit-modal-email"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: sheet-holding-deposit-keyboard
+- hideKeyboard
+- tapOn:
+    id: "owner-holding-deposit-modal-close"
+
+# ── 7. Lease renewal — Send Renewal Offer (pageSheet, text inputs) ───────────
+# needs: a lease expiring soon with no active offer (button reads
+# "Send Renewal Offer" or "Send Counter-Offer")
+- openLink: lalarenteapp://(owner)/renewals
+- waitForAnimationToEnd:
+    timeout: 3000
+- scrollUntilVisible:
+    element:
+      text: "Send (Renewal Offer|Counter-Offer)"
+    direction: DOWN
+    timeout: 8000
+    centerElement: true
+    optional: true
+- runFlow:
+    when:
+      visible:
+        text: "Send (Renewal Offer|Counter-Offer)"
+    commands:
+      - tapOn:
+          text: "Send (Renewal Offer|Counter-Offer)"
+          index: 0
+      - extendedWaitUntil:
+          visible: "Lease Type"
+          timeout: 10000
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - takeScreenshot: sheet-lease-renewal
+      - tapOn:
+          below: "Duration \\(months\\)"
+          index: 0
+          optional: true
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - takeScreenshot: sheet-lease-renewal-keyboard
+      - hideKeyboard
+      # close icon has no testID; the modal handles Android back (onRequestClose)
+      - back
+
+# ── 8. Deposit management — Add Deposit Deduction (pageSheet, text inputs) ───
+# needs: a deposit with refund status "Awaiting Inspection" or
+# "Deductions Proposed" (an ended lease with a refund initiated)
+- openLink: lalarenteapp://(owner)/deposits
+- waitForAnimationToEnd:
+    timeout: 3000
+- scrollUntilVisible:
+    element:
+      text: "Awaiting Inspection|Deductions Proposed"
+    direction: DOWN
+    timeout: 8000
+    centerElement: true
+    optional: true
+- runFlow:
+    when:
+      visible:
+        text: "Awaiting Inspection|Deductions Proposed"
+    commands:
+      # tapping the card header expands it
+      - tapOn:
+          text: "Awaiting Inspection|Deductions Proposed"
+          index: 0
+      - scrollUntilVisible:
+          element:
+            text: "Add Deduction"
+          direction: DOWN
+          timeout: 15000
+          centerElement: true
+          optional: true
+      - runFlow:
+          when:
+            visible:
+              text: "Add Deduction"
+          commands:
+            - tapOn:
+                text: "Add Deduction"
+            - extendedWaitUntil:
+                visible: "Add Deposit Deduction"
+                timeout: 10000
+            - waitForAnimationToEnd:
+                timeout: 1500
+            - takeScreenshot: sheet-deposit-deduction
+            - tapOn:
+                text: "e.g. Carpet damage.*"
+            - waitForAnimationToEnd:
+                timeout: 1500
+            - takeScreenshot: sheet-deposit-deduction-keyboard
+            - hideKeyboard
+            - back
+
+# ── 9. Insurance claim — Select Policy picker (pageSheet) ────────────────────
+# needs: at least one active insurance policy (else the picker is not rendered)
+- openLink: lalarenteapp://(owner)/insurance/new
+- waitForAnimationToEnd:
+    timeout: 3000
+- scrollUntilVisible:
+    element:
+      text: "Select a policy.*"
+    direction: DOWN
+    timeout: 8000
+    centerElement: true
+    optional: true
+- runFlow:
+    when:
+      visible:
+        text: "Select a policy.*"
+    commands:
+      - tapOn:
+          text: "Select a policy.*"
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - takeScreenshot: sheet-insurance-policy-picker
+      # no input in the picker; close with Android back (onRequestClose)
+      - back
+
+# ── 10. Insurance claim — Add Document (pageSheet, text input) ───────────────
+# needs: an existing insurance claim for "2B Datura" (claim cards have no
+# testID; the card is found by its property name)
+- openLink: lalarenteapp://(owner)/insurance
+- waitForAnimationToEnd:
+    timeout: 3000
+- runFlow:
+    when:
+      visible:
+        text: "2B Datura"
+    commands:
+      - tapOn:
+          text: "2B Datura"
+          index: 0
+      - scrollUntilVisible:
+          element:
+            text: "Add Photo"
+          direction: DOWN
+          timeout: 15000
+          centerElement: true
+          optional: true
+      - runFlow:
+          when:
+            visible:
+              text: "Add Photo"
+          commands:
+            - tapOn:
+                text: "Add Photo"
+            - extendedWaitUntil:
+                visible: "Add Document"
+                timeout: 10000
+            - waitForAnimationToEnd:
+                timeout: 1500
+            - takeScreenshot: sheet-insurance-add-document
+            - tapOn:
+                text: "e.g. Fire damage photo.*"
+            - waitForAnimationToEnd:
+                timeout: 1500
+            - takeScreenshot: sheet-insurance-add-document-keyboard
+            - hideKeyboard
+            - back
