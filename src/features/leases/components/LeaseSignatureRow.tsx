@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { signedSignatureUrl } from '@/src/shared/utils/storageDataUri';
+import { colors } from '@/src/shared/theme/colors';
 
 const SIGNED_URL_TTL_SECONDS = 3600;
 
@@ -45,7 +46,7 @@ export default function LeaseSignatureRow({
         <Ionicons
           name={signedAt ? 'checkmark-circle' : 'time-outline'}
           size={20}
-          color={signedAt ? accentColor : '#FFA500'}
+          color={signedAt ? accentColor : colors.warning[600]}
         />
         <View style={styles.text}>
           <Text style={styles.label}>{label}</Text>
@@ -80,7 +81,7 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: colors.gray[100],
   },
   left: {
     flexDirection: 'row',
@@ -89,16 +90,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   text: { flex: 1 },
-  label: { fontSize: 12, color: '#999' },
-  name: { fontSize: 16, fontWeight: '600', color: '#333' },
-  status: { fontSize: 14, color: '#FFA500', flexShrink: 0 },
+  label: { fontSize: 12, color: colors.gray[500] },
+  name: { fontSize: 16, fontWeight: '600', color: colors.gray[800] },
+  status: { fontSize: 14, color: colors.warning[600], flexShrink: 0 },
   image: {
     width: 120,
     height: 60,
     marginTop: 8,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: colors.border.default,
     borderRadius: 4,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: colors.gray[50],
   },
 });
