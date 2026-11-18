@@ -368,6 +368,17 @@ appId: com.lalarente.app
 - inputText: "LC-clause ${LC_TOKEN}"
 - tapOn:
     id: "owner-lease-review-clauses-save"
+- waitForAnimationToEnd:
+    timeout: 2000
+# Android: the tap can miss while the keyboard closes — re-tap only if the
+# sheet is still open
+- runFlow:
+    when:
+      visible:
+        id: "owner-lease-review-clauses-save"
+    commands:
+      - tapOn:
+          id: "owner-lease-review-clauses-save"
 - extendedWaitUntil:
     notVisible:
       id: "owner-lease-review-clauses-input"
