@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import {
   Keyboard,
   Platform,
+  type KeyboardEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   type ScrollView,
@@ -10,13 +11,17 @@ import {
 
 /** Gap kept between the revealed block and the keyboard. */
 export const REVEAL_MARGIN = 16;
+/** Wait for the KAV resize / native focus scroll to settle before measuring. */
+export const REVEAL_DELAY_MS = Platform.OS === 'ios' ? 300 : 100;
 
 /**
- * How far to scroll so a block (`target`, window coords) sits fully inside the
- * visible part of the scroll view (`viewport`, window coords) and above the
- * keyboard's top edge (`keyboardTop`, screen coords). Edge-to-edge Android
- * does not shrink the window for the keyboard, so the scroll view's own frame
- * can extend under it. Returns the new offset, or null when already visible.
+ * How far to scroll so a block (`target`) sits fully inside the visible part
+ * of the scroll view (`viewport`) and above the keyboard's top edge
+ * (`keyboardTop`). Edge-to-edge Android does not shrink the window for the
+ * keyboard, so the scroll view's frame can extend under it. All three share
+ * one origin: `measureInWindow` and the keyboard's `screenY` coincide for a
+ * full-screen app window (Android edge-to-edge, iOS). Returns the new offset,
+ * or null when already visible.
  */
 export function revealOffset(
   target: { y: number; height: number },
@@ -36,58 +41,75 @@ export function revealOffset(
  * so a submit button below it stayed under the keyboard (CT7-050).
  *
  * Attach `scrollRef` + `onScroll` to the ScrollView, `targetRef` to the block,
- * and call `armReveal` from the input's onFocus.
+ * and `onFocus` / `onBlur` to the input.
  */
 export function useRevealAboveKeyboard() {
   const scrollRef = useRef<ScrollView>(null);
   const targetRef = useRef<View>(null);
   const offset = useRef(0);
-  const armed = useRef(false);
+  const focused = useRef(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const reveal = useCallback((keyboardTop: number) => {
-    const scroll = scrollRef.current;
-    const target = targetRef.current;
-    if (!scroll || !target) return;
-    target.measureInWindow((_tx, ty, _tw, th) => {
-      // ScrollView is a host component on both architectures.
-      (scroll as unknown as View).measureInWindow((_sx, sy, _sw, sh) => {
-        const next = revealOffset(
-          { y: ty, height: th },
-          { y: sy, height: sh },
-          keyboardTop,
-          offset.current
-        );
-        if (next !== null) scroll.scrollTo({ y: next, animated: true });
-      });
-    });
+  const cancel = useCallback(() => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
   }, []);
+
+  const schedule = useCallback(
+    (keyboardTop: number) => {
+      cancel();
+      timer.current = setTimeout(() => {
+        timer.current = null;
+        const scroll = scrollRef.current;
+        const target = targetRef.current;
+        // the input may have lost focus or the keyboard closed meanwhile
+        if (!focused.current || !Keyboard.isVisible() || !scroll || !target) return;
+        target.measureInWindow((_tx, ty, _tw, th) => {
+          // ScrollView is a host component on both architectures.
+          (scroll as unknown as View).measureInWindow((_sx, sy, _sw, sh) => {
+            const next = revealOffset(
+              { y: ty, height: th },
+              { y: sy, height: sh },
+              keyboardTop,
+              offset.current
+            );
+            if (next !== null) scroll.scrollTo({ y: next, animated: true });
+          });
+        });
+      }, REVEAL_DELAY_MS);
+    },
+    [cancel]
+  );
 
   useEffect(() => {
     const event = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const show = Keyboard.addListener(event, (e) => {
-      if (!armed.current) return;
-      // let the KAV padding / native focus scroll settle first
-      setTimeout(() => reveal(e.endCoordinates.screenY), Platform.OS === 'ios' ? 300 : 100);
+    const show = Keyboard.addListener(event, (e: KeyboardEvent) => {
+      // also fires when the keyboard reopens while the input kept focus
+      if (focused.current) schedule(e.endCoordinates.screenY);
     });
-    const hide = Keyboard.addListener('keyboardDidHide', () => {
-      armed.current = false;
-    });
+    const hide = Keyboard.addListener('keyboardDidHide', cancel);
     return () => {
       show.remove();
       hide.remove();
+      cancel();
     };
-  }, [reveal]);
+  }, [schedule, cancel]);
 
-  const armReveal = useCallback(() => {
-    armed.current = true;
-    // keyboard may already be up (moving focus between inputs)
+  const onFocus = useCallback(() => {
+    focused.current = true;
+    // keyboard already up (focus moved from another input): no show event
     const metrics = Keyboard.metrics();
-    if (Keyboard.isVisible() && metrics) setTimeout(() => reveal(metrics.screenY), 100);
-  }, [reveal]);
+    if (Keyboard.isVisible() && metrics) schedule(metrics.screenY);
+  }, [schedule]);
+
+  const onBlur = useCallback(() => {
+    focused.current = false;
+    cancel();
+  }, [cancel]);
 
   const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     offset.current = e.nativeEvent.contentOffset.y;
   }, []);
 
-  return { scrollRef, targetRef, armReveal, onScroll };
+  return { scrollRef, targetRef, onFocus, onBlur, onScroll };
 }

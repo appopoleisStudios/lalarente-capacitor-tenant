@@ -39,13 +39,14 @@ describe('InspectionScreen keeps "Add Comment" above the keyboard (CT7-050)', ()
     'utf8'
   );
 
-  it('the comment input arms the reveal and the input + button form the revealed block', () => {
+  it('the comment input reports focus/blur and the input + button form the revealed block', () => {
     const block = src.slice(
       src.indexOf('<View ref={commentReveal.targetRef}'),
       src.indexOf('testID="inspection-tenant-comment-add"')
     );
     expect(block).toContain('testID="inspection-tenant-comment-input"');
-    expect(block).toContain('onFocus={commentReveal.armReveal}');
+    expect(block).toContain('onFocus={commentReveal.onFocus}');
+    expect(block).toContain('onBlur={commentReveal.onBlur}');
   });
 
   it('the screen avoids the keyboard on Android too, so the ScrollView ends at it', () => {

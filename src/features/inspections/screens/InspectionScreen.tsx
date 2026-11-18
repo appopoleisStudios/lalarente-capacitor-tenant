@@ -950,7 +950,8 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                       placeholder="Something missing or not right in this room? Describe it here..."
                       value={commentDraft}
                       onChangeText={setCommentDraft}
-                      onFocus={commentReveal.armReveal}
+                      onFocus={commentReveal.onFocus}
+                      onBlur={commentReveal.onBlur}
                       multiline
                       numberOfLines={3}
                     />
