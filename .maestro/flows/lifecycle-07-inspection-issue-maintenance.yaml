@@ -524,6 +524,10 @@ appId: com.lalarente.app
 - tapOn:
     text: "(OK|Cancel|Don.t Allow|Allow)"
     optional: true
+- runFlow:
+    file: ../subflows/dismiss-camera-android.yaml
+    env:
+      RETURN_ID: "maintenance-add-camera"
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:

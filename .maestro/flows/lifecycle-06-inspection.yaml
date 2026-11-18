@@ -268,6 +268,10 @@ appId: com.lalarente.app
 - tapOn:
     text: "(OK|Cancel|Don.t Allow|Allow)"
     optional: true
+- runFlow:
+    file: ../subflows/dismiss-camera-android.yaml
+    env:
+      RETURN_ID: "inspection-item-0-camera"
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -284,6 +288,10 @@ appId: com.lalarente.app
 - tapOn:
     text: "(OK|Cancel|Don.t Allow|Allow)"
     optional: true
+- runFlow:
+    file: ../subflows/dismiss-camera-android.yaml
+    env:
+      RETURN_ID: "inspection-room-take-photo"
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:

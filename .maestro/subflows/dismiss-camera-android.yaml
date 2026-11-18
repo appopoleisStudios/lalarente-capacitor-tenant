@@ -1,0 +1,26 @@
+# Android emulators have a working virtual camera, so a "Take photo" button
+# opens the system camera app (iOS simulators show an alert instead). Accept a
+# runtime permission prompt if one shows, then close the camera with Back until
+# the app is back — RETURN_ID is the button that was tapped. No-op on iOS.
+appId: com.lalarente.app
+---
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          text: "(While using the app|Only this time|Allow)"
+          optional: true
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - repeat:
+          times: 2
+          while:
+            notVisible:
+              id: "${RETURN_ID}"
+          commands:
+            - back
+            - waitForAnimationToEnd:
+                timeout: 2000
+      - assertVisible:
+          id: "${RETURN_ID}"
