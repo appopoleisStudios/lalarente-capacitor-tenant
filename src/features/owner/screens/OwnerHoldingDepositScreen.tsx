@@ -18,6 +18,7 @@ import {
   TextInput,
   Modal,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -576,103 +577,108 @@ function CreateDepositModal({
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
       <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
-        <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>Request Holding Deposit</Text>
-          <TouchableOpacity
-            testID="owner-holding-deposit-modal-close"
-            onPress={onClose}
-            style={styles.closeBtn}
-          >
-            <Ionicons name="close" size={24} color={colors.text.primary} />
-          </TouchableOpacity>
-        </View>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Request Holding Deposit</Text>
+            <TouchableOpacity
+              testID="owner-holding-deposit-modal-close"
+              onPress={onClose}
+              style={styles.closeBtn}
+            >
+              <Ionicons name="close" size={24} color={colors.text.primary} />
+            </TouchableOpacity>
+          </View>
 
-        {/* Scrollable so tapping outside a field (or dragging) dismisses the
+          {/* Scrollable so tapping outside a field (or dragging) dismisses the
             number pad, which has no return key and would cover Create. */}
-        <ScrollView
-          contentContainerStyle={styles.modalBody}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-        >
-          {/* Property Selector */}
-          <Text style={styles.fieldLabel}>Property</Text>
-          <View style={styles.propertyPicker}>
-            {properties.length === 0 ? (
-              <Text style={styles.noPropertiesText}>No listed properties available</Text>
-            ) : (
-              properties.map((p) => (
-                <TouchableOpacity
-                  testID="owner-holding-deposit-modal-property"
-                  key={p.id}
-                  style={[
-                    styles.propertyOption,
-                    selectedPropertyId === p.id && {
-                      borderColor: colors.rsa.blue,
-                      backgroundColor: '#E6EBF5',
-                    },
-                  ]}
-                  onPress={() => setSelectedPropertyId(p.id)}
-                >
-                  <Text
-                    style={[
-                      styles.propertyOptionText,
-                      selectedPropertyId === p.id && { color: colors.rsa.blue, fontWeight: '700' },
-                    ]}
-                  >
-                    {p.title}
-                  </Text>
-                  {selectedPropertyId === p.id && (
-                    <Ionicons name="checkmark-circle" size={18} color={colors.rsa.blue} />
-                  )}
-                </TouchableOpacity>
-              ))
-            )}
-          </View>
-
-          {/* Tenant Email */}
-          <Text style={styles.fieldLabel}>Tenant Email</Text>
-          <TextInput
-            testID="owner-holding-deposit-modal-email"
-            style={styles.textInput}
-            value={tenantEmail}
-            onChangeText={setTenantEmail}
-            placeholder="tenant@example.com"
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-
-          {/* Amount */}
-          <Text style={styles.fieldLabel}>Amount (ZAR)</Text>
-          <TextInput
-            testID="owner-holding-deposit-modal-amount"
-            style={styles.textInput}
-            value={amount}
-            onChangeText={setAmount}
-            placeholder="e.g. 5000"
-            keyboardType="numeric"
-          />
-
-          <View style={styles.modalNotice}>
-            <Ionicons name="information-circle" size={14} color={colors.rsa.blue} />
-            <Text style={styles.modalNoticeText}>
-              Typically 1 month's rent. Must be refunded if the application is unsuccessful (RHA
-              s5A).
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            testID="owner-holding-deposit-modal-create"
-            style={[styles.createButton, loading && { opacity: 0.7 }]}
-            onPress={handleCreate}
-            disabled={loading}
+          <ScrollView
+            contentContainerStyle={styles.modalBody}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
           >
-            {loading ? (
-              <ActivityIndicator color={colors.rsa.white} />
-            ) : (
-              <Text style={styles.createButtonText}>Create Deposit Request</Text>
-            )}
-          </TouchableOpacity>
-        </ScrollView>
+            {/* Property Selector */}
+            <Text style={styles.fieldLabel}>Property</Text>
+            <View style={styles.propertyPicker}>
+              {properties.length === 0 ? (
+                <Text style={styles.noPropertiesText}>No listed properties available</Text>
+              ) : (
+                properties.map((p) => (
+                  <TouchableOpacity
+                    testID="owner-holding-deposit-modal-property"
+                    key={p.id}
+                    style={[
+                      styles.propertyOption,
+                      selectedPropertyId === p.id && {
+                        borderColor: colors.rsa.blue,
+                        backgroundColor: '#E6EBF5',
+                      },
+                    ]}
+                    onPress={() => setSelectedPropertyId(p.id)}
+                  >
+                    <Text
+                      style={[
+                        styles.propertyOptionText,
+                        selectedPropertyId === p.id && {
+                          color: colors.rsa.blue,
+                          fontWeight: '700',
+                        },
+                      ]}
+                    >
+                      {p.title}
+                    </Text>
+                    {selectedPropertyId === p.id && (
+                      <Ionicons name="checkmark-circle" size={18} color={colors.rsa.blue} />
+                    )}
+                  </TouchableOpacity>
+                ))
+              )}
+            </View>
+
+            {/* Tenant Email */}
+            <Text style={styles.fieldLabel}>Tenant Email</Text>
+            <TextInput
+              testID="owner-holding-deposit-modal-email"
+              style={styles.textInput}
+              value={tenantEmail}
+              onChangeText={setTenantEmail}
+              placeholder="tenant@example.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+
+            {/* Amount */}
+            <Text style={styles.fieldLabel}>Amount (ZAR)</Text>
+            <TextInput
+              testID="owner-holding-deposit-modal-amount"
+              style={styles.textInput}
+              value={amount}
+              onChangeText={setAmount}
+              placeholder="e.g. 5000"
+              keyboardType="numeric"
+            />
+
+            <View style={styles.modalNotice}>
+              <Ionicons name="information-circle" size={14} color={colors.rsa.blue} />
+              <Text style={styles.modalNoticeText}>
+                Typically 1 month's rent. Must be refunded if the application is unsuccessful (RHA
+                s5A).
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              testID="owner-holding-deposit-modal-create"
+              style={[styles.createButton, loading && { opacity: 0.7 }]}
+              onPress={handleCreate}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color={colors.rsa.white} />
+              ) : (
+                <Text style={styles.createButtonText}>Create Deposit Request</Text>
+              )}
+            </TouchableOpacity>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
   );

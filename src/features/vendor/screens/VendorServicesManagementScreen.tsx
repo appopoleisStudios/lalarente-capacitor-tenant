@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   TextInput,
   Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -310,7 +312,10 @@ export default function ServicesManagementScreen() {
         transparent={true}
         onRequestClose={() => setShowAddServiceModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
           <View style={[styles.modalContent, { paddingBottom: insets.bottom }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add Service</Text>
@@ -319,7 +324,7 @@ export default function ServicesManagementScreen() {
               </Pressable>
             </View>
 
-            <ScrollView style={styles.modalScroll}>
+            <ScrollView style={styles.modalScroll} keyboardShouldPersistTaps="handled">
               <Text style={styles.label}>
                 Category <Text style={styles.required}>*</Text>
               </Text>
@@ -398,7 +403,7 @@ export default function ServicesManagementScreen() {
               </Pressable>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Add Area Modal */}
@@ -408,7 +413,10 @@ export default function ServicesManagementScreen() {
         transparent={true}
         onRequestClose={() => setShowAddAreaModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
           <View style={[styles.modalContent, { paddingBottom: insets.bottom }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add Service Area</Text>
@@ -417,7 +425,7 @@ export default function ServicesManagementScreen() {
               </Pressable>
             </View>
 
-            <ScrollView style={styles.modalScroll}>
+            <ScrollView style={styles.modalScroll} keyboardShouldPersistTaps="handled">
               <Text style={styles.label}>
                 City <Text style={styles.required}>*</Text>
               </Text>
@@ -475,7 +483,7 @@ export default function ServicesManagementScreen() {
               </Pressable>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

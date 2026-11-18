@@ -16,6 +16,7 @@ import {
   Alert,
   TextInput,
   Modal,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter, useLocalSearchParams } from 'expo-router';
@@ -525,49 +526,54 @@ export default function OwnerInsuranceClaimScreen() {
             onRequestClose={() => setAddDocModal(false)}
           >
             <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
-              <View style={styles.modalHeader}>
-                <TouchableOpacity onPress={() => setAddDocModal(false)}>
-                  <Ionicons name="close" size={24} color={colors.text.primary} />
-                </TouchableOpacity>
-                <Text style={styles.modalTitle}>Add Document</Text>
-                <View style={{ width: 24 }} />
-              </View>
-              <ScrollView contentContainerStyle={styles.modalContent}>
-                <Text style={styles.fieldLabel}>Document Type</Text>
-                <View style={styles.docTypeRow}>
-                  {['photo', 'quote', 'report', 'receipt', 'other'].map((type) => (
-                    <TouchableOpacity
-                      key={type}
-                      style={[styles.docTypeChip, docType === type && styles.docTypeChipActive]}
-                      onPress={() => setDocType(type)}
-                    >
-                      <Text
-                        style={[
-                          styles.docTypeChipText,
-                          docType === type && styles.docTypeChipTextActive,
-                        ]}
-                      >
-                        {type}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+              <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+                <View style={styles.modalHeader}>
+                  <TouchableOpacity onPress={() => setAddDocModal(false)}>
+                    <Ionicons name="close" size={24} color={colors.text.primary} />
+                  </TouchableOpacity>
+                  <Text style={styles.modalTitle}>Add Document</Text>
+                  <View style={{ width: 24 }} />
                 </View>
-                <Text style={styles.fieldLabel}>Document Title *</Text>
-                <TextInput
-                  style={styles.modalInput}
-                  value={docTitle}
-                  onChangeText={setDocTitle}
-                  placeholder="e.g. Fire damage photo — kitchen"
-                  placeholderTextColor={colors.gray[400]}
-                />
-                <TouchableOpacity
-                  style={[styles.submitButton, { marginTop: 24 }]}
-                  onPress={handlePickAndUpload}
+                <ScrollView
+                  contentContainerStyle={styles.modalContent}
+                  keyboardShouldPersistTaps="handled"
                 >
-                  <Ionicons name="image-outline" size={18} color={colors.rsa.white} />
-                  <Text style={styles.submitButtonText}>Pick Photo & Upload</Text>
-                </TouchableOpacity>
-              </ScrollView>
+                  <Text style={styles.fieldLabel}>Document Type</Text>
+                  <View style={styles.docTypeRow}>
+                    {['photo', 'quote', 'report', 'receipt', 'other'].map((type) => (
+                      <TouchableOpacity
+                        key={type}
+                        style={[styles.docTypeChip, docType === type && styles.docTypeChipActive]}
+                        onPress={() => setDocType(type)}
+                      >
+                        <Text
+                          style={[
+                            styles.docTypeChipText,
+                            docType === type && styles.docTypeChipTextActive,
+                          ]}
+                        >
+                          {type}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <Text style={styles.fieldLabel}>Document Title *</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    value={docTitle}
+                    onChangeText={setDocTitle}
+                    placeholder="e.g. Fire damage photo — kitchen"
+                    placeholderTextColor={colors.gray[400]}
+                  />
+                  <TouchableOpacity
+                    style={[styles.submitButton, { marginTop: 24 }]}
+                    onPress={handlePickAndUpload}
+                  >
+                    <Ionicons name="image-outline" size={18} color={colors.rsa.white} />
+                    <Text style={styles.submitButtonText}>Pick Photo & Upload</Text>
+                  </TouchableOpacity>
+                </ScrollView>
+              </KeyboardAvoidingView>
             </SafeAreaView>
           </Modal>
         </KeyboardAvoidingView>
