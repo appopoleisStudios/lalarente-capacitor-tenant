@@ -134,7 +134,7 @@ export default function ClosureMediationScreen() {
       ) : (
         <KeyboardAvoidingView
           style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           <ScrollView contentContainerStyle={styles.body} testID="closure-mediation-thread">
             <Text style={styles.lede}>
