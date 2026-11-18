@@ -1855,3 +1855,20 @@ then neither the owner nor the tenant could sign.
         navigation) — release gate step 4.
   - [x] Jest: `Select` bottom inset, `LeaseSignatureRow` expiry/failure.
   - [ ] Each sheet visually checked on the Android emulator (release APK).
+
+## CT7-048 🟠 Bottom tab labels under the Android navigation buttons (all roles)
+
+- **Role:** owner, tenant, vendor · **Platform:** Android (3-button navigation)
+  · Found in the Android lifecycle run (lc06 / lc08 screenshots).
+- **Today:** the owner, tenant and vendor tab bars had a fixed height 85 and
+  bottom padding 25. With edge-to-edge and 3-button navigation the inset is
+  ~48dp, so the labels (Home, Search, Payments, …) sat under the system
+  Back/Home/Recents buttons. `tenant-tabbar-guard` only checks that the labels
+  exist, so it passed.
+- **Acceptance criteria:**
+  - [x] Shared `useTabBarStyle()` sizes the bar from the device's bottom inset
+        (min 25, so devices without an inset are unchanged); all three layouts use it.
+  - [x] Jest: 48dp inset → padding 48 / height 108; no inset → 85/25; each
+        layout uses the hook and has no fixed `height: 85`.
+  - [ ] Owner, tenant and vendor tab bars visually checked on the Android
+        emulator (release APK, 3-button navigation).
