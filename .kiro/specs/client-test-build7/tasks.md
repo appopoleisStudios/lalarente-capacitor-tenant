@@ -1870,5 +1870,5 @@ then neither the owner nor the tenant could sign.
         (min 25, so devices without an inset are unchanged); all three layouts use it.
   - [x] Jest: 48dp inset → padding 48 / height 108; no inset → 85/25; each
         layout uses the hook and has no fixed `height: 85`.
-  - [ ] Owner, tenant and vendor tab bars visually checked on the Android
+  - [x] Owner, tenant and vendor tab bars visually checked on the Android
         emulator (release APK, 3-button navigation).

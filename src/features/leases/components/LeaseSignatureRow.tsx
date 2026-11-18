@@ -46,7 +46,7 @@ export default function LeaseSignatureRow({
         <Ionicons
           name={signedAt ? 'checkmark-circle' : 'time-outline'}
           size={20}
-          color={signedAt ? accentColor : colors.warning[600]}
+          color={signedAt ? accentColor : colors.warning[700]}
         />
         <View style={styles.text}>
           <Text style={styles.label}>{label}</Text>
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   text: { flex: 1 },
   label: { fontSize: 12, color: colors.gray[500] },
   name: { fontSize: 16, fontWeight: '600', color: colors.gray[800] },
-  status: { fontSize: 14, color: colors.warning[600], flexShrink: 0 },
+  status: { fontSize: 14, color: colors.warning[700], flexShrink: 0 },
   image: {
     width: 120,
     height: 60,
