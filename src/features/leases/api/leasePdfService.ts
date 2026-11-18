@@ -623,7 +623,9 @@ export async function generateAndUploadLeasePDF(
 
     const publicUrl = await uploadLeasePDF(leaseData.id, arrayBuffer);
 
-    await FileSystem.deleteAsync(uri, { idempotent: true });
+    // best effort: the PDF is uploaded, a leftover temp file must not make
+    // the caller treat it as failed and generate it again (CT7-052)
+    await FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {});
 
     return publicUrl;
   } catch (error) {

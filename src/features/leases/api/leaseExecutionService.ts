@@ -35,7 +35,9 @@ export const LEASE_PDF_MISSING_MESSAGE =
   'Lease agreement signed and activated! The lease PDF could not be created yet — tap "Generate PDF" on this screen to try again.';
 
 /** Attempts at generating the lease PDF before giving up (CT7-052). */
-export const PDF_ATTEMPTS = 3;
+// 2, not more: the upload inside already retries network errors, and the
+// owner waits on the signing screen meanwhile
+export const PDF_ATTEMPTS = 2;
 const PDF_RETRY_DELAY_MS = 1500;
 
 /**

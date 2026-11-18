@@ -1928,7 +1928,8 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   `contracts/<lease>/signed-lease.pdf` object for lease 25349598…, while the
   five earlier fixture leases that day each have one.
 - **Acceptance criteria:**
-  - [x] PDF generation is retried (3 attempts, 1.5 s apart); each failure is
+  - [x] PDF generation is retried (2 attempts, 1.5 s apart; the upload retries
+        network errors itself); temp-file cleanup can't fail it; each failure is
         reported to Sentry.
   - [x] `executeLease` returns `pdfGenerated`; when false (or the URL could not
         be saved) the owner is told to tap "Generate PDF".
