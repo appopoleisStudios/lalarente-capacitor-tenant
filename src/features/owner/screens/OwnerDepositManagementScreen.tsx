@@ -617,7 +617,7 @@ export default function OwnerDepositManagementScreen() {
           presentationStyle="pageSheet"
           onRequestClose={() => setDeductionModal(null)}
         >
-          <SafeAreaView style={styles.modalContainer} edges={['top']}>
+          <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
             <View style={styles.modalHeader}>
               <TouchableOpacity onPress={() => setDeductionModal(null)}>
                 <Ionicons name="close" size={24} color={colors.text.primary} />

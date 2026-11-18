@@ -11,7 +11,7 @@ import {
   Linking,
   Modal,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { PickerSheet, toDateString } from '@/src/shared/components/ui/DateField';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,6 +30,7 @@ const RSA = { blue: '#002395', gold: '#FFB81C' };
 type ActionType = 'approve' | 'decline' | 'complete' | null;
 
 export default function OwnerViewingDetailScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams();
   const viewingId = params.id as string;
@@ -272,7 +273,7 @@ export default function OwnerViewingDetailScreen() {
       >
         <View style={styles.modalOverlay}>
           <KeyboardAvoidingView style={{ justifyContent: 'flex-end' }}>
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, { paddingBottom: insets.bottom }]}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>
                   {actionType === 'approve' && 'Approve Viewing'}

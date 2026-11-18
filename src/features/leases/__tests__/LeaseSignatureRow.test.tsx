@@ -6,7 +6,7 @@
  */
 import React from 'react';
 import { Image, StyleSheet } from 'react-native';
-import { render, waitFor } from '@testing-library/react-native';
+import { render, waitFor, act } from '@testing-library/react-native';
 import LeaseSignatureRow from '../components/LeaseSignatureRow';
 
 const mockCreateSignedUrl = jest.fn();
@@ -18,6 +18,7 @@ const PUBLIC_URL = 'https://x.supabase.co/storage/v1/object/public/signatures/le
 
 describe('LeaseSignatureRow', () => {
   beforeEach(() => {
+    mockCreateSignedUrl.mockReset();
     mockCreateSignedUrl.mockResolvedValue({ data: { signedUrl: 'https://signed/tenant.png?t=1' } });
   });
 
@@ -32,7 +33,7 @@ describe('LeaseSignatureRow', () => {
     );
     const status = getByTestId('lease-signature-status-tenant');
     expect(StyleSheet.flatten(status.props.style).flexShrink).toBe(0);
-    const left = status.parent!.parent!.children[0] as any;
+    const left = getByTestId('lease-signature-left-tenant');
     expect(StyleSheet.flatten(left.props.style).flex).toBe(1);
   });
 
@@ -51,6 +52,39 @@ describe('LeaseSignatureRow', () => {
         uri: 'https://signed/tenant.png?t=1',
       })
     );
-    expect(mockCreateSignedUrl).toHaveBeenCalledWith('lease-1/tenant.png', 300);
+    expect(mockCreateSignedUrl).toHaveBeenCalledWith('lease-1/tenant.png', 3600);
+  });
+
+  it('shows no thumbnail when signing fails (the public URL cannot load)', async () => {
+    mockCreateSignedUrl.mockResolvedValue({ data: null, error: { message: 'denied' } });
+    const { UNSAFE_queryByType } = render(
+      <LeaseSignatureRow
+        label="Tenant"
+        name="You"
+        signedAt="2026-11-18T06:40:13Z"
+        signatureUrl={PUBLIC_URL}
+        accentColor="#007A4D"
+      />
+    );
+    await waitFor(() => expect(mockCreateSignedUrl).toHaveBeenCalled());
+    expect(UNSAFE_queryByType(Image)).toBeNull();
+  });
+
+  it('re-signs the URL when the image fails to load (expired link)', async () => {
+    const { UNSAFE_getByType } = render(
+      <LeaseSignatureRow
+        label="Tenant"
+        name="You"
+        signedAt="2026-11-18T06:40:13Z"
+        signatureUrl={PUBLIC_URL}
+        accentColor="#007A4D"
+      />
+    );
+    await waitFor(() => expect(UNSAFE_getByType(Image)).toBeTruthy());
+    mockCreateSignedUrl.mockResolvedValue({ data: { signedUrl: 'https://signed/tenant.png?t=2' } });
+    act(() => UNSAFE_getByType(Image).props.onError());
+    await waitFor(() =>
+      expect(UNSAFE_getByType(Image).props.source).toEqual({ uri: 'https://signed/tenant.png?t=2' })
+    );
   });
 });

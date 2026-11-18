@@ -13,7 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../../lib/supabase';
 import { EmptyState, FeaturePin, LoadingSpinner } from '@/src/shared/components';
 
@@ -94,6 +94,7 @@ const MONEY_HUB_LINKS: {
 ];
 
 export default function TenantPaymentScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [lease, setLease] = useState<Lease | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -589,7 +590,7 @@ export default function TenantPaymentScreen() {
       {/* EFT Payment Confirmation Modal */}
       <Modal visible={showPayModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
+          <View style={[styles.modalSheet, { paddingBottom: Math.max(40, insets.bottom + 8) }]}>
             <Text style={styles.modalTitle}>Confirm Payment</Text>
             {payingPayment && (
               <Text style={styles.modalAmount}>

@@ -10,7 +10,7 @@ import {
   TextInput,
   Modal,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/src/contexts/AuthContext';
@@ -35,6 +35,7 @@ const PROVINCES = [
 ];
 
 export default function ServicesManagementScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -310,7 +311,7 @@ export default function ServicesManagementScreen() {
         onRequestClose={() => setShowAddServiceModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { paddingBottom: insets.bottom }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add Service</Text>
               <Pressable onPress={() => setShowAddServiceModal(false)}>
@@ -408,7 +409,7 @@ export default function ServicesManagementScreen() {
         onRequestClose={() => setShowAddAreaModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { paddingBottom: insets.bottom }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add Service Area</Text>
               <Pressable onPress={() => setShowAddAreaModal(false)}>
