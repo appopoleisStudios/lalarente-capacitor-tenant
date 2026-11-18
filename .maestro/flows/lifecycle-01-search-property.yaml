@@ -314,17 +314,24 @@ appId: com.lalarente.app
     timeout: 20000
 
 # ── LC-5-27 before any lease exists: My Lease and Lease Journey offer Search Properties ───
+# CT7-039: the suite's tenant is also the client's test tenant, who may have a
+# real lease open on another property — then My Lease shows that lease and the
+# empty state can't be checked. Only checked when the tenant has no lease.
 - openLink: lalarenteapp://(tenant)/lease
 - extendedWaitUntil:
-    visible:
-      id: "tenant-lease-search-properties"
+    visible: "My Lease"
     timeout: 20000
-- tapOn:
-    id: "tenant-lease-search-properties"
-- extendedWaitUntil:
-    visible:
-      id: "tenant-search-input"
-    timeout: 20000
+- runFlow:
+    when:
+      visible:
+        id: "tenant-lease-search-properties"
+    commands:
+      - tapOn:
+          id: "tenant-lease-search-properties"
+      - extendedWaitUntil:
+          visible:
+            id: "tenant-search-input"
+          timeout: 20000
 - openLink: lalarenteapp://(tenant)/lease-journey
 - extendedWaitUntil:
     visible:

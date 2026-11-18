@@ -1,0 +1,26 @@
+# Cancel a DateField picker on either platform. iOS: our sheet's Cancel button
+# (`${PICKER_ID}-cancel`). Android: the native date/time dialog's Cancel.
+# Usage: - runFlow: { file: ../subflows/picker-cancel.yaml, env: { PICKER_ID: "<field testID>" } }
+appId: com.lalarente.app
+---
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: "${PICKER_ID}-cancel"
+          timeout: 10000
+      - tapOn:
+          id: "${PICKER_ID}-cancel"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible: "Cancel"
+          timeout: 10000
+      - tapOn: "Cancel"
+      - extendedWaitUntil:
+          notVisible: "Cancel"
+          timeout: 10000

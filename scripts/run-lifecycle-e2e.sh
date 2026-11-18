@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Run lifecycle E2E flows (viewing → application → holding deposit → lease →
 # inspection → maintenance → occupied) on the Android emulator (the client's
-# platform) with the installed release APK. DEVICE=<iOS sim UDID> still works.
+# platform) with the installed release APK. iOS: DEVICE=<simulator UDID>.
 # Usage: scripts/run-lifecycle-e2e.sh [flow-name ...]   (default: full chain)
 #   e.g. scripts/run-lifecycle-e2e.sh lifecycle-01-search-property
 # Needs .maestro/.env, and the APK under test installed on the emulator
@@ -11,10 +11,12 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 set -a; source .maestro/.env; set +a
 
-# Android emulator by default — every release check runs on Android.
-DEVICE="${DEVICE:-${SIM_UDID:-emulator-5554}}"
+# Android emulator by default — every release check runs on Android. iOS only
+# when asked for explicitly: DEVICE=<simulator UDID>.
+DEVICE="${DEVICE:-emulator-5554}"
+if adb -s "$DEVICE" get-state >/dev/null 2>&1; then PLATFORM=android; else PLATFORM=ios; fi
 restart_app() {
-  if [[ "$DEVICE" == emulator-* || "$DEVICE" == *:* ]]; then
+  if [[ "$PLATFORM" == android ]]; then
     adb -s "$DEVICE" shell am force-stop com.lalarente.app
   else
     xcrun simctl terminate "$DEVICE" com.lalarente.app 2>/dev/null
@@ -39,6 +41,20 @@ LC_TOKEN="${LC_TOKEN:-$(date +%m%d%H%M)}"
 
 OUT=".maestro/lifecycle-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$OUT"
+# Record what this run tested — the release gate needs the device and the APK.
+{
+  echo "device:   $DEVICE ($PLATFORM)"
+  if [[ "$PLATFORM" == android ]]; then
+    adb -s "$DEVICE" shell dumpsys package com.lalarente.app | grep -E "versionCode|lastUpdateTime" | sed 's/^ */apk:      /'
+  fi
+  echo "commit:   $(git rev-parse --short HEAD)"
+} | tee "$OUT/device.txt"
+# The photo steps pick the newest photo in the device library: make sure one exists.
+if [[ "$PLATFORM" == android ]]; then
+  adb -s "$DEVICE" push "$ROOT/.maestro/assets/e2e-photo.jpg" /sdcard/Pictures/e2e-photo.jpg >/dev/null
+  adb -s "$DEVICE" shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE \
+    -d file:///sdcard/Pictures/e2e-photo.jpg >/dev/null
+fi
 # Full chain. The viewing must have happened before the tenant can apply
 # (CT7-032), so 02a is followed by moving it into the past and 02d.
 [[ $# -eq 0 ]] && set -- lifecycle-01-search-property lifecycle-02a-viewing-approve \

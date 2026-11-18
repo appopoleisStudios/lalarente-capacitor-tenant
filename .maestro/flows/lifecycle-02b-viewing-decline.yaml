@@ -96,23 +96,19 @@ appId: com.lalarente.app
 - tapOn:
     id: "owner-viewing-modal-slot-date"
     index: 0
-- extendedWaitUntil:
-    visible:
-      id: "owner-viewing-slot-done"
-    timeout: 10000
-- tapOn:
-    id: "owner-viewing-slot-done"
+- runFlow:
+    file: ../subflows/picker-confirm.yaml
+    env:
+      PICKER_ID: "owner-viewing-slot"
 - waitForAnimationToEnd:
     timeout: 1500
 - tapOn:
     id: "owner-viewing-modal-slot-time"
     index: 0
-- extendedWaitUntil:
-    visible:
-      id: "owner-viewing-slot-cancel"
-    timeout: 10000
-- tapOn:
-    id: "owner-viewing-slot-cancel"
+- runFlow:
+    file: ../subflows/picker-cancel.yaml
+    env:
+      PICKER_ID: "owner-viewing-slot"
 - waitForAnimationToEnd:
     timeout: 1500
 - waitForAnimationToEnd:

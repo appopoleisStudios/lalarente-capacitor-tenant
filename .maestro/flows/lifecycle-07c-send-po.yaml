@@ -60,13 +60,11 @@ appId: com.lalarente.app
           centerElement: true
       - tapOn:
           id: "owner-send-po-time"
-      - extendedWaitUntil:
-          visible:
-            id: "owner-send-po-time-cancel"
-          timeout: 10000
       - takeScreenshot: lc07c-po-time-picker
-      - tapOn:
-          id: "owner-send-po-time-cancel"
+      - runFlow:
+          file: ../subflows/picker-cancel.yaml
+          env:
+            PICKER_ID: "owner-send-po-time"
       - waitForAnimationToEnd:
           timeout: 1000
 
@@ -167,13 +165,11 @@ appId: com.lalarente.app
           centerElement: true
       - tapOn:
           id: "owner-send-po-date"
-      - extendedWaitUntil:
-          visible:
-            id: "owner-send-po-date-done"
-          timeout: 10000
       - takeScreenshot: lc07c-po-date-picker
-      - tapOn:
-          id: "owner-send-po-date-done"
+      - runFlow:
+          file: ../subflows/picker-confirm.yaml
+          env:
+            PICKER_ID: "owner-send-po-date"
       - waitForAnimationToEnd:
           timeout: 1000
       - scrollUntilVisible:

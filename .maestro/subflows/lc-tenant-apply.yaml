@@ -152,22 +152,18 @@ appId: com.lalarente.app
           centerElement: true
       - tapOn:
           id: "tenant-apply-dob"
-      - extendedWaitUntil:
-          visible:
-            id: "tenant-apply-dob-cancel"
-          timeout: 10000
-      - tapOn:
-          id: "tenant-apply-dob-cancel"
+      - runFlow:
+          file: ../subflows/picker-cancel.yaml
+          env:
+            PICKER_ID: "tenant-apply-dob"
       - waitForAnimationToEnd:
           timeout: 1000
       - tapOn:
           id: "tenant-apply-dob"
-      - extendedWaitUntil:
-          visible:
-            id: "tenant-apply-dob-done"
-          timeout: 10000
-      - tapOn:
-          id: "tenant-apply-dob-done"
+      - runFlow:
+          file: ../subflows/picker-confirm.yaml
+          env:
+            PICKER_ID: "tenant-apply-dob"
       - waitForAnimationToEnd:
           timeout: 1000
 - waitForAnimationToEnd:
@@ -325,22 +321,18 @@ appId: com.lalarente.app
           centerElement: true
       - tapOn:
           id: "tenant-apply-employment-start"
-      - extendedWaitUntil:
-          visible:
-            id: "tenant-apply-employment-start-cancel"
-          timeout: 10000
-      - tapOn:
-          id: "tenant-apply-employment-start-cancel"
+      - runFlow:
+          file: ../subflows/picker-cancel.yaml
+          env:
+            PICKER_ID: "tenant-apply-employment-start"
       - waitForAnimationToEnd:
           timeout: 1000
       - tapOn:
           id: "tenant-apply-employment-start"
-      - extendedWaitUntil:
-          visible:
-            id: "tenant-apply-employment-start-done"
-          timeout: 10000
-      - tapOn:
-          id: "tenant-apply-employment-start-done"
+      - runFlow:
+          file: ../subflows/picker-confirm.yaml
+          env:
+            PICKER_ID: "tenant-apply-employment-start"
       - waitForAnimationToEnd:
           timeout: 1000
 - runFlow:

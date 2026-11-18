@@ -1,0 +1,26 @@
+# Confirm a DateField picker on either platform. iOS: our sheet's Done button
+# (`${PICKER_ID}-done`). Android: the native date/time dialog's OK.
+# Usage: - runFlow: { file: ../subflows/picker-confirm.yaml, env: { PICKER_ID: "<field testID>" } }
+appId: com.lalarente.app
+---
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: "${PICKER_ID}-done"
+          timeout: 10000
+      - tapOn:
+          id: "${PICKER_ID}-done"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible: "OK"
+          timeout: 10000
+      - tapOn: "OK"
+      - extendedWaitUntil:
+          notVisible: "OK"
+          timeout: 10000

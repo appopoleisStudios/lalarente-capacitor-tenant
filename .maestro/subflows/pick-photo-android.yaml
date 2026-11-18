@@ -1,0 +1,31 @@
+# Android system photo picker: pick the newest photo. No-op on iOS or when the
+# picker isn't showing (e.g. a permission alert instead). Single-select pickers
+# return on the tap; multi-select shows Done. Needs a photo on the device:
+# scripts/run-lifecycle-e2e.sh pushes one.
+appId: com.lalarente.app
+---
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible: "Albums"
+          timeout: 10000
+          optional: true
+      - runFlow:
+          when:
+            visible: "Albums"
+          commands:
+            - tapOn:
+                text: "Photo taken on.*"
+                index: 0
+            - waitForAnimationToEnd:
+                timeout: 1500
+            - runFlow:
+                when:
+                  visible: "Deselect all"
+                commands:
+                  - tapOn: "Done"
+            - extendedWaitUntil:
+                notVisible: "Albums"
+                timeout: 10000

@@ -60,12 +60,10 @@ appId: com.lalarente.app
 # ── dates default to next month + 12 months; open each picker and confirm ───
 - tapOn:
     id: "owner-lease-create-start-date"
-- extendedWaitUntil:
-    visible:
-      id: "owner-lease-create-start-date-done"
-    timeout: 20000
-- tapOn:
-    id: "owner-lease-create-start-date-done"
+- runFlow:
+    file: ../subflows/picker-confirm.yaml
+    env:
+      PICKER_ID: "owner-lease-create-start-date"
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -84,12 +82,10 @@ appId: com.lalarente.app
     timeout: 1000
 - tapOn:
     id: "owner-lease-create-end-date"
-- extendedWaitUntil:
-    visible:
-      id: "owner-lease-create-end-date-done"
-    timeout: 20000
-- tapOn:
-    id: "owner-lease-create-end-date-done"
+- runFlow:
+    file: ../subflows/picker-confirm.yaml
+    env:
+      PICKER_ID: "owner-lease-create-end-date"
 
 # ── LC-5-06 validation: rent is required ──────────────────────────────────
 - waitForAnimationToEnd:

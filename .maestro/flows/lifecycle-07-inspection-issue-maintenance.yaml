@@ -534,18 +534,23 @@ appId: com.lalarente.app
     visibilityPercentage: 60
 - tapOn:
     id: "maintenance-add-gallery"
+- runFlow: ../subflows/pick-photo-android.yaml
 - waitForAnimationToEnd:
     timeout: 2500
 # multi-select picker (out-of-process — Maestro cannot see inside it):
 # wait for it, tap the first tile, confirm with ✓
 - waitForAnimationToEnd:
     timeout: 4000
-- tapOn:
-    point: "50%,28%"
-- waitForAnimationToEnd:
-    timeout: 1500
-- tapOn:
-    point: "90%,15%"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: "50%,28%"
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - tapOn:
+          point: "90%,15%"
 - waitForAnimationToEnd:
     timeout: 3000
 # single-select pickers with editing show a crop screen instead
