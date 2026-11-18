@@ -1,5 +1,6 @@
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
+import { StatusBar } from 'expo-status-bar';
 import * as Sentry from '@sentry/react-native';
 import { AuthProvider, useAuth } from '@/src/contexts/AuthContext';
 import { env, RELEASE_VERSION } from '@/src/core/config/env';
@@ -62,6 +63,10 @@ function RootLayout() {
     <ErrorBoundary>
       <QueryProvider>
         <AuthProvider>
+          {/* Dark status-bar icons over the app's light screens. Android draws
+              edge-to-edge with a transparent status bar, and the default light
+              icons were invisible (clock, battery, signal) — CT7-049. */}
+          <StatusBar style="dark" />
           <RootLayoutNav />
         </AuthProvider>
       </QueryProvider>
