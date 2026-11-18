@@ -1,8 +1,10 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/src/shared/theme/colors';
+import { useTabBarStyle } from '@/src/shared/navigation/useTabBarStyle';
 
 export default function VendorLayout() {
+  const tabBarStyle = useTabBarStyle();
   return (
     <Tabs
       backBehavior="history"
@@ -10,14 +12,8 @@ export default function VendorLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.role.vendor.primary, // RSA Gold - Vendor primary
         tabBarInactiveTintColor: colors.gray[400],
-        tabBarStyle: {
-          backgroundColor: colors.background.default,
-          borderTopWidth: 1,
-          borderTopColor: colors.border.default,
-          height: 85,
-          paddingBottom: 25,
-          paddingTop: 8,
-        },
+        // sized from the device's bottom inset — clears Android nav buttons (CT7-048)
+        tabBarStyle: tabBarStyle,
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',
