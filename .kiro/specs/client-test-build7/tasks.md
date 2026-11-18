@@ -1898,3 +1898,19 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         field keeps it and the action buttons visible, first tap works —
         `android-keyboard-forms-guard` green (in `run-android-guards.sh`);
         lifecycle 01→05 green.
+
+## CT7-050 🟠 Tenant "Add Comment" stays under the keyboard (inspection report)
+
+- **Role:** tenant · **Platform:** Android · Found in the Android lifecycle run
+  (lifecycle-06, LC-6-14a: `inspection-tenant-comment-add` not found after typing).
+- **Today:** on the move-in inspection report the tenant types a comment and
+  the keyboard covers the "Add Comment" button. Android (adjustResize) only
+  scrolls the focused input into view, and the button sits below it, so the
+  tenant has to close the keyboard before they can post.
+- **Acceptance criteria:**
+  - [x] Shared `useRevealAboveKeyboard()`: when the keyboard opens while the
+        comment box is focused, the input + button block scrolls fully above it.
+  - [x] Jest: `revealOffset` maths; InspectionScreen wires the hook to the
+        comment input, the block and the ScrollView.
+  - [ ] Visually checked on the Android emulator (release APK): button visible
+        with the keyboard up; lifecycle-06 posts a comment with one tap.

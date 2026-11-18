@@ -10,6 +10,7 @@ import {
   TextInput,
   Image,
   Keyboard,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
@@ -23,6 +24,7 @@ import { exportInspectionReportPdf } from '../../owner/utils/pdfReports';
 import SignatureModal from '../../leases/components/SignatureModal';
 import PhotoMarkupModal from '../components/PhotoMarkupModal';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { useRevealAboveKeyboard } from '@/src/shared/hooks/useRevealAboveKeyboard';
 import { reportApiError } from '@/src/core/observability/sentry';
 import {
   InspectionWithRelations,
@@ -70,6 +72,8 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
   const [generalNotes, setGeneralNotes] = useState('');
   const [tenantComments, setTenantComments] = useState<TenantInspectionComment[]>([]);
   const [commentDraft, setCommentDraft] = useState('');
+  // keeps "Add Comment" above the keyboard while typing (CT7-050)
+  const commentReveal = useRevealAboveKeyboard();
   const [addingComment, setAddingComment] = useState(false);
   // Tenants review the report: they can add comments and raise issues but
   // cannot change or remove anything the owner recorded.
@@ -531,7 +535,10 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView>
+      {/* Edge-to-edge Android does not shrink the window for the keyboard, so
+          the ScrollView would run under it and could not scroll "Add Comment"
+          into view (CT7-050). */}
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.header}>
@@ -631,6 +638,9 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
           {/* handled: with the keyboard up, the first tap on "Add Comment" used to
               only dismiss the keyboard, so comments silently weren't posted */}
           <ScrollView
+            ref={commentReveal.scrollRef}
+            onScroll={commentReveal.onScroll}
+            scrollEventThrottle={16}
             style={styles.scrollView}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
@@ -933,13 +943,14 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                   </View>
                 ))}
                 {readOnly && inspection.status !== 'cancelled' && (
-                  <>
+                  <View ref={commentReveal.targetRef} collapsable={false}>
                     <TextInput
                       testID="inspection-tenant-comment-input"
                       style={[styles.notesInput, styles.roomNotes]}
                       placeholder="Something missing or not right in this room? Describe it here..."
                       value={commentDraft}
                       onChangeText={setCommentDraft}
+                      onFocus={commentReveal.armReveal}
                       multiline
                       numberOfLines={3}
                     />
@@ -961,7 +972,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                         </Text>
                       )}
                     </TouchableOpacity>
-                  </>
+                  </View>
                 )}
               </View>
             )}
