@@ -462,7 +462,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
   scrollView: { flex: 1 },
-  scrollContent: { padding: 16, paddingBottom: 120 },
+  scrollContent: { padding: 16 },
   section: { marginBottom: 24 },
   label: { fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 8 },
   input: {
@@ -560,10 +560,6 @@ const styles = StyleSheet.create({
   addMediaText: { fontSize: 12, color: '#6b7280', marginTop: 4, fontWeight: '600' },
   mediaHint: { fontSize: 11, color: '#9ca3af', marginTop: 8 },
   footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     padding: 16,
     backgroundColor: '#ffffff',
     borderTopWidth: 1,

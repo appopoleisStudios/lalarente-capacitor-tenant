@@ -790,7 +790,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
   scrollView: { flex: 1 },
-  scrollContent: { padding: 16, paddingBottom: 120 },
+  scrollContent: { padding: 16 },
   section: { marginBottom: 24 },
   label: { fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 8 },
   propertyCard: {
@@ -949,10 +949,6 @@ const styles = StyleSheet.create({
   vendorPickerTitle: { fontSize: 15, fontWeight: '700', color: '#111827' },
   vendorPickerSubtitle: { fontSize: 12, color: '#6b7280', marginTop: 2 },
   footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     padding: 16,
     backgroundColor: '#ffffff',
     borderTopWidth: 1,

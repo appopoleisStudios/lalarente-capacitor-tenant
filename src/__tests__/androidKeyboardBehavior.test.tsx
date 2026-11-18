@@ -92,6 +92,16 @@ export function verticalScrollViews(src: string): number {
   ).length;
 }
 
+/** Style names that pin a view to the bottom edge (absolute, bottom: 0, no top). */
+export function pinnedFooters(src: string): string[] {
+  return [...src.matchAll(/\n\s*(\w+): \{([^{}]*)\}/g)]
+    .filter(
+      ([, , body]) =>
+        /position: 'absolute'/.test(body) && /\bbottom: 0\b/.test(body) && !/\btop: /.test(body)
+    )
+    .map(([, name]) => name);
+}
+
 const SCREENS = FILES.filter((f) => rel(f).startsWith('app/') || rel(f).includes('/screens/'));
 
 describe('keyboard avoidance works on Android (CT7-051)', () => {
@@ -215,6 +225,23 @@ describe('keyboard avoidance works on Android (CT7-051)', () => {
       expect(src.indexOf(id)).toBeGreaterThan(open);
       expect(src.indexOf(id)).toBeLessThan(close);
     }
+  });
+
+  it('no footer is pinned over a keyboard-aware form (it hid the field being typed in)', () => {
+    // an absolute bottom footer covers the end of the scroll view, so a field
+    // scrolled "above the keyboard" was still behind Submit (device: Report Issue)
+    const offenders = FILES.filter((f) => {
+      const src = fs.readFileSync(f, 'utf8');
+      return /<KeyboardAwareScrollView\b/.test(src) && pinnedFooters(src).length > 0;
+    }).map(rel);
+    expect(offenders).toEqual([]);
+  });
+
+  it('the footer checker finds pinned footers, not full-screen overlays', () => {
+    const footer = `  footer: {\n    position: 'absolute',\n    bottom: 0,\n    left: 0,\n  },`;
+    const overlay = `  overlay: {\n    position: 'absolute',\n    top: 0,\n    bottom: 0,\n  },`;
+    expect(pinnedFooters(`const styles = StyleSheet.create({\n${footer}\n});`)).toEqual(['footer']);
+    expect(pinnedFooters(`const styles = StyleSheet.create({\n${overlay}\n});`)).toEqual([]);
   });
 
   it('the scroll checker counts vertical ScrollViews only', () => {
