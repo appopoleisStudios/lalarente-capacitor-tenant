@@ -15,7 +15,6 @@ import {
   Platform,
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
@@ -32,6 +31,7 @@ import { depositRefundApi } from '@/src/features/deposits/api/depositRefund.api'
 import { colors } from '@/src/shared/theme/colors';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const RSA_BLUE = '#002395';
 
@@ -193,7 +193,7 @@ export default function OwnerEarlyTerminationScreen() {
             <ActivityIndicator size="large" color={RSA_BLUE} />
           </View>
         ) : (
-          <ScrollView
+          <KeyboardAwareScrollView
             style={styles.scroll}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
@@ -348,7 +348,7 @@ export default function OwnerEarlyTerminationScreen() {
             )}
 
             <View style={{ height: 60 }} />
-          </ScrollView>
+          </KeyboardAwareScrollView>
         )}
 
         {/* Decline Modal */}

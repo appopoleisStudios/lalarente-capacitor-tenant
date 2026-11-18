@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
@@ -22,6 +21,7 @@ import { colors } from '@/src/shared/theme/colors';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { StyleSheet } from 'react-native';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const RSA = { blue: '#002395' };
 
@@ -178,7 +178,7 @@ export default function ReportMaintenanceScreen() {
           <View style={{ width: 40 }} />
         </View>
 
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -418,7 +418,7 @@ export default function ReportMaintenanceScreen() {
               📷 Photos & 🎥 Videos (max 50MB per video, 2min duration)
             </Text>
           </Animated.View>
-        </ScrollView>
+        </KeyboardAwareScrollView>
 
         {/* Submit Button */}
         <View style={styles.footer}>

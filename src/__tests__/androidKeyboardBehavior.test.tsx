@@ -80,6 +80,18 @@ const TOP_INPUT_ONLY: Record<string, string> = {
   'app/test-components.tsx': 'dev-only component playground',
 };
 
+/** Screens that scroll their own input + button block above the keyboard. */
+const OWN_REVEAL: Record<string, string> = {
+  'src/features/inspections/screens/InspectionScreen.tsx': 'useRevealAboveKeyboard (CT7-050)',
+};
+
+/** `<ScrollView …>` tags that scroll vertically (not `horizontal`, not a type argument). */
+export function verticalScrollViews(src: string): number {
+  return [...src.matchAll(/(?<![\w.])<ScrollView\b([^>]*)>/g)].filter(
+    (m) => !/\bhorizontal\b(?!\s*=\s*\{\s*false)/.test(m[1])
+  ).length;
+}
+
 const SCREENS = FILES.filter((f) => rel(f).startsWith('app/') || rel(f).includes('/screens/'));
 
 describe('keyboard avoidance works on Android (CT7-051)', () => {
@@ -171,6 +183,47 @@ describe('keyboard avoidance works on Android (CT7-051)', () => {
     expect(inputsWithoutKav(outside)).toBe(true);
     expect(inputsWithoutKav(wrapped)).toBe(false);
     expect(inputsWithoutKav('<Input value={v} />')).toBe(true);
+  });
+
+  it('forms inside a KeyboardAvoidingView scroll with KeyboardAwareScrollView', () => {
+    // the KAV shrinks the form after the keyboard is up; a plain ScrollView
+    // then leaves the field being typed in below the visible area (device run:
+    // Report Issue title hidden while typing)
+    const offenders = FILES.filter((f) => {
+      if (rel(f) in OWN_REVEAL) return false;
+      const src = fs.readFileSync(f, 'utf8');
+      return /<KeyboardAvoidingView\b/.test(src) && verticalScrollViews(src) > 0;
+    }).map(rel);
+    expect(offenders).toEqual([]);
+  });
+
+  it('the own-reveal allowlist still names screens that need it', () => {
+    for (const r of Object.keys(OWN_REVEAL)) {
+      expect(fs.readFileSync(path.join(ROOT, r), 'utf8')).toContain('useRevealAboveKeyboard');
+    }
+  });
+
+  it('tenant Report Issue fields scroll with KeyboardAwareScrollView', () => {
+    const src = fs.readFileSync(
+      path.join(ROOT, 'src/features/tenant/screens/TenantMaintenanceReportScreen.tsx'),
+      'utf8'
+    );
+    const open = src.indexOf('<KeyboardAwareScrollView');
+    const close = src.indexOf('</KeyboardAwareScrollView>');
+    expect(open).toBeGreaterThan(-1);
+    for (const id of ['maintenance-title-input', 'maintenance-description-input']) {
+      expect(src.indexOf(id)).toBeGreaterThan(open);
+      expect(src.indexOf(id)).toBeLessThan(close);
+    }
+  });
+
+  it('the scroll checker counts vertical ScrollViews only', () => {
+    expect(verticalScrollViews('<ScrollView style={s}>')).toBe(1);
+    expect(
+      verticalScrollViews('<ScrollView horizontal showsHorizontalScrollIndicator={false}>')
+    ).toBe(0);
+    expect(verticalScrollViews('const r = useRef<ScrollView>(null);')).toBe(0);
+    expect(verticalScrollViews('<KeyboardAwareScrollView style={s}>')).toBe(0);
   });
 
   it('the checker itself catches iOS-only and missing behaviors', () => {

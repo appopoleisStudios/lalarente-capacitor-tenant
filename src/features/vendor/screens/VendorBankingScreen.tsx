@@ -14,7 +14,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -26,6 +25,7 @@ import * as Haptics from 'expo-haptics';
 import { supabase } from '@/src/lib/supabase';
 import { FeaturePin } from '@/src/shared/components';
 import { colors } from '@/src/shared/theme/colors';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const BRAND_BLUE = colors.info[500]; // RSA Blue
 const BRAND_GREEN = colors.success[500]; // SA Green
@@ -245,7 +245,7 @@ export default function VendorBankingScreen() {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
@@ -392,7 +392,7 @@ export default function VendorBankingScreen() {
               share your banking information with third parties.
             </Text>
           </View>
-        </ScrollView>
+        </KeyboardAwareScrollView>
 
         {/* Footer */}
         <View style={styles.footer}>

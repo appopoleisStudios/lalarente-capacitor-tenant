@@ -26,7 +26,6 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -34,6 +33,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const RSA = { green: '#007A4D' };
 
@@ -331,14 +331,14 @@ export default function TenantInvoiceApprovalScreen() {
           <ActivityIndicator size="large" color={RSA.green} />
         </View>
       ) : hasInvoices ? (
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
           {invoices.map(renderInvoice)}
           <View style={{ height: 40 }} />
-        </ScrollView>
+        </KeyboardAwareScrollView>
       ) : (
         <View style={styles.emptyContainer}>
           <Ionicons name="receipt-outline" size={56} color={colors.gray[300]} />

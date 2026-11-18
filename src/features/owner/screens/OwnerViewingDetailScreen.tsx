@@ -3,7 +3,6 @@ import {
   Platform,
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
@@ -25,6 +24,7 @@ import {
   formatViewingDateTime,
 } from '../../properties/utils/viewingHelpers';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const RSA = { blue: '#002395', gold: '#FFB81C' };
 
@@ -292,7 +292,7 @@ export default function OwnerViewingDetailScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView
+            <KeyboardAwareScrollView
               style={styles.modalBody}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
@@ -446,7 +446,7 @@ export default function OwnerViewingDetailScreen() {
                   />
                 </View>
               )}
-            </ScrollView>
+            </KeyboardAwareScrollView>
 
             <View style={styles.modalFooter}>
               <TouchableOpacity
@@ -574,7 +574,7 @@ export default function OwnerViewingDetailScreen() {
           <View style={styles.placeholder} />
         </View>
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <KeyboardAwareScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Expired Banner */}
           {expired && (
             <View style={styles.expiredBanner}>
@@ -742,7 +742,7 @@ export default function OwnerViewingDetailScreen() {
               )}
             </View>
           </View>
-        </ScrollView>
+        </KeyboardAwareScrollView>
 
         {/* Action Buttons */}
         {isPending && !expired && (

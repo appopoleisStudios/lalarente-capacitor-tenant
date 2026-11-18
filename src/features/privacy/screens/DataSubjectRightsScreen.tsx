@@ -9,7 +9,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
@@ -32,6 +31,7 @@ import {
 } from '../api';
 import { reportApiError } from '@/src/core/observability/sentry';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 type Tab = 'access' | 'correction' | 'deletion';
 
@@ -413,7 +413,7 @@ export default function DataSubjectRightsScreen() {
           ))}
         </View>
 
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.content}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -504,7 +504,7 @@ export default function DataSubjectRightsScreen() {
           {renderRequestList()}
 
           <View style={{ height: 40 }} />
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   Pressable,
   Alert,
   ActivityIndicator,
@@ -23,6 +22,7 @@ import {
   VendorServiceArea,
   ServiceCategory,
 } from '@/src/features/vendor/api/profileApi';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const PROVINCES = [
   'Eastern Cape',
@@ -211,7 +211,10 @@ export default function ServicesManagementScreen() {
         <View style={styles.headerRight} />
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <KeyboardAwareScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+      >
         {/* Services Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -303,7 +306,7 @@ export default function ServicesManagementScreen() {
             </Text>
           </View>
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       {/* Add Service Modal */}
       <Modal
@@ -324,7 +327,7 @@ export default function ServicesManagementScreen() {
               </Pressable>
             </View>
 
-            <ScrollView style={styles.modalScroll} keyboardShouldPersistTaps="handled">
+            <KeyboardAwareScrollView style={styles.modalScroll} keyboardShouldPersistTaps="handled">
               <Text style={styles.label}>
                 Category <Text style={styles.required}>*</Text>
               </Text>
@@ -381,7 +384,7 @@ export default function ServicesManagementScreen() {
                 placeholder="e.g., per hour, per visit"
                 placeholderTextColor={colors.text.tertiary}
               />
-            </ScrollView>
+            </KeyboardAwareScrollView>
 
             <View style={styles.modalFooter}>
               <Pressable
@@ -425,7 +428,7 @@ export default function ServicesManagementScreen() {
               </Pressable>
             </View>
 
-            <ScrollView style={styles.modalScroll} keyboardShouldPersistTaps="handled">
+            <KeyboardAwareScrollView style={styles.modalScroll} keyboardShouldPersistTaps="handled">
               <Text style={styles.label}>
                 City <Text style={styles.required}>*</Text>
               </Text>
@@ -461,7 +464,7 @@ export default function ServicesManagementScreen() {
                   </Pressable>
                 ))}
               </View>
-            </ScrollView>
+            </KeyboardAwareScrollView>
 
             <View style={styles.modalFooter}>
               <Pressable

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   TextInput,
   StyleSheet,
@@ -23,6 +22,7 @@ import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAv
 import { supabase } from '../../../lib/supabase';
 import { leaseDraftStore, generateDraftId } from '../../leases/utils/leaseDraftStore';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const RSA = { blue: '#002395', gold: '#FFB81C' }; // Owner colors
 
@@ -251,7 +251,7 @@ export default function OwnerLeaseCreateScreen() {
             <View style={{ width: 24 }} />
           </View>
 
-          <ScrollView
+          <KeyboardAwareScrollView
             style={styles.scrollView}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
@@ -502,7 +502,7 @@ export default function OwnerLeaseCreateScreen() {
                 <Text style={styles.createButtonText}>Review Lease Agreement</Text>
               </TouchableOpacity>
             </View>
-          </ScrollView>
+          </KeyboardAwareScrollView>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

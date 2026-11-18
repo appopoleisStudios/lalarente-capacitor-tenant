@@ -15,7 +15,6 @@ import React, { useState, useCallback } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -25,6 +24,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { reportApiError } from '@/src/core/observability/sentry';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const RSA = { blue: '#002395' };
 
@@ -257,7 +257,7 @@ export default function OwnerPODetailScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -660,7 +660,7 @@ export default function OwnerPODetailScreen() {
           )}
 
           <View style={{ height: 100 }} />
-        </ScrollView>
+        </KeyboardAwareScrollView>
 
         {/* Date / time pickers — bottom sheet with Done on iOS, dialog on Android */}
         <PickerSheet

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
@@ -26,6 +25,7 @@ import { supabase } from '@/src/lib/supabase';
 import { colors } from '@/src/shared/theme/colors';
 import { StyleSheet } from 'react-native';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const RSA = { green: '#007A4D' }; // Tenant primary: RSA Green
 
@@ -323,7 +323,7 @@ export default function TenantMaintenanceReportScreen() {
           <View style={{ width: 40 }} />
         </View>
 
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -722,7 +722,7 @@ export default function TenantMaintenanceReportScreen() {
               )}
             </View>
           </Animated.View>
-        </ScrollView>
+        </KeyboardAwareScrollView>
 
         {/* Submit Button */}
         <View style={styles.footer}>

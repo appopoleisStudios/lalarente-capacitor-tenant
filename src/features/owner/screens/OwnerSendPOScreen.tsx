@@ -4,15 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { PickerSheet } from '@/src/shared/components/ui/DateField';
@@ -21,6 +13,7 @@ import { supabase } from '@/src/lib/supabase';
 import { sendPOToVendor } from '@/src/features/maintenance/api/purchase-orders/poActions.api';
 import { reportApiError } from '@/src/core/observability/sentry';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 export default function OwnerSendPOScreen() {
   const router = useRouter();
@@ -141,7 +134,7 @@ export default function OwnerSendPOScreen() {
           <View style={styles.headerButton} />
         </View>
 
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.container}
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
@@ -269,7 +262,7 @@ export default function OwnerSendPOScreen() {
           >
             <Text style={styles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

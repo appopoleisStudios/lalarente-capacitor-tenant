@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
@@ -18,6 +17,7 @@ import { supabase } from '../../../lib/supabase';
 import type { InspectionType } from '../types';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const RSA = { blue: '#002395', gold: '#FFB81C' };
 
@@ -204,7 +204,7 @@ export default function OwnerScheduleInspectionScreen() {
           <View style={{ width: 32 }} />
         </View>
 
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
@@ -336,7 +336,7 @@ export default function OwnerScheduleInspectionScreen() {
           </TouchableOpacity>
 
           <View style={{ height: 40 }} />
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

@@ -10,7 +10,6 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +23,7 @@ import {
 } from '../../leases/api/leasePdfService';
 import { leaseDraftStore } from '../../leases/utils/leaseDraftStore';
 import { colors } from '@/src/shared/theme/colors';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const RSA = { blue: '#002395', gold: '#FFB81C' };
 
@@ -332,7 +332,7 @@ export default function OwnerLeaseReviewScreen() {
                 <Ionicons name="close" size={24} color="#333" />
               </TouchableOpacity>
             </View>
-            <ScrollView
+            <KeyboardAwareScrollView
               style={styles.modalScroll}
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode="on-drag"
@@ -463,7 +463,7 @@ export default function OwnerLeaseReviewScreen() {
                 value={customClauses}
                 onChangeText={setCustomClauses}
               />
-            </ScrollView>
+            </KeyboardAwareScrollView>
             <TouchableOpacity
               testID="owner-lease-review-clauses-save"
               style={styles.doneBtn}

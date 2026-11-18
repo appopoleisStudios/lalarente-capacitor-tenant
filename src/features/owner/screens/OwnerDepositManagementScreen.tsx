@@ -12,7 +12,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
@@ -39,6 +38,7 @@ import {
 import { colors } from '@/src/shared/theme/colors';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -361,7 +361,7 @@ export default function OwnerDepositManagementScreen() {
           <Text style={styles.title}>Deposit Management</Text>
         </View>
 
-        <ScrollView contentContainerStyle={styles.content}>
+        <KeyboardAwareScrollView contentContainerStyle={styles.content}>
           {/* Summary Cards */}
           <View style={styles.summaryRow}>
             <View style={[styles.summaryCard, { flex: 1 }]}>
@@ -609,7 +609,7 @@ export default function OwnerDepositManagementScreen() {
               );
             })
           )}
-        </ScrollView>
+        </KeyboardAwareScrollView>
 
         {/* Add Deduction Modal */}
         <Modal
@@ -627,7 +627,7 @@ export default function OwnerDepositManagementScreen() {
                 <Text style={styles.modalTitle}>Add Deposit Deduction</Text>
                 <View style={{ width: 24 }} />
               </View>
-              <ScrollView
+              <KeyboardAwareScrollView
                 contentContainerStyle={styles.modalContent}
                 keyboardShouldPersistTaps="handled"
               >
@@ -694,7 +694,7 @@ export default function OwnerDepositManagementScreen() {
                     </>
                   )}
                 </TouchableOpacity>
-              </ScrollView>
+              </KeyboardAwareScrollView>
             </KeyboardAvoidingView>
           </SafeAreaView>
         </Modal>

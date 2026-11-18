@@ -23,6 +23,7 @@ import { styles } from './AddPropertyScreen.styles';
 import { reportApiError } from '@/src/core/observability/sentry';
 import { validate3dTourUrl } from '@/src/features/properties/utils/validate3dTourUrl';
 import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 interface PropertyForm {
   title: string;
@@ -303,7 +304,7 @@ export default function AddPropertyScreen() {
             </AnimatedButton>
           </View>
 
-          <ScrollView
+          <KeyboardAwareScrollView
             ref={scrollRef}
             style={styles.scrollView}
             contentContainerStyle={styles.scrollContent}
@@ -757,7 +758,7 @@ export default function AddPropertyScreen() {
                 </Text>
               </View>
             </AnimatedButton>
-          </ScrollView>
+          </KeyboardAwareScrollView>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

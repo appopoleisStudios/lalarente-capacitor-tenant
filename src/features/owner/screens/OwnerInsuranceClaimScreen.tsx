@@ -10,7 +10,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
@@ -37,6 +36,7 @@ import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAv
 import { reportApiError } from '@/src/core/observability/sentry';
 import { DateField } from '@/src/shared/components/ui/DateField';
 import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -333,7 +333,10 @@ export default function OwnerInsuranceClaimScreen() {
             </View>
           </View>
 
-          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <KeyboardAwareScrollView
+            contentContainerStyle={styles.content}
+            keyboardShouldPersistTaps="handled"
+          >
             {/* Claim Number (if assigned) */}
             {claim.claim_number && (
               <View style={styles.claimNumberCard}>
@@ -516,7 +519,7 @@ export default function OwnerInsuranceClaimScreen() {
                 })}
               </View>
             </View>
-          </ScrollView>
+          </KeyboardAwareScrollView>
 
           {/* Add Document Modal */}
           <Modal
@@ -534,7 +537,7 @@ export default function OwnerInsuranceClaimScreen() {
                   <Text style={styles.modalTitle}>Add Document</Text>
                   <View style={{ width: 24 }} />
                 </View>
-                <ScrollView
+                <KeyboardAwareScrollView
                   contentContainerStyle={styles.modalContent}
                   keyboardShouldPersistTaps="handled"
                 >
@@ -572,7 +575,7 @@ export default function OwnerInsuranceClaimScreen() {
                     <Ionicons name="image-outline" size={18} color={colors.rsa.white} />
                     <Text style={styles.submitButtonText}>Pick Photo & Upload</Text>
                   </TouchableOpacity>
-                </ScrollView>
+                </KeyboardAwareScrollView>
               </KeyboardAvoidingView>
             </SafeAreaView>
           </Modal>
@@ -593,7 +596,10 @@ export default function OwnerInsuranceClaimScreen() {
           <Text style={styles.title}>New Insurance Claim</Text>
         </View>
 
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <KeyboardAwareScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Policy Selection */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Select Policy</Text>
@@ -709,7 +715,7 @@ export default function OwnerInsuranceClaimScreen() {
               </>
             )}
           </TouchableOpacity>
-        </ScrollView>
+        </KeyboardAwareScrollView>
 
         {/* Policy Picker Modal */}
         <Modal
@@ -726,7 +732,7 @@ export default function OwnerInsuranceClaimScreen() {
               <Text style={styles.modalTitle}>Select Policy</Text>
               <View style={{ width: 24 }} />
             </View>
-            <ScrollView>
+            <KeyboardAwareScrollView>
               {policies.map((p) => (
                 <TouchableOpacity
                   key={p.id}
@@ -752,7 +758,7 @@ export default function OwnerInsuranceClaimScreen() {
                   )}
                 </TouchableOpacity>
               ))}
-            </ScrollView>
+            </KeyboardAwareScrollView>
           </SafeAreaView>
         </Modal>
       </KeyboardAvoidingView>

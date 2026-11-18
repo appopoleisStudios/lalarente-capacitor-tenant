@@ -31,6 +31,7 @@ import {
 import { ErrorState } from '@/src/shared/components/ui/ErrorState';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { goBack } from '@/src/shared/navigation/goBack';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 export default function TenantVerificationScreen() {
   const router = useRouter();
@@ -250,7 +251,7 @@ export default function TenantVerificationScreen() {
 
   if (mode === 'select') {
     return (
-      <ScrollView
+      <KeyboardAwareScrollView
         style={styles.container}
         // header used to sit under the status bar (back arrow untappable)
         contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top }]}
@@ -307,14 +308,14 @@ export default function TenantVerificationScreen() {
             <Text style={styles.rejectButtonText}>Work Needs Fixes</Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     );
   }
 
   if (mode === 'approve') {
     return (
       <KeyboardAvoidingView>
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.container}
           // header used to sit under the status bar (back arrow untappable)
           contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top }]}
@@ -411,7 +412,7 @@ export default function TenantVerificationScreen() {
               <Text style={styles.submitButtonText}>Confirm - Work is Complete</Text>
             )}
           </TouchableOpacity>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </KeyboardAvoidingView>
     );
   }
@@ -419,7 +420,7 @@ export default function TenantVerificationScreen() {
   // Reject mode
   return (
     <KeyboardAvoidingView>
-      <ScrollView
+      <KeyboardAwareScrollView
         style={styles.container}
         // header used to sit under the status bar (back arrow untappable)
         contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top }]}
@@ -525,7 +526,7 @@ export default function TenantVerificationScreen() {
             <Text style={styles.submitButtonText}>Submit Issues for Vendor</Text>
           )}
         </TouchableOpacity>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </KeyboardAvoidingView>
   );
 }

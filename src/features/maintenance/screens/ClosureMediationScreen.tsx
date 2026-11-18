@@ -13,7 +13,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -22,6 +21,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 type PartyRole = 'owner' | 'tenant' | 'vendor';
 
@@ -136,7 +136,10 @@ export default function ClosureMediationScreen() {
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          <ScrollView contentContainerStyle={styles.body} testID="closure-mediation-thread">
+          <KeyboardAwareScrollView
+            contentContainerStyle={styles.body}
+            testID="closure-mediation-thread"
+          >
             <Text style={styles.lede}>
               Owner, tenant, and vendor can talk here after a job is disputed three times. This is
               not a rent payment dispute.
@@ -152,7 +155,7 @@ export default function ClosureMediationScreen() {
                 </View>
               ))
             )}
-          </ScrollView>
+          </KeyboardAwareScrollView>
           <View style={styles.composer}>
             <TextInput
               style={styles.input}

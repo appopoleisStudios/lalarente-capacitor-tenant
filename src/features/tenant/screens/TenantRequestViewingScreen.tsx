@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
@@ -16,6 +15,7 @@ import { PickerSheet, toDateString } from '@/src/shared/components/ui/DateField'
 import { viewingsApi } from '../../properties/api/viewingsApi';
 import { supabase } from '../../../lib/supabase';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const RSA = { green: '#007A4D', gold: '#FFB81C' };
 
@@ -205,7 +205,7 @@ export default function TenantRequestViewingScreen() {
             </View>
           ) : existingViewing ? (
             /* Existing Viewing Status Card */
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            <KeyboardAwareScrollView style={styles.content} showsVerticalScrollIndicator={false}>
               <View style={styles.propertyCard}>
                 <Ionicons name="home" size={24} color={RSA.green} />
                 <View style={styles.propertyInfo}>
@@ -309,11 +309,11 @@ export default function TenantRequestViewingScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
-            </ScrollView>
+            </KeyboardAwareScrollView>
           ) : (
             /* Normal Request Form */
             <>
-              <ScrollView
+              <KeyboardAwareScrollView
                 style={styles.content}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
@@ -404,7 +404,7 @@ export default function TenantRequestViewingScreen() {
                     <Text style={styles.tipText}>Check neighborhood and amenities</Text>
                   </View>
                 </View>
-              </ScrollView>
+              </KeyboardAwareScrollView>
 
               {/* Submit Button */}
               <View style={styles.footer}>

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
@@ -19,6 +18,7 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 import { persistFicaDocField } from '../utils/persistFicaDoc';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const RSA = { green: '#007A4D', blue: '#002395' };
 
@@ -481,7 +481,7 @@ export default function TenantProfileScreen() {
             </TouchableOpacity>
           </View>
 
-          <ScrollView
+          <KeyboardAwareScrollView
             style={styles.scrollView}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
@@ -804,7 +804,7 @@ export default function TenantProfileScreen() {
               <Ionicons name="log-out-outline" size={20} color="#F44336" />
               <Text style={styles.signOutText}>Sign Out</Text>
             </TouchableOpacity>
-          </ScrollView>
+          </KeyboardAwareScrollView>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

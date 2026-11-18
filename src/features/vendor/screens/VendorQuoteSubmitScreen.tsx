@@ -11,7 +11,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -21,6 +20,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { goBack } from '@/src/shared/navigation/goBack';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const RSA = { blue: '#002395', green: '#007A4D', gold: '#FFB81C', red: '#DE3831' };
 
@@ -601,7 +601,7 @@ export default function VendorQuoteSubmitScreen() {
             </TouchableOpacity>
           </View>
         )}
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           keyboardDismissMode="on-drag"
@@ -883,7 +883,7 @@ export default function VendorQuoteSubmitScreen() {
           </View>
 
           <View style={{ height: 120 }} />
-        </ScrollView>
+        </KeyboardAwareScrollView>
         {/* Bottom Action Bar */}
         <View style={styles.bottomBar}>
           <TouchableOpacity

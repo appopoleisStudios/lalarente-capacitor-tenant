@@ -9,7 +9,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   TextInput,
   StyleSheet,
@@ -27,6 +26,7 @@ import {
 } from '@/src/features/leases/api/leaseTermination.api';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { goBack } from '@/src/shared/navigation/goBack';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 export default function TenantEarlyTerminationScreen() {
   const router = useRouter();
@@ -148,7 +148,7 @@ export default function TenantEarlyTerminationScreen() {
           <View style={{ width: 40 }} />
         </View>
 
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.content}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -249,7 +249,7 @@ export default function TenantEarlyTerminationScreen() {
           )}
 
           <View style={{ height: 100 }} />
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

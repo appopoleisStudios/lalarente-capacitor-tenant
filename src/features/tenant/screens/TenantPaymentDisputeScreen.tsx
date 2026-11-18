@@ -8,7 +8,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   TextInput,
   StyleSheet,
@@ -27,6 +26,7 @@ import {
 } from '@/src/features/payments/api/paymentDisputes.api';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { goBack } from '@/src/shared/navigation/goBack';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const DISPUTE_REASONS: { value: DisputeReason; label: string; icon: string }[] = [
   { value: 'incorrect_amount', label: 'Incorrect Amount', icon: 'calculator-outline' },
@@ -204,7 +204,7 @@ export default function TenantPaymentDisputeScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.content}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -336,7 +336,7 @@ export default function TenantPaymentDisputeScreen() {
           )}
 
           <View style={{ height: 100 }} />
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

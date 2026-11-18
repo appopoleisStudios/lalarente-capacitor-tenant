@@ -10,7 +10,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
@@ -24,6 +23,7 @@ import { leaseExpiryApi, LeaseExpiryInfo } from '@/src/features/leases/api/lease
 import { leaseRenewalApi, RenewalNegotiation } from '@/src/features/leases/api/leaseRenewal.api';
 import { colors } from '@/src/shared/theme/colors';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -285,7 +285,10 @@ export default function TenantLeaseRenewalScreen() {
           </View>
         </View>
 
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <KeyboardAwareScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Expiry Countdown */}
           <View
             style={[
@@ -629,7 +632,7 @@ export default function TenantLeaseRenewalScreen() {
               })}
             </View>
           )}
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

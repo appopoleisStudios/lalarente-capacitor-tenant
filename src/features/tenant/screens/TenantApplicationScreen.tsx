@@ -23,6 +23,7 @@ import { propertiesApi } from '../../properties/api/propertiesApi';
 import { uploadFile } from '../../../lib/storage';
 import type { PropertyWithRelations } from '../../properties/api/propertiesApi';
 import { DateField } from '@/src/shared/components/ui/DateField';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const RSA = { green: '#007A4D', blue: '#002395' };
 
@@ -612,7 +613,7 @@ export default function TenantApplicationScreen() {
           <Text style={styles.propertyRent}>R {property.rent_amount?.toLocaleString()}/month</Text>
         </View>
 
-        <ScrollView
+        <KeyboardAwareScrollView
           ref={scrollRef}
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
@@ -1098,7 +1099,7 @@ export default function TenantApplicationScreen() {
               </View>
             </View>
           )}
-        </ScrollView>
+        </KeyboardAwareScrollView>
 
         {/* Action Buttons */}
         <View style={styles.actionBar}>
