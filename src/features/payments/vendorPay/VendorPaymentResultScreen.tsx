@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, SafeAreaView, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, Linking } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '@/src/lib/supabase';
 import { PaymentStepsIndicator } from '@/src/shared/components/ui/PaymentStepsIndicator';
@@ -136,7 +137,7 @@ export function VendorPaymentResultScreen({ config }: { config: VendorPayConfig 
 
   if (error && !status) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }} edges={['top']}>
         <ErrorState
           title="Payment Status"
           message={error}
@@ -148,7 +149,10 @@ export function VendorPaymentResultScreen({ config }: { config: VendorPayConfig 
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: isSuccess ? '#F0FDF4' : '#FEF2F2' }}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: isSuccess ? '#F0FDF4' : '#FEF2F2' }}
+      edges={['top']}
+    >
       <PaymentStepsIndicator current={isSuccess ? 2 : 1} error={!isSuccess} />
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
         <View

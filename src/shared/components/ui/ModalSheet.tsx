@@ -5,13 +5,13 @@ import {
   Modal,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   Dimensions,
   ScrollView,
   ViewStyle,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -35,6 +35,8 @@ export function ModalSheet({
   showCloseButton = true,
   style,
 }: ModalSheetProps) {
+  // Keep the sheet's last row above the Android navigation bar (edge-to-edge).
+  const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       {/* Lift the sheet above the keyboard — text inputs (e.g. "Request
@@ -43,9 +45,12 @@ export function ModalSheet({
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <SafeAreaView style={styles.safeArea}>
+        <View style={styles.safeArea}>
           <TouchableOpacity style={styles.backdrop} onPress={onClose} activeOpacity={1} />
-          <View style={[styles.sheet, { maxHeight }, style]}>
+          <View
+            testID="modal-sheet"
+            style={[styles.sheet, { maxHeight, paddingBottom: insets.bottom }, style]}
+          >
             {/* Handle */}
             <View style={styles.handleContainer}>
               <View style={styles.handle} />
@@ -77,7 +82,7 @@ export function ModalSheet({
               {children}
             </ScrollView>
           </View>
-        </SafeAreaView>
+        </View>
       </KeyboardAvoidingView>
     </Modal>
   );
