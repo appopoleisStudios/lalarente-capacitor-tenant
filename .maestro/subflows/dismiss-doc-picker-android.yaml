@@ -1,0 +1,18 @@
+# Android system document picker (DocumentsUI) has no Cancel button: close it
+# with Back. No-op on iOS (its picker is closed by tapping Cancel) or when no
+# picker is showing.
+appId: com.lalarente.app
+---
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - runFlow:
+          when:
+            visible: "(Recent|Recents|No items|Browse.*)"
+          commands:
+            - back
+            - waitForAnimationToEnd:
+                timeout: 2000

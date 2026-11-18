@@ -406,6 +406,7 @@ appId: com.lalarente.app
           centerElement: true
       - tapOn:
           id: "tenant-apply-id-doc-upload"
+      - runFlow: ../subflows/dismiss-doc-picker-android.yaml
       - extendedWaitUntil:
           visible: "Upload Document"
           timeout: 15000
@@ -453,11 +454,16 @@ appId: com.lalarente.app
           centerElement: true
       - tapOn:
           id: "tenant-apply-income-doc-add-new"
+      - runFlow: ../subflows/dismiss-doc-picker-android.yaml
       - waitForAnimationToEnd:
           timeout: 3000
-      - tapOn:
-          text: "Cancel"
-          optional: true
+      - runFlow:
+          when:
+            platform: iOS
+          commands:
+            - tapOn:
+                text: "Cancel"
+                optional: true
       - waitForAnimationToEnd:
           timeout: 2000
 - runFlow:
@@ -483,11 +489,16 @@ appId: com.lalarente.app
           centerElement: true
       - tapOn:
           id: "tenant-apply-income-doc-upload"
+      - runFlow: ../subflows/dismiss-doc-picker-android.yaml
       - waitForAnimationToEnd:
           timeout: 3000
-      - tapOn:
-          text: "Cancel"
-          optional: true
+      - runFlow:
+          when:
+            platform: iOS
+          commands:
+            - tapOn:
+                text: "Cancel"
+                optional: true
       - waitForAnimationToEnd:
           timeout: 2000
 - runFlow:
@@ -513,11 +524,16 @@ appId: com.lalarente.app
           centerElement: true
       - tapOn:
           id: "tenant-apply-reference-doc-upload"
+      - runFlow: ../subflows/dismiss-doc-picker-android.yaml
       - waitForAnimationToEnd:
           timeout: 3000
-      - tapOn:
-          text: "Cancel"
-          optional: true
+      - runFlow:
+          when:
+            platform: iOS
+          commands:
+            - tapOn:
+                text: "Cancel"
+                optional: true
       - waitForAnimationToEnd:
           timeout: 2000
 - waitForAnimationToEnd:
