@@ -8,7 +8,6 @@ import {
   StyleSheet,
   Alert,
   Linking,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -16,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { notificationsApi } from '../../notifications/api/notificationsApi';
 import SignatureModal from '../../leases/components/SignatureModal';
+import LeaseSignatureRow from '../../leases/components/LeaseSignatureRow';
 import { uploadSignature, getLeaseDocumentUrl } from '../../leases/api/storageService';
 import { executeLease } from '../../leases/api/leaseExecutionService';
 import { regenerateLeasePDF } from '../../leases/api/regenerateLeasePDF';
@@ -697,17 +697,19 @@ export default function OwnerLeaseDetailScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Signatures</Text>
             <View style={styles.card}>
-              <SignatureRow
+              <LeaseSignatureRow
                 label="Owner"
                 name="You"
                 signedAt={lease.owner_signed_at}
                 signatureUrl={lease.owner_signature_url}
+                accentColor={RSA.blue}
               />
-              <SignatureRow
+              <LeaseSignatureRow
                 label="Tenant"
                 name={lease.tenant?.full_name || 'Tenant'}
                 signedAt={lease.tenant_signed_at}
                 signatureUrl={lease.tenant_signature_url}
+                accentColor={RSA.blue}
               />
             </View>
           </View>
@@ -834,42 +836,6 @@ const DetailRow = ({ icon, label, value }: { icon: any; label: string; value: st
       <Text style={styles.detailLabel}>{label}</Text>
     </View>
     <Text style={styles.detailValue}>{value}</Text>
-  </View>
-);
-
-const SignatureRow = ({
-  label,
-  name,
-  signedAt,
-  signatureUrl,
-}: {
-  label: string;
-  name: string;
-  signedAt: string | null;
-  signatureUrl?: string | null;
-}) => (
-  <View style={styles.signatureRow}>
-    <View style={styles.signatureLeft}>
-      <Ionicons
-        name={signedAt ? 'checkmark-circle' : 'time-outline'}
-        size={20}
-        color={signedAt ? RSA.blue : '#FFA500'}
-      />
-      <View style={{ flex: 1 }}>
-        <Text style={styles.signatureLabel}>{label}</Text>
-        <Text style={styles.signatureName}>{name}</Text>
-        {signatureUrl && (
-          <Image
-            source={{ uri: signatureUrl }}
-            style={styles.signatureImage}
-            resizeMode="contain"
-          />
-        )}
-      </View>
-    </View>
-    <Text style={[styles.signatureStatus, signedAt && styles.signatureStatusSigned]}>
-      {signedAt ? `Signed ${new Date(signedAt).toLocaleDateString()}` : 'Pending'}
-    </Text>
   </View>
 );
 
@@ -1122,45 +1088,6 @@ const styles = StyleSheet.create({
   documentSubtitle: {
     fontSize: 14,
     color: '#666',
-  },
-  signatureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  signatureLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  signatureLabel: {
-    fontSize: 12,
-    color: '#999',
-  },
-  signatureName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  signatureStatus: {
-    fontSize: 14,
-    color: '#FFA500',
-  },
-  signatureStatusSigned: {
-    color: RSA.blue,
-  },
-  signatureImage: {
-    width: 120,
-    height: 60,
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 4,
-    backgroundColor: '#FAFAFA',
   },
   inspectionButton: {
     flexDirection: 'row',
