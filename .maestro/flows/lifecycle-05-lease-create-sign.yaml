@@ -331,6 +331,17 @@ appId: com.lalarente.app
 - inputText: "LC-maint ${LC_TOKEN} tenant maintains the garden"
 - tapOn:
     id: "lease-clause-edit-save"
+- waitForAnimationToEnd:
+    timeout: 1500
+# Android: after a long inputText the keyboard is still animating away and
+# the tap can land where Save was a moment ago — re-tap only if still editing
+- runFlow:
+    when:
+      visible:
+        id: "lease-clause-edit-save"
+    commands:
+      - tapOn:
+          id: "lease-clause-edit-save"
 - extendedWaitUntil:
     visible: "Edited"
     timeout: 10000
