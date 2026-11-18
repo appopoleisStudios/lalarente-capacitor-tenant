@@ -14,6 +14,12 @@ OUT=".maestro/android-guards-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$OUT"
 # 3-button navigation: the tallest nav bar, so anything drawn under it fails.
 adb -s "$DEVICE" shell cmd overlay enable com.android.internal.systemui.navbar.threebutton >/dev/null 2>&1
+sleep 2
+if [[ "$(adb -s "$DEVICE" shell settings get secure navigation_mode | tr -d '\r')" != 0 ]]; then
+  echo "✗ could not switch $DEVICE to 3-button navigation — guards would not catch nav-bar overlap" >&2
+  exit 1
+fi
+echo "⚠ clears the app and resets the lifecycle fixture — don't run during a lifecycle run"
 
 GUARDS=(
   tenant-tabbar-guard        # 5 canonical tenant tabs, no Vendor Payments tab
@@ -32,7 +38,7 @@ run_guard() {
   ( cd "$OUT" && maestro --device "$DEVICE" test "$ROOT/.maestro/flows/$name.yaml" \
       --env TENANT_EMAIL="$TENANT_EMAIL" --env TENANT_PASSWORD="$TENANT_PASSWORD" \
       --env OWNER_EMAIL="$OWNER_EMAIL" --env OWNER_PASSWORD="$OWNER_PASSWORD" \
-      "${extra[@]}" > "$name.log" 2>&1 )
+      ${extra[@]+"${extra[@]}"} > "$name.log" 2>&1 )
   local status=$?
   if [[ "$name" == android-lease-sign-guard ]]; then
     node scripts/reset-lifecycle-fixture.mjs --apply >/dev/null
