@@ -1915,3 +1915,23 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   - [x] Visually checked on the Android emulator (release APK): button visible
         with the keyboard up; lifecycle-06 posts a comment with one tap
         (both LC-comments posted; owner inspection steps green).
+
+## CT7-052 🟠 Active lease left without its PDF, owner told "activated!" (owner)
+
+- **Role:** owner · **Platform:** all · Found in the Android lifecycle run
+  (lifecycle-05: both signed, lease active, no `lease_document_url`; owner
+  saw the fallback "Generate PDF" button instead of "Download PDF").
+- **Today:** the PDF is generated on the owner's phone right after the second
+  signature. One failure (e.g. the just-uploaded signature image not readable
+  yet) was logged and swallowed; the lease activated without a PDF and the
+  owner still saw "Lease agreement signed and activated!". Evidence: no
+  `contracts/<lease>/signed-lease.pdf` object for lease 25349598…, while the
+  five earlier fixture leases that day each have one.
+- **Acceptance criteria:**
+  - [x] PDF generation is retried (3 attempts, 1.5 s apart); each failure is
+        reported to Sentry.
+  - [x] `executeLease` returns `pdfGenerated`; when false (or the URL could not
+        be saved) the owner is told to tap "Generate PDF".
+  - [x] Jest: retry succeeds on a later attempt, gives up after 3 and reports
+        each; the signing alert uses the flag.
+  - [ ] Android lifecycle-05 green (Download PDF shown after signing).

@@ -30,6 +30,37 @@ function calculateNextPaymentDate(startDate: string, paymentDueDay: number): str
   return `${y}-${m}-${d}`;
 }
 
+/** Shown to the owner when the lease is active but its PDF is missing (CT7-052). */
+export const LEASE_PDF_MISSING_MESSAGE =
+  'Lease agreement signed and activated! The lease PDF could not be created yet — tap "Generate PDF" on this screen to try again.';
+
+/** Attempts at generating the lease PDF before giving up (CT7-052). */
+export const PDF_ATTEMPTS = 3;
+const PDF_RETRY_DELAY_MS = 1500;
+
+/**
+ * Runs `generate` up to `attempts` times, waiting between attempts. Returns its
+ * result, or null when every attempt failed (each failure is reported).
+ * The just-uploaded signature images were sometimes not readable yet, so a
+ * single failure left an active lease without a PDF (CT7-052).
+ */
+export async function withPdfRetry<T>(
+  generate: () => Promise<T>,
+  attempts = PDF_ATTEMPTS,
+  delayMs = PDF_RETRY_DELAY_MS
+): Promise<T | null> {
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      return await generate();
+    } catch (pdfError) {
+      reportApiError(pdfError, 'lease_documents', 'insert');
+      console.error(`Error generating lease PDF (attempt ${attempt}/${attempts}):`, pdfError);
+      if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  return null;
+}
+
 /**
  * Execute lease when both parties have signed
  * This function:
@@ -39,8 +70,11 @@ function calculateNextPaymentDate(startDate: string, paymentDueDay: number): str
  * 4. Creates first payment record
  * 5. Updates application status
  * 6. Creates notifications for both parties
+ *
+ * Resolves with `pdfGenerated: false` when the lease is active but its PDF
+ * could not be created, so the caller can tell the user (CT7-052).
  */
-export async function executeLease(leaseId: string): Promise<void> {
+export async function executeLease(leaseId: string): Promise<{ pdfGenerated: boolean }> {
   try {
     // Get lease details with related data
     const { data: lease, error: leaseError } = await supabase
@@ -84,17 +118,9 @@ export async function executeLease(leaseId: string): Promise<void> {
 
     // 1. Generate and upload lease PDF document
     console.log('Generating lease PDF document...');
-    let leaseDocumentUrl: string | null = null;
-
-    try {
-      leaseDocumentUrl = await generateAndUploadLeasePDF(lease as any);
-      console.log('Lease PDF generated and uploaded successfully:', leaseDocumentUrl);
-    } catch (pdfError) {
-      reportApiError(pdfError, 'lease_documents', 'insert');
-      console.error('Error generating lease PDF:', pdfError);
-      // Don't throw - lease can still be executed without PDF
-      // PDF can be generated manually later if needed
-    }
+    // Not fatal: the lease is valid without the PDF, and the owner can
+    // generate it later from the lease screen (told via pdfGenerated).
+    let leaseDocumentUrl = await withPdfRetry(() => generateAndUploadLeasePDF(lease as any));
 
     // 2. Update lease with document URL (if PDF was generated)
     if (leaseDocumentUrl) {
@@ -104,8 +130,9 @@ export async function executeLease(leaseId: string): Promise<void> {
         .eq('id', leaseId);
 
       if (docUpdateError) {
+        reportApiError(docUpdateError, 'leases', 'update');
         console.error('Error updating lease document URL:', docUpdateError);
-        // Don't throw - not critical
+        leaseDocumentUrl = null; // the screen still has no PDF to show
       }
     }
 
@@ -168,6 +195,7 @@ export async function executeLease(leaseId: string): Promise<void> {
     if (leaseDocumentUrl) {
       console.log('Lease document available at:', leaseDocumentUrl);
     }
+    return { pdfGenerated: leaseDocumentUrl !== null };
   } catch (error) {
     reportApiError(error, 'leases', 'update');
     console.error('Error executing lease:', error);
