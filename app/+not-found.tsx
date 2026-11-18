@@ -1,5 +1,6 @@
 import { Link, Stack } from 'expo-router';
 import { StyleSheet } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 
 import { Text, View } from '@/components/Themed';
 
@@ -7,6 +8,8 @@ export default function NotFoundScreen() {
   return (
     <>
       <Stack.Screen options={{ title: 'Oops!' }} />
+      {/* themed background follows the system theme, so the icons must too */}
+      <StatusBar style="auto" />
       <View style={styles.container}>
         <Text style={styles.title}>This screen doesn't exist.</Text>
 
