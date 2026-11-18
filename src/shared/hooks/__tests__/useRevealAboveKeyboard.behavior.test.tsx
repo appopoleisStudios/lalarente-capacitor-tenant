@@ -17,18 +17,28 @@ const TARGET = { y: 1050, h: 200 };
 const FRAME = { y: 500, h: 1700 };
 const EXPECTED_Y = TARGET.y + TARGET.h + REVEAL_MARGIN - KEYBOARD_TOP;
 
-function setup() {
+/** deferred: measurements complete only when `flush()` is called (as on device, async) */
+function setup({ deferred = false } = {}) {
   const scrollTo = jest.fn();
+  const pending: (() => void)[] = [];
+  const measure = (y: number, h: number) => (cb: (...a: number[]) => void) => {
+    const done = () => cb(0, y, 400, h);
+    if (deferred) pending.push(done);
+    else done();
+  };
   const hook = renderHook(() => useRevealAboveKeyboard());
   const r = hook.result.current;
   (r.scrollRef as { current: unknown }).current = {
     scrollTo,
-    measureInWindow: (cb: (...a: number[]) => void) => cb(0, FRAME.y, 400, FRAME.h),
+    measureInWindow: measure(FRAME.y, FRAME.h),
   };
   (r.targetRef as { current: unknown }).current = {
-    measureInWindow: (cb: (...a: number[]) => void) => cb(0, TARGET.y, 400, TARGET.h),
+    measureInWindow: measure(TARGET.y, TARGET.h),
   };
-  return { hook, r, scrollTo };
+  const flush = () => {
+    while (pending.length) pending.shift()!();
+  };
+  return { hook, r, scrollTo, flush };
 }
 
 function keyboardShows() {
@@ -128,5 +138,53 @@ describe('useRevealAboveKeyboard (CT7-050)', () => {
     tick();
     expect(removed).toBe(2);
     expect(scrollTo).not.toHaveBeenCalled();
+  });
+
+  describe('measurements still in flight when the timer has fired', () => {
+    function started() {
+      const ctx = setup({ deferred: true });
+      act(() => ctx.r.onFocus());
+      act(() => keyboardShows());
+      tick(); // timer fired, measureInWindow pending
+      return ctx;
+    }
+
+    it('scroll when nothing changed (control)', () => {
+      const { scrollTo, flush } = started();
+      flush();
+      expect(scrollTo).toHaveBeenCalledWith({ y: EXPECTED_Y, animated: true });
+    });
+
+    it('no scroll if the keyboard hid meanwhile', () => {
+      const { scrollTo, flush } = started();
+      act(() => keyboardHides());
+      flush();
+      expect(scrollTo).not.toHaveBeenCalled();
+    });
+
+    it('no scroll if the input blurred meanwhile', () => {
+      const { r, scrollTo, flush } = started();
+      act(() => r.onBlur());
+      flush();
+      expect(scrollTo).not.toHaveBeenCalled();
+    });
+
+    it('no scroll if the screen unmounted meanwhile', () => {
+      const { hook, scrollTo, flush } = started();
+      hook.unmount();
+      flush();
+      expect(scrollTo).not.toHaveBeenCalled();
+    });
+
+    it('a newer keyboard event supersedes the stale measurement', () => {
+      const { scrollTo, flush } = started();
+      act(() => keyboardHides());
+      act(() => keyboardShows());
+      flush(); // stale run (keyboard hid) must not scroll
+      expect(scrollTo).not.toHaveBeenCalled();
+      tick();
+      flush();
+      expect(scrollTo).toHaveBeenCalledTimes(1);
+    });
   });
 });

@@ -49,8 +49,11 @@ export function useRevealAboveKeyboard() {
   const offset = useRef(0);
   const focused = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // bumped on every cancel, so measurements already in flight are dropped too
+  const generation = useRef(0);
 
   const cancel = useCallback(() => {
+    generation.current += 1;
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
   }, []);
@@ -58,12 +61,15 @@ export function useRevealAboveKeyboard() {
   const schedule = useCallback(
     (keyboardTop: number) => {
       cancel();
+      const run = generation.current;
+      // the input may have lost focus or the keyboard closed meanwhile
+      const stillWanted = () =>
+        run === generation.current && focused.current && Keyboard.isVisible();
       timer.current = setTimeout(() => {
         timer.current = null;
         const scroll = scrollRef.current;
         const target = targetRef.current;
-        // the input may have lost focus or the keyboard closed meanwhile
-        if (!focused.current || !Keyboard.isVisible() || !scroll || !target) return;
+        if (!stillWanted() || !scroll || !target) return;
         target.measureInWindow((_tx, ty, _tw, th) => {
           // ScrollView is a host component on both architectures.
           (scroll as unknown as View).measureInWindow((_sx, sy, _sw, sh) => {
@@ -73,7 +79,7 @@ export function useRevealAboveKeyboard() {
               keyboardTop,
               offset.current
             );
-            if (next !== null) scroll.scrollTo({ y: next, animated: true });
+            if (next !== null && stillWanted()) scroll.scrollTo({ y: next, animated: true });
           });
         });
       }, REVEAL_DELAY_MS);
