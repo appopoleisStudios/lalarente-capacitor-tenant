@@ -1912,5 +1912,6 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         comment box is focused, the input + button block scrolls fully above it.
   - [x] Jest: `revealOffset` maths; InspectionScreen wires the hook to the
         comment input, the block and the ScrollView.
-  - [ ] Visually checked on the Android emulator (release APK): button visible
-        with the keyboard up; lifecycle-06 posts a comment with one tap.
+  - [x] Visually checked on the Android emulator (release APK): button visible
+        with the keyboard up; lifecycle-06 posts a comment with one tap
+        (both LC-comments posted; owner inspection steps green).
