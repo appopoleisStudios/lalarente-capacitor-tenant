@@ -2001,3 +2001,17 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         visible with the keyboard up.
   - [x] Android emulator (release APK): Report Issue, chat thread and a long
         form keep the field being typed in and the buttons reachable; lifecycle 01→08 green.
+
+## CT7-049 🟡 Status-bar clock, battery and signal invisible on Android
+
+- **Role:** all · **Platform:** Android · Found in the CT7-048 emulator check.
+- **Today:** with edge-to-edge the status bar is transparent, the Android theme
+  doesn't request dark icons and the app set no `StatusBar` style, so the
+  white icons disappeared on the app's white screens.
+- **Acceptance criteria:**
+  - [x] Root layout renders `<StatusBar style="dark" />` (expo-status-bar).
+  - [x] Jest: the root layout keeps the dark status bar.
+  - [x] Clock/battery visible on owner, tenant and vendor screens on the
+        Android emulator (release APK), 2026-11-19, in system light and dark
+        mode: dark icons on the app's light screens, light icons on the dark
+        3D tour, dark again after leaving it.

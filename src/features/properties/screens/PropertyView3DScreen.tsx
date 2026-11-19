@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { FocusedStatusBar } from '@/src/shared/components/FocusedStatusBar';
 import { propertiesApi } from '../api/propertiesApi';
 import type { PropertyWithRelations } from '../api/propertiesApi';
 
@@ -87,6 +88,8 @@ export default function PropertyView3DScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      {/* near-black top area: light status-bar icons while the tour is open */}
+      <FocusedStatusBar style="light" />
       {/* Header — dark chrome, always visible so the user can never be trapped */}
       <View style={styles.header}>
         <TouchableOpacity
