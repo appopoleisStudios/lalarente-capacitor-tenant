@@ -349,8 +349,8 @@ appId: com.lalarente.app
           timeout: 20000
 
 # ── no lease yet: Report Issue explains why and Go Back works ─────────────
-# CT7-039: only when the shared tenant has no open lease (Report Issue also
-# accepts a lease still awaiting signatures).
+# CT7-039: only when the shared tenant has no lease in effect (CT7-066: a
+# lease still awaiting signatures does not allow Report Issue).
 - openLink: lalarenteapp://(tenant)/maintenance/report
 - waitForAnimationToEnd:
     timeout: 4000

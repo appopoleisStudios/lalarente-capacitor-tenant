@@ -26,6 +26,11 @@ import { colors } from '@/src/shared/theme/colors';
 import { StyleSheet } from 'react-native';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
+import {
+  LEASE_IN_EFFECT_STATUSES,
+  REPORT_ISSUE_NEEDS_SIGNED_LEASE_MESSAGE,
+  canReportIssue,
+} from '@/src/features/leases/utils/leaseInEffect';
 
 const RSA = { green: '#007A4D' }; // Tenant primary: RSA Green
 
@@ -93,7 +98,8 @@ export default function TenantMaintenanceReportScreen() {
         const categoriesData = await maintenanceApi.getServiceCategories();
         setCategories(categoriesData);
 
-        // Fetch tenant's active leases to get properties (including pending signature leases)
+        // Fetch tenant's leases in effect — issues can only be reported to the
+        // owner on a lease signed by both (CT7-066)
         if (user?.id) {
           console.log('🔍 Fetching leases for tenant:', user.id);
 
@@ -107,7 +113,7 @@ export default function TenantMaintenanceReportScreen() {
             `
             )
             .eq('tenant_id', user.id)
-            .in('status', ['active', 'pending_tenant_signature', 'pending_owner_signature'])
+            .in('status', [...LEASE_IN_EFFECT_STATUSES])
             .order('created_at', { ascending: false });
 
           console.log('📋 Leases query result:', { leasesData, error });
@@ -115,13 +121,13 @@ export default function TenantMaintenanceReportScreen() {
           if (error) {
             console.error('❌ Error fetching leases:', error);
             // Don't show alert here - let the UI handle the null state
-          } else if (leasesData && leasesData.length > 0) {
-            console.log(`✅ Found ${leasesData.length} lease(s)`);
-            setActiveLeases(leasesData);
-            // Auto-select the first (most recent) lease
-            setSelectedLeaseId(leasesData[0].id);
           } else {
-            console.warn('⚠️ No leases found for tenant');
+            const reportable = (leasesData ?? []).filter((l) => canReportIssue(l.status));
+            if (reportable.length > 0) {
+              setActiveLeases(reportable);
+              // Auto-select the first (most recent) lease
+              setSelectedLeaseId(reportable[0].id);
+            }
           }
         }
       } catch (error: any) {
@@ -179,6 +185,10 @@ export default function TenantMaintenanceReportScreen() {
     }
 
     const selectedLease = activeLeases.find((l) => l.id === selectedLeaseId);
+    if (selectedLease && !canReportIssue(selectedLease.status)) {
+      Alert.alert('Lease not signed', REPORT_ISSUE_NEEDS_SIGNED_LEASE_MESSAGE);
+      return;
+    }
     if (!selectedLease?.property_id) {
       Alert.alert('Error', 'Could not determine property. Please contact support.');
       return;
@@ -290,9 +300,7 @@ export default function TenantMaintenanceReportScreen() {
         <View style={styles.errorContainer}>
           <Text style={styles.errorIcon}>⚠️</Text>
           <Text style={styles.errorTitle}>No Active Lease</Text>
-          <Text style={styles.errorMessage}>
-            You need an active lease to report maintenance issues. Please contact your landlord.
-          </Text>
+          <Text style={styles.errorMessage}>{REPORT_ISSUE_NEEDS_SIGNED_LEASE_MESSAGE}</Text>
           <TouchableOpacity
             testID="maintenance-report-go-back"
             style={styles.retryButton}
