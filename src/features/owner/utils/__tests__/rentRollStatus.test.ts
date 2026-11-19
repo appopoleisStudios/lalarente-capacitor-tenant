@@ -145,5 +145,7 @@ describe('the rent roll screen uses it (CT7-057 guard)', () => {
     expect(src).toMatch(/RENT_ROLL_STATUS_LABEL\[item\.payment_status\]/);
     expect(src).not.toMatch(/\{item\.payment_status\}/);
     expect(src).toMatch(/<ScrollView\s+horizontal/);
+    // a shrinking ScrollView clipped the chip labels on Android
+    expect(src).toMatch(/filtersScroll: \{ flexGrow: 0, flexShrink: 0 \}/);
   });
 });

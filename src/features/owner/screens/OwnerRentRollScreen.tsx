@@ -554,7 +554,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   // six chips don't fit a phone width: scroll sideways (SA #262)
-  filtersScroll: { flexGrow: 0 },
+  // flexShrink 0: the list below otherwise squeezes the row and clips the chip
+  // labels (seen on Android)
+  filtersScroll: { flexGrow: 0, flexShrink: 0 },
   filtersContainer: {
     flexDirection: 'row',
     paddingHorizontal: 16,
