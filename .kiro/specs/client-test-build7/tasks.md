@@ -1916,6 +1916,26 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         with the keyboard up; lifecycle-06 posts a comment with one tap
         (both LC-comments posted; owner inspection steps green).
 
+## CT7-060 🟡 Dates follow the phone's language: "Due: 12/1/2026" (all roles)
+
+- **Role:** all · **Platform:** all · Found in the Android walkthrough
+  (tenant → Payments → Payment History, and owner → Rent Roll "Next due").
+- **Today:** 46 places formatted dates with a bare `toLocaleDateString()` /
+  `toLocaleString()`, so the format follows the phone's language. On an
+  English (US) phone the first rent showed "Due: 12/1/2026", which a South
+  African reads as 12 January, while the dashboard showed "2026/12/01".
+- **Acceptance criteria:**
+  - [x] Every such date (17 screens/components: leases, payments, rent roll,
+        tenants, applications, quotes, maintenance timeline, compliance,
+        vendor documents and jobs) uses the shared `formatDate()` →
+        "1 Dec 2026" (date-time: "1 Dec 2026, 14:30").
+  - [x] Jest guard `dateLocale.test.ts`: no bare `toLocaleDateString()` /
+        `toLocaleTimeString()` / `new Date(…).toLocaleString()` in `src` or
+        `app` (fails on main: 18 files).
+  - [x] Android emulator (release APK), 2026-11-19: tenant Payments "Due: 01
+        Dec 2026"; owner Rent Roll "Next due: 01 Dec 2026"; Tenants & Leases
+        "01 Dec 2026 → 30 Nov 2027" (main: 12/1/2026).
+
 ## CT7-058 🟡 Property search with no match says "No properties yet" (owner)
 
 - **Role:** owner · **Platform:** all · Found in the Android walkthrough

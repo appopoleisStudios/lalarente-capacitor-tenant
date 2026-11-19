@@ -25,6 +25,7 @@ import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAv
 import { ReasonPromptModal } from '@/src/shared/components/ui/ReasonPromptModal';
 import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
+import { formatDate } from '../../../shared/utils/format';
 export default function OwnerApplicationDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -320,11 +321,7 @@ export default function OwnerApplicationDetailScreen() {
                 <InfoRow
                   icon="calendar"
                   label="Date of Birth"
-                  value={
-                    application.date_of_birth
-                      ? new Date(application.date_of_birth).toLocaleDateString()
-                      : 'N/A'
-                  }
+                  value={application.date_of_birth ? formatDate(application.date_of_birth) : 'N/A'}
                 />
               </View>
             </View>
@@ -349,7 +346,7 @@ export default function OwnerApplicationDetailScreen() {
                     <InfoRow
                       icon="calendar"
                       label="Employment Start"
-                      value={new Date(application.employment_start_date).toLocaleDateString()}
+                      value={formatDate(application.employment_start_date)}
                     />
                   )}
                   {application.employer_contact && (
@@ -651,22 +648,23 @@ export default function OwnerApplicationDetailScreen() {
                 <InfoRow
                   icon="calendar"
                   label="Submitted"
-                  value={new Date(
-                    application.submitted_at || application.created_at!
-                  ).toLocaleString()}
+                  value={formatDate(
+                    application.submitted_at || application.created_at!,
+                    'datetime'
+                  )}
                 />
                 {application.reviewed_at && (
                   <InfoRow
                     icon="checkmark-circle"
                     label="Reviewed"
-                    value={new Date(application.reviewed_at).toLocaleString()}
+                    value={formatDate(application.reviewed_at, 'datetime')}
                   />
                 )}
                 {application.approved_at && (
                   <InfoRow
                     icon="checkmark-done"
                     label="Approved"
-                    value={new Date(application.approved_at).toLocaleString()}
+                    value={formatDate(application.approved_at, 'datetime')}
                   />
                 )}
               </View>

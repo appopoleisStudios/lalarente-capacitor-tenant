@@ -19,6 +19,7 @@ import { supabase } from '../../../lib/supabase';
 import { EmptyState, FeaturePin, LoadingSpinner } from '@/src/shared/components';
 import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
+import { formatDate } from '../../../shared/utils/format';
 const RSA = { green: '#007A4D', gold: '#FFB81C' }; // Tenant colors
 
 interface Payment {
@@ -387,9 +388,7 @@ export default function TenantPaymentScreen() {
                 <View style={styles.nextPaymentDetails}>
                   <View style={styles.detailRow}>
                     <Ionicons name="calendar-outline" size={16} color="#666" />
-                    <Text style={styles.detailText}>
-                      Due: {new Date(nextPayment.due_date).toLocaleDateString()}
-                    </Text>
+                    <Text style={styles.detailText}>Due: {formatDate(nextPayment.due_date)}</Text>
                   </View>
                   <View style={styles.detailRow}>
                     <Ionicons name="home-outline" size={16} color="#666" />
@@ -521,11 +520,9 @@ export default function TenantPaymentScreen() {
                         'Payment Details',
                         `Amount: R ${payment.amount.toLocaleString()}\n` +
                           `Type: ${payment.type}\n` +
-                          `Due: ${new Date(payment.due_date).toLocaleDateString()}\n` +
+                          `Due: ${formatDate(payment.due_date)}\n` +
                           `Status: ${payment.status}\n` +
-                          (payment.paid_date
-                            ? `Paid: ${new Date(payment.paid_date).toLocaleDateString()}\n`
-                            : '') +
+                          (payment.paid_date ? `Paid: ${formatDate(payment.paid_date)}\n` : '') +
                           (payment.transaction_id
                             ? `Transaction: ${payment.transaction_id}\n`
                             : '') +
@@ -546,8 +543,8 @@ export default function TenantPaymentScreen() {
                         <Text style={styles.paymentType}>{payment.type}</Text>
                         <Text style={styles.paymentDate}>
                           {payment.paid_date
-                            ? `Paid: ${new Date(payment.paid_date).toLocaleDateString()}`
-                            : `Due: ${new Date(payment.due_date).toLocaleDateString()}`}
+                            ? `Paid: ${formatDate(payment.paid_date)}`
+                            : `Due: ${formatDate(payment.due_date)}`}
                         </Text>
                       </View>
                     </View>

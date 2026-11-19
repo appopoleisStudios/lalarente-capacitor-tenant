@@ -21,6 +21,7 @@ import type { LeaseWithRelations } from '../../properties/api/leasesApi';
 import { styles } from './OwnerPropertyDetailScreen.styles';
 import { reportApiError } from '@/src/core/observability/sentry';
 
+import { formatDate } from '../../../shared/utils/format';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function OwnerPropertyDetailScreen() {
@@ -365,9 +366,7 @@ export default function OwnerPropertyDetailScreen() {
                   {property.available_from && (
                     <View style={styles.termItem}>
                       <Text style={styles.termLabel}>Available From</Text>
-                      <Text style={styles.termValue}>
-                        {new Date(property.available_from).toLocaleDateString()}
-                      </Text>
+                      <Text style={styles.termValue}>{formatDate(property.available_from)}</Text>
                     </View>
                   )}
                 </View>
@@ -413,8 +412,7 @@ export default function OwnerPropertyDetailScreen() {
                   <View style={styles.leaseInfo}>
                     <Text style={styles.leaseLabel}>Lease Period</Text>
                     <Text style={styles.leaseValue}>
-                      {new Date(activeLease.start_date).toLocaleDateString()} -{' '}
-                      {new Date(activeLease.end_date).toLocaleDateString()}
+                      {formatDate(activeLease.start_date)} - {formatDate(activeLease.end_date)}
                     </Text>
                     <Text style={styles.leaseLabel}>Monthly Rent</Text>
                     <Text style={styles.leaseValue}>

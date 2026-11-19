@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { reportApiError } from '@/src/core/observability/sentry';
 
+import { formatDate } from '../../../shared/utils/format';
 const RSA = { blue: '#002395', gold: '#FFB81C' }; // Owner colors
 
 interface Lease {
@@ -143,7 +144,7 @@ export default function TenantsScreen() {
     } else if (diffDays <= 7) {
       return { text: `Due in ${diffDays}d`, color: '#FF9800', icon: 'time' };
     }
-    return { text: `Due ${dueDate.toLocaleDateString()}`, color: '#666', icon: 'calendar' };
+    return { text: `Due ${formatDate(dueDate)}`, color: '#666', icon: 'calendar' };
   };
 
   const handleContactTenant = (e: any, tenant: Lease['tenant']) => {
@@ -232,15 +233,14 @@ export default function TenantsScreen() {
               <Ionicons name="calendar-outline" size={16} color="#666" />
               <Text style={styles.infoLabel}>{isExpired ? 'Expired' : 'Lease Ends'}</Text>
               <Text style={[styles.infoValue, isExpiringSoon && styles.infoValueWarning]}>
-                {isExpired ? new Date(item.end_date).toLocaleDateString() : `${daysRemaining} days`}
+                {isExpired ? formatDate(item.end_date) : `${daysRemaining} days`}
               </Text>
             </View>
           </View>
 
           <View style={styles.dateRange}>
             <Text style={styles.dateText}>
-              {new Date(item.start_date).toLocaleDateString()} →{' '}
-              {new Date(item.end_date).toLocaleDateString()}
+              {formatDate(item.start_date)} → {formatDate(item.end_date)}
             </Text>
           </View>
         </View>

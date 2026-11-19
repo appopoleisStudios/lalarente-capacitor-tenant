@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { signedSignatureUrl } from '@/src/shared/utils/storageDataUri';
 import { colors } from '@/src/shared/theme/colors';
 
+import { formatDate } from '../../../shared/utils/format';
 const SIGNED_URL_TTL_SECONDS = 3600;
 
 /**
@@ -67,7 +68,7 @@ export default function LeaseSignatureRow({
         testID={`lease-signature-status-${label.toLowerCase()}`}
         style={[styles.status, signedAt && { color: accentColor }]}
       >
-        {signedAt ? `Signed ${new Date(signedAt).toLocaleDateString()}` : 'Pending'}
+        {signedAt ? `Signed ${formatDate(signedAt)}` : 'Pending'}
       </Text>
     </View>
   );
