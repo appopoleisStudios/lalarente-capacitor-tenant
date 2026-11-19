@@ -1,9 +1,11 @@
 import { useAuth } from '@/src/contexts/AuthContext';
 import {
   getQuoteById,
+  getQuoteLines,
   getQuoteRevisions,
   updateQuote,
   type Quote,
+  type QuoteLine,
   type QuoteRevision,
 } from '@/src/features/maintenance/api';
 import { colors } from '@/src/shared/theme/colors';
@@ -43,6 +45,7 @@ export default function VendorQuoteDetailScreen() {
   const { user } = useAuth();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [revisions, setRevisions] = useState<QuoteRevision[]>([]);
+  const [lines, setLines] = useState<QuoteLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [showRevisions, setShowRevisions] = useState(false);
@@ -78,8 +81,12 @@ export default function VendorQuoteDetailScreen() {
       setEditTotal(quoteData.total_amount?.toString() || '0');
       setEditNotes(quoteData.notes || '');
 
-      const revisionsData = await getQuoteRevisions(quoteId);
+      const [revisionsData, linesData] = await Promise.all([
+        getQuoteRevisions(quoteId),
+        getQuoteLines(quoteId),
+      ]);
       setRevisions(revisionsData);
+      setLines(linesData);
     } catch (error: any) {
       console.error('Error fetching quote:', error);
       Alert.alert('Error', 'Failed to load quote details');
@@ -222,6 +229,30 @@ export default function VendorQuoteDetailScreen() {
               <View style={styles.contractBanner}>
                 <Ionicons name="document-text-outline" size={20} color={colors.info[600]} />
                 <Text style={styles.contractBannerText}>Long-term Contract Quote</Text>
+              </View>
+            </View>
+          )}
+
+          {lines.length > 0 && (
+            <View style={styles.section} testID="quote-line-items">
+              <Text style={styles.sectionTitle}>Line Items</Text>
+              <View style={styles.costCard}>
+                {lines.map((line, index) => (
+                  <View
+                    key={line.id}
+                    style={[styles.lineRow, index === lines.length - 1 && styles.lineRowLast]}
+                  >
+                    <View style={styles.lineInfo}>
+                      <Text style={styles.lineDescription}>{line.description}</Text>
+                      <Text style={styles.lineMeta}>
+                        {line.qty} × R {Number(line.unit_price).toLocaleString()}
+                      </Text>
+                    </View>
+                    <Text style={styles.costValue}>
+                      R {(Number(line.qty) * Number(line.unit_price)).toLocaleString()}
+                    </Text>
+                  </View>
+                ))}
               </View>
             </View>
           )}
@@ -563,6 +594,20 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: '#e5e7eb', marginVertical: 8 },
   totalLabel: { fontSize: 18, fontWeight: '700', color: '#111827' },
   totalValue: { fontSize: 24, fontWeight: '700', color: RSA.blue },
+  lineRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 12,
+    paddingBottom: 12,
+    marginBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  lineRowLast: { borderBottomWidth: 0, paddingBottom: 0, marginBottom: 0 },
+  lineInfo: { flex: 1 },
+  lineDescription: { fontSize: 15, fontWeight: '600', color: '#111827' },
+  lineMeta: { fontSize: 13, color: '#6b7280', marginTop: 2 },
 
   editCard: {
     backgroundColor: '#FFFFFF',

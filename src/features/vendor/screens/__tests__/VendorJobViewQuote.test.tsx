@@ -48,7 +48,7 @@ function request(quoteStatus: string) {
 describe('vendor job screen: View Quote (CT7-054)', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it.each(['submitted', 'approved', 'rejected', 'revision_requested'])(
+  it.each(['requested', 'submitted', 'approved', 'rejected', 'revision_requested'])(
     'a %s quote opens its detail screen',
     async (status) => {
       (getVendorRequestById as jest.Mock).mockResolvedValue(request(status));

@@ -1930,6 +1930,11 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   - [x] Jest `VendorJobViewQuote.test.tsx`: button shown and routes for
         submitted / approved / rejected / revision requested; absent with no
         quote (fails without the fix).
+  - [x] The quote detail screen never loaded the submitted line items (only
+        subtotal / VAT / total; SA #259): it now lists each line with
+        quantity × unit price and amount (`getQuoteLines`). Jest
+        `VendorQuoteDetailLines.test.tsx` for every quote status (fails
+        without the fix).
   - [ ] Android emulator (release APK): vendor job → View Quote shows the line
         items.
 

@@ -4,7 +4,7 @@
  */
 
 import { supabase } from '@/src/lib/supabase';
-import type { Quote, QuoteSubmissionData, QuoteUpdateData } from '../types/quote.types';
+import type { Quote, QuoteLine, QuoteSubmissionData, QuoteUpdateData } from '../types/quote.types';
 import { createQuoteRevision } from './quoteRevisions.api';
 import { reportApiError } from '@/src/core/observability/sentry';
 
@@ -65,6 +65,19 @@ export async function getQuoteById(quoteId: string): Promise<Quote> {
 
   if (error) throw error;
   return data as Quote;
+}
+
+/**
+ * Line items of a quote (CT7-054). The table has no timestamp, so they come
+ * back in storage order, as on the vendor's edit screen.
+ *
+ * @param quoteId - The quote ID
+ */
+export async function getQuoteLines(quoteId: string): Promise<QuoteLine[]> {
+  const { data, error } = await supabase.from('quote_lines').select('*').eq('quote_id', quoteId);
+
+  if (error) throw error;
+  return (data || []) as QuoteLine[];
 }
 
 /**
