@@ -1916,6 +1916,30 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         with the keyboard up; lifecycle-06 posts a comment with one tap
         (both LC-comments posted; owner inspection steps green).
 
+## CT7-055 🟡 Back from a maintenance request loops back to it (owner)
+
+- **Role:** owner · **Platform:** all (seen on Android) · Found in the full
+  walkthrough; reproduced on the emulator: Maintenance → request → ← →
+  list → Android Back → **the same request again** → Back → dashboard.
+- **Today:** the header back arrow pushed the maintenance list whenever there
+  was history, adding a new entry instead of going back; with no history
+  (opened from a link) it called `back()`, which goes nowhere.
+- **Acceptance criteria:**
+  - [x] The arrow goes back like Android Back; with no history (opened cold
+        from a notification) it resets the tabs to the maintenance list —
+        `replace` / `navigate` would keep the request in tab history (SA #260).
+        Shared `useGoBackOr('maintenance')`, also on the tenant and vendor
+        request details (header, not-found, after delete).
+  - [x] Jest: `useGoBackOr.test.ts` drives the real React Navigation
+        `TabRouter` (navigate-to-list loops back, reset does not, list →
+        detail → back → back leaves Maintenance) + guard on the three detail
+        screens; `OwnerMaintenanceDetailBack.test.tsx` renders the owner
+        screen (fails without the fix).
+  - [x] Android emulator (release APK), 2026-11-19: Maintenance → request → ←
+        → list → Back goes to the dashboard (no loop back into the request).
+  - [x] Android emulator: request opened cold by link → ← → maintenance list
+        → Back leaves the app to the caller (does not reopen the request).
+
 ## CT7-054 🟡 Vendor can't open the quote they submitted (vendor)
 
 - **Role:** vendor · **Platform:** all · Found in the full walkthrough (code

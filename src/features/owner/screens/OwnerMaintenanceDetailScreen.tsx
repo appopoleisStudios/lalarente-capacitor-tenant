@@ -42,6 +42,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { reportApiError } from '@/src/core/observability/sentry';
 import { showChoices } from '@/src/shared/components/ui/ChoiceSheet';
+import { useGoBackOr } from '@/src/shared/hooks/useGoBackOr';
 
 const RSA = { blue: '#002395' };
 
@@ -68,6 +69,7 @@ const PRIORITY_CONFIG = {
 
 export default function OwnerMaintenanceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const goBack = useGoBackOr('maintenance');
   const { user } = useAuth();
   const [request, setRequest] = useState<any>(null);
   const [quotes, setQuotes] = useState<any[]>([]);
@@ -503,7 +505,7 @@ export default function OwnerMaintenanceDetailScreen() {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
               // Navigate back
-              router.back();
+              goBack();
 
               // Show success after navigation
               setTimeout(() => {
@@ -541,7 +543,7 @@ export default function OwnerMaintenanceDetailScreen() {
           <TouchableOpacity
             testID="owner-maintenance-detail-go-back"
             style={styles.backButton}
-            onPress={() => router.back()}
+            onPress={goBack}
           >
             <Text style={styles.backButtonText}>Go Back</Text>
           </TouchableOpacity>
@@ -574,15 +576,7 @@ export default function OwnerMaintenanceDetailScreen() {
       <View style={styles.header}>
         <TouchableOpacity
           testID="owner-maintenance-detail-back"
-          onPress={() => {
-            // Navigate back to maintenance list instead of using router.back()
-            // which can go to dashboard
-            if (router.canGoBack()) {
-              router.push('/(owner)/maintenance');
-            } else {
-              router.back();
-            }
-          }}
+          onPress={goBack} // CT7-055: back like Android Back; the list if opened cold
           style={styles.headerButton}
         >
           <Ionicons name="arrow-back" size={24} color="#111827" />

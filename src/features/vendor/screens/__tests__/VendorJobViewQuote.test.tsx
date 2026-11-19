@@ -16,6 +16,9 @@ jest.mock('expo-router', () => ({
     require('react').useEffect(effect, []);
   },
 }));
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: () => ({ canGoBack: () => true, goBack: jest.fn(), reset: jest.fn() }),
+}));
 jest.mock('@/src/contexts/AuthContext', () => ({ useAuth: () => ({ user: { id: 'vendor-1' } }) }));
 jest.mock('@/src/features/maintenance/api', () => ({ getVendorRequestById: jest.fn() }));
 jest.mock('react-native-safe-area-context', () => {

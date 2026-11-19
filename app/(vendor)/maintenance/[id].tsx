@@ -18,6 +18,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useGoBackOr } from '@/src/shared/hooks/useGoBackOr';
 
 const RSA = { blue: '#002395', green: '#007A4D', gold: '#FFB81C', red: '#DE3831' };
 
@@ -39,6 +40,7 @@ const STATUS_CONFIG = {
 
 export default function VendorMaintenanceDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const goBack = useGoBackOr('maintenance');
   const { user } = useAuth();
   const [request, setRequest] = useState<VendorMaintenanceRequest | null>(null);
   const [loading, setLoading] = useState(true);
@@ -153,7 +155,7 @@ export default function VendorMaintenanceDetail() {
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle" size={64} color={colors.error[500]} />
           <Text style={styles.errorText}>Request not found</Text>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <TouchableOpacity style={styles.backButton} onPress={goBack}>
             <Text style={styles.backButtonText}>Go Back</Text>
           </TouchableOpacity>
         </View>
@@ -172,13 +174,7 @@ export default function VendorMaintenanceDetail() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => {
-            if (router.canGoBack()) {
-              router.back();
-            } else {
-              router.push('/(vendor)/maintenance');
-            }
-          }}
+          onPress={goBack} // CT7-055: back like Android Back; the list if opened cold
           style={styles.headerButton}
         >
           <Ionicons name="arrow-back" size={24} color="#111827" />
