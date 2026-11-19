@@ -1,0 +1,100 @@
+Running on Pixel_7
+ > Flow lifecycle-02d-viewing-complete
+Run ../subflows/login-owner.yaml...
+  Assert that (Optional) id: email-input is visible... WARNED
+  Run flow when ".*Portfolio Dashboard.*" is visible...
+  Run flow when ".*Portfolio Dashboard.*" is visible... SKIPPED
+  Run flow when ".*Portfolio Dashboard.*" is not visible...
+    Run flow when id: email-input is not visible...
+      Stop com.lalarente.app... COMPLETED
+      Launch app "com.lalarente.app" and clear keychain (launch arguments: {EXDevMenuIsOnboardingFinished=true})... COMPLETED
+      Run dismiss-dev-menu.yaml...
+        Run flow when "Open DevTools" is visible...
+        Run flow when "Open DevTools" is visible... SKIPPED
+        Run flow when "Toggle performance monitor" is visible...
+        Run flow when "Toggle performance monitor" is visible... SKIPPED
+        Run flow when "Reload" is visible...
+        Run flow when "Reload" is visible... SKIPPED
+      Run dismiss-dev-menu.yaml... COMPLETED
+      Assert that (Optional) ".*Portfolio Dashboard.*" is visible... WARNED
+      Run flow when ".*Portfolio Dashboard.*" is not visible...
+        Assert that (Optional) id: email-input is visible... WARNED
+      Run flow when ".*Portfolio Dashboard.*" is not visible... COMPLETED
+      Run flow when id: email-input is not visible...
+        Run flow when id: tab-profile is visible...
+          Run sign-out-tenant.yaml...
+            Wait for animation to end within 2000 ms... COMPLETED
+            Tap on (Optional) id: tab-home... COMPLETED
+            Wait for animation to end within 2000 ms... COMPLETED
+            Tap on id: tab-profile... COMPLETED
+            Wait for animation to end within 2500 ms... COMPLETED
+            Scrolling DOWN until ".*Sign Out.*" is visible with speed 40, visibility percentage 100%, timeout 15000 ms, with centering disabled... COMPLETED
+            Tap on ".*Sign Out.*"... COMPLETED
+            Assert that ".*Are you sure.*" is visible... COMPLETED
+            Tap on "Sign Out", Index: 1... COMPLETED
+            Assert that id: email-input is visible... COMPLETED
+            Assert that "Sign in to your account" is visible... COMPLETED
+          Run sign-out-tenant.yaml... COMPLETED
+        Run flow when id: tab-profile is visible... COMPLETED
+        Run flow when id: tab-vendor-profile is visible...
+        Run flow when id: tab-vendor-profile is visible... SKIPPED
+        Run flow when id: tab-owner-profile is visible...
+        Run flow when id: tab-owner-profile is visible... SKIPPED
+        Assert that id: email-input is visible... COMPLETED
+      Run flow when id: email-input is not visible... COMPLETED
+    Run flow when id: email-input is not visible... COMPLETED
+    Run flow when ".*Portfolio Dashboard.*" is not visible...
+      Tap on id: email-input... COMPLETED
+      Erase text... COMPLETED
+      Input text ${OWNER_EMAIL}... COMPLETED
+      Tap on (Optional) "Sign in to your account"... COMPLETED
+      Wait for animation to end within 2000 ms... COMPLETED
+      Tap on id: password-input... COMPLETED
+      Wait for animation to end within 1000 ms... COMPLETED
+      Erase text... COMPLETED
+      Input text ${OWNER_PASSWORD}... COMPLETED
+      Tap on (Optional) "Sign in to your account"... COMPLETED
+      Wait for animation to end within 2000 ms... COMPLETED
+      Tap on id: sign-in-button... COMPLETED
+      Assert that ".*Portfolio Dashboard.*" is visible... COMPLETED
+    Run flow when ".*Portfolio Dashboard.*" is not visible... COMPLETED
+  Run flow when ".*Portfolio Dashboard.*" is not visible... COMPLETED
+Run ../subflows/login-owner.yaml... COMPLETED
+Open lalarenteapp://(owner)/viewings... COMPLETED
+Assert that "Viewing Requests" is visible... COMPLETED
+Tap on id: owner-viewings-filter-approved... COMPLETED
+Wait for animation to end within 2000 ms... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Scrolling DOWN until id: owner-viewing-card-viewed is visible with speed 40, visibility percentage 60%, timeout 20000 ms, with centering enabled... COMPLETED
+Assert that id: owner-viewing-card-noshow is visible... COMPLETED
+Take screenshot lc02d-owner-awaiting-confirmation... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Run ../subflows/lc-owner-open-viewing.yaml...
+  Open lalarenteapp://(owner)/viewings... COMPLETED
+  Assert that "Viewing Requests" is visible... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+  Tap on id: owner-viewings-filter-all... COMPLETED
+  Repeat 3 times...
+    Swipe from (50%,45%) to (50%,90%) in 300 ms... COMPLETED
+  Repeat 3 times... COMPLETED
+  Wait for animation to end within 3000 ms... COMPLETED
+  Assert that id: owner-viewing-card is visible... COMPLETED
+  Wait for animation to end within 1500 ms... COMPLETED
+  Scrolling UP until ".*${MSG} ${LC_TOKEN}.*" is visible with speed 40, visibility percentage 100%, timeout 6000 ms, with centering disabled... WARNED
+  Scrolling DOWN until ".*${MSG} ${LC_TOKEN}.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... WARNED
+  Wait for animation to end within 1500 ms... COMPLETED
+  Tap on ".*${MSG} ${LC_TOKEN}.*"... FAILED
+Run ../subflows/lc-owner-open-viewing.yaml... FAILED
+
+Element not found: Text matching regex: .*LC-view 11181244.*
+
+Element with Text matching regex: .*LC-view 11181244.* not found. Check the UI hierarchy in debug artifacts to verify if the element exists.
+
+Possible causes:
+- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
+- Element may be temporarily unavailable due to loading state.
+- This could be a real regression that needs to be addressed.
+
+==== Debug output (logs & screenshots) ====
+
+/Users/appopoleis/.maestro/tests/2026-11-18_125123

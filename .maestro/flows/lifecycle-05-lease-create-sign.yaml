@@ -60,12 +60,10 @@ appId: com.lalarente.app
 # ── dates default to next month + 12 months; open each picker and confirm ───
 - tapOn:
     id: "owner-lease-create-start-date"
-- extendedWaitUntil:
-    visible:
-      id: "owner-lease-create-start-date-done"
-    timeout: 20000
-- tapOn:
-    id: "owner-lease-create-start-date-done"
+- runFlow:
+    file: ../subflows/picker-confirm.yaml
+    env:
+      PICKER_ID: "owner-lease-create-start-date"
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -84,12 +82,10 @@ appId: com.lalarente.app
     timeout: 1000
 - tapOn:
     id: "owner-lease-create-end-date"
-- extendedWaitUntil:
-    visible:
-      id: "owner-lease-create-end-date-done"
-    timeout: 20000
-- tapOn:
-    id: "owner-lease-create-end-date-done"
+- runFlow:
+    file: ../subflows/picker-confirm.yaml
+    env:
+      PICKER_ID: "owner-lease-create-end-date"
 
 # ── LC-5-06 validation: rent is required ──────────────────────────────────
 - waitForAnimationToEnd:
@@ -335,6 +331,17 @@ appId: com.lalarente.app
 - inputText: "LC-maint ${LC_TOKEN} tenant maintains the garden"
 - tapOn:
     id: "lease-clause-edit-save"
+- waitForAnimationToEnd:
+    timeout: 1500
+# Android: after a long inputText the keyboard is still animating away and
+# the tap can land where Save was a moment ago — re-tap only if still editing
+- runFlow:
+    when:
+      visible:
+        id: "lease-clause-edit-save"
+    commands:
+      - tapOn:
+          id: "lease-clause-edit-save"
 - extendedWaitUntil:
     visible: "Edited"
     timeout: 10000
@@ -361,6 +368,17 @@ appId: com.lalarente.app
 - inputText: "LC-clause ${LC_TOKEN}"
 - tapOn:
     id: "owner-lease-review-clauses-save"
+- waitForAnimationToEnd:
+    timeout: 2000
+# Android: the tap can miss while the keyboard closes — re-tap only if the
+# sheet is still open
+- runFlow:
+    when:
+      visible:
+        id: "owner-lease-review-clauses-save"
+    commands:
+      - tapOn:
+          id: "owner-lease-review-clauses-save"
 - extendedWaitUntil:
     notVisible:
       id: "owner-lease-review-clauses-input"
@@ -426,10 +444,12 @@ appId: com.lalarente.app
     centerElement: true
 - waitForAnimationToEnd:
     timeout: 1500
+# the Additional Terms card sits ABOVE the Sign button (on a tall Android
+# screen it's off-screen once Sign is centred)
 - scrollUntilVisible:
     element:
       text: ".*LC-clause ${LC_TOKEN}.*"
-    direction: DOWN
+    direction: UP
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true

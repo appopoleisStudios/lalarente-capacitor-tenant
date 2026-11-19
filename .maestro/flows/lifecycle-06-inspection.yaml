@@ -3,8 +3,8 @@
 # Covers LC-6-01 to 6-22. Needs the active lease from stage 5.
 # Needs migration 20261113000002 (F10 fix: the status constraint now allows
 # 'pending_signatures' and 'cancelled').
-# PRECONDITION: the simulator photo library has at least one photo
-# (xcrun simctl addmedia <udid> <image>). The photo-picker taps use screen
+# PRECONDITION: the device photo library has at least one photo (the runner
+# pushes one on Android; iOS: xcrun simctl addmedia <udid> <image>). iOS taps use screen
 # positions and have not been verified on a device.
 # Not automatable: camera capture (no camera on the simulator).
 # Env: creds, LC_PROPERTY_TITLE, LC_TOKEN
@@ -155,12 +155,10 @@ appId: com.lalarente.app
     centerElement: true
 - tapOn:
     id: "owner-schedule-inspection-date"
-- extendedWaitUntil:
-    visible:
-      id: "owner-schedule-inspection-date-done"
-    timeout: 10000
-- tapOn:
-    id: "owner-schedule-inspection-date-done"
+- runFlow:
+    file: ../subflows/picker-confirm.yaml
+    env:
+      PICKER_ID: "owner-schedule-inspection-date"
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -231,6 +229,7 @@ appId: com.lalarente.app
     text: "Items to Inspect"
 - tapOn:
     id: "inspection-item-0-gallery"
+- runFlow: ../subflows/pick-photo-android.yaml
 - waitForAnimationToEnd:
     timeout: 2500
 # the picker can take a few seconds to present
@@ -269,6 +268,10 @@ appId: com.lalarente.app
 - tapOn:
     text: "(OK|Cancel|Don.t Allow|Allow)"
     optional: true
+- runFlow:
+    file: ../subflows/dismiss-camera-android.yaml
+    env:
+      RETURN_ID: "inspection-item-0-camera"
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -285,6 +288,10 @@ appId: com.lalarente.app
 - tapOn:
     text: "(OK|Cancel|Don.t Allow|Allow)"
     optional: true
+- runFlow:
+    file: ../subflows/dismiss-camera-android.yaml
+    env:
+      RETURN_ID: "inspection-room-take-photo"
 - waitForAnimationToEnd:
     timeout: 1500
 - scrollUntilVisible:
@@ -383,6 +390,7 @@ appId: com.lalarente.app
           timeout: 15000
       - tapOn:
           id: "inspection-room-gallery"
+      - runFlow: ../subflows/pick-photo-android.yaml
       - waitForAnimationToEnd:
           timeout: 2500
       # the picker can take a few seconds to present
@@ -745,10 +753,20 @@ appId: com.lalarente.app
 # ── LC-6-14b raise the first comment as a maintenance request (pre-filled) ───
 - waitForAnimationToEnd:
     timeout: 1500
+# Android: one upward fling on this long page can overshoot to the top, so the
+# UP pass is optional and the DOWN pass (which found it before) is the check.
 - scrollUntilVisible:
     element:
       text: ".*LC-comment-1 ${LC_TOKEN}.*"
     direction: UP
+    timeout: 20000
+    visibilityPercentage: 60
+    centerElement: true
+    optional: true
+- scrollUntilVisible:
+    element:
+      text: ".*LC-comment-1 ${LC_TOKEN}.*"
+    direction: DOWN
     timeout: 20000
     visibilityPercentage: 60
     centerElement: true

@@ -178,28 +178,23 @@ appId: com.lalarente.app
     id: "owner-viewing-modal-time"
 - tapOn:
     id: "owner-viewing-modal-date"
-- extendedWaitUntil:
-    visible:
-      id: "owner-viewing-modal-date-done"
-    timeout: 10000
-- tapOn:
-    id: "owner-viewing-modal-date-done"
+- runFlow:
+    file: ../subflows/picker-confirm.yaml
+    env:
+      PICKER_ID: "owner-viewing-modal-date"
 - waitForAnimationToEnd:
     timeout: 1500
 - tapOn:
     id: "owner-viewing-modal-time"
-- extendedWaitUntil:
-    visible:
-      id: "owner-viewing-modal-time-cancel"
-    timeout: 10000
 - takeScreenshot: lc02a-owner-approve-modal
 # let the native time wheel finish sliding in: looking the button up mid-
 # animation crashes the iOS 26 XCUITest driver (kAXErrorInvalidUIElement)
 - waitForAnimationToEnd:
     timeout: 3000
-- tapOn:
-    id: "owner-viewing-modal-time-cancel"
-    retryTapIfNoChange: false
+- runFlow:
+    file: ../subflows/picker-cancel.yaml
+    env:
+      PICKER_ID: "owner-viewing-modal-time"
 - waitForAnimationToEnd:
     timeout: 1500
 - waitForAnimationToEnd:

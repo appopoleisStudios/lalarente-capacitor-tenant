@@ -1,15 +1,27 @@
 #!/usr/bin/env bash
 # Run lifecycle E2E flows (viewing → application → holding deposit → lease →
-# inspection → maintenance → occupied) on the iOS simulator.
+# inspection → maintenance → occupied) on the Android emulator (the client's
+# platform) with the installed release APK. iOS: DEVICE=<simulator UDID>.
 # Usage: scripts/run-lifecycle-e2e.sh [flow-name ...]   (default: full chain)
 #   e.g. scripts/run-lifecycle-e2e.sh lifecycle-01-search-property
-# Needs Metro running (scripts/start-metro-e2e.sh) and .maestro/.env.
+# Needs .maestro/.env, and the APK under test installed on the emulator
+# (iOS sim only: Metro running via scripts/start-metro-e2e.sh).
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 set -a; source .maestro/.env; set +a
 
-SIM_UDID="${SIM_UDID:-F40A74AA-78B1-4B57-BDFE-108149D0D6B7}"
+# Android emulator by default — every release check runs on Android. iOS only
+# when asked for explicitly: DEVICE=<simulator UDID>.
+DEVICE="${DEVICE:-emulator-5554}"
+if adb -s "$DEVICE" get-state >/dev/null 2>&1; then PLATFORM=android; else PLATFORM=ios; fi
+restart_app() {
+  if [[ "$PLATFORM" == android ]]; then
+    adb -s "$DEVICE" shell am force-stop com.lalarente.app
+  else
+    xcrun simctl terminate "$DEVICE" com.lalarente.app 2>/dev/null
+  fi
+}
 # Fixture: override in .maestro/.env to point at other test data
 : "${LC_PROPERTY_ID:=2ee8cfaf-f02d-491b-8947-6c49975f5732}"
 : "${LC_PROPERTY_TITLE:=2B Datura}"
@@ -29,6 +41,20 @@ LC_TOKEN="${LC_TOKEN:-$(date +%m%d%H%M)}"
 
 OUT=".maestro/lifecycle-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$OUT"
+# Record what this run tested — the release gate needs the device and the APK.
+{
+  echo "device:   $DEVICE ($PLATFORM)"
+  if [[ "$PLATFORM" == android ]]; then
+    adb -s "$DEVICE" shell dumpsys package com.lalarente.app | grep -E "versionCode|lastUpdateTime" | sed 's/^ */apk:      /'
+  fi
+  echo "commit:   $(git rev-parse --short HEAD)"
+} | tee "$OUT/device.txt"
+# The photo steps pick the newest photo in the device library: make sure one exists.
+if [[ "$PLATFORM" == android ]]; then
+  adb -s "$DEVICE" push "$ROOT/.maestro/assets/e2e-photo.jpg" /sdcard/Pictures/e2e-photo.jpg >/dev/null
+  adb -s "$DEVICE" shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE \
+    -d file:///sdcard/Pictures/e2e-photo.jpg >/dev/null
+fi
 # Full chain. The viewing must have happened before the tenant can apply
 # (CT7-032), so 02a is followed by moving it into the past and 02d.
 [[ $# -eq 0 ]] && set -- lifecycle-01-search-property lifecycle-02a-viewing-approve \
@@ -44,7 +70,7 @@ for name in "$@"; do
     continue
   fi
   mkdir -p "$OUT/$name"
-  # Retry ONLY when the Maestro driver itself crashed (iOS 26 XCUITest
+  # Retry ONLY when the Maestro driver itself crashed (e.g. iOS 26 XCUITest
   # "kAXErrorInvalidUIElement" while a sheet animates) — never when an app
   # check failed. Flows are written to be re-runnable from their start.
   for attempt in 1 2 3; do
@@ -57,7 +83,7 @@ for name in "$@"; do
         pgrep -f "maestro.cli.AppKt" >/dev/null || break
       done ) &
     watchdog=$!
-    ( set -o pipefail; cd "$OUT/$name" && maestro --device "$SIM_UDID" test "$ROOT/.maestro/flows/${name}.yaml" \
+    ( set -o pipefail; cd "$OUT/$name" && maestro --device "$DEVICE" test "$ROOT/.maestro/flows/${name}.yaml" \
         --env TENANT_EMAIL="$TENANT_EMAIL" --env TENANT_PASSWORD="$TENANT_PASSWORD" \
         --env OWNER_EMAIL="$OWNER_EMAIL" --env OWNER_PASSWORD="$OWNER_PASSWORD" \
         --env VENDOR_EMAIL="${VENDOR_EMAIL:-}" --env VENDOR_PASSWORD="${VENDOR_PASSWORD:-}" \
@@ -73,7 +99,7 @@ for name in "$@"; do
     kill "$watchdog" 2>/dev/null
     if grep -q "Exception in thread" "$OUT/$name/log.txt" && ! grep -q "\.\.\. FAILED" "$OUT/$name/log.txt"; then
       echo "↻ $name: Maestro driver crashed (attempt $attempt) — retrying"
-      xcrun simctl terminate "$SIM_UDID" com.lalarente.app 2>/dev/null
+      restart_app
       sleep 3
       continue
     fi

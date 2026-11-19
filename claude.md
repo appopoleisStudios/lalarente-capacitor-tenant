@@ -112,11 +112,16 @@ MUST satisfy, in order:
    (Lint, Tests, TypeScript). Never from a feature branch or a dirty tree.
 2. **Every bug fix in it ships with a regression test** that fails without the
    fix (Jest unit test or Maestro flow). No test → not done.
-3. **Full lifecycle chain passes on a device** from a clean fixture:
-   `node scripts/reset-lifecycle-fixture.mjs --apply` then
-   `scripts/run-lifecycle-e2e.sh` (01 → 08).
-4. **Android release APK smoke-tested on the emulator** (owner, tenant, vendor
-   dashboards; sign-out → sign-in) plus `tenant-tabbar-guard.yaml`.
+3. **Full lifecycle chain passes on the ANDROID EMULATOR with this exact
+   release APK** from a clean fixture: `node scripts/reset-lifecycle-fixture.mjs
+--apply` then `scripts/run-lifecycle-e2e.sh` (01 → 08, defaults to
+   `emulator-5554`). The client uses Android: an iOS-simulator pass does NOT
+   count (build 11 shipped with lease signing broken on Android because it was
+   only ever signed on the iOS sim).
+4. **Android guard flows pass on the emulator**: `scripts/run-android-guards.sh`
+   (`tenant-tabbar-guard`, `android-lease-sign-guard`, and the guard flow of
+   every client-reported bug — add new ones to that script), plus a smoke of
+   the owner, tenant and vendor dashboards and sign-out → sign-in.
 5. **Recorded**: `builds/lalarente-<version>-build.<n>-rev.<r>.apk` +
    `builds/BUILD_INFO-…txt` with the exact commit SHA, SHA-256 of the APK,
    what changed, and which checks passed. Testers report the build number.
@@ -149,5 +154,5 @@ If any step fails, the APK is not sent — fix, add the test, start again.
 - **Every change touching `app/(tenant)/_layout.tsx` or adding files under `app/(tenant)/vendor-payments/` MUST:**
   1. Keep the concrete `vendor-payments/index` entry with `href: null` (never a bare directory name, never a visible tab).
   2. Pass the Maestro regression guard `.maestro/flows/tenant-tabbar-guard.yaml` (asserts the 5 canonical tabs exist and NO "Vendor Payments" text/testID is in the navbar). It is wired into `run-e2e-individual.sh` and `run-full-e2e-suite.sh`.
-  3. Visually confirm on the iOS simulator (tenancy = tenant profile "Nashin Indraj") that the navbar shows only the 5 canonical tabs.
+  3. Visually confirm on the Android emulator with the release APK (tenancy = tenant profile "Nashin Indraj") that the navbar shows only the 5 canonical tabs.
 - Anything else that renders a "Pay Vendor" entry point belongs inside the Payments money hub, never in the tab bar.

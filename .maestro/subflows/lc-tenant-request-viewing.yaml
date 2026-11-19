@@ -46,22 +46,18 @@ appId: com.lalarente.app
 # ── date and time buttons open their pickers ──────────────────────────────
 - tapOn:
     id: "viewing-request-date"
-- extendedWaitUntil:
-    visible:
-      id: "viewing-request-date-done"
-    timeout: 10000
-- tapOn:
-    id: "viewing-request-date-done"
+- runFlow:
+    file: ../subflows/picker-confirm.yaml
+    env:
+      PICKER_ID: "viewing-request-date"
 - waitForAnimationToEnd:
     timeout: 2000
 - tapOn:
     id: "viewing-request-time"
-- extendedWaitUntil:
-    visible:
-      id: "viewing-request-time-done"
-    timeout: 10000
-- tapOn:
-    id: "viewing-request-time-done"
+- runFlow:
+    file: ../subflows/picker-confirm.yaml
+    env:
+      PICKER_ID: "viewing-request-time"
 - waitForAnimationToEnd:
     timeout: 2000
 - tapOn:

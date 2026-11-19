@@ -1,0 +1,197 @@
+Running on Pixel_7
+ > Flow lifecycle-01-search-property
+Run ../subflows/login-tenant.yaml...
+  Assert that (Optional) id: email-input is visible... WARNED
+  Run flow when id: email-input is not visible...
+    Stop com.lalarente.app... COMPLETED
+    Launch app "com.lalarente.app" and clear keychain (launch arguments: {EXDevMenuIsOnboardingFinished=true})... COMPLETED
+    Run dismiss-dev-menu.yaml...
+      Run flow when "Open DevTools" is visible...
+      Run flow when "Open DevTools" is visible... SKIPPED
+      Run flow when "Toggle performance monitor" is visible...
+      Run flow when "Toggle performance monitor" is visible... SKIPPED
+      Run flow when "Reload" is visible...
+      Run flow when "Reload" is visible... SKIPPED
+    Run dismiss-dev-menu.yaml... COMPLETED
+    Assert that (Optional) "Welcome back" is visible... WARNED
+    Run flow when "Welcome back," is not visible...
+    Run flow when "Welcome back," is not visible... SKIPPED
+    Run flow when id: email-input is not visible...
+      Run flow when id: tab-profile is visible...
+        Run sign-out-tenant.yaml...
+          Wait for animation to end within 2000 ms... COMPLETED
+          Tap on (Optional) id: tab-home... COMPLETED
+          Wait for animation to end within 2000 ms... COMPLETED
+          Tap on id: tab-profile... COMPLETED
+          Wait for animation to end within 2500 ms... COMPLETED
+          Scrolling DOWN until ".*Sign Out.*" is visible with speed 40, visibility percentage 100%, timeout 15000 ms, with centering disabled... COMPLETED
+          Tap on ".*Sign Out.*"... COMPLETED
+          Assert that ".*Are you sure.*" is visible... COMPLETED
+          Tap on "Sign Out", Index: 1... COMPLETED
+          Assert that id: email-input is visible... COMPLETED
+          Assert that "Sign in to your account" is visible... COMPLETED
+        Run sign-out-tenant.yaml... COMPLETED
+      Run flow when id: tab-profile is visible... COMPLETED
+      Run flow when id: tab-vendor-profile is visible...
+      Run flow when id: tab-vendor-profile is visible... SKIPPED
+      Run flow when id: tab-owner-profile is visible...
+      Run flow when id: tab-owner-profile is visible... SKIPPED
+      Assert that id: email-input is visible... COMPLETED
+    Run flow when id: email-input is not visible... COMPLETED
+  Run flow when id: email-input is not visible... COMPLETED
+  Tap on id: email-input... COMPLETED
+  Erase text... COMPLETED
+  Input text ${TENANT_EMAIL}... COMPLETED
+  Tap on (Optional) "Sign in to your account"... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+  Tap on id: password-input... COMPLETED
+  Wait for animation to end within 1000 ms... COMPLETED
+  Erase text... COMPLETED
+  Input text ${TENANT_PASSWORD}... COMPLETED
+  Tap on (Optional) "Sign in to your account"... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+  Tap on id: sign-in-button... COMPLETED
+  Assert that "Welcome back," is visible... COMPLETED
+Run ../subflows/login-tenant.yaml... COMPLETED
+Open lalarenteapp://(tenant)/search... COMPLETED
+Assert that id: tenant-search-input is visible... COMPLETED
+Assert that id: tenant-search-clear is not visible... COMPLETED
+Tap on id: tenant-search-input... COMPLETED
+Input text zzz-no-such-property... COMPLETED
+Press Enter key... COMPLETED
+Assert that "No properties found" is visible... COMPLETED
+Assert that id: tenant-search-clear is visible... COMPLETED
+Tap on id: tenant-search-clear... COMPLETED
+Assert that id: tenant-search-clear is not visible... COMPLETED
+Assert that id: tenant-property-card is visible... COMPLETED
+Tap on id: tenant-search-input... COMPLETED
+Input text ${LC_PROPERTY_TITLE}... COMPLETED
+Press Enter key... COMPLETED
+Assert that id: tenant-property-card is visible... COMPLETED
+Assert that ".*${LC_PROPERTY_TITLE}.*" is visible... COMPLETED
+Take screenshot lc01-search-by-title... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Assert that id: tenant-search-min-price is not visible... COMPLETED
+Tap on id: tenant-search-filters-toggle... COMPLETED
+Assert that id: tenant-search-min-price is visible... COMPLETED
+Assert that id: tenant-search-max-price is visible... COMPLETED
+Tap on id: tenant-search-min-price... COMPLETED
+Input text ${LC_PRICE_MIN}... COMPLETED
+Tap on id: tenant-search-max-price... COMPLETED
+Input text ${LC_PRICE_MAX}... COMPLETED
+Press Enter key... COMPLETED
+Assert that id: tenant-property-card is visible... COMPLETED
+Assert that ".*${LC_PROPERTY_TITLE}.*" is visible... COMPLETED
+Tap on id: tenant-search-max-price... COMPLETED
+Erase 30 characters... COMPLETED
+Input text 1... COMPLETED
+Press Enter key... COMPLETED
+Assert that "No properties found" is visible... COMPLETED
+Take screenshot lc01-price-excludes... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Tap on id: tenant-search-clear-filters... COMPLETED
+Assert that id: tenant-property-card is visible... COMPLETED
+Assert that id: tenant-search-clear is not visible... COMPLETED
+Tap on id: tenant-search-input... COMPLETED
+Input text ${LC_PROPERTY_TITLE}... COMPLETED
+Press Enter key... COMPLETED
+Assert that id: tenant-property-card is visible... COMPLETED
+Tap on id: tenant-search-bedrooms-1... COMPLETED
+Assert that id: tenant-property-card is visible... COMPLETED
+Tap on id: tenant-search-bedrooms-2... COMPLETED
+Assert that id: tenant-property-card is visible... COMPLETED
+Tap on id: tenant-search-bedrooms-3... COMPLETED
+Assert that "No properties found" is visible... COMPLETED
+Tap on id: tenant-search-bedrooms-4... COMPLETED
+Assert that "No properties found" is visible... COMPLETED
+Take screenshot lc01-bedrooms-excludes... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Tap on id: tenant-search-bedrooms-4... COMPLETED
+Assert that id: tenant-property-card is visible... COMPLETED
+Tap on id: tenant-search-type-house... COMPLETED
+Assert that "No properties found" is visible... COMPLETED
+Tap on id: tenant-search-type-apartment... COMPLETED
+Assert that "No properties found" is visible... COMPLETED
+Tap on id: tenant-search-type-townhouse... COMPLETED
+Take screenshot lc01-type-townhouse... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Assert that id: tenant-property-card is visible... COMPLETED
+Tap on id: tenant-search-type-townhouse... COMPLETED
+Assert that id: tenant-property-card is visible... COMPLETED
+Tap on id: tenant-search-filters-toggle... COMPLETED
+Assert that id: tenant-search-min-price is not visible... COMPLETED
+Swipe from (50%,45%) to (50%,85%) in 400 ms... COMPLETED
+Assert that id: tenant-property-card is visible... COMPLETED
+Tap on id: tenant-property-card, Index: 0... COMPLETED
+Assert that id: tenant-property-back is visible... COMPLETED
+Assert that ".*${LC_PROPERTY_TITLE}.*" is visible... COMPLETED
+Take screenshot lc01-property-detail... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Tap on id: tenant-property-favorite... COMPLETED
+Tap on id: tenant-property-favorite... COMPLETED
+Open lalarenteapp://(tenant)/search... COMPLETED
+Assert that id: tenant-search-results is visible... COMPLETED
+Open lalarenteapp://(tenant)/properties/${LC_PROPERTY_ID}... COMPLETED
+Assert that id: tenant-property-back is visible... COMPLETED
+Tap on id: tenant-property-share... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Take screenshot lc01-share-sheet... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Tap on point (50%,25%)... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Open lalarenteapp://(tenant)/properties/${LC_PROPERTY_ID}... COMPLETED
+Assert that id: tenant-property-back is visible... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Scrolling DOWN until id: tenant-view-3d is visible with speed 40, visibility percentage 60%, timeout 20000 ms, with centering enabled... COMPLETED
+Tap on id: tenant-view-3d... COMPLETED
+Assert that "Feature coming soon" is visible... COMPLETED
+Tap on "OK"... COMPLETED
+Take screenshot lc01-3d-coming-soon... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Open lalarenteapp://(tenant)/properties/${LC_PROPERTY_ID}... COMPLETED
+Assert that id: tenant-property-back is visible... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Scrolling DOWN until id: tenant-property-contact-owner is visible with speed 40, visibility percentage 60%, timeout 20000 ms, with centering enabled... COMPLETED
+Tap on id: tenant-property-contact-owner... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Take screenshot lc01-contact-owner... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Tap on (Optional) "Cancel"... COMPLETED
+Open lalarenteapp://(tenant)/properties/${LC_PROPERTY_ID}... COMPLETED
+Assert that id: tenant-property-request-viewing is visible... COMPLETED
+Tap on id: tenant-property-request-viewing... COMPLETED
+Assert that id: viewing-request-back is visible... COMPLETED
+Assert that ".*${LC_PROPERTY_TITLE}.*" is visible... COMPLETED
+Tap on id: viewing-request-back... COMPLETED
+Assert that id: tenant-property-apply is visible... COMPLETED
+Tap on id: tenant-property-apply... COMPLETED
+Assert that id: tenant-apply-back is visible... COMPLETED
+Take screenshot lc01-apply-form... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Tap on id: tenant-apply-back... COMPLETED
+Assert that id: tenant-property-back is visible... COMPLETED
+Tap on id: tenant-property-back... COMPLETED
+Assert that id: tenant-search-input is visible... COMPLETED
+Open lalarenteapp://(tenant)/lease... COMPLETED
+Assert that "My Lease" is visible... COMPLETED
+Run flow when id: tenant-lease-search-properties is visible...
+Run flow when id: tenant-lease-search-properties is visible... SKIPPED
+Open lalarenteapp://(tenant)/lease-journey... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Run flow when id: tenant-journey-search-properties is visible...
+Run flow when id: tenant-journey-search-properties is visible... SKIPPED
+Open lalarenteapp://(tenant)/maintenance/report... COMPLETED
+Assert that "No Active Lease" is visible... FAILED
+
+Assertion is false: "No Active Lease" is visible
+
+Assertion '"No Active Lease" is visible' failed. Check the UI hierarchy in debug artifacts to verify the element state and properties.
+
+Possible causes:
+- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
+- Element may be temporarily unavailable due to loading state
+- This could be a real regression that needs to be addressed
+
+==== Debug output (logs & screenshots) ====
+
+/Users/appopoleis/.maestro/tests/2026-11-18_132358
