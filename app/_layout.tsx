@@ -6,6 +6,7 @@ import { env, RELEASE_VERSION } from '@/src/core/config/env';
 import { ErrorBoundary } from '@/src/components/ErrorBoundary';
 import { QueryProvider } from '@/src/core/query/QueryProvider';
 import { disableDevToolsInterference } from '@/src/core/dev/disableDevToolsInterference';
+import { ChoiceSheetHost } from '@/src/shared/components/ui/ChoiceSheet';
 import '../global.css';
 
 // Prevent shake / LogBox / Expo tools FAB from opening React Native DevTools during E2E.
@@ -63,6 +64,7 @@ function RootLayout() {
       <QueryProvider>
         <AuthProvider>
           <RootLayoutNav />
+          <ChoiceSheetHost />
         </AuthProvider>
       </QueryProvider>
     </ErrorBoundary>

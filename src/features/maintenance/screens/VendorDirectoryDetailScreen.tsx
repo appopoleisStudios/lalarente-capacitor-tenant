@@ -25,6 +25,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { showChoices } from '@/src/shared/components/ui/ChoiceSheet';
 
 const OWNER_BLUE = colors.role.owner.primary;
 const TENANT_GREEN = colors.role.tenant.primary;
@@ -178,7 +179,7 @@ export default function VendorDirectoryDetailScreen() {
         },
       }));
       buttons.push({ text: 'Cancel', style: 'cancel' });
-      Alert.alert(`Invite ${label}`, 'Send a quote request on an open job:', buttons);
+      showChoices(`Invite ${label}`, 'Send a quote request on an open job:', buttons);
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Could not load jobs.');
     }

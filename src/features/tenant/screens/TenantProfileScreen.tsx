@@ -19,6 +19,7 @@ import { supabase } from '../../../lib/supabase';
 import { persistFicaDocField } from '../utils/persistFicaDoc';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
+import { showChoices } from '@/src/shared/components/ui/ChoiceSheet';
 
 const RSA = { green: '#007A4D', blue: '#002395' };
 
@@ -232,7 +233,7 @@ export default function TenantProfileScreen() {
   };
 
   const handleUploadProofOfAddress = () => {
-    Alert.alert('Upload Document', 'Choose source', [
+    showChoices('Upload Document', 'Choose source', [
       {
         text: 'Take Photo',
         onPress: () =>
@@ -548,7 +549,7 @@ export default function TenantProfileScreen() {
                     disabled={!editing}
                     onPress={() => {
                       if (!editing) return;
-                      Alert.alert('Country Code', 'Select your country calling code', [
+                      showChoices('Country Code', 'Select your country calling code', [
                         { text: '+27  South Africa', onPress: () => setCountryCode('+27') },
                         { text: '+263  Zimbabwe', onPress: () => setCountryCode('+263') },
                         { text: '+267  Botswana', onPress: () => setCountryCode('+267') },

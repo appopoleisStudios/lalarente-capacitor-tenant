@@ -17,6 +17,7 @@ import { documentsApi } from '../api/documentsApi';
 import { DocumentWithRelations, DocumentType, DOCUMENT_CATEGORIES } from '../types';
 import { supabase } from '../../../lib/supabase';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { showChoices } from '@/src/shared/components/ui/ChoiceSheet';
 
 const COLORS = {
   owner: { primary: '#002395', secondary: '#FFB81C' },
@@ -130,7 +131,7 @@ export default function DocumentViewerScreen({ role = 'owner' }: Props) {
   };
 
   const handleExtendRetention = () => {
-    Alert.alert(
+    showChoices(
       'Extend Retention',
       'How many years would you like to extend the retention period?',
       [

@@ -28,6 +28,7 @@ import { supabase } from '@/src/lib/supabase';
 import { documentsApi } from '@/src/features/documents/api/documentsApi';
 import { DOCUMENT_CATEGORIES } from '@/src/features/documents/types';
 import type { Document, DocumentType, FileInfo } from '@/src/features/documents/types';
+import { showChoices } from '@/src/shared/components/ui/ChoiceSheet';
 
 // ── Types ──
 
@@ -169,7 +170,7 @@ export default function TenantDocumentsScreen() {
 
   const pickFile = async (): Promise<FileInfo | null> => {
     return new Promise((resolve) => {
-      Alert.alert('Upload Document', 'Choose source', [
+      showChoices('Upload Document', 'Choose source', [
         {
           text: 'Photo Library',
           onPress: async () => {

@@ -41,6 +41,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { showChoices } from '@/src/shared/components/ui/ChoiceSheet';
 
 const RSA = { blue: '#002395' };
 
@@ -196,7 +197,7 @@ export default function OwnerMaintenanceDetailScreen() {
   };
 
   const handlePushToVendors = () => {
-    Alert.alert('Push to Vendors', 'How would you like to route this request?', [
+    showChoices('Push to Vendors', 'How would you like to route this request?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Select Specific Vendors',
