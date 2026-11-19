@@ -1970,7 +1970,7 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         shared `KeyboardAwareScrollView` (scrolls the focused input above the
         keyboard after the shrink), used by every vertical ScrollView in a
         file with a KAV; Jest behaviour test + guard (fails on the old screen).
-  - [ ] lifecycle-07 asserts the title / description field and Submit stay
+  - [x] lifecycle-07 asserts the title / description field and Submit stay
         visible with the keyboard up.
-  - [ ] Android emulator (release APK): Report Issue, chat thread and a long
+  - [x] Android emulator (release APK): Report Issue, chat thread and a long
         form keep the field being typed in and the buttons reachable; lifecycle 01→08 green.
