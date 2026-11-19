@@ -81,7 +81,9 @@ export function notificationRoute(role: NotificationRole, n: UnreadNotification)
   }
   if (role === 'owner') {
     if (n.type.startsWith('application_')) return '/(owner)/applications';
-    if (n.type === 'lease_signed' && d.lease_id) return `/(owner)/leases/${d.lease_id}`;
+    if (n.type.startsWith('lease_')) {
+      return d.lease_id ? `/(owner)/leases/${d.lease_id}` : '/(owner)/tenants';
+    }
     return null;
   }
   if (role === 'tenant') {

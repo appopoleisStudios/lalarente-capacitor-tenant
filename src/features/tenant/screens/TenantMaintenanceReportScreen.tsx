@@ -202,6 +202,21 @@ export default function TenantMaintenanceReportScreen() {
       return;
     }
 
+    // The lease may have changed since the form opened (e.g. terminated):
+    // check its current status right before creating the request.
+    const { data: currentLease, error: leaseCheckError } = await supabase
+      .from('leases')
+      .select('status')
+      .eq('id', selectedLeaseId);
+    if (leaseCheckError) {
+      Alert.alert("Couldn't check your lease", 'Check your connection and try again.');
+      return;
+    }
+    if (!canReportIssue(currentLease?.[0]?.status)) {
+      Alert.alert('Lease not signed', REPORT_ISSUE_NEEDS_SIGNED_LEASE_MESSAGE);
+      return;
+    }
+
     try {
       setSubmitting(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);

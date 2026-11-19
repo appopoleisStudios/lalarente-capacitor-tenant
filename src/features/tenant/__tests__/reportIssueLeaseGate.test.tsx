@@ -6,7 +6,9 @@
  * form.
  */
 import React, { useEffect as mockUseEffect } from 'react';
-import { act, render, screen, waitFor } from '@testing-library/react-native';
+import { Alert } from 'react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { maintenanceApi } from '@/src/features/maintenance/api';
 import TenantMaintenanceReportScreen from '../screens/TenantMaintenanceReportScreen';
 import TenantMaintenanceListScreen from '../screens/TenantMaintenanceListScreen';
 
@@ -32,6 +34,7 @@ jest.mock('@/src/features/maintenance/api', () => ({
   maintenanceApi: {
     getServiceCategories: jest.fn(() => Promise.resolve([])),
     getPropertyServiceItems: jest.fn(() => Promise.resolve([])),
+    createMaintenanceRequest: jest.fn(() => Promise.resolve({ id: 'req-1' })),
   },
   consumePendingVendorSelection: jest.fn(() => null),
 }));
@@ -147,6 +150,25 @@ describe('CT7-066 Report Issue needs a lease signed by both', () => {
       expect(screen.queryByText('No Active Lease')).toBeNull();
       expect(screen.queryByText(NEEDS_LEASE)).toBeNull();
       expect(screen.queryByText('Submit Request')).toBeNull();
+    });
+
+    it('re-checks the lease on submit: a lease ended after the form opened is refused', async () => {
+      const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+      mockLeases = lease('active');
+      render(<TenantMaintenanceReportScreen />);
+      expect(await screen.findByText('Submit Request')).toBeTruthy();
+      fireEvent.changeText(screen.getByTestId('maintenance-title-input'), 'Leaking kitchen tap');
+      fireEvent.changeText(
+        screen.getByTestId('maintenance-description-input'),
+        'The kitchen tap has been dripping constantly since Monday.'
+      );
+      mockLeases = lease('terminated'); // ended elsewhere while the form was open
+      await act(async () => {
+        fireEvent.press(screen.getByText('Submit Request'));
+      });
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledWith('Lease not signed', NEEDS_LEASE));
+      expect(maintenanceApi.createMaintenanceRequest).not.toHaveBeenCalled();
+      alertSpy.mockRestore();
     });
   });
 

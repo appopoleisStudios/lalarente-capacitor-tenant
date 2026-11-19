@@ -87,6 +87,20 @@ describe('notificationRoute', () => {
       notificationRoute('tenant', notif({ type: 'payment_due', data: { application_id: 'a1' } }))
     ).toBe('/(tenant)/holding-deposit');
     expect(notificationRoute('vendor', notif({ type: 'lease_signed' }))).toBeNull();
+    // Real lease_signed payload (leasesApi): carries lease_id since CT7-064
+    expect(
+      notificationRoute(
+        'owner',
+        notif({
+          type: 'lease_signed',
+          data: { lease_id: 'l1', propertyTitle: '', customTitle: 'Lease Activated' },
+        })
+      )
+    ).toBe('/(owner)/leases/l1');
+    // Older rows without lease_id still open somewhere useful
+    expect(notificationRoute('owner', notif({ type: 'lease_signed', data: {} }))).toBe(
+      '/(owner)/tenants'
+    );
   });
 });
 
@@ -106,5 +120,14 @@ describe('Notifications screens (guard)', () => {
     const tap = src.slice(src.indexOf('const handleTap'));
     expect(tap).toMatch(/markNotificationsRead\(item\.notificationIds\)/);
     expect(src.slice(0, src.indexOf('const handleTap'))).not.toMatch(/markNotificationsRead\(/);
+  });
+});
+
+describe('lease notifications carry the lease id (guard)', () => {
+  it('every lease_signed notification sent by leasesApi includes lease_id', () => {
+    const src = fs.readFileSync(path.join(__dirname, '../../properties/api/leasesApi.ts'), 'utf8');
+    const blocks = src.split("type: 'lease_signed'").slice(1);
+    expect(blocks.length).toBeGreaterThan(0);
+    blocks.forEach((b) => expect(b.slice(0, b.indexOf('}'))).toMatch(/lease_id:/));
   });
 });

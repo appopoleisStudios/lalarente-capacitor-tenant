@@ -59,7 +59,7 @@ export default function VendorDirectoryDetailScreen() {
   const accent = isOwner ? OWNER_BLUE : TENANT_GREEN;
   const { id, requestId } = useLocalSearchParams<{ id: string; requestId?: string }>();
   // A tenant can start a new report only on a lease in effect (CT7-066)
-  const { canReport } = useCanReportIssue(!isOwner);
+  const { canReport, refresh: refreshCanReport } = useCanReportIssue(!isOwner);
 
   const [loading, setLoading] = useState(true);
   const [inviting, setInviting] = useState(false);
@@ -144,7 +144,13 @@ export default function VendorDirectoryDetailScreen() {
         ['open', 'assigned', 'in_progress'].includes(String(job.status))
       );
       if (openJobs.length === 0) {
-        if (!isOwner && !canReport) {
+        if (!isOwner && canReport === null) {
+          // Lease check still loading or failed: don't claim there is no lease.
+          refreshCanReport();
+          Alert.alert("Couldn't check your lease", 'Check your connection and try again.');
+          return;
+        }
+        if (!isOwner && canReport === false) {
           Alert.alert('No open jobs', REPORT_ISSUE_NEEDS_SIGNED_LEASE_MESSAGE);
           return;
         }
