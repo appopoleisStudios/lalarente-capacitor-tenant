@@ -8,6 +8,7 @@ export interface ChipProps {
   variant?: 'default' | 'primary' | 'outline';
   size?: 'small' | 'medium';
   style?: ViewStyle;
+  testID?: string;
 }
 
 export function Chip({
@@ -17,6 +18,7 @@ export function Chip({
   variant = selected ? 'primary' : 'outline',
   size = 'medium',
   style,
+  testID,
 }: ChipProps) {
   const variantStyles = {
     default: { bg: '#F1F5F9', text: '#475569', border: '#F1F5F9' },
@@ -37,14 +39,11 @@ export function Chip({
       onPress={onPress}
       activeOpacity={0.7}
       disabled={!onPress}
+      testID={testID}
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
     >
-      <Text
-        style={[
-          styles.text,
-          { color: resolved.text },
-          size === 'small' && styles.textSmall,
-        ]}
-      >
+      <Text style={[styles.text, { color: resolved.text }, size === 'small' && styles.textSmall]}>
         {label}
       </Text>
     </TouchableOpacity>
