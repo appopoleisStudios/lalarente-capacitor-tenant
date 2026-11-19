@@ -877,9 +877,18 @@ appId: com.lalarente.app
 - extendedWaitUntil:
     visible: "Reports"
     timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 1500
+# Completed work orders are listed above the inspection reports and grow with
+# every run, so the signature prompt can start below the fold.
+- scrollUntilVisible:
+    element:
+      id: "tenant-report-inspection-sign"
+    direction: DOWN
+    timeout: 20000
+    visibilityPercentage: 100
 - tapOn:
     id: "tenant-report-inspection-sign"
-    index: 0
 - extendedWaitUntil:
     visible: "Move-In Inspection"
     timeout: 30000
