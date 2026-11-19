@@ -1931,6 +1931,61 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   - [x] Android emulator (release APK), 2026-11-19: New Message → View My
         Jobs opens the My Jobs list (no error alert).
 
+## CT7-060 🟡 Dates follow the phone's language: "Due: 12/1/2026" (all roles)
+
+- **Role:** all · **Platform:** all · Found in the Android walkthrough
+  (tenant → Payments → Payment History, and owner → Rent Roll "Next due").
+- **Today:** 46 places formatted dates with a bare `toLocaleDateString()` /
+  `toLocaleString()`, so the format follows the phone's language. On an
+  English (US) phone the first rent showed "Due: 12/1/2026", which a South
+  African reads as 12 January, while the dashboard showed "2026/12/01".
+- **Acceptance criteria:**
+  - [x] Every such date (17 screens/components: leases, payments, rent roll,
+        tenants, applications, quotes, maintenance timeline, compliance,
+        vendor documents and jobs) uses the shared `formatDate()` →
+        "1 Dec 2026" (date-time: "1 Dec 2026, 14:30").
+  - [x] Jest guard `dateLocale.test.ts`: no bare `toLocaleDateString()` /
+        `toLocaleTimeString()` / `new Date(…).toLocaleString()` in `src` or
+        `app` (fails on main: 18 files).
+  - [x] Android emulator (release APK), 2026-11-19: tenant Payments "Due: 01
+        Dec 2026"; owner Rent Roll "Next due: 01 Dec 2026"; Tenants & Leases
+        "01 Dec 2026 → 30 Nov 2027" (main: 12/1/2026).
+
+## CT7-058 🟡 Property search with no match says "No properties yet" (owner)
+
+- **Role:** owner · **Platform:** all · Found in the Android walkthrough
+  (My Properties → search "zzz-no-such-property").
+- **Today:** the list's empty state was always "No properties yet — Add your
+  first property", even for an owner with four properties whose search or
+  status filter matched none.
+- **Acceptance criteria:**
+  - [x] With properties hidden by the search / filter: "No properties match"
+        and a **Clear filters** button; "No properties yet" only for an owner
+        with no properties.
+  - [x] Jest `PropertiesListEmptyState.test.tsx` (fails without the fix).
+  - [x] Android emulator (release APK), 2026-11-19: search "zzqx-nomatch" →
+        "No properties match" + Clear filters → full list back.
+
+## CT7-059 🟡 Raw values with underscores on screen ("Prepaid Water_electricity", "Bbq")
+
+- **Role:** owner, tenant · **Platform:** all · Found in the Android
+  walkthrough (Add Property: selected services / amenities chips).
+- **Today:** labels were built with `value.replace('_', ' ')`, which replaces
+  only the first underscore, then title-cased: "Prepaid Water_electricity",
+  "Bbq". Same pattern on application status, compliance risk level, lease
+  type, tenant maintenance empty text and the inspection-issue description.
+- **Acceptance criteria:**
+  - [x] Add / Edit Property chips use the option's own label
+        (`optionLabel`): "Prepaid Water/Electricity", "BBQ"; custom entries
+        formatted with every underscore replaced.
+  - [x] The other sites replace every underscore.
+  - [x] Jest `optionLabel.test.ts` + guard: no string-pattern `.replace('_', …)`
+        anywhere in `src/` or `app/` (fails without the fix).
+  - [x] Android emulator (release APK), 2026-11-19: Edit Property (same chip
+        code as Add) → tick BBQ and Prepaid Water/Electricity → chips read
+        "BBQ" and "Prepaid Water/Electricity" (main: "Bbq",
+        "Prepaid Water_electricity"); not saved.
+
 ## CT7-057 🟠 Rent Roll says "Paid" for rent that was never paid (owner)
 
 - **Role:** owner · **Platform:** all · Found in the Android walkthrough

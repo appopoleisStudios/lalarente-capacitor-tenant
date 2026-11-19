@@ -15,6 +15,7 @@ import { supabase } from '../../../lib/supabase';
 import { applicationsApi, ApplicationWithRelations } from '../../properties/api/applicationsApi';
 import type { Database } from '../../../types/database.types';
 
+import { formatDate } from '../../../shared/utils/format';
 type ApplicationStatus =
   | 'draft'
   | 'submitted'
@@ -362,16 +363,14 @@ export default function OwnerApplicationsScreen() {
                         ]}
                       >
                         <Ionicons name={getStatusIcon(item.status)} size={16} color="#FFF" />
-                        <Text style={styles.statusText}>{item.status.replace('_', ' ')}</Text>
+                        <Text style={styles.statusText}>{item.status.replace(/_/g, ' ')}</Text>
                       </View>
                     </View>
 
                     <View style={styles.cardBody}>
                       <View style={styles.infoRow}>
                         <Ionicons name="calendar-outline" size={18} color="#666" />
-                        <Text style={styles.infoText}>
-                          Applied: {new Date(item.created_at!).toLocaleDateString()}
-                        </Text>
+                        <Text style={styles.infoText}>Applied: {formatDate(item.created_at!)}</Text>
                       </View>
                       {item.affordability_ratio && (
                         <View style={styles.infoRow}>

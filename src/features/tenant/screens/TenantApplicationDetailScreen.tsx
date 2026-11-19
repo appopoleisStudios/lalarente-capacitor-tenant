@@ -13,6 +13,7 @@ import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { applicationsApi, ApplicationWithRelations } from '../../properties/api/applicationsApi';
 
+import { formatDate } from '../../../shared/utils/format';
 const RSA = { green: '#007A4D', blue: '#002395' };
 
 export default function TenantApplicationDetailScreen() {
@@ -157,16 +158,14 @@ export default function TenantApplicationDetailScreen() {
               <TimelineItem
                 icon="paper-plane"
                 label="Submitted"
-                date={new Date(
-                  application.submitted_at || application.created_at!
-                ).toLocaleString()}
+                date={formatDate(application.submitted_at || application.created_at!, 'datetime')}
                 completed
               />
               {application.reviewed_at && (
                 <TimelineItem
                   icon="eye"
                   label="Under Review"
-                  date={new Date(application.reviewed_at).toLocaleString()}
+                  date={formatDate(application.reviewed_at, 'datetime')}
                   completed
                 />
               )}
@@ -174,7 +173,7 @@ export default function TenantApplicationDetailScreen() {
                 <TimelineItem
                   icon="checkmark-circle"
                   label="Approved"
-                  date={new Date(application.approved_at).toLocaleString()}
+                  date={formatDate(application.approved_at, 'datetime')}
                   completed
                 />
               )}
@@ -182,7 +181,7 @@ export default function TenantApplicationDetailScreen() {
                 <TimelineItem
                   icon="close-circle"
                   label="Rejected"
-                  date={new Date(application.rejected_at).toLocaleString()}
+                  date={formatDate(application.rejected_at, 'datetime')}
                   completed
                 />
               )}

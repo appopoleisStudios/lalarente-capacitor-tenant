@@ -20,6 +20,7 @@ import { propertiesApi } from '../../properties/api/propertiesApi';
 import type { PropertyWithRelations } from '../../properties/api/propertiesApi';
 import { viewingGate, OPEN_VIEWING_STATUSES, type OpenViewing } from '../utils/viewingGate';
 
+import { formatDate } from '../../../shared/utils/format';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const RSA = { green: '#007A4D', blue: '#002395' };
 
@@ -568,10 +569,7 @@ export default function TenantPropertyDetailScreen() {
                   />
                 )}
                 {property.available_from && (
-                  <DetailRow
-                    label="Available From"
-                    value={new Date(property.available_from).toLocaleDateString()}
-                  />
+                  <DetailRow label="Available From" value={formatDate(property.available_from)} />
                 )}
                 {property.minimum_lease_months && (
                   <DetailRow label="Min. Lease" value={`${property.minimum_lease_months} months`} />

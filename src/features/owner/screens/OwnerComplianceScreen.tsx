@@ -30,6 +30,7 @@ import { applicationsApi } from '@/src/features/properties/api/applicationsApi';
 import type { Document } from '@/src/features/documents/types';
 import { reportApiError } from '@/src/core/observability/sentry';
 
+import { formatDate } from '../../../shared/utils/format';
 type Tab = 'fica' | 'property';
 
 interface TenantFica {
@@ -521,7 +522,7 @@ export default function OwnerComplianceScreen() {
                         {tenant.riskLevel && (
                           <View style={[styles.riskBadge, { backgroundColor: riskColor + '20' }]}>
                             <Text style={[styles.riskText, { color: riskColor }]}>
-                              {tenant.riskLevel.replace('_', ' ').toUpperCase()}
+                              {tenant.riskLevel.replace(/_/g, ' ').toUpperCase()}
                             </Text>
                           </View>
                         )}
@@ -649,7 +650,7 @@ export default function OwnerComplianceScreen() {
                               <Text style={styles.checklistLaw}>
                                 {doc
                                   ? doc.created_at
-                                    ? `Uploaded ${new Date(doc.created_at).toLocaleDateString()}`
+                                    ? `Uploaded ${formatDate(doc.created_at)}`
                                     : 'Uploaded'
                                   : item.law}
                               </Text>

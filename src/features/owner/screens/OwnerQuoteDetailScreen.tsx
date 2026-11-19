@@ -26,6 +26,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { reportApiError } from '@/src/core/observability/sentry';
 
+import { formatDate } from '../../../shared/utils/format';
 const RSA = { blue: '#002395' };
 
 const STATUS_CONFIG = {
@@ -435,14 +436,14 @@ export default function OwnerQuoteDetailScreen() {
             <TimelineItem
               icon="add-circle"
               label="Quote Created"
-              date={new Date(quote.created_at).toLocaleDateString()}
+              date={formatDate(quote.created_at)}
               completed
             />
             {quote.status === 'submitted' && (
               <TimelineItem
                 icon="document-text"
                 label="Submitted"
-                date={new Date(quote.updated_at).toLocaleDateString()}
+                date={formatDate(quote.updated_at)}
                 completed
               />
             )}
@@ -450,7 +451,7 @@ export default function OwnerQuoteDetailScreen() {
               <TimelineItem
                 icon="create"
                 label="Revision Requested"
-                date={new Date(quote.updated_at).toLocaleDateString()}
+                date={formatDate(quote.updated_at)}
                 completed
               />
             )}
@@ -458,7 +459,7 @@ export default function OwnerQuoteDetailScreen() {
               <TimelineItem
                 icon="checkmark-circle"
                 label="Approved"
-                date={new Date(quote.updated_at).toLocaleDateString()}
+                date={formatDate(quote.updated_at)}
                 completed
               />
             )}
@@ -466,7 +467,7 @@ export default function OwnerQuoteDetailScreen() {
               <TimelineItem
                 icon="close-circle"
                 label="Rejected"
-                date={new Date(quote.updated_at).toLocaleDateString()}
+                date={formatDate(quote.updated_at)}
                 completed
               />
             )}

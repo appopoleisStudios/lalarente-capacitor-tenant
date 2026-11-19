@@ -28,6 +28,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
 import { colors } from '@/src/shared/theme/colors';
 
+import { formatDate } from '../../../shared/utils/format';
 const RSA = { green: '#007A4D', gold: '#FFB81C' }; // Tenant colors
 
 function unpackRelation<T>(value: T | T[] | null | undefined): T | undefined {
@@ -521,16 +522,12 @@ export default function TenantLeaseScreen() {
               <View style={styles.dateRow}>
                 <View style={styles.dateItem}>
                   <Text style={styles.dateLabel}>Start Date</Text>
-                  <Text style={styles.dateValue}>
-                    {new Date(lease.start_date).toLocaleDateString()}
-                  </Text>
+                  <Text style={styles.dateValue}>{formatDate(lease.start_date)}</Text>
                 </View>
                 <Ionicons name="arrow-forward" size={20} color="#CCC" />
                 <View style={styles.dateItem}>
                   <Text style={styles.dateLabel}>End Date</Text>
-                  <Text style={styles.dateValue}>
-                    {new Date(lease.end_date).toLocaleDateString()}
-                  </Text>
+                  <Text style={styles.dateValue}>{formatDate(lease.end_date)}</Text>
                 </View>
               </View>
 
@@ -581,7 +578,7 @@ export default function TenantLeaseScreen() {
                   icon="document-text"
                   label="Lease Type"
                   value={lease.lease_type
-                    .replace('_', ' ')
+                    .replace(/_/g, ' ')
                     .replace(/\b\w/g, (l) => l.toUpperCase())}
                 />
               )}
@@ -589,7 +586,7 @@ export default function TenantLeaseScreen() {
                 <DetailRow
                   icon="checkmark-circle"
                   label="Lease Executed"
-                  value={new Date(lease.executed_at).toLocaleDateString()}
+                  value={formatDate(lease.executed_at)}
                 />
               )}
               {lease.rent_escalation_type && lease.rent_escalation_value && (

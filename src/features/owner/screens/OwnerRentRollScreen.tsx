@@ -24,6 +24,7 @@ import {
   type RentRollStatus,
 } from '../utils/rentRollStatus';
 
+import { formatDate } from '../../../shared/utils/format';
 interface PropertyPaymentSummary {
   property_id: string;
   property_title: string;
@@ -275,18 +276,14 @@ export default function OwnerRentRollScreen() {
         {item.next_payment_due && (
           <View style={styles.infoRow}>
             <Ionicons name="calendar-outline" size={16} color="#666" />
-            <Text style={styles.infoText}>
-              Next due: {new Date(item.next_payment_due).toLocaleDateString()}
-            </Text>
+            <Text style={styles.infoText}>Next due: {formatDate(item.next_payment_due)}</Text>
           </View>
         )}
 
         {item.last_payment_date && (
           <View style={styles.infoRow}>
             <Ionicons name="checkmark-circle-outline" size={16} color="#666" />
-            <Text style={styles.infoText}>
-              Last paid: {new Date(item.last_payment_date).toLocaleDateString()}
-            </Text>
+            <Text style={styles.infoText}>Last paid: {formatDate(item.last_payment_date)}</Text>
           </View>
         )}
       </View>
