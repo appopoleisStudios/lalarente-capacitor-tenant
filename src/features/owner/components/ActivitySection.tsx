@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { router } from 'expo-router';
 import { AnimatedButton } from '@/src/shared/components';
 
 interface Activity {
@@ -7,6 +8,7 @@ interface Activity {
   label: string;
   value: string;
   date: string;
+  route: string;
 }
 
 interface ActivitySectionProps {
@@ -16,15 +18,19 @@ interface ActivitySectionProps {
 export const ActivitySection = ({ activities }: ActivitySectionProps) => {
   return (
     <View>
+      {/* No "View All": there is no full activity screen, and the button did
+          nothing (CT7-056). */}
       <View style={styles.header}>
         <Text style={styles.title}>Recent Activity</Text>
-        <AnimatedButton>
-          <Text style={styles.seeAll}>View All</Text>
-        </AnimatedButton>
       </View>
       <View style={styles.card}>
         {activities.map((a, i) => (
-          <AnimatedButton key={i} style={styles.item}>
+          <AnimatedButton
+            key={i}
+            testID={`owner-activity-${i}`}
+            style={styles.item}
+            onPress={() => router.push(a.route as never)}
+          >
             <View style={styles.itemInner}>
               <View style={styles.iconContainer}>
                 <Text>{a.icon}</Text>
@@ -51,7 +57,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   title: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  seeAll: { fontSize: 13, fontWeight: '600', color: '#002395' },
   card: {
     backgroundColor: '#ffffff',
     borderRadius: 12,

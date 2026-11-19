@@ -1916,6 +1916,24 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         with the keyboard up; lifecycle-06 posts a comment with one tap
         (both LC-comments posted; owner inspection steps green).
 
+## CT7-056 🟡 Owner dashboard Recent Activity rows do nothing when tapped (owner)
+
+- **Role:** owner · **Platform:** all · Found in the full walkthrough (code
+  review of the dashboard).
+- **Today:** each Recent Activity row (rent received, arrears, new maintenance,
+  new application, viewing events) and the "View All" link are animated
+  buttons with no `onPress`: they react to a tap and go nowhere. There is no
+  full activity screen for "View All" to open.
+- **Acceptance criteria:**
+  - [x] Every feed item carries a `route` (required in the type): rent → Rent
+        Roll, arrears → Arrears, maintenance / application / viewing → its
+        detail screen. Tapping a row opens it.
+  - [x] Dead "View All" removed.
+  - [x] Jest `ActivitySection.test.tsx`: rows navigate, no View All (fails
+        without the fix).
+  - [ ] Android emulator (release APK): tap a Recent Activity row on the owner
+        dashboard → its detail opens.
+
 ## CT7-055 🟡 Back from a maintenance request loops back to it (owner)
 
 - **Role:** owner · **Platform:** all (seen on Android) · Found in the full
