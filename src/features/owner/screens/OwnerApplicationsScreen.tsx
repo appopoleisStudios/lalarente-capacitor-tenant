@@ -362,7 +362,7 @@ export default function OwnerApplicationsScreen() {
                         ]}
                       >
                         <Ionicons name={getStatusIcon(item.status)} size={16} color="#FFF" />
-                        <Text style={styles.statusText}>{item.status.replace('_', ' ')}</Text>
+                        <Text style={styles.statusText}>{item.status.replace(/_/g, ' ')}</Text>
                       </View>
                     </View>
 
