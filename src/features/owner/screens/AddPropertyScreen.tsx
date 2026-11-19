@@ -15,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { PickerSheet, toDateString } from '@/src/shared/components/ui/DateField';
 import { AddressSearch } from '../components/AddressSearch';
+import { PropertyTypePicker } from '../components/PropertyTypePicker';
 import { AnimatedButton } from '@/src/shared/components';
 import { propertiesApi } from '../../properties/api/propertiesApi';
 import { supabase } from '../../../lib/supabase';
@@ -585,12 +586,9 @@ export default function AddPropertyScreen() {
             {/* Property Type */}
             <View style={styles.section}>
               <Text style={styles.label}>Property Type *</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g., Apartment, House, Townhouse"
-                placeholderTextColor="#9ca3af"
+              <PropertyTypePicker
                 value={form.property_type}
-                onChangeText={(text) => setForm({ ...form, property_type: text })}
+                onChange={(type) => setForm({ ...form, property_type: type })}
               />
             </View>
 
