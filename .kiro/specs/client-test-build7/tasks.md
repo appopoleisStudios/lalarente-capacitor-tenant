@@ -1935,10 +1935,10 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         detail → back → back leaves Maintenance) + guard on the three detail
         screens; `OwnerMaintenanceDetailBack.test.tsx` renders the owner
         screen (fails without the fix).
-  - [ ] Android emulator (release APK): Maintenance → request → ← → list →
-        Back leaves Maintenance (no loop back into the request).
-  - [ ] Android emulator: request opened cold by link → ← → list → Back does
-        not reopen the request.
+  - [x] Android emulator (release APK), 2026-11-19: Maintenance → request → ←
+        → list → Back goes to the dashboard (no loop back into the request).
+  - [x] Android emulator: request opened cold by link → ← → maintenance list
+        → Back leaves the app to the caller (does not reopen the request).
 
 ## CT7-054 🟡 Vendor can't open the quote they submitted (vendor)
 
