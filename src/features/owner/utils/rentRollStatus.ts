@@ -5,8 +5,17 @@
  * payment was more than five days away, or when it had no payments at all,
  * even if nothing had ever been paid. A new tenancy whose first rent is due
  * next month showed "Paid" while the owner had collected R 0 (Invoices and
- * Tax Reports agreed: R 0). "Paid" now needs a completed payment; a tenancy
- * that has not paid yet and is not due soon is "upcoming".
+ * Tax Reports agreed: R 0).
+ *
+ * Rules (rent rows of the active lease only; cancelled rows ignored):
+ * - unpaid = pending, failed, or completed with an amount still outstanding
+ *   (partial payment);
+ * - processing: a tenant-submitted payment awaits the owner's confirmation;
+ * - overdue: an unpaid row whose due date has passed;
+ * - due soon: the next unpaid row is due within five days;
+ * - paid: the latest rent that has fallen due is settled;
+ * - upcoming: nothing has fallen due yet (new tenancy).
+ * Due dates are calendar dates, compared with today's date in South Africa.
  */
 export type RentRollStatus =
   | 'paid'
@@ -28,32 +37,72 @@ export const RENT_ROLL_STATUS_LABEL: Record<RentRollStatus, string> = {
 /** Days before the due date at which an unpaid payment counts as due soon. */
 export const DUE_SOON_DAYS = 5;
 
-interface Payment {
+export interface RentPayment {
   status: string;
+  /** SQL DATE, YYYY-MM-DD */
   due_date: string;
-  paid_date?: string | null;
+  amount: number;
+  amount_outstanding?: number | null;
+  type?: string | null;
+  lease?: { status?: string | null } | null;
 }
 
-export function rentRollStatus(
+export interface RentSummary {
+  status: RentRollStatus;
+  /** due date of the next unpaid rent, if any */
+  nextDue: string | null;
+  overdueAmount: number;
+}
+
+const SAST_OFFSET_MS = 2 * 60 * 60 * 1000; // UTC+2, no daylight saving
+
+/** Today's calendar date in South Africa, YYYY-MM-DD. */
+export function saToday(now: Date = new Date()): string {
+  return new Date(now.getTime() + SAST_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+const day = (date: string) => Date.parse(`${date.slice(0, 10)}T00:00:00Z`) / 86_400_000;
+
+const outstanding = (p: RentPayment) => Number(p.amount_outstanding ?? 0);
+
+const isUnpaid = (p: RentPayment) =>
+  p.status === 'pending' ||
+  p.status === 'failed' ||
+  (p.status === 'completed' && outstanding(p) > 0);
+
+const owed = (p: RentPayment) => (outstanding(p) > 0 ? outstanding(p) : Number(p.amount) || 0);
+
+export function summarizeRent(
   propertyStatus: string | null | undefined,
-  payments: Payment[],
-  today: Date = new Date()
-): RentRollStatus {
-  if (propertyStatus !== 'rented') return 'no_lease';
-  if (payments.some((p) => p.status === 'processing')) return 'processing';
-  if (payments.some((p) => p.status === 'pending' && new Date(p.due_date) < today)) {
-    return 'overdue';
+  payments: RentPayment[],
+  today: string = saToday()
+): RentSummary {
+  if (propertyStatus !== 'rented') return { status: 'no_lease', nextDue: null, overdueAmount: 0 };
+
+  const rent = payments.filter((p) => (p.type ?? 'rent') === 'rent' && p.status !== 'cancelled');
+  // the active tenancy only, so a previous tenant's payments don't count
+  const active = rent.some((p) => p.lease?.status === 'active')
+    ? rent.filter((p) => p.lease?.status === 'active')
+    : rent;
+
+  const unpaid = active.filter(isUnpaid);
+  const overdue = unpaid.filter((p) => day(p.due_date) < day(today));
+  const next = unpaid
+    .filter((p) => day(p.due_date) >= day(today))
+    .sort((a, b) => day(a.due_date) - day(b.due_date))[0];
+  const overdueAmount = overdue.reduce((sum, p) => sum + owed(p), 0);
+  const nextDue = next?.due_date ?? null;
+  const summary = (status: RentRollStatus): RentSummary => ({ status, nextDue, overdueAmount });
+
+  if (active.some((p) => p.status === 'processing')) return summary('processing');
+  if (overdue.length > 0) return summary('overdue');
+  if (next && day(next.due_date) - day(today) <= DUE_SOON_DAYS) return summary('pending');
+
+  const fallenDue = active
+    .filter((p) => day(p.due_date) <= day(today))
+    .sort((a, b) => day(b.due_date) - day(a.due_date));
+  if (fallenDue.length > 0 && !isUnpaid(fallenDue[0]) && fallenDue[0].status === 'completed') {
+    return summary('paid');
   }
-  const next = payments
-    .filter((p) => p.status === 'pending' && new Date(p.due_date) >= today)
-    .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())[0];
-  if (next) {
-    const daysUntilDue = Math.ceil(
-      (new Date(next.due_date).getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    if (daysUntilDue <= DUE_SOON_DAYS) return 'pending';
-  }
-  const hasPaid = payments.some((p) => p.status === 'completed' && p.paid_date);
-  if (hasPaid) return 'paid';
-  return 'upcoming';
+  return summary('upcoming');
 }

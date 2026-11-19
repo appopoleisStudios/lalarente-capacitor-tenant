@@ -1927,16 +1927,22 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   than five days away, or when it had no payments, without checking that any
   payment was ever completed.
 - **Acceptance criteria:**
-  - [x] `rentRollStatus()` (pure): "Paid" needs a completed payment; not yet
-        paid and not due soon → new **Upcoming** status (own colour, icon and
-        filter chip); within five days → "Due soon"; overdue / processing /
-        no lease unchanged.
+  - [x] `summarizeRent()` (pure; status, next due, overdue amount): rent rows
+        of the active lease only; unpaid = pending, failed or completed with an
+        outstanding balance (partial); "Paid" only when the latest rent that
+        has fallen due is settled; nothing due yet → new **Upcoming** status
+        (own colour, icon and filter chip); within five days → "Due soon";
+        due dates compared as South African calendar dates (SA #262).
+  - [x] Filter chips scroll sideways (six chips overflow a phone width).
   - [x] Badge and filter chips show labels ("No lease", "Due soon"), not raw
         values.
   - [x] Jest `rentRollStatus.test.ts`: each status incl. the 2B Datura case,
         labels, and a guard that the screen uses them (fails on main).
   - [ ] Android emulator (release APK): Rent Roll shows 2B Datura as
         Upcoming, other properties "No lease".
+  - [ ] Follow-up (separate): owner dashboard "In Arrears" and analytics still
+        compare dates as timestamps and ignore failed / partial rows
+        (`ownerDashboardApi.ts`) — move them onto `summarizeRent`.
 
 ## CT7-055 🟡 Back from a maintenance request loops back to it (owner)
 

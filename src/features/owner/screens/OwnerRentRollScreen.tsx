@@ -8,6 +8,7 @@ import {
   RefreshControl,
   StyleSheet,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -18,7 +19,8 @@ import { propertiesApi } from '../../properties/api/propertiesApi';
 import { notificationsApi } from '../../notifications/api/notificationsApi';
 import {
   RENT_ROLL_STATUS_LABEL,
-  rentRollStatus,
+  summarizeRent,
+  type RentPayment,
   type RentRollStatus,
 } from '../utils/rentRollStatus';
 
@@ -82,11 +84,6 @@ export default function OwnerRentRollScreen() {
           .filter((p) => p.status === 'pending' && new Date(p.due_date) >= today)
           .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
 
-        // Find overdue payments
-        const overduePayments = propertyPayments.filter(
-          (p) => p.status === 'pending' && new Date(p.due_date) < today
-        );
-
         // Find payments awaiting owner confirmation (tenant submitted EFT)
         const processingPayments = propertyPayments
           .filter((p) => p.status === 'processing')
@@ -98,10 +95,9 @@ export default function OwnerRentRollScreen() {
           .sort((a, b) => new Date(b.paid_date!).getTime() - new Date(a.paid_date!).getTime());
 
         const nextPayment = upcomingPayments[0];
-        const overdueAmount = overduePayments.reduce((sum, p) => sum + p.amount, 0);
         const lastPayment = paidPayments[0];
 
-        const paymentStatus = rentRollStatus(property.status, propertyPayments, today);
+        const rent = summarizeRent(property.status, propertyPayments as unknown as RentPayment[]);
 
         return {
           property_id: property.id,
@@ -110,9 +106,9 @@ export default function OwnerRentRollScreen() {
           tenant_id: (nextPayment as any)?.tenant_id || (lastPayment as any)?.tenant_id || null,
           tenant_name: nextPayment?.tenant?.full_name || lastPayment?.tenant?.full_name || null,
           monthly_rent: property.rent_amount || 0,
-          next_payment_due: nextPayment?.due_date || null,
-          payment_status: paymentStatus,
-          overdue_amount: overdueAmount,
+          next_payment_due: rent.nextDue,
+          payment_status: rent.status,
+          overdue_amount: rent.overdueAmount,
           last_payment_date: lastPayment?.paid_date || null,
           processing_payments: processingPayments,
         };
@@ -404,7 +400,12 @@ export default function OwnerRentRollScreen() {
         </View>
 
         {/* Filters */}
-        <View style={styles.filtersContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filtersScroll}
+          contentContainerStyle={styles.filtersContainer}
+        >
           {(['all', 'paid', 'upcoming', 'processing', 'pending', 'overdue'] as const).map(
             (filter) => (
               <TouchableOpacity
@@ -426,7 +427,7 @@ export default function OwnerRentRollScreen() {
               </TouchableOpacity>
             )
           )}
-        </View>
+        </ScrollView>
 
         {/* Property List */}
         {filteredSummaries.length === 0 ? (
@@ -552,6 +553,8 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 4,
   },
+  // six chips don't fit a phone width: scroll sideways (SA #262)
+  filtersScroll: { flexGrow: 0 },
   filtersContainer: {
     flexDirection: 'row',
     paddingHorizontal: 16,

@@ -11,6 +11,7 @@ type PaymentUpdate = Database['public']['Tables']['payments']['Update'];
 export interface PaymentWithRelations extends Payment {
   lease?: {
     id: string;
+    status?: string;
     start_date: string;
     end_date: string;
     monthly_rent: number;
@@ -40,11 +41,11 @@ export interface CreatePaymentInput {
   tenant_id: string;
   owner_id: string;
   property_id: string;
-  
+
   type: 'rent' | 'deposit' | 'application_fee' | 'interest' | 'utility' | 'other';
   amount: number;
   due_date: string;
-  
+
   payment_method?: 'bank_transfer' | 'card' | 'cash' | 'eft' | 'debit_order';
 }
 
@@ -140,7 +141,8 @@ export const paymentsApi = {
 
     // Send payment confirmation to tenant and owner
     try {
-      const { notificationsApi } = await import('@/src/features/notifications/api/notificationsApi');
+      const { notificationsApi } =
+        await import('@/src/features/notifications/api/notificationsApi');
       const payment = data as any;
       notificationsApi.sendNotification({
         user_id: payment.tenant_id,
@@ -195,7 +197,8 @@ export const paymentsApi = {
 
     // Send failure notification to tenant
     try {
-      const { notificationsApi } = await import('@/src/features/notifications/api/notificationsApi');
+      const { notificationsApi } =
+        await import('@/src/features/notifications/api/notificationsApi');
       const payment = data as any;
       notificationsApi.sendNotification({
         user_id: payment.tenant_id,
@@ -253,13 +256,15 @@ export const paymentsApi = {
   async getPayment(id: string): Promise<PaymentWithRelations> {
     const { data, error } = await supabase
       .from('payments')
-      .select(`
+      .select(
+        `
         *,
         lease:leases!lease_id(id, start_date, end_date, monthly_rent),
         property:properties!property_id(id, title, address),
         tenant:profiles!tenant_id(id, full_name, email, phone),
         owner:profiles!owner_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('id', id)
       .single();
 
@@ -277,12 +282,14 @@ export const paymentsApi = {
   async getTenantPayments(tenantId: string): Promise<PaymentWithRelations[]> {
     const { data, error } = await supabase
       .from('payments')
-      .select(`
+      .select(
+        `
         *,
         lease:leases!lease_id(id, start_date, end_date, monthly_rent),
         property:properties!property_id(id, title, address),
         owner:profiles!owner_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('tenant_id', tenantId)
       .order('due_date', { ascending: false });
 
@@ -300,12 +307,14 @@ export const paymentsApi = {
   async getOwnerPayments(ownerId: string): Promise<PaymentWithRelations[]> {
     const { data, error } = await supabase
       .from('payments')
-      .select(`
+      .select(
+        `
         *,
-        lease:leases!lease_id(id, start_date, end_date, monthly_rent),
+        lease:leases!lease_id(id, status, start_date, end_date, monthly_rent),
         property:properties!property_id(id, title, address),
         tenant:profiles!tenant_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('owner_id', ownerId)
       .order('due_date', { ascending: false });
 
@@ -323,12 +332,14 @@ export const paymentsApi = {
   async getLeasePayments(leaseId: string): Promise<PaymentWithRelations[]> {
     const { data, error } = await supabase
       .from('payments')
-      .select(`
+      .select(
+        `
         *,
         property:properties!property_id(id, title, address),
         tenant:profiles!tenant_id(id, full_name, email, phone),
         owner:profiles!owner_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('lease_id', leaseId)
       .order('due_date', { ascending: true });
 
@@ -343,19 +354,24 @@ export const paymentsApi = {
   /**
    * Get upcoming payments (due within next 30 days)
    */
-  async getUpcomingPayments(tenantId: string, daysAhead: number = 30): Promise<PaymentWithRelations[]> {
+  async getUpcomingPayments(
+    tenantId: string,
+    daysAhead: number = 30
+  ): Promise<PaymentWithRelations[]> {
     const today = new Date();
     const futureDate = new Date();
     futureDate.setDate(today.getDate() + daysAhead);
 
     const { data, error } = await supabase
       .from('payments')
-      .select(`
+      .select(
+        `
         *,
         lease:leases!lease_id(id, start_date, end_date, monthly_rent),
         property:properties!property_id(id, title, address),
         owner:profiles!owner_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('tenant_id', tenantId)
       .eq('status', 'pending')
       .gte('due_date', today.toISOString())
@@ -378,13 +394,15 @@ export const paymentsApi = {
 
     let query = supabase
       .from('payments')
-      .select(`
+      .select(
+        `
         *,
         lease:leases!lease_id(id, start_date, end_date, monthly_rent),
         property:properties!property_id(id, title, address),
         tenant:profiles!tenant_id(id, full_name, email, phone),
         owner:profiles!owner_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('status', 'pending')
       .lt('due_date', today);
 
@@ -412,11 +430,13 @@ export const paymentsApi = {
   async getPropertyPaymentHistory(propertyId: string): Promise<PaymentWithRelations[]> {
     const { data, error } = await supabase
       .from('payments')
-      .select(`
+      .select(
+        `
         *,
         lease:leases!lease_id(id, start_date, end_date, monthly_rent),
         tenant:profiles!tenant_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('property_id', propertyId)
       .order('due_date', { ascending: false });
 
@@ -443,29 +463,30 @@ export const paymentsApi = {
     }
 
     const today = new Date();
-    
-    const totalCollected = payments
-      ?.filter(p => p.status === 'completed')
-      .reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
 
-    const totalPending = payments
-      ?.filter(p => p.status === 'pending' && new Date(p.due_date) >= today)
-      .reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+    const totalCollected =
+      payments
+        ?.filter((p) => p.status === 'completed')
+        .reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
 
-    const overduePayments = payments
-      ?.filter(p => p.status === 'pending' && new Date(p.due_date) < today) || [];
+    const totalPending =
+      payments
+        ?.filter((p) => p.status === 'pending' && new Date(p.due_date) >= today)
+        .reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+
+    const overduePayments =
+      payments?.filter((p) => p.status === 'pending' && new Date(p.due_date) < today) || [];
 
     const totalOverdue = overduePayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
-    const completedPayments = payments?.filter(p => p.status === 'completed') || [];
-    const onTimePayments = completedPayments.filter(p => {
+    const completedPayments = payments?.filter((p) => p.status === 'completed') || [];
+    const onTimePayments = completedPayments.filter((p) => {
       if (!p.paid_date) return false;
       return new Date(p.paid_date) <= new Date(p.due_date);
     });
 
-    const onTimePercentage = completedPayments.length > 0
-      ? (onTimePayments.length / completedPayments.length) * 100
-      : 0;
+    const onTimePercentage =
+      completedPayments.length > 0 ? (onTimePayments.length / completedPayments.length) * 100 : 0;
 
     return {
       total_collected: totalCollected,
@@ -505,7 +526,7 @@ export const paymentsApi = {
     // Generate monthly payments
     while (currentDate <= endDate) {
       const dueDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), paymentDueDay);
-      
+
       // Skip if due date is before lease start
       if (dueDate >= startDate && dueDate <= endDate) {
         payments.push({
@@ -525,10 +546,7 @@ export const paymentsApi = {
     }
 
     // Insert all payments
-    const { data, error } = await supabase
-      .from('payments')
-      .insert(payments)
-      .select();
+    const { data, error } = await supabase.from('payments').insert(payments).select();
 
     if (error) {
       console.error('Error generating recurring payments:', error);
@@ -579,7 +597,10 @@ export const paymentsApi = {
   /**
    * Update interest accrual on an overdue payment in the database.
    */
-  async updateInterestAccrual(paymentId: string, annualInterestRate: number = 2.0): Promise<Payment> {
+  async updateInterestAccrual(
+    paymentId: string,
+    annualInterestRate: number = 2.0
+  ): Promise<Payment> {
     const payment = await this.getPayment(paymentId);
     const daysOverdue = this.getDaysOverdue(payment);
     const interestAmount = this.calculateInterestOnArrears(payment, annualInterestRate);
