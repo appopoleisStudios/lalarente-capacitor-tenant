@@ -1916,6 +1916,28 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         with the keyboard up; lifecycle-06 posts a comment with one tap
         (both LC-comments posted; owner inspection steps green).
 
+## CT7-057 🟠 Rent Roll says "Paid" for rent that was never paid (owner)
+
+- **Role:** owner · **Platform:** all · Found in the Android walkthrough
+  (owner dashboard → Rent Roll): 2B Datura showed **Paid** while Invoices
+  ("Total Collected R 0,00") and Tax Reports ("0 payments") agreed nothing was
+  collected — its only payment is pending, due 1 Dec. The badge also showed
+  the raw value "No_lease".
+- **Today:** a rented property was "paid" whenever its next payment was more
+  than five days away, or when it had no payments, without checking that any
+  payment was ever completed.
+- **Acceptance criteria:**
+  - [x] `rentRollStatus()` (pure): "Paid" needs a completed payment; not yet
+        paid and not due soon → new **Upcoming** status (own colour, icon and
+        filter chip); within five days → "Due soon"; overdue / processing /
+        no lease unchanged.
+  - [x] Badge and filter chips show labels ("No lease", "Due soon"), not raw
+        values.
+  - [x] Jest `rentRollStatus.test.ts`: each status incl. the 2B Datura case,
+        labels, and a guard that the screen uses them (fails on main).
+  - [ ] Android emulator (release APK): Rent Roll shows 2B Datura as
+        Upcoming, other properties "No lease".
+
 ## CT7-055 🟡 Back from a maintenance request loops back to it (owner)
 
 - **Role:** owner · **Platform:** all (seen on Android) · Found in the full

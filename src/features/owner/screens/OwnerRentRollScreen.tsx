@@ -16,6 +16,11 @@ import { supabase } from '../../../lib/supabase';
 import { paymentsApi, PaymentWithRelations, PaymentStats } from '../../properties/api/paymentsApi';
 import { propertiesApi } from '../../properties/api/propertiesApi';
 import { notificationsApi } from '../../notifications/api/notificationsApi';
+import {
+  RENT_ROLL_STATUS_LABEL,
+  rentRollStatus,
+  type RentRollStatus,
+} from '../utils/rentRollStatus';
 
 interface PropertyPaymentSummary {
   property_id: string;
@@ -25,7 +30,7 @@ interface PropertyPaymentSummary {
   tenant_name: string | null;
   monthly_rent: number;
   next_payment_due: string | null;
-  payment_status: 'paid' | 'pending' | 'overdue' | 'processing' | 'no_lease';
+  payment_status: RentRollStatus;
   overdue_amount: number;
   last_payment_date: string | null;
   processing_payments: { id: string; amount: number; transaction_id: string | null }[];
@@ -39,9 +44,7 @@ export default function OwnerRentRollScreen() {
 
   const [stats, setStats] = useState<PaymentStats | null>(null);
   const [propertySummaries, setPropertySummaries] = useState<PropertyPaymentSummary[]>([]);
-  const [selectedFilter, setSelectedFilter] = useState<
-    'all' | 'paid' | 'pending' | 'overdue' | 'processing'
-  >('all');
+  const [selectedFilter, setSelectedFilter] = useState<'all' | RentRollStatus>('all');
   const [confirmingPropertyId, setConfirmingPropertyId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -98,22 +101,7 @@ export default function OwnerRentRollScreen() {
         const overdueAmount = overduePayments.reduce((sum, p) => sum + p.amount, 0);
         const lastPayment = paidPayments[0];
 
-        let paymentStatus: 'paid' | 'pending' | 'overdue' | 'processing' | 'no_lease' = 'no_lease';
-
-        if (property.status === 'rented') {
-          if (processingPayments.length > 0) {
-            paymentStatus = 'processing';
-          } else if (overduePayments.length > 0) {
-            paymentStatus = 'overdue';
-          } else if (nextPayment) {
-            const daysUntilDue = Math.ceil(
-              (new Date(nextPayment.due_date).getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-            );
-            paymentStatus = daysUntilDue <= 5 ? 'pending' : 'paid';
-          } else {
-            paymentStatus = 'paid';
-          }
-        }
+        const paymentStatus = rentRollStatus(property.status, propertyPayments, today);
 
         return {
           property_id: property.id,
@@ -220,6 +208,8 @@ export default function OwnerRentRollScreen() {
     switch (status) {
       case 'paid':
         return '#4CAF50';
+      case 'upcoming':
+        return '#2196F3';
       case 'processing':
         return '#7C3AED';
       case 'pending':
@@ -235,6 +225,8 @@ export default function OwnerRentRollScreen() {
     switch (status) {
       case 'paid':
         return 'checkmark-circle';
+      case 'upcoming':
+        return 'calendar-outline';
       case 'processing':
         return 'hourglass-outline';
       case 'pending':
@@ -265,7 +257,7 @@ export default function OwnerRentRollScreen() {
           style={[styles.statusBadge, { backgroundColor: getStatusColor(item.payment_status) }]}
         >
           <Ionicons name={getStatusIcon(item.payment_status)} size={16} color="#FFF" />
-          <Text style={styles.statusText}>{item.payment_status}</Text>
+          <Text style={styles.statusText}>{RENT_ROLL_STATUS_LABEL[item.payment_status]}</Text>
         </View>
       </View>
 
@@ -413,22 +405,27 @@ export default function OwnerRentRollScreen() {
 
         {/* Filters */}
         <View style={styles.filtersContainer}>
-          {(['all', 'paid', 'processing', 'pending', 'overdue'] as const).map((filter) => (
-            <TouchableOpacity
-              key={filter}
-              style={[styles.filterButton, selectedFilter === filter && styles.filterButtonActive]}
-              onPress={() => setSelectedFilter(filter)}
-            >
-              <Text
+          {(['all', 'paid', 'upcoming', 'processing', 'pending', 'overdue'] as const).map(
+            (filter) => (
+              <TouchableOpacity
+                key={filter}
                 style={[
-                  styles.filterButtonText,
-                  selectedFilter === filter && styles.filterButtonTextActive,
+                  styles.filterButton,
+                  selectedFilter === filter && styles.filterButtonActive,
                 ]}
+                onPress={() => setSelectedFilter(filter)}
               >
-                {filter === 'all' ? 'All' : filter.charAt(0).toUpperCase() + filter.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text
+                  style={[
+                    styles.filterButtonText,
+                    selectedFilter === filter && styles.filterButtonTextActive,
+                  ]}
+                >
+                  {filter === 'all' ? 'All' : RENT_ROLL_STATUS_LABEL[filter]}
+                </Text>
+              </TouchableOpacity>
+            )
+          )}
         </View>
 
         {/* Property List */}
@@ -633,7 +630,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#FFF',
-    textTransform: 'capitalize',
   },
   cardBody: {
     gap: 8,
