@@ -1935,8 +1935,9 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         quantity × unit price and amount (`getQuoteLines`). Jest
         `VendorQuoteDetailLines.test.tsx` for every quote status (fails
         without the fix).
-  - [ ] Android emulator (release APK): vendor job → View Quote shows the line
-        items.
+  - [x] Android emulator (release APK), 2026-11-19: vendor job → View Quote
+        opens Quote Details with the line item (11 × R 500 = R 5,500, matching
+        the subtotal), cost breakdown, revision and notes.
 
 ## CT7-053 🟠 Android alerts lose every button after the third (all roles)
 
