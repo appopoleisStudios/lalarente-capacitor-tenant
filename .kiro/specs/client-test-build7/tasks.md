@@ -1929,6 +1929,10 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         Roll, arrears → Arrears, maintenance / application / viewing → its
         detail screen. Tapping a row opens it.
   - [x] Dead "View All" removed.
+  - [x] Dashboard cache key versioned (`v2`), so a payload cached before the
+        change (activities without `route`) is never painted; sign-out still
+        clears old keys (SA #261). Jest `dashboardCache.test.ts` and
+        `buildActivityFeed.test.ts` (each category → its record id).
   - [x] Jest `ActivitySection.test.tsx`: rows navigate, no View All (fails
         without the fix).
   - [ ] Android emulator (release APK): tap a Recent Activity row on the owner

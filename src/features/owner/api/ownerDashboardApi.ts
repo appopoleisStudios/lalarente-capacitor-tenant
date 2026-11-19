@@ -485,7 +485,7 @@ function formatApplicants(applications: any[]): ApplicantItem[] {
  * Builds unified activity feed from multiple sources
  * Combines payments, maintenance, applications, and viewings into single timeline
  */
-function buildActivityFeed(
+export function buildActivityFeed(
   payments: any[],
   maintenanceRequests: any[],
   applications: any[],
