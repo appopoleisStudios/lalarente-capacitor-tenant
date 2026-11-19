@@ -1938,8 +1938,10 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         runnable, cancel on Back, native alert kept for ≤ 3 and on iOS.
   - [x] Jest guard `androidAlertButtons.test.ts`: no `Alert.alert` with more
         than three buttons, buttons must be countable (fails on the old code).
-  - [ ] Android emulator (release APK): Push to Vendors shows Dedicated
-        Vendors; Country Code lists all six; Cancel closes the upload picker.
+  - [x] Android emulator (release APK), 2026-11-19: Country Code sheet lists
+        all six codes + Cancel and picking +44 applies; proof-of-address
+        picker shows all three sources + Cancel, and Cancel and Back close it.
+        Push to Vendors uses the same sheet path (Jest covers its 4 choices).
 
 ## CT7-052 🟠 Active lease left without its PDF, owner told "activated!" (owner)
 
