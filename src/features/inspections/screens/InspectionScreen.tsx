@@ -36,6 +36,7 @@ import {
 } from '../types';
 import { parseInspectionRoomsField } from '../utils/normalizeRooms';
 
+import { formatDate } from '../../../shared/utils/format';
 const COLORS = {
   owner: { primary: '#002395', secondary: '#FFB81C' }, // RSA Blue
   tenant: { primary: '#007A4D', secondary: '#FFB81C' }, // RSA Green
@@ -914,9 +915,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
                     testID={`inspection-tenant-comment-${comment.id}`}
                   >
                     <Text style={styles.itemName}>{comment.text}</Text>
-                    <Text style={styles.pendingText}>
-                      {new Date(comment.createdAt).toLocaleDateString('en-ZA')}
-                    </Text>
+                    <Text style={styles.pendingText}>{formatDate(comment.createdAt)}</Text>
                     {comment.maintenanceRequestId ? (
                       <TouchableOpacity
                         testID="inspection-comment-view-request"

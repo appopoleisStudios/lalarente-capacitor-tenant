@@ -199,7 +199,7 @@ export default function TenantNotificationsScreen() {
           id: `pmt-${duePmt.id}`,
           kind: 'payment',
           title: 'Payment Due',
-          body: `R ${(duePmt.amount || 0).toLocaleString()} due ${new Date(duePmt.due_date).toLocaleDateString('en-ZA')}`,
+          body: `R ${(duePmt.amount || 0).toLocaleString()} due ${formatDate(duePmt.due_date)}`,
           icon: 'card',
           iconColor: colors.info[500],
           bgColor: colors.info[50],

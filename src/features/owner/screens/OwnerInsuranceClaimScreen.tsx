@@ -38,6 +38,7 @@ import { DateField } from '@/src/shared/components/ui/DateField';
 import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
 import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
+import { formatDate } from '../../../shared/utils/format';
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const formatZAR = (amount: number) =>
@@ -368,9 +369,7 @@ export default function OwnerInsuranceClaimScreen() {
               )}
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Incident Date</Text>
-                <Text style={styles.detailValue}>
-                  {new Date(claim.incident_date).toLocaleDateString('en-ZA')}
-                </Text>
+                <Text style={styles.detailValue}>{formatDate(claim.incident_date)}</Text>
               </View>
               <View style={[styles.detailRow, { alignItems: 'flex-start' }]}>
                 <Text style={styles.detailLabel}>Description</Text>
@@ -451,7 +450,7 @@ export default function OwnerInsuranceClaimScreen() {
                     <View style={styles.docInfo}>
                       <Text style={styles.docTitle}>{doc.title}</Text>
                       <Text style={styles.docType}>
-                        {doc.document_type} · {new Date(doc.created_at).toLocaleDateString('en-ZA')}
+                        {doc.document_type} · {formatDate(doc.created_at)}
                       </Text>
                     </View>
                   </View>

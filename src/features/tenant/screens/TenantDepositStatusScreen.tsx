@@ -31,6 +31,7 @@ import {
 import { colors } from '@/src/shared/theme/colors';
 import { reportApiError } from '@/src/core/observability/sentry';
 
+import { formatDate } from '../../../shared/utils/format';
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const formatZAR = (amount: number) =>
@@ -264,7 +265,7 @@ export default function TenantDepositStatusScreen() {
               <View style={styles.refundRow}>
                 <Text style={styles.refundLabel}>Refund Deadline</Text>
                 <Text style={[styles.refundValue, refund.isOverdue && { color: colors.rsa.red }]}>
-                  {new Date(refund.refundDeadline).toLocaleDateString('en-ZA')}
+                  {formatDate(refund.refundDeadline)}
                   {refund.isOverdue ? ' ⚠ Overdue' : ''}
                 </Text>
               </View>

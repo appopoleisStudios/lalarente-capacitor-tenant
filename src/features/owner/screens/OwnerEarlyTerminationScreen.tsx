@@ -33,6 +33,7 @@ import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAv
 import { reportApiError } from '@/src/core/observability/sentry';
 import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
+import { formatDate } from '../../../shared/utils/format';
 const RSA_BLUE = '#002395';
 
 interface TerminationRequest {
@@ -97,7 +98,7 @@ export default function OwnerEarlyTerminationScreen() {
   const handleAccept = (request: TerminationRequest) => {
     const tenantName = request.tenant?.full_name || 'Tenant';
     const effectiveDate = request.early_termination_effective_date
-      ? new Date(request.early_termination_effective_date).toLocaleDateString('en-ZA')
+      ? formatDate(request.early_termination_effective_date)
       : 'the agreed date';
     const penalty = request.early_termination_penalty
       ? `R ${request.early_termination_penalty.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`
@@ -248,9 +249,7 @@ export default function OwnerEarlyTerminationScreen() {
                       <Text style={styles.detailLabel}>Effective Date</Text>
                       <Text style={styles.detailValue}>
                         {req.early_termination_effective_date
-                          ? new Date(req.early_termination_effective_date).toLocaleDateString(
-                              'en-ZA'
-                            )
+                          ? formatDate(req.early_termination_effective_date)
                           : '—'}
                       </Text>
                     </View>

@@ -19,6 +19,7 @@ import { isViewingExpired, getViewingActionStatus } from '../../properties/utils
 import { reportApiError } from '@/src/core/observability/sentry';
 import { formatTime } from '@/src/shared/utils/format';
 
+import { formatDate as formatShortDate } from '../../../shared/utils/format';
 const RSA = { blue: '#002395', gold: '#FFB81C' };
 
 type ViewingStatus = 'all' | 'pending' | 'approved' | 'declined' | 'completed' | 'cancelled';
@@ -361,9 +362,7 @@ export default function OwnerViewingsScreen() {
         </View>
 
         <View style={styles.cardFooter}>
-          <Text style={styles.footerText}>
-            Requested {new Date(item.created_at!).toLocaleDateString('en-ZA')}
-          </Text>
+          <Text style={styles.footerText}>Requested {formatShortDate(item.created_at!)}</Text>
           <View style={styles.footerAction}>
             {requiresAction && <Text style={styles.actionFooterText}>Tap to respond</Text>}
             <Ionicons name="chevron-forward" size={20} color="#999" />

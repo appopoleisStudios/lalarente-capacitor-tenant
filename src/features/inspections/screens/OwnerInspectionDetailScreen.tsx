@@ -24,6 +24,7 @@ import type {
 } from '../types';
 import { normalizeRoomList, parseTenantComments } from '../utils/normalizeRooms';
 
+import { formatDate } from '../../../shared/utils/format';
 const RSA = { blue: '#002395', gold: '#FFB81C' };
 
 const CONDITION_COLOR: Record<string, string> = {
@@ -350,9 +351,7 @@ export default function OwnerInspectionDetailScreen() {
               <View key={comment.id} style={{ marginBottom: 12 }}>
                 <View style={styles.itemRow}>
                   <Text style={styles.itemName}>{comment.room}</Text>
-                  <Text style={styles.itemNotes}>
-                    {new Date(comment.createdAt).toLocaleDateString('en-ZA')}
-                  </Text>
+                  <Text style={styles.itemNotes}>{formatDate(comment.createdAt)}</Text>
                 </View>
                 <Text style={styles.generalNotes}>{comment.text}</Text>
                 {comment.maintenanceRequestId && (

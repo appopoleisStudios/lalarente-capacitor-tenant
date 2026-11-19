@@ -260,9 +260,7 @@ export default function DataSubjectRightsScreen() {
             </Text>
           </View>
         </View>
-        <Text style={styles.requestDate}>
-          Submitted: {new Date(req.created_at).toLocaleDateString('en-ZA')}
-        </Text>
+        <Text style={styles.requestDate}>Submitted: {formatDate(req.created_at)}</Text>
       </View>
     ));
   };

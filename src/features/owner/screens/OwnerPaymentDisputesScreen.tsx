@@ -31,6 +31,7 @@ import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAv
 import { reportApiError } from '@/src/core/observability/sentry';
 import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
+import { formatDate } from '../../../shared/utils/format';
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   open: { label: 'Open', color: '#D97706' },
   under_review: { label: 'Under Review', color: colors.rsa.blue },
@@ -220,8 +221,7 @@ export default function OwnerPaymentDisputesScreen() {
         {/* Payment context */}
         {payment && (
           <Text style={styles.paymentContext}>
-            Payment: R {payment.amount?.toFixed(2)} due{' '}
-            {new Date(payment.due_date).toLocaleDateString('en-ZA')}
+            Payment: R {payment.amount?.toFixed(2)} due {formatDate(payment.due_date)}
           </Text>
         )}
 

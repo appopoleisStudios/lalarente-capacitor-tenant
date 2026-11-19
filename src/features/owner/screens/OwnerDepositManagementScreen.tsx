@@ -40,6 +40,7 @@ import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAv
 import { reportApiError } from '@/src/core/observability/sentry';
 import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
+import { formatDate } from '../../../shared/utils/format';
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 interface DepositRecord {
@@ -467,8 +468,7 @@ export default function OwnerDepositManagementScreen() {
                               deposit.isOverdue && { color: colors.rsa.red },
                             ]}
                           >
-                            Refund deadline:{' '}
-                            {new Date(deposit.refundDeadline).toLocaleDateString('en-ZA')}
+                            Refund deadline: {formatDate(deposit.refundDeadline)}
                             {deposit.isOverdue ? ' — OVERDUE!' : ''}
                           </Text>
                         </View>

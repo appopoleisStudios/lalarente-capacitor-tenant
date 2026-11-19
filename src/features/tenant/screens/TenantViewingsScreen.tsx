@@ -16,6 +16,7 @@ import { viewingsApi, ViewingWithRelations } from '../../properties/api/viewings
 import { supabase } from '../../../lib/supabase';
 import { formatTime } from '@/src/shared/utils/format';
 
+import { formatDate as formatShortDate } from '../../../shared/utils/format';
 const RSA = { green: '#007A4D', gold: '#FFB81C' };
 
 type ViewingStatus = 'all' | 'pending' | 'approved' | 'declined' | 'completed' | 'cancelled';
@@ -238,9 +239,7 @@ export default function TenantViewingsScreen() {
         </View>
 
         <View style={styles.cardFooter}>
-          <Text style={styles.footerText}>
-            Requested {new Date(item.created_at!).toLocaleDateString('en-ZA')}
-          </Text>
+          <Text style={styles.footerText}>Requested {formatShortDate(item.created_at!)}</Text>
           <Ionicons name="chevron-forward" size={20} color="#999" />
         </View>
       </TouchableOpacity>

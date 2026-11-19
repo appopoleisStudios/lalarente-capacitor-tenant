@@ -15,7 +15,7 @@ import {
 } from '../hooks/useTenantDashboard';
 import { queryKeys } from '@/src/core/query/queryKeys';
 import { colors } from '@/src/shared/theme/colors';
-import { formatTime } from '@/src/shared/utils/format';
+import { formatTime, formatDate } from '@/src/shared/utils/format';
 
 const tenancyShortcutTestId = (title: string) =>
   `tenancy-${title
@@ -481,9 +481,7 @@ export default function TenantDashboardScreen() {
                 <View style={styles.leaseDetailItem}>
                   <Text style={styles.leaseDetailLabel}>Lease Ends</Text>
                   <Text style={styles.leaseDetailValue}>
-                    {activeLease.end_date
-                      ? new Date(activeLease.end_date).toLocaleDateString('en-ZA')
-                      : '—'}
+                    {activeLease.end_date ? formatDate(activeLease.end_date) : '—'}
                   </Text>
                 </View>
               </View>
@@ -843,9 +841,7 @@ export default function TenantDashboardScreen() {
                       {app.property?.title || 'Property'}
                     </Text>
                     <Text style={styles.applicationDate}>
-                      {app.created_at
-                        ? `Applied ${new Date(app.created_at).toLocaleDateString('en-ZA')}`
-                        : 'Applied'}
+                      {app.created_at ? `Applied ${formatDate(app.created_at)}` : 'Applied'}
                     </Text>
                   </View>
                   <View style={styles.applicationStatusBadge}>
@@ -936,9 +932,7 @@ export default function TenantDashboardScreen() {
                     <Text style={styles.maintenanceTitle}>
                       {request.title || 'Maintenance Request'}
                     </Text>
-                    <Text style={styles.maintenanceDate}>
-                      {new Date(request.created_at).toLocaleDateString('en-ZA')}
-                    </Text>
+                    <Text style={styles.maintenanceDate}>{formatDate(request.created_at)}</Text>
                   </View>
                   <View
                     style={[styles.maintenanceStatus, getMaintenanceStatusStyle(request.status)]}
@@ -1040,9 +1034,7 @@ export default function TenantDashboardScreen() {
                   <View style={[styles.activityDot, { backgroundColor: colors.warning[500] }]} />
                   <View style={styles.activityContent}>
                     <Text style={styles.activityText}>Payment due</Text>
-                    <Text style={styles.activityTime}>
-                      {new Date(nextPayment.due_date).toLocaleDateString('en-ZA')}
-                    </Text>
+                    <Text style={styles.activityTime}>{formatDate(nextPayment.due_date)}</Text>
                   </View>
                   <Ionicons name="chevron-forward" size={16} color={colors.text.tertiary} />
                 </TouchableOpacity>
@@ -1057,7 +1049,7 @@ export default function TenantDashboardScreen() {
                   <View style={styles.activityContent}>
                     <Text style={styles.activityText}>Payment received</Text>
                     <Text style={styles.activityTime}>
-                      {new Date(recentPayments[0].paid_date!).toLocaleDateString('en-ZA')}
+                      {formatDate(recentPayments[0].paid_date!)}
                     </Text>
                   </View>
                   <Ionicons name="chevron-forward" size={16} color={colors.text.tertiary} />
@@ -1075,7 +1067,7 @@ export default function TenantDashboardScreen() {
                   <View style={styles.activityContent}>
                     <Text style={styles.activityText}>Maintenance request active</Text>
                     <Text style={styles.activityTime}>
-                      {new Date(maintenanceRequests[0].created_at).toLocaleDateString('en-ZA')}
+                      {formatDate(maintenanceRequests[0].created_at)}
                     </Text>
                   </View>
                   <Ionicons name="chevron-forward" size={16} color={colors.text.tertiary} />
@@ -1100,9 +1092,7 @@ export default function TenantDashboardScreen() {
                   </View>
                   <View style={styles.paymentInfo}>
                     <Text style={styles.paymentType}>Rent Payment</Text>
-                    <Text style={styles.paymentDate}>
-                      Due: {new Date(nextPayment.due_date).toLocaleDateString('en-ZA')}
-                    </Text>
+                    <Text style={styles.paymentDate}>Due: {formatDate(nextPayment.due_date)}</Text>
                   </View>
                   <Text style={styles.paymentAmount}>R {nextPayment.amount.toLocaleString()}</Text>
                 </View>
@@ -1137,9 +1127,7 @@ export default function TenantDashboardScreen() {
                   </View>
                   <View style={styles.paymentHistoryInfo}>
                     <Text style={styles.paymentHistoryType}>{payment.type}</Text>
-                    <Text style={styles.paymentHistoryDate}>
-                      {new Date(payment.paid_date!).toLocaleDateString('en-ZA')}
-                    </Text>
+                    <Text style={styles.paymentHistoryDate}>{formatDate(payment.paid_date!)}</Text>
                   </View>
                   <Text style={styles.paymentHistoryAmount}>
                     R {payment.amount.toLocaleString()}

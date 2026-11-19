@@ -33,6 +33,7 @@ import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAv
 import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
 import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
+import { formatDate } from '../../../shared/utils/format';
 interface ArrearsRecord {
   id: string;
   stage: string;
@@ -353,8 +354,7 @@ export default function TenantArrearsScreen() {
                             cureDaysLeft !== null && cureDaysLeft <= 5 && styles.cureTextUrgent,
                           ]}
                         >
-                          Cure period ends{' '}
-                          {new Date(item.cure_period_ends_at).toLocaleDateString('en-ZA')}
+                          Cure period ends {formatDate(item.cure_period_ends_at)}
                           {cureDaysLeft !== null && (
                             <Text style={{ fontWeight: '800' }}>
                               {' — '}

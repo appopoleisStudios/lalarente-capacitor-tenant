@@ -118,3 +118,20 @@ describe('viewing times are formatted, not rendered raw (CT7-062)', () => {
     ).toBe(false);
   });
 });
+
+describe('viewing notification text (CT7-062)', () => {
+  it('formats the date and time stored in the notification body', () => {
+    const src = jest
+      .requireActual('fs')
+      .readFileSync(
+        jest
+          .requireActual('path')
+          .join(__dirname, '../features/notifications/api/notificationsApi.ts'),
+        'utf8'
+      ) as string;
+    // No raw viewing date/time interpolated into notification text
+    expect(src).not.toMatch(
+      /\$\{data\?\.(requestedDate|confirmedDate|viewingDate|viewingTime)\s*\|\|/
+    );
+  });
+});
