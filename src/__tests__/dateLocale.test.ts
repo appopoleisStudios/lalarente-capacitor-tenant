@@ -6,6 +6,8 @@
  * Every date shown to a user goes through formatDate (src/shared/utils/format),
  * or names the locale explicitly. A bare toLocaleDateString() /
  * toLocaleTimeString(), or toLocaleString() on a Date, fails this guard.
+ * So does toLocaleDateString('en-ZA') with no options: that renders
+ * "2026/11/19" (found on Viewing Requests in the build-12 device check).
  */
 import { formatDate } from '../shared/utils/format';
 
@@ -25,6 +27,8 @@ function sourceFiles(dir: string): string[] {
 
 const BARE_DATE = /\.toLocale(Date|Time)String\(\s*\)/;
 // new Date(...).toLocaleString() with no locale; the argument may span lines
+// 'en-ZA' with no format options → "2026/11/19"
+const ENZA_DEFAULT_DATE = /\.toLocaleDateString\(\s*['"]en-ZA['"]\s*\)/;
 const BARE_DATETIME = /new Date\((?:[^()]|\([^()]*\))*\)\s*\.toLocaleString\(\s*\)/;
 
 describe('dates use a fixed locale (CT7-060)', () => {
@@ -42,6 +46,8 @@ describe('dates use a fixed locale (CT7-060)', () => {
         hits.push(`${path.relative(ROOT, f)}: bare toLocale(Date|Time)String()`);
       if (BARE_DATETIME.test(src))
         hits.push(`${path.relative(ROOT, f)}: new Date(...).toLocaleString()`);
+      if (ENZA_DEFAULT_DATE.test(src))
+        hits.push(`${path.relative(ROOT, f)}: toLocaleDateString('en-ZA') without options`);
       return hits;
     });
     expect(offenders).toEqual([]);
@@ -50,6 +56,12 @@ describe('dates use a fixed locale (CT7-060)', () => {
   it('the guard patterns catch the forms that shipped the bug', () => {
     expect(BARE_DATE.test('new Date(p.due_date).toLocaleDateString()')).toBe(true);
     expect(BARE_DATE.test("d.toLocaleDateString('en-ZA')")).toBe(false);
+    expect(ENZA_DEFAULT_DATE.test("new Date(item.created_at!).toLocaleDateString('en-ZA')")).toBe(
+      true
+    );
+    expect(
+      ENZA_DEFAULT_DATE.test("d.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' })")
+    ).toBe(false);
     expect(
       BARE_DATETIME.test('new Date(\n  a.submitted_at || a.created_at!\n).toLocaleString()')
     ).toBe(true);

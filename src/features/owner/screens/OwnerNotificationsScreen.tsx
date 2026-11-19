@@ -13,7 +13,14 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { colors } from '@/src/shared/theme/colors';
+import { formatDate } from '@/src/shared/utils/format';
 import { reportApiError } from '@/src/core/observability/sentry';
+import {
+  fetchUnreadNotifications,
+  linkNotifications,
+  markNotificationsRead,
+  notificationRoute,
+} from '@/src/features/notifications/utils/unreadNotifications';
 
 type AlertItem = {
   id: string;
@@ -31,8 +38,10 @@ type AlertItem = {
   icon: string;
   iconColor: string;
   bgColor: string;
-  route: string;
+  route: string | null;
   timestamp: string;
+  notificationIds?: string[]; // unread notifications this row stands for
+  standalone?: boolean; // a notification with no live item behind it: gone once tapped
 };
 
 export default function OwnerNotificationsScreen() {
@@ -43,27 +52,10 @@ export default function OwnerNotificationsScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      loadAlertsAndMarkRead();
+      // CT7-064: opening the list marks nothing read; only a tapped row is.
+      loadAlerts();
     }, [])
   );
-
-  const loadAlertsAndMarkRead = async () => {
-    await loadAlerts();
-    // Mark all DB notifications as read so bell count drops on dashboard return
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-      await (supabase as any)
-        .from('notifications')
-        .update({ read_at: new Date().toISOString() })
-        .eq('user_id', user.id)
-        .is('read_at', null);
-    } catch (err) {
-      // Non-critical
-    }
-  };
 
   const loadAlerts = async () => {
     try {
@@ -89,7 +81,7 @@ export default function OwnerNotificationsScreen() {
           id: `viewing-${v.id}`,
           kind: 'viewing',
           title: 'New Viewing Request',
-          body: `${(v.tenant as any)?.full_name || 'A tenant'} wants to view ${(v.property as any)?.title || 'your property'} on ${v.requested_date}`,
+          body: `${(v.tenant as any)?.full_name || 'A tenant'} wants to view ${(v.property as any)?.title || 'your property'} on ${formatDate(v.requested_date)}`,
           icon: 'eye',
           iconColor: '#2196F3',
           bgColor: '#E3F2FD',
@@ -215,39 +207,31 @@ export default function OwnerNotificationsScreen() {
         });
       });
 
-      // 7. Unread DB notifications (catch-all for system notifications)
-      const { data: dbNotifs } = await (supabase as any)
-        .from('notifications')
-        .select('id, type, title, body, data, created_at')
-        .eq('user_id', user.id)
-        .is('read_at', null)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      (dbNotifs ?? []).forEach((n: any) => {
-        // Avoid duplicates: skip if we already have a matching item
-        const isDuplicate = items.some((item) => {
-          if (n.type === 'viewing_requested' && n.data?.viewingId)
-            return items.some((i) => i.id === `viewing-${n.data.viewingId}`);
-          if (n.type === 'maintenance_created' && n.data?.requestId)
-            return items.some((i) => i.id === `maint-${n.data.requestId}`);
-          if (n.type === 'application_received' && n.data?.applicationId)
-            return items.some((i) => i.id === `app-${n.data.applicationId}`);
-          return false;
+      // 7. Unread notifications: attach each to the row it duplicates; list the rest
+      const unread = await fetchUnreadNotifications(user.id);
+      const standalone = linkNotifications(items, unread, (n) => {
+        if (n.type === 'viewing_requested' && n.data?.viewingId)
+          return `viewing-${n.data.viewingId}`;
+        if (n.type === 'maintenance_created' && n.data?.requestId)
+          return `maint-${n.data.requestId}`;
+        if (n.type === 'application_received' && n.data?.applicationId)
+          return `app-${n.data.applicationId}`;
+        return null;
+      });
+      standalone.forEach((n) => {
+        items.push({
+          id: `notif-${n.id}`,
+          kind: 'message',
+          title: n.title || 'Notification',
+          body: n.body || '',
+          icon: 'notifications',
+          iconColor: colors.info[500],
+          bgColor: colors.info[50],
+          route: notificationRoute('owner', n),
+          timestamp: n.created_at,
+          notificationIds: [n.id],
+          standalone: true,
         });
-        if (!isDuplicate) {
-          items.push({
-            id: `notif-${n.id}`,
-            kind: 'message',
-            title: n.title || 'Notification',
-            body: n.body || '',
-            icon: 'notifications',
-            iconColor: colors.info[500],
-            bgColor: colors.info[50],
-            route: '/(owner)/messages',
-            timestamp: n.created_at,
-          });
-        }
       });
 
       // Sort all by timestamp descending
@@ -269,7 +253,15 @@ export default function OwnerNotificationsScreen() {
   };
 
   const handleTap = (item: AlertItem) => {
-    router.push(item.route as any);
+    if (item.notificationIds?.length) {
+      markNotificationsRead(item.notificationIds).catch(() => {});
+      setAlerts((prev) =>
+        item.standalone
+          ? prev.filter((a) => a.id !== item.id)
+          : prev.map((a) => (a.id === item.id ? { ...a, notificationIds: undefined } : a))
+      );
+    }
+    if (item.route) router.push(item.route as any);
   };
 
   const formatTimeAgo = (ts: string) => {

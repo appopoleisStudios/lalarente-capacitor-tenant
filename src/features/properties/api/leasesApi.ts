@@ -34,26 +34,26 @@ export interface CreateLeaseInput {
   owner_id: string;
   tenant_id: string;
   application_id?: string;
-  
+
   // Lease Period
   start_date: string;
   end_date: string;
   lease_type: 'fixed' | 'month_to_month';
-  
+
   // Financial
   monthly_rent: number;
   deposit_amount: number;
-  
+
   // Payment Terms
   payment_due_day: number; // 1-31
   late_fee_amount?: number;
   late_fee_grace_days?: number;
-  
+
   // Rent Escalation
   rent_escalation_type?: 'fixed_percentage' | 'fixed_amount' | 'cpi_linked';
   rent_escalation_value?: number;
   rent_escalation_frequency_months?: number;
-  
+
   // Document
   document_url?: string;
   document_template_id?: string;
@@ -91,30 +91,30 @@ export const leasesApi = {
         owner_id: input.owner_id,
         tenant_id: input.tenant_id,
         application_id: input.application_id || null,
-        
+
         // Lease period
         start_date: input.start_date,
         end_date: input.end_date,
         lease_type: input.lease_type,
-        
+
         // Financial
         monthly_rent: input.monthly_rent,
         deposit_amount: input.deposit_amount,
-        
+
         // Payment terms
         payment_due_day: input.payment_due_day,
         late_fee_amount: input.late_fee_amount || null,
         late_fee_grace_days: input.late_fee_grace_days || 0,
-        
+
         // Rent escalation
         rent_escalation_type: input.rent_escalation_type || null,
         rent_escalation_value: input.rent_escalation_value || null,
         rent_escalation_frequency_months: input.rent_escalation_frequency_months || null,
-        
+
         // Document
         document_url: input.document_url || null,
         document_template_id: input.document_template_id || null,
-        
+
         status: 'draft',
       })
       .select()
@@ -153,12 +153,14 @@ export const leasesApi = {
   async getLease(id: string): Promise<LeaseWithRelations> {
     const { data, error } = await supabase
       .from('leases')
-      .select(`
+      .select(
+        `
         *,
         property:properties!property_id(id, title, address, city),
         tenant:profiles!tenant_id(id, full_name, email, phone),
         owner:profiles!owner_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('id', id)
       .single();
 
@@ -176,11 +178,13 @@ export const leasesApi = {
   async getTenantLeases(tenantId: string): Promise<LeaseWithRelations[]> {
     const { data, error } = await supabase
       .from('leases')
-      .select(`
+      .select(
+        `
         *,
         property:properties!property_id(id, title, address, city),
         owner:profiles!owner_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false });
 
@@ -198,11 +202,13 @@ export const leasesApi = {
   async getOwnerLeases(ownerId: string): Promise<LeaseWithRelations[]> {
     const { data, error } = await supabase
       .from('leases')
-      .select(`
+      .select(
+        `
         *,
         property:properties!property_id(id, title, address, city),
         tenant:profiles!tenant_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('owner_id', ownerId)
       .order('created_at', { ascending: false });
 
@@ -220,12 +226,14 @@ export const leasesApi = {
   async getActiveLease(propertyId: string): Promise<LeaseWithRelations | null> {
     const { data, error } = await supabase
       .from('leases')
-      .select(`
+      .select(
+        `
         *,
         property:properties!property_id(id, title, address, city),
         tenant:profiles!tenant_id(id, full_name, email, phone),
         owner:profiles!owner_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('property_id', propertyId)
       .eq('status', 'active')
       .single();
@@ -248,12 +256,14 @@ export const leasesApi = {
   async getLeaseHistory(propertyId: string): Promise<LeaseWithRelations[]> {
     const { data, error } = await supabase
       .from('leases')
-      .select(`
+      .select(
+        `
         *,
         property:properties!property_id(id, title, address, city),
         tenant:profiles!tenant_id(id, full_name, email, phone),
         owner:profiles!owner_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('property_id', propertyId)
       .order('created_at', { ascending: false });
 
@@ -270,7 +280,7 @@ export const leasesApi = {
    */
   async signLease(id: string, signatureData: SignatureData): Promise<Lease> {
     const updateData: Record<string, unknown> = {};
-    
+
     if (signatureData.role === 'owner') {
       updateData.owner_signed_at = new Date().toISOString();
       updateData.owner_signature_url = signatureData.signature_url;
@@ -281,7 +291,7 @@ export const leasesApi = {
 
     // Check if both parties have now signed
     const lease = await this.getLease(id);
-    const bothSigned = 
+    const bothSigned =
       (signatureData.role === 'owner' && lease.tenant_signed_at) ||
       (signatureData.role === 'tenant' && lease.owner_signed_at);
 
@@ -306,22 +316,22 @@ export const leasesApi = {
 
     // If lease is now active, update property status
     if (bothSigned && lease.property_id) {
-      await supabase
-        .from('properties')
-        .update({ status: 'rented' })
-        .eq('id', lease.property_id);
-      
+      await supabase.from('properties').update({ status: 'rented' }).eq('id', lease.property_id);
+
       // Send notifications to both parties that lease is now active
       try {
-        const { notificationsApi } = await import('@/src/features/notifications/api/notificationsApi');
+        const { notificationsApi } =
+          await import('@/src/features/notifications/api/notificationsApi');
         if (lease.tenant_id) {
           notificationsApi.sendNotification({
             user_id: lease.tenant_id,
             type: 'lease_signed',
             data: {
+              lease_id: id,
               propertyTitle: '',
               customTitle: 'Lease Signed & Active!',
-              customBody: 'Your lease is now active. Welcome home! Download your lease document from the Lease tab.',
+              customBody:
+                'Your lease is now active. Welcome home! Download your lease document from the Lease tab.',
             },
           });
         }
@@ -330,6 +340,7 @@ export const leasesApi = {
             user_id: lease.owner_id,
             type: 'lease_signed',
             data: {
+              lease_id: id,
               propertyTitle: '',
               customTitle: 'Lease Activated',
               customBody: `Lease with tenant is now active. Lease document is available for download.`,
@@ -372,20 +383,19 @@ export const leasesApi = {
 
     // Update property status to rented
     if (lease.property_id) {
-      await supabase
-        .from('properties')
-        .update({ status: 'rented' })
-        .eq('id', lease.property_id);
+      await supabase.from('properties').update({ status: 'rented' }).eq('id', lease.property_id);
     }
 
     // Send confirmation to both parties
     try {
-      const { notificationsApi } = await import('@/src/features/notifications/api/notificationsApi');
+      const { notificationsApi } =
+        await import('@/src/features/notifications/api/notificationsApi');
       if (lease.tenant_id) {
         notificationsApi.sendNotification({
           user_id: lease.tenant_id,
           type: 'lease_signed',
           data: {
+            lease_id: id,
             propertyTitle: lease.property?.title || '',
             customTitle: 'Lease Executed',
             customBody: 'Your lease has been executed. Your first payment is due soon.',
@@ -397,6 +407,7 @@ export const leasesApi = {
           user_id: lease.owner_id,
           type: 'lease_signed',
           data: {
+            lease_id: id,
             propertyTitle: lease.property?.title || '',
             customTitle: 'Lease Executed',
             customBody: 'The lease has been executed. The property is now rented.',
@@ -435,15 +446,13 @@ export const leasesApi = {
 
     // Update property status to available
     if (lease.property_id) {
-      await supabase
-        .from('properties')
-        .update({ status: 'available' })
-        .eq('id', lease.property_id);
+      await supabase.from('properties').update({ status: 'available' }).eq('id', lease.property_id);
     }
 
     // Send notification to both parties about termination
     try {
-      const { notificationsApi } = await import('@/src/features/notifications/api/notificationsApi');
+      const { notificationsApi } =
+        await import('@/src/features/notifications/api/notificationsApi');
       if (lease.tenant_id) {
         notificationsApi.sendNotification({
           user_id: lease.tenant_id,
@@ -481,8 +490,10 @@ export const leasesApi = {
   isExpiringSoon(lease: Lease, daysThreshold: number = 90): boolean {
     const endDate = new Date(lease.end_date);
     const today = new Date();
-    const daysUntilExpiry = Math.floor((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    
+    const daysUntilExpiry = Math.floor(
+      (endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
     return daysUntilExpiry <= daysThreshold && daysUntilExpiry > 0;
   },
 
@@ -492,24 +503,29 @@ export const leasesApi = {
   isExpired(lease: Lease): boolean {
     const endDate = new Date(lease.end_date);
     const today = new Date();
-    
+
     return endDate < today;
   },
 
   /**
    * Get expiring leases for an owner (within 90 days)
    */
-  async getExpiringLeases(ownerId: string, daysThreshold: number = 90): Promise<LeaseWithRelations[]> {
+  async getExpiringLeases(
+    ownerId: string,
+    daysThreshold: number = 90
+  ): Promise<LeaseWithRelations[]> {
     const thresholdDate = new Date();
     thresholdDate.setDate(thresholdDate.getDate() + daysThreshold);
 
     const { data, error } = await supabase
       .from('leases')
-      .select(`
+      .select(
+        `
         *,
         property:properties!property_id(id, title, address, city),
         tenant:profiles!tenant_id(id, full_name, email, phone)
-      `)
+      `
+      )
       .eq('owner_id', ownerId)
       .eq('status', 'active')
       .lte('end_date', thresholdDate.toISOString())
@@ -529,13 +545,13 @@ export const leasesApi = {
    */
   async generateLeaseDocument(id: string): Promise<string> {
     const lease = await this.getLease(id);
-    
+
     // TODO: Integrate with PDF generation service
     // For now, return a placeholder URL
     const documentUrl = `https://example.com/leases/${id}/document.pdf`;
-    
+
     await this.updateLease(id, { document_url: documentUrl });
-    
+
     return documentUrl;
   },
 
@@ -554,21 +570,24 @@ export const leasesApi = {
     }
 
     const total = leases?.length || 0;
-    const active = leases?.filter(l => l.status === 'active').length || 0;
-    const expiring = leases?.filter(l => {
-      if (l.status !== 'active') return false;
-      const endDate = new Date(l.end_date);
-      const today = new Date();
-      const daysUntilExpiry = Math.floor((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-      return daysUntilExpiry <= 90 && daysUntilExpiry > 0;
-    }).length || 0;
+    const active = leases?.filter((l) => l.status === 'active').length || 0;
+    const expiring =
+      leases?.filter((l) => {
+        if (l.status !== 'active') return false;
+        const endDate = new Date(l.end_date);
+        const today = new Date();
+        const daysUntilExpiry = Math.floor(
+          (endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        return daysUntilExpiry <= 90 && daysUntilExpiry > 0;
+      }).length || 0;
 
     return {
       total,
       active,
       expiring,
-      expired: leases?.filter(l => l.status === 'expired').length || 0,
-      terminated: leases?.filter(l => l.status === 'terminated').length || 0,
+      expired: leases?.filter((l) => l.status === 'expired').length || 0,
+      terminated: leases?.filter((l) => l.status === 'terminated').length || 0,
     };
   },
 };

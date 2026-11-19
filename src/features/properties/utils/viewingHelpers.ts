@@ -1,3 +1,5 @@
+import { formatTime } from '@/src/shared/utils/format';
+
 /**
  * Viewing Request Helper Functions
  * Handles expiration logic and action status for viewing requests
@@ -50,8 +52,8 @@ export function isViewingExpired(viewing: ViewingRequest): boolean {
   // AND the viewing is less than 2 hours away
   if (viewing.status === 'pending' && viewing.created_at) {
     const createdAt = new Date(viewing.created_at);
-    const ownerHad24h = (now.getTime() - createdAt.getTime()) >= 24 * 60 * 60 * 1000;
-    const lessThan2hAway = (viewingDateTime.getTime() - now.getTime()) < 2 * 60 * 60 * 1000;
+    const ownerHad24h = now.getTime() - createdAt.getTime() >= 24 * 60 * 60 * 1000;
+    const lessThan2hAway = viewingDateTime.getTime() - now.getTime() < 2 * 60 * 60 * 1000;
 
     if (ownerHad24h && lessThan2hAway) {
       return true;
@@ -130,9 +132,8 @@ export function getViewingActionStatus(viewing: ViewingRequest): ViewingActionSt
 
   // Check if viewing date/time has passed
   if (viewingDateTime < now) {
-    const reason = viewing.status === 'pending'
-      ? 'viewing_date_passed_no_response'
-      : 'viewing_date_passed';
+    const reason =
+      viewing.status === 'pending' ? 'viewing_date_passed_no_response' : 'viewing_date_passed';
 
     return {
       canApprove: false,
@@ -149,7 +150,7 @@ export function getViewingActionStatus(viewing: ViewingRequest): ViewingActionSt
   // Owner had 24h to respond AND viewing is less than 2h away
   if (viewing.status === 'pending' && viewing.created_at) {
     const createdAt = new Date(viewing.created_at);
-    const ownerHad24h = (now.getTime() - createdAt.getTime()) >= 24 * 60 * 60 * 1000;
+    const ownerHad24h = now.getTime() - createdAt.getTime() >= 24 * 60 * 60 * 1000;
     const lessThan2hAway = hoursUntil < 2;
 
     if (ownerHad24h && lessThan2hAway) {
@@ -234,11 +235,13 @@ export function getViewingActionStatus(viewing: ViewingRequest): ViewingActionSt
 export function formatViewingDateTime(date: string, time: string): string {
   const viewingDate = new Date(`${date}T${time}`);
 
-  return viewingDate.toLocaleDateString('en-ZA', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }) + ` at ${time}`;
+  return (
+    viewingDate.toLocaleDateString('en-ZA', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    }) + ` at ${formatTime(time)}`
+  );
 }
 
 /**
@@ -274,7 +277,7 @@ export function filterViewingsByStatus(viewings: ViewingRequest[]) {
   const expired: ViewingRequest[] = [];
   const completed: ViewingRequest[] = [];
 
-  viewings.forEach(viewing => {
+  viewings.forEach((viewing) => {
     if (viewing.status === 'expired' || isViewingExpired(viewing)) {
       expired.push(viewing);
     } else if (viewing.status === 'completed' || shouldBeCompleted(viewing)) {

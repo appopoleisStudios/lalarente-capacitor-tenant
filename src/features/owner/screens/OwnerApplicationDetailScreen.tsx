@@ -570,7 +570,7 @@ export default function OwnerApplicationDetailScreen() {
                     <View style={styles.depositRow}>
                       <Text style={styles.depositLabel}>Pay Deadline</Text>
                       <Text style={styles.depositDeadline}>
-                        {new Date(holdingDeposit.payment_deadline).toLocaleDateString('en-ZA')}
+                        {formatDate(holdingDeposit.payment_deadline)}
                       </Text>
                     </View>
                   )}
@@ -587,9 +587,7 @@ export default function OwnerApplicationDetailScreen() {
                   {holdingDeposit.paid_at && (
                     <View style={styles.depositRow}>
                       <Text style={styles.depositLabel}>Paid On</Text>
-                      <Text style={styles.depositValue}>
-                        {new Date(holdingDeposit.paid_at).toLocaleDateString('en-ZA')}
-                      </Text>
+                      <Text style={styles.depositValue}>{formatDate(holdingDeposit.paid_at)}</Text>
                     </View>
                   )}
                   {holdingDeposit.status === 'paid' && (

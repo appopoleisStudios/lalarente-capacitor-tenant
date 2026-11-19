@@ -33,6 +33,7 @@ import { ReasonPromptModal } from '@/src/shared/components/ui/ReasonPromptModal'
 import { fromLocalIsoDate, toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
 import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
+import { formatDate } from '../../../shared/utils/format';
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const formatZAR = (amount: number) =>
@@ -331,9 +332,7 @@ export default function OwnerLeaseRenewalScreen() {
                     <View style={styles.cardHeaderRight}>
                       <Text style={styles.rentLabel}>Monthly Rent</Text>
                       <Text style={styles.rentAmount}>{formatZAR(lease.monthly_rent)}</Text>
-                      <Text style={styles.expiryDate}>
-                        Expires {new Date(lease.end_date).toLocaleDateString('en-ZA')}
-                      </Text>
+                      <Text style={styles.expiryDate}>Expires {formatDate(lease.end_date)}</Text>
                     </View>
                   </View>
 

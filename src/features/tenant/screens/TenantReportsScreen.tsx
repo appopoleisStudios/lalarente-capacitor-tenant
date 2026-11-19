@@ -22,6 +22,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/src/shared/theme/colors';
 import { supabase } from '@/src/lib/supabase';
 
+import { formatDate } from '../../../shared/utils/format';
 interface InspectionItem {
   id: string;
   type: string;
@@ -216,8 +217,7 @@ export default function TenantReportsScreen() {
                       </Text>
                       {closure.forwarded_to_tenant_at && (
                         <Text style={styles.closureDate}>
-                          Forwarded{' '}
-                          {new Date(closure.forwarded_to_tenant_at).toLocaleDateString('en-ZA')}
+                          Forwarded {formatDate(closure.forwarded_to_tenant_at)}
                         </Text>
                       )}
                     </View>
@@ -366,7 +366,7 @@ export default function TenantReportsScreen() {
                       <View style={styles.signedRow}>
                         <Ionicons name="checkmark-circle" size={16} color={colors.primary[500]} />
                         <Text style={styles.signedText}>
-                          Signed {new Date(inspection.tenant_signed_at).toLocaleDateString('en-ZA')}
+                          Signed {formatDate(inspection.tenant_signed_at)}
                         </Text>
                       </View>
                     )}

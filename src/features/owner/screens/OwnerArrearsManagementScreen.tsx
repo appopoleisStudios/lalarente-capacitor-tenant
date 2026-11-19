@@ -29,6 +29,7 @@ import { paymentDisputesApi } from '@/src/features/payments/api/paymentDisputes.
 import { reportApiError } from '@/src/core/observability/sentry';
 import { goBack } from '@/src/shared/navigation/goBack';
 
+import { formatDate } from '../../../shared/utils/format';
 const STAGE_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
   friendly_reminder: {
     label: 'Reminder',
@@ -269,8 +270,7 @@ export default function OwnerArrearsManagementScreen() {
                   </View>
                 </View>
                 <Text style={styles.arrangementDate}>
-                  Starts {new Date(arr.start_date).toLocaleDateString('en-ZA')} · Proposed{' '}
-                  {new Date(arr.created_at).toLocaleDateString('en-ZA')}
+                  Starts {formatDate(arr.start_date)} · Proposed {formatDate(arr.created_at)}
                 </Text>
                 <View style={styles.arrangementActions}>
                   <TouchableOpacity
@@ -320,8 +320,7 @@ export default function OwnerArrearsManagementScreen() {
                   </Text>
                   {escalation.cure_period_ends_at && (
                     <Text style={styles.detailText}>
-                      Cure deadline:{' '}
-                      {new Date(escalation.cure_period_ends_at).toLocaleDateString('en-ZA')}
+                      Cure deadline: {formatDate(escalation.cure_period_ends_at)}
                     </Text>
                   )}
                 </View>

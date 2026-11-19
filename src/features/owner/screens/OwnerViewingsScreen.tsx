@@ -17,7 +17,9 @@ import { viewingsApi, ViewingWithRelations } from '../../properties/api/viewings
 import { supabase } from '../../../lib/supabase';
 import { isViewingExpired, getViewingActionStatus } from '../../properties/utils/viewingHelpers';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { formatTime } from '@/src/shared/utils/format';
 
+import { formatDate as formatShortDate } from '../../../shared/utils/format';
 const RSA = { blue: '#002395', gold: '#FFB81C' };
 
 type ViewingStatus = 'all' | 'pending' | 'approved' | 'declined' | 'completed' | 'cancelled';
@@ -313,8 +315,8 @@ export default function OwnerViewingsScreen() {
             <Ionicons name="calendar-outline" size={16} color="#666" />
             <Text style={styles.detailText}>
               {item.status === 'approved' && item.confirmed_date
-                ? `${formatDate(item.confirmed_date)} at ${item.requested_time}`
-                : `Requested: ${formatDate(item.requested_date)} at ${item.requested_time}`}
+                ? `${formatDate(item.confirmed_date)} at ${formatTime(item.requested_time)}`
+                : `Requested: ${formatDate(item.requested_date)} at ${formatTime(item.requested_time)}`}
             </Text>
           </View>
 
@@ -360,9 +362,7 @@ export default function OwnerViewingsScreen() {
         </View>
 
         <View style={styles.cardFooter}>
-          <Text style={styles.footerText}>
-            Requested {new Date(item.created_at!).toLocaleDateString('en-ZA')}
-          </Text>
+          <Text style={styles.footerText}>Requested {formatShortDate(item.created_at!)}</Text>
           <View style={styles.footerAction}>
             {requiresAction && <Text style={styles.actionFooterText}>Tap to respond</Text>}
             <Ionicons name="chevron-forward" size={20} color="#999" />

@@ -19,6 +19,12 @@ import {
   isValidSAPhoneNumber,
 } from '../templates/smsTemplates';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { formatDate, formatTime } from '@/src/shared/utils/format';
+
+// CT7-062: dates/times in notification text read "20 Nov 2026" / "10:00";
+// an unparseable value is shown as given.
+const day = (v?: string | null) => (v ? formatDate(v) || v : '');
+const time = (v?: string | null) => (v ? formatTime(v) || v : '');
 
 // notifications table does not yet have a migration — cast via any until 033 is applied
 const notifTable = () => (supabase as any).from('notifications');
@@ -205,11 +211,11 @@ export const notificationsApi = {
       },
       viewing_requested: {
         title: 'New Viewing Request',
-        body: `${data?.tenantName || 'A tenant'} requested to view ${data?.propertyTitle || 'your property'} on ${data?.requestedDate || ''}.`,
+        body: `${data?.tenantName || 'A tenant'} requested to view ${data?.propertyTitle || 'your property'} on ${day(data?.requestedDate)}.`,
       },
       viewing_approved: {
         title: 'Viewing Approved',
-        body: `Your viewing request for ${data?.propertyTitle || ''} on ${data?.confirmedDate || data?.requestedDate || ''} has been approved!`,
+        body: `Your viewing request for ${data?.propertyTitle || ''} on ${day(data?.confirmedDate || data?.requestedDate)} has been approved!`,
       },
       viewing_declined: {
         title: 'Viewing Request Update',
@@ -217,7 +223,7 @@ export const notificationsApi = {
       },
       viewing_cancelled: {
         title: 'Viewing Cancelled',
-        body: `The viewing for ${data?.propertyTitle || ''} on ${data?.viewingDate || ''} has been cancelled.`,
+        body: `The viewing for ${data?.propertyTitle || ''} on ${day(data?.viewingDate)} has been cancelled.`,
       },
       viewing_completed: {
         title: 'Viewing Completed',
@@ -225,11 +231,11 @@ export const notificationsApi = {
       },
       viewing_scheduled: {
         title: 'Viewing Confirmed',
-        body: `Viewing scheduled for ${data?.viewingDate || ''} at ${data?.viewingTime || ''}.`,
+        body: `Viewing scheduled for ${day(data?.viewingDate)} at ${time(data?.viewingTime)}.`,
       },
       viewing_reminder: {
         title: 'Viewing Tomorrow',
-        body: `Reminder: Property viewing tomorrow at ${data?.viewingTime || ''}.`,
+        body: `Reminder: Property viewing tomorrow at ${time(data?.viewingTime)}.`,
       },
       welcome: {
         title: 'Welcome to LaLaRente!',

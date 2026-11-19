@@ -18,6 +18,7 @@ import {
   RequestViewingInput,
 } from '../../properties/api/viewingsApi';
 import { supabase } from '../../../lib/supabase';
+import { formatDate as formatDisplayDate, formatTime } from '@/src/shared/utils/format';
 
 const RSA = { green: '#007A4D', gold: '#FFB81C' };
 
@@ -28,7 +29,7 @@ const parseAlternativeTime = (alt: string) => {
     const date = new Date(datePart + 'T00:00:00');
     return {
       date: date.toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short' }),
-      time: timePart,
+      time: formatTime(timePart) || timePart,
       isoDate: datePart,
       isoTime: timePart,
     };
@@ -174,7 +175,7 @@ export default function TenantViewingDetailScreen() {
   };
 
   const formatDateTime = (dateStr: string, timeStr: string) => {
-    return `${formatDate(dateStr)} at ${timeStr}`;
+    return `${formatDate(dateStr)} at ${formatTime(timeStr)}`;
   };
 
   if (loading) {
@@ -432,7 +433,7 @@ export default function TenantViewingDetailScreen() {
                 <View style={styles.timelineContent}>
                   <Text style={styles.timelineTitle}>Request Submitted</Text>
                   <Text style={styles.timelineDate}>
-                    {new Date(viewing.created_at!).toLocaleString('en-ZA')}
+                    {formatDisplayDate(viewing.created_at, 'datetime')}
                   </Text>
                 </View>
               </View>
@@ -443,7 +444,7 @@ export default function TenantViewingDetailScreen() {
                   <View style={styles.timelineContent}>
                     <Text style={styles.timelineTitle}>Viewing Completed</Text>
                     <Text style={styles.timelineDate}>
-                      {new Date(viewing.completed_at).toLocaleString('en-ZA')}
+                      {formatDisplayDate(viewing.completed_at, 'datetime')}
                     </Text>
                   </View>
                 </View>

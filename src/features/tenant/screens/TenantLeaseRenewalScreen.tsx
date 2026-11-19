@@ -25,6 +25,7 @@ import { colors } from '@/src/shared/theme/colors';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
+import { formatDate } from '../../../shared/utils/format';
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const formatZAR = (amount: number) =>
@@ -311,7 +312,7 @@ export default function TenantLeaseRenewalScreen() {
                     : 'EXPIRED'}
                 </Text>
                 <Text style={styles.expiryLabel}>
-                  until lease expires on {new Date(leaseEndDate).toLocaleDateString('en-ZA')}
+                  until lease expires on {formatDate(leaseEndDate)}
                 </Text>
               </View>
             </View>
@@ -352,9 +353,7 @@ export default function TenantLeaseRenewalScreen() {
                 />
                 <View style={styles.noticeInfo}>
                   <Text style={styles.noticeLabel}>Notice at {notice.label}</Text>
-                  <Text style={styles.noticeDate}>
-                    Due: {new Date(notice.date).toLocaleDateString('en-ZA')}
-                  </Text>
+                  <Text style={styles.noticeDate}>Due: {formatDate(notice.date)}</Text>
                 </View>
                 {notice.sent && (
                   <View style={styles.sentBadge}>
@@ -390,7 +389,7 @@ export default function TenantLeaseRenewalScreen() {
                 <View style={styles.offerRow}>
                   <Text style={styles.offerLabel}>Start Date</Text>
                   <Text style={styles.offerValue}>
-                    {new Date(latestNegotiation!.proposed_start_date).toLocaleDateString('en-ZA')}
+                    {formatDate(latestNegotiation!.proposed_start_date)}
                   </Text>
                 </View>
                 {latestNegotiation!.proposed_terms_notes && (
@@ -399,8 +398,7 @@ export default function TenantLeaseRenewalScreen() {
               </View>
               {latestNegotiation!.response_deadline && (
                 <Text style={styles.deadlineText}>
-                  Respond by:{' '}
-                  {new Date(latestNegotiation!.response_deadline).toLocaleDateString('en-ZA')}
+                  Respond by: {formatDate(latestNegotiation!.response_deadline)}
                 </Text>
               )}
               <View style={styles.offerActions}>

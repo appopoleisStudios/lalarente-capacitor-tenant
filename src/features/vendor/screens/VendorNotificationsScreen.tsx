@@ -14,6 +14,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { colors } from '@/src/shared/theme/colors';
 import { goBack } from '@/src/shared/navigation/goBack';
+import {
+  fetchUnreadNotifications,
+  linkNotifications,
+  markNotificationsRead,
+  notificationRoute,
+} from '@/src/features/notifications/utils/unreadNotifications';
 
 type AlertItem = {
   id: string;
@@ -23,8 +29,10 @@ type AlertItem = {
   icon: string;
   iconColor: string;
   bgColor: string;
-  route: string;
+  route: string | null;
   timestamp: string;
+  notificationIds?: string[]; // unread notifications this row stands for
+  standalone?: boolean; // a notification with no live item behind it: gone once tapped
 };
 
 export default function VendorNotificationsScreen() {
@@ -39,26 +47,10 @@ export default function VendorNotificationsScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      loadAlertsAndMarkRead();
+      // CT7-064: opening the list marks nothing read; only a tapped row is.
+      loadAlerts();
     }, [])
   );
-
-  const loadAlertsAndMarkRead = async () => {
-    await loadAlerts();
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-      await (supabase as any)
-        .from('notifications')
-        .update({ read_at: new Date().toISOString() })
-        .eq('user_id', user.id)
-        .is('read_at', null);
-    } catch (err) {
-      // Non-critical
-    }
-  };
 
   const loadAlerts = async () => {
     try {
@@ -213,36 +205,27 @@ export default function VendorNotificationsScreen() {
         });
       });
 
-      // 6. Unread DB notifications
-      const { data: dbNotifs } = await (supabase as any)
-        .from('notifications')
-        .select('id, type, title, body, data, created_at')
-        .eq('user_id', user.id)
-        .is('read_at', null)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      (dbNotifs ?? []).forEach((n: any) => {
-        const isDuplicate = items.some((item) => {
-          if (n.type === 'quote_requested' && n.data?.requestId)
-            return items.some((i) => i.id === `quote-${n.data.requestId}`);
-          if (n.type === 'po_sent' && n.data?.poId)
-            return items.some((i) => i.id === `po-${n.data.poId}`);
-          return false;
+      // 6. Unread notifications: attach each to the row it duplicates; list the rest
+      const unread = await fetchUnreadNotifications(user.id);
+      const standalone = linkNotifications(items, unread, (n) => {
+        if (n.type === 'quote_requested' && n.data?.requestId) return `quote-${n.data.requestId}`;
+        if (n.type === 'po_sent' && n.data?.poId) return `po-${n.data.poId}`;
+        return null;
+      });
+      standalone.forEach((n) => {
+        items.push({
+          id: `notif-${n.id}`,
+          kind: 'message',
+          title: n.title || 'Notification',
+          body: n.body || '',
+          icon: 'notifications',
+          iconColor: colors.info[500],
+          bgColor: colors.info[50],
+          route: notificationRoute('vendor', n),
+          timestamp: n.created_at,
+          notificationIds: [n.id],
+          standalone: true,
         });
-        if (!isDuplicate) {
-          items.push({
-            id: `notif-${n.id}`,
-            kind: 'message',
-            title: n.title || 'Notification',
-            body: n.body || '',
-            icon: 'notifications',
-            iconColor: colors.info[500],
-            bgColor: colors.info[50],
-            route: '/(vendor)/dashboard',
-            timestamp: n.created_at,
-          });
-        }
       });
 
       // Sort all by timestamp descending
@@ -263,7 +246,15 @@ export default function VendorNotificationsScreen() {
   };
 
   const handleTap = (item: AlertItem) => {
-    router.push(item.route as any);
+    if (item.notificationIds?.length) {
+      markNotificationsRead(item.notificationIds).catch(() => {});
+      setAlerts((prev) =>
+        item.standalone
+          ? prev.filter((a) => a.id !== item.id)
+          : prev.map((a) => (a.id === item.id ? { ...a, notificationIds: undefined } : a))
+      );
+    }
+    if (item.route) router.push(item.route as any);
   };
 
   const handleBack = () => {

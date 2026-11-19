@@ -22,6 +22,7 @@ import { supabase } from '@/src/lib/supabase';
 import { colors } from '@/src/shared/theme/colors';
 import { isPaymentClaimed } from '@/src/features/applications/api/holdingDeposit.api';
 
+import { formatDate as formatShortDate } from '../../../shared/utils/format';
 interface HoldingDepositSummary {
   id: string;
   application_id: string | null;
@@ -340,8 +341,7 @@ function ApplicationCard({
               </Text>
               {deposit.payment_deadline && !isPaymentClaimed(deposit) && (
                 <Text style={styles.depositBannerDeadline}>
-                  Pay by {new Date(deposit.payment_deadline).toLocaleDateString('en-ZA')} to secure
-                  this property
+                  Pay by {formatShortDate(deposit.payment_deadline)} to secure this property
                 </Text>
               )}
             </View>

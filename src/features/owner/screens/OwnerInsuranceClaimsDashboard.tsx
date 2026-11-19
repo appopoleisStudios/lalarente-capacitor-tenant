@@ -28,6 +28,7 @@ import {
 import { colors } from '@/src/shared/theme/colors';
 import { reportApiError } from '@/src/core/observability/sentry';
 
+import { formatDate } from '../../../shared/utils/format';
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const formatZAR = (amount: number) =>
@@ -245,9 +246,7 @@ export default function OwnerInsuranceClaimsDashboard() {
                   </Text>
 
                   <View style={styles.claimBottom}>
-                    <Text style={styles.claimDate}>
-                      {new Date(claim.incident_date).toLocaleDateString('en-ZA')}
-                    </Text>
+                    <Text style={styles.claimDate}>{formatDate(claim.incident_date)}</Text>
                     <View style={styles.claimAmounts}>
                       <Text style={styles.estimatedLabel}>Est: </Text>
                       <Text style={styles.estimatedAmount}>{formatZAR(claim.estimated_cost)}</Text>

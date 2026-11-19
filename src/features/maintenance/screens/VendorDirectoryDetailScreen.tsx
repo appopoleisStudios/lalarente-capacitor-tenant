@@ -26,6 +26,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { showChoices } from '@/src/shared/components/ui/ChoiceSheet';
+import { useCanReportIssue } from '@/src/features/maintenance/hooks/useCanReportIssue';
+import { REPORT_ISSUE_NEEDS_SIGNED_LEASE_MESSAGE } from '@/src/features/leases/utils/leaseInEffect';
 
 const OWNER_BLUE = colors.role.owner.primary;
 const TENANT_GREEN = colors.role.tenant.primary;
@@ -56,6 +58,8 @@ export default function VendorDirectoryDetailScreen() {
   const role = isOwner ? 'owner' : 'tenant';
   const accent = isOwner ? OWNER_BLUE : TENANT_GREEN;
   const { id, requestId } = useLocalSearchParams<{ id: string; requestId?: string }>();
+  // A tenant can start a new report only on a lease in effect (CT7-066)
+  const { canReport, refresh: refreshCanReport } = useCanReportIssue(!isOwner);
 
   const [loading, setLoading] = useState(true);
   const [inviting, setInviting] = useState(false);
@@ -140,6 +144,16 @@ export default function VendorDirectoryDetailScreen() {
         ['open', 'assigned', 'in_progress'].includes(String(job.status))
       );
       if (openJobs.length === 0) {
+        if (!isOwner && canReport === null) {
+          // Lease check still loading or failed: don't claim there is no lease.
+          refreshCanReport();
+          Alert.alert("Couldn't check your lease", 'Check your connection and try again.');
+          return;
+        }
+        if (!isOwner && canReport === false) {
+          Alert.alert('No open jobs', REPORT_ISSUE_NEEDS_SIGNED_LEASE_MESSAGE);
+          return;
+        }
         if (!isOwner) {
           Alert.alert(
             'No open jobs',
@@ -347,7 +361,7 @@ export default function VendorDirectoryDetailScreen() {
             <Text style={[styles.secondaryButtonText, { color: accent }]}>Message in-app</Text>
           </TouchableOpacity>
 
-          {!isOwner && !requestId ? (
+          {!isOwner && !requestId && canReport ? (
             <TouchableOpacity
               accessibilityRole="button"
               style={styles.secondaryButton}

@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
-import { paymentsApi, PaymentWithRelations, PaymentStats } from '../../properties/api/paymentsApi';
+import { paymentsApi, PaymentWithRelations } from '../../properties/api/paymentsApi';
 import { propertiesApi } from '../../properties/api/propertiesApi';
 import { notificationsApi } from '../../notifications/api/notificationsApi';
 import {
@@ -45,7 +45,6 @@ export default function OwnerRentRollScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [stats, setStats] = useState<PaymentStats | null>(null);
   const [propertySummaries, setPropertySummaries] = useState<PropertyPaymentSummary[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<'all' | RentRollStatus>('all');
   const [confirmingPropertyId, setConfirmingPropertyId] = useState<string | null>(null);
@@ -63,10 +62,6 @@ export default function OwnerRentRollScreen() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
-
-      // Fetch payment stats
-      const statsData = await paymentsApi.getPaymentStats(user.id);
-      setStats(statsData);
 
       // Fetch all owner properties
       const properties = await propertiesApi.getOwnerProperties(user.id);
@@ -355,6 +350,8 @@ export default function OwnerRentRollScreen() {
   const totalMonthlyIncome = propertySummaries
     .filter((s) => s.payment_status !== 'no_lease')
     .reduce((sum, s) => sum + s.monthly_rent, 0);
+  // the tenancies badged Overdue, the same rule as the dashboard (CT7-063)
+  const overdueCount = propertySummaries.filter((s) => s.payment_status === 'overdue').length;
   const occupancyRate =
     propertySummaries.length > 0
       ? (propertySummaries.filter((s) => s.payment_status !== 'no_lease').length /
@@ -387,13 +384,13 @@ export default function OwnerRentRollScreen() {
             <Text style={styles.summaryValue}>{occupancyRate.toFixed(0)}%</Text>
             <Text style={styles.summaryLabel}>Occupancy</Text>
           </View>
-          {stats && (
-            <View style={styles.summaryCard}>
-              <Ionicons name="alert-circle-outline" size={32} color="#F44336" />
-              <Text style={styles.summaryValue}>{stats.overdue_count}</Text>
-              <Text style={styles.summaryLabel}>Overdue</Text>
-            </View>
-          )}
+          <View style={styles.summaryCard}>
+            <Ionicons name="alert-circle-outline" size={32} color="#F44336" />
+            <Text style={styles.summaryValue} testID="rent-roll-overdue-count">
+              {overdueCount}
+            </Text>
+            <Text style={styles.summaryLabel}>Overdue</Text>
+          </View>
         </View>
 
         {/* Filters */}

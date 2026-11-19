@@ -28,6 +28,7 @@ import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAv
 import { goBack } from '@/src/shared/navigation/goBack';
 import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
+import { formatDate } from '../../../shared/utils/format';
 const DISPUTE_REASONS: { value: DisputeReason; label: string; icon: string }[] = [
   { value: 'incorrect_amount', label: 'Incorrect Amount', icon: 'calculator-outline' },
   { value: 'already_paid', label: 'Already Paid', icon: 'checkmark-done-outline' },
@@ -320,9 +321,7 @@ export default function TenantPaymentDisputeScreen() {
                   </Text>
                   <View style={styles.disputeFooter}>
                     <Text style={styles.disputeAmount}>R{dispute.disputed_amount.toFixed(2)}</Text>
-                    <Text style={styles.disputeDate}>
-                      {new Date(dispute.created_at).toLocaleDateString('en-ZA')}
-                    </Text>
+                    <Text style={styles.disputeDate}>{formatDate(dispute.created_at)}</Text>
                   </View>
                   {dispute.resolution_notes && (
                     <View style={styles.resolutionBox}>

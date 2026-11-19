@@ -2,6 +2,7 @@ import { supabase } from '../../../lib/supabase';
 import { notificationsApi } from '../../notifications/api/notificationsApi';
 import { reportApiError } from '@/src/core/observability/sentry';
 import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
+import { formatTime } from '@/src/shared/utils/format';
 
 /**
  * Viewing Reminder System
@@ -122,7 +123,7 @@ export async function sendViewingReminders(): Promise<{
     for (const viewing of viewings) {
       try {
         const propertyTitle = viewing.property?.title || 'the property';
-        const viewingTime = viewing.requested_time || 'the scheduled time';
+        const viewingTime = formatTime(viewing.requested_time) || 'the scheduled time';
 
         // Send to tenant
         await notificationsApi.sendNotification({

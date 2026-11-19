@@ -17,7 +17,8 @@ import * as Haptics from 'expo-haptics';
 import { AnimatedButton } from '@/src/shared/components';
 import { MaintenanceFilters, FilterType } from '@/src/features/owner/components/MaintenanceFilters';
 import { StatusBadge, PriorityIndicator } from '@/src/features/maintenance/components';
-import { useMaintenanceRequests } from '@/src/features/maintenance/hooks';
+import { useMaintenanceRequests, useCanReportIssue } from '@/src/features/maintenance/hooks';
+import { REPORT_ISSUE_NEEDS_SIGNED_LEASE_MESSAGE } from '@/src/features/leases/utils/leaseInEffect';
 import {
   archiveMaintenanceRequest,
   unarchiveMaintenanceRequest,
@@ -38,11 +39,14 @@ export default function TenantMaintenanceListScreen() {
     onRefresh,
     refetch,
   } = useMaintenanceRequests(isArchiveView);
+  // Report Issue only exists while the tenant has a lease in effect (CT7-066)
+  const { canReport, refresh: refreshCanReport } = useCanReportIssue();
 
   useFocusEffect(
     React.useCallback(() => {
       refetch();
-    }, [refetch])
+      refreshCanReport();
+    }, [refetch, refreshCanReport])
   );
 
   const filteredRequests = allRequests.filter((request: any) => {
@@ -202,11 +206,13 @@ export default function TenantMaintenanceListScreen() {
               {counts.all} {counts.all !== 1 ? 'issues' : 'issue'} reported
             </Text>
           </View>
-          <AnimatedButton onPress={handleReportIssue} testID="maintenance-report-fab">
-            <View style={styles.reportButton}>
-              <Text style={styles.reportIcon}>+</Text>
-            </View>
-          </AnimatedButton>
+          {canReport && (
+            <AnimatedButton onPress={handleReportIssue} testID="maintenance-report-fab">
+              <View style={styles.reportButton}>
+                <Text style={styles.reportIcon}>+</Text>
+              </View>
+            </AnimatedButton>
+          )}
         </View>
 
         {/* Filters */}
@@ -244,7 +250,12 @@ export default function TenantMaintenanceListScreen() {
                       ? 'Everything is working great!'
                       : `No ${activeFilter.replace(/_/g, ' ')} issues`}
                 </Text>
-                {activeFilter === 'all' && (
+                {activeFilter === 'all' && canReport === false && (
+                  <Text style={styles.emptySubtitle} testID="maintenance-report-needs-lease">
+                    {REPORT_ISSUE_NEEDS_SIGNED_LEASE_MESSAGE}
+                  </Text>
+                )}
+                {activeFilter === 'all' && canReport && (
                   <AnimatedButton onPress={handleReportIssue} testID="maintenance-report-cta">
                     <View style={styles.reportIssueButton}>
                       <Text style={styles.reportIssueButtonText}>Report an Issue</Text>

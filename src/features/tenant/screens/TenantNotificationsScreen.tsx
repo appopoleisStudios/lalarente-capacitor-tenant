@@ -13,8 +13,15 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { colors } from '@/src/shared/theme/colors';
+import { formatDate, formatTime } from '@/src/shared/utils/format';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/src/core/query/queryKeys';
+import {
+  fetchUnreadNotifications,
+  linkNotifications,
+  markNotificationsRead,
+  notificationRoute,
+} from '@/src/features/notifications/utils/unreadNotifications';
 
 type AlertItem = {
   id: string;
@@ -24,15 +31,16 @@ type AlertItem = {
   icon: string;
   iconColor: string;
   bgColor: string;
-  route: string;
+  route: string | null;
   params?: Record<string, string>;
   timestamp: string;
-  notificationDbId?: string; // ID from notifications table, if this item has one
+  notificationIds?: string[]; // unread notifications this row stands for
+  standalone?: boolean; // a notification with no live item behind it: gone once tapped
 };
 
 export default function TenantNotificationsScreen() {
   // CT7-031: the dashboard bell is served from the cached dashboard query;
-  // refresh it once notifications are marked read so the count drops now.
+  // refresh it once a notification is marked read so the count drops now.
   const queryClient = useQueryClient();
   const refreshBell = () =>
     queryClient.invalidateQueries({ queryKey: queryKeys.tenant.dashboard(undefined).slice(0, 2) });
@@ -43,30 +51,10 @@ export default function TenantNotificationsScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      loadAlertsAndMarkRead();
+      // CT7-064: opening the list marks nothing read; only a tapped row is.
+      loadAlerts();
     }, [])
   );
-
-  const loadAlertsAndMarkRead = async () => {
-    // Load alerts first, then mark all DB notifications as read.
-    // This way the list shows all items, but going back to dashboard
-    // will show a reduced bell count.
-    await loadAlerts();
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-      await (supabase as any)
-        .from('notifications')
-        .update({ read_at: new Date().toISOString() })
-        .eq('user_id', user.id)
-        .is('read_at', null);
-      refreshBell();
-    } catch (err) {
-      // Non-critical
-    }
-  };
 
   const loadAlerts = async () => {
     try {
@@ -76,23 +64,6 @@ export default function TenantNotificationsScreen() {
       if (!user) return;
 
       const items: AlertItem[] = [];
-
-      // 0. Fetch unread notifications from DB — we'll match these to items
-      //    so tapping an item marks the corresponding DB row as read
-      const { data: dbNotifs } = await (supabase as any)
-        .from('notifications')
-        .select('id, type, data, read_at')
-        .eq('user_id', user.id)
-        .is('read_at', null);
-
-      const unreadNotifs = dbNotifs ?? [];
-
-      // Helper: find matching notification DB row for a viewing
-      const findNotifForViewing = (viewingId: string, types: string[]) => {
-        return unreadNotifs.find(
-          (n: any) => types.includes(n.type) && n.data?.viewingId === viewingId
-        );
-      };
 
       // 1. Viewing responses (declined/approved in last 30 days)
       const thirtyDaysAgo = new Date();
@@ -129,10 +100,6 @@ export default function TenantNotificationsScreen() {
       declinedResponses.forEach((v) => {
         const isApproved = v.status === 'approved';
         const altCount = (v.alternative_times as string[] | null)?.length ?? 0;
-        const matchedNotif = findNotifForViewing(
-          v.id,
-          isApproved ? ['viewing_approved'] : ['viewing_declined']
-        );
         items.push({
           id: `viewing-${v.id}`,
           kind: 'viewing',
@@ -145,7 +112,6 @@ export default function TenantNotificationsScreen() {
           bgColor: isApproved ? '#E8F5E9' : '#FFF3E0',
           route: `/(tenant)/viewings/${v.id}`,
           timestamp: v.updated_at ?? v.requested_date,
-          notificationDbId: matchedNotif?.id,
         });
       });
 
@@ -164,7 +130,7 @@ export default function TenantNotificationsScreen() {
           id: `viewing-pending-${v.id}`,
           kind: 'viewing',
           title: 'Viewing Request Pending',
-          body: `${v.property?.title || 'Property'} — ${v.requested_date} at ${v.requested_time?.slice(0, 5) || '—'}`,
+          body: `${v.property?.title || 'Property'} — ${formatDate(v.requested_date)} at ${formatTime(v.requested_time) || '—'}`,
           icon: 'time-outline',
           iconColor: '#F9A825',
           bgColor: '#FFF8E1',
@@ -233,7 +199,7 @@ export default function TenantNotificationsScreen() {
           id: `pmt-${duePmt.id}`,
           kind: 'payment',
           title: 'Payment Due',
-          body: `R ${(duePmt.amount || 0).toLocaleString()} due ${new Date(duePmt.due_date).toLocaleDateString('en-ZA')}`,
+          body: `R ${(duePmt.amount || 0).toLocaleString()} due ${formatDate(duePmt.due_date)}`,
           icon: 'card',
           iconColor: colors.info[500],
           bgColor: colors.info[50],
@@ -241,6 +207,30 @@ export default function TenantNotificationsScreen() {
           timestamp: duePmt.due_date,
         });
       }
+
+      // 6. Unread notifications: attach each to the row it duplicates; list the rest
+      const unread = await fetchUnreadNotifications(user.id);
+      const standalone = linkNotifications(items, unread, (n) => {
+        if (n.type === 'viewing_approved' || n.type === 'viewing_declined') {
+          return n.data?.viewingId ? `viewing-${n.data.viewingId}` : null;
+        }
+        return null;
+      });
+      standalone.forEach((n) => {
+        items.push({
+          id: `notif-${n.id}`,
+          kind: 'notification',
+          title: n.title || 'Notification',
+          body: n.body || '',
+          icon: 'notifications',
+          iconColor: colors.info[500],
+          bgColor: colors.info[50],
+          route: notificationRoute('tenant', n),
+          timestamp: n.created_at,
+          notificationIds: [n.id],
+          standalone: true,
+        });
+      });
 
       // Sort all by timestamp descending
       items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -260,15 +250,16 @@ export default function TenantNotificationsScreen() {
   };
 
   const handleTap = async (item: AlertItem) => {
-    // Mark the corresponding notifications DB row as read (if linked)
-    if (item.notificationDbId) {
-      await (supabase as any)
-        .from('notifications')
-        .update({ read_at: new Date().toISOString() })
-        .eq('id', item.notificationDbId);
+    if (item.notificationIds?.length) {
+      setAlerts((prev) =>
+        item.standalone
+          ? prev.filter((a) => a.id !== item.id)
+          : prev.map((a) => (a.id === item.id ? { ...a, notificationIds: undefined } : a))
+      );
+      await markNotificationsRead(item.notificationIds).catch(() => {});
       refreshBell();
     }
-    router.push(item.route as any);
+    if (item.route) router.push(item.route as any);
   };
 
   const formatTimeAgo = (ts: string) => {
