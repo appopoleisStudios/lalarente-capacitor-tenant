@@ -171,7 +171,7 @@ export default function ComposeMessageScreen({ role = 'tenant' }: Props) {
           ? `/(tenant)/messages/${thread.id}`
           : role === 'owner'
             ? `/(owner)/messages/${thread.id}`
-            : `/(vendor)/jobs/index`;
+            : '/(vendor)/jobs';
       router.replace(dest as any);
     } catch (err: any) {
       console.error('Error sending message:', err);
@@ -230,7 +230,7 @@ export default function ComposeMessageScreen({ role = 'tenant' }: Props) {
           </Text>
           <TouchableOpacity
             style={[styles.actionBtn, { backgroundColor: colors.rsa.gold }]}
-            onPress={() => router.replace('/(vendor)/jobs/index')}
+            onPress={() => router.replace('/(vendor)/jobs')}
           >
             <Text style={styles.actionBtnText}>View My Jobs</Text>
           </TouchableOpacity>

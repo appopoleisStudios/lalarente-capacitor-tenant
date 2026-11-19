@@ -1916,6 +1916,21 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         with the keyboard up; lifecycle-06 posts a comment with one tap
         (both LC-comments posted; owner inspection steps green).
 
+## CT7-061 🟡 Vendor "View My Jobs" opens "Failed to load job details" (vendor)
+
+- **Role:** vendor · **Platform:** all · Found in the Android walkthrough
+  (vendor → New Message → "Use Job Threads" → View My Jobs).
+- **Today:** the button went to `/(vendor)/jobs/index`. expo-router matched
+  that URL to `jobs/[id]` with id "index", so the vendor saw an error alert
+  instead of their jobs. The post-send destination for vendors had the same
+  path.
+- **Acceptance criteria:**
+  - [x] Both go to `/(vendor)/jobs` (the My Jobs list).
+  - [x] Jest guard `routeIndexSegment.test.ts`: no route literal in `src` or
+        `app` ends in `/index` (fails on main at both lines).
+  - [x] Android emulator (release APK), 2026-11-19: New Message → View My
+        Jobs opens the My Jobs list (no error alert).
+
 ## CT7-060 🟡 Dates follow the phone's language: "Due: 12/1/2026" (all roles)
 
 - **Role:** all · **Platform:** all · Found in the Android walkthrough
