@@ -1984,5 +1984,7 @@ Found while testing on the Android emulator with a real on-screen keyboard.
 - **Acceptance criteria:**
   - [x] Root layout renders `<StatusBar style="dark" />` (expo-status-bar).
   - [x] Jest: the root layout keeps the dark status bar.
-  - [ ] Clock/battery visible on owner, tenant and vendor screens on the
-        Android emulator (release APK).
+  - [x] Clock/battery visible on owner, tenant and vendor screens on the
+        Android emulator (release APK), 2026-11-19, in system light and dark
+        mode: dark icons on the app's light screens, light icons on the dark
+        3D tour, dark again after leaving it.
