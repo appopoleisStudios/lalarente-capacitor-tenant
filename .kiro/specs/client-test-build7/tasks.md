@@ -1916,6 +1916,23 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         with the keyboard up; lifecycle-06 posts a comment with one tap
         (both LC-comments posted; owner inspection steps green).
 
+## CT7-054 🟡 Vendor can't open the quote they submitted (vendor)
+
+- **Role:** vendor · **Platform:** all · Found in the full walkthrough (code
+  review of the vendor job screen).
+- **Today:** the job screen shows only the quote's status and total. The quote
+  detail screen (line items, terms) has a route, and the job screen has a
+  `handleViewQuote` handler and button styles for it, but no button was ever
+  rendered, so nothing in the app led there.
+- **Acceptance criteria:**
+  - [x] "View Quote" button on the job's My Quote card (every quote status)
+        opens `/(vendor)/maintenance/<id>/quote/<quoteId>`.
+  - [x] Jest `VendorJobViewQuote.test.tsx`: button shown and routes for
+        submitted / approved / rejected / revision requested; absent with no
+        quote (fails without the fix).
+  - [ ] Android emulator (release APK): vendor job → View Quote shows the line
+        items.
+
 ## CT7-053 🟠 Android alerts lose every button after the third (all roles)
 
 - **Role:** all · **Platform:** Android · Found in the full walkthrough

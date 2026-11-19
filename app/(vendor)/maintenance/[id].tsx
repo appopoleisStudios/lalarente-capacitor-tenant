@@ -378,6 +378,16 @@ export default function VendorMaintenanceDetail() {
 
               {/* Action buttons */}
               <View style={styles.quoteActionsRow}>
+                {/* the quote's line items, terms and history (CT7-054: was unreachable) */}
+                <TouchableOpacity
+                  testID="vendor-view-quote"
+                  accessibilityRole="button"
+                  style={styles.viewQuoteButton}
+                  onPress={handleViewQuote}
+                >
+                  <Ionicons name="document-text-outline" size={20} color={RSA.blue} />
+                  <Text style={styles.viewQuoteButtonText}>View Quote</Text>
+                </TouchableOpacity>
                 {request.my_quote!.status === 'revision_requested' && (
                   <TouchableOpacity style={styles.editQuoteButton} onPress={handleEditQuote}>
                     <Ionicons name="create" size={20} color="#FFFFFF" />
