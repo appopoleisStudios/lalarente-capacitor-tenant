@@ -1925,12 +1925,20 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   was history, adding a new entry instead of going back; with no history
   (opened from a link) it called `back()`, which goes nowhere.
 - **Acceptance criteria:**
-  - [x] The arrow goes back like Android Back; with no history it replaces the
-        screen with the maintenance list.
-  - [x] Jest `OwnerMaintenanceDetailBack.test.tsx`: back with history, list
-        without (both fail without the fix).
+  - [x] The arrow goes back like Android Back; with no history (opened cold
+        from a notification) it resets the tabs to the maintenance list —
+        `replace` / `navigate` would keep the request in tab history (SA #260).
+        Shared `useGoBackOr('maintenance')`, also on the tenant and vendor
+        request details (header, not-found, after delete).
+  - [x] Jest: `useGoBackOr.test.ts` drives the real React Navigation
+        `TabRouter` (navigate-to-list loops back, reset does not, list →
+        detail → back → back leaves Maintenance) + guard on the three detail
+        screens; `OwnerMaintenanceDetailBack.test.tsx` renders the owner
+        screen (fails without the fix).
   - [ ] Android emulator (release APK): Maintenance → request → ← → list →
         Back leaves Maintenance (no loop back into the request).
+  - [ ] Android emulator: request opened cold by link → ← → list → Back does
+        not reopen the request.
 
 ## CT7-054 🟡 Vendor can't open the quote they submitted (vendor)
 

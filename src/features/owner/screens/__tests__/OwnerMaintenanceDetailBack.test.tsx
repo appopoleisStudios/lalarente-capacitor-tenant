@@ -2,11 +2,12 @@
  * CT7-055: the request detail's back arrow pushed the maintenance list when
  * there was history, adding an entry, so the next Android Back reopened the
  * same request (device: detail → ← → list → Back → detail again). It now goes
- * back like Android Back, and to the list only when there is no history.
+ * back like Android Back; with no history it resets the tabs to the list
+ * (useGoBackOr, whose router-backed test covers the history itself).
  */
 import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
-import { router } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
 import OwnerMaintenanceDetailScreen from '../OwnerMaintenanceDetailScreen';
 import { getMaintenanceRequestById } from '@/src/features/maintenance/api';
 
@@ -21,6 +22,7 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ id: 'req-1' }),
   useFocusEffect: (effect: () => void) => require('react').useEffect(effect, []),
 }));
+jest.mock('@react-navigation/native', () => ({ useNavigation: jest.fn() }));
 jest.mock('expo-linking', () => ({ openURL: jest.fn() }));
 jest.mock('expo-haptics', () => ({
   impactAsync: jest.fn(),
@@ -67,7 +69,10 @@ const REQUEST = {
   tenant: null,
 };
 
+const nav = { canGoBack: jest.fn(), goBack: jest.fn(), reset: jest.fn() };
+
 async function pressBack() {
+  (useNavigation as jest.Mock).mockReturnValue(nav);
   (getMaintenanceRequestById as jest.Mock).mockResolvedValue(REQUEST);
   const ui = render(<OwnerMaintenanceDetailScreen />);
   await waitFor(() => expect(ui.getByTestId('owner-maintenance-detail-back')).toBeTruthy());
@@ -78,16 +83,16 @@ describe('owner request detail back arrow (CT7-055)', () => {
   beforeEach(() => jest.clearAllMocks());
 
   it('goes back (no new history entry) when there is somewhere to go back to', async () => {
-    (router.canGoBack as jest.Mock).mockReturnValue(true);
+    nav.canGoBack.mockReturnValue(true);
     await pressBack();
-    expect(router.back).toHaveBeenCalledTimes(1);
-    expect(router.push).not.toHaveBeenCalled();
+    expect(nav.goBack).toHaveBeenCalledTimes(1);
+    expect(nav.reset).not.toHaveBeenCalled();
   });
 
-  it('opens the maintenance list when there is no history (opened from a link)', async () => {
-    (router.canGoBack as jest.Mock).mockReturnValue(false);
+  it('opened cold from a link: resets the tabs to the maintenance list', async () => {
+    nav.canGoBack.mockReturnValue(false);
     await pressBack();
-    expect(router.replace).toHaveBeenCalledWith('/(owner)/maintenance');
-    expect(router.back).not.toHaveBeenCalled();
+    expect(nav.reset).toHaveBeenCalledWith({ index: 0, routes: [{ name: 'maintenance' }] });
+    expect(nav.goBack).not.toHaveBeenCalled();
   });
 });

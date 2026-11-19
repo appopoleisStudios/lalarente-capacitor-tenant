@@ -26,6 +26,7 @@ import { getClosureReport } from '@/src/features/maintenance/api/work/workClosur
 import { MediaGallery } from '@/src/features/maintenance/components/MediaGallery';
 import { colors } from '@/src/shared/theme/colors';
 import TenantProgressTracker from '@/src/features/tenant/components/TenantProgressTracker';
+import { useGoBackOr } from '@/src/shared/hooks/useGoBackOr';
 
 const RSA = { green: '#007A4D', gold: '#FFB81C' }; // Tenant primary: RSA Green
 
@@ -65,6 +66,7 @@ export const TENANT_MAINTENANCE_DETAIL_TEST_IDS = {
 
 export default function TenantMaintenanceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const goBack = useGoBackOr('maintenance');
   const { user } = useAuth();
   const [request, setRequest] = useState<any>(null);
   const [progressUpdates, setProgressUpdates] = useState<any[]>([]);
@@ -167,7 +169,7 @@ export default function TenantMaintenanceDetailScreen() {
         <View style={styles.header}>
           <TouchableOpacity
             testID="tenant-maintenance-detail-back"
-            onPress={() => router.back()}
+            onPress={goBack}
             style={styles.backButton}
           >
             <Ionicons name="arrow-back" size={24} color="#111827" />
@@ -189,7 +191,7 @@ export default function TenantMaintenanceDetailScreen() {
         <View style={styles.header}>
           <TouchableOpacity
             testID="tenant-maintenance-detail-back"
-            onPress={() => router.back()}
+            onPress={goBack}
             style={styles.backButton}
           >
             <Ionicons name="arrow-back" size={24} color="#111827" />
@@ -203,7 +205,7 @@ export default function TenantMaintenanceDetailScreen() {
           <TouchableOpacity
             testID="tenant-maintenance-detail-go-back"
             style={styles.retryButton}
-            onPress={() => router.back()}
+            onPress={goBack}
           >
             <Text style={styles.retryButtonText}>Go Back</Text>
           </TouchableOpacity>
@@ -222,7 +224,7 @@ export default function TenantMaintenanceDetailScreen() {
       <View style={styles.header}>
         <TouchableOpacity
           testID="tenant-maintenance-detail-back"
-          onPress={() => router.back()}
+          onPress={goBack}
           style={styles.backButton}
         >
           <Ionicons name="arrow-back" size={24} color="#111827" />
