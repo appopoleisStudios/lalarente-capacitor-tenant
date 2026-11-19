@@ -104,3 +104,30 @@ export function summarizeRent(
   }
   return summary('upcoming');
 }
+
+/**
+ * Arrears across a portfolio, exactly as the Rent Roll shows them (CT7-063):
+ * a property is in arrears when its Rent Roll status is "overdue", and the
+ * amount is that property's overdue amount. The owner dashboard uses this so
+ * its "In Arrears" and "Tenants In Arrears" figures match the Rent Roll.
+ */
+export function summarizeArrears(
+  properties: { id: string; status?: string | null }[],
+  payments: (RentPayment & { property_id?: string | null })[],
+  today: string = saToday()
+): { amount: number; count: number } {
+  let amount = 0;
+  let count = 0;
+  for (const property of properties) {
+    const rent = summarizeRent(
+      property.status,
+      payments.filter((p) => p.property_id === property.id),
+      today
+    );
+    if (rent.status === 'overdue') {
+      amount += rent.overdueAmount;
+      count += 1;
+    }
+  }
+  return { amount, count };
+}
