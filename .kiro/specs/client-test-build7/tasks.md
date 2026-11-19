@@ -1916,6 +1916,77 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         with the keyboard up; lifecycle-06 posts a comment with one tap
         (both LC-comments posted; owner inspection steps green).
 
+## CT7-062 🟡 Viewing times show seconds: "10:00:00", "2026/11/19, 03:05:01" (owner, tenant)
+
+- **Role:** owner, tenant · **Platform:** all · Found in the Android walkthrough.
+- **Today:** viewing times were rendered straight from the database
+  ("10:00:00") and viewing timelines used a default date-time with seconds.
+- **Acceptance criteria:**
+  - [x] Shared `formatTime()` → "10:00"; viewing lists, details, timelines,
+        dashboard card, reminders and notifications use it; date-times read
+        "19 Nov 2026, 03:05".
+  - [x] Jest `viewingTimeFormat.test.ts` (fails on main: 7 files).
+  - [ ] Android emulator (release APK, build 12).
+
+## CT7-063 🟠 Dashboard "In Arrears" and Rent Roll's Overdue card disagree with Rent Roll (owner)
+
+- **Role:** owner · **Platform:** all · Follow-up to CT7-057.
+- **Today:** the dashboard In Arrears amount / Tenants In Arrears and Rent
+  Roll's header Overdue card counted any pending row due before "now":
+  deposits, rent due today, a previous tenant's rows, un-rented properties,
+  while missing failed and part-paid rent. Test fixture: R 29,500 / 4 (header
+  5) where Rent Roll's badges show R 9,500 / 2.
+- **Acceptance criteria:**
+  - [x] Dashboard and Rent Roll header use `summarizeArrears` (built on
+        `summarizeRent`, the rule behind the Rent Roll badges).
+  - [x] Jest `dashboardArrears.test.ts` + `RentRollOverdueHeader.test.tsx`
+        on one shared fixture (fail on main).
+  - [ ] Android emulator (release APK, build 12).
+
+## CT7-064 🟠 Opening Notifications marks every notification read (all roles)
+
+- **Role:** all · **Platform:** all · Product decision 2026-11-19: only a
+  notification the user taps should disappear.
+- **Today:** opening the screen marked all unread notifications read, and the
+  list shows unread ones, so everything vanished after one visit.
+- **Acceptance criteria:**
+  - [x] Nothing is marked read on open; tapping a row marks only the
+        notification(s) behind it; a stand-alone notification leaves the
+        list, the rest stay and keep the bell count.
+  - [x] Stand-alone rows open what they are about (viewing, job, lease,
+        payments); tenant now lists them too.
+  - [x] Jest `unreadNotifications.test.ts` (guard fails on main, all three
+        screens).
+  - [ ] Android emulator (release APK, build 12).
+
+## CT7-065 🟡 Property Type is free text pre-filled "apartment" (owner)
+
+- **Role:** owner, tenant · **Platform:** all · Found in the Android walkthrough.
+- **Acceptance criteria:**
+  - [x] Add / Edit Property: single-select chips Apartment, House, Townhouse,
+        Cottage, Room (stored lower-case; an existing unknown value is kept
+        as its own chip).
+  - [x] Property detail (owner, tenant) shows the label; tenant search can
+        filter on every type.
+  - [x] Jest `PropertyTypePicker.test.tsx` (fails on main).
+  - [ ] Android emulator (release APK, build 12).
+
+## CT7-066 🟠 Tenant can report an issue without a signed lease (tenant)
+
+- **Role:** tenant · **Platform:** all · Product decision 2026-11-19: issues
+  are between owner and tenant, so reporting needs a lease.
+- **Acceptance criteria:**
+  - [x] Report Issue only with a lease signed by both and in effect
+        (`active`, `month_to_month`, `renewal_pending`): list "+" / "Report an
+        Issue", report screen (also by link) and vendor directory "Use on new
+        report"; otherwise "You can report issues once your lease is signed by
+        you and the owner."
+  - [x] Jest `leaseInEffect.test.ts` + `reportIssueLeaseGate.test.tsx` (fail
+        on main).
+  - [ ] Android emulator (release APK, build 12).
+  - [ ] Follow-up: enforce the same rule in the database (RLS on
+        `maintenance_requests` insert) via a migration.
+
 ## CT7-061 🟡 Vendor "View My Jobs" opens "Failed to load job details" (vendor)
 
 - **Role:** vendor · **Platform:** all · Found in the Android walkthrough
