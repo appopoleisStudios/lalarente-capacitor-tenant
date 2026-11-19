@@ -6,7 +6,6 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   TextInput,
 } from 'react-native';
 import Animated, {
@@ -24,6 +23,7 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { getDashboardRouteForRole } from '@/src/core/navigation/roleRoutes';
 import { reportApiError } from '@/src/core/observability/sentry';
 import { emailFormatError, signInErrorMessage } from '../utils/signInErrors';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 // South African flag colors
 const RSA_COLORS = {
@@ -126,7 +126,7 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <ScrollView
+        <KeyboardAwareScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -283,7 +283,7 @@ export default function LoginScreen() {
               </Pressable>
             </Animated.View>
           </Animated.View>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </KeyboardAvoidingView>
     </View>
   );

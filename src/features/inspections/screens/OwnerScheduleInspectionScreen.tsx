@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
@@ -18,6 +17,7 @@ import { supabase } from '../../../lib/supabase';
 import type { InspectionType } from '../types';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const RSA = { blue: '#002395', gold: '#FFB81C' };
 
@@ -190,150 +190,154 @@ export default function OwnerScheduleInspectionScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          testID="owner-schedule-inspection-back"
-          onPress={() => router.back()}
-          style={styles.backBtn}
-        >
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Schedule Inspection</Text>
-        <View style={{ width: 32 }} />
-      </View>
-
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-      >
-        {/* Inspection Type */}
-        <Text style={styles.sectionLabel}>Inspection Type</Text>
-        <View style={styles.typeGrid}>
-          {TYPES.map((t) => (
-            <TouchableOpacity
-              testID={`owner-schedule-inspection-type-${t.value}`}
-              key={t.value}
-              style={[styles.typeCard, selectedType === t.value && styles.typeCardActive]}
-              onPress={() => setSelectedType(t.value)}
-            >
-              <Text style={styles.typeIcon}>{t.icon}</Text>
-              <Text style={[styles.typeLabel, selectedType === t.value && styles.typeLabelActive]}>
-                {t.label}
-              </Text>
-              <Text style={styles.typeDesc}>{t.desc}</Text>
-              {selectedType === t.value && (
-                <View style={styles.checkMark}>
-                  <Ionicons name="checkmark-circle" size={18} color={RSA.blue} />
-                </View>
-              )}
-            </TouchableOpacity>
-          ))}
+      <KeyboardAvoidingView>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            testID="owner-schedule-inspection-back"
+            onPress={() => router.back()}
+            style={styles.backBtn}
+          >
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Schedule Inspection</Text>
+          <View style={{ width: 32 }} />
         </View>
 
-        {/* Lease Selector */}
-        <Text style={styles.sectionLabel}>Select Lease</Text>
-        {leases.length === 0 ? (
-          <View style={styles.noLeases}>
-            <Ionicons name="document-outline" size={32} color="#D1D5DB" />
-            <Text style={styles.noLeasesText}>No active leases found. Create a lease first.</Text>
-          </View>
-        ) : (
-          <View style={styles.leaseList}>
-            {leases.map((lease) => (
+        <KeyboardAwareScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
+          {/* Inspection Type */}
+          <Text style={styles.sectionLabel}>Inspection Type</Text>
+          <View style={styles.typeGrid}>
+            {TYPES.map((t) => (
               <TouchableOpacity
-                testID="owner-schedule-inspection-lease"
-                key={lease.id}
-                style={[styles.leaseCard, selectedLeaseId === lease.id && styles.leaseCardActive]}
-                onPress={() => setSelectedLeaseId(lease.id)}
+                testID={`owner-schedule-inspection-type-${t.value}`}
+                key={t.value}
+                style={[styles.typeCard, selectedType === t.value && styles.typeCardActive]}
+                onPress={() => setSelectedType(t.value)}
               >
-                <View style={styles.leaseRadio}>
-                  <View
-                    style={[
-                      styles.radioOuter,
-                      selectedLeaseId === lease.id && styles.radioOuterActive,
-                    ]}
-                  >
-                    {selectedLeaseId === lease.id && <View style={styles.radioInner} />}
+                <Text style={styles.typeIcon}>{t.icon}</Text>
+                <Text
+                  style={[styles.typeLabel, selectedType === t.value && styles.typeLabelActive]}
+                >
+                  {t.label}
+                </Text>
+                <Text style={styles.typeDesc}>{t.desc}</Text>
+                {selectedType === t.value && (
+                  <View style={styles.checkMark}>
+                    <Ionicons name="checkmark-circle" size={18} color={RSA.blue} />
                   </View>
-                </View>
-                <View style={styles.leaseInfo}>
-                  <Text style={styles.leaseProperty}>{lease.property_title}</Text>
-                  <Text style={styles.leaseTenant}>Tenant: {lease.tenant_name}</Text>
-                </View>
+                )}
               </TouchableOpacity>
             ))}
           </View>
-        )}
 
-        {/* Date Picker */}
-        <Text style={styles.sectionLabel}>Inspection Date</Text>
-        <TouchableOpacity
-          testID="owner-schedule-inspection-date"
-          style={styles.dateInput}
-          onPress={() => setShowDatePicker(true)}
-        >
-          <Ionicons name="calendar-outline" size={20} color={RSA.blue} />
-          <Text style={styles.dateText}>{formatDate(scheduledDate)}</Text>
-          <Ionicons name="chevron-down" size={18} color="#9CA3AF" />
-        </TouchableOpacity>
-
-        <PickerSheet
-          visible={showDatePicker}
-          value={scheduledDate}
-          mode="date"
-          minimumDate={new Date()}
-          onCancel={() => setShowDatePicker(false)}
-          onDone={(date) => {
-            setShowDatePicker(false);
-            setScheduledDate(date);
-          }}
-          testID="owner-schedule-inspection-date"
-        />
-
-        {/* Notes */}
-        <Text style={styles.sectionLabel}>Notes (Optional)</Text>
-        <TextInput
-          testID="owner-schedule-inspection-notes"
-          style={styles.notesInput}
-          placeholder="Any special instructions or items to focus on..."
-          value={notes}
-          onChangeText={setNotes}
-          multiline
-          numberOfLines={4}
-          textAlignVertical="top"
-        />
-
-        {/* Legal Note */}
-        <View style={styles.legalNote}>
-          <Ionicons name="information-circle-outline" size={16} color="#6B7280" />
-          <Text style={styles.legalNoteText}>
-            RHA s5(3)(e)–(f): A joint inspection must be conducted before tenant takes occupation.
-            Minimum 24 hours written notice required.
-          </Text>
-        </View>
-
-        {/* Submit */}
-        <TouchableOpacity
-          testID="owner-schedule-inspection-submit"
-          style={[styles.submitBtn, (!selectedLeaseId || submitting) && styles.submitBtnDisabled]}
-          onPress={handleSubmit}
-          disabled={!selectedLeaseId || submitting}
-        >
-          {submitting ? (
-            <ActivityIndicator size="small" color="#FFF" />
+          {/* Lease Selector */}
+          <Text style={styles.sectionLabel}>Select Lease</Text>
+          {leases.length === 0 ? (
+            <View style={styles.noLeases}>
+              <Ionicons name="document-outline" size={32} color="#D1D5DB" />
+              <Text style={styles.noLeasesText}>No active leases found. Create a lease first.</Text>
+            </View>
           ) : (
-            <>
-              <Ionicons name="calendar-outline" size={20} color="#FFF" />
-              <Text style={styles.submitBtnText}>Schedule Inspection</Text>
-            </>
+            <View style={styles.leaseList}>
+              {leases.map((lease) => (
+                <TouchableOpacity
+                  testID="owner-schedule-inspection-lease"
+                  key={lease.id}
+                  style={[styles.leaseCard, selectedLeaseId === lease.id && styles.leaseCardActive]}
+                  onPress={() => setSelectedLeaseId(lease.id)}
+                >
+                  <View style={styles.leaseRadio}>
+                    <View
+                      style={[
+                        styles.radioOuter,
+                        selectedLeaseId === lease.id && styles.radioOuterActive,
+                      ]}
+                    >
+                      {selectedLeaseId === lease.id && <View style={styles.radioInner} />}
+                    </View>
+                  </View>
+                  <View style={styles.leaseInfo}>
+                    <Text style={styles.leaseProperty}>{lease.property_title}</Text>
+                    <Text style={styles.leaseTenant}>Tenant: {lease.tenant_name}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
           )}
-        </TouchableOpacity>
 
-        <View style={{ height: 40 }} />
-      </ScrollView>
+          {/* Date Picker */}
+          <Text style={styles.sectionLabel}>Inspection Date</Text>
+          <TouchableOpacity
+            testID="owner-schedule-inspection-date"
+            style={styles.dateInput}
+            onPress={() => setShowDatePicker(true)}
+          >
+            <Ionicons name="calendar-outline" size={20} color={RSA.blue} />
+            <Text style={styles.dateText}>{formatDate(scheduledDate)}</Text>
+            <Ionicons name="chevron-down" size={18} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <PickerSheet
+            visible={showDatePicker}
+            value={scheduledDate}
+            mode="date"
+            minimumDate={new Date()}
+            onCancel={() => setShowDatePicker(false)}
+            onDone={(date) => {
+              setShowDatePicker(false);
+              setScheduledDate(date);
+            }}
+            testID="owner-schedule-inspection-date"
+          />
+
+          {/* Notes */}
+          <Text style={styles.sectionLabel}>Notes (Optional)</Text>
+          <TextInput
+            testID="owner-schedule-inspection-notes"
+            style={styles.notesInput}
+            placeholder="Any special instructions or items to focus on..."
+            value={notes}
+            onChangeText={setNotes}
+            multiline
+            numberOfLines={4}
+            textAlignVertical="top"
+          />
+
+          {/* Legal Note */}
+          <View style={styles.legalNote}>
+            <Ionicons name="information-circle-outline" size={16} color="#6B7280" />
+            <Text style={styles.legalNoteText}>
+              RHA s5(3)(e)–(f): A joint inspection must be conducted before tenant takes occupation.
+              Minimum 24 hours written notice required.
+            </Text>
+          </View>
+
+          {/* Submit */}
+          <TouchableOpacity
+            testID="owner-schedule-inspection-submit"
+            style={[styles.submitBtn, (!selectedLeaseId || submitting) && styles.submitBtnDisabled]}
+            onPress={handleSubmit}
+            disabled={!selectedLeaseId || submitting}
+          >
+            {submitting ? (
+              <ActivityIndicator size="small" color="#FFF" />
+            ) : (
+              <>
+                <Ionicons name="calendar-outline" size={20} color="#FFF" />
+                <Text style={styles.submitBtnText}>Schedule Inspection</Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          <View style={{ height: 40 }} />
+        </KeyboardAwareScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

@@ -30,6 +30,7 @@ import {
 } from '../api/propertyTaxPayments.api';
 import { DateField } from '@/src/shared/components/ui/DateField';
 import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const CATEGORIES: TaxCategory[] = [
   'municipal_rates',
@@ -229,7 +230,7 @@ export default function OwnerPropertyTaxScreen() {
       {loading ? (
         <ActivityIndicator size="large" color={colors.rsa.blue} style={{ marginTop: 40 }} />
       ) : (
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -321,7 +322,7 @@ export default function OwnerPropertyTaxScreen() {
           )}
 
           <View style={{ height: 80 }} />
-        </ScrollView>
+        </KeyboardAwareScrollView>
       )}
 
       <Modal
@@ -342,7 +343,10 @@ export default function OwnerPropertyTaxScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            <KeyboardAwareScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
               {/* Category */}
               <Text style={styles.fieldLabel}>Category</Text>
               <ScrollView
@@ -453,7 +457,7 @@ export default function OwnerPropertyTaxScreen() {
               )}
 
               <View style={{ height: 20 }} />
-            </ScrollView>
+            </KeyboardAwareScrollView>
 
             <TouchableOpacity
               style={[styles.saveBtn, saving && { opacity: 0.6 }]}

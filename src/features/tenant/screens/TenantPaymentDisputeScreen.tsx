@@ -8,7 +8,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   TextInput,
   StyleSheet,
@@ -27,6 +26,7 @@ import {
 } from '@/src/features/payments/api/paymentDisputes.api';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { goBack } from '@/src/shared/navigation/goBack';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const DISPUTE_REASONS: { value: DisputeReason; label: string; icon: string }[] = [
   { value: 'incorrect_amount', label: 'Incorrect Amount', icon: 'calculator-outline' },
@@ -66,7 +66,9 @@ export default function TenantPaymentDisputeScreen() {
       const timeout = new Promise<{ data: { user: null } }>((resolve) =>
         setTimeout(() => resolve({ data: { user: null } }), 8000)
       );
-      const { data: { user } } = await Promise.race([getUserPromise, timeout]);
+      const {
+        data: { user },
+      } = await Promise.race([getUserPromise, timeout]);
       if (user) {
         setUserId(user.id);
         fetchDisputes(user.id);
@@ -142,13 +144,20 @@ export default function TenantPaymentDisputeScreen() {
 
   const getStatusConfig = (status: string) => {
     switch (status) {
-      case 'open': return { color: colors.warning[500], label: 'Open' };
-      case 'under_review': return { color: colors.info[500], label: 'Under Review' };
-      case 'mediation': return { color: '#8E44AD', label: 'In Mediation' };
-      case 'resolved': return { color: colors.success[500], label: 'Resolved' };
-      case 'rejected': return { color: colors.error[500], label: 'Rejected' };
-      case 'escalated': return { color: colors.error[600], label: 'Escalated' };
-      default: return { color: colors.gray[500], label: status };
+      case 'open':
+        return { color: colors.warning[500], label: 'Open' };
+      case 'under_review':
+        return { color: colors.info[500], label: 'Under Review' };
+      case 'mediation':
+        return { color: '#8E44AD', label: 'In Mediation' };
+      case 'resolved':
+        return { color: colors.success[500], label: 'Resolved' };
+      case 'rejected':
+        return { color: colors.error[500], label: 'Rejected' };
+      case 'escalated':
+        return { color: colors.error[600], label: 'Escalated' };
+      default:
+        return { color: colors.gray[500], label: status };
     }
   };
 
@@ -156,7 +165,10 @@ export default function TenantPaymentDisputeScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => goBack(router, '/(tenant)/payments')} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => goBack(router, '/(tenant)/payments')}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle} testID="payment-disputes-title">
@@ -171,134 +183,161 @@ export default function TenantPaymentDisputeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => goBack(router, '/(tenant)/payments')} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle} testID="payment-disputes-title">
-          Payment Disputes
-        </Text>
-        <TouchableOpacity onPress={() => setShowForm(!showForm)}>
-          <Ionicons name={showForm ? 'close' : 'add-circle-outline'} size={28} color={colors.primary[500]} />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* New Dispute Form */}
-        {showForm && (
-          <View style={styles.formCard}>
-            <Text style={styles.formTitle}>Raise a Dispute</Text>
-
-            {/* Reason Selection */}
-            <Text style={styles.formLabel}>Reason</Text>
-            <View style={styles.reasonGrid}>
-              {DISPUTE_REASONS.map((reason) => (
-                <TouchableOpacity
-                  key={reason.value}
-                  style={[
-                    styles.reasonChip,
-                    selectedReason === reason.value && styles.reasonChipSelected,
-                  ]}
-                  onPress={() => setSelectedReason(reason.value)}
-                >
-                  <Ionicons
-                    name={reason.icon as any}
-                    size={16}
-                    color={selectedReason === reason.value ? colors.text.inverse : colors.text.secondary}
-                  />
-                  <Text style={[
-                    styles.reasonChipText,
-                    selectedReason === reason.value && styles.reasonChipTextSelected,
-                  ]}>
-                    {reason.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Disputed Amount */}
-            <Text style={styles.formLabel}>Disputed Amount (R)</Text>
-            <TextInput
-              style={styles.input}
-              value={disputedAmount}
-              onChangeText={setDisputedAmount}
-              placeholder="0.00"
-              placeholderTextColor={colors.text.tertiary}
-              keyboardType="decimal-pad"
+      <KeyboardAvoidingView>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => goBack(router, '/(tenant)/payments')}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle} testID="payment-disputes-title">
+            Payment Disputes
+          </Text>
+          <TouchableOpacity onPress={() => setShowForm(!showForm)}>
+            <Ionicons
+              name={showForm ? 'close' : 'add-circle-outline'}
+              size={28}
+              color={colors.primary[500]}
             />
+          </TouchableOpacity>
+        </View>
 
-            {/* Description */}
-            <Text style={styles.formLabel}>Description</Text>
-            <TextInput
-              style={[styles.input, styles.inputMultiline]}
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Describe the issue in detail..."
-              placeholderTextColor={colors.text.tertiary}
-              multiline
-              numberOfLines={4}
-            />
+        <KeyboardAwareScrollView
+          style={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* New Dispute Form */}
+          {showForm && (
+            <View style={styles.formCard}>
+              <Text style={styles.formTitle}>Raise a Dispute</Text>
 
-            <TouchableOpacity
-              style={[styles.submitButton, (!selectedReason || !description || !disputedAmount) && styles.submitButtonDisabled]}
-              onPress={handleSubmitDispute}
-              disabled={submitting || !selectedReason || !description || !disputedAmount}
-            >
-              {submitting ? (
-                <ActivityIndicator size="small" color={colors.text.inverse} />
-              ) : (
-                <Text style={styles.submitButtonText}>Submit Dispute</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Disputes List */}
-        {disputes.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="shield-checkmark-outline" size={48} color={colors.gray[300]} />
-            <Text style={styles.emptyText}>No payment disputes</Text>
-            <Text style={styles.emptySubtext}>
-              Tap + to dispute a pending or completed charge. Your landlord will review,
-              mark under review, accept, or reject. Track status here.
-            </Text>
-          </View>
-        ) : (
-          disputes.map((dispute) => {
-            const statusConfig = getStatusConfig(dispute.status);
-            return (
-              <View key={dispute.id} style={styles.disputeCard}>
-                <View style={styles.disputeHeader}>
-                  <Text style={styles.disputeReason}>
-                    {dispute.reason.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
-                  </Text>
-                  <View style={[styles.statusBadge, { backgroundColor: statusConfig.color + '20' }]}>
-                    <Text style={[styles.statusText, { color: statusConfig.color }]}>{statusConfig.label}</Text>
-                  </View>
-                </View>
-                <Text style={styles.disputeDescription} numberOfLines={2}>
-                  {dispute.description}
-                </Text>
-                <View style={styles.disputeFooter}>
-                  <Text style={styles.disputeAmount}>R{dispute.disputed_amount.toFixed(2)}</Text>
-                  <Text style={styles.disputeDate}>
-                    {new Date(dispute.created_at).toLocaleDateString('en-ZA')}
-                  </Text>
-                </View>
-                {dispute.resolution_notes && (
-                  <View style={styles.resolutionBox}>
-                    <Text style={styles.resolutionLabel}>Resolution:</Text>
-                    <Text style={styles.resolutionText}>{dispute.resolution_notes}</Text>
-                  </View>
-                )}
+              {/* Reason Selection */}
+              <Text style={styles.formLabel}>Reason</Text>
+              <View style={styles.reasonGrid}>
+                {DISPUTE_REASONS.map((reason) => (
+                  <TouchableOpacity
+                    key={reason.value}
+                    style={[
+                      styles.reasonChip,
+                      selectedReason === reason.value && styles.reasonChipSelected,
+                    ]}
+                    onPress={() => setSelectedReason(reason.value)}
+                  >
+                    <Ionicons
+                      name={reason.icon as any}
+                      size={16}
+                      color={
+                        selectedReason === reason.value
+                          ? colors.text.inverse
+                          : colors.text.secondary
+                      }
+                    />
+                    <Text
+                      style={[
+                        styles.reasonChipText,
+                        selectedReason === reason.value && styles.reasonChipTextSelected,
+                      ]}
+                    >
+                      {reason.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
-            );
-          })
-        )}
 
-        <View style={{ height: 100 }} />
-      </ScrollView>
+              {/* Disputed Amount */}
+              <Text style={styles.formLabel}>Disputed Amount (R)</Text>
+              <TextInput
+                style={styles.input}
+                value={disputedAmount}
+                onChangeText={setDisputedAmount}
+                placeholder="0.00"
+                placeholderTextColor={colors.text.tertiary}
+                keyboardType="decimal-pad"
+              />
+
+              {/* Description */}
+              <Text style={styles.formLabel}>Description</Text>
+              <TextInput
+                style={[styles.input, styles.inputMultiline]}
+                value={description}
+                onChangeText={setDescription}
+                placeholder="Describe the issue in detail..."
+                placeholderTextColor={colors.text.tertiary}
+                multiline
+                numberOfLines={4}
+              />
+
+              <TouchableOpacity
+                style={[
+                  styles.submitButton,
+                  (!selectedReason || !description || !disputedAmount) &&
+                    styles.submitButtonDisabled,
+                ]}
+                onPress={handleSubmitDispute}
+                disabled={submitting || !selectedReason || !description || !disputedAmount}
+              >
+                {submitting ? (
+                  <ActivityIndicator size="small" color={colors.text.inverse} />
+                ) : (
+                  <Text style={styles.submitButtonText}>Submit Dispute</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Disputes List */}
+          {disputes.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="shield-checkmark-outline" size={48} color={colors.gray[300]} />
+              <Text style={styles.emptyText}>No payment disputes</Text>
+              <Text style={styles.emptySubtext}>
+                Tap + to dispute a pending or completed charge. Your landlord will review, mark
+                under review, accept, or reject. Track status here.
+              </Text>
+            </View>
+          ) : (
+            disputes.map((dispute) => {
+              const statusConfig = getStatusConfig(dispute.status);
+              return (
+                <View key={dispute.id} style={styles.disputeCard}>
+                  <View style={styles.disputeHeader}>
+                    <Text style={styles.disputeReason}>
+                      {dispute.reason.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                    </Text>
+                    <View
+                      style={[styles.statusBadge, { backgroundColor: statusConfig.color + '20' }]}
+                    >
+                      <Text style={[styles.statusText, { color: statusConfig.color }]}>
+                        {statusConfig.label}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={styles.disputeDescription} numberOfLines={2}>
+                    {dispute.description}
+                  </Text>
+                  <View style={styles.disputeFooter}>
+                    <Text style={styles.disputeAmount}>R{dispute.disputed_amount.toFixed(2)}</Text>
+                    <Text style={styles.disputeDate}>
+                      {new Date(dispute.created_at).toLocaleDateString('en-ZA')}
+                    </Text>
+                  </View>
+                  {dispute.resolution_notes && (
+                    <View style={styles.resolutionBox}>
+                      <Text style={styles.resolutionLabel}>Resolution:</Text>
+                      <Text style={styles.resolutionText}>{dispute.resolution_notes}</Text>
+                    </View>
+                  )}
+                </View>
+              );
+            })
+          )}
+
+          <View style={{ height: 100 }} />
+        </KeyboardAwareScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

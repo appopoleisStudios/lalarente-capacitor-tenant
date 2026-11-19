@@ -3,7 +3,6 @@ import {
   Platform,
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
@@ -24,6 +23,7 @@ import {
 } from '../../applications/api/holdingDeposit.api';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { ReasonPromptModal } from '@/src/shared/components/ui/ReasonPromptModal';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 export default function OwnerApplicationDetailScreen() {
   const router = useRouter();
@@ -293,7 +293,10 @@ export default function OwnerApplicationDetailScreen() {
             </View>
           </View>
 
-          <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+          <KeyboardAwareScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+          >
             {/* Property Info */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Property</Text>
@@ -668,7 +671,7 @@ export default function OwnerApplicationDetailScreen() {
                 )}
               </View>
             </View>
-          </ScrollView>
+          </KeyboardAwareScrollView>
 
           {/* Action Buttons */}
           {application.status === 'submitted' || application.status === 'under_review' ? (
@@ -1017,7 +1020,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 100,
   },
   section: {
     marginBottom: 20,
@@ -1173,10 +1175,6 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   actionBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     flexDirection: 'row',
     padding: 16,
     backgroundColor: '#FFF',

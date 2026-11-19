@@ -18,7 +18,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -26,6 +25,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const RSA = { blue: '#002395' };
 
@@ -266,9 +266,9 @@ export default function VendorInvoiceSubmitScreen() {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
@@ -466,30 +466,30 @@ export default function VendorInvoiceSubmitScreen() {
           />
 
           <View style={{ height: 120 }} />
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </KeyboardAwareScrollView>
 
-      {/* Footer */}
-      <View style={styles.footer}>
-        <TouchableOpacity
-          accessibilityLabel="Submit invoice for approval"
-          accessibilityRole="button"
-          style={[styles.submitButton, submitting && { opacity: 0.6 }]}
-          onPress={handleSubmit}
-          disabled={submitting}
-        >
-          {submitting ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <>
-              <Ionicons name="send" size={18} color="#FFFFFF" />
-              <Text style={styles.submitButtonText}>
-                {isResubmit ? 'Resubmit' : 'Submit Invoice'} — {formatCurrency(totals.total)}
-              </Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
+        {/* Footer */}
+        <View style={styles.footer}>
+          <TouchableOpacity
+            accessibilityLabel="Submit invoice for approval"
+            accessibilityRole="button"
+            style={[styles.submitButton, submitting && { opacity: 0.6 }]}
+            onPress={handleSubmit}
+            disabled={submitting}
+          >
+            {submitting ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <>
+                <Ionicons name="send" size={18} color="#FFFFFF" />
+                <Text style={styles.submitButtonText}>
+                  {isResubmit ? 'Resubmit' : 'Submit Invoice'} — {formatCurrency(totals.total)}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

@@ -10,7 +10,6 @@ import {
   Platform,
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
@@ -30,6 +29,7 @@ import {
 import { colors } from '@/src/shared/theme/colors';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   open: { label: 'Open', color: '#D97706' },
@@ -318,7 +318,7 @@ export default function OwnerPaymentDisputesScreen() {
           <View style={{ width: 40 }} />
         </View>
 
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -354,7 +354,7 @@ export default function OwnerPaymentDisputesScreen() {
           )}
 
           <View style={{ height: 60 }} />
-        </ScrollView>
+        </KeyboardAwareScrollView>
 
         {/* ─── Resolve Modal ────────────────────────────────────────────────── */}
         <Modal visible={showResolveModal} transparent animationType="slide">

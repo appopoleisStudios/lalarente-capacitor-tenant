@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
@@ -16,6 +15,7 @@ import { PickerSheet, toDateString } from '@/src/shared/components/ui/DateField'
 import { viewingsApi } from '../../properties/api/viewingsApi';
 import { supabase } from '../../../lib/supabase';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const RSA = { green: '#007A4D', gold: '#FFB81C' };
 
@@ -184,141 +184,28 @@ export default function TenantRequestViewingScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            testID="viewing-request-back"
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
-            <Ionicons name="arrow-back" size={24} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Request Viewing</Text>
-          <View style={styles.placeholder} />
-        </View>
-
-        {checkingExisting ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={RSA.green} />
+      <KeyboardAvoidingView>
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity
+              testID="viewing-request-back"
+              onPress={() => router.back()}
+              style={styles.backButton}
+            >
+              <Ionicons name="arrow-back" size={24} color="#333" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Request Viewing</Text>
+            <View style={styles.placeholder} />
           </View>
-        ) : existingViewing ? (
-          /* Existing Viewing Status Card */
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            <View style={styles.propertyCard}>
-              <Ionicons name="home" size={24} color={RSA.green} />
-              <View style={styles.propertyInfo}>
-                <Text style={styles.propertyTitle} numberOfLines={2}>
-                  {propertyTitle}
-                </Text>
-                <Text style={styles.propertyHint}>Property viewing request</Text>
-              </View>
+
+          {checkingExisting ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={RSA.green} />
             </View>
-
-            <View
-              style={[
-                styles.existingCard,
-                { borderLeftColor: existingViewing.status === 'approved' ? '#4CAF50' : RSA.gold },
-              ]}
-            >
-              <View style={styles.existingHeader}>
-                <View
-                  style={[
-                    styles.existingBadge,
-                    {
-                      backgroundColor:
-                        existingViewing.status === 'approved' ? '#E8F5E9' : '#FFF8E1',
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name={existingViewing.status === 'approved' ? 'checkmark-circle' : 'time'}
-                    size={20}
-                    color={existingViewing.status === 'approved' ? '#4CAF50' : '#F9A825'}
-                  />
-                  <Text
-                    style={[
-                      styles.existingBadgeText,
-                      { color: existingViewing.status === 'approved' ? '#2E7D32' : '#F57F17' },
-                    ]}
-                  >
-                    {existingViewing.status === 'approved'
-                      ? 'Viewing Confirmed'
-                      : 'Viewing Request Pending'}
-                  </Text>
-                </View>
-              </View>
-
-              <Text style={styles.existingMessage}>
-                {existingViewing.status === 'approved'
-                  ? 'Your viewing has been approved by the property owner.'
-                  : 'You already have a pending viewing request for this property.'}
-              </Text>
-
-              <View style={styles.existingDateRow}>
-                <Ionicons name="calendar-outline" size={18} color="#666" />
-                <Text style={styles.existingDateText}>
-                  {new Date(existingViewing.requested_date).toLocaleDateString('en-ZA', {
-                    weekday: 'short',
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                  })}{' '}
-                  at {existingViewing.requested_time?.slice(0, 5) || '—'}
-                </Text>
-              </View>
-
-              <Text style={styles.existingStatusLabel}>
-                {existingViewing.status === 'approved'
-                  ? 'Confirmed — see you there!'
-                  : 'Awaiting owner response'}
-              </Text>
-
-              {existingViewing.owner_response && (
-                <View style={styles.ownerResponseBox}>
-                  <Text style={styles.ownerResponseLabel}>Owner's response:</Text>
-                  <Text style={styles.ownerResponseText}>{existingViewing.owner_response}</Text>
-                </View>
-              )}
-
-              <View style={styles.existingActions}>
-                <TouchableOpacity
-                  testID="viewing-request-existing-details"
-                  style={styles.viewDetailsButton}
-                  onPress={() => router.push(`/(tenant)/viewings/${existingViewing.id}` as any)}
-                >
-                  <Ionicons name="eye-outline" size={18} color={RSA.green} />
-                  <Text style={styles.viewDetailsText}>View Details</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  testID="viewing-request-existing-cancel"
-                  style={styles.cancelButton}
-                  onPress={handleCancelExisting}
-                  disabled={cancelling}
-                >
-                  {cancelling ? (
-                    <ActivityIndicator size="small" color="#D32F2F" />
-                  ) : (
-                    <>
-                      <Ionicons name="close-circle-outline" size={18} color="#D32F2F" />
-                      <Text style={styles.cancelButtonText}>Cancel Request</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-          </ScrollView>
-        ) : (
-          /* Normal Request Form */
-          <>
-            <ScrollView
-              style={styles.content}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              keyboardDismissMode="on-drag"
-            >
-              {/* Property Info */}
+          ) : existingViewing ? (
+            /* Existing Viewing Status Card */
+            <KeyboardAwareScrollView style={styles.content} showsVerticalScrollIndicator={false}>
               <View style={styles.propertyCard}>
                 <Ionicons name="home" size={24} color={RSA.green} />
                 <View style={styles.propertyInfo}>
@@ -329,128 +216,243 @@ export default function TenantRequestViewingScreen() {
                 </View>
               </View>
 
-              {/* Date Selection */}
-              <View style={styles.section}>
-                <Text style={styles.label}>Preferred Date *</Text>
-                <TouchableOpacity
-                  testID="viewing-request-date"
-                  style={styles.dateTimeButton}
-                  onPress={() => setShowDatePicker(true)}
-                >
-                  <Ionicons name="calendar-outline" size={20} color={RSA.green} />
-                  <Text style={styles.dateTimeText}>{formatDate(selectedDate)}</Text>
-                  <Ionicons name="chevron-down" size={20} color="#999" />
-                </TouchableOpacity>
-              </View>
-
-              {/* Time Selection */}
-              <View style={styles.section}>
-                <Text style={styles.label}>Preferred Time *</Text>
-                <TouchableOpacity
-                  testID="viewing-request-time"
-                  style={styles.dateTimeButton}
-                  onPress={() => setShowTimePicker(true)}
-                >
-                  <Ionicons name="time-outline" size={20} color={RSA.green} />
-                  <Text style={styles.dateTimeText}>{formatTime(selectedTime)}</Text>
-                  <Ionicons name="chevron-down" size={20} color="#999" />
-                </TouchableOpacity>
-              </View>
-
-              {/* Message */}
-              <View style={styles.section}>
-                <Text style={styles.label}>Message (Optional)</Text>
-                <TextInput
-                  testID="viewing-request-message"
-                  style={styles.textArea}
-                  value={message}
-                  onChangeText={setMessage}
-                  placeholder="Add any questions or special requests for the viewing..."
-                  multiline
-                  numberOfLines={4}
-                  maxLength={500}
-                  textAlignVertical="top"
-                />
-                <Text style={styles.charCount}>{message.length}/500</Text>
-              </View>
-
-              {/* Info Box */}
-              <View style={styles.infoBox}>
-                <Ionicons name="information-circle" size={20} color={RSA.green} />
-                <Text style={styles.infoText}>
-                  The property owner will receive your request and can either approve it or suggest
-                  alternative times. You'll be notified of their response.
-                </Text>
-              </View>
-
-              {/* Tips */}
-              <View style={styles.tipsSection}>
-                <Text style={styles.tipsTitle}>Viewing Tips:</Text>
-                <View style={styles.tipItem}>
-                  <Ionicons name="checkmark-circle" size={16} color={RSA.green} />
-                  <Text style={styles.tipText}>Arrive on time for the viewing</Text>
-                </View>
-                <View style={styles.tipItem}>
-                  <Ionicons name="checkmark-circle" size={16} color={RSA.green} />
-                  <Text style={styles.tipText}>Bring valid ID for verification</Text>
-                </View>
-                <View style={styles.tipItem}>
-                  <Ionicons name="checkmark-circle" size={16} color={RSA.green} />
-                  <Text style={styles.tipText}>Prepare questions about the property</Text>
-                </View>
-                <View style={styles.tipItem}>
-                  <Ionicons name="checkmark-circle" size={16} color={RSA.green} />
-                  <Text style={styles.tipText}>Check neighborhood and amenities</Text>
-                </View>
-              </View>
-            </ScrollView>
-
-            {/* Submit Button */}
-            <View style={styles.footer}>
-              <TouchableOpacity
-                testID="viewing-request-submit"
-                style={[styles.submitButton, submitting && styles.buttonDisabled]}
-                onPress={handleSubmit}
-                disabled={submitting}
+              <View
+                style={[
+                  styles.existingCard,
+                  { borderLeftColor: existingViewing.status === 'approved' ? '#4CAF50' : RSA.gold },
+                ]}
               >
-                {submitting ? (
-                  <ActivityIndicator size="small" color="#FFF" />
-                ) : (
-                  <>
-                    <Ionicons name="send" size={20} color="#FFF" />
-                    <Text style={styles.submitButtonText}>Send Request</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
+                <View style={styles.existingHeader}>
+                  <View
+                    style={[
+                      styles.existingBadge,
+                      {
+                        backgroundColor:
+                          existingViewing.status === 'approved' ? '#E8F5E9' : '#FFF8E1',
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name={existingViewing.status === 'approved' ? 'checkmark-circle' : 'time'}
+                      size={20}
+                      color={existingViewing.status === 'approved' ? '#4CAF50' : '#F9A825'}
+                    />
+                    <Text
+                      style={[
+                        styles.existingBadgeText,
+                        { color: existingViewing.status === 'approved' ? '#2E7D32' : '#F57F17' },
+                      ]}
+                    >
+                      {existingViewing.status === 'approved'
+                        ? 'Viewing Confirmed'
+                        : 'Viewing Request Pending'}
+                    </Text>
+                  </View>
+                </View>
 
-        {/* Date / time pickers — bottom sheet with Done on iOS, dialog on Android */}
-        <PickerSheet
-          visible={showDatePicker}
-          value={selectedDate}
-          mode="date"
-          minimumDate={new Date()}
-          onCancel={() => setShowDatePicker(false)}
-          onDone={(date) => {
-            setShowDatePicker(false);
-            setSelectedDate(date);
-          }}
-          testID="viewing-request-date"
-        />
-        <PickerSheet
-          visible={showTimePicker}
-          value={selectedTime}
-          mode="time"
-          onCancel={() => setShowTimePicker(false)}
-          onDone={(time) => {
-            setShowTimePicker(false);
-            setSelectedTime(time);
-          }}
-          testID="viewing-request-time"
-        />
-      </View>
+                <Text style={styles.existingMessage}>
+                  {existingViewing.status === 'approved'
+                    ? 'Your viewing has been approved by the property owner.'
+                    : 'You already have a pending viewing request for this property.'}
+                </Text>
+
+                <View style={styles.existingDateRow}>
+                  <Ionicons name="calendar-outline" size={18} color="#666" />
+                  <Text style={styles.existingDateText}>
+                    {new Date(existingViewing.requested_date).toLocaleDateString('en-ZA', {
+                      weekday: 'short',
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })}{' '}
+                    at {existingViewing.requested_time?.slice(0, 5) || '—'}
+                  </Text>
+                </View>
+
+                <Text style={styles.existingStatusLabel}>
+                  {existingViewing.status === 'approved'
+                    ? 'Confirmed — see you there!'
+                    : 'Awaiting owner response'}
+                </Text>
+
+                {existingViewing.owner_response && (
+                  <View style={styles.ownerResponseBox}>
+                    <Text style={styles.ownerResponseLabel}>Owner's response:</Text>
+                    <Text style={styles.ownerResponseText}>{existingViewing.owner_response}</Text>
+                  </View>
+                )}
+
+                <View style={styles.existingActions}>
+                  <TouchableOpacity
+                    testID="viewing-request-existing-details"
+                    style={styles.viewDetailsButton}
+                    onPress={() => router.push(`/(tenant)/viewings/${existingViewing.id}` as any)}
+                  >
+                    <Ionicons name="eye-outline" size={18} color={RSA.green} />
+                    <Text style={styles.viewDetailsText}>View Details</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    testID="viewing-request-existing-cancel"
+                    style={styles.cancelButton}
+                    onPress={handleCancelExisting}
+                    disabled={cancelling}
+                  >
+                    {cancelling ? (
+                      <ActivityIndicator size="small" color="#D32F2F" />
+                    ) : (
+                      <>
+                        <Ionicons name="close-circle-outline" size={18} color="#D32F2F" />
+                        <Text style={styles.cancelButtonText}>Cancel Request</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </KeyboardAwareScrollView>
+          ) : (
+            /* Normal Request Form */
+            <>
+              <KeyboardAwareScrollView
+                style={styles.content}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="on-drag"
+              >
+                {/* Property Info */}
+                <View style={styles.propertyCard}>
+                  <Ionicons name="home" size={24} color={RSA.green} />
+                  <View style={styles.propertyInfo}>
+                    <Text style={styles.propertyTitle} numberOfLines={2}>
+                      {propertyTitle}
+                    </Text>
+                    <Text style={styles.propertyHint}>Property viewing request</Text>
+                  </View>
+                </View>
+
+                {/* Date Selection */}
+                <View style={styles.section}>
+                  <Text style={styles.label}>Preferred Date *</Text>
+                  <TouchableOpacity
+                    testID="viewing-request-date"
+                    style={styles.dateTimeButton}
+                    onPress={() => setShowDatePicker(true)}
+                  >
+                    <Ionicons name="calendar-outline" size={20} color={RSA.green} />
+                    <Text style={styles.dateTimeText}>{formatDate(selectedDate)}</Text>
+                    <Ionicons name="chevron-down" size={20} color="#999" />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Time Selection */}
+                <View style={styles.section}>
+                  <Text style={styles.label}>Preferred Time *</Text>
+                  <TouchableOpacity
+                    testID="viewing-request-time"
+                    style={styles.dateTimeButton}
+                    onPress={() => setShowTimePicker(true)}
+                  >
+                    <Ionicons name="time-outline" size={20} color={RSA.green} />
+                    <Text style={styles.dateTimeText}>{formatTime(selectedTime)}</Text>
+                    <Ionicons name="chevron-down" size={20} color="#999" />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Message */}
+                <View style={styles.section}>
+                  <Text style={styles.label}>Message (Optional)</Text>
+                  <TextInput
+                    testID="viewing-request-message"
+                    style={styles.textArea}
+                    value={message}
+                    onChangeText={setMessage}
+                    placeholder="Add any questions or special requests for the viewing..."
+                    multiline
+                    numberOfLines={4}
+                    maxLength={500}
+                    textAlignVertical="top"
+                  />
+                  <Text style={styles.charCount}>{message.length}/500</Text>
+                </View>
+
+                {/* Info Box */}
+                <View style={styles.infoBox}>
+                  <Ionicons name="information-circle" size={20} color={RSA.green} />
+                  <Text style={styles.infoText}>
+                    The property owner will receive your request and can either approve it or
+                    suggest alternative times. You'll be notified of their response.
+                  </Text>
+                </View>
+
+                {/* Tips */}
+                <View style={styles.tipsSection}>
+                  <Text style={styles.tipsTitle}>Viewing Tips:</Text>
+                  <View style={styles.tipItem}>
+                    <Ionicons name="checkmark-circle" size={16} color={RSA.green} />
+                    <Text style={styles.tipText}>Arrive on time for the viewing</Text>
+                  </View>
+                  <View style={styles.tipItem}>
+                    <Ionicons name="checkmark-circle" size={16} color={RSA.green} />
+                    <Text style={styles.tipText}>Bring valid ID for verification</Text>
+                  </View>
+                  <View style={styles.tipItem}>
+                    <Ionicons name="checkmark-circle" size={16} color={RSA.green} />
+                    <Text style={styles.tipText}>Prepare questions about the property</Text>
+                  </View>
+                  <View style={styles.tipItem}>
+                    <Ionicons name="checkmark-circle" size={16} color={RSA.green} />
+                    <Text style={styles.tipText}>Check neighborhood and amenities</Text>
+                  </View>
+                </View>
+              </KeyboardAwareScrollView>
+
+              {/* Submit Button */}
+              <View style={styles.footer}>
+                <TouchableOpacity
+                  testID="viewing-request-submit"
+                  style={[styles.submitButton, submitting && styles.buttonDisabled]}
+                  onPress={handleSubmit}
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <>
+                      <Ionicons name="send" size={20} color="#FFF" />
+                      <Text style={styles.submitButtonText}>Send Request</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+
+          {/* Date / time pickers — bottom sheet with Done on iOS, dialog on Android */}
+          <PickerSheet
+            visible={showDatePicker}
+            value={selectedDate}
+            mode="date"
+            minimumDate={new Date()}
+            onCancel={() => setShowDatePicker(false)}
+            onDone={(date) => {
+              setShowDatePicker(false);
+              setSelectedDate(date);
+            }}
+            testID="viewing-request-date"
+          />
+          <PickerSheet
+            visible={showTimePicker}
+            value={selectedTime}
+            mode="time"
+            onCancel={() => setShowTimePicker(false)}
+            onDone={(time) => {
+              setShowTimePicker(false);
+              setSelectedTime(time);
+            }}
+            testID="viewing-request-time"
+          />
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

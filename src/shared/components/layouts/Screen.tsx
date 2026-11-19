@@ -15,7 +15,7 @@ export const Screen: React.FC<ScreenProps> = ({
   ...props
 }) => {
   const baseClasses = `flex-1 bg-white ${className}`;
-  
+
   if (useSafeArea) {
     return (
       <SafeAreaView className={baseClasses} {...props}>
@@ -23,7 +23,7 @@ export const Screen: React.FC<ScreenProps> = ({
       </SafeAreaView>
     );
   }
-  
+
   return (
     <View className={baseClasses} {...props}>
       {children}

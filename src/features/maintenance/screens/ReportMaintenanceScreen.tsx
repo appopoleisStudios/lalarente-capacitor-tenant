@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
@@ -22,6 +21,7 @@ import { colors } from '@/src/shared/theme/colors';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { StyleSheet } from 'react-native';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const RSA = { blue: '#002395' };
 
@@ -168,271 +168,273 @@ export default function ReportMaintenanceScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#111827" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Report Maintenance</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <KeyboardAvoidingView>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#111827" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Report Maintenance</Text>
+          <View style={{ width: 40 }} />
+        </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-      >
-        {/* Title */}
-        <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.section}>
-          <Text style={styles.label}>Title *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g., Leaking faucet in kitchen"
-            placeholderTextColor="#9ca3af"
-            value={title}
-            onChangeText={setTitle}
-            maxLength={100}
-          />
-        </Animated.View>
-
-        {/* Description */}
-        <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.section}>
-          <Text style={styles.label}>Description *</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Describe the issue in detail..."
-            placeholderTextColor="#9ca3af"
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={5}
-            textAlignVertical="top"
-            maxLength={500}
-          />
-          <Text style={styles.charCount}>{description.length}/500</Text>
-        </Animated.View>
-
-        {/* Property Selection */}
-        <Animated.View entering={FadeInDown.delay(300).duration(500)} style={styles.section}>
-          <Text style={styles.label}>Property *</Text>
-          <View style={styles.chipContainer}>
-            {properties.map((property) => (
-              <TouchableOpacity
-                key={property.id}
-                style={[styles.chip, propertyId === property.id && styles.chipActive]}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setPropertyId(property.id);
-                }}
-              >
-                <Text
-                  style={[styles.chipText, propertyId === property.id && styles.chipTextActive]}
-                >
-                  {property.title}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </Animated.View>
-
-        {/* Priority */}
-        <Animated.View entering={FadeInDown.delay(400).duration(500)} style={styles.section}>
-          <Text style={styles.label}>Priority</Text>
-          <View style={styles.priorityContainer}>
-            {PRIORITIES.map((item) => (
-              <TouchableOpacity
-                key={item.value}
-                style={[
-                  styles.priorityChip,
-                  priority === item.value && { backgroundColor: item.color },
-                ]}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setPriority(item.value as any);
-                }}
-              >
-                <Ionicons
-                  name={item.icon as any}
-                  size={20}
-                  color={priority === item.value ? '#FFFFFF' : item.color}
-                />
-                <Text
-                  style={[
-                    styles.priorityText,
-                    priority === item.value && styles.priorityTextActive,
-                  ]}
-                >
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </Animated.View>
-
-        {/* Category */}
-        <Animated.View entering={FadeInDown.delay(500).duration(500)} style={styles.section}>
-          <Text style={styles.label}>Category</Text>
-          <View style={styles.chipContainer}>
-            {categories.map((category) => (
-              <TouchableOpacity
-                key={category.id}
-                style={[styles.chip, categoryId === category.id && styles.chipActive]}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setCategoryId(categoryId === category.id ? null : category.id);
-                }}
-              >
-                <Text
-                  style={[styles.chipText, categoryId === category.id && styles.chipTextActive]}
-                >
-                  {category.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </Animated.View>
-
-        {/* Visibility (Owner Only) */}
-        {isOwner && (
-          <Animated.View entering={FadeInDown.delay(600).duration(500)} style={styles.section}>
-            <Text style={styles.label}>Request Visibility</Text>
-            <Text style={styles.helperText}>Choose how vendors can see this request</Text>
-            <View style={styles.visibilityContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.visibilityChip,
-                  visibility === 'public' && styles.visibilityChipActive,
-                ]}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setVisibility('public');
-                }}
-              >
-                <Text style={styles.visibilityIcon}>🌍</Text>
-                <Text
-                  style={[
-                    styles.visibilityLabel,
-                    visibility === 'public' && styles.visibilityLabelActive,
-                  ]}
-                >
-                  Open Market
-                </Text>
-                <Text
-                  style={[
-                    styles.visibilityHint,
-                    visibility === 'public' && styles.visibilityHintActive,
-                  ]}
-                >
-                  All vendors can quote
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.visibilityChip,
-                  visibility === 'invited' && styles.visibilityChipActive,
-                ]}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setVisibility('invited');
-                }}
-              >
-                <Text style={styles.visibilityIcon}>🔒</Text>
-                <Text
-                  style={[
-                    styles.visibilityLabel,
-                    visibility === 'invited' && styles.visibilityLabelActive,
-                  ]}
-                >
-                  Invite Only
-                </Text>
-                <Text
-                  style={[
-                    styles.visibilityHint,
-                    visibility === 'invited' && styles.visibilityHintActive,
-                  ]}
-                >
-                  Choose specific vendors
-                </Text>
-              </TouchableOpacity>
-            </View>
+        <KeyboardAwareScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
+          {/* Title */}
+          <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.section}>
+            <Text style={styles.label}>Title *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g., Leaking faucet in kitchen"
+              placeholderTextColor="#9ca3af"
+              value={title}
+              onChangeText={setTitle}
+              maxLength={100}
+            />
           </Animated.View>
-        )}
 
-        {/* Photos & Videos */}
-        <Animated.View entering={FadeInDown.delay(700).duration(500)} style={styles.section}>
-          <Text style={styles.label}>Photos & Videos ({files.length}/10)</Text>
-          <View style={styles.mediaGrid}>
-            {files.map((file, index) => (
-              <View key={index} style={styles.mediaWrapper}>
-                {file.type === 'video' ? (
-                  <Video
-                    source={{ uri: file.uri }}
-                    style={styles.media}
-                    useNativeControls
-                    resizeMode={ResizeMode.COVER}
-                    isLooping
-                  />
-                ) : (
-                  <Image source={{ uri: file.uri }} style={styles.media} />
-                )}
+          {/* Description */}
+          <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.section}>
+            <Text style={styles.label}>Description *</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="Describe the issue in detail..."
+              placeholderTextColor="#9ca3af"
+              value={description}
+              onChangeText={setDescription}
+              multiline
+              numberOfLines={5}
+              textAlignVertical="top"
+              maxLength={500}
+            />
+            <Text style={styles.charCount}>{description.length}/500</Text>
+          </Animated.View>
+
+          {/* Property Selection */}
+          <Animated.View entering={FadeInDown.delay(300).duration(500)} style={styles.section}>
+            <Text style={styles.label}>Property *</Text>
+            <View style={styles.chipContainer}>
+              {properties.map((property) => (
                 <TouchableOpacity
-                  style={styles.removeMedia}
+                  key={property.id}
+                  style={[styles.chip, propertyId === property.id && styles.chipActive]}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    removeFile(file.uri);
+                    setPropertyId(property.id);
                   }}
                 >
-                  <Ionicons name="close-circle" size={24} color="#DE3831" />
+                  <Text
+                    style={[styles.chipText, propertyId === property.id && styles.chipTextActive]}
+                  >
+                    {property.title}
+                  </Text>
                 </TouchableOpacity>
-                <View style={styles.mediaTypeBadge}>
-                  <Text style={styles.mediaTypeText}>{file.type === 'video' ? '🎥' : '📷'}</Text>
-                </View>
-              </View>
-            ))}
-            {canAddMore && (
-              <>
-                <TouchableOpacity
-                  style={styles.addMediaButton}
-                  onPress={takePhoto}
-                  testID="media-add-camera"
-                >
-                  <Ionicons name="camera" size={32} color={RSA.blue} />
-                  <Text style={styles.addMediaText}>Camera</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.addMediaButton}
-                  onPress={pickMedia}
-                  testID="media-add-gallery"
-                >
-                  <Ionicons name="images" size={32} color={RSA.blue} />
-                  <Text style={styles.addMediaText}>Gallery</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
-          <Text style={styles.mediaHint}>
-            📷 Photos & 🎥 Videos (max 50MB per video, 2min duration)
-          </Text>
-        </Animated.View>
-      </ScrollView>
+              ))}
+            </View>
+          </Animated.View>
 
-      {/* Submit Button */}
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
-          onPress={handleSubmit}
-          disabled={submitting}
-        >
-          {submitting ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.submitButtonText}>Submit Request</Text>
+          {/* Priority */}
+          <Animated.View entering={FadeInDown.delay(400).duration(500)} style={styles.section}>
+            <Text style={styles.label}>Priority</Text>
+            <View style={styles.priorityContainer}>
+              {PRIORITIES.map((item) => (
+                <TouchableOpacity
+                  key={item.value}
+                  style={[
+                    styles.priorityChip,
+                    priority === item.value && { backgroundColor: item.color },
+                  ]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setPriority(item.value as any);
+                  }}
+                >
+                  <Ionicons
+                    name={item.icon as any}
+                    size={20}
+                    color={priority === item.value ? '#FFFFFF' : item.color}
+                  />
+                  <Text
+                    style={[
+                      styles.priorityText,
+                      priority === item.value && styles.priorityTextActive,
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </Animated.View>
+
+          {/* Category */}
+          <Animated.View entering={FadeInDown.delay(500).duration(500)} style={styles.section}>
+            <Text style={styles.label}>Category</Text>
+            <View style={styles.chipContainer}>
+              {categories.map((category) => (
+                <TouchableOpacity
+                  key={category.id}
+                  style={[styles.chip, categoryId === category.id && styles.chipActive]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setCategoryId(categoryId === category.id ? null : category.id);
+                  }}
+                >
+                  <Text
+                    style={[styles.chipText, categoryId === category.id && styles.chipTextActive]}
+                  >
+                    {category.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </Animated.View>
+
+          {/* Visibility (Owner Only) */}
+          {isOwner && (
+            <Animated.View entering={FadeInDown.delay(600).duration(500)} style={styles.section}>
+              <Text style={styles.label}>Request Visibility</Text>
+              <Text style={styles.helperText}>Choose how vendors can see this request</Text>
+              <View style={styles.visibilityContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.visibilityChip,
+                    visibility === 'public' && styles.visibilityChipActive,
+                  ]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setVisibility('public');
+                  }}
+                >
+                  <Text style={styles.visibilityIcon}>🌍</Text>
+                  <Text
+                    style={[
+                      styles.visibilityLabel,
+                      visibility === 'public' && styles.visibilityLabelActive,
+                    ]}
+                  >
+                    Open Market
+                  </Text>
+                  <Text
+                    style={[
+                      styles.visibilityHint,
+                      visibility === 'public' && styles.visibilityHintActive,
+                    ]}
+                  >
+                    All vendors can quote
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.visibilityChip,
+                    visibility === 'invited' && styles.visibilityChipActive,
+                  ]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setVisibility('invited');
+                  }}
+                >
+                  <Text style={styles.visibilityIcon}>🔒</Text>
+                  <Text
+                    style={[
+                      styles.visibilityLabel,
+                      visibility === 'invited' && styles.visibilityLabelActive,
+                    ]}
+                  >
+                    Invite Only
+                  </Text>
+                  <Text
+                    style={[
+                      styles.visibilityHint,
+                      visibility === 'invited' && styles.visibilityHintActive,
+                    ]}
+                  >
+                    Choose specific vendors
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </Animated.View>
           )}
-        </TouchableOpacity>
-      </View>
+
+          {/* Photos & Videos */}
+          <Animated.View entering={FadeInDown.delay(700).duration(500)} style={styles.section}>
+            <Text style={styles.label}>Photos & Videos ({files.length}/10)</Text>
+            <View style={styles.mediaGrid}>
+              {files.map((file, index) => (
+                <View key={index} style={styles.mediaWrapper}>
+                  {file.type === 'video' ? (
+                    <Video
+                      source={{ uri: file.uri }}
+                      style={styles.media}
+                      useNativeControls
+                      resizeMode={ResizeMode.COVER}
+                      isLooping
+                    />
+                  ) : (
+                    <Image source={{ uri: file.uri }} style={styles.media} />
+                  )}
+                  <TouchableOpacity
+                    style={styles.removeMedia}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      removeFile(file.uri);
+                    }}
+                  >
+                    <Ionicons name="close-circle" size={24} color="#DE3831" />
+                  </TouchableOpacity>
+                  <View style={styles.mediaTypeBadge}>
+                    <Text style={styles.mediaTypeText}>{file.type === 'video' ? '🎥' : '📷'}</Text>
+                  </View>
+                </View>
+              ))}
+              {canAddMore && (
+                <>
+                  <TouchableOpacity
+                    style={styles.addMediaButton}
+                    onPress={takePhoto}
+                    testID="media-add-camera"
+                  >
+                    <Ionicons name="camera" size={32} color={RSA.blue} />
+                    <Text style={styles.addMediaText}>Camera</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.addMediaButton}
+                    onPress={pickMedia}
+                    testID="media-add-gallery"
+                  >
+                    <Ionicons name="images" size={32} color={RSA.blue} />
+                    <Text style={styles.addMediaText}>Gallery</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+            <Text style={styles.mediaHint}>
+              📷 Photos & 🎥 Videos (max 50MB per video, 2min duration)
+            </Text>
+          </Animated.View>
+        </KeyboardAwareScrollView>
+
+        {/* Submit Button */}
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+            onPress={handleSubmit}
+            disabled={submitting}
+          >
+            {submitting ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.submitButtonText}>Submit Request</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -460,7 +462,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
   scrollView: { flex: 1 },
-  scrollContent: { padding: 16, paddingBottom: 120 },
+  scrollContent: { padding: 16 },
   section: { marginBottom: 24 },
   label: { fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 8 },
   input: {
@@ -558,10 +560,6 @@ const styles = StyleSheet.create({
   addMediaText: { fontSize: 12, color: '#6b7280', marginTop: 4, fontWeight: '600' },
   mediaHint: { fontSize: 11, color: '#9ca3af', marginTop: 8 },
   footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     padding: 16,
     backgroundColor: '#ffffff',
     borderTopWidth: 1,

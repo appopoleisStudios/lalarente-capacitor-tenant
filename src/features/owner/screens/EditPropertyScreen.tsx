@@ -24,6 +24,7 @@ import { reportApiError } from '@/src/core/observability/sentry';
 import { validate3dTourUrl } from '@/src/features/properties/utils/validate3dTourUrl';
 import { DateField } from '@/src/shared/components/ui/DateField';
 import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 interface PropertyForm {
   title: string;
@@ -389,7 +390,7 @@ export default function EditPropertyScreen() {
             </AnimatedButton>
           </View>
 
-          <ScrollView
+          <KeyboardAwareScrollView
             style={styles.scrollView}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
@@ -767,7 +768,7 @@ export default function EditPropertyScreen() {
             {/* Bottom-of-scroll Save removed in CT7-003 — the header Save
                 is the single action and is reachable without scrolling.
                 Dirty-state gating lives on the header button. */}
-          </ScrollView>
+          </KeyboardAwareScrollView>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

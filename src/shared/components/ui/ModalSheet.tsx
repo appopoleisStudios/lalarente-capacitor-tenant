@@ -6,13 +6,13 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
-  ScrollView,
   ViewStyle,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -82,14 +82,14 @@ export function ModalSheet({
             )}
 
             {/* Content */}
-            <ScrollView
+            <KeyboardAwareScrollView
               style={styles.content}
               showsVerticalScrollIndicator={false}
               bounces={false}
               keyboardShouldPersistTaps="handled"
             >
               {children}
-            </ScrollView>
+            </KeyboardAwareScrollView>
           </View>
         </View>
       </KeyboardAvoidingView>

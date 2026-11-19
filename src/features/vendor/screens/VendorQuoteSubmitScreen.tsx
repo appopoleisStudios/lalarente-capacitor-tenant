@@ -11,7 +11,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -20,6 +19,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { goBack } from '@/src/shared/navigation/goBack';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const RSA = { blue: '#002395', green: '#007A4D', gold: '#FFB81C', red: '#DE3831' };
 
@@ -564,352 +565,358 @@ export default function VendorQuoteSubmitScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        {/* Back: returns to the request detail it was opened from (tabs use
+      <KeyboardAvoidingView>
+        {/* Header */}
+        <View style={styles.header}>
+          {/* Back: returns to the request detail it was opened from (tabs use
             backBehavior='history'); the detail is also the fallback when
             there is no history (CT7-033). */}
-        <TouchableOpacity
-          onPress={() => goBack(router, `/(vendor)/maintenance/${id}`)}
-          style={styles.headerButton}
-          testID="quote-back"
-        >
-          <Ionicons name="arrow-back" size={24} color="#111827" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isEditMode ? 'Revise Quote' : 'Submit Quote'}</Text>
-        <TouchableOpacity
-          onPress={handleSaveDraft}
-          style={styles.headerButton}
-          testID="quote-save-draft-header"
-        >
-          <Ionicons name="save-outline" size={24} color={RSA.blue} />
-        </TouchableOpacity>
-      </View>
-      {/* Draft restored banner — shown only when a saved draft was pre-filled */}
-      {draftRestored && (
-        <View style={styles.draftBanner} testID="quote-draft-restored-banner">
-          <Ionicons name="document-text-outline" size={18} color={colors.info[600]} />
-          <Text style={styles.draftBannerText}>Draft restored</Text>
           <TouchableOpacity
-            onPress={handleDiscardDraft}
-            testID="quote-draft-discard"
-            style={styles.draftDiscardButton}
+            onPress={() => goBack(router, `/(vendor)/maintenance/${id}`)}
+            style={styles.headerButton}
+            testID="quote-back"
           >
-            <Text style={styles.draftDiscardText}>Discard</Text>
+            <Ionicons name="arrow-back" size={24} color="#111827" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{isEditMode ? 'Revise Quote' : 'Submit Quote'}</Text>
+          <TouchableOpacity
+            onPress={handleSaveDraft}
+            style={styles.headerButton}
+            testID="quote-save-draft-header"
+          >
+            <Ionicons name="save-outline" size={24} color={RSA.blue} />
           </TouchableOpacity>
         </View>
-      )}
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        keyboardDismissMode="on-drag"
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Timeline */}
-        <View style={styles.timelineContainer}>
-          <View style={styles.timelineHeader}>
-            <Ionicons name="location" size={20} color={RSA.blue} />
-            <Text style={styles.timelineText}>Step 2 of 5: Create Quote</Text>
+        {/* Draft restored banner — shown only when a saved draft was pre-filled */}
+        {draftRestored && (
+          <View style={styles.draftBanner} testID="quote-draft-restored-banner">
+            <Ionicons name="document-text-outline" size={18} color={colors.info[600]} />
+            <Text style={styles.draftBannerText}>Draft restored</Text>
+            <TouchableOpacity
+              onPress={handleDiscardDraft}
+              testID="quote-draft-discard"
+              style={styles.draftDiscardButton}
+            >
+              <Text style={styles.draftDiscardText}>Discard</Text>
+            </TouchableOpacity>
           </View>
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: '40%' }]} />
-          </View>
-          <View style={styles.timelineSteps}>
-            <View style={styles.timelineStep}>
-              <View style={[styles.stepDot, styles.stepDotComplete]}>
-                <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+        )}
+        <KeyboardAwareScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Timeline */}
+          <View style={styles.timelineContainer}>
+            <View style={styles.timelineHeader}>
+              <Ionicons name="location" size={20} color={RSA.blue} />
+              <Text style={styles.timelineText}>Step 2 of 5: Create Quote</Text>
+            </View>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { width: '40%' }]} />
+            </View>
+            <View style={styles.timelineSteps}>
+              <View style={styles.timelineStep}>
+                <View style={[styles.stepDot, styles.stepDotComplete]}>
+                  <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+                </View>
+                <Text style={styles.stepLabel}>View</Text>
               </View>
-              <Text style={styles.stepLabel}>View</Text>
-            </View>
-            <View style={styles.timelineLine} />
-            <View style={styles.timelineStep}>
-              <View style={[styles.stepDot, styles.stepDotActive]} />
-              <Text style={[styles.stepLabel, styles.stepLabelActive]}>Quote</Text>
-            </View>
-            <View style={styles.timelineLine} />
-            <View style={styles.timelineStep}>
-              <View style={styles.stepDot} />
-              <Text style={styles.stepLabel}>Wait</Text>
-            </View>
-            <View style={styles.timelineLine} />
-            <View style={styles.timelineStep}>
-              <View style={styles.stepDot} />
-              <Text style={styles.stepLabel}>Work</Text>
-            </View>
-            <View style={styles.timelineLine} />
-            <View style={styles.timelineStep}>
-              <View style={styles.stepDot} />
-              <Text style={styles.stepLabel}>💰</Text>
+              <View style={styles.timelineLine} />
+              <View style={styles.timelineStep}>
+                <View style={[styles.stepDot, styles.stepDotActive]} />
+                <Text style={[styles.stepLabel, styles.stepLabelActive]}>Quote</Text>
+              </View>
+              <View style={styles.timelineLine} />
+              <View style={styles.timelineStep}>
+                <View style={styles.stepDot} />
+                <Text style={styles.stepLabel}>Wait</Text>
+              </View>
+              <View style={styles.timelineLine} />
+              <View style={styles.timelineStep}>
+                <View style={styles.stepDot} />
+                <Text style={styles.stepLabel}>Work</Text>
+              </View>
+              <View style={styles.timelineLine} />
+              <View style={styles.timelineStep}>
+                <View style={styles.stepDot} />
+                <Text style={styles.stepLabel}>💰</Text>
+              </View>
             </View>
           </View>
-        </View>
 
-        {/* Tip */}
-        <View style={styles.tipContainer}>
-          <Ionicons name="bulb" size={20} color={colors.warning[600]} />
-          <Text style={styles.tipText}>Tip: Add all items needed for this job</Text>
-        </View>
+          {/* Tip */}
+          <View style={styles.tipContainer}>
+            <Ionicons name="bulb" size={20} color={colors.warning[600]} />
+            <Text style={styles.tipText}>Tip: Add all items needed for this job</Text>
+          </View>
 
-        {/* Work Items Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Work Items (Components)</Text>
+          {/* Work Items Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Work Items (Components)</Text>
 
-          {lineItems.map((item, index) => (
-            <View key={item.id} style={styles.lineItemCard}>
-              <View style={styles.lineItemHeader}>
-                <Text style={styles.lineItemNumber}>{index + 1}.</Text>
-                {lineItems.length > 1 && (
+            {lineItems.map((item, index) => (
+              <View key={item.id} style={styles.lineItemCard}>
+                <View style={styles.lineItemHeader}>
+                  <Text style={styles.lineItemNumber}>{index + 1}.</Text>
+                  {lineItems.length > 1 && (
+                    <TouchableOpacity
+                      onPress={() => removeLineItem(item.id)}
+                      style={styles.removeButton}
+                    >
+                      <Ionicons name="close-circle" size={24} color={colors.error[500]} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                <TextInput
+                  style={styles.input}
+                  placeholder="Item name (e.g., Pipe Replacement)"
+                  placeholderTextColor={colors.gray[400]}
+                  value={item.name}
+                  onChangeText={(text) => updateLineItem(item.id, 'name', text)}
+                  testID="quote-item-name"
+                />
+
+                <View style={styles.lineItemRow}>
+                  <View style={styles.lineItemField}>
+                    <Text style={styles.fieldLabel}>Quantity</Text>
+                    <TextInput
+                      style={styles.inputSmall}
+                      placeholder="1"
+                      placeholderTextColor={colors.gray[400]}
+                      keyboardType="numeric"
+                      value={item.quantity.toString()}
+                      onChangeText={(text) =>
+                        updateLineItem(item.id, 'quantity', parseInt(text) || 0)
+                      }
+                      testID="quote-quantity"
+                    />
+                  </View>
+
+                  <View style={styles.lineItemField}>
+                    <Text style={styles.fieldLabel}>Unit Price (R)</Text>
+                    <TextInput
+                      style={styles.inputSmall}
+                      placeholder="0"
+                      placeholderTextColor={colors.gray[400]}
+                      keyboardType="numeric"
+                      value={item.unit_price > 0 ? item.unit_price.toString() : ''}
+                      onChangeText={(text) =>
+                        updateLineItem(item.id, 'unit_price', parseFloat(text) || 0)
+                      }
+                      testID="quote-unit-price"
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.lineItemTotal}>
+                  <Text style={styles.lineItemTotalLabel}>Item Total:</Text>
+                  <Text style={styles.lineItemTotalAmount}>
+                    R{' '}
+                    {(item.quantity * item.unit_price).toLocaleString('en-ZA', {
+                      minimumFractionDigits: 2,
+                    })}
+                  </Text>
+                </View>
+              </View>
+            ))}
+
+            <TouchableOpacity style={styles.addButton} onPress={addLineItem}>
+              <Ionicons name="add-circle" size={24} color={RSA.blue} />
+              <Text style={styles.addButtonText}>Add Item</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.templatesButton}
+              onPress={() => setShowTemplates(!showTemplates)}
+            >
+              <Ionicons name="list" size={20} color={RSA.blue} />
+              <Text style={styles.templatesButtonText}>Use Common Templates</Text>
+            </TouchableOpacity>
+
+            {showTemplates && (
+              <View style={styles.templatesContainer}>
+                {COMMON_ITEMS.map((template, index) => (
                   <TouchableOpacity
-                    onPress={() => removeLineItem(item.id)}
-                    style={styles.removeButton}
+                    key={index}
+                    style={styles.templateItem}
+                    onPress={() => handleUseTemplate(template)}
                   >
-                    <Ionicons name="close-circle" size={24} color={colors.error[500]} />
+                    <Text style={styles.templateName}>{template.name}</Text>
+                    <Text style={styles.templatePrice}>R {template.typical_price}</Text>
                   </TouchableOpacity>
-                )}
+                ))}
               </View>
+            )}
+          </View>
 
-              <TextInput
-                style={styles.input}
-                placeholder="Item name (e.g., Pipe Replacement)"
-                placeholderTextColor={colors.gray[400]}
-                value={item.name}
-                onChangeText={(text) => updateLineItem(item.id, 'name', text)}
-                testID="quote-item-name"
-              />
-
-              <View style={styles.lineItemRow}>
-                <View style={styles.lineItemField}>
-                  <Text style={styles.fieldLabel}>Quantity</Text>
-                  <TextInput
-                    style={styles.inputSmall}
-                    placeholder="1"
-                    placeholderTextColor={colors.gray[400]}
-                    keyboardType="numeric"
-                    value={item.quantity.toString()}
-                    onChangeText={(text) =>
-                      updateLineItem(item.id, 'quantity', parseInt(text) || 0)
-                    }
-                    testID="quote-quantity"
-                  />
-                </View>
-
-                <View style={styles.lineItemField}>
-                  <Text style={styles.fieldLabel}>Unit Price (R)</Text>
-                  <TextInput
-                    style={styles.inputSmall}
-                    placeholder="0"
-                    placeholderTextColor={colors.gray[400]}
-                    keyboardType="numeric"
-                    value={item.unit_price > 0 ? item.unit_price.toString() : ''}
-                    onChangeText={(text) =>
-                      updateLineItem(item.id, 'unit_price', parseFloat(text) || 0)
-                    }
-                    testID="quote-unit-price"
-                  />
-                </View>
-              </View>
-
-              <View style={styles.lineItemTotal}>
-                <Text style={styles.lineItemTotalLabel}>Item Total:</Text>
-                <Text style={styles.lineItemTotalAmount}>
-                  R{' '}
-                  {(item.quantity * item.unit_price).toLocaleString('en-ZA', {
-                    minimumFractionDigits: 2,
-                  })}
+          {/* Cost Summary */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>💰 Cost Summary</Text>
+            <View style={styles.summaryCard}>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Items Total</Text>
+                <Text style={styles.summaryValue}>
+                  R {subtotal.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
                 </Text>
               </View>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>VAT (15%)</Text>
+                <Text style={styles.summaryValue}>
+                  R {vatAmount.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
+                </Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Discount</Text>
+                <TextInput
+                  style={styles.discountInput}
+                  placeholder="0"
+                  placeholderTextColor={colors.gray[400]}
+                  keyboardType="numeric"
+                  value={discount > 0 ? discount.toString() : ''}
+                  onChangeText={(text) => setDiscount(parseFloat(text) || 0)}
+                />
+              </View>
+              <View style={styles.summaryDivider} />
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryTotalLabel}>TOTAL</Text>
+                <Text style={styles.summaryTotalAmount}>
+                  R {total.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
+                </Text>
+              </View>
+              <View style={styles.earningsContainer}>
+                <Ionicons name="checkmark-circle" size={20} color={RSA.green} />
+                <Text style={styles.earningsText}>
+                  You'll earn: ~R{' '}
+                  {estimatedEarnings.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
+                </Text>
+              </View>
+              <Text style={styles.earningsNote}>(after platform fee)</Text>
             </View>
-          ))}
-
-          <TouchableOpacity style={styles.addButton} onPress={addLineItem}>
-            <Ionicons name="add-circle" size={24} color={RSA.blue} />
-            <Text style={styles.addButtonText}>Add Item</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.templatesButton}
-            onPress={() => setShowTemplates(!showTemplates)}
-          >
-            <Ionicons name="list" size={20} color={RSA.blue} />
-            <Text style={styles.templatesButtonText}>Use Common Templates</Text>
-          </TouchableOpacity>
-
-          {showTemplates && (
-            <View style={styles.templatesContainer}>
-              {COMMON_ITEMS.map((template, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.templateItem}
-                  onPress={() => handleUseTemplate(template)}
-                >
-                  <Text style={styles.templateName}>{template.name}</Text>
-                  <Text style={styles.templatePrice}>R {template.typical_price}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-
-        {/* Cost Summary */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>💰 Cost Summary</Text>
-          <View style={styles.summaryCard}>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Items Total</Text>
-              <Text style={styles.summaryValue}>
-                R {subtotal.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
-              </Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>VAT (15%)</Text>
-              <Text style={styles.summaryValue}>
-                R {vatAmount.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
-              </Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Discount</Text>
-              <TextInput
-                style={styles.discountInput}
-                placeholder="0"
-                placeholderTextColor={colors.gray[400]}
-                keyboardType="numeric"
-                value={discount > 0 ? discount.toString() : ''}
-                onChangeText={(text) => setDiscount(parseFloat(text) || 0)}
-              />
-            </View>
-            <View style={styles.summaryDivider} />
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryTotalLabel}>TOTAL</Text>
-              <Text style={styles.summaryTotalAmount}>
-                R {total.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
-              </Text>
-            </View>
-            <View style={styles.earningsContainer}>
-              <Ionicons name="checkmark-circle" size={20} color={RSA.green} />
-              <Text style={styles.earningsText}>
-                You'll earn: ~R{' '}
-                {estimatedEarnings.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
-              </Text>
-            </View>
-            <Text style={styles.earningsNote}>(after platform fee)</Text>
           </View>
-        </View>
 
-        {/* Duration */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>⏱️ How long? (Required)</Text>
-          <TouchableOpacity
-            style={styles.pickerButton}
-            testID="quote-duration-picker"
-            onPress={() => setShowDurationPicker(!showDurationPicker)}
-          >
-            <Text style={duration ? styles.pickerButtonTextSelected : styles.pickerButtonText}>
-              {duration || 'Select duration'}
-            </Text>
-            <Ionicons name="chevron-down" size={20} color={colors.gray[500]} />
-          </TouchableOpacity>
-
-          {showDurationPicker && (
-            <View style={styles.pickerContainer}>
-              {DURATION_OPTIONS.map((option, index) => (
-                <TouchableOpacity
-                  key={index}
-                  testID={`quote-duration-${option.replace(/[^a-z0-9]/gi, '-').toLowerCase()}`}
-                  style={styles.pickerOption}
-                  onPress={() => {
-                    setDuration(option);
-                    setShowDurationPicker(false);
-                  }}
-                >
-                  <Text style={styles.pickerOptionText}>{option}</Text>
-                  {duration === option && <Ionicons name="checkmark" size={20} color={RSA.blue} />}
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-
-        {/* Warranty */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🛡️ Warranty (Optional)</Text>
-          <TouchableOpacity
-            style={styles.pickerButton}
-            onPress={() => setShowWarrantyPicker(!showWarrantyPicker)}
-          >
-            <Text style={styles.pickerButtonTextSelected}>{warranty}</Text>
-            <Ionicons name="chevron-down" size={20} color={colors.gray[500]} />
-          </TouchableOpacity>
-
-          {showWarrantyPicker && (
-            <View style={styles.pickerContainer}>
-              {WARRANTY_OPTIONS.map((option, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.pickerOption}
-                  onPress={() => {
-                    setWarranty(option);
-                    setShowWarrantyPicker(false);
-                  }}
-                >
-                  <Text style={styles.pickerOptionText}>{option}</Text>
-                  {warranty === option && <Ionicons name="checkmark" size={20} color={RSA.blue} />}
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-
-        {/* Notes */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📝 Notes (Optional)</Text>
-          <Text style={styles.exampleText}>Example: "Includes all materials and cleanup"</Text>
-          <TextInput
-            style={styles.textArea}
-            placeholder="Add any additional notes..."
-            placeholderTextColor={colors.gray[400]}
-            multiline
-            numberOfLines={4}
-            value={notes}
-            onChangeText={setNotes}
-            textAlignVertical="top"
-            testID="quote-notes"
-          />
-        </View>
-
-        <View style={{ height: 120 }} />
-      </ScrollView>
-      {/* Bottom Action Bar */}
-      <View style={styles.bottomBar}>
-        <TouchableOpacity
-          style={styles.saveDraftButton}
-          testID="quote-save-draft"
-          onPress={handleSaveDraft}
-        >
-          <Text style={styles.saveDraftButtonText}>Save Draft</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
-          testID="quote-submit"
-          onPress={handleSubmit}
-          disabled={submitting}
-        >
-          {submitting ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <>
-              <Text style={styles.submitButtonText}>
-                {isEditMode ? 'Update Quote' : 'Submit Quote'}
+          {/* Duration */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>⏱️ How long? (Required)</Text>
+            <TouchableOpacity
+              style={styles.pickerButton}
+              testID="quote-duration-picker"
+              onPress={() => setShowDurationPicker(!showDurationPicker)}
+            >
+              <Text style={duration ? styles.pickerButtonTextSelected : styles.pickerButtonText}>
+                {duration || 'Select duration'}
               </Text>
-              <Ionicons
-                name={isEditMode ? 'checkmark-circle' : 'rocket'}
-                size={20}
-                color="#FFFFFF"
-              />
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
+              <Ionicons name="chevron-down" size={20} color={colors.gray[500]} />
+            </TouchableOpacity>
+
+            {showDurationPicker && (
+              <View style={styles.pickerContainer}>
+                {DURATION_OPTIONS.map((option, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    testID={`quote-duration-${option.replace(/[^a-z0-9]/gi, '-').toLowerCase()}`}
+                    style={styles.pickerOption}
+                    onPress={() => {
+                      setDuration(option);
+                      setShowDurationPicker(false);
+                    }}
+                  >
+                    <Text style={styles.pickerOptionText}>{option}</Text>
+                    {duration === option && (
+                      <Ionicons name="checkmark" size={20} color={RSA.blue} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+
+          {/* Warranty */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>🛡️ Warranty (Optional)</Text>
+            <TouchableOpacity
+              style={styles.pickerButton}
+              onPress={() => setShowWarrantyPicker(!showWarrantyPicker)}
+            >
+              <Text style={styles.pickerButtonTextSelected}>{warranty}</Text>
+              <Ionicons name="chevron-down" size={20} color={colors.gray[500]} />
+            </TouchableOpacity>
+
+            {showWarrantyPicker && (
+              <View style={styles.pickerContainer}>
+                {WARRANTY_OPTIONS.map((option, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.pickerOption}
+                    onPress={() => {
+                      setWarranty(option);
+                      setShowWarrantyPicker(false);
+                    }}
+                  >
+                    <Text style={styles.pickerOptionText}>{option}</Text>
+                    {warranty === option && (
+                      <Ionicons name="checkmark" size={20} color={RSA.blue} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+
+          {/* Notes */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>📝 Notes (Optional)</Text>
+            <Text style={styles.exampleText}>Example: "Includes all materials and cleanup"</Text>
+            <TextInput
+              style={styles.textArea}
+              placeholder="Add any additional notes..."
+              placeholderTextColor={colors.gray[400]}
+              multiline
+              numberOfLines={4}
+              value={notes}
+              onChangeText={setNotes}
+              textAlignVertical="top"
+              testID="quote-notes"
+            />
+          </View>
+
+          <View style={{ height: 120 }} />
+        </KeyboardAwareScrollView>
+        {/* Bottom Action Bar */}
+        <View style={styles.bottomBar}>
+          <TouchableOpacity
+            style={styles.saveDraftButton}
+            testID="quote-save-draft"
+            onPress={handleSaveDraft}
+          >
+            <Text style={styles.saveDraftButtonText}>Save Draft</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+            testID="quote-submit"
+            onPress={handleSubmit}
+            disabled={submitting}
+          >
+            {submitting ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <Text style={styles.submitButtonText}>
+                  {isEditMode ? 'Update Quote' : 'Submit Quote'}
+                </Text>
+                <Ionicons
+                  name={isEditMode ? 'checkmark-circle' : 'rocket'}
+                  size={20}
+                  color="#FFFFFF"
+                />
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

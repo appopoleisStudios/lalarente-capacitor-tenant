@@ -9,7 +9,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   TextInput,
   StyleSheet,
@@ -27,6 +26,7 @@ import {
 } from '@/src/features/leases/api/leaseTermination.api';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { goBack } from '@/src/shared/navigation/goBack';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 export default function TenantEarlyTerminationScreen() {
   const router = useRouter();
@@ -136,113 +136,121 @@ export default function TenantEarlyTerminationScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => goBack(router, '/(tenant)/lease')}
-          style={styles.backButton}
+      <KeyboardAvoidingView>
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => goBack(router, '/(tenant)/lease')}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Early Termination</Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <KeyboardAwareScrollView
+          style={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Early Termination</Text>
-        <View style={{ width: 40 }} />
-      </View>
-
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Warning Banner */}
-        <View style={styles.warningBanner}>
-          <Ionicons name="warning" size={24} color={colors.warning[600]} />
-          <Text style={styles.warningText}>
-            Early termination will incur a penalty. Please review the estimate below carefully.
-          </Text>
-        </View>
-
-        {/* Estimate Card */}
-        <View style={styles.estimateCard}>
-          <Text style={styles.estimateTitle}>Termination Estimate</Text>
-
-          <View style={styles.estimateRow}>
-            <Text style={styles.estimateLabel}>Monthly Rent</Text>
-            <Text style={styles.estimateValue}>
-              R{estimate.monthlyRent.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
+          {/* Warning Banner */}
+          <View style={styles.warningBanner}>
+            <Ionicons name="warning" size={24} color={colors.warning[600]} />
+            <Text style={styles.warningText}>
+              Early termination will incur a penalty. Please review the estimate below carefully.
             </Text>
           </View>
 
-          <View style={styles.estimateRow}>
-            <Text style={styles.estimateLabel}>Remaining Months</Text>
-            <Text style={styles.estimateValue}>{estimate.remainingMonths}</Text>
-          </View>
+          {/* Estimate Card */}
+          <View style={styles.estimateCard}>
+            <Text style={styles.estimateTitle}>Termination Estimate</Text>
 
-          <View style={styles.estimateRow}>
-            <Text style={styles.estimateLabel}>Notice Period</Text>
-            <Text style={styles.estimateValue}>{estimate.noticePeriodDays} days</Text>
-          </View>
+            <View style={styles.estimateRow}>
+              <Text style={styles.estimateLabel}>Monthly Rent</Text>
+              <Text style={styles.estimateValue}>
+                R{estimate.monthlyRent.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
+              </Text>
+            </View>
 
-          <View style={styles.estimateRow}>
-            <Text style={styles.estimateLabel}>Effective Date</Text>
-            <Text style={styles.estimateValue}>{estimate.effectiveDate}</Text>
-          </View>
+            <View style={styles.estimateRow}>
+              <Text style={styles.estimateLabel}>Remaining Months</Text>
+              <Text style={styles.estimateValue}>{estimate.remainingMonths}</Text>
+            </View>
 
-          <View style={styles.divider} />
+            <View style={styles.estimateRow}>
+              <Text style={styles.estimateLabel}>Notice Period</Text>
+              <Text style={styles.estimateValue}>{estimate.noticePeriodDays} days</Text>
+            </View>
 
-          <View style={styles.estimateRow}>
-            <Text style={[styles.estimateLabel, styles.penaltyLabel]}>Termination Penalty</Text>
-            <Text style={styles.penaltyValue}>
-              R{estimate.penaltyAmount.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
+            <View style={styles.estimateRow}>
+              <Text style={styles.estimateLabel}>Effective Date</Text>
+              <Text style={styles.estimateValue}>{estimate.effectiveDate}</Text>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.estimateRow}>
+              <Text style={[styles.estimateLabel, styles.penaltyLabel]}>Termination Penalty</Text>
+              <Text style={styles.penaltyValue}>
+                R{estimate.penaltyAmount.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
+              </Text>
+            </View>
+
+            <Text style={styles.penaltyNote}>
+              Capped at 2 months rent per CPA reasonable penalty guidelines
             </Text>
-          </View>
 
-          <Text style={styles.penaltyNote}>
-            Capped at 2 months rent per CPA reasonable penalty guidelines
-          </Text>
-
-          <View style={styles.estimateRow}>
-            <Text style={styles.estimateLabel}>Deposit Refund Estimate</Text>
-            <Text style={[styles.estimateValue, { color: colors.success[500] }]}>
-              R
-              {estimate.depositRefundEstimate.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
-            </Text>
-          </View>
-        </View>
-
-        {/* Reason */}
-        <Text style={styles.formLabel}>Reason for termination (optional)</Text>
-        <TextInput
-          style={styles.input}
-          value={reason}
-          onChangeText={setReason}
-          placeholder="e.g., Relocating for work, financial reasons..."
-          placeholderTextColor={colors.text.tertiary}
-          multiline
-          numberOfLines={3}
-        />
-
-        {/* Submit / Submitted State */}
-        {submitted ? (
-          <View style={styles.submittedBanner}>
-            <Ionicons name="checkmark-circle" size={22} color={colors.success[500]} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.submittedTitle}>Request Pending</Text>
-              <Text style={styles.submittedDesc}>
-                Your landlord has been notified and will respond soon.
+            <View style={styles.estimateRow}>
+              <Text style={styles.estimateLabel}>Deposit Refund Estimate</Text>
+              <Text style={[styles.estimateValue, { color: colors.success[500] }]}>
+                R
+                {estimate.depositRefundEstimate.toLocaleString('en-ZA', {
+                  minimumFractionDigits: 2,
+                })}
               </Text>
             </View>
           </View>
-        ) : (
-          <TouchableOpacity
-            style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
-            onPress={handleSubmit}
-            disabled={submitting}
-          >
-            {submitting ? (
-              <ActivityIndicator size="small" color={colors.text.inverse} />
-            ) : (
-              <Text style={styles.submitButtonText}>Submit Termination Request</Text>
-            )}
-          </TouchableOpacity>
-        )}
 
-        <View style={{ height: 100 }} />
-      </ScrollView>
+          {/* Reason */}
+          <Text style={styles.formLabel}>Reason for termination (optional)</Text>
+          <TextInput
+            style={styles.input}
+            value={reason}
+            onChangeText={setReason}
+            placeholder="e.g., Relocating for work, financial reasons..."
+            placeholderTextColor={colors.text.tertiary}
+            multiline
+            numberOfLines={3}
+          />
+
+          {/* Submit / Submitted State */}
+          {submitted ? (
+            <View style={styles.submittedBanner}>
+              <Ionicons name="checkmark-circle" size={22} color={colors.success[500]} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.submittedTitle}>Request Pending</Text>
+                <Text style={styles.submittedDesc}>
+                  Your landlord has been notified and will respond soon.
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+              onPress={handleSubmit}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <ActivityIndicator size="small" color={colors.text.inverse} />
+              ) : (
+                <Text style={styles.submitButtonText}>Submit Termination Request</Text>
+              )}
+            </TouchableOpacity>
+          )}
+
+          <View style={{ height: 100 }} />
+        </KeyboardAwareScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

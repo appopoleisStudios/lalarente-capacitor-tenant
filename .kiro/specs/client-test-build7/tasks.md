@@ -1938,3 +1938,39 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   - [x] Android lifecycle-05 green (Download PDF shown after signing):
         emulator run 2026-11-19 (lifecycle-20261119-030736) — lease activated,
         no "Generate PDF" fallback, Download PDF on owner and tenant.
+
+## CT7-051 🟠 Keyboard covers the lower part of full-screen forms (Android, all roles)
+
+- **Role:** all · **Platform:** Android · Found in the Android lifecycle run
+  (lifecycle-07: tenant _Report Issue_ — description field hidden under the
+  keyboard after typing the title). Same root cause as CT7-050.
+- **Today:** Android draws edge-to-edge (targetSdk 35+), so the window is no
+  longer resized for the keyboard. The shared `KeyboardAvoidingView` (26
+  screens) and 7 screens using React Native's directly had no Android
+  behavior, so the lower fields and buttons of those forms stayed under the
+  keyboard: report issue, chat thread, compose message, tenant application,
+  closure / mediation, vendor invoice, banking, progress update, add/edit
+  property, lease create, early termination, documents upload, profile edits…
+- **Acceptance criteria:**
+  - [x] Shared `KeyboardAvoidingView` defaults to `height` on Android
+        (`padding` on iOS unchanged); the 7 direct uses set `height` too.
+  - [x] 16 form screens that rendered no KeyboardAvoidingView at all (Report
+        Issue, report maintenance, schedule inspection, PO detail / send PO,
+        owner + tenant profile, data-subject rights, early termination, lease
+        renewal, payment dispute, request viewing, verification, vendor quote
+        detail / submit, search filters) now wrap header, form and footer.
+  - [x] 5 screens whose KAV closed before the submit footer now enclose it.
+  - [x] Jest `androidKeyboardBehavior.test.tsx`: shared default on Android and
+        iOS, caller override; no `KeyboardAvoidingView` in the app is iOS-only;
+        every screen with an input outside a modal renders one (allowlist for
+        top-only search bars); Report Issue wraps description + submit.
+  - [x] Device run 2026-11-19 caught a regression of the first fix: the KAV
+        shrank the form but the ScrollView kept its offset, so the field being
+        typed in went out of view (Report Issue: Issue Title). Fixed with the
+        shared `KeyboardAwareScrollView` (scrolls the focused input above the
+        keyboard after the shrink), used by every vertical ScrollView in a
+        file with a KAV; Jest behaviour test + guard (fails on the old screen).
+  - [x] lifecycle-07 asserts the title / description field and Submit stay
+        visible with the keyboard up.
+  - [x] Android emulator (release APK): Report Issue, chat thread and a long
+        form keep the field being typed in and the buttons reachable; lifecycle 01→08 green.

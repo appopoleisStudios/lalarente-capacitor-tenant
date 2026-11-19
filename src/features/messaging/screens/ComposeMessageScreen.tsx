@@ -25,6 +25,7 @@ import { colors } from '@/src/shared/theme/colors';
 import { supabase } from '@/src/lib/supabase';
 import { messagesApi } from '../api/messagesApi';
 import type { ThreadCategory } from '../types';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 interface LeaseSummary {
   id: string;
@@ -301,7 +302,7 @@ export default function ComposeMessageScreen({ role = 'tenant' }: Props) {
           <Text style={styles.headerTitle}>Select Tenant</Text>
           <View style={{ width: 40 }} />
         </View>
-        <ScrollView style={styles.pickerList}>
+        <KeyboardAwareScrollView style={styles.pickerList}>
           <Text style={styles.pickerHint}>Choose a tenant to message:</Text>
           {leases.map((lease) => (
             <TouchableOpacity
@@ -324,7 +325,7 @@ export default function ComposeMessageScreen({ role = 'tenant' }: Props) {
               <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
             </TouchableOpacity>
           ))}
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </SafeAreaView>
     );
   }
@@ -359,7 +360,7 @@ export default function ComposeMessageScreen({ role = 'tenant' }: Props) {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
       >
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.content}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -462,7 +463,7 @@ export default function ComposeMessageScreen({ role = 'tenant' }: Props) {
             />
             <Text style={styles.charCount}>{message.length}/2000</Text>
           </View>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

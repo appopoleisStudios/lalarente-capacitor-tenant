@@ -17,7 +17,6 @@ import {
   Alert,
   TextInput,
   Modal,
-  ScrollView,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -33,6 +32,7 @@ import {
 import { colors } from '@/src/shared/theme/colors';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -591,7 +591,7 @@ function CreateDepositModal({
 
           {/* Scrollable so tapping outside a field (or dragging) dismisses the
             number pad, which has no return key and would cover Create. */}
-          <ScrollView
+          <KeyboardAwareScrollView
             contentContainerStyle={styles.modalBody}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
@@ -677,7 +677,7 @@ function CreateDepositModal({
                 <Text style={styles.createButtonText}>Create Deposit Request</Text>
               )}
             </TouchableOpacity>
-          </ScrollView>
+          </KeyboardAwareScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>

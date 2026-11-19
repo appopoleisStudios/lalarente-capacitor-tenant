@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   Alert,
   TextInput,
   TouchableOpacity,
@@ -15,6 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { supabase } from '@/src/lib/supabase';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const RSA = { blue: '#002395', red: '#DE3831' };
 
@@ -121,122 +122,128 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profile</Text>
-        <TouchableOpacity
-          onPress={() => (editing ? handleSave() : setEditing(true))}
-          disabled={saving}
-        >
-          {saving ? (
-            <ActivityIndicator color={RSA.blue} />
-          ) : (
-            <Text style={styles.editBtn}>{editing ? 'Save' : 'Edit'}</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* Avatar */}
-        <View style={styles.profileCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initials}</Text>
-          </View>
-          {editing ? (
-            <TextInput
-              style={styles.nameInput}
-              value={fullName}
-              onChangeText={setFullName}
-              placeholder="Full name"
-              placeholderTextColor="#9ca3af"
-            />
-          ) : (
-            <Text style={styles.name}>{fullName || 'No name set'}</Text>
-          )}
-          <Text testID="owner-profile-email" style={styles.email}>
-            {email}
-          </Text>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>Owner Account</Text>
-          </View>
+      <KeyboardAvoidingView>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Profile</Text>
+          <TouchableOpacity
+            onPress={() => (editing ? handleSave() : setEditing(true))}
+            disabled={saving}
+          >
+            {saving ? (
+              <ActivityIndicator color={RSA.blue} />
+            ) : (
+              <Text style={styles.editBtn}>{editing ? 'Save' : 'Edit'}</Text>
+            )}
+          </TouchableOpacity>
         </View>
 
-        {/* Phone */}
-        {editing && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Contact</Text>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Phone Number</Text>
+        <KeyboardAwareScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Avatar */}
+          <View style={styles.profileCard}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{initials}</Text>
+            </View>
+            {editing ? (
               <TextInput
-                style={styles.input}
-                value={phone}
-                onChangeText={setPhone}
-                placeholder="+27 XX XXX XXXX"
+                style={styles.nameInput}
+                value={fullName}
+                onChangeText={setFullName}
+                placeholder="Full name"
                 placeholderTextColor="#9ca3af"
-                keyboardType="phone-pad"
               />
+            ) : (
+              <Text style={styles.name}>{fullName || 'No name set'}</Text>
+            )}
+            <Text testID="owner-profile-email" style={styles.email}>
+              {email}
+            </Text>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>Owner Account</Text>
             </View>
           </View>
-        )}
 
-        {/* Account Settings */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account Settings</Text>
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => router.push('/(owner)/notifications' as any)}
-          >
-            <Ionicons
-              name="notifications-outline"
-              size={20}
-              color={RSA.blue}
-              style={styles.menuIcon}
-            />
-            <Text style={styles.menuText}>Notifications</Text>
-            <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
-          </TouchableOpacity>
-        </View>
+          {/* Phone */}
+          {editing && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Contact</Text>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Phone Number</Text>
+                <TextInput
+                  style={styles.input}
+                  value={phone}
+                  onChangeText={setPhone}
+                  placeholder="+27 XX XXX XXXX"
+                  placeholderTextColor="#9ca3af"
+                  keyboardType="phone-pad"
+                />
+              </View>
+            </View>
+          )}
 
-        {/* Legal & Compliance */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Legal & Compliance</Text>
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => router.push('/(owner)/privacy' as any)}
-          >
-            <Ionicons
-              name="shield-checkmark-outline"
-              size={20}
-              color={RSA.blue}
-              style={styles.menuIcon}
-            />
-            <Text style={styles.menuText}>Privacy & POPIA</Text>
-            <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => router.push('/(owner)/arrears' as any)}
-          >
-            <Ionicons name="card-outline" size={20} color={RSA.blue} style={styles.menuIcon} />
-            <Text style={styles.menuText}>Arrears Management</Text>
-            <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => router.push('/(owner)/renewals' as any)}
-          >
-            <Ionicons name="refresh-outline" size={20} color={RSA.blue} style={styles.menuIcon} />
-            <Text style={styles.menuText}>Lease Renewals</Text>
-            <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
-          </TouchableOpacity>
-        </View>
+          {/* Account Settings */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Account Settings</Text>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => router.push('/(owner)/notifications' as any)}
+            >
+              <Ionicons
+                name="notifications-outline"
+                size={20}
+                color={RSA.blue}
+                style={styles.menuIcon}
+              />
+              <Text style={styles.menuText}>Notifications</Text>
+              <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
+            </TouchableOpacity>
+          </View>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={20} color="#fff" />
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
+          {/* Legal & Compliance */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Legal & Compliance</Text>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => router.push('/(owner)/privacy' as any)}
+            >
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={20}
+                color={RSA.blue}
+                style={styles.menuIcon}
+              />
+              <Text style={styles.menuText}>Privacy & POPIA</Text>
+              <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => router.push('/(owner)/arrears' as any)}
+            >
+              <Ionicons name="card-outline" size={20} color={RSA.blue} style={styles.menuIcon} />
+              <Text style={styles.menuText}>Arrears Management</Text>
+              <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => router.push('/(owner)/renewals' as any)}
+            >
+              <Ionicons name="refresh-outline" size={20} color={RSA.blue} style={styles.menuIcon} />
+              <Text style={styles.menuText}>Lease Renewals</Text>
+              <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
+            </TouchableOpacity>
+          </View>
 
-        <Text style={styles.version}>Version 1.0.3</Text>
-      </ScrollView>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Ionicons name="log-out-outline" size={20} color="#fff" />
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.version}>Version 1.0.3</Text>
+        </KeyboardAwareScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

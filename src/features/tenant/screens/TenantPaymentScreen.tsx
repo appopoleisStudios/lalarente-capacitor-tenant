@@ -8,7 +8,6 @@ import {
   Modal,
   Platform,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -18,6 +17,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../../lib/supabase';
 import { EmptyState, FeaturePin, LoadingSpinner } from '@/src/shared/components';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const RSA = { green: '#007A4D', gold: '#FFB81C' }; // Tenant colors
 
@@ -294,7 +294,7 @@ export default function TenantPaymentScreen() {
               />
             </View>
           </View>
-          <ScrollView
+          <KeyboardAwareScrollView
             style={styles.scrollView}
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[RSA.green]} />
@@ -332,7 +332,7 @@ export default function TenantPaymentScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-          </ScrollView>
+          </KeyboardAwareScrollView>
         </View>
       </SafeAreaView>
     );
@@ -355,7 +355,7 @@ export default function TenantPaymentScreen() {
           </View>
         </View>
 
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.scrollView}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[RSA.green]} />
@@ -586,7 +586,7 @@ export default function TenantPaymentScreen() {
               </View>
             )}
           </View>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </View>
 
       {/* EFT Payment Confirmation Modal */}

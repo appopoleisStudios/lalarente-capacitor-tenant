@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
@@ -19,6 +18,7 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 import { persistFicaDocField } from '../utils/persistFicaDoc';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const RSA = { green: '#007A4D', blue: '#002395' };
 
@@ -462,344 +462,351 @@ export default function TenantProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text testID="tenant-profile-title" style={styles.headerTitle}>
-            My Profile
-          </Text>
-          <TouchableOpacity
-            onPress={() => (editing ? handleSave() : setEditing(true))}
-            disabled={saving}
-          >
-            {saving ? (
-              <ActivityIndicator color={RSA.green} />
-            ) : (
-              <Text style={styles.editButton}>{editing ? 'Save' : 'Edit'}</Text>
-            )}
-          </TouchableOpacity>
-        </View>
+      <KeyboardAvoidingView>
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text testID="tenant-profile-title" style={styles.headerTitle}>
+              My Profile
+            </Text>
+            <TouchableOpacity
+              onPress={() => (editing ? handleSave() : setEditing(true))}
+              disabled={saving}
+            >
+              {saving ? (
+                <ActivityIndicator color={RSA.green} />
+              ) : (
+                <Text style={styles.editButton}>{editing ? 'Save' : 'Edit'}</Text>
+              )}
+            </TouchableOpacity>
+          </View>
 
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Profile Completion Banner */}
-          {!editing &&
-            !loading &&
-            (isProfileComplete ? (
-              <View style={styles.completeBanner}>
-                <Ionicons name="checkmark-circle" size={20} color="#16A34A" />
-                <Text style={styles.completeBannerText}>Profile complete</Text>
+          <KeyboardAwareScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* Profile Completion Banner */}
+            {!editing &&
+              !loading &&
+              (isProfileComplete ? (
+                <View style={styles.completeBanner}>
+                  <Ionicons name="checkmark-circle" size={20} color="#16A34A" />
+                  <Text style={styles.completeBannerText}>Profile complete</Text>
+                </View>
+              ) : (
+                <View style={styles.incompleteBanner}>
+                  <Ionicons name="alert-circle" size={20} color="#DC2626" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.incompleteBannerTitle}>
+                      Complete your profile to apply for properties
+                    </Text>
+                    <Text style={styles.incompleteBannerList}>
+                      Missing: {missingFields.join(', ')}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+
+            {/* Personal Information */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Personal Information</Text>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Full Name</Text>
+                <TextInput
+                  style={[styles.input, !editing && styles.inputDisabled]}
+                  value={fullName}
+                  onChangeText={setFullName}
+                  editable={editing}
+                  placeholder="Enter your full name"
+                  placeholderTextColor="#999"
+                />
               </View>
-            ) : (
-              <View style={styles.incompleteBanner}>
-                <Ionicons name="alert-circle" size={20} color="#DC2626" />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.incompleteBannerTitle}>
-                    Complete your profile to apply for properties
-                  </Text>
-                  <Text style={styles.incompleteBannerList}>
-                    Missing: {missingFields.join(', ')}
-                  </Text>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Email</Text>
+                <TextInput
+                  testID="tenant-profile-email"
+                  style={[styles.input, !editing && styles.inputDisabled]}
+                  value={email}
+                  onChangeText={setEmail}
+                  editable={editing}
+                  placeholder="your.email@example.com"
+                  placeholderTextColor="#999"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Phone Number</Text>
+                <View style={styles.phoneRow}>
+                  <TouchableOpacity
+                    style={[styles.codeChip, !editing && styles.inputDisabled]}
+                    disabled={!editing}
+                    onPress={() => {
+                      if (!editing) return;
+                      Alert.alert('Country Code', 'Select your country calling code', [
+                        { text: '+27  South Africa', onPress: () => setCountryCode('+27') },
+                        { text: '+263  Zimbabwe', onPress: () => setCountryCode('+263') },
+                        { text: '+267  Botswana', onPress: () => setCountryCode('+267') },
+                        { text: '+44  United Kingdom', onPress: () => setCountryCode('+44') },
+                        { text: '+1  USA / Canada', onPress: () => setCountryCode('+1') },
+                        { text: '+91  India', onPress: () => setCountryCode('+91') },
+                        { text: 'Cancel', style: 'cancel' },
+                      ]);
+                    }}
+                  >
+                    <Text style={styles.codeText}>{countryCode}</Text>
+                    {editing && <Ionicons name="chevron-down-outline" size={12} color="#666" />}
+                  </TouchableOpacity>
+                  <TextInput
+                    style={[styles.input, styles.phoneInput, !editing && styles.inputDisabled]}
+                    value={localPhone}
+                    onChangeText={setLocalPhone}
+                    editable={editing}
+                    placeholder="82 123 4567"
+                    placeholderTextColor="#999"
+                    keyboardType="phone-pad"
+                  />
                 </View>
               </View>
-            ))}
 
-          {/* Personal Information */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Personal Information</Text>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Full Name</Text>
-              <TextInput
-                style={[styles.input, !editing && styles.inputDisabled]}
-                value={fullName}
-                onChangeText={setFullName}
-                editable={editing}
-                placeholder="Enter your full name"
-                placeholderTextColor="#999"
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                testID="tenant-profile-email"
-                style={[styles.input, !editing && styles.inputDisabled]}
-                value={email}
-                onChangeText={setEmail}
-                editable={editing}
-                placeholder="your.email@example.com"
-                placeholderTextColor="#999"
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Phone Number</Text>
-              <View style={styles.phoneRow}>
-                <TouchableOpacity
-                  style={[styles.codeChip, !editing && styles.inputDisabled]}
-                  disabled={!editing}
-                  onPress={() => {
-                    if (!editing) return;
-                    Alert.alert('Country Code', 'Select your country calling code', [
-                      { text: '+27  South Africa', onPress: () => setCountryCode('+27') },
-                      { text: '+263  Zimbabwe', onPress: () => setCountryCode('+263') },
-                      { text: '+267  Botswana', onPress: () => setCountryCode('+267') },
-                      { text: '+44  United Kingdom', onPress: () => setCountryCode('+44') },
-                      { text: '+1  USA / Canada', onPress: () => setCountryCode('+1') },
-                      { text: '+91  India', onPress: () => setCountryCode('+91') },
-                      { text: 'Cancel', style: 'cancel' },
-                    ]);
-                  }}
-                >
-                  <Text style={styles.codeText}>{countryCode}</Text>
-                  {editing && <Ionicons name="chevron-down-outline" size={12} color="#666" />}
-                </TouchableOpacity>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>ID Number</Text>
                 <TextInput
-                  style={[styles.input, styles.phoneInput, !editing && styles.inputDisabled]}
-                  value={localPhone}
-                  onChangeText={setLocalPhone}
+                  style={[styles.input, !editing && styles.inputDisabled]}
+                  value={idNumber}
+                  onChangeText={setIdNumber}
                   editable={editing}
-                  placeholder="82 123 4567"
+                  placeholder="Enter your ID number"
                   placeholderTextColor="#999"
-                  keyboardType="phone-pad"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Date of Birth</Text>
+                <TouchableOpacity
+                  style={[styles.input, !editing && styles.inputDisabled]}
+                  onPress={() => editing && setShowDobPicker(true)}
+                  activeOpacity={editing ? 0.7 : 1}
+                >
+                  <Text style={{ color: dateOfBirth ? '#333' : '#999', fontSize: 16 }}>
+                    {dateOfBirth || 'Select date'}
+                  </Text>
+                </TouchableOpacity>
+                <PickerSheet
+                  visible={showDobPicker}
+                  value={dateOfBirth ? new Date(`${dateOfBirth}T00:00:00`) : new Date(2000, 0, 1)}
+                  mode="date"
+                  maximumDate={new Date()}
+                  onCancel={() => setShowDobPicker(false)}
+                  onDone={(date) => {
+                    setShowDobPicker(false);
+                    setDateOfBirth(toDateString(date));
+                  }}
+                  testID="tenant-profile-dob"
                 />
               </View>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>ID Number</Text>
-              <TextInput
-                style={[styles.input, !editing && styles.inputDisabled]}
-                value={idNumber}
-                onChangeText={setIdNumber}
-                editable={editing}
-                placeholder="Enter your ID number"
-                placeholderTextColor="#999"
-              />
+            {/* Employment Information */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Employment Information</Text>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Employer</Text>
+                <TextInput
+                  style={[styles.input, !editing && styles.inputDisabled]}
+                  value={employer}
+                  onChangeText={setEmployer}
+                  editable={editing}
+                  placeholder="Company name"
+                  placeholderTextColor="#999"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Position</Text>
+                <TextInput
+                  style={[styles.input, !editing && styles.inputDisabled]}
+                  value={position}
+                  onChangeText={setPosition}
+                  editable={editing}
+                  placeholder="Your job title"
+                  placeholderTextColor="#999"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Monthly Income (Gross)</Text>
+                <TextInput
+                  style={[styles.input, !editing && styles.inputDisabled]}
+                  value={monthlyIncome}
+                  onChangeText={setMonthlyIncome}
+                  editable={editing}
+                  placeholder="0"
+                  placeholderTextColor="#999"
+                  keyboardType="numeric"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Employer Contact</Text>
+                <TextInput
+                  style={[styles.input, !editing && styles.inputDisabled]}
+                  value={employerContact}
+                  onChangeText={setEmployerContact}
+                  editable={editing}
+                  placeholder="HR phone or email"
+                  placeholderTextColor="#999"
+                />
+              </View>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Date of Birth</Text>
-              <TouchableOpacity
-                style={[styles.input, !editing && styles.inputDisabled]}
-                onPress={() => editing && setShowDobPicker(true)}
-                activeOpacity={editing ? 0.7 : 1}
-              >
-                <Text style={{ color: dateOfBirth ? '#333' : '#999', fontSize: 16 }}>
-                  {dateOfBirth || 'Select date'}
+            {/* Proof of Address */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Proof of Address</Text>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Proof of Address Document</Text>
+                {proofOfAddressUrl ? (
+                  <View style={styles.uploadedRow}>
+                    <Ionicons name="document-attach" size={20} color={RSA.green} />
+                    <Text style={styles.uploadedText} numberOfLines={1}>
+                      Document uploaded
+                    </Text>
+                    {editing && (
+                      <TouchableOpacity onPress={handleUploadProofOfAddress}>
+                        <Text style={styles.replaceText}>Replace</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.uploadButton}
+                    onPress={handleUploadProofOfAddress}
+                  >
+                    <Ionicons name="cloud-upload-outline" size={22} color={RSA.green} />
+                    <Text style={styles.uploadButtonText}>
+                      Upload utility bill or bank statement
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                <Text style={styles.uploadHint}>
+                  Recent utility bill, bank statement, or municipal account (photo or PDF, not older
+                  than 3 months)
                 </Text>
-              </TouchableOpacity>
-              <PickerSheet
-                visible={showDobPicker}
-                value={dateOfBirth ? new Date(`${dateOfBirth}T00:00:00`) : new Date(2000, 0, 1)}
-                mode="date"
-                maximumDate={new Date()}
-                onCancel={() => setShowDobPicker(false)}
-                onDone={(date) => {
-                  setShowDobPicker(false);
-                  setDateOfBirth(toDateString(date));
-                }}
-                testID="tenant-profile-dob"
-              />
-            </View>
-          </View>
-
-          {/* Employment Information */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Employment Information</Text>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Employer</Text>
-              <TextInput
-                style={[styles.input, !editing && styles.inputDisabled]}
-                value={employer}
-                onChangeText={setEmployer}
-                editable={editing}
-                placeholder="Company name"
-                placeholderTextColor="#999"
-              />
+              </View>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Position</Text>
-              <TextInput
-                style={[styles.input, !editing && styles.inputDisabled]}
-                value={position}
-                onChangeText={setPosition}
-                editable={editing}
-                placeholder="Your job title"
-                placeholderTextColor="#999"
-              />
+            {/* CT7-014 — SA ID Document */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>SA ID Document</Text>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Upload your ID</Text>
+                {idDocumentUrl ? (
+                  <View style={styles.uploadedRow}>
+                    <Ionicons name="document-attach" size={20} color={RSA.green} />
+                    <Text style={styles.uploadedText} numberOfLines={1}>
+                      ID document uploaded
+                    </Text>
+                    {editing && (
+                      <TouchableOpacity disabled={savingFicaDoc} onPress={handleUploadIdDocument}>
+                        <Text style={styles.replaceText}>Replace</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.uploadButton}
+                    disabled={savingFicaDoc}
+                    onPress={handleUploadIdDocument}
+                  >
+                    <Ionicons name="cloud-upload-outline" size={22} color={RSA.green} />
+                    <Text style={styles.uploadButtonText}>
+                      {savingFicaDoc ? 'Please wait…' : 'Upload ID photo or PDF'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                <Text style={styles.uploadHint}>
+                  Clear photo or scan of your SA ID (green ID book or smart ID card).
+                </Text>
+              </View>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Monthly Income (Gross)</Text>
-              <TextInput
-                style={[styles.input, !editing && styles.inputDisabled]}
-                value={monthlyIncome}
-                onChangeText={setMonthlyIncome}
-                editable={editing}
-                placeholder="0"
-                placeholderTextColor="#999"
-                keyboardType="numeric"
-              />
+            {/* CT7-014 — Salary Certificate */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Salary Certificate</Text>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Latest payslip or salary letter</Text>
+                {salaryCertificateUrl ? (
+                  <View style={styles.uploadedRow}>
+                    <Ionicons name="document-attach" size={20} color={RSA.green} />
+                    <Text style={styles.uploadedText} numberOfLines={1}>
+                      Salary certificate uploaded
+                    </Text>
+                    {editing && (
+                      <TouchableOpacity
+                        disabled={savingFicaDoc}
+                        onPress={handleUploadSalaryCertificate}
+                      >
+                        <Text style={styles.replaceText}>Replace</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.uploadButton}
+                    disabled={savingFicaDoc}
+                    onPress={handleUploadSalaryCertificate}
+                  >
+                    <Ionicons name="cloud-upload-outline" size={22} color={RSA.green} />
+                    <Text style={styles.uploadButtonText}>
+                      {savingFicaDoc ? 'Please wait…' : 'Upload payslip or salary letter'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                <Text style={styles.uploadHint}>
+                  Most recent payslip or an employer salary confirmation letter (photo or PDF).
+                </Text>
+              </View>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Employer Contact</Text>
-              <TextInput
-                style={[styles.input, !editing && styles.inputDisabled]}
-                value={employerContact}
-                onChangeText={setEmployerContact}
-                editable={editing}
-                placeholder="HR phone or email"
-                placeholderTextColor="#999"
-              />
-            </View>
-          </View>
-
-          {/* Proof of Address */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Proof of Address</Text>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Proof of Address Document</Text>
-              {proofOfAddressUrl ? (
-                <View style={styles.uploadedRow}>
-                  <Ionicons name="document-attach" size={20} color={RSA.green} />
-                  <Text style={styles.uploadedText} numberOfLines={1}>
-                    Document uploaded
-                  </Text>
-                  {editing && (
-                    <TouchableOpacity onPress={handleUploadProofOfAddress}>
-                      <Text style={styles.replaceText}>Replace</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              ) : (
-                <TouchableOpacity style={styles.uploadButton} onPress={handleUploadProofOfAddress}>
-                  <Ionicons name="cloud-upload-outline" size={22} color={RSA.green} />
-                  <Text style={styles.uploadButtonText}>Upload utility bill or bank statement</Text>
-                </TouchableOpacity>
-              )}
-              <Text style={styles.uploadHint}>
-                Recent utility bill, bank statement, or municipal account (photo or PDF, not older
-                than 3 months)
+            {/* Info Note */}
+            <View style={styles.infoCard}>
+              <Ionicons name="information-circle" size={20} color={RSA.blue} />
+              <Text style={styles.infoText}>
+                This information will be used to pre-fill your rental applications and help property
+                owners review your profile.
               </Text>
             </View>
-          </View>
 
-          {/* CT7-014 — SA ID Document */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>SA ID Document</Text>
+            {/* Privacy & Data Rights */}
+            <TouchableOpacity
+              style={styles.privacyButton}
+              onPress={() => router.push('/(tenant)/privacy')}
+            >
+              <Ionicons name="shield-checkmark-outline" size={20} color={RSA.blue} />
+              <View style={styles.privacyContent}>
+                <Text style={styles.privacyTitle}>Privacy & Data Rights</Text>
+                <Text style={styles.privacySubtitle}>Manage your data, consent & POPIA rights</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+            </TouchableOpacity>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Upload your ID</Text>
-              {idDocumentUrl ? (
-                <View style={styles.uploadedRow}>
-                  <Ionicons name="document-attach" size={20} color={RSA.green} />
-                  <Text style={styles.uploadedText} numberOfLines={1}>
-                    ID document uploaded
-                  </Text>
-                  {editing && (
-                    <TouchableOpacity disabled={savingFicaDoc} onPress={handleUploadIdDocument}>
-                      <Text style={styles.replaceText}>Replace</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={styles.uploadButton}
-                  disabled={savingFicaDoc}
-                  onPress={handleUploadIdDocument}
-                >
-                  <Ionicons name="cloud-upload-outline" size={22} color={RSA.green} />
-                  <Text style={styles.uploadButtonText}>
-                    {savingFicaDoc ? 'Please wait…' : 'Upload ID photo or PDF'}
-                  </Text>
-                </TouchableOpacity>
-              )}
-              <Text style={styles.uploadHint}>
-                Clear photo or scan of your SA ID (green ID book or smart ID card).
-              </Text>
-            </View>
-          </View>
-
-          {/* CT7-014 — Salary Certificate */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Salary Certificate</Text>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Latest payslip or salary letter</Text>
-              {salaryCertificateUrl ? (
-                <View style={styles.uploadedRow}>
-                  <Ionicons name="document-attach" size={20} color={RSA.green} />
-                  <Text style={styles.uploadedText} numberOfLines={1}>
-                    Salary certificate uploaded
-                  </Text>
-                  {editing && (
-                    <TouchableOpacity
-                      disabled={savingFicaDoc}
-                      onPress={handleUploadSalaryCertificate}
-                    >
-                      <Text style={styles.replaceText}>Replace</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={styles.uploadButton}
-                  disabled={savingFicaDoc}
-                  onPress={handleUploadSalaryCertificate}
-                >
-                  <Ionicons name="cloud-upload-outline" size={22} color={RSA.green} />
-                  <Text style={styles.uploadButtonText}>
-                    {savingFicaDoc ? 'Please wait…' : 'Upload payslip or salary letter'}
-                  </Text>
-                </TouchableOpacity>
-              )}
-              <Text style={styles.uploadHint}>
-                Most recent payslip or an employer salary confirmation letter (photo or PDF).
-              </Text>
-            </View>
-          </View>
-
-          {/* Info Note */}
-          <View style={styles.infoCard}>
-            <Ionicons name="information-circle" size={20} color={RSA.blue} />
-            <Text style={styles.infoText}>
-              This information will be used to pre-fill your rental applications and help property
-              owners review your profile.
-            </Text>
-          </View>
-
-          {/* Privacy & Data Rights */}
-          <TouchableOpacity
-            style={styles.privacyButton}
-            onPress={() => router.push('/(tenant)/privacy')}
-          >
-            <Ionicons name="shield-checkmark-outline" size={20} color={RSA.blue} />
-            <View style={styles.privacyContent}>
-              <Text style={styles.privacyTitle}>Privacy & Data Rights</Text>
-              <Text style={styles.privacySubtitle}>Manage your data, consent & POPIA rights</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-          </TouchableOpacity>
-
-          {/* Sign Out Button */}
-          <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-            <Ionicons name="log-out-outline" size={20} color="#F44336" />
-            <Text style={styles.signOutText}>Sign Out</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </View>
+            {/* Sign Out Button */}
+            <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+              <Ionicons name="log-out-outline" size={20} color="#F44336" />
+              <Text style={styles.signOutText}>Sign Out</Text>
+            </TouchableOpacity>
+          </KeyboardAwareScrollView>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

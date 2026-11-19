@@ -13,7 +13,6 @@ import {
   Platform,
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
@@ -32,6 +31,7 @@ import {
 import { colors } from '@/src/shared/theme/colors';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 interface ArrearsRecord {
   id: string;
@@ -207,7 +207,7 @@ export default function TenantArrearsScreen() {
           <View style={{ width: 40 }} />
         </View>
 
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -399,7 +399,7 @@ export default function TenantArrearsScreen() {
           )}
 
           <View style={{ height: 60 }} />
-        </ScrollView>
+        </KeyboardAwareScrollView>
 
         {/* ─── Payment Arrangement Modal ───────────────────────────────────── */}
         <Modal visible={showArrangementModal} transparent animationType="slide">

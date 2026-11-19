@@ -19,7 +19,6 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -28,6 +27,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const RSA = { blue: '#002395' };
 
@@ -226,7 +226,7 @@ export default function OwnerClosureApprovalScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {closureReport?.mediation_required ? (
           <TouchableOpacity
             style={{
@@ -362,7 +362,7 @@ export default function OwnerClosureApprovalScreen() {
         )}
 
         <View style={{ height: 120 }} />
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       {/* Footer Actions — only show for pending closures */}
       <View style={styles.footer}>

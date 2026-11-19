@@ -19,7 +19,6 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -27,6 +26,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const RSA = { blue: '#002395' };
 
@@ -214,7 +214,7 @@ export default function VendorPODetailScreen() {
         <View style={styles.headerButton} />
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.statusContainer}>
           <View style={[styles.statusBadge, { backgroundColor: statusConfig.color }]}>
             <Ionicons name={statusConfig.icon as any} size={20} color="#FFFFFF" />
@@ -385,7 +385,7 @@ export default function VendorPODetailScreen() {
         )}
 
         <View style={{ height: 120 }} />
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       {/* Reject Reason Modal */}
       <Modal

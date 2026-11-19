@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
@@ -20,6 +19,7 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { colors } from '@/src/shared/theme/colors';
 import { vendorProfileApi } from '@/src/features/vendor/api/profileApi';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 export default function VendorEditProfileScreen() {
   const router = useRouter();
@@ -161,7 +161,7 @@ export default function VendorEditProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
@@ -222,7 +222,7 @@ export default function VendorEditProfileScreen() {
             Your email and rating cannot be changed here. Update business services, areas and
             documents from the Profile screen.
           </Text>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

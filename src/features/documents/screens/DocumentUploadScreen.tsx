@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   TextInput,
-  ScrollView,
   ActivityIndicator,
   StyleSheet,
   Alert,
@@ -17,6 +16,7 @@ import { documentsApi } from '../api/documentsApi';
 import { DocumentType, AccessLevel, DOCUMENT_CATEGORIES, FileInfo } from '../types';
 import { supabase } from '../../../lib/supabase';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const COLORS = {
   owner: { primary: '#002395', secondary: '#FFB81C' },
@@ -171,7 +171,7 @@ export default function DocumentUploadScreen({
               <Ionicons name="close" size={24} color="#333" />
             </TouchableOpacity>
           </View>
-          <ScrollView style={styles.pickerList}>
+          <KeyboardAwareScrollView style={styles.pickerList}>
             {Object.values(DOCUMENT_CATEGORIES).map((category) => (
               <TouchableOpacity
                 key={category.type}
@@ -205,7 +205,7 @@ export default function DocumentUploadScreen({
                 )}
               </TouchableOpacity>
             ))}
-          </ScrollView>
+          </KeyboardAwareScrollView>
         </View>
       </View>
     );
@@ -226,7 +226,7 @@ export default function DocumentUploadScreen({
             <View style={styles.placeholder} />
           </View>
 
-          <ScrollView
+          <KeyboardAwareScrollView
             style={styles.content}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
@@ -355,7 +355,7 @@ export default function DocumentUploadScreen({
                 {selectedCategory.label.toLowerCase()} policy. You'll be notified before deletion.
               </Text>
             </View>
-          </ScrollView>
+          </KeyboardAwareScrollView>
 
           {/* Upload Button */}
           <View style={styles.footer}>

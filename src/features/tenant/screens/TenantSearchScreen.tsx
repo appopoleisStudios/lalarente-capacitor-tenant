@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import type { PropertyWithRelations } from '../../properties/api/propertiesApi';
+import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 
 export default function TenantSearchScreen() {
   const router = useRouter();
@@ -213,146 +214,148 @@ export default function TenantSearchScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.container}>
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
-            <Ionicons name="search-outline" size={20} color="#666" />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search by location, title..."
-              placeholderTextColor="#999"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              testID="tenant-search-input"
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity testID="tenant-search-clear" onPress={() => setSearchQuery('')}>
-                <Ionicons name="close-circle" size={20} color="#666" />
-              </TouchableOpacity>
-            )}
-          </View>
-          <TouchableOpacity
-            testID="tenant-search-filters-toggle"
-            style={styles.filterButton}
-            onPress={() => setShowFilters(!showFilters)}
-          >
-            <Ionicons name="options-outline" size={24} color="#002395" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Filters */}
-        {showFilters && (
-          <View style={styles.filtersPanel}>
-            <View style={styles.filterRow}>
-              <Text style={styles.filterLabel}>Price Range</Text>
-              <View style={styles.priceInputs}>
-                <TextInput
-                  testID="tenant-search-min-price"
-                  style={styles.priceInput}
-                  placeholder="Min"
-                  placeholderTextColor="#999"
-                  keyboardType="numeric"
-                  value={minPrice}
-                  onChangeText={setMinPrice}
-                />
-                <Text style={styles.priceSeparator}>-</Text>
-                <TextInput
-                  testID="tenant-search-max-price"
-                  style={styles.priceInput}
-                  placeholder="Max"
-                  placeholderTextColor="#999"
-                  keyboardType="numeric"
-                  value={maxPrice}
-                  onChangeText={setMaxPrice}
-                />
-              </View>
+      <KeyboardAvoidingView>
+        <View style={styles.container}>
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <View style={styles.searchBar}>
+              <Ionicons name="search-outline" size={20} color="#666" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search by location, title..."
+                placeholderTextColor="#999"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                testID="tenant-search-input"
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity testID="tenant-search-clear" onPress={() => setSearchQuery('')}>
+                  <Ionicons name="close-circle" size={20} color="#666" />
+                </TouchableOpacity>
+              )}
             </View>
-
-            <View style={styles.filterRow}>
-              <Text style={styles.filterLabel}>Bedrooms</Text>
-              <View style={styles.optionButtons}>
-                {[1, 2, 3, 4].map((num) => (
-                  <TouchableOpacity
-                    testID={`tenant-search-bedrooms-${num}`}
-                    key={num}
-                    style={[styles.optionButton, bedrooms === num && styles.optionButtonActive]}
-                    onPress={() => setBedrooms(bedrooms === num ? null : num)}
-                  >
-                    <Text
-                      style={[
-                        styles.optionButtonText,
-                        bedrooms === num && styles.optionButtonTextActive,
-                      ]}
-                    >
-                      {num}+
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.filterRow}>
-              <Text style={styles.filterLabel}>Property Type</Text>
-              <View style={styles.optionButtons}>
-                {['house', 'apartment', 'townhouse'].map((type) => (
-                  <TouchableOpacity
-                    testID={`tenant-search-type-${type}`}
-                    key={type}
-                    style={[
-                      styles.optionButton,
-                      propertyType === type && styles.optionButtonActive,
-                    ]}
-                    onPress={() => setPropertyType(propertyType === type ? null : type)}
-                  >
-                    <Text
-                      style={[
-                        styles.optionButtonText,
-                        propertyType === type && styles.optionButtonTextActive,
-                      ]}
-                    >
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
             <TouchableOpacity
-              testID="tenant-search-clear-filters"
-              style={styles.clearButton}
-              onPress={clearFilters}
+              testID="tenant-search-filters-toggle"
+              style={styles.filterButton}
+              onPress={() => setShowFilters(!showFilters)}
             >
-              <Text style={styles.clearButtonText}>Clear Filters</Text>
+              <Ionicons name="options-outline" size={24} color="#002395" />
             </TouchableOpacity>
           </View>
-        )}
 
-        {/* Results Count */}
-        <View style={styles.resultsHeader}>
-          <Text testID="tenant-search-results" style={styles.resultsText}>
-            {filteredProperties.length}{' '}
-            {filteredProperties.length === 1 ? 'property' : 'properties'} found
-          </Text>
-        </View>
+          {/* Filters */}
+          {showFilters && (
+            <View style={styles.filtersPanel}>
+              <View style={styles.filterRow}>
+                <Text style={styles.filterLabel}>Price Range</Text>
+                <View style={styles.priceInputs}>
+                  <TextInput
+                    testID="tenant-search-min-price"
+                    style={styles.priceInput}
+                    placeholder="Min"
+                    placeholderTextColor="#999"
+                    keyboardType="numeric"
+                    value={minPrice}
+                    onChangeText={setMinPrice}
+                  />
+                  <Text style={styles.priceSeparator}>-</Text>
+                  <TextInput
+                    testID="tenant-search-max-price"
+                    style={styles.priceInput}
+                    placeholder="Max"
+                    placeholderTextColor="#999"
+                    keyboardType="numeric"
+                    value={maxPrice}
+                    onChangeText={setMaxPrice}
+                  />
+                </View>
+              </View>
 
-        {/* Property List */}
-        {filteredProperties.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="home-outline" size={64} color="#CCC" />
-            <Text style={styles.emptyText}>No properties found</Text>
-            <Text style={styles.emptySubtext}>Try adjusting your search or filters</Text>
+              <View style={styles.filterRow}>
+                <Text style={styles.filterLabel}>Bedrooms</Text>
+                <View style={styles.optionButtons}>
+                  {[1, 2, 3, 4].map((num) => (
+                    <TouchableOpacity
+                      testID={`tenant-search-bedrooms-${num}`}
+                      key={num}
+                      style={[styles.optionButton, bedrooms === num && styles.optionButtonActive]}
+                      onPress={() => setBedrooms(bedrooms === num ? null : num)}
+                    >
+                      <Text
+                        style={[
+                          styles.optionButtonText,
+                          bedrooms === num && styles.optionButtonTextActive,
+                        ]}
+                      >
+                        {num}+
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.filterRow}>
+                <Text style={styles.filterLabel}>Property Type</Text>
+                <View style={styles.optionButtons}>
+                  {['house', 'apartment', 'townhouse'].map((type) => (
+                    <TouchableOpacity
+                      testID={`tenant-search-type-${type}`}
+                      key={type}
+                      style={[
+                        styles.optionButton,
+                        propertyType === type && styles.optionButtonActive,
+                      ]}
+                      onPress={() => setPropertyType(propertyType === type ? null : type)}
+                    >
+                      <Text
+                        style={[
+                          styles.optionButtonText,
+                          propertyType === type && styles.optionButtonTextActive,
+                        ]}
+                      >
+                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <TouchableOpacity
+                testID="tenant-search-clear-filters"
+                style={styles.clearButton}
+                onPress={clearFilters}
+              >
+                <Text style={styles.clearButtonText}>Clear Filters</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Results Count */}
+          <View style={styles.resultsHeader}>
+            <Text testID="tenant-search-results" style={styles.resultsText}>
+              {filteredProperties.length}{' '}
+              {filteredProperties.length === 1 ? 'property' : 'properties'} found
+            </Text>
           </View>
-        ) : (
-          <FlatList
-            data={filteredProperties}
-            renderItem={renderPropertyCard}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.listContent}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          />
-        )}
-      </View>
+
+          {/* Property List */}
+          {filteredProperties.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="home-outline" size={64} color="#CCC" />
+              <Text style={styles.emptyText}>No properties found</Text>
+              <Text style={styles.emptySubtext}>Try adjusting your search or filters</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={filteredProperties}
+              renderItem={renderPropertyCard}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.listContent}
+              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+            />
+          )}
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

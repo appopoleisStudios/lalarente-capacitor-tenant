@@ -6,6 +6,11 @@ import {
   KeyboardAvoidingViewProps,
 } from 'react-native';
 
+/**
+ * Android draws edge-to-edge (targetSdk 35+), so the window is no longer
+ * resized for the keyboard: without a behavior, the lower part of every form
+ * sat under the keyboard and could not be scrolled into view (CT7-050/051).
+ */
 export const KeyboardAvoidingView: React.FC<KeyboardAvoidingViewProps> = ({
   children,
   behavior,
@@ -14,7 +19,7 @@ export const KeyboardAvoidingView: React.FC<KeyboardAvoidingViewProps> = ({
 }) => {
   return (
     <RNKeyboardAvoidingView
-      behavior={behavior || (Platform.OS === 'ios' ? 'padding' : undefined)}
+      behavior={behavior || (Platform.OS === 'ios' ? 'padding' : 'height')}
       style={[styles.flex, style]}
       {...props}
     >

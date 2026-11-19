@@ -14,7 +14,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -26,6 +25,7 @@ import * as Haptics from 'expo-haptics';
 import { supabase } from '@/src/lib/supabase';
 import { FeaturePin } from '@/src/shared/components';
 import { colors } from '@/src/shared/theme/colors';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const BRAND_BLUE = colors.info[500]; // RSA Blue
 const BRAND_GREEN = colors.success[500]; // SA Green
@@ -243,9 +243,9 @@ export default function VendorBankingScreen() {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
@@ -392,29 +392,29 @@ export default function VendorBankingScreen() {
               share your banking information with third parties.
             </Text>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </KeyboardAwareScrollView>
 
-      {/* Footer */}
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.saveButton, saving && { opacity: 0.6 }]}
-          onPress={handleSave}
-          disabled={saving}
-          testID={VENDOR_BANKING_TEST_IDS.saveButton}
-        >
-          {saving ? (
-            <ActivityIndicator color={colors.text.inverse} />
-          ) : (
-            <>
-              <Ionicons name="save-outline" size={18} color={colors.text.inverse} />
-              <Text style={styles.saveButtonText}>
-                {hasExistingData ? 'Update Preferences' : 'Save Preferences'}
-              </Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
+        {/* Footer */}
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[styles.saveButton, saving && { opacity: 0.6 }]}
+            onPress={handleSave}
+            disabled={saving}
+            testID={VENDOR_BANKING_TEST_IDS.saveButton}
+          >
+            {saving ? (
+              <ActivityIndicator color={colors.text.inverse} />
+            ) : (
+              <>
+                <Ionicons name="save-outline" size={18} color={colors.text.inverse} />
+                <Text style={styles.saveButtonText}>
+                  {hasExistingData ? 'Update Preferences' : 'Save Preferences'}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
@@ -26,6 +25,7 @@ import { supabase } from '@/src/lib/supabase';
 import { colors } from '@/src/shared/theme/colors';
 import { StyleSheet } from 'react-native';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const RSA = { green: '#007A4D' }; // Tenant primary: RSA Green
 
@@ -309,431 +309,437 @@ export default function TenantMaintenanceReportScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          testID="maintenance-report-back"
-          onPress={() => router.back()}
-          style={styles.backButton}
+      <KeyboardAvoidingView>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            testID="maintenance-report-back"
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color="#111827" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Report Issue</Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <KeyboardAwareScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
         >
-          <Ionicons name="arrow-back" size={24} color="#111827" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Report Issue</Text>
-        <View style={{ width: 40 }} />
-      </View>
-
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardDismissMode="on-drag"
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Property Selection (if multiple leases) or Display (if single lease) */}
-        <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.section}>
-          <Text style={styles.label}>Property {activeLeases.length > 1 ? '*' : ''}</Text>
-          {activeLeases.length === 1 ? (
-            // Single property - just display it
-            <View style={styles.propertyCard}>
-              <Ionicons name="home" size={24} color={RSA.green} />
-              <View style={styles.propertyInfo}>
-                <Text style={styles.propertyTitle}>{selectedLease.property?.title}</Text>
-                {selectedLease.property?.address && (
-                  <Text style={styles.propertyAddress}>{selectedLease.property.address}</Text>
-                )}
-              </View>
-            </View>
-          ) : (
-            // Multiple properties - show selector
-            <>
-              <Text style={styles.helperText}>Select which property needs maintenance</Text>
-              {activeLeases.map((lease) => (
-                <TouchableOpacity
-                  testID="maintenance-report-lease"
-                  key={lease.id}
-                  style={[
-                    styles.propertySelectCard,
-                    selectedLeaseId === lease.id && styles.propertySelectCardActive,
-                  ]}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setSelectedLeaseId(lease.id);
-                  }}
-                >
-                  <Ionicons
-                    name={selectedLeaseId === lease.id ? 'radio-button-on' : 'radio-button-off'}
-                    size={24}
-                    color={selectedLeaseId === lease.id ? RSA.green : '#9ca3af'}
-                    style={styles.radioIcon}
-                  />
-                  <View style={styles.propertySelectInfo}>
-                    <Text
-                      style={[
-                        styles.propertySelectTitle,
-                        selectedLeaseId === lease.id && styles.propertySelectTitleActive,
-                      ]}
-                    >
-                      {lease.property?.title || lease.property?.address || 'Property'}
-                    </Text>
-                    {lease.property?.address && lease.property?.title && (
-                      <Text style={styles.propertySelectAddress}>📍 {lease.property.address}</Text>
-                    )}
-
-                    {/* Expanded Details - Only show when selected */}
-                    {selectedLeaseId === lease.id && (
-                      <View style={styles.propertyDetails}>
-                        <View style={styles.detailRow}>
-                          <Ionicons name="person-outline" size={14} color="#6b7280" />
-                          <Text style={styles.detailLabel}>Owner:</Text>
-                          <Text style={styles.detailValue}>{lease.owner?.full_name || 'N/A'}</Text>
-                        </View>
-                        <View style={styles.detailRow}>
-                          <Ionicons name="calendar-outline" size={14} color="#6b7280" />
-                          <Text style={styles.detailLabel}>Lease Period:</Text>
-                          <Text style={styles.detailValue}>
-                            {new Date(lease.start_date).toLocaleDateString('en-GB', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric',
-                            })}{' '}
-                            -{' '}
-                            {new Date(lease.end_date).toLocaleDateString('en-GB', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric',
-                            })}
-                          </Text>
-                        </View>
-                        <View style={styles.detailRow}>
-                          <Ionicons name="cash-outline" size={14} color="#6b7280" />
-                          <Text style={styles.detailLabel}>Monthly Rent:</Text>
-                          <Text style={styles.detailValue}>
-                            R{' '}
-                            {lease.monthly_rent?.toLocaleString() ||
-                              lease.property?.rent_amount?.toLocaleString() ||
-                              'N/A'}
-                          </Text>
-                        </View>
-                        <View style={styles.detailRow}>
-                          <Ionicons name="information-circle-outline" size={14} color="#6b7280" />
-                          <Text style={styles.detailLabel}>Status:</Text>
-                          <Text style={[styles.detailValue, styles.statusBadgeText]}>
-                            {lease.status === 'active'
-                              ? '✓ Active'
-                              : lease.status.replace(/_/g, ' ')}
-                          </Text>
-                        </View>
-                      </View>
-                    )}
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </>
-          )}
-        </Animated.View>
-
-        {/* Service item picker (shown when property has configured items) */}
-        {serviceItems.length > 0 && (
-          <Animated.View entering={FadeInDown.delay(150).duration(500)} style={styles.section}>
-            <Text style={styles.label}>Which system is this about?</Text>
-            <Text style={styles.helperText}>
-              Select the affected system or choose "Something else"
-            </Text>
-            {serviceItems.map((item) => {
-              const isSelected = selectedServiceItemId === item.id;
-              return (
-                <TouchableOpacity
-                  testID="maintenance-report-service-item"
-                  key={item.id}
-                  style={[
-                    styles.serviceItemCard,
-                    isSelected && styles.serviceItemCardActive,
-                    !item.tenant_may_dispatch && styles.serviceItemCardLocked,
-                  ]}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setSelectedServiceItemId(isSelected ? null : item.id);
-                  }}
-                >
-                  <Ionicons
-                    name={isSelected ? 'radio-button-on' : 'radio-button-off'}
-                    size={22}
-                    color={isSelected ? RSA.green : '#9ca3af'}
-                  />
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={[styles.serviceItemName, isSelected && styles.serviceItemNameActive]}
-                    >
-                      {item.name}
-                    </Text>
-                    {!item.tenant_may_dispatch && (
-                      <Text style={styles.serviceItemNote}>
-                        Your owner manages this — they'll be notified to arrange repairs
-                      </Text>
-                    )}
-                  </View>
-                  {!item.tenant_may_dispatch && (
-                    <Ionicons name="lock-closed-outline" size={16} color="#9ca3af" />
+          {/* Property Selection (if multiple leases) or Display (if single lease) */}
+          <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.section}>
+            <Text style={styles.label}>Property {activeLeases.length > 1 ? '*' : ''}</Text>
+            {activeLeases.length === 1 ? (
+              // Single property - just display it
+              <View style={styles.propertyCard}>
+                <Ionicons name="home" size={24} color={RSA.green} />
+                <View style={styles.propertyInfo}>
+                  <Text style={styles.propertyTitle}>{selectedLease.property?.title}</Text>
+                  {selectedLease.property?.address && (
+                    <Text style={styles.propertyAddress}>{selectedLease.property.address}</Text>
                   )}
-                </TouchableOpacity>
-              );
-            })}
-            <TouchableOpacity
-              testID="maintenance-report-service-item-other"
-              style={[
-                styles.serviceItemCard,
-                selectedServiceItemId === 'other' && styles.serviceItemCardActive,
-              ]}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setSelectedServiceItemId(selectedServiceItemId === 'other' ? null : 'other');
-              }}
-            >
-              <Ionicons
-                name={selectedServiceItemId === 'other' ? 'radio-button-on' : 'radio-button-off'}
-                size={22}
-                color={selectedServiceItemId === 'other' ? RSA.green : '#9ca3af'}
-              />
-              <Text
-                style={[
-                  styles.serviceItemName,
-                  selectedServiceItemId === 'other' && styles.serviceItemNameActive,
-                ]}
-              >
-                Something else
-              </Text>
-            </TouchableOpacity>
-          </Animated.View>
-        )}
+                </View>
+              </View>
+            ) : (
+              // Multiple properties - show selector
+              <>
+                <Text style={styles.helperText}>Select which property needs maintenance</Text>
+                {activeLeases.map((lease) => (
+                  <TouchableOpacity
+                    testID="maintenance-report-lease"
+                    key={lease.id}
+                    style={[
+                      styles.propertySelectCard,
+                      selectedLeaseId === lease.id && styles.propertySelectCardActive,
+                    ]}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setSelectedLeaseId(lease.id);
+                    }}
+                  >
+                    <Ionicons
+                      name={selectedLeaseId === lease.id ? 'radio-button-on' : 'radio-button-off'}
+                      size={24}
+                      color={selectedLeaseId === lease.id ? RSA.green : '#9ca3af'}
+                      style={styles.radioIcon}
+                    />
+                    <View style={styles.propertySelectInfo}>
+                      <Text
+                        style={[
+                          styles.propertySelectTitle,
+                          selectedLeaseId === lease.id && styles.propertySelectTitleActive,
+                        ]}
+                      >
+                        {lease.property?.title || lease.property?.address || 'Property'}
+                      </Text>
+                      {lease.property?.address && lease.property?.title && (
+                        <Text style={styles.propertySelectAddress}>
+                          📍 {lease.property.address}
+                        </Text>
+                      )}
 
-        {/* Title */}
-        <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.section}>
-          <Text style={styles.label}>Issue Title *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g., Leaking faucet in kitchen"
-            placeholderTextColor="#9ca3af"
-            value={title}
-            onChangeText={setTitle}
-            maxLength={100}
-            testID="maintenance-title-input"
-          />
-          {title.length > 0 && title.length < 5 && (
-            <Text style={styles.validationHint}>Minimum 5 characters</Text>
-          )}
-        </Animated.View>
-
-        {/* Description */}
-        <Animated.View entering={FadeInDown.delay(300).duration(500)} style={styles.section}>
-          <Text style={styles.label}>Description *</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Describe the issue in detail... Include when you first noticed it, what's happening, and how urgent it is."
-            placeholderTextColor="#9ca3af"
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={5}
-            textAlignVertical="top"
-            maxLength={500}
-            testID="maintenance-description-input"
-          />
-          <View style={styles.descriptionFooter}>
-            {description.length > 0 && description.length < 20 && (
-              <Text style={styles.validationHint}>Minimum 20 characters</Text>
+                      {/* Expanded Details - Only show when selected */}
+                      {selectedLeaseId === lease.id && (
+                        <View style={styles.propertyDetails}>
+                          <View style={styles.detailRow}>
+                            <Ionicons name="person-outline" size={14} color="#6b7280" />
+                            <Text style={styles.detailLabel}>Owner:</Text>
+                            <Text style={styles.detailValue}>
+                              {lease.owner?.full_name || 'N/A'}
+                            </Text>
+                          </View>
+                          <View style={styles.detailRow}>
+                            <Ionicons name="calendar-outline" size={14} color="#6b7280" />
+                            <Text style={styles.detailLabel}>Lease Period:</Text>
+                            <Text style={styles.detailValue}>
+                              {new Date(lease.start_date).toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
+                              })}{' '}
+                              -{' '}
+                              {new Date(lease.end_date).toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
+                              })}
+                            </Text>
+                          </View>
+                          <View style={styles.detailRow}>
+                            <Ionicons name="cash-outline" size={14} color="#6b7280" />
+                            <Text style={styles.detailLabel}>Monthly Rent:</Text>
+                            <Text style={styles.detailValue}>
+                              R{' '}
+                              {lease.monthly_rent?.toLocaleString() ||
+                                lease.property?.rent_amount?.toLocaleString() ||
+                                'N/A'}
+                            </Text>
+                          </View>
+                          <View style={styles.detailRow}>
+                            <Ionicons name="information-circle-outline" size={14} color="#6b7280" />
+                            <Text style={styles.detailLabel}>Status:</Text>
+                            <Text style={[styles.detailValue, styles.statusBadgeText]}>
+                              {lease.status === 'active'
+                                ? '✓ Active'
+                                : lease.status.replace(/_/g, ' ')}
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </>
             )}
-            <Text
-              style={[
-                styles.charCount,
-                description.length > 0 && description.length < 20 && styles.charCountWarning,
-              ]}
-            >
-              {description.length}/500
-            </Text>
-          </View>
-        </Animated.View>
+          </Animated.View>
 
-        {/* Priority */}
-        <Animated.View entering={FadeInDown.delay(400).duration(500)} style={styles.section}>
-          <Text style={styles.label}>Priority</Text>
-          <Text style={styles.helperText}>How urgent is this issue?</Text>
-          <View style={styles.priorityContainer}>
-            {PRIORITIES.map((item) => (
+          {/* Service item picker (shown when property has configured items) */}
+          {serviceItems.length > 0 && (
+            <Animated.View entering={FadeInDown.delay(150).duration(500)} style={styles.section}>
+              <Text style={styles.label}>Which system is this about?</Text>
+              <Text style={styles.helperText}>
+                Select the affected system or choose "Something else"
+              </Text>
+              {serviceItems.map((item) => {
+                const isSelected = selectedServiceItemId === item.id;
+                return (
+                  <TouchableOpacity
+                    testID="maintenance-report-service-item"
+                    key={item.id}
+                    style={[
+                      styles.serviceItemCard,
+                      isSelected && styles.serviceItemCardActive,
+                      !item.tenant_may_dispatch && styles.serviceItemCardLocked,
+                    ]}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setSelectedServiceItemId(isSelected ? null : item.id);
+                    }}
+                  >
+                    <Ionicons
+                      name={isSelected ? 'radio-button-on' : 'radio-button-off'}
+                      size={22}
+                      color={isSelected ? RSA.green : '#9ca3af'}
+                    />
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[styles.serviceItemName, isSelected && styles.serviceItemNameActive]}
+                      >
+                        {item.name}
+                      </Text>
+                      {!item.tenant_may_dispatch && (
+                        <Text style={styles.serviceItemNote}>
+                          Your owner manages this — they'll be notified to arrange repairs
+                        </Text>
+                      )}
+                    </View>
+                    {!item.tenant_may_dispatch && (
+                      <Ionicons name="lock-closed-outline" size={16} color="#9ca3af" />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
               <TouchableOpacity
-                key={item.value}
-                testID={`maintenance-priority-${item.value}`}
-                accessibilityRole="button"
-                accessibilityState={{ selected: priority === item.value }}
+                testID="maintenance-report-service-item-other"
                 style={[
-                  styles.priorityChip,
-                  priority === item.value && { backgroundColor: item.color },
+                  styles.serviceItemCard,
+                  selectedServiceItemId === 'other' && styles.serviceItemCardActive,
                 ]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setPriority(item.value as any);
+                  setSelectedServiceItemId(selectedServiceItemId === 'other' ? null : 'other');
                 }}
               >
                 <Ionicons
-                  name={item.icon as any}
-                  size={20}
-                  color={priority === item.value ? '#FFFFFF' : item.color}
+                  name={selectedServiceItemId === 'other' ? 'radio-button-on' : 'radio-button-off'}
+                  size={22}
+                  color={selectedServiceItemId === 'other' ? RSA.green : '#9ca3af'}
                 />
                 <Text
                   style={[
-                    styles.priorityText,
-                    priority === item.value && styles.priorityTextActive,
+                    styles.serviceItemName,
+                    selectedServiceItemId === 'other' && styles.serviceItemNameActive,
                   ]}
                 >
-                  {item.label}
+                  Something else
                 </Text>
               </TouchableOpacity>
-            ))}
-          </View>
-        </Animated.View>
-
-        {/* Category */}
-        <Animated.View entering={FadeInDown.delay(500).duration(500)} style={styles.section}>
-          <Text style={styles.label}>Category (Optional)</Text>
-          <Text style={styles.helperText}>Select the category that best describes the issue</Text>
-          <View style={styles.chipContainer}>
-            {categories.map((category) => (
-              <TouchableOpacity
-                key={category.id}
-                testID={`maintenance-category-${category.name.toLowerCase().replace(/\s+/g, '-')}`}
-                accessibilityRole="button"
-                accessibilityState={{ selected: categoryId === category.id }}
-                style={[styles.chip, categoryId === category.id && styles.chipActive]}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setCategoryId(categoryId === category.id ? null : category.id);
-                }}
-              >
-                <Text
-                  style={[styles.chipText, categoryId === category.id && styles.chipTextActive]}
-                >
-                  {category.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </Animated.View>
-
-        {/* Choose a specific vendor (optional) */}
-        <Animated.View entering={FadeInDown.delay(550).duration(500)} style={styles.section}>
-          <Text style={styles.label}>Vendor (Optional)</Text>
-          <Text style={styles.helperText}>
-            Browse available vendors or let your landlord assign one
-          </Text>
-          <TouchableOpacity
-            style={styles.vendorPickerCard}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push({
-                pathname: '/(tenant)/maintenance/vendor-marketplace',
-                params: {
-                  categoryId: categoryId || undefined,
-                  categoryName: categories.find((c) => c.id === categoryId)?.name || undefined,
-                },
-              });
-            }}
-            testID="tenant-choose-vendor"
-          >
-            <View style={styles.vendorPickerIcon}>
-              <Ionicons name="people" size={24} color={RSA.green} />
-            </View>
-            <View style={styles.vendorPickerInfo}>
-              <Text style={styles.vendorPickerTitle}>
-                {selectedVendor
-                  ? selectedVendor.business_name || selectedVendor.full_name || 'Selected vendor'
-                  : 'Browse Vendors'}
-              </Text>
-              <Text style={styles.vendorPickerSubtitle}>
-                {selectedVendor
-                  ? 'Tap to choose a different vendor, or clear below'
-                  : 'See ratings, trades, and service areas'}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
-          </TouchableOpacity>
-          {selectedVendor && (
-            <TouchableOpacity
-              testID="maintenance-report-clear-vendor"
-              onPress={() => setSelectedVendor(null)}
-              style={{ marginTop: 8, alignSelf: 'flex-start' }}
-              accessibilityRole="button"
-              accessibilityLabel="Clear selected vendor"
-            >
-              <Text style={{ fontSize: 13, fontWeight: '600', color: RSA.green }}>
-                Clear vendor — broadcast to the open market
-              </Text>
-            </TouchableOpacity>
+            </Animated.View>
           )}
-        </Animated.View>
 
-        {/* Photos & Videos */}
-        <Animated.View entering={FadeInDown.delay(600).duration(500)} style={styles.section}>
-          <Text style={styles.label}>Photos & Videos ({files.length}/10)</Text>
-          <Text style={styles.helperText}>
-            Adding photos or videos helps your landlord understand the issue better
-          </Text>
-          <View style={styles.mediaGrid}>
-            {files.map((file, index) => (
-              <View key={index} style={styles.mediaWrapper}>
-                <Image source={{ uri: file.uri }} style={styles.media} />
+          {/* Title */}
+          <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.section}>
+            <Text style={styles.label}>Issue Title *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g., Leaking faucet in kitchen"
+              placeholderTextColor="#9ca3af"
+              value={title}
+              onChangeText={setTitle}
+              maxLength={100}
+              testID="maintenance-title-input"
+            />
+            {title.length > 0 && title.length < 5 && (
+              <Text style={styles.validationHint}>Minimum 5 characters</Text>
+            )}
+          </Animated.View>
+
+          {/* Description */}
+          <Animated.View entering={FadeInDown.delay(300).duration(500)} style={styles.section}>
+            <Text style={styles.label}>Description *</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="Describe the issue in detail... Include when you first noticed it, what's happening, and how urgent it is."
+              placeholderTextColor="#9ca3af"
+              value={description}
+              onChangeText={setDescription}
+              multiline
+              numberOfLines={5}
+              textAlignVertical="top"
+              maxLength={500}
+              testID="maintenance-description-input"
+            />
+            <View style={styles.descriptionFooter}>
+              {description.length > 0 && description.length < 20 && (
+                <Text style={styles.validationHint}>Minimum 20 characters</Text>
+              )}
+              <Text
+                style={[
+                  styles.charCount,
+                  description.length > 0 && description.length < 20 && styles.charCountWarning,
+                ]}
+              >
+                {description.length}/500
+              </Text>
+            </View>
+          </Animated.View>
+
+          {/* Priority */}
+          <Animated.View entering={FadeInDown.delay(400).duration(500)} style={styles.section}>
+            <Text style={styles.label}>Priority</Text>
+            <Text style={styles.helperText}>How urgent is this issue?</Text>
+            <View style={styles.priorityContainer}>
+              {PRIORITIES.map((item) => (
                 <TouchableOpacity
-                  testID="maintenance-report-remove-media"
-                  style={styles.removeMedia}
+                  key={item.value}
+                  testID={`maintenance-priority-${item.value}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: priority === item.value }}
+                  style={[
+                    styles.priorityChip,
+                    priority === item.value && { backgroundColor: item.color },
+                  ]}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    removeFile(file.uri);
+                    setPriority(item.value as any);
                   }}
                 >
-                  <Ionicons name="close-circle" size={24} color="#DE3831" />
+                  <Ionicons
+                    name={item.icon as any}
+                    size={20}
+                    color={priority === item.value ? '#FFFFFF' : item.color}
+                  />
+                  <Text
+                    style={[
+                      styles.priorityText,
+                      priority === item.value && styles.priorityTextActive,
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
                 </TouchableOpacity>
-                <View style={styles.mediaTypeBadge}>
-                  <Text style={styles.mediaTypeText}>{file.type === 'video' ? '🎥' : '📷'}</Text>
-                </View>
-              </View>
-            ))}
-            {canAddMore && (
-              <>
-                <TouchableOpacity
-                  style={styles.addMediaButton}
-                  onPress={takePhoto}
-                  testID="maintenance-add-camera"
-                >
-                  <Ionicons name="camera" size={32} color={RSA.green} />
-                  <Text style={styles.addMediaText}>Camera</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.addMediaButton}
-                  onPress={pickMedia}
-                  testID="maintenance-add-gallery"
-                >
-                  <Ionicons name="images" size={32} color={RSA.green} />
-                  <Text style={styles.addMediaText}>Gallery</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
-        </Animated.View>
-      </ScrollView>
+              ))}
+            </View>
+          </Animated.View>
 
-      {/* Submit Button */}
-      <View style={styles.footer}>
-        <TouchableOpacity
-          testID="maintenance-submit"
-          style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
-          onPress={handleSubmit}
-          disabled={submitting}
-        >
-          {submitting ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.submitButtonText}>Submit Request</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+          {/* Category */}
+          <Animated.View entering={FadeInDown.delay(500).duration(500)} style={styles.section}>
+            <Text style={styles.label}>Category (Optional)</Text>
+            <Text style={styles.helperText}>Select the category that best describes the issue</Text>
+            <View style={styles.chipContainer}>
+              {categories.map((category) => (
+                <TouchableOpacity
+                  key={category.id}
+                  testID={`maintenance-category-${category.name.toLowerCase().replace(/\s+/g, '-')}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: categoryId === category.id }}
+                  style={[styles.chip, categoryId === category.id && styles.chipActive]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setCategoryId(categoryId === category.id ? null : category.id);
+                  }}
+                >
+                  <Text
+                    style={[styles.chipText, categoryId === category.id && styles.chipTextActive]}
+                  >
+                    {category.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </Animated.View>
+
+          {/* Choose a specific vendor (optional) */}
+          <Animated.View entering={FadeInDown.delay(550).duration(500)} style={styles.section}>
+            <Text style={styles.label}>Vendor (Optional)</Text>
+            <Text style={styles.helperText}>
+              Browse available vendors or let your landlord assign one
+            </Text>
+            <TouchableOpacity
+              style={styles.vendorPickerCard}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push({
+                  pathname: '/(tenant)/maintenance/vendor-marketplace',
+                  params: {
+                    categoryId: categoryId || undefined,
+                    categoryName: categories.find((c) => c.id === categoryId)?.name || undefined,
+                  },
+                });
+              }}
+              testID="tenant-choose-vendor"
+            >
+              <View style={styles.vendorPickerIcon}>
+                <Ionicons name="people" size={24} color={RSA.green} />
+              </View>
+              <View style={styles.vendorPickerInfo}>
+                <Text style={styles.vendorPickerTitle}>
+                  {selectedVendor
+                    ? selectedVendor.business_name || selectedVendor.full_name || 'Selected vendor'
+                    : 'Browse Vendors'}
+                </Text>
+                <Text style={styles.vendorPickerSubtitle}>
+                  {selectedVendor
+                    ? 'Tap to choose a different vendor, or clear below'
+                    : 'See ratings, trades, and service areas'}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+            </TouchableOpacity>
+            {selectedVendor && (
+              <TouchableOpacity
+                testID="maintenance-report-clear-vendor"
+                onPress={() => setSelectedVendor(null)}
+                style={{ marginTop: 8, alignSelf: 'flex-start' }}
+                accessibilityRole="button"
+                accessibilityLabel="Clear selected vendor"
+              >
+                <Text style={{ fontSize: 13, fontWeight: '600', color: RSA.green }}>
+                  Clear vendor — broadcast to the open market
+                </Text>
+              </TouchableOpacity>
+            )}
+          </Animated.View>
+
+          {/* Photos & Videos */}
+          <Animated.View entering={FadeInDown.delay(600).duration(500)} style={styles.section}>
+            <Text style={styles.label}>Photos & Videos ({files.length}/10)</Text>
+            <Text style={styles.helperText}>
+              Adding photos or videos helps your landlord understand the issue better
+            </Text>
+            <View style={styles.mediaGrid}>
+              {files.map((file, index) => (
+                <View key={index} style={styles.mediaWrapper}>
+                  <Image source={{ uri: file.uri }} style={styles.media} />
+                  <TouchableOpacity
+                    testID="maintenance-report-remove-media"
+                    style={styles.removeMedia}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      removeFile(file.uri);
+                    }}
+                  >
+                    <Ionicons name="close-circle" size={24} color="#DE3831" />
+                  </TouchableOpacity>
+                  <View style={styles.mediaTypeBadge}>
+                    <Text style={styles.mediaTypeText}>{file.type === 'video' ? '🎥' : '📷'}</Text>
+                  </View>
+                </View>
+              ))}
+              {canAddMore && (
+                <>
+                  <TouchableOpacity
+                    style={styles.addMediaButton}
+                    onPress={takePhoto}
+                    testID="maintenance-add-camera"
+                  >
+                    <Ionicons name="camera" size={32} color={RSA.green} />
+                    <Text style={styles.addMediaText}>Camera</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.addMediaButton}
+                    onPress={pickMedia}
+                    testID="maintenance-add-gallery"
+                  >
+                    <Ionicons name="images" size={32} color={RSA.green} />
+                    <Text style={styles.addMediaText}>Gallery</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          </Animated.View>
+        </KeyboardAwareScrollView>
+
+        {/* Submit Button */}
+        <View style={styles.footer}>
+          <TouchableOpacity
+            testID="maintenance-submit"
+            style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+            onPress={handleSubmit}
+            disabled={submitting}
+          >
+            {submitting ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.submitButtonText}>Submit Request</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -784,7 +790,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
   scrollView: { flex: 1 },
-  scrollContent: { padding: 16, paddingBottom: 120 },
+  scrollContent: { padding: 16 },
   section: { marginBottom: 24 },
   label: { fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 8 },
   propertyCard: {
@@ -943,10 +949,6 @@ const styles = StyleSheet.create({
   vendorPickerTitle: { fontSize: 15, fontWeight: '700', color: '#111827' },
   vendorPickerSubtitle: { fontSize: 12, color: '#6b7280', marginTop: 2 },
   footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     padding: 16,
     backgroundColor: '#ffffff',
     borderTopWidth: 1,

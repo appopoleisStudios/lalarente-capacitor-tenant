@@ -10,7 +10,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
@@ -32,6 +31,7 @@ import { colors } from '@/src/shared/theme/colors';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { ReasonPromptModal } from '@/src/shared/components/ui/ReasonPromptModal';
 import { fromLocalIsoDate, toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
+import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -272,7 +272,7 @@ export default function OwnerLeaseRenewalScreen() {
           )}
         </View>
 
-        <ScrollView contentContainerStyle={styles.content}>
+        <KeyboardAwareScrollView contentContainerStyle={styles.content}>
           {/* Overdue Notices Warning */}
           {overdueNotices.length > 0 && (
             <View style={styles.warningCard}>
@@ -509,7 +509,7 @@ export default function OwnerLeaseRenewalScreen() {
               );
             })
           )}
-        </ScrollView>
+        </KeyboardAwareScrollView>
 
         {/* Offer Modal */}
         <Modal
@@ -528,7 +528,7 @@ export default function OwnerLeaseRenewalScreen() {
                 <View style={{ width: 24 }} />
               </View>
 
-              <ScrollView
+              <KeyboardAwareScrollView
                 contentContainerStyle={styles.modalContent}
                 keyboardShouldPersistTaps="handled"
               >
@@ -623,7 +623,7 @@ export default function OwnerLeaseRenewalScreen() {
                     </>
                   )}
                 </TouchableOpacity>
-              </ScrollView>
+              </KeyboardAwareScrollView>
             </KeyboardAvoidingView>
           </SafeAreaView>
         </Modal>
