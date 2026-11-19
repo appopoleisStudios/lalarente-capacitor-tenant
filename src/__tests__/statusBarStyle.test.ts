@@ -31,7 +31,23 @@ describe('status bar icons stay visible (CT7-049)', () => {
   });
 
   it('the themed not-found screen follows the system theme', () => {
-    expect(code('app/+not-found.tsx')).toMatch(/<StatusBar style="auto" \/>/);
+    expect(code('app/+not-found.tsx')).toMatch(/<FocusedStatusBar style="auto" \/>/);
+  });
+
+  it('only the root layout renders a raw StatusBar; screens use FocusedStatusBar (SA #254)', () => {
+    // A raw <StatusBar> in a screen stays in effect while that screen is
+    // mounted underneath another one, overriding the root's dark icons.
+    const allowed = new Set(['app/_layout.tsx', 'src/shared/components/FocusedStatusBar.tsx']);
+    const files = (dir: string): string[] =>
+      fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true }).flatMap((e) => {
+        const rel = path.join(dir, e.name);
+        if (e.isDirectory()) return e.name === '__tests__' ? [] : files(rel);
+        return e.name.endsWith('.tsx') ? [rel] : [];
+      });
+    const raw = ['app', 'src']
+      .flatMap(files)
+      .filter((rel) => !allowed.has(rel) && /<StatusBar\b/.test(code(rel)));
+    expect(raw).toEqual([]);
   });
 
   it('the comment stripper ignores a tag that only appears in a comment', () => {
