@@ -80,10 +80,8 @@ export function summarizeRent(
   if (propertyStatus !== 'rented') return { status: 'no_lease', nextDue: null, overdueAmount: 0 };
 
   const rent = payments.filter((p) => (p.type ?? 'rent') === 'rent' && p.status !== 'cancelled');
-  // the active tenancy only, so a previous tenant's payments don't count
-  const active = rent.some((p) => p.lease?.status === 'active')
-    ? rent.filter((p) => p.lease?.status === 'active')
-    : rent;
+  // the active tenancy only: a previous tenant's rows never count (SA #262)
+  const active = rent.filter((p) => p.lease?.status === 'active');
 
   const unpaid = active.filter(isUnpaid);
   const overdue = unpaid.filter((p) => day(p.due_date) < day(today));

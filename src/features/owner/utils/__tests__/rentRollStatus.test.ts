@@ -78,6 +78,18 @@ describe('summarizeRent (CT7-057)', () => {
     ).toBe('upcoming');
   });
 
+  it('only a terminated lease has rows: neither paid nor overdue for the new tenancy', () => {
+    expect(status([row({ status: 'completed', due_date: '2026-10-01', lease: old })])).toBe(
+      'upcoming'
+    );
+    const s = summarizeRent(
+      'rented',
+      [row({ status: 'pending', due_date: '2026-10-01', lease: old })],
+      TODAY
+    );
+    expect(s).toMatchObject({ status: 'upcoming', overdueAmount: 0, nextDue: null });
+  });
+
   it('rent due today is not overdue yet; it is due soon', () => {
     expect(status([row({ status: 'pending', due_date: TODAY })])).toBe('pending');
   });
