@@ -1928,7 +1928,8 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   - [x] Both go to `/(vendor)/jobs` (the My Jobs list).
   - [x] Jest guard `routeIndexSegment.test.ts`: no route literal in `src` or
         `app` ends in `/index` (fails on main at both lines).
-  - [ ] Android emulator (release APK): View My Jobs opens the My Jobs list.
+  - [x] Android emulator (release APK), 2026-11-19: New Message → View My
+        Jobs opens the My Jobs list (no error alert).
 
 ## CT7-057 🟠 Rent Roll says "Paid" for rent that was never paid (owner)
 
