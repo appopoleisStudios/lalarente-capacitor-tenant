@@ -1932,8 +1932,9 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   - [x] Jest guard `dateLocale.test.ts`: no bare `toLocaleDateString()` /
         `toLocaleTimeString()` / `new Date(…).toLocaleString()` in `src` or
         `app` (fails on main: 18 files).
-  - [ ] Android emulator (release APK): tenant Payments and owner Rent Roll /
-        Tenants / lease detail show "1 Dec 2026".
+  - [x] Android emulator (release APK), 2026-11-19: tenant Payments "Due: 01
+        Dec 2026"; owner Rent Roll "Next due: 01 Dec 2026"; Tenants & Leases
+        "01 Dec 2026 → 30 Nov 2027" (main: 12/1/2026).
 
 ## CT7-057 🟠 Rent Roll says "Paid" for rent that was never paid (owner)
 
