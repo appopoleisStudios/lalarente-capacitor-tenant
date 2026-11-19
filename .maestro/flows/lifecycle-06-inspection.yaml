@@ -880,15 +880,21 @@ appId: com.lalarente.app
 - waitForAnimationToEnd:
     timeout: 1500
 # Completed work orders are listed above the inspection reports and grow with
-# every run, so the signature prompt can start below the fold.
+# every run, so the signature prompt can start below the fold. Several rows can
+# carry a Sign prompt (inspections on other properties), so take the one under
+# this property's row. The fixture reset cancels this tenant's pending
+# inspections on the lifecycle properties, so the run's move-in inspection is
+# the only unsigned one for ${LC_PROPERTY_TITLE}.
 - scrollUntilVisible:
     element:
       id: "tenant-report-inspection-sign"
+      below: ".*${LC_PROPERTY_TITLE}.*"
     direction: DOWN
     timeout: 20000
     visibilityPercentage: 100
 - tapOn:
     id: "tenant-report-inspection-sign"
+    below: ".*${LC_PROPERTY_TITLE}.*"
 - extendedWaitUntil:
     visible: "Move-In Inspection"
     timeout: 30000

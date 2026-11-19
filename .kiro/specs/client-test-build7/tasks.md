@@ -1922,9 +1922,10 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   run, 2026-11-20 02:40 (phase 08, owner signed out → tenant signed in).
 - **Seen:** the dashboard header said "Tenant" (no name), no 2B Datura card,
   "No recent activity", although the lease was `active`. The dashboard
-  query finished in 342 ms with no error, so profile and lease came back
-  empty rather than failing — consistent with the query running without the
-  tenant's session (RLS returns no rows, not an error).
+  query completed in 342 ms; the displayed data was empty. The profile read's
+  error is discarded (`useTenantDashboard.ts`), so a failed profile read also
+  shows "Tenant". A missing tenant session / RLS filtering is an unconfirmed
+  hypothesis.
 - **Not reproduced:** 4 owner → tenant sign-in switches on the same APK all
   showed the tenant's name and data.
 - **Acceptance criteria:**
