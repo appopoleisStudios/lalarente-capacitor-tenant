@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/src/shared/theme/colors';
 
+import { formatDate } from '../../../shared/utils/format';
 const RSA = { blue: '#002395' };
 
 const QUOTE_STATUS_CONFIG = {
@@ -124,9 +125,7 @@ export function QuoteCard({
                 <View style={styles.revisionBadge}>
                   <Text style={styles.revisionBadgeText}>v{revision.revision_number}</Text>
                 </View>
-                <Text style={styles.revisionDate}>
-                  {new Date(revision.created_at).toLocaleDateString()}
-                </Text>
+                <Text style={styles.revisionDate}>{formatDate(revision.created_at)}</Text>
               </View>
               <View style={styles.revisionAmount}>
                 <Text style={styles.revisionAmountLabel}>Amount:</Text>

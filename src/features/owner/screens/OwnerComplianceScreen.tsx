@@ -30,6 +30,7 @@ import { applicationsApi } from '@/src/features/properties/api/applicationsApi';
 import type { Document } from '@/src/features/documents/types';
 import { reportApiError } from '@/src/core/observability/sentry';
 
+import { formatDate } from '../../../shared/utils/format';
 type Tab = 'fica' | 'property';
 
 interface TenantFica {
@@ -649,7 +650,7 @@ export default function OwnerComplianceScreen() {
                               <Text style={styles.checklistLaw}>
                                 {doc
                                   ? doc.created_at
-                                    ? `Uploaded ${new Date(doc.created_at).toLocaleDateString()}`
+                                    ? `Uploaded ${formatDate(doc.created_at)}`
                                     : 'Uploaded'
                                   : item.law}
                               </Text>

@@ -24,6 +24,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { reportApiError } from '@/src/core/observability/sentry';
 import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
 
+import { formatDate } from '../../../shared/utils/format';
 const RSA = { blue: '#002395', gold: '#FFB81C' }; // Owner colors
 
 interface Lease {
@@ -526,16 +527,12 @@ export default function OwnerLeaseDetailScreen() {
               <View style={styles.dateRow}>
                 <View style={styles.dateItem}>
                   <Text style={styles.dateLabel}>Start Date</Text>
-                  <Text style={styles.dateValue}>
-                    {new Date(lease.start_date).toLocaleDateString()}
-                  </Text>
+                  <Text style={styles.dateValue}>{formatDate(lease.start_date)}</Text>
                 </View>
                 <Ionicons name="arrow-forward" size={20} color="#CCC" />
                 <View style={styles.dateItem}>
                   <Text style={styles.dateLabel}>End Date</Text>
-                  <Text style={styles.dateValue}>
-                    {new Date(lease.end_date).toLocaleDateString()}
-                  </Text>
+                  <Text style={styles.dateValue}>{formatDate(lease.end_date)}</Text>
                 </View>
               </View>
 
@@ -594,7 +591,7 @@ export default function OwnerLeaseDetailScreen() {
                 <DetailRow
                   icon="checkmark-circle"
                   label="Lease Executed"
-                  value={new Date(lease.executed_at).toLocaleDateString()}
+                  value={formatDate(lease.executed_at)}
                 />
               )}
               {lease.rent_escalation_type && lease.rent_escalation_value && (

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/src/shared/theme/colors';
+import { formatDate } from '@/src/shared/utils/format';
 
 const RSA = { blue: '#002395' };
 
@@ -32,7 +33,11 @@ interface RequestTimelineSectionProps {
   purchaseOrder: any;
 }
 
-export function RequestTimelineSection({ request, quotes, purchaseOrder }: RequestTimelineSectionProps) {
+export function RequestTimelineSection({
+  request,
+  quotes,
+  purchaseOrder,
+}: RequestTimelineSectionProps) {
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Timeline</Text>
@@ -40,14 +45,14 @@ export function RequestTimelineSection({ request, quotes, purchaseOrder }: Reque
         <TimelineItem
           icon="add-circle"
           label="Created"
-          date={new Date(request.created_at).toLocaleDateString()}
+          date={formatDate(request.created_at)}
           completed
         />
         {request.acknowledged_at && (
           <TimelineItem
             icon="checkmark-circle"
             label="Acknowledged"
-            date={new Date(request.acknowledged_at).toLocaleDateString()}
+            date={formatDate(request.acknowledged_at)}
             completed
           />
         )}
@@ -55,7 +60,7 @@ export function RequestTimelineSection({ request, quotes, purchaseOrder }: Reque
           <TimelineItem
             icon="people"
             label="Sent to Vendors"
-            date={new Date(request.vendor_routed_at).toLocaleDateString()}
+            date={formatDate(request.vendor_routed_at)}
             completed
           />
         )}
@@ -63,7 +68,7 @@ export function RequestTimelineSection({ request, quotes, purchaseOrder }: Reque
           <TimelineItem
             icon="document-text"
             label={`Quote${quotes.length > 1 ? 's' : ''} Received (${quotes.length})`}
-            date={new Date(quotes[0].created_at).toLocaleDateString()}
+            date={formatDate(quotes[0].created_at)}
             completed
           />
         )}
@@ -71,7 +76,7 @@ export function RequestTimelineSection({ request, quotes, purchaseOrder }: Reque
           <TimelineItem
             icon="receipt"
             label="Purchase Order Issued"
-            date={new Date(purchaseOrder.created_at).toLocaleDateString()}
+            date={formatDate(purchaseOrder.created_at)}
             completed
           />
         )}
@@ -79,11 +84,7 @@ export function RequestTimelineSection({ request, quotes, purchaseOrder }: Reque
           <TimelineItem
             icon="construct"
             label="Work In Progress"
-            date={
-              request.scheduled_date
-                ? new Date(request.scheduled_date).toLocaleDateString()
-                : 'In Progress'
-            }
+            date={request.scheduled_date ? formatDate(request.scheduled_date) : 'In Progress'}
             completed
           />
         )}
@@ -91,17 +92,12 @@ export function RequestTimelineSection({ request, quotes, purchaseOrder }: Reque
           <TimelineItem
             icon="checkmark-done"
             label="Completed"
-            date={new Date(request.completed_date).toLocaleDateString()}
+            date={formatDate(request.completed_date)}
             completed
           />
         )}
         {request.status === 'closed' && !request.completed_date && (
-          <TimelineItem
-            icon="archive"
-            label="Closed"
-            date={new Date().toLocaleDateString()}
-            completed
-          />
+          <TimelineItem icon="archive" label="Closed" date={formatDate(new Date())} completed />
         )}
       </View>
     </View>

@@ -1,5 +1,6 @@
 import type { VendorMaintenanceRequest } from '@/src/features/maintenance/api';
 import { colors } from '@/src/shared/theme/colors';
+import { formatDate as formatShortDate } from '@/src/shared/utils/format';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -56,7 +57,7 @@ export function JobCard({ job, onPress }: JobCardProps) {
     if (diffDays === 0) return 'Today';
     if (diffDays === 1) return 'Yesterday';
     if (diffDays < 7) return `${diffDays} days ago`;
-    return date.toLocaleDateString();
+    return formatShortDate(date);
   };
 
   // Format currency
@@ -66,17 +67,11 @@ export function JobCard({ job, onPress }: JobCardProps) {
   };
 
   return (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       {/* Status Badge */}
       <View style={[styles.statusBadge, { backgroundColor: statusConfig.bgColor }]}>
         <Ionicons name={statusConfig.icon} size={16} color={statusConfig.color} />
-        <Text style={[styles.statusText, { color: statusConfig.color }]}>
-          {statusConfig.label}
-        </Text>
+        <Text style={[styles.statusText, { color: statusConfig.color }]}>{statusConfig.label}</Text>
       </View>
 
       {/* Title */}
@@ -105,9 +100,7 @@ export function JobCard({ job, onPress }: JobCardProps) {
         {job.my_quote?.total_amount && (
           <View style={styles.infoItem}>
             <Text style={styles.infoLabel}>Amount:</Text>
-            <Text style={styles.infoValue}>
-              {formatCurrency(job.my_quote.total_amount)}
-            </Text>
+            <Text style={styles.infoValue}>{formatCurrency(job.my_quote.total_amount)}</Text>
           </View>
         )}
       </View>

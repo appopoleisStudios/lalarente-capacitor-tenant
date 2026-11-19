@@ -16,6 +16,7 @@ import { supabase } from '@/src/lib/supabase';
 import type { MaintenanceRequest } from '@/src/features/maintenance/api/types/maintenance.types';
 import { reportApiError } from '@/src/core/observability/sentry';
 
+import { formatDate } from '../../../shared/utils/format';
 // ============================================================================
 // TYPE DEFINITIONS
 // ============================================================================
@@ -656,5 +657,5 @@ function formatRelativeTime(date: Date): string {
   if (diffDays === 1) return 'Yesterday';
   if (diffDays < 7) return `${diffDays}d ago`;
 
-  return date.toLocaleDateString();
+  return formatDate(date);
 }

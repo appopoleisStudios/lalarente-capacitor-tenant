@@ -17,6 +17,7 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { colors } from '@/src/shared/theme/colors';
 import { vendorProfileApi, VendorDocument } from '@/src/features/vendor/api/profileApi';
 
+import { formatDate } from '../../../shared/utils/format';
 const DOCUMENT_TYPES = [
   { value: 'ID', label: 'ID Document', icon: '🪪' },
   { value: 'PoliceClearance', label: 'Police Clearance', icon: '👮' },
@@ -267,10 +268,7 @@ export default function DocumentsManagementScreen() {
                         <View style={styles.docInfo}>
                           <Text style={styles.docTitle}>{docType?.label || doc.doc_type}</Text>
                           <Text style={styles.docDate}>
-                            Uploaded{' '}
-                            {doc.uploaded_at
-                              ? new Date(doc.uploaded_at).toLocaleDateString()
-                              : 'Unknown'}
+                            Uploaded {doc.uploaded_at ? formatDate(doc.uploaded_at) : 'Unknown'}
                           </Text>
                         </View>
                         <View style={styles.docActions}>
@@ -323,9 +321,9 @@ export default function DocumentsManagementScreen() {
                           <Text style={styles.docDate}>
                             Approved{' '}
                             {doc.reviewed_at
-                              ? new Date(doc.reviewed_at).toLocaleDateString()
+                              ? formatDate(doc.reviewed_at)
                               : doc.uploaded_at
-                                ? new Date(doc.uploaded_at).toLocaleDateString()
+                                ? formatDate(doc.uploaded_at)
                                 : 'Unknown'}
                           </Text>
                         </View>
@@ -380,9 +378,9 @@ export default function DocumentsManagementScreen() {
                           <Text style={styles.docDate}>
                             Rejected{' '}
                             {doc.reviewed_at
-                              ? new Date(doc.reviewed_at).toLocaleDateString()
+                              ? formatDate(doc.reviewed_at)
                               : doc.uploaded_at
-                                ? new Date(doc.uploaded_at).toLocaleDateString()
+                                ? formatDate(doc.uploaded_at)
                                 : 'Unknown'}
                           </Text>
                         </View>
