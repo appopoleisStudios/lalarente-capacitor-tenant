@@ -1926,7 +1926,7 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         dashboard card, reminders and notifications use it; date-times read
         "19 Nov 2026, 03:05".
   - [x] Jest `viewingTimeFormat.test.ts` (fails on main: 7 files).
-  - [ ] Android emulator (release APK, build 12).
+  - [x] Android emulator (release APK), 2026-11-19: Viewing Requests "Requested: Fri, 20 Nov at 10:00", "Requested 19 Nov 2026" (was "2026/11/19"); tenant My Viewings same. All 36 `toLocaleDateString('en-ZA')` dates (yyyy/mm/dd) now formatDate; guard extended.
 
 ## CT7-063 🟠 Dashboard "In Arrears" and Rent Roll's Overdue card disagree with Rent Roll (owner)
 
@@ -1941,7 +1941,7 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         `summarizeRent`, the rule behind the Rent Roll badges).
   - [x] Jest `dashboardArrears.test.ts` + `RentRollOverdueHeader.test.tsx`
         on one shared fixture (fail on main).
-  - [ ] Android emulator (release APK, build 12).
+  - [x] Android emulator (release APK), 2026-11-19: dashboard In Arrears R 0 and Rent Roll Overdue card 0 agree with the Rent Roll badges.
 
 ## CT7-064 🟠 Opening Notifications marks every notification read (all roles)
 
@@ -1957,7 +1957,7 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         payments); tenant now lists them too.
   - [x] Jest `unreadNotifications.test.ts` (guard fails on main, all three
         screens).
-  - [ ] Android emulator (release APK, build 12).
+  - [x] Android emulator (release APK), 2026-11-19: owner opens Notifications → unread count unchanged (16 → 16); tenant taps "Viewing Completed" → opens the viewing, back: only that row gone, others stay (unread 56 → 55).
 
 ## CT7-065 🟡 Property Type is free text pre-filled "apartment" (owner)
 
@@ -1969,7 +1969,7 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   - [x] Property detail (owner, tenant) shows the label; tenant search can
         filter on every type.
   - [x] Jest `PropertyTypePicker.test.tsx` (fails on main).
-  - [ ] Android emulator (release APK, build 12).
+  - [x] Android emulator (release APK), 2026-11-19: Edit Property shows the chips with the stored "Townhouse" selected and Save disabled (no change); property detail Type "Townhouse"; not saved.
 
 ## CT7-066 🟠 Tenant can report an issue without a signed lease (tenant)
 
@@ -1983,7 +1983,7 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         you and the owner."
   - [x] Jest `leaseInEffect.test.ts` + `reportIssueLeaseGate.test.tsx` (fail
         on main).
-  - [ ] Android emulator (release APK, build 12).
+  - [x] Android emulator (release APK), 2026-11-19: tenant with an active lease sees Report Issue (+); unsigned-lease refusal covered by Jest (no unsigned fixture on device).
   - [ ] Follow-up: enforce the same rule in the database (RLS on
         `maintenance_requests` insert) via a migration.
 
