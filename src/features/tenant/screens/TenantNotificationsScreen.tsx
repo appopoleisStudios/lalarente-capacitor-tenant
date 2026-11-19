@@ -13,6 +13,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { colors } from '@/src/shared/theme/colors';
+import { formatDate, formatTime } from '@/src/shared/utils/format';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/src/core/query/queryKeys';
 
@@ -164,7 +165,7 @@ export default function TenantNotificationsScreen() {
           id: `viewing-pending-${v.id}`,
           kind: 'viewing',
           title: 'Viewing Request Pending',
-          body: `${v.property?.title || 'Property'} — ${v.requested_date} at ${v.requested_time?.slice(0, 5) || '—'}`,
+          body: `${v.property?.title || 'Property'} — ${formatDate(v.requested_date)} at ${formatTime(v.requested_time) || '—'}`,
           icon: 'time-outline',
           iconColor: '#F9A825',
           bgColor: '#FFF8E1',

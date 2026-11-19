@@ -21,6 +21,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { colors } from '@/src/shared/theme/colors';
+import { formatDate } from '@/src/shared/utils/format';
 import { supabase } from '@/src/lib/supabase';
 import {
   dataSubjectRightsApi,
@@ -440,7 +441,7 @@ export default function DataSubjectRightsScreen() {
                 <Text style={styles.exportTitle}>Your Data Export</Text>
               </View>
               <Text style={styles.exportDate}>
-                Generated: {new Date(exportedData.exportedAt).toLocaleString('en-ZA')}
+                Generated: {formatDate(exportedData.exportedAt, 'datetime')}
               </Text>
               {[
                 {

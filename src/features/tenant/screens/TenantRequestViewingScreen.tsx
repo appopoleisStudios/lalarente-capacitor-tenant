@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { PickerSheet, toDateString } from '@/src/shared/components/ui/DateField';
 import { viewingsApi } from '../../properties/api/viewingsApi';
 import { supabase } from '../../../lib/supabase';
+import { formatTime as formatTimeOfDay } from '@/src/shared/utils/format';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
@@ -265,7 +266,7 @@ export default function TenantRequestViewingScreen() {
                       month: 'short',
                       day: 'numeric',
                     })}{' '}
-                    at {existingViewing.requested_time?.slice(0, 5) || '—'}
+                    at {formatTimeOfDay(existingViewing.requested_time) || '—'}
                   </Text>
                 </View>
 

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { AnimatedButton } from '@/src/shared/components';
+import { formatTime } from '@/src/shared/utils/format';
 
 interface ViewingRequest {
   id: string;
@@ -86,7 +87,7 @@ export const ViewingRequestsSection = ({ viewings, pendingCount }: ViewingReques
               </View>
               <View style={styles.dateContainer}>
                 <Text style={styles.date}>{formatDate(viewing.requested_date)}</Text>
-                <Text style={styles.time}>{viewing.requested_time}</Text>
+                <Text style={styles.time}>{formatTime(viewing.requested_time)}</Text>
               </View>
               <View style={[styles.status, { backgroundColor: statusColor.bg }]}>
                 <Text style={[styles.statusText, { color: statusColor.text }]}>

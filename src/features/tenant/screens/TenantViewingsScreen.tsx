@@ -14,6 +14,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { viewingsApi, ViewingWithRelations } from '../../properties/api/viewingsApi';
 import { supabase } from '../../../lib/supabase';
+import { formatTime } from '@/src/shared/utils/format';
 
 const RSA = { green: '#007A4D', gold: '#FFB81C' };
 
@@ -214,8 +215,8 @@ export default function TenantViewingsScreen() {
             <Ionicons name="calendar-outline" size={16} color="#666" />
             <Text style={styles.detailText}>
               {item.status === 'approved' && item.confirmed_date
-                ? `Confirmed: ${formatDate(item.confirmed_date)} at ${item.requested_time}`
-                : `Requested: ${formatDate(item.requested_date)} at ${item.requested_time}`}
+                ? `Confirmed: ${formatDate(item.confirmed_date)} at ${formatTime(item.requested_time)}`
+                : `Requested: ${formatDate(item.requested_date)} at ${formatTime(item.requested_time)}`}
             </Text>
           </View>
 

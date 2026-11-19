@@ -13,6 +13,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { colors } from '@/src/shared/theme/colors';
+import { formatDate } from '@/src/shared/utils/format';
 import { reportApiError } from '@/src/core/observability/sentry';
 
 type AlertItem = {
@@ -89,7 +90,7 @@ export default function OwnerNotificationsScreen() {
           id: `viewing-${v.id}`,
           kind: 'viewing',
           title: 'New Viewing Request',
-          body: `${(v.tenant as any)?.full_name || 'A tenant'} wants to view ${(v.property as any)?.title || 'your property'} on ${v.requested_date}`,
+          body: `${(v.tenant as any)?.full_name || 'A tenant'} wants to view ${(v.property as any)?.title || 'your property'} on ${formatDate(v.requested_date)}`,
           icon: 'eye',
           iconColor: '#2196F3',
           bgColor: '#E3F2FD',
