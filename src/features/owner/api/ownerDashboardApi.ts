@@ -59,6 +59,8 @@ export interface ActivityItem {
   label: string;
   value: string;
   date: string;
+  /** where tapping the row goes (CT7-056) */
+  route: string;
 }
 
 export interface DocumentStats {
@@ -483,7 +485,7 @@ function formatApplicants(applications: any[]): ApplicantItem[] {
  * Builds unified activity feed from multiple sources
  * Combines payments, maintenance, applications, and viewings into single timeline
  */
-function buildActivityFeed(
+export function buildActivityFeed(
   payments: any[],
   maintenanceRequests: any[],
   applications: any[],
@@ -505,6 +507,7 @@ function buildActivityFeed(
         value: `R ${(p.amount || 0).toLocaleString()}`,
         date: formatRelativeTime(new Date(p.paid_date!)),
         timestamp: new Date(p.paid_date!),
+        route: '/(owner)/rent-roll',
       });
     });
 
@@ -528,6 +531,7 @@ function buildActivityFeed(
         value: `R ${(p.amount || 0).toLocaleString()}`,
         date: formatRelativeTime(new Date(p.due_date!)),
         timestamp: new Date(p.due_date!),
+        route: '/(owner)/arrears',
       });
     });
 
@@ -543,6 +547,7 @@ function buildActivityFeed(
         value: property?.title || 'Property',
         date: formatRelativeTime(new Date(m.created_at)),
         timestamp: new Date(m.created_at),
+        route: `/(owner)/maintenance/${m.id}`,
       });
     });
 
@@ -558,6 +563,7 @@ function buildActivityFeed(
         value: property?.title || 'Property',
         date: formatRelativeTime(new Date(a.created_at)),
         timestamp: new Date(a.created_at),
+        route: `/(owner)/applications/${a.id}`,
       });
     });
 
@@ -591,7 +597,14 @@ function buildActivityFeed(
       label = 'Viewing Cancelled';
     }
 
-    activities.push({ icon, label, value, date: formatRelativeTime(timestamp), timestamp });
+    activities.push({
+      icon,
+      label,
+      value,
+      date: formatRelativeTime(timestamp),
+      timestamp,
+      route: `/(owner)/viewings/${v.id}`,
+    });
   });
 
   // Sort by most recent first and return without timestamp field

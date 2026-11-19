@@ -1947,6 +1947,29 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         compare dates as timestamps and ignore failed / partial rows
         (`ownerDashboardApi.ts`) — move them onto `summarizeRent`.
 
+## CT7-056 🟡 Owner dashboard Recent Activity rows do nothing when tapped (owner)
+
+- **Role:** owner · **Platform:** all · Found in the full walkthrough (code
+  review of the dashboard).
+- **Today:** each Recent Activity row (rent received, arrears, new maintenance,
+  new application, viewing events) and the "View All" link are animated
+  buttons with no `onPress`: they react to a tap and go nowhere. There is no
+  full activity screen for "View All" to open.
+- **Acceptance criteria:**
+  - [x] Every feed item carries a `route` (required in the type): rent → Rent
+        Roll, arrears → Arrears, maintenance / application / viewing → its
+        detail screen. Tapping a row opens it.
+  - [x] Dead "View All" removed.
+  - [x] Dashboard cache key versioned (`v2`), so a payload cached before the
+        change (activities without `route`) is never painted; sign-out still
+        clears old keys (SA #261). Jest `dashboardCache.test.ts` and
+        `buildActivityFeed.test.ts` (each category → its record id).
+  - [x] Jest `ActivitySection.test.tsx`: rows navigate, no View All (fails
+        without the fix).
+  - [x] Android emulator (release APK), 2026-11-19: Recent Activity shows no
+        "View All"; tapping "New Application · 2B Datura" opens its
+        Application Details.
+
 ## CT7-055 🟡 Back from a maintenance request loops back to it (owner)
 
 - **Role:** owner · **Platform:** all (seen on Android) · Found in the full
