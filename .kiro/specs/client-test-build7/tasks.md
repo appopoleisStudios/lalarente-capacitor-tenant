@@ -1916,6 +1916,37 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         with the keyboard up; lifecycle-06 posts a comment with one tap
         (both LC-comments posted; owner inspection steps green).
 
+## CT7-057 🟠 Rent Roll says "Paid" for rent that was never paid (owner)
+
+- **Role:** owner · **Platform:** all · Found in the Android walkthrough
+  (owner dashboard → Rent Roll): 2B Datura showed **Paid** while Invoices
+  ("Total Collected R 0,00") and Tax Reports ("0 payments") agreed nothing was
+  collected — its only payment is pending, due 1 Dec. The badge also showed
+  the raw value "No_lease".
+- **Today:** a rented property was "paid" whenever its next payment was more
+  than five days away, or when it had no payments, without checking that any
+  payment was ever completed.
+- **Acceptance criteria:**
+  - [x] `summarizeRent()` (pure; status, next due, overdue amount): rent rows
+        of the active lease only; unpaid = pending, failed or completed with an
+        outstanding balance (partial); "Paid" only when the latest rent that
+        has fallen due is settled; nothing due yet → new **Upcoming** status
+        (own colour, icon and filter chip); within five days → "Due soon";
+        due dates compared as South African calendar dates (SA #262).
+  - [x] Filter chips scroll sideways (six chips overflow a phone width).
+  - [x] Badge and filter chips show labels ("No lease", "Due soon"), not raw
+        values.
+  - [x] Jest `rentRollStatus.test.ts`: each status incl. the 2B Datura case,
+        labels, and a guard that the screen uses them (fails on main).
+  - [x] Android emulator (release APK), 2026-11-19: Rent Roll shows 2B Datura
+        as **Upcoming** (next due 12/1/2026), Dolphin and 96 De Waal as "No
+        lease"; chips readable and scroll sideways (a first build clipped the
+        labels: chip row now `flexShrink: 0`); Upcoming filter lists only
+        2B Datura.
+  - [ ] Follow-up (separate): owner dashboard "In Arrears" and analytics still
+        compare dates as timestamps and ignore failed / partial rows
+        (`ownerDashboardApi.ts`) — move them onto `summarizeRent`.
+
 ## CT7-056 🟡 Owner dashboard Recent Activity rows do nothing when tapped (owner)
 
 - **Role:** owner · **Platform:** all · Found in the full walkthrough (code
