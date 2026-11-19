@@ -575,12 +575,14 @@ export default function OwnerMaintenanceDetailScreen() {
         <TouchableOpacity
           testID="owner-maintenance-detail-back"
           onPress={() => {
-            // Navigate back to maintenance list instead of using router.back()
-            // which can go to dashboard
+            // Back to where the owner came from (list, dashboard, notification),
+            // like Android Back. Pushing the list here added a history entry, so
+            // the next Back reopened this request (CT7-055). With no history
+            // (opened from a link) go to the list.
             if (router.canGoBack()) {
-              router.push('/(owner)/maintenance');
-            } else {
               router.back();
+            } else {
+              router.replace('/(owner)/maintenance');
             }
           }}
           style={styles.headerButton}

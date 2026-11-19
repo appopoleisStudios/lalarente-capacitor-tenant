@@ -1916,6 +1916,22 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         with the keyboard up; lifecycle-06 posts a comment with one tap
         (both LC-comments posted; owner inspection steps green).
 
+## CT7-055 🟡 Back from a maintenance request loops back to it (owner)
+
+- **Role:** owner · **Platform:** all (seen on Android) · Found in the full
+  walkthrough; reproduced on the emulator: Maintenance → request → ← →
+  list → Android Back → **the same request again** → Back → dashboard.
+- **Today:** the header back arrow pushed the maintenance list whenever there
+  was history, adding a new entry instead of going back; with no history
+  (opened from a link) it called `back()`, which goes nowhere.
+- **Acceptance criteria:**
+  - [x] The arrow goes back like Android Back; with no history it replaces the
+        screen with the maintenance list.
+  - [x] Jest `OwnerMaintenanceDetailBack.test.tsx`: back with history, list
+        without (both fail without the fix).
+  - [ ] Android emulator (release APK): Maintenance → request → ← → list →
+        Back leaves Maintenance (no loop back into the request).
+
 ## CT7-054 🟡 Vendor can't open the quote they submitted (vendor)
 
 - **Role:** vendor · **Platform:** all · Found in the full walkthrough (code
