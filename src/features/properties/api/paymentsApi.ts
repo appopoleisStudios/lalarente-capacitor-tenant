@@ -57,14 +57,6 @@ export interface ProcessPaymentInput {
   payment_reference?: string;
 }
 
-export interface PaymentStats {
-  total_collected: number;
-  total_pending: number;
-  total_overdue: number;
-  overdue_count: number;
-  on_time_percentage: number;
-}
-
 export const paymentsApi = {
   /**
    * Create a new payment record
@@ -446,55 +438,6 @@ export const paymentsApi = {
     }
 
     return data as PaymentWithRelations[];
-  },
-
-  /**
-   * Calculate payment statistics for owner
-   */
-  async getPaymentStats(ownerId: string): Promise<PaymentStats> {
-    const { data: payments, error } = await supabase
-      .from('payments')
-      .select('id, amount, status, due_date, paid_date')
-      .eq('owner_id', ownerId);
-
-    if (error) {
-      console.error('Error fetching payment stats:', error);
-      throw new Error(`Failed to fetch payment stats: ${error.message}`);
-    }
-
-    const today = new Date();
-
-    const totalCollected =
-      payments
-        ?.filter((p) => p.status === 'completed')
-        .reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
-
-    const totalPending =
-      payments
-        ?.filter((p) => p.status === 'pending' && new Date(p.due_date) >= today)
-        .reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
-
-    const overduePayments =
-      payments?.filter((p) => p.status === 'pending' && new Date(p.due_date) < today) || [];
-
-    const totalOverdue = overduePayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-
-    const completedPayments = payments?.filter((p) => p.status === 'completed') || [];
-    const onTimePayments = completedPayments.filter((p) => {
-      if (!p.paid_date) return false;
-      return new Date(p.paid_date) <= new Date(p.due_date);
-    });
-
-    const onTimePercentage =
-      completedPayments.length > 0 ? (onTimePayments.length / completedPayments.length) * 100 : 0;
-
-    return {
-      total_collected: totalCollected,
-      total_pending: totalPending,
-      total_overdue: totalOverdue,
-      overdue_count: overduePayments.length,
-      on_time_percentage: Math.round(onTimePercentage),
-    };
   },
 
   /**
