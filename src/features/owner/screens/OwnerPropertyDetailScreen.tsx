@@ -19,6 +19,8 @@ import { leasesApi } from '../../properties/api/leasesApi';
 import type { PropertyWithRelations } from '../../properties/api/propertiesApi';
 import type { LeaseWithRelations } from '../../properties/api/leasesApi';
 import { styles } from './OwnerPropertyDetailScreen.styles';
+import { optionLabel } from '@/src/shared/utils/optionLabel';
+import { PROPERTY_TYPE_OPTIONS } from '@/src/features/properties/utils/propertyTypes';
 import { reportApiError } from '@/src/core/observability/sentry';
 
 import { formatDate } from '../../../shared/utils/format';
@@ -303,7 +305,9 @@ export default function OwnerPropertyDetailScreen() {
               <View style={styles.detailsGrid}>
                 <View style={styles.detailItem}>
                   <Text style={styles.detailLabel}>Type</Text>
-                  <Text style={styles.detailValue}>{property.property_type}</Text>
+                  <Text style={styles.detailValue}>
+                    {optionLabel(property.property_type, PROPERTY_TYPE_OPTIONS)}
+                  </Text>
                 </View>
                 <View style={styles.detailItem}>
                   <Text style={styles.detailLabel}>Bedrooms</Text>

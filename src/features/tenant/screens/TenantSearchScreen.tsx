@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import type { PropertyWithRelations } from '../../properties/api/propertiesApi';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
+import { PROPERTY_TYPE_OPTIONS } from '@/src/features/properties/utils/propertyTypes';
 
 export default function TenantSearchScreen() {
   const router = useRouter();
@@ -297,7 +298,7 @@ export default function TenantSearchScreen() {
               <View style={styles.filterRow}>
                 <Text style={styles.filterLabel}>Property Type</Text>
                 <View style={styles.optionButtons}>
-                  {['house', 'apartment', 'townhouse'].map((type) => (
+                  {PROPERTY_TYPE_OPTIONS.map(({ value: type, label }) => (
                     <TouchableOpacity
                       testID={`tenant-search-type-${type}`}
                       key={type}
@@ -313,7 +314,7 @@ export default function TenantSearchScreen() {
                           propertyType === type && styles.optionButtonTextActive,
                         ]}
                       >
-                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                        {label}
                       </Text>
                     </TouchableOpacity>
                   ))}

@@ -18,6 +18,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { propertiesApi } from '../../properties/api/propertiesApi';
 import type { PropertyWithRelations } from '../../properties/api/propertiesApi';
+import { optionLabel } from '@/src/shared/utils/optionLabel';
+import { PROPERTY_TYPE_OPTIONS } from '@/src/features/properties/utils/propertyTypes';
 import { viewingGate, OPEN_VIEWING_STATUSES, type OpenViewing } from '../utils/viewingGate';
 
 import { formatDate } from '../../../shared/utils/format';
@@ -561,7 +563,10 @@ export default function TenantPropertyDetailScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Property Details</Text>
               <View style={styles.detailsGrid}>
-                <DetailRow label="Type" value={property.property_type} />
+                <DetailRow
+                  label="Type"
+                  value={optionLabel(property.property_type, PROPERTY_TYPE_OPTIONS)}
+                />
                 {property.deposit_amount && (
                   <DetailRow
                     label="Deposit"

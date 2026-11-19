@@ -67,3 +67,27 @@ describe('Add / Edit Property use the picker, not a text input (CT7-065 guard)',
     expect(src).not.toMatch(/onChangeText=\{[^}]*property_type:/);
   });
 });
+
+describe('property type shows its label everywhere (CT7-065 guard)', () => {
+  const fs = jest.requireActual('fs') as typeof import('fs');
+  const path = jest.requireActual('path') as typeof import('path');
+  const FEATURES = path.resolve(__dirname, '..', '..', '..');
+  const read = (rel: string) => fs.readFileSync(path.join(FEATURES, rel), 'utf8');
+
+  it.each([
+    'owner/screens/OwnerPropertyDetailScreen.tsx',
+    'tenant/screens/TenantPropertyDetailScreen.tsx',
+  ])('%s formats property_type with optionLabel', (rel) => {
+    const src = read(rel);
+    expect(src).toMatch(/optionLabel\(\s*property\.property_type,\s*PROPERTY_TYPE_OPTIONS\s*\)/);
+    // No raw render: {property.property_type} or value={property.property_type}
+    expect(src).not.toMatch(/\{\s*property\.property_type\s*\}/);
+  });
+
+  it('TenantSearchScreen filters on every PROPERTY_TYPE_OPTIONS type, case-insensitively', () => {
+    const src = read('tenant/screens/TenantSearchScreen.tsx');
+    expect(src).toMatch(/PROPERTY_TYPE_OPTIONS\.map\(/);
+    expect(src).not.toMatch(/\[\s*'house',\s*'apartment',\s*'townhouse'\s*\]/);
+    expect(src).toMatch(/property_type\?\.toLowerCase\(\)\s*===\s*propertyType/);
+  });
+});
