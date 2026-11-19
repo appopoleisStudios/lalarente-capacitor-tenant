@@ -242,7 +242,7 @@ export default function TenantMaintenanceListScreen() {
                     ? 'Long-press any request to archive it'
                     : activeFilter === 'all'
                       ? 'Everything is working great!'
-                      : `No ${activeFilter.replace('_', ' ')} issues`}
+                      : `No ${activeFilter.replace(/_/g, ' ')} issues`}
                 </Text>
                 {activeFilter === 'all' && (
                   <AnimatedButton onPress={handleReportIssue} testID="maintenance-report-cta">

@@ -1916,6 +1916,39 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         with the keyboard up; lifecycle-06 posts a comment with one tap
         (both LC-comments posted; owner inspection steps green).
 
+## CT7-058 🟡 Property search with no match says "No properties yet" (owner)
+
+- **Role:** owner · **Platform:** all · Found in the Android walkthrough
+  (My Properties → search "zzz-no-such-property").
+- **Today:** the list's empty state was always "No properties yet — Add your
+  first property", even for an owner with four properties whose search or
+  status filter matched none.
+- **Acceptance criteria:**
+  - [x] With properties hidden by the search / filter: "No properties match"
+        and a **Clear filters** button; "No properties yet" only for an owner
+        with no properties.
+  - [x] Jest `PropertiesListEmptyState.test.tsx` (fails without the fix).
+  - [ ] Android emulator (release APK): search with no match → "No properties
+        match" → Clear filters → list back.
+
+## CT7-059 🟡 Raw values with underscores on screen ("Prepaid Water_electricity", "Bbq")
+
+- **Role:** owner, tenant · **Platform:** all · Found in the Android
+  walkthrough (Add Property: selected services / amenities chips).
+- **Today:** labels were built with `value.replace('_', ' ')`, which replaces
+  only the first underscore, then title-cased: "Prepaid Water_electricity",
+  "Bbq". Same pattern on application status, compliance risk level, lease
+  type, tenant maintenance empty text and the inspection-issue description.
+- **Acceptance criteria:**
+  - [x] Add / Edit Property chips use the option's own label
+        (`optionLabel`): "Prepaid Water/Electricity", "BBQ"; custom entries
+        formatted with every underscore replaced.
+  - [x] The other sites replace every underscore.
+  - [x] Jest `optionLabel.test.ts` + guard: no string-pattern `.replace('_', …)`
+        anywhere in `src/` or `app/` (fails without the fix).
+  - [ ] Android emulator (release APK): Add Property → tick Prepaid
+        Water/Electricity and BBQ → chips read the same.
+
 ## CT7-057 🟠 Rent Roll says "Paid" for rent that was never paid (owner)
 
 - **Role:** owner · **Platform:** all · Found in the Android walkthrough

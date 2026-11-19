@@ -161,7 +161,7 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
         inspectionCommentId: comment.id,
         prefillTitle: `${comment.room}: inspection issue`,
         prefillDescription: `Raised from the ${
-          inspection.type === 'move_in' ? 'move-in' : inspection.type.replace('_', '-')
+          inspection.type === 'move_in' ? 'move-in' : inspection.type.replace(/_/g, '-')
         } inspection (${comment.room}).\n\n${comment.text}`,
       },
     } as any);

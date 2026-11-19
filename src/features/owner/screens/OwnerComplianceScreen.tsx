@@ -521,7 +521,7 @@ export default function OwnerComplianceScreen() {
                         {tenant.riskLevel && (
                           <View style={[styles.riskBadge, { backgroundColor: riskColor + '20' }]}>
                             <Text style={[styles.riskText, { color: riskColor }]}>
-                              {tenant.riskLevel.replace('_', ' ').toUpperCase()}
+                              {tenant.riskLevel.replace(/_/g, ' ').toUpperCase()}
                             </Text>
                           </View>
                         )}
