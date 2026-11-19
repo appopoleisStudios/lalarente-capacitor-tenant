@@ -6,7 +6,7 @@
  * form.
  */
 import React, { useEffect as mockUseEffect } from 'react';
-import { render, screen, waitFor } from '@testing-library/react-native';
+import { act, render, screen, waitFor } from '@testing-library/react-native';
 import TenantMaintenanceReportScreen from '../screens/TenantMaintenanceReportScreen';
 import TenantMaintenanceListScreen from '../screens/TenantMaintenanceListScreen';
 
@@ -67,6 +67,9 @@ jest.mock('@/src/features/maintenance/hooks', () => {
 // The tenant's leases in the database; the query builder applies the
 // .eq/.in filters the screen sends, like PostgREST would.
 let mockLeases: { id: string; status: string; tenant_id: string; property_id: string }[] = [];
+// Set to make the lease query fail, like a network/PostgREST error
+let mockLeaseError: { message: string } | null = null;
+let mockLeaseQueries = 0;
 jest.mock('@/src/lib/supabase', () => {
   const query = () => {
     const filters: ((row: any) => boolean)[] = [];
@@ -81,11 +84,14 @@ jest.mock('@/src/lib/supabase', () => {
         filters.push((row) => vals.includes(row[col]));
         return builder;
       },
-      then: (resolve: (v: unknown) => void, reject?: (e: unknown) => void) =>
-        Promise.resolve({
-          data: mockLeases.filter((row) => filters.every((f) => f(row))),
-          error: null,
-        }).then(resolve, reject),
+      then: (resolve: (v: unknown) => void, reject?: (e: unknown) => void) => {
+        mockLeaseQueries += 1;
+        return Promise.resolve(
+          mockLeaseError
+            ? { data: null, error: mockLeaseError }
+            : { data: mockLeases.filter((row) => filters.every((f) => f(row))), error: null }
+        ).then(resolve, reject);
+      },
     };
     return builder;
   };
@@ -103,7 +109,14 @@ const UNSIGNED = [
   'pending_owner_signature',
 ];
 
+const NEEDS_LEASE = 'You can report issues once your lease is signed by you and the owner.';
+
 describe('CT7-066 Report Issue needs a lease signed by both', () => {
+  beforeEach(() => {
+    mockLeaseError = null;
+    mockLeaseQueries = 0;
+  });
+
   describe('report screen (deep-link target)', () => {
     it.each(UNSIGNED)('refuses for a %s lease', async (status) => {
       mockLeases = lease(status);
@@ -124,6 +137,17 @@ describe('CT7-066 Report Issue needs a lease signed by both', () => {
         expect(await screen.findByText('Submit Request')).toBeTruthy();
       }
     );
+
+    it('says the lease check failed (not "No Active Lease") when the query errors', async () => {
+      mockLeases = lease('active');
+      mockLeaseError = { message: 'Network request failed' };
+      render(<TenantMaintenanceReportScreen />);
+      expect(await screen.findByText("Couldn't check your lease")).toBeTruthy();
+      expect(screen.getByTestId('maintenance-report-retry')).toBeTruthy();
+      expect(screen.queryByText('No Active Lease')).toBeNull();
+      expect(screen.queryByText(NEEDS_LEASE)).toBeNull();
+      expect(screen.queryByText('Submit Request')).toBeNull();
+    });
   });
 
   describe('maintenance list Report Issue buttons', () => {
@@ -141,6 +165,17 @@ describe('CT7-066 Report Issue needs a lease signed by both', () => {
       await waitFor(() => expect(screen.getByTestId('maintenance-report-fab')).toBeTruthy());
       expect(screen.getByTestId('maintenance-report-cta')).toBeTruthy();
       expect(screen.queryByTestId('maintenance-report-needs-lease')).toBeNull();
+    });
+
+    it('shows neither the buttons nor the needs-lease note when the check errors', async () => {
+      mockLeases = lease('pending_owner_signature');
+      mockLeaseError = { message: 'Network request failed' };
+      render(<TenantMaintenanceListScreen />);
+      await waitFor(() => expect(mockLeaseQueries).toBeGreaterThan(0));
+      await act(async () => {});
+      expect(screen.queryByTestId('maintenance-report-needs-lease')).toBeNull();
+      expect(screen.queryByTestId('maintenance-report-fab')).toBeNull();
+      expect(screen.queryByTestId('maintenance-report-cta')).toBeNull();
     });
   });
 });

@@ -73,6 +73,9 @@ export default function TenantMaintenanceReportScreen() {
   const [activeLeases, setActiveLeases] = useState<any[]>([]);
   const [selectedLeaseId, setSelectedLeaseId] = useState<string | null>(null);
   const [loadingData, setLoadingData] = useState(true);
+  // The lease check failed (network/query error) — not the same as "no lease"
+  const [leaseCheckFailed, setLeaseCheckFailed] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [selectedVendor, setSelectedVendor] = useState<{
     id: string;
     full_name: string | null;
@@ -93,6 +96,7 @@ export default function TenantMaintenanceReportScreen() {
     async function fetchData() {
       try {
         setLoadingData(true);
+        setLeaseCheckFailed(false);
 
         // Fetch categories
         const categoriesData = await maintenanceApi.getServiceCategories();
@@ -120,7 +124,7 @@ export default function TenantMaintenanceReportScreen() {
 
           if (error) {
             console.error('❌ Error fetching leases:', error);
-            // Don't show alert here - let the UI handle the null state
+            setLeaseCheckFailed(true);
           } else {
             const reportable = (leasesData ?? []).filter((l) => canReportIssue(l.status));
             if (reportable.length > 0) {
@@ -132,14 +136,14 @@ export default function TenantMaintenanceReportScreen() {
         }
       } catch (error: any) {
         console.error('Error fetching data:', error);
-        Alert.alert('Error', 'Failed to load form data');
+        setLeaseCheckFailed(true);
       } finally {
         setLoadingData(false);
       }
     }
 
     fetchData();
-  }, [user?.id]);
+  }, [user?.id, loadAttempt]);
 
   // Fetch service items when selected lease changes
   useEffect(() => {
@@ -278,6 +282,36 @@ export default function TenantMaintenanceReportScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={RSA.green} />
           <Text style={styles.loadingText}>Loading form...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (leaseCheckFailed) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            testID="maintenance-report-back"
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color={colors.gray[900]} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Report Issue</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorIcon}>⚠️</Text>
+          <Text style={styles.errorTitle}>Couldn&apos;t check your lease</Text>
+          <Text style={styles.errorMessage}>Check your connection and try again.</Text>
+          <TouchableOpacity
+            testID="maintenance-report-retry"
+            style={styles.retryButton}
+            onPress={() => setLoadAttempt((n) => n + 1)}
+          >
+            <Text style={styles.retryButtonText}>Try Again</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );

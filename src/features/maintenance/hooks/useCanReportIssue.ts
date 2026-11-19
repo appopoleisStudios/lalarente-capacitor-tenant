@@ -8,8 +8,9 @@ import {
 
 /**
  * Whether the signed-in tenant has a lease in effect, i.e. may report an
- * issue to their owner. `null` while the first check runs; entry points show
- * only on `true`, so they never flash on for an unsigned lease.
+ * issue to their owner. `true`/`false` only after a successful check; `null`
+ * while checking or when the check failed. Entry points show only on `true`
+ * and the needs-lease note only on `false`, so a network error shows neither.
  */
 export function useCanReportIssue(enabled = true) {
   const { user } = useAuth();
@@ -20,12 +21,16 @@ export function useCanReportIssue(enabled = true) {
       setCanReport(false);
       return;
     }
-    const { data, error } = await supabase
-      .from('leases')
-      .select('id, status')
-      .eq('tenant_id', user.id)
-      .in('status', [...LEASE_IN_EFFECT_STATUSES]);
-    setCanReport(!error && (data ?? []).some((lease) => canReportIssue(lease.status)));
+    try {
+      const { data, error } = await supabase
+        .from('leases')
+        .select('id, status')
+        .eq('tenant_id', user.id)
+        .in('status', [...LEASE_IN_EFFECT_STATUSES]);
+      setCanReport(error ? null : (data ?? []).some((lease) => canReportIssue(lease.status)));
+    } catch {
+      setCanReport(null);
+    }
   }, [enabled, user?.id]);
 
   useEffect(() => {
