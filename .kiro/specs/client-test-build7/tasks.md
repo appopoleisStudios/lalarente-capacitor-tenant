@@ -1935,8 +1935,9 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         `buildActivityFeed.test.ts` (each category → its record id).
   - [x] Jest `ActivitySection.test.tsx`: rows navigate, no View All (fails
         without the fix).
-  - [ ] Android emulator (release APK): tap a Recent Activity row on the owner
-        dashboard → its detail opens.
+  - [x] Android emulator (release APK), 2026-11-19: Recent Activity shows no
+        "View All"; tapping "New Application · 2B Datura" opens its
+        Application Details.
 
 ## CT7-055 🟡 Back from a maintenance request loops back to it (owner)
 
