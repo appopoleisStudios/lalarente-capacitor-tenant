@@ -1916,6 +1916,33 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         with the keyboard up; lifecycle-06 posts a comment with one tap
         (both LC-comments posted; owner inspection steps green).
 
+## CT7-053 🟠 Android alerts lose every button after the third (all roles)
+
+- **Role:** all · **Platform:** Android · Found in the full walkthrough
+  (owner maintenance code review), confirmed in React Native's `Alert.js`:
+  Android keeps `buttons.slice(0, 3)` and the dialog is not cancelable.
+- **Today:** six dialogs had more than three buttons, so on Android:
+  - owner **Push to Vendors**: "Dedicated Vendors" missing;
+  - document **Extend Retention**: "5 Years" missing;
+  - tenant **Profile → Country Code**: only +27 / +263 / +267, no UK, USA,
+    India, no Cancel;
+  - tenant **Documents upload** and **Profile → proof of address** source
+    pickers: no Cancel (user forced to pick a source);
+  - **Vendor directory → Invite** with three open jobs: no Cancel.
+- **Acceptance criteria:**
+  - [x] `showChoices` (same arguments as `Alert.alert`): on Android with more
+        than three buttons, a bottom sheet lists them all; Back / backdrop /
+        Cancel run the cancel button. iOS and ≤ 3 buttons unchanged.
+  - [x] The six dialogs use it; the host is mounted in the root layout.
+  - [x] Jest `ChoiceSheet.test.tsx`: all four Push to Vendors choices shown and
+        runnable, cancel on Back, native alert kept for ≤ 3 and on iOS.
+  - [x] Jest guard `androidAlertButtons.test.ts`: no `Alert.alert` with more
+        than three buttons, buttons must be countable (fails on the old code).
+  - [x] Android emulator (release APK), 2026-11-19: Country Code sheet lists
+        all six codes + Cancel and picking +44 applies; proof-of-address
+        picker shows all three sources + Cancel, and Cancel and Back close it.
+        Push to Vendors uses the same sheet path (Jest covers its 4 choices).
+
 ## CT7-052 🟠 Active lease left without its PDF, owner told "activated!" (owner)
 
 - **Role:** owner · **Platform:** all · Found in the Android lifecycle run
