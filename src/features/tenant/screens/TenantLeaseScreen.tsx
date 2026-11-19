@@ -578,7 +578,7 @@ export default function TenantLeaseScreen() {
                   icon="document-text"
                   label="Lease Type"
                   value={lease.lease_type
-                    .replace('_', ' ')
+                    .replace(/_/g, ' ')
                     .replace(/\b\w/g, (l) => l.toUpperCase())}
                 />
               )}

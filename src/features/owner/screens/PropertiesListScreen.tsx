@@ -204,17 +204,37 @@ export default function PropertiesListScreen() {
               />
             }
             ListEmptyComponent={
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyTitle}>No properties yet</Text>
-                <Text style={styles.emptyText}>
-                  Add your first property to start managing rent and maintenance.
-                </Text>
-                <AnimatedButton onPress={() => router.push('/(owner)/add-property')}>
-                  <View style={styles.emptyButton}>
-                    <Text style={styles.emptyButtonText}>+ Add Property</Text>
-                  </View>
-                </AnimatedButton>
-              </View>
+              properties.length > 0 ? (
+                // the owner has properties; the search or status filter hides
+                // them all (CT7-058: this said "No properties yet")
+                <View style={styles.emptyState} testID="owner-properties-no-match">
+                  <Text style={styles.emptyTitle}>No properties match</Text>
+                  <Text style={styles.emptyText}>Nothing matches your search or filter.</Text>
+                  <AnimatedButton
+                    testID="owner-properties-clear-filters"
+                    onPress={() => {
+                      setSearchQuery('');
+                      setStatusFilter('all');
+                    }}
+                  >
+                    <View style={styles.emptyButton}>
+                      <Text style={styles.emptyButtonText}>Clear filters</Text>
+                    </View>
+                  </AnimatedButton>
+                </View>
+              ) : (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyTitle}>No properties yet</Text>
+                  <Text style={styles.emptyText}>
+                    Add your first property to start managing rent and maintenance.
+                  </Text>
+                  <AnimatedButton onPress={() => router.push('/(owner)/add-property')}>
+                    <View style={styles.emptyButton}>
+                      <Text style={styles.emptyButtonText}>+ Add Property</Text>
+                    </View>
+                  </AnimatedButton>
+                </View>
+              )
             }
           />
         )}

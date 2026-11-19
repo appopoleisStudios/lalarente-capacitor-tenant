@@ -24,6 +24,7 @@ import { reportApiError } from '@/src/core/observability/sentry';
 import { validate3dTourUrl } from '@/src/features/properties/utils/validate3dTourUrl';
 import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
 import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
+import { optionLabel } from '@/src/shared/utils/optionLabel';
 
 interface PropertyForm {
   title: string;
@@ -426,9 +427,7 @@ export default function AddPropertyScreen() {
                   {form.amenities.map((amenity) => (
                     <AnimatedButton key={amenity} onPress={() => removeAmenity(amenity)}>
                       <View style={styles.tag}>
-                        <Text style={styles.tagText}>
-                          {amenity.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
-                        </Text>
+                        <Text style={styles.tagText}>{optionLabel(amenity, AMENITY_OPTIONS)}</Text>
                         <Text style={styles.tagClose}>×</Text>
                       </View>
                     </AnimatedButton>
@@ -484,7 +483,7 @@ export default function AddPropertyScreen() {
                         style={[styles.tag, { backgroundColor: '#d1fae5', borderColor: '#059669' }]}
                       >
                         <Text style={[styles.tagText, { color: '#065f46' }]}>
-                          {service.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                          {optionLabel(service, SERVICE_OPTIONS)}
                         </Text>
                         <Text style={[styles.tagClose, { color: '#059669' }]}>×</Text>
                       </View>
