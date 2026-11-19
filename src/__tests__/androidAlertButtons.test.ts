@@ -97,31 +97,61 @@ function parts(src: string, open: number): string[] {
   throw new Error('unbalanced brackets');
 }
 
-/** Most buttons an expression can produce, or null when it can't be told. */
+/** Index of the bracket closing the one at `open`. */
+function closing(src: string, open: number): number {
+  let depth = 0;
+  for (let i = open; i < src.length; i += 1) {
+    if ('([{'.includes(src[i])) depth += 1;
+    else if (')]}'.includes(src[i])) {
+      depth -= 1;
+      if (depth === 0) return i;
+    }
+  }
+  return -1;
+}
+
+/** `cond ? a : b` split at its top level, or null. */
+function ternary(e: string): [string, string] | null {
+  let depth = 0;
+  let q = -1;
+  let nested = 0;
+  for (let i = 0; i < e.length; i += 1) {
+    const c = e[i];
+    if ('([{'.includes(c)) depth += 1;
+    else if (')]}'.includes(c)) depth -= 1;
+    else if (depth === 0 && c === '?' && e[i + 1] !== '.' && e[i + 1] !== '?' && e[i - 1] !== '?') {
+      if (q < 0) q = i;
+      else nested += 1;
+    } else if (depth === 0 && c === ':' && q >= 0) {
+      if (nested === 0) return [e.slice(q + 1, i), e.slice(i + 1)];
+      nested -= 1;
+    }
+  }
+  return null;
+}
+
+/**
+ * Most buttons an expression can produce, or null when it can't be told.
+ * Only array literals, spreads of those, and `?:` between them are counted;
+ * anything else (a variable, `.map(…)`) is unknown.
+ */
 export function maxButtons(expr: string): number | null {
-  const e = expr.trim();
-  if (e.startsWith('[')) {
+  let e = expr.trim();
+  while (e.startsWith('(') && closing(e, 0) === e.length - 1) e = e.slice(1, -1).trim();
+  if (e.startsWith('[') && closing(e, 0) === e.length - 1) {
     let total = 0;
     for (const part of parts(e, 0)) {
       const p = part.trim();
-      if (p.startsWith('...')) {
-        const arrays = [...p.matchAll(/\[/g)].map((m) => {
-          const inner = parts(p, m.index!);
-          return inner.length;
-        });
-        total += arrays.length ? Math.max(...arrays) : Infinity;
-      } else total += 1;
+      const n = p.startsWith('...') ? maxButtons(p.slice(3)) : 1;
+      if (n === null) return null;
+      total += n;
     }
     return total;
   }
-  // cond ? [..] : [..]
-  const q = e.indexOf('?');
-  if (q > 0) {
-    const arrays = [...e.matchAll(/(?:\?|:)\s*\[/g)].map((m) =>
-      maxButtons(e.slice(m.index! + m[0].length - 1))
-    );
-    if (arrays.length === 2 && arrays.every((n) => n !== null))
-      return Math.max(...(arrays as number[]));
+  const branches = ternary(e);
+  if (branches) {
+    const [x, y] = branches.map(maxButtons);
+    return x === null || y === null ? null : Math.max(x, y);
   }
   return null;
 }
@@ -181,6 +211,19 @@ describe('Android alerts never lose buttons (CT7-053)', () => {
       count(`Alert.alert('a', 'b', [{ text: 'OK' }, ...(x ? [{ text: 'Go' }] : [])])`)
     ).toEqual([2]);
     expect(count(`Alert.alert('a', 'b', buttons)`)).toEqual([null]);
+    // SA #258: arrays inside a spread's callbacks or indexes are not buttons
+    expect(count(`Alert.alert('a', 'b', [...items.map((x) => ({ text: x.tags[0] }))])`)).toEqual([
+      null,
+    ]);
+    expect(
+      count(
+        `Alert.alert('a', 'b', [...(ok ? [{ text: 'A', onPress: () => f([1, 2, 3, 4]) }] : [])])`
+      )
+    ).toEqual([1]);
+    expect(count(`Alert.alert('a', 'b', a ? [{ text: 'A' }] : b ? [] : [{}, {}, {}, {}])`)).toEqual(
+      [4]
+    );
+    expect(count(`Alert.alert('a', 'b', [{ text: 'A', onPress: () => x?.y ?? z }])`)).toEqual([1]);
     expect(count(`Alert.alert('a')`)).toEqual([null]);
   });
 });
