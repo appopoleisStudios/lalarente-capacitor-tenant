@@ -26,6 +26,11 @@ import { colors } from '@/src/shared/theme/colors';
 import { StyleSheet } from 'react-native';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
+import {
+  LEASE_IN_EFFECT_STATUSES,
+  REPORT_ISSUE_NEEDS_SIGNED_LEASE_MESSAGE,
+  canReportIssue,
+} from '@/src/features/leases/utils/leaseInEffect';
 
 const RSA = { green: '#007A4D' }; // Tenant primary: RSA Green
 
@@ -68,6 +73,9 @@ export default function TenantMaintenanceReportScreen() {
   const [activeLeases, setActiveLeases] = useState<any[]>([]);
   const [selectedLeaseId, setSelectedLeaseId] = useState<string | null>(null);
   const [loadingData, setLoadingData] = useState(true);
+  // The lease check failed (network/query error) — not the same as "no lease"
+  const [leaseCheckFailed, setLeaseCheckFailed] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [selectedVendor, setSelectedVendor] = useState<{
     id: string;
     full_name: string | null;
@@ -88,12 +96,14 @@ export default function TenantMaintenanceReportScreen() {
     async function fetchData() {
       try {
         setLoadingData(true);
+        setLeaseCheckFailed(false);
 
         // Fetch categories
         const categoriesData = await maintenanceApi.getServiceCategories();
         setCategories(categoriesData);
 
-        // Fetch tenant's active leases to get properties (including pending signature leases)
+        // Fetch tenant's leases in effect — issues can only be reported to the
+        // owner on a lease signed by both (CT7-066)
         if (user?.id) {
           console.log('🔍 Fetching leases for tenant:', user.id);
 
@@ -107,33 +117,33 @@ export default function TenantMaintenanceReportScreen() {
             `
             )
             .eq('tenant_id', user.id)
-            .in('status', ['active', 'pending_tenant_signature', 'pending_owner_signature'])
+            .in('status', [...LEASE_IN_EFFECT_STATUSES])
             .order('created_at', { ascending: false });
 
           console.log('📋 Leases query result:', { leasesData, error });
 
           if (error) {
             console.error('❌ Error fetching leases:', error);
-            // Don't show alert here - let the UI handle the null state
-          } else if (leasesData && leasesData.length > 0) {
-            console.log(`✅ Found ${leasesData.length} lease(s)`);
-            setActiveLeases(leasesData);
-            // Auto-select the first (most recent) lease
-            setSelectedLeaseId(leasesData[0].id);
+            setLeaseCheckFailed(true);
           } else {
-            console.warn('⚠️ No leases found for tenant');
+            const reportable = (leasesData ?? []).filter((l) => canReportIssue(l.status));
+            if (reportable.length > 0) {
+              setActiveLeases(reportable);
+              // Auto-select the first (most recent) lease
+              setSelectedLeaseId(reportable[0].id);
+            }
           }
         }
       } catch (error: any) {
         console.error('Error fetching data:', error);
-        Alert.alert('Error', 'Failed to load form data');
+        setLeaseCheckFailed(true);
       } finally {
         setLoadingData(false);
       }
     }
 
     fetchData();
-  }, [user?.id]);
+  }, [user?.id, loadAttempt]);
 
   // Fetch service items when selected lease changes
   useEffect(() => {
@@ -179,6 +189,10 @@ export default function TenantMaintenanceReportScreen() {
     }
 
     const selectedLease = activeLeases.find((l) => l.id === selectedLeaseId);
+    if (selectedLease && !canReportIssue(selectedLease.status)) {
+      Alert.alert('Lease not signed', REPORT_ISSUE_NEEDS_SIGNED_LEASE_MESSAGE);
+      return;
+    }
     if (!selectedLease?.property_id) {
       Alert.alert('Error', 'Could not determine property. Please contact support.');
       return;
@@ -273,6 +287,36 @@ export default function TenantMaintenanceReportScreen() {
     );
   }
 
+  if (leaseCheckFailed) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            testID="maintenance-report-back"
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color={colors.gray[900]} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Report Issue</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorIcon}>⚠️</Text>
+          <Text style={styles.errorTitle}>Couldn&apos;t check your lease</Text>
+          <Text style={styles.errorMessage}>Check your connection and try again.</Text>
+          <TouchableOpacity
+            testID="maintenance-report-retry"
+            style={styles.retryButton}
+            onPress={() => setLoadAttempt((n) => n + 1)}
+          >
+            <Text style={styles.retryButtonText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (activeLeases.length === 0) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
@@ -290,9 +334,7 @@ export default function TenantMaintenanceReportScreen() {
         <View style={styles.errorContainer}>
           <Text style={styles.errorIcon}>⚠️</Text>
           <Text style={styles.errorTitle}>No Active Lease</Text>
-          <Text style={styles.errorMessage}>
-            You need an active lease to report maintenance issues. Please contact your landlord.
-          </Text>
+          <Text style={styles.errorMessage}>{REPORT_ISSUE_NEEDS_SIGNED_LEASE_MESSAGE}</Text>
           <TouchableOpacity
             testID="maintenance-report-go-back"
             style={styles.retryButton}
