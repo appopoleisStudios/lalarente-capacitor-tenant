@@ -1938,8 +1938,11 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         values.
   - [x] Jest `rentRollStatus.test.ts`: each status incl. the 2B Datura case,
         labels, and a guard that the screen uses them (fails on main).
-  - [ ] Android emulator (release APK): Rent Roll shows 2B Datura as
-        Upcoming, other properties "No lease".
+  - [x] Android emulator (release APK), 2026-11-19: Rent Roll shows 2B Datura
+        as **Upcoming** (next due 12/1/2026), Dolphin and 96 De Waal as "No
+        lease"; chips readable and scroll sideways (a first build clipped the
+        labels: chip row now `flexShrink: 0`); Upcoming filter lists only
+        2B Datura.
   - [ ] Follow-up (separate): owner dashboard "In Arrears" and analytics still
         compare dates as timestamps and ignore failed / partial rows
         (`ownerDashboardApi.ts`) — move them onto `summarizeRent`.
