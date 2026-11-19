@@ -17,6 +17,7 @@ import { viewingsApi, ViewingWithRelations } from '../../properties/api/viewings
 import { supabase } from '../../../lib/supabase';
 import { isViewingExpired, getViewingActionStatus } from '../../properties/utils/viewingHelpers';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { formatTime } from '@/src/shared/utils/format';
 
 const RSA = { blue: '#002395', gold: '#FFB81C' };
 
@@ -313,8 +314,8 @@ export default function OwnerViewingsScreen() {
             <Ionicons name="calendar-outline" size={16} color="#666" />
             <Text style={styles.detailText}>
               {item.status === 'approved' && item.confirmed_date
-                ? `${formatDate(item.confirmed_date)} at ${item.requested_time}`
-                : `Requested: ${formatDate(item.requested_date)} at ${item.requested_time}`}
+                ? `${formatDate(item.confirmed_date)} at ${formatTime(item.requested_time)}`
+                : `Requested: ${formatDate(item.requested_date)} at ${formatTime(item.requested_time)}`}
             </Text>
           </View>
 

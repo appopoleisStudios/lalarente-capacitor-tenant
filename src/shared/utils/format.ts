@@ -57,3 +57,28 @@ export function formatDate(
     minute: '2-digit',
   });
 }
+
+/**
+ * Format a time of day for display: '10:00' (24-hour, no seconds).
+ *
+ * Accepts a Postgres `time` ('10:00:00', '9:30'), a local date-time
+ * ('2026-11-19T10:00'), or a zoned timestamp ('2026-11-19T08:00:00Z',
+ * shown in the phone's local time).
+ *
+ * Returns '' for null/undefined/invalid input.
+ */
+export function formatTime(time: string | null | undefined): string {
+  if (!time) return '';
+  const local = /^(?:\d{4}-\d{2}-\d{2}[T ])?(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?$/.exec(
+    time.trim()
+  );
+  if (local) {
+    const h = Number(local[1]);
+    if (h > 23 || Number(local[2]) > 59) return '';
+    return `${String(h).padStart(2, '0')}:${local[2]}`;
+  }
+  if (!/^\d{4}-\d{2}-\d{2}T/.test(time)) return '';
+  const d = new Date(time);
+  if (isNaN(d.getTime())) return '';
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}

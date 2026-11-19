@@ -15,6 +15,7 @@ import {
 } from '../hooks/useTenantDashboard';
 import { queryKeys } from '@/src/core/query/queryKeys';
 import { colors } from '@/src/shared/theme/colors';
+import { formatTime } from '@/src/shared/utils/format';
 
 const tenancyShortcutTestId = (title: string) =>
   `tenancy-${title
@@ -787,7 +788,7 @@ export default function TenantDashboardScreen() {
                         day: 'numeric',
                         month: 'short',
                       })}{' '}
-                      at {viewing.requested_time?.slice(0, 5) || '09:00'}
+                      at {formatTime(viewing.requested_time) || '09:00'}
                     </Text>
                   </View>
                   <View

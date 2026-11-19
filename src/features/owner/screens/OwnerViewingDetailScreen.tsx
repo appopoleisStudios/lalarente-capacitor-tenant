@@ -24,6 +24,10 @@ import {
   formatViewingDateTime,
 } from '../../properties/utils/viewingHelpers';
 import { reportApiError } from '@/src/core/observability/sentry';
+import {
+  formatDate as formatDisplayDate,
+  formatTime as formatTimeOfDay,
+} from '@/src/shared/utils/format';
 import { KeyboardAwareScrollView } from '@/src/shared/components/layouts/KeyboardAwareScrollView';
 
 const RSA = { blue: '#002395', gold: '#FFB81C' };
@@ -305,7 +309,8 @@ export default function OwnerViewingDetailScreen() {
                     <View style={{ flex: 1 }}>
                       <Text style={styles.requestedDateLabel}>Requested date & time</Text>
                       <Text style={styles.requestedDateValue}>
-                        {formatDate(viewing.requested_date)} at {viewing.requested_time}
+                        {formatDate(viewing.requested_date)} at{' '}
+                        {formatTimeOfDay(viewing.requested_time)}
                       </Text>
                     </View>
                   </View>
@@ -676,7 +681,8 @@ export default function OwnerViewingDetailScreen() {
                 <View style={styles.detailContent}>
                   <Text style={styles.detailLabel}>Date & Time</Text>
                   <Text style={styles.detailValue}>
-                    {formatDate(viewing.requested_date)} at {viewing.requested_time}
+                    {formatDate(viewing.requested_date)} at{' '}
+                    {formatTimeOfDay(viewing.requested_time)}
                   </Text>
                 </View>
               </View>
@@ -687,7 +693,8 @@ export default function OwnerViewingDetailScreen() {
                   <View style={styles.detailContent}>
                     <Text style={styles.detailLabel}>Confirmed</Text>
                     <Text style={[styles.detailValue, { color: '#4CAF50' }]}>
-                      {formatDate(viewing.confirmed_date)} at {viewing.requested_time}
+                      {formatDate(viewing.confirmed_date)} at{' '}
+                      {formatTimeOfDay(viewing.requested_time)}
                     </Text>
                   </View>
                 </View>
@@ -724,7 +731,7 @@ export default function OwnerViewingDetailScreen() {
                 <View style={styles.timelineContent}>
                   <Text style={styles.timelineTitle}>Request Received</Text>
                   <Text style={styles.timelineDate}>
-                    {new Date(viewing.created_at!).toLocaleString('en-ZA')}
+                    {formatDisplayDate(viewing.created_at, 'datetime')}
                   </Text>
                 </View>
               </View>
@@ -735,7 +742,7 @@ export default function OwnerViewingDetailScreen() {
                   <View style={styles.timelineContent}>
                     <Text style={styles.timelineTitle}>Viewing Completed</Text>
                     <Text style={styles.timelineDate}>
-                      {new Date(viewing.completed_at).toLocaleString('en-ZA')}
+                      {formatDisplayDate(viewing.completed_at, 'datetime')}
                     </Text>
                   </View>
                 </View>
