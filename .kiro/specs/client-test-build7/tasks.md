@@ -1916,6 +1916,25 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         with the keyboard up; lifecycle-06 posts a comment with one tap
         (both LC-comments posted; owner inspection steps green).
 
+## CT7-067 🟠 Tenant dashboard once showed "Welcome back, Tenant" with no home or activity right after sign-in (tenant) — investigating
+
+- **Role:** tenant · **Platform:** Android · Found in the build-12 lifecycle
+  run, 2026-11-20 02:40 (phase 08, owner signed out → tenant signed in).
+- **Seen:** the dashboard header said "Tenant" (no name), no 2B Datura card,
+  "No recent activity", although the lease was `active`. The dashboard
+  query completed in 342 ms; the displayed data was empty. The profile read's
+  error is discarded (`useTenantDashboard.ts`), so a failed profile read also
+  shows "Tenant". A missing tenant session / RLS filtering is an unconfirmed
+  hypothesis.
+- **Not reproduced:** 4 owner → tenant sign-in switches on the same APK all
+  showed the tenant's name and data.
+- **Acceptance criteria:**
+  - [ ] Root cause found (session not yet attached when the first dashboard
+        query runs, or another cause) and fixed.
+  - [ ] Regression test that fails without the fix.
+  - [ ] Android emulator: repeated sign-out → sign-in shows the tenant's own
+        dashboard every time.
+
 ## CT7-062 🟡 Viewing times show seconds: "10:00:00", "2026/11/19, 03:05:01" (owner, tenant)
 
 - **Role:** owner, tenant · **Platform:** all · Found in the Android walkthrough.
@@ -1934,8 +1953,7 @@ Found while testing on the Android emulator with a real on-screen keyboard.
 - **Today:** the dashboard In Arrears amount / Tenants In Arrears and Rent
   Roll's header Overdue card counted any pending row due before "now":
   deposits, rent due today, a previous tenant's rows, un-rented properties,
-  while missing failed and part-paid rent. Test fixture: R 29,500 / 4 (header
-  5) where Rent Roll's badges show R 9,500 / 2.
+  while missing failed and part-paid rent. Test fixture: R 29,500 / 4 (header 5) where Rent Roll's badges show R 9,500 / 2.
 - **Acceptance criteria:**
   - [x] Dashboard and Rent Roll header use `summarizeArrears` (built on
         `summarizeRent`, the rule behind the Rent Roll badges).
