@@ -29,7 +29,7 @@ const parseAlternativeTime = (alt: string) => {
     const date = new Date(datePart + 'T00:00:00');
     return {
       date: date.toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short' }),
-      time: timePart,
+      time: formatTime(timePart) || timePart,
       isoDate: datePart,
       isoTime: timePart,
     };

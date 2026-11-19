@@ -11,6 +11,7 @@
  * fails this guard.
  */
 import { formatDate, formatTime } from '../shared/utils/format';
+import { formatViewingDateTime } from '../features/properties/utils/viewingHelpers';
 
 const fs = jest.requireActual('fs') as typeof import('fs');
 const path = jest.requireActual('path') as typeof import('path');
@@ -28,7 +29,7 @@ function sourceFiles(dir: string): string[] {
 
 // {viewing.requested_time} in JSX or ${item.requested_time} in a template string.
 // `${date}T${v.requested_time}` builds a Date to parse, not display, so it is allowed.
-const RAW_VIEWING_TIME = /(?<!T\$)\{\s*[\w.?!]*\.(requested_time|confirmed_time)\s*\}/;
+const RAW_VIEWING_TIME = /(?<!T\$)\{\s*[\w.?!]*\.(requested_time|confirmed_time)\s*(\}|\|\||\?\?)/;
 // new Date(...).toLocaleString('en-ZA') with no options prints seconds
 const DATETIME_WITH_SECONDS =
   /new Date\((?:[^()]|\([^()]*\))*\)\s*\.toLocaleString\(\s*['"]en-ZA['"]\s*\)/;
@@ -65,6 +66,12 @@ describe('formatTime (CT7-062)', () => {
     expect(formatTime('10:75')).toBe('');
   });
 
+  it('formatViewingDateTime shows the time without seconds', () => {
+    const out = formatViewingDateTime('2026-11-19', '10:00:00');
+    expect(out).toMatch(/ at 10:00$/);
+    expect(out).not.toMatch(/:\d\d:\d\d/);
+  });
+
   it("formatDate(x, 'datetime') has no seconds", () => {
     expect(formatDate('2026-11-19T03:05:01', 'datetime')).toMatch(/^19 Nov(\.)? 2026,? 03:05$/);
   });
@@ -95,6 +102,8 @@ describe('viewing times are formatted, not rendered raw (CT7-062)', () => {
   it('the guard patterns catch the forms that shipped the bug', () => {
     expect(RAW_VIEWING_TIME.test('at {viewing.requested_time}')).toBe(true);
     expect(RAW_VIEWING_TIME.test('`Requested: x at ${item.requested_time}`')).toBe(true);
+    expect(RAW_VIEWING_TIME.test("at {viewing.requested_time || '—'}")).toBe(true);
+    expect(RAW_VIEWING_TIME.test("${v.requested_time ?? ''}")).toBe(true);
     expect(RAW_VIEWING_TIME.test('at {formatTime(viewing.requested_time)}')).toBe(false);
     expect(RAW_VIEWING_TIME.test('requested_time: v.requested_time,')).toBe(false);
     expect(RAW_VIEWING_TIME.test('new Date(`${v.requested_date}T${v.requested_time}`)')).toBe(
