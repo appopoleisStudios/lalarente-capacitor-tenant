@@ -170,6 +170,27 @@ describe('CT7-066 Report Issue needs a lease signed by both', () => {
       expect(maintenanceApi.createMaintenanceRequest).not.toHaveBeenCalled();
       alertSpy.mockRestore();
     });
+    it('two quick taps on Submit create one request', async () => {
+      const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+      (maintenanceApi.createMaintenanceRequest as jest.Mock).mockClear();
+      mockLeases = lease('active');
+      render(<TenantMaintenanceReportScreen />);
+      expect(await screen.findByText('Submit Request')).toBeTruthy();
+      fireEvent.changeText(screen.getByTestId('maintenance-title-input'), 'Leaking kitchen tap');
+      fireEvent.changeText(
+        screen.getByTestId('maintenance-description-input'),
+        'The kitchen tap has been dripping constantly since Monday.'
+      );
+      const button = screen.getByText('Submit Request');
+      await act(async () => {
+        fireEvent.press(button);
+        fireEvent.press(button);
+      });
+      await waitFor(() => expect(maintenanceApi.createMaintenanceRequest).toHaveBeenCalledTimes(1));
+      await act(async () => {});
+      expect(maintenanceApi.createMaintenanceRequest).toHaveBeenCalledTimes(1);
+      alertSpy.mockRestore();
+    });
   });
 
   describe('maintenance list Report Issue buttons', () => {

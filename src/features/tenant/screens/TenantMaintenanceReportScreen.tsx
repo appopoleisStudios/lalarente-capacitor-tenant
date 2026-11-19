@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -67,6 +67,8 @@ export default function TenantMaintenanceReportScreen() {
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Synchronous lock: state updates are async, so a second tap could slip in.
+  const submitLock = useRef(false);
 
   // Data from API
   const [categories, setCategories] = useState<any[]>([]);
@@ -202,23 +204,25 @@ export default function TenantMaintenanceReportScreen() {
       return;
     }
 
-    // The lease may have changed since the form opened (e.g. terminated):
-    // check its current status right before creating the request.
-    const { data: currentLease, error: leaseCheckError } = await supabase
-      .from('leases')
-      .select('status')
-      .eq('id', selectedLeaseId);
-    if (leaseCheckError) {
-      Alert.alert("Couldn't check your lease", 'Check your connection and try again.');
-      return;
-    }
-    if (!canReportIssue(currentLease?.[0]?.status)) {
-      Alert.alert('Lease not signed', REPORT_ISSUE_NEEDS_SIGNED_LEASE_MESSAGE);
-      return;
-    }
-
+    if (submitLock.current) return;
+    submitLock.current = true;
+    setSubmitting(true);
     try {
-      setSubmitting(true);
+      // The lease may have changed since the form opened (e.g. terminated):
+      // check its current status right before creating the request.
+      const { data: currentLease, error: leaseCheckError } = await supabase
+        .from('leases')
+        .select('status')
+        .eq('id', selectedLeaseId);
+      if (leaseCheckError) {
+        Alert.alert("Couldn't check your lease", 'Check your connection and try again.');
+        return;
+      }
+      if (!canReportIssue(currentLease?.[0]?.status)) {
+        Alert.alert('Lease not signed', REPORT_ISSUE_NEEDS_SIGNED_LEASE_MESSAGE);
+        return;
+      }
+
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
       const resolvedServiceItemId =
@@ -275,6 +279,7 @@ export default function TenantMaintenanceReportScreen() {
       Alert.alert('Error', error.message || 'Failed to submit request');
       console.error('Submit error:', error);
     } finally {
+      submitLock.current = false;
       setSubmitting(false);
     }
   };
