@@ -15,6 +15,7 @@ import { getMaintenanceRequests } from '@/src/features/maintenance/api';
 import { supabase } from '@/src/lib/supabase';
 import type { MaintenanceRequest } from '@/src/features/maintenance/api/types/maintenance.types';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { summarizeArrears } from '../utils/rentRollStatus';
 
 import { formatDate } from '../../../shared/utils/format';
 // ============================================================================
@@ -342,7 +343,7 @@ async function fetchUserProfile(ownerId: string) {
  * @param payments - Owner's payments from paymentsApi
  * @returns Aggregated portfolio statistics
  */
-function calculatePortfolioStats(properties: any[], payments: any[]): PortfolioStats {
+export function calculatePortfolioStats(properties: any[], payments: any[]): PortfolioStats {
   const totalUnits = properties.length;
   const occupied = properties.filter((p) => p.status === 'rented').length;
   const vacant = properties.filter((p) => p.status === 'available').length;
@@ -352,17 +353,8 @@ function calculatePortfolioStats(properties: any[], payments: any[]): PortfolioS
     .filter((p) => p.status === 'rented')
     .reduce((sum, p) => sum + (p.rent_amount || 0), 0);
 
-  // Calculate arrears from overdue/pending payments past due date
-  const now = new Date();
-  const arrears = payments
-    .filter((p) => {
-      if (!p.due_date) return false;
-      const dueDate = new Date(p.due_date);
-      const isOverdue = dueDate < now;
-      const isPending = p.status === 'pending' || p.status === 'overdue';
-      return isOverdue && isPending;
-    })
-    .reduce((sum, p) => sum + (p.amount || 0), 0);
+  // Arrears as the Rent Roll shows them (CT7-063)
+  const arrears = summarizeArrears(properties, payments).amount;
 
   return { totalUnits, occupied, vacant, monthIncome, arrears };
 }
@@ -375,7 +367,7 @@ function calculatePortfolioStats(properties: any[], payments: any[]): PortfolioS
  * @param maintenanceRequests - Owner's maintenance requests
  * @returns Key performance indicators for dashboard
  */
-function calculateAnalytics(
+export function calculateAnalytics(
   properties: any[],
   payments: any[],
   maintenanceRequests: any[]
@@ -399,19 +391,8 @@ function calculateAnalytics(
   // Calculate occupancy percentage
   const currentOccupancy = totalUnits > 0 ? Math.round((occupied / totalUnits) * 100) : 0;
 
-  // Count unique tenants with overdue payments
-  const now = new Date();
-  const tenantsInArrears = new Set(
-    payments
-      .filter((p) => {
-        if (!p.due_date || !p.tenant_id) return false;
-        const dueDate = new Date(p.due_date);
-        const isOverdue = dueDate < now;
-        const isPending = p.status === 'pending' || p.status === 'overdue';
-        return isOverdue && isPending;
-      })
-      .map((p) => p.tenant_id)
-  ).size;
+  // Tenancies the Rent Roll shows as overdue (CT7-063)
+  const tenantsInArrears = summarizeArrears(properties, payments).count;
 
   // Count open maintenance requests
   const openMaintenance = maintenanceRequests.filter((m) =>
