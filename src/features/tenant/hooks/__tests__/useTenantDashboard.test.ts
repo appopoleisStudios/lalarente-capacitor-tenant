@@ -41,6 +41,20 @@ describe('useTenantDashboard', () => {
     expect(result.current.data?.userName).toBe('Test User');
   });
 
+  it('CT7-067: an unreadable own profile is an error, not "Welcome back, Tenant"', async () => {
+    // a query without a session: RLS hides the tenant's own profile row
+    makeSupabaseMock({
+      profiles: {
+        data: null,
+        error: { message: 'JSON object requested, multiple (or no) rows returned' },
+      },
+    });
+    const { result } = renderHook(() => useTenantDashboard('user-1'), { wrapper });
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect((result.current.error as Error).message).toMatch(/^profiles: /);
+    expect(result.current.data).toBeUndefined();
+  });
+
   it('enters error state when leases query fails', async () => {
     makeSupabaseMock({ leases: { data: null, error: { message: 'permission denied' } } });
     const { result } = renderHook(() => useTenantDashboard('user-1'), { wrapper });
@@ -82,7 +96,9 @@ describe('useTenantDashboard', () => {
     // The hook issues two queries: approved/pending and declined — both must scope to userId.
     expect(viewingQueries.length).toBeGreaterThanOrEqual(2);
     expect(
-      viewingQueries.every((q) => q.eq.some(([col, val]) => col === 'tenant_id' && val === 'user-1'))
+      viewingQueries.every((q) =>
+        q.eq.some(([col, val]) => col === 'tenant_id' && val === 'user-1')
+      )
     ).toBe(true);
     // First query must restrict to upcoming statuses; second must restrict to 'declined'.
     const [upcomingQuery, declinedQuery] = viewingQueries;
@@ -230,5 +246,17 @@ describe('useTenantDashboard', () => {
       expect(ids[2]).toBe('near3');
       expect(ids).not.toContain('far');
     });
+  });
+});
+
+describe('TenantDashboardScreen error state (CT7-067)', () => {
+  it('shows an error with retry instead of an empty "Tenant" dashboard', () => {
+    const src = require('fs').readFileSync(
+      require('path').resolve(__dirname, '../../screens/TenantDashboardScreen.tsx'),
+      'utf8'
+    );
+    expect(src).toMatch(
+      /if \(isError && !data\) \{[\s\S]*?tenant-dashboard-error[\s\S]*?onRetry=\{\(\) => refetch\(\)\}/
+    );
   });
 });

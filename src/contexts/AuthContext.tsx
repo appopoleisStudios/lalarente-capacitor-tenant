@@ -28,6 +28,63 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// CT7-067: supabase.auth.setSession() checks the token over the network and,
+// if that fails, RESOLVES with { error } and stores no session. Sign-in used to
+// fire it and forget it (a `.catch` never sees a resolved error), so the app
+// could look signed in while every query ran without a session: RLS returned
+// nothing and the tenant saw "Welcome back, Tenant" with no home. The session
+// is now attached and checked before the user is treated as signed in.
+export const ATTACH_SESSION_TIMEOUT_MS = 4_000;
+export const ATTACH_SESSION_ATTEMPTS = 2;
+
+export class SessionAttachError extends Error {
+  code = 'session_not_attached';
+  constructor() {
+    super("Couldn't finish signing in");
+    this.name = 'SessionAttachError';
+  }
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('timed out')), ms);
+    promise.then(
+      (v) => {
+        clearTimeout(timer);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(timer);
+        reject(e);
+      }
+    );
+  });
+}
+
+/** Store the session in supabase-js and confirm it belongs to `userId`. */
+async function attachSession(
+  tokens: { access_token: string; refresh_token: string },
+  userId: string
+): Promise<void> {
+  for (let i = 0; i < ATTACH_SESSION_ATTEMPTS; i++) {
+    try {
+      const attached = await withTimeout(
+        (async () => {
+          const { error } = await supabase.auth.setSession(tokens);
+          if (error) return false;
+          const { data } = await supabase.auth.getSession();
+          return data.session?.user?.id === userId;
+        })(),
+        ATTACH_SESSION_TIMEOUT_MS
+      );
+      if (attached) return;
+    } catch {
+      // timed out or threw: try again
+    }
+  }
+  throw new SessionAttachError();
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -208,15 +265,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const data = await res.json();
 
-      // Set session in supabase-js (fire-and-forget)
-      supabase.auth
-        .setSession({
+      // CT7-067: the session must be in supabase-js before the app uses it.
+      await attachSession(
+        {
           access_token: data.session.access_token,
           refresh_token: data.session.refresh_token,
-        })
-        .catch((err: any) => console.error('signUp setSession error:', err));
+        },
+        data.user.id
+      );
 
-      // Manually set session state immediately so navigation is unblocked
       setSession(data.session);
       setUser(data.user);
 
@@ -284,25 +341,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const data = await res.json();
 
-      // Set the session in supabase-js (fire-and-forget — the SDK itself
-      // can hang on SecureStore writes, so we must NOT await it).
-      supabase.auth
-        .setSession({
-          access_token: data.access_token,
-          refresh_token: data.refresh_token,
-        })
-        .catch((err: any) => console.error('setSession error:', err));
+      // CT7-067: attach the session to supabase-js (bounded, retried once)
+      // BEFORE the user counts as signed in; otherwise every query would run
+      // without it. On failure sign-in fails with a clear message.
+      await attachSession(
+        { access_token: data.access_token, refresh_token: data.refresh_token },
+        data.user.id
+      );
 
-      // Manually set session state immediately so navigation is not blocked.
-      // The onAuthStateChange handler also fires, but we don't wait for it.
       setSession(data as any);
       setUser(data.user);
-      profileUserIdRef.current = data.user.id;
-      fetchProfile(data.user.id, data.access_token)
-        .then(setProfile)
-        .catch(() => {
-          profileUserIdRef.current = null;
-        });
+      // The SIGNED_IN event from setSession may already have fetched it.
+      if (profileUserIdRef.current !== data.user.id) {
+        profileUserIdRef.current = data.user.id;
+        fetchProfile(data.user.id, data.access_token)
+          .then(setProfile)
+          .catch(() => {
+            profileUserIdRef.current = null;
+          });
+      }
 
       // Loading stays true until the navigation effect fires (watching profile)
       // or the safety timeout in handleLogin (15s) kicks in.
@@ -349,7 +406,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Refresh profile
   async function refreshProfile() {
     if (user) {
-      const profile = await fetchProfile(user.id);
+      // without the token the read is anonymous and RLS returns no profile
+      const profile = await fetchProfile(user.id, session?.access_token);
       setProfile(profile);
     }
   }

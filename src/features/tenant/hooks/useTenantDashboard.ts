@@ -143,7 +143,7 @@ async function fetchDashboardData(userId: string): Promise<TenantDashboardData> 
   // One parallel wave for every independent query (these used to run one
   // after another — ~10 round trips before the dashboard could render).
   const [
-    { data: profile },
+    profileResult,
     leaseResult,
     payments,
     maintenanceResult,
@@ -217,6 +217,11 @@ async function fetchDashboardData(userId: string): Promise<TenantDashboardData> 
     checkTenantProfileCompleteness(userId),
   ]);
 
+  // CT7-067: the tenant can always read their own profile. If they can't, the
+  // queries ran without a valid session and every other result is empty too;
+  // fail (React Query retries) instead of showing "Welcome back, Tenant".
+  if (profileResult.error) throw new Error(`profiles: ${profileResult.error.message}`);
+  const profile = profileResult.data;
   if (leaseResult.error) throw new Error(`leases: ${leaseResult.error.message}`);
   if (maintenanceResult.error)
     throw new Error(`maintenance_requests: ${maintenanceResult.error.message}`);

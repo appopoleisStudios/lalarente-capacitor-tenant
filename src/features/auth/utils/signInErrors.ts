@@ -34,6 +34,10 @@ export function signInErrorMessage(error: unknown): string {
   if (code === 'user_banned' || m.includes('banned')) {
     return 'Sign-in is not possible for this account. Please contact support.';
   }
+  // CT7-067: password accepted, but the session could not be attached.
+  if (code === 'session_not_attached') {
+    return "Couldn't finish signing in. Check your internet connection and try again.";
+  }
   if (
     m.includes('timed out') ||
     m.includes('network') ||

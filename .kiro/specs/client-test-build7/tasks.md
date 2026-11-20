@@ -2007,7 +2007,7 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   - [x] Export failures are reported and logged in both screens (Jest guard).
   - [ ] Android emulator: full lifecycle 01 → 08 passes on the new APK.
 
-## CT7-067 🟠 Tenant dashboard once showed "Welcome back, Tenant" with no home or activity right after sign-in (tenant) — investigating
+## CT7-067 🟠 Tenant dashboard once showed "Welcome back, Tenant" with no home or activity right after sign-in (tenant) — fixed
 
 - **Role:** tenant · **Platform:** Android · Found in the build-12 lifecycle
   run, 2026-11-20 02:40 (phase 08, owner signed out → tenant signed in).
@@ -2019,10 +2019,35 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   hypothesis.
 - **Not reproduced:** 4 owner → tenant sign-in switches on the same APK all
   showed the tenant's name and data.
+- **Most likely cause (from the code; failure path reproduced in Jest, not
+  reproduced on the device):** sign-in got the tokens over REST, then called
+  `supabase.auth.setSession()` fire-and-forget and marked the user signed in.
+  `setSession` checks the token over the network; when that fails it
+  RESOLVES `{ error }` and stores no session, so the `.catch` never fired. The
+  app looked signed in while every supabase-js query ran without a session:
+  RLS returned no rows and no errors, the `.single()` profile read failed
+  silently → "Tenant", no lease, no activity. The network probe (5 s
+  interval) shows no outage at 02:40 but logged 64 short timeouts over the
+  day, so a blip during that one call is plausible; a failed SecureStore
+  write would look the same.
+- **Fix:**
+  - Sign-in and sign-up await `setSession`, check the stored session is the
+    user's (`getSession`), retry once, 4 s per attempt (8 s max, inside the
+    login screen's 15 s safety timer); on failure sign-in fails with "Couldn't
+    finish signing in. Check your internet connection and try again." The
+    user is never shown a signed-in but empty app.
+  - The tenant dashboard treats an unreadable own profile as an error (React
+    Query retries) and shows "Couldn't load your dashboard" + Try Again
+    instead of an empty "Welcome back, Tenant".
+  - `refreshProfile()` passes the access token (it read anonymously; no
+    callers today).
 - **Acceptance criteria:**
-  - [ ] Root cause found (session not yet attached when the first dashboard
-        query runs, or another cause) and fixed.
-  - [ ] Regression test that fails without the fix.
+  - [x] Root cause found and fixed (above).
+  - [x] Jest `authSignInSession.test.tsx` (setSession error → sign-in fails,
+        user stays signed out; blip then success; wrong/missing stored
+        session; hung setSession bounded) + `useTenantDashboard.test.ts`
+        (profile error → error state; screen error state guard). 5 fail on
+        main.
   - [ ] Android emulator: repeated sign-out → sign-in shows the tenant's own
         dashboard every time.
 
