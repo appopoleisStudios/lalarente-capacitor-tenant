@@ -1,9 +1,14 @@
 import * as Print from 'expo-print';
+import * as FileSystem from 'expo-file-system/legacy';
 
 // CT7-068: expo-print renders HTML in a hidden Android WebView. Chromium's
 // print step fails now and then ("Printing failed" → ERR_PDF_WRITE) or never
-// calls back, which left the export spinner running forever. Each attempt is
-// time-limited and a failed attempt is retried.
+// calls back, which left the export spinner running forever.
+// - A failed print is retried (it fails fast, nothing is left running).
+// - A print that doesn't answer in time fails the export with
+//   PrintTimeoutError and is NOT retried: expo-print can't cancel the native
+//   render, so retrying would stack WebViews. If the abandoned render finishes
+//   later, its file is deleted.
 
 export const PRINT_TIMEOUT_MS = 45_000;
 export const PRINT_ATTEMPTS = 3;
@@ -15,12 +20,30 @@ export class PrintTimeoutError extends Error {
   }
 }
 
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  let timer: ReturnType<typeof setTimeout>;
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new PrintTimeoutError()), ms);
+function printOnce(html: string, timeoutMs: number): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      reject(new PrintTimeoutError());
+    }, timeoutMs);
+
+    Print.printToFileAsync({ html, base64: false }).then(
+      ({ uri }) => {
+        clearTimeout(timer);
+        if (timedOut) {
+          // late result of an abandoned render: nobody will use it
+          FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {});
+        } else {
+          resolve(uri);
+        }
+      },
+      (err) => {
+        clearTimeout(timer);
+        if (!timedOut) reject(err);
+      }
+    );
   });
-  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
 export async function printHtmlToFile(
@@ -31,9 +54,9 @@ export async function printHtmlToFile(
   let lastError: unknown;
   for (let i = 0; i < attempts; i++) {
     try {
-      const { uri } = await withTimeout(Print.printToFileAsync({ html, base64: false }), timeoutMs);
-      return uri;
+      return await printOnce(html, timeoutMs);
     } catch (err) {
+      if (err instanceof PrintTimeoutError) throw err;
       lastError = err;
     }
   }

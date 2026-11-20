@@ -1939,8 +1939,10 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   failed." and the export rejected with `ERR_PDF_WRITE`. In another try the
   print never called back and the export spinner ran past 150 s. All report
   exports (`pdfReports.ts`) now use `printHtmlToFile`
-  (`src/shared/utils/printToPdf.ts`): each attempt limited to 45 s, up to 3
-  attempts. Sentry forwards Expo error codes (`ERR_PDF_WRITE`) as-is.
+  (`src/shared/utils/printToPdf.ts`): each attempt limited to 45 s; a failed print is
+  retried up to 3 times, a timed-out one is not (expo-print can't cancel the
+  render) and its late file is deleted. Sentry forwards expo-print's own error
+  codes (allow-list, e.g. `ERR_PDF_WRITE`).
 - **Acceptance criteria:**
   - [x] A failed or hung WebView print is retried and never hangs (Jest).
   - [x] A stalled request fails after its limit instead of hanging (Jest).

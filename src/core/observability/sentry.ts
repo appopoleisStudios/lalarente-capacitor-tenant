@@ -73,12 +73,21 @@ function safeName(name: string): string {
   return SAFE_ERROR_NAMES.has(name) ? name : 'Error';
 }
 
-// Expo native module error codes are derived from the exception class name
-// (e.g. ERR_PDF_WRITE), never from user data, so they are forwarded as-is.
-const EXPO_ERROR_CODE = /^ERR_[A-Z0-9_]{1,60}$/;
+// expo-print's native error codes (derived from its exception class names).
+// An explicit list: a code that merely looks like ERR_* could carry user data.
+const SAFE_NATIVE_CODES = new Set([
+  'ERR_PDF_WRITE',
+  'ERR_PRINT_MANAGER_NOT_AVAILABLE',
+  'ERR_CANNOT_LOAD_URI',
+  'ERR_INVALID_URI',
+  'ERR_NULL_URI',
+  'ERR_FILE_NOT_FOUND',
+  'ERR_UNEXPECTED_PRINT',
+  'ERR_BASE64_ENCODING_FAILED',
+]);
 
 function safeCodeMessage(code: string): string {
-  if (EXPO_ERROR_CODE.test(code)) return code;
+  if (SAFE_NATIVE_CODES.has(code)) return code;
   const desc = SAFE_PG_CODE_DESCRIPTIONS.get(code);
   // Unknown codes are not forwarded — they could contain arbitrary caller-supplied text.
   return desc ? `${code}: ${desc}` : 'unknown database error';
