@@ -1934,7 +1934,15 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   owner `OwnerInspectionDetailScreen`) now report the error to Sentry and
   log it; the export keeps the database error instead of replacing it, and
   Sentry classifies timeouts as "request timed out" (no user text).
+- **Root cause (found with the new logging on the device check):** expo-print
+  renders the PDF in a hidden Android WebView; Chromium logged "Printing
+  failed." and the export rejected with `ERR_PDF_WRITE`. In another try the
+  print never called back and the export spinner ran past 150 s. All report
+  exports (`pdfReports.ts`) now use `printHtmlToFile`
+  (`src/shared/utils/printToPdf.ts`): each attempt limited to 45 s, up to 3
+  attempts. Sentry forwards Expo error codes (`ERR_PDF_WRITE`) as-is.
 - **Acceptance criteria:**
+  - [x] A failed or hung WebView print is retried and never hangs (Jest).
   - [x] A stalled request fails after its limit instead of hanging (Jest).
   - [x] Caller aborts still work; normal responses pass through (Jest).
   - [x] Export failures are reported and logged in both screens (Jest guard).

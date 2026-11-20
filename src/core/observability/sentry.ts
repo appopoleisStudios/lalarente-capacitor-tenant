@@ -38,6 +38,7 @@ const SAFE_ERROR_NAMES = new Set([
   'NetworkError',
   'AuthError',
   'StorageError',
+  'PrintTimeoutError',
 ]);
 
 // Rebuild a stack string from genuine frame lines only.
@@ -72,7 +73,12 @@ function safeName(name: string): string {
   return SAFE_ERROR_NAMES.has(name) ? name : 'Error';
 }
 
+// Expo native module error codes are derived from the exception class name
+// (e.g. ERR_PDF_WRITE), never from user data, so they are forwarded as-is.
+const EXPO_ERROR_CODE = /^ERR_[A-Z0-9_]{1,60}$/;
+
 function safeCodeMessage(code: string): string {
+  if (EXPO_ERROR_CODE.test(code)) return code;
   const desc = SAFE_PG_CODE_DESCRIPTIONS.get(code);
   // Unknown codes are not forwarded — they could contain arbitrary caller-supplied text.
   return desc ? `${code}: ${desc}` : 'unknown database error';
