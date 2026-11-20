@@ -436,7 +436,9 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
         { text: 'View Documents', onPress: () => router.push(docsPath as any) },
         { text: 'Done', style: 'cancel' },
       ]);
-    } catch {
+    } catch (err) {
+      reportApiError(err, 'inspections', 'export');
+      console.error('Error exporting inspection report:', err);
       Alert.alert('Error', 'Failed to generate inspection report. Please try again.');
     } finally {
       setExporting(false);

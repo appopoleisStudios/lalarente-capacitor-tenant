@@ -117,7 +117,9 @@ export default function OwnerInspectionDetailScreen() {
         { text: 'View Documents', onPress: () => router.push('/(owner)/documents' as any) },
         { text: 'OK', style: 'cancel' },
       ]);
-    } catch {
+    } catch (err) {
+      reportApiError(err, 'inspections', 'export');
+      console.error('Error exporting inspection report:', err);
       Alert.alert('Error', 'Failed to generate PDF report.');
     } finally {
       setExporting(false);

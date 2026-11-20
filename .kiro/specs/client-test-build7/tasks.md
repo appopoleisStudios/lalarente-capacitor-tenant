@@ -1916,6 +1916,27 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         with the keyboard up; lifecycle-06 posts a comment with one tap
         (both LC-comments posted; owner inspection steps green).
 
+## CT7-068 🟠 Server requests could hang forever; inspection report export failed without saying why (all roles) — fixed
+
+- **Role:** all · **Platform:** Android · Found in the build-12 lifecycle run,
+  2026-11-20 03:58 (phase 06: tenant's second "Export Report" showed "Failed
+  to generate inspection report"; the first export a few seconds earlier
+  saved). The network probe was clean, no file reached storage, and the
+  export's `catch {}` discarded the error, so the failing step is unknown.
+  Not reproduced in 4 back-to-back exports. Same class as the earlier stuck
+  Approve/property spinners: React Native's Android fetch has no timeout.
+- **Fix:** every Supabase request goes through `createFetchWithTimeout`
+  (`src/lib/fetchWithTimeout.ts`): 30 s for database/auth, 120 s for storage
+  and edge functions; a stalled request fails with "Request timed out"
+  (which sign-in already shows as "Can't reach Lalarente"). Both inspection
+  export handlers (tenant `InspectionScreen`, owner
+  `OwnerInspectionDetailScreen`) now report the error to Sentry and log it.
+- **Acceptance criteria:**
+  - [x] A stalled request fails after its limit instead of hanging (Jest).
+  - [x] Caller aborts still work; normal responses pass through (Jest).
+  - [x] Export failures are reported and logged in both screens (Jest guard).
+  - [ ] Android emulator: full lifecycle 01 → 08 passes on the new APK.
+
 ## CT7-067 🟠 Tenant dashboard once showed "Welcome back, Tenant" with no home or activity right after sign-in (tenant) — investigating
 
 - **Role:** tenant · **Platform:** Android · Found in the build-12 lifecycle
