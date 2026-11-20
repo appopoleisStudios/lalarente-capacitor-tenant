@@ -40,16 +40,21 @@ export function createFetchWithTimeout(
 ): typeof fetch {
   return (input, init) => {
     const url = typeof input === 'string' ? input : isRequest(input) ? input.url : input.href;
-    const ms = getTimeout(url, init?.body);
+    // The body may come in init or inside a Request. A Request's body can't be
+    // inspected cheaply, so a POST/PUT Request counts as a (binary) upload.
+    const requestHasBody =
+      isRequest(input) && ['POST', 'PUT'].includes((input.method || '').toUpperCase());
+    const body = init?.body != null ? init.body : requestHasBody ? input : undefined;
+    const ms = getTimeout(url, body);
     if (ms == null) return baseFetch(input, init);
 
     const controller = new AbortController();
     let timedOut = false;
 
-    // Keep honouring the caller's abort signal: init.signal wins, otherwise the
-    // Request's own signal (supabase-js passes signals for cancellable calls).
+    // Keep honouring the caller's abort signal: an init.signal (or explicit
+    // null) wins, otherwise the Request's own signal, as native fetch does.
     const callerSignal =
-      init && 'signal' in init ? init.signal : isRequest(input) ? input.signal : undefined;
+      init?.signal !== undefined ? init.signal : isRequest(input) ? input.signal : undefined;
     const onCallerAbort = () => controller.abort();
     if (callerSignal) {
       if (callerSignal.aborted) controller.abort();

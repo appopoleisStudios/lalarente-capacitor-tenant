@@ -56,6 +56,20 @@ describe('inspection report export keeps its error (CT7-068)', () => {
     expect(reported.message).toBe('request timed out');
   });
 
+  it('only the exact timeout text is classified, nothing that merely contains it', () => {
+    for (const message of [
+      'insert failed: Request timed out after 30s for tenant@example.com',
+      'Some other text. Request timed out after 30s',
+      'UnknownError: Request timed out after 30s',
+    ]) {
+      expect(sanitizeForSentry(new Error(message)).message).toBe('API error');
+    }
+    // a database code is never overridden by the phrase
+    expect(
+      sanitizeForSentry({ code: '57014', message: 'x Request timed out after 30s' }).message
+    ).toMatch(/^57014/);
+  });
+
   const screens = ['InspectionScreen.tsx', 'OwnerInspectionDetailScreen.tsx'];
   it.each(screens)('%s reports and logs the export failure', (file) => {
     const src = fs.readFileSync(path.resolve(__dirname, '../screens', file), 'utf8');
@@ -63,6 +77,6 @@ describe('inspection report export keeps its error (CT7-068)', () => {
     const catchBlock = handler.slice(handler.indexOf('} catch'), handler.indexOf('} finally'));
     expect(catchBlock).toMatch(/catch \(err\)/);
     expect(catchBlock).toMatch(/reportApiError\(err, 'inspections', 'export'\)/);
-    expect(catchBlock).toMatch(/console\.error\(/);
+    expect(catchBlock).toMatch(/console\.error\([^)]*sanitizeForSentry\(err\)/); // never the raw error (breadcrumbs)
   });
 });

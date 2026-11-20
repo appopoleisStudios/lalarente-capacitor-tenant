@@ -78,9 +78,11 @@ function safeCodeMessage(code: string): string {
   return desc ? `${code}: ${desc}` : 'unknown database error';
 }
 
-// CT7-068: our own fixed timeout text (fetchWithTimeout), also as mapped into a
-// PostgREST/auth error message. Contains no user data, so it is classified.
-const REQUEST_TIMEOUT_PATTERN = /Request timed out after \d+s/;
+// CT7-068: exactly our own fixed timeout text (fetchWithTimeout), alone or with
+// the "<name>: " prefix supabase-js adds when it maps a failed fetch into a
+// PostgREST error. Contains no user data, so it is classified.
+const REQUEST_TIMEOUT_PATTERN =
+  /^(?:(?:RequestTimeoutError|FetchError): )?Request timed out after \d+s$/;
 const REQUEST_TIMEOUT_MESSAGE = 'request timed out';
 
 function isRequestTimeout(error: unknown): boolean {

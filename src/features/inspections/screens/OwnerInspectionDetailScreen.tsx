@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { inspectionsApi } from '../api/inspectionsApi';
 import { supabase } from '../../../lib/supabase';
 import { exportInspectionReportPdf } from '../../owner/utils/pdfReports';
-import { reportApiError } from '@/src/core/observability/sentry';
+import { reportApiError, sanitizeForSentry } from '@/src/core/observability/sentry';
 import type {
   InspectionWithRelations,
   InspectionRooms,
@@ -119,7 +119,7 @@ export default function OwnerInspectionDetailScreen() {
       ]);
     } catch (err) {
       reportApiError(err, 'inspections', 'export');
-      console.error('Error exporting inspection report:', err);
+      console.error('Error exporting inspection report:', sanitizeForSentry(err).message);
       Alert.alert('Error', 'Failed to generate PDF report.');
     } finally {
       setExporting(false);

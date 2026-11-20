@@ -74,6 +74,55 @@ describe('fetchWithTimeout (CT7-068)', () => {
     await expect(p).rejects.not.toBeInstanceOf(RequestTimeoutError);
   });
 
+  it('signal precedence matches native fetch: init.signal, else the Request signal', async () => {
+    const f = createFetchWithTimeout(hangingFetch);
+
+    // init { signal: undefined } does not drop the Request's own signal
+    const reqCtl = new AbortController();
+    const p1 = f(new Request(`${BASE}/rest/v1/x`, { signal: reqCtl.signal }), {
+      signal: undefined,
+    });
+    reqCtl.abort();
+    await expect(p1).rejects.toThrow('Aborted');
+    await expect(p1).rejects.not.toBeInstanceOf(RequestTimeoutError);
+
+    // an explicit init.signal overrides the Request's
+    const reqCtl2 = new AbortController();
+    const initCtl = new AbortController();
+    const p2 = f(new Request(`${BASE}/rest/v1/x`, { signal: reqCtl2.signal }), {
+      signal: initCtl.signal,
+    });
+    reqCtl2.abort(); // ignored
+    initCtl.abort();
+    await expect(p2).rejects.toThrow('Aborted');
+
+    // explicit null: no caller signal, only the timeout applies
+    const reqCtl3 = new AbortController();
+    const p3 = f(new Request(`${BASE}/rest/v1/x`, { signal: reqCtl3.signal }), { signal: null });
+    reqCtl3.abort(); // ignored
+    jest.advanceTimersByTime(DEFAULT_TIMEOUT_MS);
+    await expect(p3).rejects.toBeInstanceOf(RequestTimeoutError);
+  });
+
+  it('an upload sent as a Request is not cut off either', async () => {
+    let finish!: (r: Response) => void;
+    const slowUpload = jest.fn(
+      () => new Promise<Response>((resolve) => (finish = resolve))
+    ) as unknown as typeof fetch;
+    const f = createFetchWithTimeout(slowUpload);
+    const ok = { ok: true } as Response;
+
+    const p = f(
+      new Request(`${BASE}/storage/v1/object/maintenance-media/u/video.mp4`, {
+        method: 'POST',
+        body: new ArrayBuffer(8),
+      })
+    );
+    jest.advanceTimersByTime(LONG_TIMEOUT_MS * 5);
+    finish(ok);
+    await expect(p).resolves.toBe(ok);
+  });
+
   it('accepts URL inputs', async () => {
     const f = createFetchWithTimeout(hangingFetch);
     const p = f(new URL(`${BASE}/rest/v1/x`));
