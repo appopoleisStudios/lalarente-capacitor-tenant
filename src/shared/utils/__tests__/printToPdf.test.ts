@@ -9,6 +9,8 @@ import {
   PRINT_ATTEMPTS,
   PRINT_TIMEOUT_MS,
   PRINT_RETRY_DELAY_MS,
+  resetPrinterWarmUpForTests,
+  warmUpPrinter,
 } from '../printToPdf';
 
 jest.mock('expo-print', () => ({ printToFileAsync: jest.fn() }));
@@ -169,4 +171,45 @@ describe('Sentry gets the print error, not "unknown database error" (CT7-068)', 
     expect(out.message).toBe('unknown database error');
     expect(out.stack).not.toContain('27821234567');
   });
+});
+
+describe('warmUpPrinter (CT7-069)', () => {
+  beforeEach(() => {
+    print.mockReset();
+    deleteAsync.mockClear();
+    resetPrinterWarmUpForTests();
+  });
+
+  it('prints one blank page per app process and deletes it', async () => {
+    print.mockResolvedValue({ uri: 'file:///warm.pdf' });
+    warmUpPrinter();
+    warmUpPrinter(); // second screen mount: no second print
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(print).toHaveBeenCalledTimes(1);
+    expect(deleteAsync).toHaveBeenCalledWith('file:///warm.pdf', { idempotent: true });
+  });
+
+  it('a failed or stuck warm-up is ignored and the real export still prints', async () => {
+    jest.useFakeTimers();
+    print
+      .mockReturnValueOnce(new Promise(() => {})) // warm-up hangs
+      .mockResolvedValueOnce({ uri: 'file:///r.pdf' });
+    warmUpPrinter();
+    await jest.advanceTimersByTimeAsync(PRINT_TIMEOUT_MS); // warm-up times out silently
+    await expect(printHtmlToFile('<p/>')).resolves.toBe('file:///r.pdf');
+    jest.useRealTimers();
+  });
+
+  it.each(['InspectionScreen.tsx', 'OwnerInspectionDetailScreen.tsx'])(
+    '%s warms the printer up on mount',
+    (file) => {
+      const src = require('fs').readFileSync(
+        require('path').resolve(__dirname, '../../../features/inspections/screens', file),
+        'utf8'
+      );
+      expect(src).toMatch(/useEffect\(\(\) => \{\s*warmUpPrinter\(\);\s*\}, \[\]\);/);
+    }
+  );
 });

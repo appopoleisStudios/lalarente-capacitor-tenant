@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { inspectionsApi } from '../api/inspectionsApi';
 import { supabase } from '../../../lib/supabase';
 import { exportInspectionReportPdf } from '../../owner/utils/pdfReports';
+import { warmUpPrinter } from '@/src/shared/utils/printToPdf';
 import { reportApiError, sanitizeForSentry } from '@/src/core/observability/sentry';
 import type {
   InspectionWithRelations,
@@ -84,6 +85,11 @@ export default function OwnerInspectionDetailScreen() {
       load();
     }, [id])
   );
+
+  // CT7-069: the first PDF print in a fresh app process often fails or hangs
+  useEffect(() => {
+    warmUpPrinter();
+  }, []);
 
   const load = async () => {
     try {

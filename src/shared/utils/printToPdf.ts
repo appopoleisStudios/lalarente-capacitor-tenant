@@ -85,3 +85,25 @@ export async function printHtmlToFile(
   }
   throw lastError;
 }
+
+let warmUpStarted = false;
+
+/**
+ * CT7-069: in 48 device exports every failed or stuck print was the FIRST
+ * print in a fresh app process. Screens that can export call this on mount:
+ * one blank print per process, in the background, so the user's report is
+ * never the first. Its file is deleted; a failure or hang is ignored (nobody
+ * waits on it).
+ */
+export function warmUpPrinter(): void {
+  if (warmUpStarted) return;
+  warmUpStarted = true;
+  printOnce('<html><body></body></html>', PRINT_TIMEOUT_MS)
+    .then((uri) => FileSystem.deleteAsync(uri, { idempotent: true }))
+    .catch(() => {});
+}
+
+/** Test-only: forget that the warm-up ran. */
+export function resetPrinterWarmUpForTests(): void {
+  warmUpStarted = false;
+}

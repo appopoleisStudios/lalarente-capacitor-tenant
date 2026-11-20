@@ -1940,6 +1940,11 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   the failure was a stuck print then two ERR_PDF_WRITE 40 ms apart, all right
   after app start. Failed prints are now retried after 1 s, 2 s, 3 s (4
   attempts in all).
+  Next 24: 23 saved; the failure was both attempts stuck in a fresh process.
+  Across 48 device exports every failed or stuck print was the first print in
+  its app process. Both inspection screens now call `warmUpPrinter()` on
+  mount: one blank background print per process (file deleted, failures
+  ignored), so the user's report is never the first print.
 - **Acceptance criteria:**
   - [x] Logging of the failing step, without user data (Jest).
   - [x] Cause identified from device logs and fixed, with a regression test
