@@ -2030,24 +2030,33 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   interval) shows no outage at 02:40 but logged 64 short timeouts over the
   day, so a blip during that one call is plausible; a failed SecureStore
   write would look the same.
-- **Fix:**
-  - Sign-in and sign-up await `setSession`, check the stored session is the
-    user's (`getSession`), retry once, 4 s per attempt (8 s max, inside the
-    login screen's 15 s safety timer); on failure sign-in fails with "Couldn't
-    finish signing in. Check your internet connection and try again." The
-    user is never shown a signed-in but empty app.
-  - The tenant dashboard treats an unreadable own profile as an error (React
-    Query retries) and shows "Couldn't load your dashboard" + Try Again
-    instead of an empty "Welcome back, Tenant".
-  - `refreshProfile()` passes the access token (it read anonymously; no
-    callers today).
+- **Fix (after SA round 1):**
+  - Sign-in and sign-up publish user, session and profile together, only
+    after `setSession` succeeded (retried once), `getSession` holds this
+    user's session and the profile loaded. Any failure clears the local
+    session and fails with a clear message ("Couldn't finish signing in…" /
+    "Couldn't load your account…"; sign-up: "Your account was created, but we
+    could not sign you in"). No abandoned attempts (no wrapper timeouts): the
+    network call is bounded by the CT7-068 fetch timeout.
+  - The auth listener is muted while sign-in/sign-up runs, so the SIGNED_IN
+    that `setSession` emits before verification can't publish the user;
+    push registration moved into the sign-in path.
+  - Session storage is memory-first with SecureStore written behind it in
+    order: a failed or hung SecureStore write can no longer lose the session.
+  - Login screen: the 15 s fallback timer starts after sign-in resolves, so
+    the button can't re-enable mid sign-in.
+  - Tenant dashboard: an unreadable own profile is an error (React Query
+    retries) and the screen shows "Couldn't load your dashboard" + Try Again.
+  - `refreshProfile()` passes the access token.
 - **Acceptance criteria:**
   - [x] Root cause found and fixed (above).
-  - [x] Jest `authSignInSession.test.tsx` (setSession error → sign-in fails,
-        user stays signed out; blip then success; wrong/missing stored
-        session; hung setSession bounded) + `useTenantDashboard.test.ts`
-        (profile error → error state; screen error state guard). 5 fail on
-        main.
+  - [x] Jest `authSignInSession.test.tsx` (drives the real auth listener:
+        setSession error; SIGNED_IN without a stored session; other user's
+        session; blip then success; profile failure; retry after failure;
+        listener outside sign-in; sign-up), `sessionStorage.test.ts`
+        (failed/hung SecureStore write, ordering, restart, write during
+        first read), `useTenantDashboard.test.ts` (profile error → error
+        state; screen guard).
   - [ ] Android emulator: repeated sign-out → sign-in shows the tenant's own
         dashboard every time.
 

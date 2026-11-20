@@ -4,31 +4,37 @@ import * as SecureStore from 'expo-secure-store';
 import { Database } from '@/src/types/database.types';
 import { createFetchWithTimeout } from './fetchWithTimeout';
 
-// SecureStore adapter with defensive error handling — prevents hangs when
-// the simulator/device has transient SecureStore issues (e.g. missing passcode,
-// keychain contention). Falls back to in-memory null on any read error.
-const secureStoreAdapter = {
+// Session storage: memory first, SecureStore behind it (CT7-067).
+// supabase-js reads the session back from storage for every request. A
+// SecureStore write that failed (swallowed) or hung used to leave the client
+// without a session right after a successful sign-in, so every query ran
+// anonymously. Writes now land in memory at once; SecureStore is updated in
+// the background, in order, so the session also survives an app restart.
+const memory = new Map<string, string | null>();
+let persistQueue: Promise<void> = Promise.resolve();
+function persist(op: () => Promise<void>, what: string) {
+  persistQueue = persistQueue.then(op).catch((e) => console.warn(`SecureStore.${what} failed:`, e));
+}
+
+export const secureStoreAdapter = {
   getItem: async (key: string) => {
+    if (memory.has(key)) return memory.get(key) ?? null;
     try {
-      return await SecureStore.getItemAsync(key);
+      const value = await SecureStore.getItemAsync(key);
+      if (!memory.has(key)) memory.set(key, value); // a newer write wins
+      return memory.get(key) ?? null;
     } catch (e) {
       console.warn('SecureStore.getItemAsync failed:', e);
       return null;
     }
   },
   setItem: async (key: string, value: string) => {
-    try {
-      await SecureStore.setItemAsync(key, value);
-    } catch (e) {
-      console.warn('SecureStore.setItemAsync failed:', e);
-    }
+    memory.set(key, value);
+    persist(() => SecureStore.setItemAsync(key, value), 'setItemAsync');
   },
   removeItem: async (key: string) => {
-    try {
-      await SecureStore.deleteItemAsync(key);
-    } catch (e) {
-      console.warn('SecureStore.deleteItemAsync failed:', e);
-    }
+    memory.set(key, null);
+    persist(() => SecureStore.deleteItemAsync(key), 'deleteItemAsync');
   },
 };
 

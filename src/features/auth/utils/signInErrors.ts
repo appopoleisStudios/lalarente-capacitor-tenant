@@ -38,6 +38,9 @@ export function signInErrorMessage(error: unknown): string {
   if (code === 'session_not_attached') {
     return "Couldn't finish signing in. Check your internet connection and try again.";
   }
+  if (code === 'profile_not_loaded') {
+    return "Couldn't load your account. Check your internet connection and try again.";
+  }
   if (
     m.includes('timed out') ||
     m.includes('network') ||
