@@ -8,6 +8,7 @@ import {
   PrintTimeoutError,
   PRINT_ATTEMPTS,
   PRINT_TIMEOUT_MS,
+  PRINT_RETRY_DELAY_MS,
 } from '../printToPdf';
 
 jest.mock('expo-print', () => ({ printToFileAsync: jest.fn() }));
@@ -44,17 +45,37 @@ describe('printHtmlToFile (CT7-068)', () => {
   });
   afterEach(() => jest.useRealTimers());
 
-  it('retries a failed WebView print and returns the file', async () => {
+  it('retries a failed WebView print after a pause and returns the file', async () => {
+    jest.useFakeTimers();
     print.mockRejectedValueOnce(pdfWriteError()).mockResolvedValueOnce({ uri: 'file:///r.pdf' });
-    await expect(printHtmlToFile('<p/>')).resolves.toBe('file:///r.pdf');
+    const p = printHtmlToFile('<p/>');
+    await jest.advanceTimersByTimeAsync(PRINT_RETRY_DELAY_MS - 1);
+    expect(print).toHaveBeenCalledTimes(1); // not straight away
+    await jest.advanceTimersByTimeAsync(1);
+    await expect(p).resolves.toBe('file:///r.pdf');
     expect(print).toHaveBeenCalledTimes(2);
   });
 
   it('gives up after the last attempt with the real error', async () => {
+    jest.useFakeTimers();
     print.mockRejectedValue(pdfWriteError());
-    const err = await printHtmlToFile('<p/>').catch((e) => e);
+    const p = printHtmlToFile('<p/>').catch((e) => e);
+    await jest.advanceTimersByTimeAsync(PRINT_RETRY_DELAY_MS * 10);
+    const err = await p;
     expect(print).toHaveBeenCalledTimes(PRINT_ATTEMPTS);
     expect(err.code).toBe('ERR_PDF_WRITE');
+  });
+
+  it('device sequence after app start: stuck, failed, failed, then saved', async () => {
+    jest.useFakeTimers();
+    print
+      .mockReturnValueOnce(new Promise(() => {}))
+      .mockRejectedValueOnce(pdfWriteError())
+      .mockRejectedValueOnce(pdfWriteError())
+      .mockResolvedValueOnce({ uri: 'file:///r.pdf' });
+    const p = printHtmlToFile('<p/>');
+    await jest.advanceTimersByTimeAsync(PRINT_TIMEOUT_MS + PRINT_RETRY_DELAY_MS * 10);
+    await expect(p).resolves.toBe('file:///r.pdf');
   });
 
   it('CT7-069: the stuck first print after app start is retried once and the export saves', async () => {

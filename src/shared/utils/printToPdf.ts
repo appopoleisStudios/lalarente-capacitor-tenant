@@ -12,10 +12,16 @@ import * as FileSystem from 'expo-file-system/legacy';
 //   15 s is retried ONCE. expo-print can't cancel the stuck render, so at most
 //   one abandoned WebView is left per export; if it ever answers, its file is
 //   deleted.
+// - Fast ERR_PDF_WRITE failures cluster right after app start (two failed
+//   40 ms apart in one export), so a failed print is retried after a short,
+//   growing pause instead of immediately.
 
 export const PRINT_TIMEOUT_MS = 15_000;
-export const PRINT_ATTEMPTS = 3;
+export const PRINT_ATTEMPTS = 4;
 export const PRINT_TIMEOUT_RETRIES = 1;
+export const PRINT_RETRY_DELAY_MS = 1_000;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 export class PrintTimeoutError extends Error {
   constructor() {
@@ -69,7 +75,11 @@ export async function printHtmlToFile(
     try {
       return await printOnce(html, timeoutMs);
     } catch (err) {
-      if (err instanceof PrintTimeoutError && ++timeouts > PRINT_TIMEOUT_RETRIES) throw err;
+      if (err instanceof PrintTimeoutError) {
+        if (++timeouts > PRINT_TIMEOUT_RETRIES) throw err;
+      } else if (i < attempts - 1) {
+        await sleep(PRINT_RETRY_DELAY_MS * (i + 1));
+      }
       lastError = err;
     }
   }

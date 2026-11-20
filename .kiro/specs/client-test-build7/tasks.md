@@ -1936,7 +1936,10 @@ Found while testing on the Android emulator with a real on-screen keyboard.
 - **Fix:** `printHtmlToFile` waits 15 s (was 45 s) and retries a print that
   didn't answer once. expo-print can't cancel the stuck render, so at most
   one abandoned WebView is left per export; its file is deleted if it ever
-  answers.
+  answers. Device check of that (24 exports, 16 fresh launches): 23 saved;
+  the failure was a stuck print then two ERR_PDF_WRITE 40 ms apart, all right
+  after app start. Failed prints are now retried after 1 s, 2 s, 3 s (4
+  attempts in all).
 - **Acceptance criteria:**
   - [x] Logging of the failing step, without user data (Jest).
   - [x] Cause identified from device logs and fixed, with a regression test
