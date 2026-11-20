@@ -102,21 +102,19 @@ export default function LoginScreen() {
 
     setFormError('');
 
-    // Safety timeout: if navigation doesn't fire within 15 s, reset the button
-    // so the user can try again rather than being permanently stuck.
-    const timeout = setTimeout(() => setLoading(false), 15000);
-
     try {
       setLoading(true);
+      // signIn settles on its own (every step has a time limit) and resolves
+      // only once the session and profile are in place (CT7-067).
       await signIn(email.trim(), password);
-      // Navigation is handled by the useEffect watching profile + authLoading.
+      // Navigation is handled by the useEffect watching profile + authLoading;
+      // if it somehow doesn't fire, give the button back after 15 s.
+      setTimeout(() => setLoading(false), 15000);
     } catch (error: any) {
       reportApiError(error, 'auth', 'select');
       console.error('Login error:', error);
       setFormError(signInErrorMessage(error));
       setLoading(false);
-    } finally {
-      clearTimeout(timeout);
     }
   };
 

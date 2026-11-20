@@ -2007,7 +2007,7 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   - [x] Export failures are reported and logged in both screens (Jest guard).
   - [ ] Android emulator: full lifecycle 01 → 08 passes on the new APK.
 
-## CT7-067 🟠 Tenant dashboard once showed "Welcome back, Tenant" with no home or activity right after sign-in (tenant) — investigating
+## CT7-067 🟠 Tenant dashboard once showed "Welcome back, Tenant" with no home or activity right after sign-in (tenant) — fixed
 
 - **Role:** tenant · **Platform:** Android · Found in the build-12 lifecycle
   run, 2026-11-20 02:40 (phase 08, owner signed out → tenant signed in).
@@ -2019,12 +2019,56 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   hypothesis.
 - **Not reproduced:** 4 owner → tenant sign-in switches on the same APK all
   showed the tenant's name and data.
+- **Most likely cause (from the code; failure path reproduced in Jest, not
+  reproduced on the device):** sign-in got the tokens over REST, then called
+  `supabase.auth.setSession()` fire-and-forget and marked the user signed in.
+  `setSession` checks the token over the network; when that fails it
+  RESOLVES `{ error }` and stores no session, so the `.catch` never fired. The
+  app looked signed in while every supabase-js query ran without a session:
+  RLS returned no rows and no errors, the `.single()` profile read failed
+  silently → "Tenant", no lease, no activity. The network probe (5 s
+  interval) shows no outage at 02:40 but logged 64 short timeouts over the
+  day, so a blip during that one call is plausible; a failed SecureStore
+  write would look the same.
+- **Fix (after SA rounds 1–2):**
+  - Sign-in and sign-up publish user, session and profile together, only
+    after `setSession` succeeded (retried once), `getSession` holds this
+    user's session and the profile loaded. Any failure clears the local
+    session and fails with a clear message ("Couldn't finish signing in…" /
+    "Couldn't load your account…"; sign-up: "Your account was created, but we
+    could not sign you in"). No abandoned attempts (no wrapper timeouts): the
+    network call is bounded by the CT7-068 fetch timeout.
+  - The auth listener is muted while sign-in/sign-up runs, so the SIGNED_IN
+    that `setSession` emits before verification can't publish the user;
+    push registration moved into the sign-in path.
+  - Session storage is memory-first with SecureStore written behind it: a
+    failed or hung SecureStore call can no longer lose the session; each
+    SecureStore call has a 3 s limit, persistence always writes a key's latest
+    value (a sign-out's delete can't be overtaken by an older write), failed
+    writes are retried, a hung cold-start read counts as "no session".
+  - Failure cleanup and the stale-session purge use `clearLocalSession()`
+    (storage first, then a purely local signOut): `signOut({scope:'local'})`
+    alone calls the logout endpoint and, offline, keeps the session.
+  - The published session is the one supabase-js stored; a second tap on Sign
+    In shares the first attempt.
+  - Login screen: the 15 s fallback timer starts after sign-in resolves, so
+    the button can't re-enable mid sign-in.
+  - Tenant dashboard: an unreadable own profile is an error (React Query
+    retries) and the screen shows "Couldn't load your dashboard" + Try Again.
+  - `refreshProfile()` passes the access token.
 - **Acceptance criteria:**
-  - [ ] Root cause found (session not yet attached when the first dashboard
-        query runs, or another cause) and fixed.
-  - [ ] Regression test that fails without the fix.
-  - [ ] Android emulator: repeated sign-out → sign-in shows the tenant's own
-        dashboard every time.
+  - [x] Root cause found and fixed (above).
+  - [x] Jest `authSignInSession.test.tsx` (drives the real auth listener:
+        setSession error; SIGNED_IN without a stored session; other user's
+        session; blip then success; profile failure; retry after failure;
+        listener outside sign-in; sign-up), `sessionStorage.test.ts`
+        (failed/hung SecureStore write, ordering, restart, write during
+        first read), `useTenantDashboard.test.ts` (profile error → error
+        state; screen guard).
+  - [x] Android emulator (release APK, PR #272 round 2), 2026-11-20: 6×
+        vendor sign-in → sign-out → tenant sign-in; every time the dashboard
+        showed "Welcome back, Nashin Indraj" with the tenant's data, never
+        "Tenant" or the error screen. Full gate on the final build to follow.
 
 ## CT7-062 🟡 Viewing times show seconds: "10:00:00", "2026/11/19, 03:05:01" (owner, tenant)
 
@@ -2104,11 +2148,17 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         touching read/update/delete. Jest guard
         `maintenanceInsertPolicy.test.ts` (statuses = LEASE_IN_EFFECT_STATUSES,
         restrictive, both branches).
-  - [ ] Applied to production after merge (user approved 2026-11-20, one
-        time) and verified: rolled-back dry run (tenant without lease and
-        owner on another's property → 42501; tenant with lease and owner on
-        own property → allowed), then lifecycle-07 (tenant reports with an
-        active lease) green in the gate.
+  - [x] Applied to production 2026-11-20 after merge (#273, user-approved
+        one time), exactly the merged file, recorded in schema_migrations.
+        Rolled-back dry runs with the test tenant (nothing persisted, 0 rows):
+        before — tenant without a lease could insert (gap confirmed); with the
+        migration and again on the live policy — tenant without lease 42501,
+        tenant with active lease allowed, tenant naming another owner 42501;
+        rule function: owner on own property true, vendor as owner/tenant
+        false. Live: policy RESTRICTIVE/INSERT/authenticated, function
+        SECURITY DEFINER with empty search_path, anon cannot execute.
+  - [ ] lifecycle-07 (tenant reports with an active lease) green in the next
+        release gate.
 
 ## CT7-061 🟡 Vendor "View My Jobs" opens "Failed to load job details" (vendor)
 

@@ -87,8 +87,10 @@ export default function RegisterScreen() {
       );
       // navigation handled by useEffect above
     } catch (err: any) {
+      // CT7-067: the account may exist but sign-in could not be completed
+      const created = err?.code === 'session_not_attached' || err?.code === 'profile_not_loaded';
       Alert.alert(
-        'Registration Failed',
+        created ? 'Account created' : 'Registration Failed',
         err.message || 'Could not create account. Please try again.'
       );
     } finally {

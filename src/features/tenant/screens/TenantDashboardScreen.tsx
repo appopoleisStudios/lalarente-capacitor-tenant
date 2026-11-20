@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl } 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect, type Href } from 'expo-router';
 import { DashboardSkeleton } from '@/src/shared/components/ui/DashboardSkeleton';
+import { ErrorState } from '@/src/shared/components/ui/ErrorState';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { focusManager } from '@tanstack/react-query';
@@ -120,7 +121,7 @@ export default function TenantDashboardScreen() {
   const { user } = useAuth();
   const userId = user?.id ?? null;
 
-  const { data, isLoading, isRefetching, refetch } = useTenantDashboard(userId);
+  const { data, isLoading, isError, isRefetching, refetch } = useTenantDashboard(userId);
   const queryClient = useTenantDashboardQueryClient();
 
   const {
@@ -175,6 +176,22 @@ export default function TenantDashboardScreen() {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <DashboardSkeleton title="Welcome back," variant="tenant" />
+      </SafeAreaView>
+    );
+  }
+
+  // CT7-067: never show an empty "Welcome back, Tenant" dashboard when the
+  // data could not be loaded; say so and offer a retry.
+  if (isError && !data) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View testID="tenant-dashboard-error" style={{ flex: 1 }}>
+          <ErrorState
+            title="Couldn't load your dashboard"
+            message="Check your internet connection and try again."
+            onRetry={() => refetch()}
+          />
+        </View>
       </SafeAreaView>
     );
   }
