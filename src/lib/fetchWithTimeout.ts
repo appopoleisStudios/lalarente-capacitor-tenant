@@ -5,7 +5,7 @@
 
 /** Database, auth and RPC calls. */
 export const DEFAULT_TIMEOUT_MS = 30_000;
-/** File uploads/downloads and edge functions legitimately take longer. */
+/** Storage reads/lists/signing and edge functions legitimately take longer. */
 export const LONG_TIMEOUT_MS = 120_000;
 
 export class RequestTimeoutError extends Error {
@@ -15,29 +15,41 @@ export class RequestTimeoutError extends Error {
   }
 }
 
-export function timeoutForUrl(url: string): number {
+/**
+ * Time limit for a request, or null for none. File uploads (a binary body sent
+ * to storage) have no limit: fetch reports no progress, so a slow but healthy
+ * upload (maintenance videos go up to 50 MB) can't be told from a stalled one.
+ */
+export function timeoutFor(url: string, body?: unknown): number | null {
+  if (url.includes('/storage/v1/object/') && body != null && typeof body !== 'string') {
+    return null;
+  }
   return url.includes('/storage/v1/') || url.includes('/functions/v1/')
     ? LONG_TIMEOUT_MS
     : DEFAULT_TIMEOUT_MS;
 }
 
+type FetchInput = Parameters<typeof fetch>[0];
+
+const isRequest = (input: FetchInput): input is Request =>
+  typeof input === 'object' && input !== null && !(input instanceof URL) && 'url' in input;
+
 export function createFetchWithTimeout(
   baseFetch: typeof fetch = fetch,
-  getTimeout: (url: string) => number = timeoutForUrl
+  getTimeout: (url: string, body?: unknown) => number | null = timeoutFor
 ): typeof fetch {
   return (input, init) => {
-    const url =
-      typeof input === 'string'
-        ? input
-        : input instanceof URL
-          ? input.href
-          : (input as Request).url;
-    const ms = getTimeout(url);
+    const url = typeof input === 'string' ? input : isRequest(input) ? input.url : input.href;
+    const ms = getTimeout(url, init?.body);
+    if (ms == null) return baseFetch(input, init);
+
     const controller = new AbortController();
     let timedOut = false;
 
-    // Keep honouring an abort the caller asked for (supabase-js passes signals).
-    const callerSignal = init?.signal;
+    // Keep honouring the caller's abort signal: init.signal wins, otherwise the
+    // Request's own signal (supabase-js passes signals for cancellable calls).
+    const callerSignal =
+      init && 'signal' in init ? init.signal : isRequest(input) ? input.signal : undefined;
     const onCallerAbort = () => controller.abort();
     if (callerSignal) {
       if (callerSignal.aborted) controller.abort();

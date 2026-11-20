@@ -1431,7 +1431,9 @@ export async function exportInspectionReportPdf(
     .eq('id', inspectionId)
     .single();
 
-  if (error || !insp) throw new Error('Failed to load inspection data');
+  // Keep the database error (code, timeout) so the export handler can report it.
+  if (error) throw error;
+  if (!insp) throw new Error('Failed to load inspection data');
 
   const roomsData = insp.rooms as any;
   const roomsList: any[] = roomsData?.rooms || [];

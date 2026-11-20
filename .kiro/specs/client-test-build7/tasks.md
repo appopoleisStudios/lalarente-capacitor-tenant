@@ -1927,10 +1927,13 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   Approve/property spinners: React Native's Android fetch has no timeout.
 - **Fix:** every Supabase request goes through `createFetchWithTimeout`
   (`src/lib/fetchWithTimeout.ts`): 30 s for database/auth, 120 s for storage
-  and edge functions; a stalled request fails with "Request timed out"
-  (which sign-in already shows as "Can't reach Lalarente"). Both inspection
-  export handlers (tenant `InspectionScreen`, owner
-  `OwnerInspectionDetailScreen`) now report the error to Sentry and log it.
+  reads and edge functions, no limit for file uploads (no progress events,
+  so a slow 50 MB video can't be told from a stall); a stalled request fails
+  with "Request timed out" (which sign-in already shows as "Can't reach
+  Lalarente"). Both inspection export handlers (tenant `InspectionScreen`,
+  owner `OwnerInspectionDetailScreen`) now report the error to Sentry and
+  log it; the export keeps the database error instead of replacing it, and
+  Sentry classifies timeouts as "request timed out" (no user text).
 - **Acceptance criteria:**
   - [x] A stalled request fails after its limit instead of hanging (Jest).
   - [x] Caller aborts still work; normal responses pass through (Jest).

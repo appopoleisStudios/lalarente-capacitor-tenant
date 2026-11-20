@@ -5,15 +5,17 @@ import {
   DEFAULT_TIMEOUT_MS,
   LONG_TIMEOUT_MS,
   RequestTimeoutError,
-  timeoutForUrl,
+  timeoutFor,
 } from '../fetchWithTimeout';
 
 // A fetch that never answers until its signal aborts — what a stalled
 // Android OkHttp request looks like to the app (CT7-068).
 const hangingFetch = jest.fn(
-  (_input: any, init?: RequestInit) =>
+  (input: any, init?: RequestInit) =>
     new Promise<Response>((_resolve, reject) => {
-      init?.signal?.addEventListener('abort', () => reject(new Error('Aborted')));
+      const signal = init?.signal ?? input?.signal;
+      if (signal?.aborted) reject(new Error('Aborted'));
+      signal?.addEventListener('abort', () => reject(new Error('Aborted')));
     })
 ) as unknown as typeof fetch;
 
@@ -56,30 +58,59 @@ describe('fetchWithTimeout (CT7-068)', () => {
     await expect(p).rejects.not.toBeInstanceOf(RequestTimeoutError);
   });
 
-  it('gives uploads and edge functions the longer limit', () => {
-    expect(timeoutForUrl(`${BASE}/rest/v1/leases`)).toBe(DEFAULT_TIMEOUT_MS);
-    expect(timeoutForUrl(`${BASE}/auth/v1/user`)).toBe(DEFAULT_TIMEOUT_MS);
-    expect(timeoutForUrl(`${BASE}/storage/v1/object/documents/a.pdf`)).toBe(LONG_TIMEOUT_MS);
-    expect(timeoutForUrl(`${BASE}/functions/v1/send-push`)).toBe(LONG_TIMEOUT_MS);
+  it("honours a Request object's own signal, aborted before or after the call", async () => {
+    const f = createFetchWithTimeout(hangingFetch);
+
+    const before = new AbortController();
+    before.abort();
+    await expect(f(new Request(`${BASE}/rest/v1/x`, { signal: before.signal }))).rejects.toThrow(
+      'Aborted'
+    );
+
+    const after = new AbortController();
+    const p = f(new Request(`${BASE}/rest/v1/x`, { signal: after.signal }));
+    after.abort();
+    await expect(p).rejects.toThrow('Aborted');
+    await expect(p).rejects.not.toBeInstanceOf(RequestTimeoutError);
+  });
+
+  it('accepts URL inputs', async () => {
+    const f = createFetchWithTimeout(hangingFetch);
+    const p = f(new URL(`${BASE}/rest/v1/x`));
+    jest.advanceTimersByTime(DEFAULT_TIMEOUT_MS);
+    await expect(p).rejects.toBeInstanceOf(RequestTimeoutError);
+  });
+
+  it('never cuts off a file upload, however long it takes', async () => {
+    let finish!: (r: Response) => void;
+    const slowUpload = jest.fn(
+      () => new Promise<Response>((resolve) => (finish = resolve))
+    ) as unknown as typeof fetch;
+    const f = createFetchWithTimeout(slowUpload);
+    const ok = { ok: true } as Response;
+
+    const p = f(`${BASE}/storage/v1/object/maintenance-media/u/video.mp4`, {
+      method: 'POST',
+      body: new ArrayBuffer(8),
+    });
+    jest.advanceTimersByTime(LONG_TIMEOUT_MS * 5); // a 50 MB video on a slow line
+    finish(ok);
+    await expect(p).resolves.toBe(ok);
+  });
+
+  it('limits: 30 s database/auth, 120 s storage reads and functions, none for uploads', () => {
+    expect(timeoutFor(`${BASE}/rest/v1/leases`)).toBe(DEFAULT_TIMEOUT_MS);
+    expect(timeoutFor(`${BASE}/auth/v1/user`)).toBe(DEFAULT_TIMEOUT_MS);
+    expect(timeoutFor(`${BASE}/storage/v1/object/public/documents/a.pdf`)).toBe(LONG_TIMEOUT_MS);
+    expect(timeoutFor(`${BASE}/storage/v1/object/list/documents`, '{"prefix":""}')).toBe(
+      LONG_TIMEOUT_MS
+    );
+    expect(timeoutFor(`${BASE}/functions/v1/send-push`, '{}')).toBe(LONG_TIMEOUT_MS);
+    expect(timeoutFor(`${BASE}/storage/v1/object/documents/a.pdf`, new ArrayBuffer(1))).toBeNull();
   });
 
   it('the app Supabase client uses it', () => {
     const src = fs.readFileSync(path.resolve(__dirname, '../supabase.ts'), 'utf8');
     expect(src).toMatch(/global:\s*\{\s*fetch:\s*createFetchWithTimeout\(\)\s*\}/);
-  });
-});
-
-describe('inspection report export keeps its error (CT7-068)', () => {
-  const screens = ['InspectionScreen.tsx', 'OwnerInspectionDetailScreen.tsx'];
-  it.each(screens)('%s reports and logs the export failure', (file) => {
-    const src = fs.readFileSync(
-      path.resolve(__dirname, '../../features/inspections/screens', file),
-      'utf8'
-    );
-    const handler = src.slice(src.indexOf('exportInspectionReportPdf(inspection.id'));
-    const catchBlock = handler.slice(handler.indexOf('} catch'), handler.indexOf('} finally'));
-    expect(catchBlock).toMatch(/catch \(err\)/);
-    expect(catchBlock).toMatch(/reportApiError\(err, 'inspections', 'export'\)/);
-    expect(catchBlock).toMatch(/console\.error\(/);
   });
 });

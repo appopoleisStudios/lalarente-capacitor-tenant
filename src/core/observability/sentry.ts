@@ -78,7 +78,27 @@ function safeCodeMessage(code: string): string {
   return desc ? `${code}: ${desc}` : 'unknown database error';
 }
 
+// CT7-068: our own fixed timeout text (fetchWithTimeout), also as mapped into a
+// PostgREST/auth error message. Contains no user data, so it is classified.
+const REQUEST_TIMEOUT_PATTERN = /Request timed out after \d+s/;
+const REQUEST_TIMEOUT_MESSAGE = 'request timed out';
+
+function isRequestTimeout(error: unknown): boolean {
+  if (error === null || typeof error !== 'object') return false;
+  const message = (error as { message?: unknown }).message;
+  return typeof message === 'string' && REQUEST_TIMEOUT_PATTERN.test(message);
+}
+
 export function sanitizeForSentry(error: unknown): Error {
+  if (isRequestTimeout(error)) {
+    const sanitized = new Error(REQUEST_TIMEOUT_MESSAGE);
+    sanitized.name = 'RequestTimeoutError';
+    if (error instanceof Error) {
+      sanitized.stack = replaceStackMessage(error.stack, REQUEST_TIMEOUT_MESSAGE);
+    }
+    return sanitized;
+  }
+
   // instanceof Error is checked first so a JS Error that also carries a .code
   // property (e.g. some Supabase client wrappers) keeps its original stack
   // instead of being treated as a plain structured object and losing frames.
