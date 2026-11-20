@@ -106,6 +106,25 @@ it('a timed-out write that lands AFTER the sign-out is overwritten again (SA rep
   expect(await lib.secureStoreAdapter.getItem('sb-session')).toBeNull();
 });
 
+it('a slow but successful SecureStore does not keep rewriting the same value', async () => {
+  jest.useFakeTimers();
+  store.setItemAsync.mockImplementation(
+    (k: string, v: string) =>
+      new Promise<void>(
+        (r) =>
+          setTimeout(() => {
+            native.set(k, v);
+            r();
+          }, lib.SECURE_STORE_TIMEOUT_MS + 1_000) // always "times out", then succeeds
+      )
+  );
+  await lib.secureStoreAdapter.setItem('k', 'S');
+  await jest.advanceTimersByTimeAsync(60_000);
+  expect(native.get('k')).toBe('S');
+  // first write + at most SECURE_STORE_RETRIES retries, not an endless loop
+  expect(store.setItemAsync.mock.calls.length).toBeLessThanOrEqual(1 + lib.SECURE_STORE_RETRIES);
+});
+
 it('persists the latest value: an older write never lands after a newer one', async () => {
   await lib.secureStoreAdapter.setItem('k', 'A');
   await lib.secureStoreAdapter.setItem('k', 'B');

@@ -65,9 +65,13 @@ async function flush() {
       } catch (e) {
         // A timed-out call is not cancelled and may still land later, after
         // newer writes (e.g. an old session written back over a sign-out).
-        // When it settles, write the then-latest value again.
+        // When it lands, write the then-latest value again - but only if it
+        // differs from what just landed (a slow but successful store must
+        // not keep rewriting itself).
         op.then(
-          () => schedulePersist(key),
+          () => {
+            if ((memory.get(key) ?? null) !== value) schedulePersist(key);
+          },
           () => {}
         );
         console.warn('SecureStore write failed:', e);
