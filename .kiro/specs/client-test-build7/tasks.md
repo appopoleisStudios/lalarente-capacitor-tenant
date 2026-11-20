@@ -2122,7 +2122,7 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   - [x] Jest `PropertyTypePicker.test.tsx` (fails on main).
   - [x] Android emulator (release APK), 2026-11-19: Edit Property shows the chips with the stored "Townhouse" selected and Save disabled (no change); property detail Type "Townhouse"; not saved.
 
-## CT7-066 🟠 Tenant can report an issue without a signed lease (tenant)
+## CT7-066 🟠 Tenant can report an issue without a signed lease (tenant) — app + database
 
 - **Role:** tenant · **Platform:** all · Product decision 2026-11-19: issues
   are between owner and tenant, so reporting needs a lease.
@@ -2135,8 +2135,22 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   - [x] Jest `leaseInEffect.test.ts` + `reportIssueLeaseGate.test.tsx` (fail
         on main).
   - [x] Android emulator (release APK), 2026-11-19: tenant with an active lease sees Report Issue (+); unsigned-lease refusal covered by Jest (no unsigned fixture on device).
-  - [ ] Follow-up: enforce the same rule in the database (RLS on
-        `maintenance_requests` insert) via a migration.
+  - [x] Database enforces it: migration
+        `20261120000001_ct7_066_maintenance_insert_requires_lease.sql` adds a
+        RESTRICTIVE insert policy (`may_report_maintenance`, SECURITY
+        DEFINER): tenant only with a lease in effect on that property to its
+        owner; owner only on a property they own. Found while writing it: the
+        live permissive policies (`*_tenant_insert`, `*_tenant_access`,
+        `*_owner_insert`, `*_owner_access`) let any tenant or owner insert a
+        request on ANY property; the restrictive policy closes that without
+        touching read/update/delete. Jest guard
+        `maintenanceInsertPolicy.test.ts` (statuses = LEASE_IN_EFFECT_STATUSES,
+        restrictive, both branches).
+  - [ ] Applied to production after merge (user approved 2026-11-20, one
+        time) and verified: rolled-back dry run (tenant without lease and
+        owner on another's property → 42501; tenant with lease and owner on
+        own property → allowed), then lifecycle-07 (tenant reports with an
+        active lease) green in the gate.
 
 ## CT7-061 🟡 Vendor "View My Jobs" opens "Failed to load job details" (vendor)
 
