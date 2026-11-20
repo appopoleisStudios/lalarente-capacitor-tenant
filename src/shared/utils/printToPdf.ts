@@ -5,13 +5,17 @@ import * as FileSystem from 'expo-file-system/legacy';
 // print step fails now and then ("Printing failed" → ERR_PDF_WRITE) or never
 // calls back, which left the export spinner running forever.
 // - A failed print is retried (it fails fast, nothing is left running).
-// - A print that doesn't answer in time fails the export with
-//   PrintTimeoutError and is NOT retried: expo-print can't cancel the native
-//   render, so retrying would stack WebViews. If the abandoned render finishes
-//   later, its file is deleted.
+// - CT7-069, measured on the emulator: a print either finishes in 0.4–1.3 s or
+//   never answers at all (no late result after 2+ min), and every hang was the
+//   first print in a fresh app process; the next print in the same process
+//   always worked, even right after a hang. So a print that doesn't answer in
+//   15 s is retried ONCE. expo-print can't cancel the stuck render, so at most
+//   one abandoned WebView is left per export; if it ever answers, its file is
+//   deleted.
 
-export const PRINT_TIMEOUT_MS = 45_000;
+export const PRINT_TIMEOUT_MS = 15_000;
 export const PRINT_ATTEMPTS = 3;
+export const PRINT_TIMEOUT_RETRIES = 1;
 
 export class PrintTimeoutError extends Error {
   constructor() {
@@ -60,11 +64,12 @@ export async function printHtmlToFile(
   timeoutMs: number = PRINT_TIMEOUT_MS
 ): Promise<string> {
   let lastError: unknown;
+  let timeouts = 0;
   for (let i = 0; i < attempts; i++) {
     try {
       return await printOnce(html, timeoutMs);
     } catch (err) {
-      if (err instanceof PrintTimeoutError) throw err;
+      if (err instanceof PrintTimeoutError && ++timeouts > PRINT_TIMEOUT_RETRIES) throw err;
       lastError = err;
     }
   }

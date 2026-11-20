@@ -57,36 +57,53 @@ describe('printHtmlToFile (CT7-068)', () => {
     expect(err.code).toBe('ERR_PDF_WRITE');
   });
 
-  it('a print that never calls back ends the export (no endless spinner, no stacked render)', async () => {
+  it('CT7-069: the stuck first print after app start is retried once and the export saves', async () => {
+    jest.useFakeTimers();
+    print
+      .mockReturnValueOnce(new Promise(() => {})) // first print in a fresh process: never answers
+      .mockResolvedValueOnce({ uri: 'file:///r.pdf' });
+    const p = printHtmlToFile('<p/>');
+    await jest.advanceTimersByTimeAsync(PRINT_TIMEOUT_MS);
+    await expect(p).resolves.toBe('file:///r.pdf');
+    expect(print).toHaveBeenCalledTimes(2);
+  });
+
+  it('a second stuck print ends the export: at most one abandoned render per tap', async () => {
     jest.useFakeTimers();
     print.mockReturnValue(new Promise(() => {}));
     const p = printHtmlToFile('<p/>').catch((e) => e);
-    await jest.advanceTimersByTimeAsync(PRINT_TIMEOUT_MS);
+    await jest.advanceTimersByTimeAsync(PRINT_TIMEOUT_MS * 2);
     expect(await p).toBeInstanceOf(PrintTimeoutError);
-    expect(print).toHaveBeenCalledTimes(1); // not retried while the native render may still run
+    expect(print).toHaveBeenCalledTimes(2);
+  });
+
+  it('the limit is well above a healthy print (0.4–1.3 s measured) and below a long wait', () => {
+    expect(PRINT_TIMEOUT_MS).toBeGreaterThanOrEqual(10_000);
+    expect(PRINT_TIMEOUT_MS).toBeLessThanOrEqual(20_000);
   });
 
   it('a late result from an abandoned print is deleted, not used', async () => {
     jest.useFakeTimers();
     const late = deferred<{ uri: string }>();
-    print.mockReturnValueOnce(late.promise);
-    const p = printHtmlToFile('<p/>').catch((e) => e);
+    print.mockReturnValueOnce(late.promise).mockResolvedValueOnce({ uri: 'file:///r.pdf' });
+    const p = printHtmlToFile('<p/>');
     await jest.advanceTimersByTimeAsync(PRINT_TIMEOUT_MS);
-    expect(await p).toBeInstanceOf(PrintTimeoutError);
+    await expect(p).resolves.toBe('file:///r.pdf');
 
     late.resolve({ uri: 'file:///late.pdf' });
     await Promise.resolve();
     await Promise.resolve();
     expect(deleteAsync).toHaveBeenCalledWith('file:///late.pdf', { idempotent: true });
+    expect(deleteAsync).not.toHaveBeenCalledWith('file:///r.pdf', expect.anything());
   });
 
-  it('logs how late an abandoned print answered, to tell slow from stuck (CT7-069)', async () => {
+  it('logs how late an abandoned print answered, to tell slow from stuck', async () => {
     jest.useFakeTimers();
     const log = jest.spyOn(console, 'log').mockImplementation(() => {});
     const late = deferred<{ uri: string }>();
-    print.mockReturnValueOnce(late.promise);
-    const p = printHtmlToFile('<p/>').catch((e) => e);
-    await jest.advanceTimersByTimeAsync(PRINT_TIMEOUT_MS + 15_000);
+    print.mockReturnValueOnce(late.promise).mockResolvedValueOnce({ uri: 'file:///r.pdf' });
+    const p = printHtmlToFile('<p/>');
+    await jest.advanceTimersByTimeAsync(PRINT_TIMEOUT_MS);
     await p;
     late.resolve({ uri: 'file:///late.pdf' });
     await Promise.resolve();
@@ -94,15 +111,15 @@ describe('printHtmlToFile (CT7-068)', () => {
     log.mockRestore();
   });
 
-  it('a late failure of an abandoned print is ignored, and the next export works', async () => {
+  it('a late failure of an abandoned print is ignored', async () => {
     jest.useFakeTimers();
     const late = deferred<{ uri: string }>();
     print.mockReturnValueOnce(late.promise).mockResolvedValueOnce({ uri: 'file:///next.pdf' });
-    const p = printHtmlToFile('<p/>').catch((e) => e);
+    const p = printHtmlToFile('<p/>');
     await jest.advanceTimersByTimeAsync(PRINT_TIMEOUT_MS);
-    expect(await p).toBeInstanceOf(PrintTimeoutError);
+    await expect(p).resolves.toBe('file:///next.pdf');
     late.reject(pdfWriteError()); // must not surface anywhere
-    await expect(printHtmlToFile('<p/>')).resolves.toBe('file:///next.pdf');
+    await Promise.resolve();
   });
 
   it('a successful print clears its timer', async () => {

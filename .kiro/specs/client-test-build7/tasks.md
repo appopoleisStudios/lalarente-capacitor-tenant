@@ -1916,7 +1916,7 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         with the keyboard up; lifecycle-06 posts a comment with one tap
         (both LC-comments posted; owner inspection steps green).
 
-## CT7-069 🟠 Inspection report print still hangs now and then; export ends with "Failed to generate" after ~45 s (all roles) — investigating
+## CT7-069 🟠 First PDF print after the app starts hangs; export ended with "Failed to generate" after ~45 s (all roles) — fixed
 
 - **Role:** all · **Platform:** Android · Found on the PR #268 device check
   (2026-11-20 06:11): 7 of 8 back-to-back exports saved; the first one after
@@ -1927,12 +1927,20 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   print's duration and, for a print abandoned at the time limit, when (or
   whether) it answered later; `exportInspectionReportPdf` logs load+embed,
   print and upload times, photo count and HTML size. No user data is logged.
-- **Next:** pick the fix from the logs. A late answer means the limit is too
-  short; no answer means the WebView is stuck; failures that follow HTML size
-  or a fresh launch need a smaller input or a warm-up.
+- **Found with the logs (emulator, 2026-11-20 06:21–06:31, 16 exports):**
+  a print either finished in 0.4–1.3 s or never answered (no late result
+  after 2+ min). All 6 hangs were the first print in a fresh app process
+  (5 of 8 fresh launches, plus the first export after install); every later
+  print in the same process worked, including right after a hang. Load+embed
+  took 3–10 s (11 photos, 1.1 MB HTML) and upload 0.5–1.6 s, and neither ever failed.
+- **Fix:** `printHtmlToFile` waits 15 s (was 45 s) and retries a print that
+  didn't answer once. expo-print can't cancel the stuck render, so at most
+  one abandoned WebView is left per export; its file is deleted if it ever
+  answers.
 - **Acceptance criteria:**
   - [x] Logging of the failing step, without user data (Jest).
-  - [ ] Cause identified from device logs and fixed, with a regression test.
+  - [x] Cause identified from device logs and fixed, with a regression test
+        (stuck first print → retried → saved).
   - [ ] Android emulator: about 20 exports in a row, including fresh launches,
         all saved.
 
