@@ -1415,6 +1415,9 @@ export async function exportInspectionReportPdf(
   inspectionId: string,
   userId: string
 ): Promise<string> {
+  // CT7-069: per-step timings and sizes (no user data) to find where an
+  // intermittent export failure happens.
+  const t0 = Date.now();
   const { data: insp, error } = await supabase
     .from('inspections')
     .select(
@@ -1490,17 +1493,29 @@ export async function exportInspectionReportPdf(
     tenantComments
   );
 
+  const tEmbedded = Date.now();
+  const images = processedRooms.reduce(
+    (n, r) => n + r.photoDataUris.length + r.items.reduce((m, i) => m + i.photoDataUris.length, 0),
+    0
+  );
+  console.log(
+    `[export] load+embed ${tEmbedded - t0}ms, ${images} photos, html ${Math.round(html.length / 1024)}KB`
+  );
+
   const uri = await printHtmlToFile(html);
+  const tPrinted = Date.now();
 
   const typeLabel =
     insp.type === 'move_in' ? 'Move-In' : insp.type === 'move_out' ? 'Move-Out' : 'Periodic';
   const propertyTitle = property?.title || 'Property';
   const title = `${typeLabel} Inspection Report — ${propertyTitle}`;
 
-  return saveReportToDocuments(uri, 'inspection_report', title, userId, {
+  const docId = await saveReportToDocuments(uri, 'inspection_report', title, userId, {
     property_id: insp.property_id ?? undefined,
     lease_id: insp.lease_id ?? undefined,
     tenant_id: insp.tenant_id ?? undefined,
     access_level: 'both',
   });
+  console.log(`[export] print ${tPrinted - tEmbedded}ms, upload ${Date.now() - tPrinted}ms`);
+  return docId;
 }

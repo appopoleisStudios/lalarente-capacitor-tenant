@@ -119,7 +119,8 @@ export default function OwnerInspectionDetailScreen() {
       ]);
     } catch (err) {
       reportApiError(err, 'inspections', 'export');
-      console.error('Error exporting inspection report:', sanitizeForSentry(err).message);
+      const safe = sanitizeForSentry(err);
+      console.error('Error exporting inspection report:', `${safe.name}: ${safe.message}`);
       Alert.alert('Error', 'Failed to generate PDF report.');
     } finally {
       setExporting(false);

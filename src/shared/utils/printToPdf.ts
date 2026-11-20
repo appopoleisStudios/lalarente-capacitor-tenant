@@ -22,6 +22,7 @@ export class PrintTimeoutError extends Error {
 
 function printOnce(html: string, timeoutMs: number): Promise<string> {
   return new Promise<string>((resolve, reject) => {
+    const started = Date.now();
     let timedOut = false;
     const timer = setTimeout(() => {
       timedOut = true;
@@ -32,14 +33,21 @@ function printOnce(html: string, timeoutMs: number): Promise<string> {
       ({ uri }) => {
         clearTimeout(timer);
         if (timedOut) {
-          // late result of an abandoned render: nobody will use it
+          // late result of an abandoned render: nobody will use it. Logged so
+          // a slow print can be told from a stuck one (CT7-069).
+          console.log(`[print] late result after ${Date.now() - started}ms (discarded)`);
           FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {});
         } else {
+          console.log(`[print] done in ${Date.now() - started}ms`);
           resolve(uri);
         }
       },
       (err) => {
         clearTimeout(timer);
+        const code = typeof err?.code === 'string' ? err.code : 'no code';
+        console.log(
+          `[print] failed after ${Date.now() - started}ms (${code})${timedOut ? ', late' : ''}`
+        );
         if (!timedOut) reject(err);
       }
     );

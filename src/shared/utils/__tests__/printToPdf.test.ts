@@ -80,6 +80,20 @@ describe('printHtmlToFile (CT7-068)', () => {
     expect(deleteAsync).toHaveBeenCalledWith('file:///late.pdf', { idempotent: true });
   });
 
+  it('logs how late an abandoned print answered, to tell slow from stuck (CT7-069)', async () => {
+    jest.useFakeTimers();
+    const log = jest.spyOn(console, 'log').mockImplementation(() => {});
+    const late = deferred<{ uri: string }>();
+    print.mockReturnValueOnce(late.promise);
+    const p = printHtmlToFile('<p/>').catch((e) => e);
+    await jest.advanceTimersByTimeAsync(PRINT_TIMEOUT_MS + 15_000);
+    await p;
+    late.resolve({ uri: 'file:///late.pdf' });
+    await Promise.resolve();
+    expect(log).toHaveBeenCalledWith(expect.stringMatching(/^\[print\] late result after \d+ms/));
+    log.mockRestore();
+  });
+
   it('a late failure of an abandoned print is ignored, and the next export works', async () => {
     jest.useFakeTimers();
     const late = deferred<{ uri: string }>();

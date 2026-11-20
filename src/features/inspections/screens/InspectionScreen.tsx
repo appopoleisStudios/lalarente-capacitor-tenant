@@ -438,7 +438,8 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
       ]);
     } catch (err) {
       reportApiError(err, 'inspections', 'export');
-      console.error('Error exporting inspection report:', sanitizeForSentry(err).message);
+      const safe = sanitizeForSentry(err);
+      console.error('Error exporting inspection report:', `${safe.name}: ${safe.message}`);
       Alert.alert('Error', 'Failed to generate inspection report. Please try again.');
     } finally {
       setExporting(false);

@@ -1916,6 +1916,26 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         with the keyboard up; lifecycle-06 posts a comment with one tap
         (both LC-comments posted; owner inspection steps green).
 
+## CT7-069 🟠 Inspection report print still hangs now and then; export ends with "Failed to generate" after ~45 s (all roles) — investigating
+
+- **Role:** all · **Platform:** Android · Found on the PR #268 device check
+  (2026-11-20 06:11): 7 of 8 back-to-back exports saved; the first one after
+  install failed about 55 s after the tap (CT7-068's 45 s print limit; the
+  log then showed only "API error", so this is inferred from timing).
+- **This change (diagnostics):** export failures are logged as
+  `<name>: <message>` from the sanitized error; `printHtmlToFile` logs each
+  print's duration and, for a print abandoned at the time limit, when (or
+  whether) it answered later; `exportInspectionReportPdf` logs load+embed,
+  print and upload times, photo count and HTML size. No user data is logged.
+- **Next:** pick the fix from the logs. A late answer means the limit is too
+  short; no answer means the WebView is stuck; failures that follow HTML size
+  or a fresh launch need a smaller input or a warm-up.
+- **Acceptance criteria:**
+  - [x] Logging of the failing step, without user data (Jest).
+  - [ ] Cause identified from device logs and fixed, with a regression test.
+  - [ ] Android emulator: about 20 exports in a row, including fresh launches,
+        all saved.
+
 ## CT7-068 🟠 Server requests could hang forever; inspection report export failed without saying why (all roles) — fixed
 
 - **Role:** all · **Platform:** Android · Found in the build-12 lifecycle run,
