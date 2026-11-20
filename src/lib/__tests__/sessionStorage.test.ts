@@ -80,6 +80,32 @@ it('hung write → sign-out → restart: the session is gone (later writes are n
   expect(await lib.secureStoreAdapter.getItem('sb-session')).toBeNull();
 });
 
+it('a timed-out write that lands AFTER the sign-out is overwritten again (SA repro)', async () => {
+  jest.useFakeTimers();
+  let land!: () => void;
+  store.setItemAsync.mockImplementationOnce(
+    (k: string, v: string) =>
+      new Promise<void>((r) => {
+        land = () => {
+          native.set(k, v); // the native write finally happens
+          r();
+        };
+      })
+  );
+  await lib.secureStoreAdapter.setItem('sb-session', 'NEW');
+  await jest.advanceTimersByTimeAsync(lib.SECURE_STORE_TIMEOUT_MS + 1); // times out
+  await lib.secureStoreAdapter.removeItem('sb-session'); // sign-out
+  await jest.advanceTimersByTimeAsync(10_000); // delete + retries done
+  expect(native.has('sb-session')).toBe(false);
+  land(); // the old write lands late and restores the session…
+  expect(native.get('sb-session')).toBe('NEW');
+  await jest.advanceTimersByTimeAsync(10);
+  expect(native.has('sb-session')).toBe(false); // …and is deleted again
+  jest.useRealTimers();
+  restartApp();
+  expect(await lib.secureStoreAdapter.getItem('sb-session')).toBeNull();
+});
+
 it('persists the latest value: an older write never lands after a newer one', async () => {
   await lib.secureStoreAdapter.setItem('k', 'A');
   await lib.secureStoreAdapter.setItem('k', 'B');

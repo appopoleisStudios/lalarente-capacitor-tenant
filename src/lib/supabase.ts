@@ -14,6 +14,8 @@ import { createFetchWithTimeout } from './fetchWithTimeout';
 //   delete can't be overtaken by an older write) and every SecureStore call
 //   has a time limit, so one hung call can't stall later ones; a failed or
 //   timed-out call is retried a few times with the then-latest value;
+// - a call that timed out but lands later triggers a rewrite of the latest
+//   value, so it can't leave stale data behind;
 // - a cold-start read has a time limit too (treated as "no session").
 export const SECURE_STORE_TIMEOUT_MS = 3_000;
 export const SECURE_STORE_RETRIES = 3;
@@ -55,12 +57,19 @@ async function flush() {
       const key = dirty.values().next().value as string;
       dirty.delete(key);
       const value = memory.get(key) ?? null;
+      const op =
+        value === null ? SecureStore.deleteItemAsync(key) : SecureStore.setItemAsync(key, value);
       try {
-        await bounded(
-          value === null ? SecureStore.deleteItemAsync(key) : SecureStore.setItemAsync(key, value)
-        );
+        await bounded(op);
         failures.delete(key);
       } catch (e) {
+        // A timed-out call is not cancelled and may still land later, after
+        // newer writes (e.g. an old session written back over a sign-out).
+        // When it settles, write the then-latest value again.
+        op.then(
+          () => schedulePersist(key),
+          () => {}
+        );
         console.warn('SecureStore write failed:', e);
         const n = (failures.get(key) ?? 0) + 1;
         failures.set(key, n);
