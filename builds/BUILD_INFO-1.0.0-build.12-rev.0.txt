@@ -59,14 +59,16 @@ Android layout and input
   ✓ CT7-051 Keyboard no longer covers full-screen forms, all roles (#256)
   ✓ CT7-053 Android alerts keep all their buttons (#258)
 Leases, rent and money
-  ✓ CT7-052 A lease is never activated without its PDF (#257)
+  ✓ CT7-052 Lease PDF generation is retried when a lease is activated; if it
+    still fails, the owner is told to use "Generate PDF" (#257)
   ✓ CT7-057 Rent Roll no longer says "Paid" for unpaid rent (#262)
   ✓ CT7-063 Dashboard "In Arrears" and Rent Roll "Overdue" now agree (#266)
 Navigation
   ✓ CT7-054 Vendor can open the quote they submitted (#259)
   ✓ CT7-055 Back from a maintenance request no longer loops (#260)
   ✓ CT7-056 Owner dashboard Recent Activity rows open their item (#261)
-  ✓ CT7-061 Vendor "View My Jobs" opens the job (#265)
+  ✓ CT7-061 Vendor "View My Jobs" opens the My Jobs list instead of an
+    error (#265)
 Text and dates
   ✓ CT7-058 Property search with no match says "No properties match" with
     Clear filters (#263)
@@ -86,10 +88,12 @@ Reports (PDF export)
   ✓ CT7-068 Server requests can no longer hang forever (30 s limit, 120 s for
     files/functions; uploads exempt); a failed export reports its real
     cause; a failed WebView print is retried (#268)
-  ✓ CT7-069 First PDF print after the app starts no longer hangs or fails
-    the export: the printer is warmed up on Android when an inspection
+  ✓ CT7-069 First PDF print after the app starts could hang or fail the
+    export: the printer is now warmed up on Android when an inspection
     opens, and a stuck print is retried once. Device check: 24/24 exports
-    saved, 16 of them right after a fresh app launch (#269)
+    saved, 16 of them right after a fresh app launch (earlier versions of
+    the fix: 23/24). The Android WebView print step itself still fails now
+    and then; the app works around it rather than removing it (#269)
 Testing
   ✓ Android lifecycle runner for the release gate (#250)
   ✓ CT7-070 lifecycle-03a checks the "Submitted" label reliably (#270)
