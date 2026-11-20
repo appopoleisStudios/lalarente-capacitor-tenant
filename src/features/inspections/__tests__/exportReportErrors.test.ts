@@ -77,6 +77,8 @@ describe('inspection report export keeps its error (CT7-068)', () => {
     const catchBlock = handler.slice(handler.indexOf('} catch'), handler.indexOf('} finally'));
     expect(catchBlock).toMatch(/catch \(err\)/);
     expect(catchBlock).toMatch(/reportApiError\(err, 'inspections', 'export'\)/);
-    expect(catchBlock).toMatch(/console\.error\([^)]*sanitizeForSentry\(err\)/); // never the raw error (breadcrumbs)
+    expect(catchBlock).toMatch(
+      /const safe = sanitizeForSentry\(err\);\s*console\.error\([^;]*\$\{safe\.name\}: \$\{safe\.message\}/
+    ); // never the raw error (breadcrumbs)
   });
 });

@@ -1916,6 +1916,42 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         with the keyboard up; lifecycle-06 posts a comment with one tap
         (both LC-comments posted; owner inspection steps green).
 
+## CT7-069 🟠 First PDF print after the app starts hangs; export ended with "Failed to generate" after ~45 s (all roles) — fixed
+
+- **Role:** all · **Platform:** Android · Found on the PR #268 device check
+  (2026-11-20 06:11): 7 of 8 back-to-back exports saved; the first one after
+  install failed about 55 s after the tap (CT7-068's 45 s print limit; the
+  log then showed only "API error", so this is inferred from timing).
+- **This change (diagnostics):** export failures are logged as
+  `<name>: <message>` from the sanitized error; `printHtmlToFile` logs each
+  print's duration and, for a print abandoned at the time limit, when (or
+  whether) it answered later; `exportInspectionReportPdf` logs load+embed,
+  print and upload times, photo count and HTML size. No user data is logged.
+- **Found with the logs (emulator, 2026-11-20 06:21–06:31, 16 exports):**
+  a print either finished in 0.4–1.3 s or never answered (no late result
+  after 2+ min). All 6 hangs were the first print in a fresh app process
+  (5 of 8 fresh launches, plus the first export after install); every later
+  print in the same process worked, including right after a hang. Load+embed
+  took 3–10 s (11 photos, 1.1 MB HTML) and upload 0.5–1.6 s, and neither ever failed.
+- **Fix:** `printHtmlToFile` waits 15 s (was 45 s) and retries a print that
+  didn't answer once. expo-print can't cancel the stuck render, so at most
+  one abandoned WebView is left per export; its file is deleted if it ever
+  answers. Device check of that (24 exports, 16 fresh launches): 23 saved;
+  the failure was a stuck print then two ERR_PDF_WRITE 40 ms apart, all right
+  after app start. Failed prints are now retried after 1 s, 2 s, 3 s (4
+  attempts in all).
+  Next 24: 23 saved; the failure was both attempts stuck in a fresh process.
+  Across 48 device exports every failed or stuck print was the first print in
+  its app process. Both inspection screens now call `warmUpPrinter()` on
+  mount: one blank background print per process (file deleted, failures
+  ignored), so the user's report is never the first print.
+- **Acceptance criteria:**
+  - [x] Logging of the failing step, without user data (Jest).
+  - [x] Cause identified from device logs and fixed, with a regression test
+        (stuck first print → retried → saved).
+  - [ ] Android emulator: about 20 exports in a row, including fresh launches,
+        all saved.
+
 ## CT7-068 🟠 Server requests could hang forever; inspection report export failed without saying why (all roles) — fixed
 
 - **Role:** all · **Platform:** Android · Found in the build-12 lifecycle run,

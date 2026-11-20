@@ -10,7 +10,7 @@ import {
   isBusinessDay,
   nextBusinessDay,
   subtractBusinessDays,
-  toDateString
+  toDateString,
 } from '../businessDayCalculator';
 
 describe('businessDayCalculator', () => {
@@ -127,7 +127,7 @@ describe('businessDayCalculator', () => {
 
     it('should correctly handle a January lease end across the dense Dec/Jan holiday block for 80, 60, and 40 days', () => {
       const leaseEndDate = new Date('2026-01-30');
-      
+
       const notice80 = calculateExpiryNoticeDate(leaseEndDate, 80);
       const notice60 = calculateExpiryNoticeDate(leaseEndDate, 60);
       const notice40 = calculateExpiryNoticeDate(leaseEndDate, 40);
@@ -210,7 +210,7 @@ describe('businessDayCalculator', () => {
       expect(calculateLegalInterest(-1000, 10.5, 30)).toBe(0);
     });
   });
-  
+
   describe('nextBusinessDay', () => {
     it('should return the SAME day if the input is already a business day', () => {
       const thursday = new Date('2026-06-11');
@@ -259,5 +259,5 @@ describe('businessDayCalculator', () => {
 
       expect(holidays1999.length).toBe(0);
     });
-  }); 
+  });
 });

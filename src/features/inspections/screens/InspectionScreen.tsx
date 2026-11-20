@@ -21,6 +21,7 @@ import { uploadSignature } from '../../leases/api/storageService';
 import { supabase, STORAGE_BUCKETS } from '@/src/lib/supabase';
 import { uploadPhoto } from '@/src/shared/utils/photoUpload';
 import { exportInspectionReportPdf } from '../../owner/utils/pdfReports';
+import { warmUpPrinter } from '@/src/shared/utils/printToPdf';
 import SignatureModal from '../../leases/components/SignatureModal';
 import PhotoMarkupModal from '../components/PhotoMarkupModal';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
@@ -94,6 +95,11 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
       loadInspection();
     }
   }, [id]);
+
+  // CT7-069: the first PDF print in a fresh app process often fails or hangs
+  useEffect(() => {
+    warmUpPrinter();
+  }, []);
 
   const loadInspection = async () => {
     try {
@@ -438,7 +444,8 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
       ]);
     } catch (err) {
       reportApiError(err, 'inspections', 'export');
-      console.error('Error exporting inspection report:', sanitizeForSentry(err).message);
+      const safe = sanitizeForSentry(err);
+      console.error('Error exporting inspection report:', `${safe.name}: ${safe.message}`);
       Alert.alert('Error', 'Failed to generate inspection report. Please try again.');
     } finally {
       setExporting(false);

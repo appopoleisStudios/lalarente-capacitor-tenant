@@ -196,10 +196,7 @@ export function subtractBusinessDays(startDate: Date | string, days: number): Da
 /**
  * Count business days between two dates (exclusive of both endpoints).
  */
-export function countBusinessDaysBetween(
-  startDate: Date | string,
-  endDate: Date | string
-): number {
+export function countBusinessDaysBetween(startDate: Date | string, endDate: Date | string): number {
   const start = typeof startDate === 'string' ? parseDate(startDate) : cloneDate(startDate);
   const end = typeof endDate === 'string' ? parseDate(endDate) : cloneDate(endDate);
 
