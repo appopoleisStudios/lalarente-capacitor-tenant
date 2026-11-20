@@ -1,0 +1,109 @@
+LaLarente App - Build Information
+==================================
+
+Build Date: 2026-11-20
+Build Type: Client Testing (Alpha)
+
+Version Information:
+  Version:      1.0.0
+  Build Number: 12
+  Revision:     0
+  Full Version: 1.0.0-build.12-rev.0
+
+Android Information:
+  Version Code: 12
+  Version Name: 1.0.0
+  Package:      com.lalarente.app
+  SHA-256:      a55beba5304f4d1dfed67c50e5186938048f2a364fcc1fca2931bc01bda7f22e
+  Source:       main @ c15ca10 (PRs #248-#269 merged). Rebuilt from main
+                after the #269 merge; same SHA-256 as the branch build.
+                main @ ad5a1c9 (#270) changes only a Maestro flow and the
+                Kiro board, so this APK is also main @ ad5a1c9.
+
+Build Configuration:
+  Platform:     Android
+  Build Type:   APK (Release)
+  Build Method: Local Gradle (assembleRelease)
+  Minify:       Enabled
+  Hermes:       Enabled
+
+Release gate (CLAUDE.md) — checks passed on this build
+------------------------------------------------------
+  ✓ CI green on every PR (Lint, Tests 903/903, TypeScript)
+  ✓ Senior Auditor (Codex gpt-6-astra) review on every PR; findings fixed
+    and re-reviewed before merge
+  ✓ Every fix ships with a regression test (Jest unit/guard tests; Android
+    device check per PR)
+  ✓ Lifecycle chain 01 → 08 on emulator-5554 with this APK, from a clean
+    fixture (reset-lifecycle-fixture --apply): 13/13 passed, 2026-11-20
+    (search, viewing, application, holding deposit, lease create + sign,
+    inspection incl. PDF report export, issue → maintenance, vendor quote,
+    PO, work closure + verification, occupied).
+    Run 1 of the gate failed at 03a on a test problem (CT7-070, below);
+    fixed in #270, fixture reset, full chain re-run green.
+  ✓ Release APK smoke test on emulator-5554: owner, tenant and vendor
+    dashboards; sign-out → sign-in — passed
+  ✓ tenant-tabbar-guard.yaml — passed (5 tabs, no Vendor Payments)
+
+Fixes since build 11
+--------------------
+Android layout and input
+  ✓ CT7-043 Leases can be signed on Android again (PR #249)
+  ✓ CT7-044 Signature date fits the screen; signature images show (PR #249)
+  ✓ CT7-045 Screens no longer slide under the Android system bars (PR #249)
+  ✓ CT7-046 Bottom sheets/owner modals: last button clear of the nav bar (#251)
+  ✓ CT7-047 Keyboard no longer covers pop-up form fields and buttons (#252)
+  ✓ CT7-048 Bottom tab labels clear of the Android navigation buttons (#253)
+  ✓ CT7-049 Status-bar clock, battery and signal visible on Android (#254)
+  ✓ CT7-050 Tenant "Add Comment" (inspection report) above the keyboard (#255)
+  ✓ CT7-051 Keyboard no longer covers full-screen forms, all roles (#256)
+  ✓ CT7-053 Android alerts keep all their buttons (#258)
+Leases, rent and money
+  ✓ CT7-052 A lease is never activated without its PDF (#257)
+  ✓ CT7-057 Rent Roll no longer says "Paid" for unpaid rent (#262)
+  ✓ CT7-063 Dashboard "In Arrears" and Rent Roll "Overdue" now agree (#266)
+Navigation
+  ✓ CT7-054 Vendor can open the quote they submitted (#259)
+  ✓ CT7-055 Back from a maintenance request no longer loops (#260)
+  ✓ CT7-056 Owner dashboard Recent Activity rows open their item (#261)
+  ✓ CT7-061 Vendor "View My Jobs" opens the job (#265)
+Text and dates
+  ✓ CT7-058 Property search with no match says "No properties match" with
+    Clear filters (#263)
+  ✓ CT7-059 No raw values with underscores on screen (#263)
+  ✓ CT7-060 Dates are "19 Nov 2026" everywhere, whatever the phone's
+    language (#264, and the remaining screens in #266)
+  ✓ CT7-062 Viewing times without seconds: "Fri, 20 Nov at 10:00" (#266)
+  ✓ CT7-065 Property Type is a choice (Apartment, House, Townhouse, Cottage,
+    Room, or Other) instead of free text (#266)
+Notifications
+  ✓ CT7-064 Opening Notifications no longer marks everything read; only the
+    notification you tap disappears (#266)
+Maintenance
+  ✓ CT7-066 Report Issue only when the tenant's lease is signed by both and
+    in effect (#266)
+Reports (PDF export)
+  ✓ CT7-068 Server requests can no longer hang forever (30 s limit, 120 s for
+    files/functions; uploads exempt); a failed export reports its real
+    cause; a failed WebView print is retried (#268)
+  ✓ CT7-069 First PDF print after the app starts no longer hangs or fails
+    the export: the printer is warmed up on Android when an inspection
+    opens, and a stuck print is retried once. Device check: 24/24 exports
+    saved, 16 of them right after a fresh app launch (#269)
+Testing
+  ✓ Android lifecycle runner for the release gate (#250)
+  ✓ CT7-070 lifecycle-03a checks the "Submitted" label reliably (#270)
+
+Known open items (not in this build)
+------------------------------------
+  - CT7-067 Tenant dashboard once showed "Welcome back, Tenant" with no
+    home; did not recur in testing, cause not found yet.
+  - CT7-066 is enforced in the app; the matching database rule (RLS) is a
+    follow-up.
+  - Notifications sent before this build keep their old date text; new ones
+    use the new format.
+  - Some older e2e walkthrough flows need updating for the new screens
+    (Report Issue now needs an active lease).
+  - Carried over from build 11: documents bucket public-flagged; lease
+    terminations and payment disputes don't notify yet; push sent from the
+    app, not the server; client and automated tests share test accounts.
