@@ -20,8 +20,16 @@ export class RequestTimeoutError extends Error {
  * to storage) have no limit: fetch reports no progress, so a slow but healthy
  * upload (maintenance videos go up to 50 MB) can't be told from a stalled one.
  */
+// Storage operations under /object/ that send small JSON, never a file.
+const STORAGE_JSON_OPS = /\/storage\/v1\/object\/(?:list|sign|move|copy|info)(?:\/|\?|$)/;
+
 export function timeoutFor(url: string, body?: unknown): number | null {
-  if (url.includes('/storage/v1/object/') && body != null && typeof body !== 'string') {
+  if (
+    url.includes('/storage/v1/object/') &&
+    !STORAGE_JSON_OPS.test(url) &&
+    body != null &&
+    typeof body !== 'string'
+  ) {
     return null;
   }
   return url.includes('/storage/v1/') || url.includes('/functions/v1/')

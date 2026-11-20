@@ -123,6 +123,27 @@ describe('fetchWithTimeout (CT7-068)', () => {
     await expect(p).resolves.toBe(ok);
   });
 
+  it.each(['list/documents', 'sign/documents/report.pdf', 'move', 'copy'])(
+    'a storage %s Request (JSON, not a file) keeps the 120 s limit',
+    async (op) => {
+      const f = createFetchWithTimeout(hangingFetch);
+      const p = f(
+        new Request(`${BASE}/storage/v1/object/${op}`, { method: 'POST', body: '{"a":1}' })
+      );
+      jest.advanceTimersByTime(LONG_TIMEOUT_MS);
+      await expect(p).rejects.toBeInstanceOf(RequestTimeoutError);
+    }
+  );
+
+  it('signed-URL uploads stay exempt', () => {
+    expect(
+      timeoutFor(
+        `${BASE}/storage/v1/object/upload/sign/documents/a.pdf?token=t`,
+        new ArrayBuffer(1)
+      )
+    ).toBeNull();
+  });
+
   it('accepts URL inputs', async () => {
     const f = createFetchWithTimeout(hangingFetch);
     const p = f(new URL(`${BASE}/rest/v1/x`));
