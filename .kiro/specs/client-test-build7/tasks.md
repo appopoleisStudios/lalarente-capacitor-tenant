@@ -1961,12 +1961,17 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   its app process. Both inspection screens now call `warmUpPrinter()` on
   mount: one blank background print per process (file deleted, failures
   ignored), so the user's report is never the first print.
+  With the warm-up (APK from a1e0c82; Android code identical to the merged
+  da89732): 24 of 24 exports saved, 16 of them right after a fresh app
+  launch and 8 back-to-back. The print step still failed 14 times
+  (ERR_PDF_WRITE), all absorbed by the warm-up or recovered by a retry.
 - **Acceptance criteria:**
   - [x] Logging of the failing step, without user data (Jest).
   - [x] Cause identified from device logs and fixed, with a regression test
         (stuck first print → retried → saved).
-  - [ ] Android emulator: about 20 exports in a row, including fresh launches,
-        all saved.
+  - [x] Android emulator: about 20 exports in a row, including fresh launches,
+        all saved (2026-11-20: 24/24, 16 fresh launches). The underlying
+        WebView print failure is worked around, not removed.
 
 ## CT7-068 🟠 Server requests could hang forever; inspection report export failed without saying why (all roles) — fixed
 
