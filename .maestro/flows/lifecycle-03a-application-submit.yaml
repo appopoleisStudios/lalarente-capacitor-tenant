@@ -14,9 +14,19 @@ appId: com.lalarente.app
     env:
       PROP_ID: "${LC_PROPERTY_ID}"
       PROP_TITLE: "${LC_PROPERTY_TITLE}"
-- assertVisible: "(?i).*submitted.*"
-- assertVisible:
-    id: "tenant-applications-withdraw"
+# The new application is the only active one and sits at the top of My
+# Applications; scrolling to its title can leave its status label under the
+# header once the test account has many old (withdrawn) applications. Scroll
+# up to the label instead of asserting whatever happens to be on screen.
+- scrollUntilVisible:
+    element: "(?i).*submitted.*"
+    direction: UP
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: "tenant-applications-withdraw"
+    direction: DOWN
+    timeout: 20000
 - takeScreenshot: lc03a-tenant-submitted
 - waitForAnimationToEnd:
     timeout: 1500

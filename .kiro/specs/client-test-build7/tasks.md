@@ -1916,6 +1916,22 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         with the keyboard up; lifecycle-06 posts a comment with one tap
         (both LC-comments posted; owner inspection steps green).
 
+## CT7-070 🟡 lifecycle-03a failed on a hidden status label, not an app bug (test) — fixed
+
+- **Role:** tenant · **Platform:** Android · Found in the build 12 release gate
+  (2026-11-20, main c15ca10).
+- **Today:** the application was submitted (DB `submitted` at 11:51, the
+  failure time), but the flow asserted "Submitted" on whatever was on screen.
+  The test account now has 29 (withdrawn) applications from fixture resets;
+  scrolling to the property title left the new card's status label under the
+  header. 03a stopped before the owner requested the holding deposit, so
+  04 → 08 failed in cascade.
+- **Acceptance criteria:**
+  - [x] 03a scrolls up to the "Submitted" label and down to Withdraw before
+        asserting them.
+  - [x] Full lifecycle 01 → 08 green from a clean fixture with the fix
+        (2026-11-20, 13/13, build 12 APK from main c15ca10).
+
 ## CT7-069 🟠 First PDF print after the app starts hangs; export ended with "Failed to generate" after ~45 s (all roles) — fixed
 
 - **Role:** all · **Platform:** Android · Found on the PR #268 device check
