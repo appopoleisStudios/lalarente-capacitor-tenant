@@ -174,7 +174,13 @@ describe('Sentry gets the print error, not "unknown database error" (CT7-068)', 
 });
 
 describe('warmUpPrinter (CT7-069)', () => {
+  const { Platform } = require('react-native');
+  const realOS = Platform.OS;
+  afterEach(() => {
+    Platform.OS = realOS;
+  });
   beforeEach(() => {
+    Platform.OS = 'android';
     print.mockReset();
     deleteAsync.mockClear();
     resetPrinterWarmUpForTests();
@@ -189,6 +195,12 @@ describe('warmUpPrinter (CT7-069)', () => {
     await Promise.resolve();
     expect(print).toHaveBeenCalledTimes(1);
     expect(deleteAsync).toHaveBeenCalledWith('file:///warm.pdf', { idempotent: true });
+  });
+
+  it.each(['ios', 'web'])('never prints on %s (web would open the print dialog)', (os) => {
+    Platform.OS = os;
+    warmUpPrinter();
+    expect(print).not.toHaveBeenCalled();
   });
 
   it('a failed or stuck warm-up is ignored and the real export still prints', async () => {

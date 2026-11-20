@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import * as Print from 'expo-print';
 import * as FileSystem from 'expo-file-system/legacy';
 
@@ -96,7 +97,9 @@ let warmUpStarted = false;
  * waits on it).
  */
 export function warmUpPrinter(): void {
-  if (warmUpStarted) return;
+  // Android only: that is where the failure was measured, and on web a print
+  // opens the browser's print dialog.
+  if (Platform.OS !== 'android' || warmUpStarted) return;
   warmUpStarted = true;
   printOnce('<html><body></body></html>', PRINT_TIMEOUT_MS)
     .then((uri) => FileSystem.deleteAsync(uri, { idempotent: true }))
