@@ -15,7 +15,9 @@ let listener: Listener = () => {};
 const mockSetSession = jest.fn();
 const mockGetSession = jest.fn();
 const mockSignOut = jest.fn();
+const mockClearLocal = jest.fn();
 jest.mock('@/src/lib/supabase', () => ({
+  clearLocalSession: (...a: unknown[]) => mockClearLocal(...a),
   supabase: {
     auth: {
       getSession: (...a: unknown[]) => mockGetSession(...a),
@@ -69,6 +71,9 @@ beforeEach(() => {
     listener('SIGNED_OUT', null);
     return { error: null };
   });
+  mockClearLocal.mockImplementation(async () => {
+    listener('SIGNED_OUT', null);
+  });
   global.fetch = jest.fn(async (url: string) => {
     if (String(url).includes('/auth/v1/token')) {
       return { ok: true, json: async () => TOKENS } as Response;
@@ -118,7 +123,8 @@ it('SIGNED_IN from setSession is not trusted when the session was not stored', a
   expect(caught?.code).toBe('session_not_attached');
   expect(result.current.user).toBeNull();
   expect(result.current.profile).toBeNull();
-  expect(mockSignOut).toHaveBeenLastCalledWith({ scope: 'local' }); // half state cleared
+  // half state cleared without a network call (works offline)
+  expect(mockClearLocal).toHaveBeenCalledTimes(2); // stale purge + failure cleanup
 });
 
 it('a stored session of another user is rejected', async () => {
@@ -208,4 +214,41 @@ it('sign-up keeps the reason when the account was created but sign-in failed', a
   expect(caught?.code).toBe('session_not_attached');
   expect(caught?.message).toMatch(/account was created/);
   expect(result.current.user).toBeNull();
+});
+
+it('publishes the session supabase-js stored (it may differ from the REST tokens)', async () => {
+  const refreshed = { ...SESSION, access_token: 'at-refreshed' };
+  setSessionEmitting();
+  const { result } = await renderAuth();
+  mockGetSession.mockResolvedValue({ data: { session: refreshed }, error: null });
+  await act(async () => {
+    await result.current.signIn('t@example.com', 'pw');
+  });
+  expect(result.current.session?.access_token).toBe('at-refreshed');
+});
+
+it('a second tap while signing in shares the first attempt', async () => {
+  let release!: () => void;
+  mockSetSession.mockImplementation(
+    () =>
+      new Promise((r) => {
+        release = () => r({ data: { session: SESSION }, error: null });
+      })
+  );
+  const { result } = await renderAuth();
+  mockGetSession.mockResolvedValue(sessionOf(USER.id));
+  let first!: Promise<void>;
+  let second!: Promise<void>;
+  await act(async () => {
+    first = result.current.signIn('t@example.com', 'pw');
+    second = result.current.signIn('t@example.com', 'pw');
+  });
+  expect(second).toBe(first);
+  await act(async () => {
+    await waitFor(() => expect(mockSetSession).toHaveBeenCalled());
+    release();
+    await first;
+  });
+  expect(mockSetSession).toHaveBeenCalledTimes(1);
+  expect(result.current.user?.id).toBe(USER.id);
 });

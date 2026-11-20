@@ -1,6 +1,7 @@
-// CT7-067: a SecureStore write that fails or hangs must not lose the session
-// supabase-js just stored (it reads it back for every request).
-import type * as SecureStore from 'expo-secure-store';
+// CT7-067: a SecureStore call that fails or hangs must not lose the session
+// supabase-js just stored (it reads it back for every request), must not
+// stall later writes, and a sign-out must win over an older write.
+import type * as SecureStoreT from 'expo-secure-store';
 
 jest.mock('expo-secure-store', () => ({
   getItemAsync: jest.fn(),
@@ -11,53 +12,118 @@ jest.mock('expo-constants', () => ({
   expoConfig: { extra: { supabaseUrl: 'https://x.supabase.co', supabaseAnonKey: 'anon' } },
 }));
 
-let store: jest.Mocked<typeof SecureStore>;
-let adapter: typeof import('../supabase').secureStoreAdapter;
+type Lib = typeof import('../supabase');
+let store: jest.Mocked<typeof SecureStoreT>;
+let lib: Lib;
+/** what the phone's keystore holds (survives "restarts") */
+let native: Map<string, string>;
+const hang = () => new Promise<never>(() => {});
+
+function fakeNativeStore() {
+  store.getItemAsync.mockImplementation(async (k: string) => native.get(k) ?? null);
+  store.setItemAsync.mockImplementation(async (k: string, v: string) => {
+    native.set(k, v);
+  });
+  store.deleteItemAsync.mockImplementation(async (k: string) => {
+    native.delete(k);
+  });
+}
+
+function restartApp() {
+  jest.resetModules();
+  store = require('expo-secure-store');
+  fakeNativeStore();
+  lib = jest.requireActual('../supabase');
+  // the real client must not run its refresh timer in tests
+  lib.supabase.auth.stopAutoRefresh().catch(() => {});
+}
 
 beforeEach(() => {
-  jest.resetModules();
-  jest.clearAllMocks();
-  store = require('expo-secure-store');
-  adapter = jest.requireActual('../supabase').secureStoreAdapter;
+  native = new Map();
+  jest.useRealTimers();
   jest.spyOn(console, 'warn').mockImplementation(() => {});
+  restartApp();
 });
+afterEach(() => jest.useRealTimers());
+
+const flushMicrotasks = () => new Promise((r) => setImmediate(r));
 
 it('a failed SecureStore write still leaves the session readable', async () => {
   store.setItemAsync.mockRejectedValue(new Error('keystore'));
-  await adapter.setItem('sb-session', 'S');
-  expect(await adapter.getItem('sb-session')).toBe('S');
+  await lib.secureStoreAdapter.setItem('sb-session', 'S');
+  expect(await lib.secureStoreAdapter.getItem('sb-session')).toBe('S');
 });
 
-it('a hung SecureStore write does not block or lose the session', async () => {
-  store.setItemAsync.mockReturnValue(new Promise(() => {}));
-  await adapter.setItem('sb-session', 'S'); // resolves at once
-  expect(await adapter.getItem('sb-session')).toBe('S');
+it('a hung SecureStore write does not block the session', async () => {
+  store.setItemAsync.mockReturnValue(hang());
+  await lib.secureStoreAdapter.setItem('sb-session', 'S'); // resolves at once
+  expect(await lib.secureStoreAdapter.getItem('sb-session')).toBe('S');
 });
 
-it('remove wins over an earlier set, in memory and in SecureStore order', async () => {
-  store.setItemAsync.mockResolvedValue(undefined);
-  store.deleteItemAsync.mockResolvedValue(undefined);
-  await adapter.setItem('k', 'S');
-  await adapter.removeItem('k');
-  expect(await adapter.getItem('k')).toBeNull();
-  await new Promise((r) => setImmediate(r));
-  expect(store.setItemAsync.mock.invocationCallOrder[0]).toBeLessThan(
-    store.deleteItemAsync.mock.invocationCallOrder[0]
-  );
+it('the session survives an app restart', async () => {
+  await lib.secureStoreAdapter.setItem('sb-session', 'S');
+  await flushMicrotasks();
+  restartApp();
+  expect(await lib.secureStoreAdapter.getItem('sb-session')).toBe('S');
 });
 
-it('after an app restart the session is read from SecureStore', async () => {
-  store.getItemAsync.mockResolvedValue('persisted');
-  expect(await adapter.getItem('sb-session')).toBe('persisted');
+it('hung write → sign-out → restart: the session is gone (later writes are not stalled)', async () => {
+  jest.useFakeTimers();
+  store.setItemAsync.mockReturnValueOnce(hang()); // first write never answers
+  native.set('sb-session', 'OLD');
+  await lib.secureStoreAdapter.setItem('sb-session', 'NEW');
+  await lib.secureStoreAdapter.removeItem('sb-session'); // sign-out
+  await jest.advanceTimersByTimeAsync(lib.SECURE_STORE_TIMEOUT_MS + 10_000);
+  expect(store.deleteItemAsync).toHaveBeenCalledWith('sb-session');
+  jest.useRealTimers();
+  restartApp();
+  expect(await lib.secureStoreAdapter.getItem('sb-session')).toBeNull();
+});
+
+it('persists the latest value: an older write never lands after a newer one', async () => {
+  await lib.secureStoreAdapter.setItem('k', 'A');
+  await lib.secureStoreAdapter.setItem('k', 'B');
+  await lib.secureStoreAdapter.removeItem('k');
+  await lib.secureStoreAdapter.setItem('k', 'C');
+  await flushMicrotasks();
+  await flushMicrotasks();
+  expect(native.get('k')).toBe('C');
+});
+
+it('a failed write is retried with the then-latest value', async () => {
+  jest.useFakeTimers();
+  store.setItemAsync.mockRejectedValueOnce(new Error('keystore busy'));
+  await lib.secureStoreAdapter.setItem('k', 'S');
+  await jest.advanceTimersByTimeAsync(5_000);
+  expect(native.get('k')).toBe('S');
+});
+
+it('a hung cold-start read counts as "no session" instead of hanging', async () => {
+  jest.useFakeTimers();
+  store.getItemAsync.mockReturnValue(hang());
+  const read = lib.secureStoreAdapter.getItem('cold');
+  await jest.advanceTimersByTimeAsync(lib.SECURE_STORE_TIMEOUT_MS + 1);
+  await expect(read).resolves.toBeNull();
 });
 
 it('a write during a slow first read is not overwritten by the old value', async () => {
   let finishRead!: (v: string) => void;
   store.getItemAsync.mockReturnValue(new Promise((r) => (finishRead = r)));
-  store.setItemAsync.mockResolvedValue(undefined);
-  const read = adapter.getItem('k');
-  await adapter.setItem('k', 'new');
+  const read = lib.secureStoreAdapter.getItem('slow');
+  await lib.secureStoreAdapter.setItem('slow', 'new');
   finishRead('old');
   expect(await read).toBe('new');
-  expect(await adapter.getItem('k')).toBe('new');
+  expect(await lib.secureStoreAdapter.getItem('slow')).toBe('new');
+});
+
+it('clearLocalSession removes the session even when the logout call fails (offline)', async () => {
+  const key = (lib.supabase.auth as unknown as { storageKey: string }).storageKey;
+  await lib.secureStoreAdapter.setItem(key, JSON.stringify({ access_token: 'at' }));
+  // what supabase-js does offline: resolves { error } and keeps the session
+  const signOut = jest
+    .spyOn(lib.supabase.auth, 'signOut')
+    .mockResolvedValue({ error: { message: 'Failed to fetch' } } as never);
+  await lib.clearLocalSession();
+  expect(await lib.secureStoreAdapter.getItem(key)).toBeNull();
+  expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
 });

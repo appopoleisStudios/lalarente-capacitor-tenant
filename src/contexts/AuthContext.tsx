@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import { Session, User } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
 import { Database } from '@/src/types/database.types';
-import { supabase } from '@/src/lib/supabase';
+import { supabase, clearLocalSession } from '@/src/lib/supabase';
 import { clearPendingVendorSelection } from '@/src/features/maintenance/api/vendors/pendingVendorSelection';
 import { clearDashboardCaches } from '@/src/shared/utils/dashboardCache';
 import {
@@ -66,19 +66,19 @@ export class ProfileLoadError extends Error {
 async function attachSession(
   tokens: { access_token: string; refresh_token: string },
   userId: string
-): Promise<boolean> {
+): Promise<Session | null> {
   for (let i = 0; i < ATTACH_SESSION_ATTEMPTS; i++) {
     try {
       const { error } = await supabase.auth.setSession(tokens);
       if (!error) {
         const { data } = await supabase.auth.getSession();
-        if (data.session?.user?.id === userId) return true;
+        if (data.session?.user?.id === userId) return data.session;
       }
     } catch {
       // try again
     }
   }
-  return false;
+  return null;
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -235,20 +235,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function completeSignIn(tokens: {
     access_token: string;
     refresh_token: string;
-    user: User;
+    user: { id: string };
     [k: string]: unknown;
   }) {
     const userId = tokens.user.id;
     let failure: Error | null = null;
     let loaded: Profile | null = null;
-    if (!(await attachSession(tokens, userId))) {
+    // the session as supabase-js stored it (it may have refreshed it already)
+    const stored = await attachSession(tokens, userId);
+    if (!stored) {
       failure = new SessionAttachError();
     } else {
-      loaded = await fetchProfile(userId, tokens.access_token);
+      loaded = await fetchProfile(userId, stored.access_token);
       if (!loaded) failure = new ProfileLoadError();
     }
     if (failure) {
-      await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+      await clearLocalSession(); // no network: works offline too
       profileUserIdRef.current = null;
       setSession(null);
       setUser(null);
@@ -256,8 +258,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw failure;
     }
     profileUserIdRef.current = userId;
-    setSession(tokens as unknown as Session);
-    setUser(tokens.user);
+    setSession(stored);
+    setUser(stored!.user);
     setProfile(loaded);
     // the listener (which registers on SIGNED_IN) is muted during sign-in
     Promise.resolve()
@@ -329,15 +331,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Sign in function — uses REST API directly instead of supabase-js SDK
   // because supabase.auth.signInWithPassword() can hang indefinitely in
   // React Native when there are keychain/SecureStore contention issues.
-  async function signIn(email: string, password: string) {
-    if (authBusyRef.current) return;
+  // A second tap while signing in gets the same outcome as the first.
+  const signInFlightRef = useRef<Promise<void> | null>(null);
+  function signIn(email: string, password: string): Promise<void> {
+    if (signInFlightRef.current) return signInFlightRef.current;
+    const flight = runSignIn(email, password).finally(() => {
+      signInFlightRef.current = null;
+    });
+    signInFlightRef.current = flight;
+    return flight;
+  }
+
+  async function runSignIn(email: string, password: string) {
     try {
       setLoading(true);
       authBusyRef.current = true;
 
-      // Purge any stale local session. Awaited: storage writes go to memory
-      // first (src/lib/supabase.ts), so this cannot hang on SecureStore.
-      await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+      // Purge any stale local session, without a network call (CT7-067).
+      await clearLocalSession();
 
       // Call Supabase Auth REST API directly (avoids SDK hang)
       const SUPABASE_URL = Constants.expoConfig?.extra?.supabaseUrl || '';

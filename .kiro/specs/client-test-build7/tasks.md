@@ -2030,7 +2030,7 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   interval) shows no outage at 02:40 but logged 64 short timeouts over the
   day, so a blip during that one call is plausible; a failed SecureStore
   write would look the same.
-- **Fix (after SA round 1):**
+- **Fix (after SA rounds 1–2):**
   - Sign-in and sign-up publish user, session and profile together, only
     after `setSession` succeeded (retried once), `getSession` holds this
     user's session and the profile loaded. Any failure clears the local
@@ -2041,8 +2041,16 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   - The auth listener is muted while sign-in/sign-up runs, so the SIGNED_IN
     that `setSession` emits before verification can't publish the user;
     push registration moved into the sign-in path.
-  - Session storage is memory-first with SecureStore written behind it in
-    order: a failed or hung SecureStore write can no longer lose the session.
+  - Session storage is memory-first with SecureStore written behind it: a
+    failed or hung SecureStore call can no longer lose the session; each
+    SecureStore call has a 3 s limit, persistence always writes a key's latest
+    value (a sign-out's delete can't be overtaken by an older write), failed
+    writes are retried, a hung cold-start read counts as "no session".
+  - Failure cleanup and the stale-session purge use `clearLocalSession()`
+    (storage first, then a purely local signOut): `signOut({scope:'local'})`
+    alone calls the logout endpoint and, offline, keeps the session.
+  - The published session is the one supabase-js stored; a second tap on Sign
+    In shares the first attempt.
   - Login screen: the 15 s fallback timer starts after sign-in resolves, so
     the button can't re-enable mid sign-in.
   - Tenant dashboard: an unreadable own profile is an error (React Query

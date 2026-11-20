@@ -8,19 +8,77 @@ import { createFetchWithTimeout } from './fetchWithTimeout';
 // supabase-js reads the session back from storage for every request. A
 // SecureStore write that failed (swallowed) or hung used to leave the client
 // without a session right after a successful sign-in, so every query ran
-// anonymously. Writes now land in memory at once; SecureStore is updated in
-// the background, in order, so the session also survives an app restart.
+// anonymously. Now:
+// - writes land in memory at once and are persisted in the background;
+// - persistence always writes a key's LATEST value (so a later sign-out's
+//   delete can't be overtaken by an older write) and every SecureStore call
+//   has a time limit, so one hung call can't stall later ones; a failed or
+//   timed-out call is retried a few times with the then-latest value;
+// - a cold-start read has a time limit too (treated as "no session").
+export const SECURE_STORE_TIMEOUT_MS = 3_000;
+export const SECURE_STORE_RETRIES = 3;
+const SECURE_STORE_RETRY_DELAY_MS = 2_000;
+
+function bounded<T>(promise: Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error('SecureStore timed out')),
+      SECURE_STORE_TIMEOUT_MS
+    );
+    promise.then(
+      (v) => {
+        clearTimeout(timer);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(timer);
+        reject(e);
+      }
+    );
+  });
+}
+
 const memory = new Map<string, string | null>();
-let persistQueue: Promise<void> = Promise.resolve();
-function persist(op: () => Promise<void>, what: string) {
-  persistQueue = persistQueue.then(op).catch((e) => console.warn(`SecureStore.${what} failed:`, e));
+const dirty = new Set<string>();
+const failures = new Map<string, number>();
+let flushing = false;
+
+function schedulePersist(key: string) {
+  dirty.add(key);
+  if (!flushing) void flush();
+}
+
+async function flush() {
+  flushing = true;
+  try {
+    while (dirty.size > 0) {
+      const key = dirty.values().next().value as string;
+      dirty.delete(key);
+      const value = memory.get(key) ?? null;
+      try {
+        await bounded(
+          value === null ? SecureStore.deleteItemAsync(key) : SecureStore.setItemAsync(key, value)
+        );
+        failures.delete(key);
+      } catch (e) {
+        console.warn('SecureStore write failed:', e);
+        const n = (failures.get(key) ?? 0) + 1;
+        failures.set(key, n);
+        if (n <= SECURE_STORE_RETRIES) {
+          setTimeout(() => schedulePersist(key), SECURE_STORE_RETRY_DELAY_MS);
+        }
+      }
+    }
+  } finally {
+    flushing = false;
+  }
 }
 
 export const secureStoreAdapter = {
   getItem: async (key: string) => {
     if (memory.has(key)) return memory.get(key) ?? null;
     try {
-      const value = await SecureStore.getItemAsync(key);
+      const value = await bounded(SecureStore.getItemAsync(key));
       if (!memory.has(key)) memory.set(key, value); // a newer write wins
       return memory.get(key) ?? null;
     } catch (e) {
@@ -30,11 +88,13 @@ export const secureStoreAdapter = {
   },
   setItem: async (key: string, value: string) => {
     memory.set(key, value);
-    persist(() => SecureStore.setItemAsync(key, value), 'setItemAsync');
+    failures.delete(key);
+    schedulePersist(key);
   },
   removeItem: async (key: string) => {
     memory.set(key, null);
-    persist(() => SecureStore.deleteItemAsync(key), 'deleteItemAsync');
+    failures.delete(key);
+    schedulePersist(key);
   },
 };
 
@@ -62,6 +122,20 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, 
   // CT7-068: no request may hang forever (Android fetch has no timeout)
   global: { fetch: createFetchWithTimeout() },
 });
+
+/**
+ * CT7-067: remove this device's session without any network call.
+ * `auth.signOut({ scope: 'local' })` first calls the logout endpoint and, if
+ * that fails (offline, 5xx), returns `{ error }` WITHOUT removing the stored
+ * session. Clearing storage first makes the signOut that follows purely
+ * local (no access token left to send); it still stops the refresh timer and
+ * emits SIGNED_OUT.
+ */
+export async function clearLocalSession(): Promise<void> {
+  const key: string | undefined = (supabase.auth as unknown as { storageKey?: string }).storageKey;
+  if (key) await secureStoreAdapter.removeItem(key);
+  await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+}
 
 // Storage bucket names
 export const STORAGE_BUCKETS = {
