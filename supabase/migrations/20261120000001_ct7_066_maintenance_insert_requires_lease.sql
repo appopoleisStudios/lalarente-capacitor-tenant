@@ -28,14 +28,16 @@ create or replace function public.may_report_maintenance(
 language sql
 stable
 security definer
-set search_path = public
+-- empty search_path + schema-qualified names: a caller's temporary tables
+-- can't shadow properties/leases inside this definer function (SA)
+set search_path = ''
 as $$
   select
     -- owner reporting on a property they own
     (
       p_owner_id = auth.uid()
       and exists (
-        select 1 from properties p
+        select 1 from public.properties p
         where p.id = p_property_id and p.owner_id = auth.uid()
       )
     )
@@ -45,8 +47,8 @@ as $$
       p_tenant_id = auth.uid()
       and exists (
         select 1
-        from leases l
-        join properties p on p.id = l.property_id
+        from public.leases l
+        join public.properties p on p.id = l.property_id
         where l.tenant_id = auth.uid()
           and l.property_id = p_property_id
           and p.owner_id = p_owner_id
@@ -55,7 +57,7 @@ as $$
     );
 $$;
 
-revoke all on function public.may_report_maintenance(uuid, uuid, uuid) from public;
+revoke all on function public.may_report_maintenance(uuid, uuid, uuid) from public, anon;
 grant execute on function public.may_report_maintenance(uuid, uuid, uuid) to authenticated;
 
 drop policy if exists mr_insert_reporter_must_have_standing on public.maintenance_requests;

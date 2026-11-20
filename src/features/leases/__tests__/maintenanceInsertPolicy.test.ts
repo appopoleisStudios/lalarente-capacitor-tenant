@@ -38,14 +38,16 @@ describe('maintenance_requests insert policy (CT7-066)', () => {
 
   it('owner branch: only on a property they own', () => {
     expect(code).toMatch(
-      /p_owner_id = auth\.uid\(\)\s+and exists \(\s+select 1 from properties p\s+where p\.id = p_property_id and p\.owner_id = auth\.uid\(\)/
+      /p_owner_id = auth\.uid\(\)\s+and exists \(\s+select 1 from public\.properties p\s+where p\.id = p_property_id and p\.owner_id = auth\.uid\(\)/
     );
   });
 
   it('helper is security definer with a fixed search_path and not executable by anon', () => {
-    expect(code).toMatch(/security definer\s+set search_path = public/);
+    expect(code).toMatch(/security definer\s+set search_path = ''/);
+    // every table is schema-qualified (no shadowing via the search path)
+    expect(code).not.toMatch(/\b(from|join)\s+(properties|leases)\b/);
     expect(code).toMatch(
-      /revoke all on function public\.may_report_maintenance\(uuid, uuid, uuid\) from public/
+      /revoke all on function public\.may_report_maintenance\(uuid, uuid, uuid\) from public, anon;/
     );
   });
 });
