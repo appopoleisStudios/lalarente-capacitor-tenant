@@ -2068,7 +2068,8 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   - [x] Android emulator (release APK, PR #272 round 2), 2026-11-20: 6×
         vendor sign-in → sign-out → tenant sign-in; every time the dashboard
         showed "Welcome back, Nashin Indraj" with the tenant's data, never
-        "Tenant" or the error screen. Full gate on the final build to follow.
+        "Tenant" or the error screen. Repeated on the build 13 APK (main @
+        ea71e81, final code): 6/6 passed; build 13 release gate green.
 
 ## CT7-062 🟡 Viewing times show seconds: "10:00:00", "2026/11/19, 03:05:01" (owner, tenant)
 
@@ -2157,8 +2158,8 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         rule function: owner on own property true, vendor as owner/tenant
         false. Live: policy RESTRICTIVE/INSERT/authenticated, function
         SECURITY DEFINER with empty search_path, anon cannot execute.
-  - [ ] lifecycle-07 (tenant reports with an active lease) green in the next
-        release gate.
+  - [x] lifecycle-07 (tenant reports with an active lease) green in the
+        build 13 release gate (2026-11-20, lifecycle 13/13, main @ ea71e81).
 
 ## CT7-061 🟡 Vendor "View My Jobs" opens "Failed to load job details" (vendor)
 
