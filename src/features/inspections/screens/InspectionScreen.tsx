@@ -25,7 +25,7 @@ import SignatureModal from '../../leases/components/SignatureModal';
 import PhotoMarkupModal from '../components/PhotoMarkupModal';
 import { KeyboardAvoidingView } from '@/src/shared/components/layouts/KeyboardAvoidingView';
 import { useRevealAboveKeyboard } from '@/src/shared/hooks/useRevealAboveKeyboard';
-import { reportApiError } from '@/src/core/observability/sentry';
+import { reportApiError, sanitizeForSentry } from '@/src/core/observability/sentry';
 import {
   InspectionWithRelations,
   RoomInspection,
@@ -436,7 +436,9 @@ export default function InspectionScreen({ role = 'owner' }: Props) {
         { text: 'View Documents', onPress: () => router.push(docsPath as any) },
         { text: 'Done', style: 'cancel' },
       ]);
-    } catch {
+    } catch (err) {
+      reportApiError(err, 'inspections', 'export');
+      console.error('Error exporting inspection report:', sanitizeForSentry(err).message);
       Alert.alert('Error', 'Failed to generate inspection report. Please try again.');
     } finally {
       setExporting(false);

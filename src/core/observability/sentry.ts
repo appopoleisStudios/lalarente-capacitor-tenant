@@ -38,6 +38,7 @@ const SAFE_ERROR_NAMES = new Set([
   'NetworkError',
   'AuthError',
   'StorageError',
+  'PrintTimeoutError',
 ]);
 
 // Rebuild a stack string from genuine frame lines only.
@@ -72,13 +73,49 @@ function safeName(name: string): string {
   return SAFE_ERROR_NAMES.has(name) ? name : 'Error';
 }
 
+// expo-print's native error codes (derived from its exception class names).
+// An explicit list: a code that merely looks like ERR_* could carry user data.
+const SAFE_NATIVE_CODES = new Set([
+  'ERR_PDF_WRITE',
+  'ERR_PRINT_MANAGER_NOT_AVAILABLE',
+  'ERR_CANNOT_LOAD_URI',
+  'ERR_INVALID_URI',
+  'ERR_NULL_URI',
+  'ERR_FILE_NOT_FOUND',
+  'ERR_UNEXPECTED_PRINT',
+  'ERR_BASE64_ENCODING_FAILED',
+]);
+
 function safeCodeMessage(code: string): string {
+  if (SAFE_NATIVE_CODES.has(code)) return code;
   const desc = SAFE_PG_CODE_DESCRIPTIONS.get(code);
   // Unknown codes are not forwarded — they could contain arbitrary caller-supplied text.
   return desc ? `${code}: ${desc}` : 'unknown database error';
 }
 
+// CT7-068: exactly our own fixed timeout text (fetchWithTimeout), alone or with
+// the "<name>: " prefix supabase-js adds when it maps a failed fetch into a
+// PostgREST error. Contains no user data, so it is classified.
+const REQUEST_TIMEOUT_PATTERN =
+  /^(?:(?:RequestTimeoutError|FetchError): )?Request timed out after \d+s$/;
+const REQUEST_TIMEOUT_MESSAGE = 'request timed out';
+
+function isRequestTimeout(error: unknown): boolean {
+  if (error === null || typeof error !== 'object') return false;
+  const message = (error as { message?: unknown }).message;
+  return typeof message === 'string' && REQUEST_TIMEOUT_PATTERN.test(message);
+}
+
 export function sanitizeForSentry(error: unknown): Error {
+  if (isRequestTimeout(error)) {
+    const sanitized = new Error(REQUEST_TIMEOUT_MESSAGE);
+    sanitized.name = 'RequestTimeoutError';
+    if (error instanceof Error) {
+      sanitized.stack = replaceStackMessage(error.stack, REQUEST_TIMEOUT_MESSAGE);
+    }
+    return sanitized;
+  }
+
   // instanceof Error is checked first so a JS Error that also carries a .code
   // property (e.g. some Supabase client wrappers) keeps its original stack
   // instead of being treated as a plain structured object and losing frames.

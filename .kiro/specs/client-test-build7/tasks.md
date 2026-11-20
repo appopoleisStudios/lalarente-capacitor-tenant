@@ -1916,6 +1916,40 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         with the keyboard up; lifecycle-06 posts a comment with one tap
         (both LC-comments posted; owner inspection steps green).
 
+## CT7-068 🟠 Server requests could hang forever; inspection report export failed without saying why (all roles) — fixed
+
+- **Role:** all · **Platform:** Android · Found in the build-12 lifecycle run,
+  2026-11-20 03:58 (phase 06: tenant's second "Export Report" showed "Failed
+  to generate inspection report"; the first export a few seconds earlier
+  saved). The network probe was clean, no file reached storage, and the
+  export's `catch {}` discarded the error, so the failing step is unknown.
+  Not reproduced in 4 back-to-back exports. Same class as the earlier stuck
+  Approve/property spinners: React Native's Android fetch has no timeout.
+- **Fix:** every Supabase request goes through `createFetchWithTimeout`
+  (`src/lib/fetchWithTimeout.ts`): 30 s for database/auth, 120 s for storage
+  reads and edge functions, no limit for file uploads (no progress events,
+  so a slow 50 MB video can't be told from a stall); a stalled request fails
+  with "Request timed out" (which sign-in already shows as "Can't reach
+  Lalarente"). Both inspection export handlers (tenant `InspectionScreen`,
+  owner `OwnerInspectionDetailScreen`) now report the error to Sentry and
+  log it; the export keeps the database error instead of replacing it, and
+  Sentry classifies timeouts as "request timed out" (no user text).
+- **Root cause (found with the new logging on the device check):** expo-print
+  renders the PDF in a hidden Android WebView; Chromium logged "Printing
+  failed." and the export rejected with `ERR_PDF_WRITE`. In another try the
+  print never called back and the export spinner ran past 150 s. All report
+  exports (`pdfReports.ts`) now use `printHtmlToFile`
+  (`src/shared/utils/printToPdf.ts`): each attempt limited to 45 s; a failed print is
+  retried up to 3 times, a timed-out one is not (expo-print can't cancel the
+  render) and its late file is deleted. Sentry forwards expo-print's own error
+  codes (allow-list, e.g. `ERR_PDF_WRITE`).
+- **Acceptance criteria:**
+  - [x] A failed or hung WebView print is retried and never hangs (Jest).
+  - [x] A stalled request fails after its limit instead of hanging (Jest).
+  - [x] Caller aborts still work; normal responses pass through (Jest).
+  - [x] Export failures are reported and logged in both screens (Jest guard).
+  - [ ] Android emulator: full lifecycle 01 → 08 passes on the new APK.
+
 ## CT7-067 🟠 Tenant dashboard once showed "Welcome back, Tenant" with no home or activity right after sign-in (tenant) — investigating
 
 - **Role:** tenant · **Platform:** Android · Found in the build-12 lifecycle

@@ -5,7 +5,7 @@
  * Templates mirror the client-provided PDF templates.
  */
 
-import * as Print from 'expo-print';
+import { printHtmlToFile } from '@/src/shared/utils/printToPdf';
 import * as FileSystem from 'expo-file-system/legacy';
 import { supabase } from '../../../lib/supabase';
 import { documentsApi } from '../../documents/api/documentsApi';
@@ -688,7 +688,7 @@ export async function exportMonthlyStatementPdf(
 
   const html = buildOwnerStatementHtml(ownerName, period, propertySections);
 
-  const { uri } = await Print.printToFileAsync({ html, base64: false });
+  const uri = await printHtmlToFile(html);
 
   const title = `Owner Statement — ${MONTHS[month]} ${year}`;
   const documentId = await saveReportToDocuments(uri, 'owner_statement', title, ownerId);
@@ -706,7 +706,7 @@ export async function exportTaxStatementPdf(
 ): Promise<string> {
   const html = buildTaxStatementHtml(data);
 
-  const { uri } = await Print.printToFileAsync({ html, base64: false });
+  const uri = await printHtmlToFile(html);
 
   const title = `Tax Statement ${data.taxYearLabel}`;
   const documentId = await saveReportToDocuments(uri, 'tax_statement', title, ownerId);
@@ -1002,7 +1002,7 @@ export async function exportSingleRentInvoicePdf(
   invoice: RentInvoiceRow
 ): Promise<string> {
   const html = buildSingleRentInvoiceHtml(ownerName, invoice);
-  const { uri } = await Print.printToFileAsync({ html, base64: false });
+  const uri = await printHtmlToFile(html);
   const invNumber = `INV-${invoice.id.slice(0, 8).toUpperCase()}`;
   const title = `Rent Invoice ${invNumber} — ${invoice.tenant_name}`;
   return saveReportToDocuments(uri, 'invoice', title, ownerId);
@@ -1017,7 +1017,7 @@ export async function exportSingleVendorInvoicePdf(
   po: VendorInvoiceRow
 ): Promise<string> {
   const html = buildSingleVendorInvoiceHtml(ownerName, po);
-  const { uri } = await Print.printToFileAsync({ html, base64: false });
+  const uri = await printHtmlToFile(html);
   const title = `PO ${po.po_number} — ${po.vendor_name}`;
   return saveReportToDocuments(uri, 'invoice', title, ownerId);
 }
@@ -1034,7 +1034,7 @@ export async function exportInvoicesPdf(
   vendorInvoices: VendorInvoiceRow[]
 ): Promise<string> {
   const html = buildInvoicesHtml(ownerName, tab, rentInvoices, vendorInvoices);
-  const { uri } = await Print.printToFileAsync({ html, base64: false });
+  const uri = await printHtmlToFile(html);
 
   const label = tab === 'rent' ? 'Rent Invoices' : 'Vendor Invoices';
   const today = new Date();
@@ -1431,7 +1431,9 @@ export async function exportInspectionReportPdf(
     .eq('id', inspectionId)
     .single();
 
-  if (error || !insp) throw new Error('Failed to load inspection data');
+  // Keep the database error (code, timeout) so the export handler can report it.
+  if (error) throw error;
+  if (!insp) throw new Error('Failed to load inspection data');
 
   const roomsData = insp.rooms as any;
   const roomsList: any[] = roomsData?.rooms || [];
@@ -1488,7 +1490,7 @@ export async function exportInspectionReportPdf(
     tenantComments
   );
 
-  const { uri } = await Print.printToFileAsync({ html, base64: false });
+  const uri = await printHtmlToFile(html);
 
   const typeLabel =
     insp.type === 'move_in' ? 'Move-In' : insp.type === 'move_out' ? 'Move-Out' : 'Periodic';

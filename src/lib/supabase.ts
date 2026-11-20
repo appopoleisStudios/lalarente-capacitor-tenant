@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
 import { Database } from '@/src/types/database.types';
+import { createFetchWithTimeout } from './fetchWithTimeout';
 
 // SecureStore adapter with defensive error handling — prevents hangs when
 // the simulator/device has transient SecureStore issues (e.g. missing passcode,
@@ -52,6 +53,8 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, 
     detectSessionInUrl: false,
     storage: secureStoreAdapter,
   },
+  // CT7-068: no request may hang forever (Android fetch has no timeout)
+  global: { fetch: createFetchWithTimeout() },
 });
 
 // Storage bucket names
@@ -78,8 +81,7 @@ export type InsertTables<T extends keyof Database['public']['Tables']> =
 export type UpdateTables<T extends keyof Database['public']['Tables']> =
   Database['public']['Tables'][T]['Update'];
 
-export type Enums<T extends keyof Database['public']['Enums']> =
-  Database['public']['Enums'][T];
+export type Enums<T extends keyof Database['public']['Enums']> = Database['public']['Enums'][T];
 
 // Convenience type aliases for commonly used tables
 export type Property = Tables<'properties'>;
@@ -111,13 +113,17 @@ export type UserRole = Enums<'user_role'>;
 
 // Helper function to check if user is authenticated
 export const isAuthenticated = async () => {
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   return !!session;
 };
 
 // Helper function to get current user
 export const getCurrentUser = async () => {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   return user;
 };
 
@@ -126,11 +132,7 @@ export const getCurrentUserProfile = async () => {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
+  const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
 
   if (error) {
     console.error('Error fetching user profile:', error);
@@ -147,36 +149,24 @@ export const uploadFile = async (
   file: Blob | File,
   options?: { contentType?: string; cacheControl?: string }
 ) => {
-  const { data, error } = await supabase.storage
-    .from(STORAGE_BUCKETS[bucket])
-    .upload(path, file, {
-      contentType: options?.contentType,
-      cacheControl: options?.cacheControl || '3600',
-      upsert: false,
-    });
+  const { data, error } = await supabase.storage.from(STORAGE_BUCKETS[bucket]).upload(path, file, {
+    contentType: options?.contentType,
+    cacheControl: options?.cacheControl || '3600',
+    upsert: false,
+  });
 
   if (error) throw error;
   return data;
 };
 
-export const getPublicUrl = (
-  bucket: keyof typeof STORAGE_BUCKETS,
-  path: string
-) => {
-  const { data } = supabase.storage
-    .from(STORAGE_BUCKETS[bucket])
-    .getPublicUrl(path);
+export const getPublicUrl = (bucket: keyof typeof STORAGE_BUCKETS, path: string) => {
+  const { data } = supabase.storage.from(STORAGE_BUCKETS[bucket]).getPublicUrl(path);
 
   return data.publicUrl;
 };
 
-export const deleteFile = async (
-  bucket: keyof typeof STORAGE_BUCKETS,
-  path: string
-) => {
-  const { error } = await supabase.storage
-    .from(STORAGE_BUCKETS[bucket])
-    .remove([path]);
+export const deleteFile = async (bucket: keyof typeof STORAGE_BUCKETS, path: string) => {
+  const { error } = await supabase.storage.from(STORAGE_BUCKETS[bucket]).remove([path]);
 
   if (error) throw error;
 };
