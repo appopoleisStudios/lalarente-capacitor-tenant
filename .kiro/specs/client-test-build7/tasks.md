@@ -1941,6 +1941,25 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   - [ ] Lifecycle 05 (owner signs → lease active with PDF) green on the
         release APK at the next build gate.
 
+## CT7-073 🟡 Profile badge and dashboard banner still kept two field lists (tenant) — fixed
+
+- **Role:** tenant · **Platform:** all · Found in the regression-test audit
+  (2026-11-21); the CT7-025 fix aligned the two lists by hand but left two
+  copies.
+- **Today:** `TenantProfileScreen` built its own "missing fields" list next to
+  `checkTenantProfileCompleteness`. They had already drifted: the screen also
+  required Email (always set after sign-in, so not visible yet), with
+  different labels.
+- **Fix:** one function, `missingTenantProfileFields`, used by both the
+  dashboard banner (through `checkTenantProfileCompleteness`) and the Profile
+  screen badge. The badge now uses the banner's labels (e.g. "Phone number").
+- **Acceptance criteria:**
+  - [x] Jest (`profileCompleteness.test.ts`): the shared list's rules; the
+        Profile screen and the completeness check both call it (the screen
+        test fails with the old screen code).
+  - [ ] Profile badge and dashboard banner checked on the release APK at the
+        next build gate.
+
 ## CT7-071 🔴 Any signed-in user could edit a "public" maintenance request (database) — fixed
 
 - **Role:** vendor (any account) · **Platform:** server · Found in the CT7-066

@@ -58,6 +58,35 @@ function positiveNumber(v: unknown): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
+export interface TenantProfileValues {
+  fullName: string | null | undefined;
+  phone: string | null | undefined;
+  idNumber: string | null | undefined;
+  dateOfBirth: string | null | undefined;
+  monthlyIncome: number | string | null | undefined;
+  proofOfAddressUrl: string | null | undefined;
+  idDocumentUrl: string | null | undefined;
+  hasSalaryCertificate: boolean;
+}
+
+/**
+ * The fields a tenant profile still needs, in display order. The ONE list:
+ * the dashboard banner (via checkTenantProfileCompleteness) and the Profile
+ * screen badge both use it, so they can't disagree again (CT7-025, CT7-073).
+ */
+export function missingTenantProfileFields(v: TenantProfileValues): string[] {
+  const missing: string[] = [];
+  if (!nonBlank(v.fullName)) missing.push(LABEL.fullName);
+  if (!nonBlank(v.phone)) missing.push(LABEL.phone);
+  if (!nonBlank(v.idNumber)) missing.push(LABEL.idNumber);
+  if (!nonBlank(v.dateOfBirth)) missing.push(LABEL.dateOfBirth);
+  if (positiveNumber(v.monthlyIncome) == null) missing.push(LABEL.monthlyIncome);
+  if (!nonBlank(v.proofOfAddressUrl)) missing.push(LABEL.proofOfAddress);
+  if (!nonBlank(v.idDocumentUrl)) missing.push(LABEL.idDocument);
+  if (!v.hasSalaryCertificate) missing.push(LABEL.salaryCertificate);
+  return missing;
+}
+
 export async function checkTenantProfileCompleteness(
   userId: string
 ): Promise<TenantProfileCompletenessResult> {
@@ -94,15 +123,16 @@ export async function checkTenantProfileCompleteness(
   const salaryCerts = data.fica_documents?.salary_certificate_urls ?? null;
   const hasSalaryCert = Array.isArray(salaryCerts) && salaryCerts.some((u) => nonBlank(u) !== null);
 
-  const missing: string[] = [];
-  if (!nonBlank(data.full_name)) missing.push(LABEL.fullName);
-  if (!nonBlank(data.phone)) missing.push(LABEL.phone);
-  if (!idNumber) missing.push(LABEL.idNumber);
-  if (!dob) missing.push(LABEL.dateOfBirth);
-  if (income == null) missing.push(LABEL.monthlyIncome);
-  if (!nonBlank(data.proof_of_address_url)) missing.push(LABEL.proofOfAddress);
-  if (!idDocumentUrl) missing.push(LABEL.idDocument);
-  if (!hasSalaryCert) missing.push(LABEL.salaryCertificate);
+  const missing = missingTenantProfileFields({
+    fullName: data.full_name,
+    phone: data.phone,
+    idNumber,
+    dateOfBirth: dob,
+    monthlyIncome: income,
+    proofOfAddressUrl: data.proof_of_address_url,
+    idDocumentUrl,
+    hasSalaryCertificate: hasSalaryCert,
+  });
 
   return missing.length === 0
     ? { status: 'ok', complete: true, missing: [] }
