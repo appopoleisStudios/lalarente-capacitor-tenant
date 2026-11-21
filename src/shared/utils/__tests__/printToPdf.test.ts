@@ -214,14 +214,57 @@ describe('warmUpPrinter (CT7-069)', () => {
     jest.useRealTimers();
   });
 
-  it.each(['InspectionScreen.tsx', 'OwnerInspectionDetailScreen.tsx'])(
-    '%s warms the printer up on mount',
-    (file) => {
-      const src = require('fs').readFileSync(
-        require('path').resolve(__dirname, '../../../features/inspections/screens', file),
-        'utf8'
-      );
-      expect(src).toMatch(/useEffect\(\(\) => \{\s*warmUpPrinter\(\);\s*\}, \[\]\);/);
+  it.each([
+    'inspections/screens/InspectionScreen.tsx',
+    'inspections/screens/OwnerInspectionDetailScreen.tsx',
+    // CT7-072: the lease PDF is printed when the owner signs / "Generate PDF"
+    'owner/screens/OwnerLeaseDetailScreen.tsx',
+    'tenant/screens/TenantLeaseScreen.tsx',
+  ])('%s warms the printer up on mount', (file) => {
+    const src = require('fs').readFileSync(
+      require('path').resolve(__dirname, '../../../features', file),
+      'utf8'
+    );
+    expect(src).toMatch(/useEffect\(\(\) => \{\s*warmUpPrinter\(\);\s*\}, \[\]\);/);
+  });
+});
+
+// CT7-072: the lease PDF called expo-print directly, so it had no time limit,
+// no retry and no warm-up, and lease activation could spin forever. Every
+// print must go through printHtmlToFile.
+describe('no direct expo-print calls outside printToPdf.ts (CT7-072)', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const repo = path.resolve(__dirname, '../../../..');
+  const files: string[] = [];
+  const walk = (dir: string) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) {
+        if (e.name !== '__tests__' && e.name !== 'node_modules') walk(p);
+      } else if (/\.(ts|tsx)$/.test(e.name)) files.push(p);
     }
-  );
+  };
+  walk(path.join(repo, 'src'));
+  walk(path.join(repo, 'app'));
+
+  it('scans the app source', () => {
+    expect(files.length).toBeGreaterThan(100);
+  });
+
+  it('only printToPdf.ts calls printToFileAsync', () => {
+    const offenders = files
+      .filter((f) => !f.endsWith(path.join('shared', 'utils', 'printToPdf.ts')))
+      .filter((f) => /printToFileAsync/.test(fs.readFileSync(f, 'utf8')))
+      .map((f) => path.relative(repo, f));
+    expect(offenders).toEqual([]);
+  });
+
+  it('the lease PDF prints through printHtmlToFile', () => {
+    const src = fs.readFileSync(
+      path.join(repo, 'src/features/leases/api/leasePdfService.ts'),
+      'utf8'
+    );
+    expect(src).toMatch(/await printHtmlToFile\(html\)/);
+  });
 });

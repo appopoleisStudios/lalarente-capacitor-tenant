@@ -1,6 +1,7 @@
 import { supabase } from '../../../lib/supabase';
 import { generateAndUploadLeasePDF } from './leasePdfService';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { PrintTimeoutError } from '@/src/shared/utils/printToPdf';
 
 /**
  * Calculate the next payment date based on start date and payment due day
@@ -57,6 +58,9 @@ export async function withPdfRetry<T>(
     } catch (pdfError) {
       reportApiError(pdfError, 'lease_documents', 'insert');
       console.error(`Error generating lease PDF (attempt ${attempt}/${attempts}):`, pdfError);
+      // CT7-072: the printer helper already retried a stuck print; another
+      // round would keep the owner on the signing screen for 30 s more.
+      if (pdfError instanceof PrintTimeoutError) break;
       if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
   }

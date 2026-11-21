@@ -26,6 +26,7 @@ import { reportApiError } from '@/src/core/observability/sentry';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
 import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
+import { warmUpPrinter } from '@/src/shared/utils/printToPdf';
 import { colors } from '@/src/shared/theme/colors';
 
 import { formatDate } from '../../../shared/utils/format';
@@ -119,6 +120,12 @@ export default function TenantLeaseScreen() {
 
   useEffect(() => {
     loadActiveLease();
+  }, []);
+
+  // CT7-072: "Generate PDF" prints the lease; the first print in a fresh app
+  // process often hangs (CT7-069), so it must not be the lease's
+  useEffect(() => {
+    warmUpPrinter();
   }, []);
 
   const loadActiveLease = async () => {

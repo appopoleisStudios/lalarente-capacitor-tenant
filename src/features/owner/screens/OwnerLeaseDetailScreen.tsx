@@ -23,6 +23,7 @@ import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
 import { reportApiError } from '@/src/core/observability/sentry';
 import { toLocalIsoDate } from '@/src/features/leases/utils/leaseDateMath';
+import { warmUpPrinter } from '@/src/shared/utils/printToPdf';
 
 import { formatDate } from '../../../shared/utils/format';
 const RSA = { blue: '#002395', gold: '#FFB81C' }; // Owner colors
@@ -75,6 +76,12 @@ export default function OwnerLeaseDetailScreen() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // CT7-072: signing makes the lease PDF; the first print in a fresh app
+  // process often hangs (CT7-069), so it must not be the lease's
+  useEffect(() => {
+    warmUpPrinter();
+  }, []);
 
   const loadLease = async () => {
     try {
