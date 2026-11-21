@@ -1938,8 +1938,8 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         `printHtmlToFile`; both lease screens warm up; a stuck print is not
         retried again; `executeLease` generates through `withPdfRetry`.
         5 tests fail without the fix.
-  - [ ] Lifecycle 05 (owner signs → lease active with PDF) green on the
-        release APK at the next build gate.
+  - [x] Lifecycle 05 (owner signs → lease active with PDF) green on the
+        release APK at the next build gate. Build 15, 2026-11-21 (15/15).
 
 ## CT7-074 🟡 "Verify Completed Work" has no back arrow (tenant) — fixed
 
@@ -1953,8 +1953,8 @@ Found while testing on the Android emulator with a real on-screen keyboard.
 - **Acceptance criteria:**
   - [x] Jest `TenantVerificationBack.test.tsx` (renders the screen): the arrow
         goes back, or to the tenant home with no history. Fails without the fix.
-  - [ ] Lifecycle 07d (tenant verifies the work) green on the release APK at
-        the next build gate.
+  - [x] Lifecycle 07d (tenant verifies the work) green on the release APK at
+        the next build gate. Build 15, 2026-11-21 (15/15).
 
 ## CT7-073 🟡 Profile badge and dashboard banner still kept two field lists (tenant) — fixed
 
@@ -1972,8 +1972,9 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   - [x] Jest (`profileCompleteness.test.ts`): the shared list's rules; the
         Profile screen and the completeness check both call it (the screen
         test fails with the old screen code).
-  - [ ] Profile badge and dashboard banner checked on the release APK at the
-        next build gate.
+  - [x] Profile badge and dashboard banner checked on the release APK at the
+        next build gate. Build 15, 2026-11-21: complete tenant → no dashboard
+        banner, Profile shows "Profile complete".
 
 ## CT7-071 🔴 Any signed-in user could edit a "public" maintenance request (database) — fixed
 
