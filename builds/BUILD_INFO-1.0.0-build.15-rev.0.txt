@@ -1,0 +1,134 @@
+LaLarente App - Build Information
+==================================
+
+Build Date: 2026-11-21
+Build Type: Client Testing (Alpha)
+
+Version Information:
+  Version:      1.0.0
+  Build Number: 15
+  Revision:     0
+  Full Version: 1.0.0-build.15-rev.0
+
+Android Information:
+  Version Code: 15
+  Version Name: 1.0.0
+  Package:      com.lalarente.app
+  SHA-256:      634cd54090416ce4d67f8470c75fcfdad87c1ead91c589b1c7bc718ec4add79a
+  Source:       main @ 1546653 (merge of #282; #278, #279, #280, #282
+                merged). Built from a clean main checkout. Later main
+                commits up to 13e8139 (#281, #283) change only tests and
+                test scripts — no app code differs from the APK's source.
+
+Build Configuration:
+  Platform:     Android
+  Build Type:   APK (Release)
+  Build Method: Local Gradle (assembleRelease)
+  Minify:       Enabled
+  Hermes:       Enabled
+
+Release gate (CLAUDE.md) — checks passed on this build
+------------------------------------------------------
+  ✓ CI green on every PR (Lint, Tests, TypeScript); full Jest on main
+    13e8139: 1039/1039
+  ✓ Senior Auditor (Codex gpt-6-astra) review on every PR; findings fixed
+    and re-reviewed before merge
+  ✓ Every fix ships with a regression test. Regression-test audit of every
+    fixed board item (CT7-001..071): each one now has an automated test that
+    fails if the fix is undone (#279, #281, #283); the audit found and fixed
+    CT7-072/073/074 below
+  ✓ Lifecycle chain 01 → 08 on emulator-5554 with this APK, from a clean
+    fixture (reset-lifecycle-fixture --apply): 15/15 passed, 2026-11-21,
+    including the new database-rule checks (all refused as they must be):
+      CT7-030 second open viewing for the same home → refused (23505)
+      CT7-032 application before the viewing has happened → refused (P0001)
+      CT7-019 approve with the holding deposit unpaid → refused (P0001)
+  ✓ Release APK smoke test on emulator-5554: owner, tenant and vendor
+    dashboards; sign-out → sign-in — passed
+  ✓ Android guards (scripts/run-android-guards.sh, 3-button navigation):
+    7/7 passed, 2026-11-21 (.maestro/android-guards-20261121-181544)
+  ✓ CT7-067 check: 6× vendor sign-in → sign-out → tenant sign-in; the tenant
+    dashboard showed the tenant's own name and home every time — passed (6/6)
+  ✓ CT7-073 check: tenant with a complete profile — no "Complete Your
+    Profile" banner on the dashboard, Profile screen says "Profile
+    complete" — passed
+
+New since build 14
+------------------
+  ✓ CT7-072 Lease PDF made when the lease is signed now has the same
+    protection as report exports: a time limit, one retry of a stuck print,
+    and the printer warmed up when a lease screen opens. Before, a stuck
+    first print could leave the owner's signing spinner running forever
+    (#278)
+  ✓ CT7-073 Tenant profile badge and dashboard "complete your profile"
+    banner now use one shared list of required fields, so they can't
+    disagree (#280)
+  ✓ CT7-074 Tenant "Verify Completed Work" screen has a back arrow (#282)
+  ✓ Regression guards for every earlier fix (#279, #281) and database-rule
+    checks in the lifecycle chain (#283)
+
+Client release notes — everything since build 11
+================================================
+(Build 11 was the last build the client received. Builds 12-14 were
+internal. Build 15 installs over build 11 and keeps the data.)
+
+Everyone (Android)
+  - Screens, bottom tabs and pop-up sheets no longer hide under the
+    Android status bar or navigation buttons; the clock, battery and signal
+    stay visible.
+  - The keyboard no longer covers form fields or buttons, in pop-ups or
+    full screens.
+  - Alerts keep all their buttons.
+  - Dates read "19 Nov 2026" everywhere and viewing times "Fri, 20 Nov at
+    10:00"; no raw technical values on screen.
+  - Opening Notifications no longer marks everything read; only the one you
+    tap is cleared.
+  - Signing in finishes properly; if it can't, it says so instead of
+    opening an empty screen.
+  - Report PDFs export reliably, including right after the app starts.
+
+Owner
+  - Leases can be signed on Android; the signature date fits and signature
+    images show.
+  - Signing a lease can no longer hang on making the PDF; if the PDF fails,
+    you're told to tap "Generate PDF".
+  - Rent Roll no longer shows unpaid rent as "Paid"; the dashboard "In
+    Arrears" and Rent Roll "Overdue" agree.
+  - Recent Activity rows on the dashboard open their item.
+  - Back from a maintenance request no longer loops.
+  - Property Type is a choice (Apartment, House, Townhouse, Cottage or
+    Room).
+  - Property search with no match says so and offers "Clear filters".
+
+Tenant
+  - Leases can be signed on Android.
+  - "Add Comment" on an inspection report stays above the keyboard.
+  - Report Issue is available once the lease is signed by both sides and
+    in effect.
+  - The dashboard no longer shows "Welcome back, Tenant" with no home; if
+    it can't load, it says so with "Try Again".
+  - Profile badge and dashboard banner agree on what's missing.
+  - "Verify Completed Work" has a back arrow.
+
+Vendor
+  - You can open a quote you submitted.
+  - "View My Jobs" opens your job list.
+
+Security (no visible change)
+  - Only people involved in a maintenance request can change it.
+  - Maintenance requests can only be created by the property's owner or a
+    tenant with a lease in effect there.
+
+Known open items (not in this build)
+------------------------------------
+  - CT7-069: Android's PDF printing still fails now and then on the first
+    print after the app starts; the app warms the printer up and retries,
+    so exports succeed (24/24 on the emulator) — a workaround, not a cure.
+  - Android sheet guards skip steps whose data isn't on the test fixture
+    (owner insurance claim, tenant payment arrangement).
+  - Board items CT7-034..042 (from the client's build 11 test) are still
+    open.
+  - Notifications sent before build 13 keep their old date text.
+  - Carried over from build 11: documents bucket public-flagged; lease
+    terminations and payment disputes don't notify yet; push sent from the
+    app, not the server; client and automated tests share test accounts.
