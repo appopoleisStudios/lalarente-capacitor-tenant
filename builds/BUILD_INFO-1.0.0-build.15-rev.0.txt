@@ -15,9 +15,10 @@ Android Information:
   Version Name: 1.0.0
   Package:      com.lalarente.app
   SHA-256:      634cd54090416ce4d67f8470c75fcfdad87c1ead91c589b1c7bc718ec4add79a
-  Source:       main @ 5a0f12a (APK built here; PRs #278-#282 merged).
-                main @ 13e8139 adds #281/#283 tests and test scripts only —
-                no app code differs from the APK's source.
+  Source:       main @ 1546653 (merge of #282; #278, #279, #280, #282
+                merged). Built from a clean main checkout. Later main
+                commits up to 13e8139 (#281, #283) change only tests and
+                test scripts — no app code differs from the APK's source.
 
 Build Configuration:
   Platform:     Android
@@ -95,13 +96,13 @@ Owner
     Arrears" and Rent Roll "Overdue" agree.
   - Recent Activity rows on the dashboard open their item.
   - Back from a maintenance request no longer loops.
-  - Property Type is a choice (Apartment, House, Townhouse, Cottage, Room,
-    Other).
+  - Property Type is a choice (Apartment, House, Townhouse, Cottage or
+    Room).
+  - Property search with no match says so and offers "Clear filters".
 
 Tenant
   - Leases can be signed on Android.
   - "Add Comment" on an inspection report stays above the keyboard.
-  - Property search with no match says so and offers "Clear filters".
   - Report Issue is available once the lease is signed by both sides and
     in effect.
   - The dashboard no longer shows "Welcome back, Tenant" with no home; if
