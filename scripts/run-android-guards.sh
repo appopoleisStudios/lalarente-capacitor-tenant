@@ -32,34 +32,44 @@ GUARDS=(
 )
 
 run_guard() {
-  local name="$1" extra=()
+  local name="$1" extra=() status=0
   # Clean start: a failed clear would test a stale session, so fail the guard.
   adb -s "$DEVICE" shell pm clear com.lalarente.app 2>&1 | grep -q Success \
     || { echo "✗ $name: could not clear app data" >&2; return 1; }
+  # Setup failures still go through the fixture reset below (a half-done setup
+  # can leave a lease, application or deposit behind for the next guard).
   if [[ "$name" == android-lease-sign-guard ]]; then
-    node scripts/reset-lifecycle-fixture.mjs --apply >/dev/null || return 1
     local lease_id
-    lease_id="$(node scripts/seed-sign-guard-lease.mjs)" || return 1
-    extra=(--env LEASE_ID="$lease_id")
+    if node scripts/reset-lifecycle-fixture.mjs --apply >/dev/null \
+      && lease_id="$(node scripts/seed-sign-guard-lease.mjs)"; then
+      extra=(--env LEASE_ID="$lease_id")
+    else
+      echo "✗ $name: setup (seed lease) failed" >&2; status=1
+    fi
   fi
   if [[ "$name" == android-keyboard-forms-guard ]]; then
-    # Its owner part needs a SUBMITTED application; earlier resets withdraw
-    # them, and without one the guard tested nothing (build 14 gate).
-    node scripts/reset-lifecycle-fixture.mjs --apply >/dev/null || return 1
-    scripts/run-lifecycle-e2e.sh lifecycle-01-search-property lifecycle-02a-viewing-approve \
-      script:scripts/e2e/viewing-happened.mjs lifecycle-02d-viewing-complete \
-      lifecycle-03a-application-submit > "$OUT/$name-setup.log" 2>&1 \
-      || { echo "✗ $name: setup (lifecycle 01 → 03a) failed — see $OUT/$name-setup.log" >&2; return 1; }
+    # Its owner part needs a SUBMITTED application with no holding deposit
+    # yet (Reject prompt + deposit dialog); without one the guard tested
+    # nothing (build 14 gate). lifecycle-03a would also request the deposit.
+    if ! { node scripts/reset-lifecycle-fixture.mjs --apply >/dev/null \
+      && scripts/run-lifecycle-e2e.sh lifecycle-01-search-property lifecycle-02a-viewing-approve \
+        script:scripts/e2e/viewing-happened.mjs lifecycle-02d-viewing-complete \
+        setup-application-submitted > "$OUT/$name-setup.log" 2>&1; }; then
+      echo "✗ $name: setup (lifecycle 01 → 02d + submit) failed — see $OUT/$name-setup.log" >&2
+      status=1
+    fi
     adb -s "$DEVICE" shell pm clear com.lalarente.app >/dev/null 2>&1
   fi
-  ( cd "$OUT" && maestro --device "$DEVICE" test "$ROOT/.maestro/flows/$name.yaml" \
-      --env TENANT_EMAIL="$TENANT_EMAIL" --env TENANT_PASSWORD="$TENANT_PASSWORD" \
-      --env OWNER_EMAIL="$OWNER_EMAIL" --env OWNER_PASSWORD="$OWNER_PASSWORD" \
-      --env VENDOR_EMAIL="${VENDOR_EMAIL:-}" --env VENDOR_PASSWORD="${VENDOR_PASSWORD:-}" \
-      ${extra[@]+"${extra[@]}"} > "$name.log" 2>&1 )
-  local status=$?
+  if [[ $status == 0 ]]; then
+    ( cd "$OUT" && maestro --device "$DEVICE" test "$ROOT/.maestro/flows/$name.yaml" \
+        --env TENANT_EMAIL="$TENANT_EMAIL" --env TENANT_PASSWORD="$TENANT_PASSWORD" \
+        --env OWNER_EMAIL="$OWNER_EMAIL" --env OWNER_PASSWORD="$OWNER_PASSWORD" \
+        --env VENDOR_EMAIL="${VENDOR_EMAIL:-}" --env VENDOR_PASSWORD="${VENDOR_PASSWORD:-}" \
+        ${extra[@]+"${extra[@]}"} > "$name.log" 2>&1 )
+    status=$?
+  fi
   if [[ "$name" == android-lease-sign-guard || "$name" == android-keyboard-forms-guard ]]; then
-    # A failed cleanup leaves a live fixture lease behind: that fails the guard.
+    # A failed cleanup leaves fixture data behind: that fails the guard.
     if ! node scripts/reset-lifecycle-fixture.mjs --apply > "$OUT/$name-reset.log" 2>&1; then
       echo "✗ $name: fixture reset failed — see $OUT/$name-reset.log" >&2
       return 1

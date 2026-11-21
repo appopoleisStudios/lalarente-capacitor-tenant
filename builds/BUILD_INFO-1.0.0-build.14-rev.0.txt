@@ -39,14 +39,16 @@ Release gate (CLAUDE.md) — checks passed on this build
   ✓ Android guards (scripts/run-android-guards.sh, 3-button navigation):
     7/7 passed, 2026-11-21 — tenant-tabbar-guard (5 tabs, no Vendor
     Payments), vendor-tabbar-guard, android-lease-sign-guard (CT7-043),
-    android-keyboard-forms-guard (CT7-047), android-sheets-owner/-tenant/
+    android-keyboard-forms-guard (CT7-047: application Reject prompt and
+    holding-deposit dialog both exercised), android-sheets-owner/-tenant/
     -vendor (CT7-046). Sheet steps whose data isn't on the fixture are
     skipped by those flows (owner insurance claim, tenant arrangement).
     Test-only fixes found by this gate (no app change, APK unchanged):
     the keyboard guard had no submitted application to open (the runner now
-    sets one up: lifecycle 01 → 03a), the three sheet guards were not in the
-    runner (added), and android-sheets-vendor tapped the wrong "Add" button
-    (fixed; the app was checked by hand and is correct).
+    sets one up with lifecycle 01 → 02d + setup-application-submitted, and
+    resets the fixture even when setup fails), the three sheet guards were
+    not in the runner (added), and android-sheets-vendor tapped the wrong
+    "Add" button (fixed; the app was checked by hand and is correct).
   ✓ CT7-067 check: 6× vendor sign-in → sign-out → tenant sign-in; the tenant
     dashboard showed the tenant's own name and data every time — passed (6/6)
 
