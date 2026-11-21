@@ -6,7 +6,10 @@
 //   - Supabase lookup errors                                 → status 'error',
 //                                                              never silently "incomplete".
 
-import { checkTenantProfileCompleteness } from '../utils/profileCompleteness';
+import {
+  checkTenantProfileCompleteness,
+  missingTenantProfileFields,
+} from '../utils/profileCompleteness';
 
 const mockMaybeSingle = jest.fn();
 
@@ -194,5 +197,55 @@ describe('checkTenantProfileCompleteness', () => {
     const result = await checkTenantProfileCompleteness('u1');
 
     expect(result).toEqual({ status: 'ok', complete: false, missing: ['Profile not found'] });
+  });
+});
+
+// CT7-025 / CT7-073: the Profile badge and the dashboard banner disagreed
+// because each had its own field list (the screen also demanded Email).
+// There is one list now; both must use it.
+describe('one list of missing profile fields (CT7-025, CT7-073)', () => {
+  const full = {
+    fullName: 'Thandi',
+    phone: '0821234567',
+    idNumber: '9001015009087',
+    dateOfBirth: '1990-01-01',
+    monthlyIncome: '25000',
+    proofOfAddressUrl: 'poa.pdf',
+    idDocumentUrl: 'id.pdf',
+    hasSalaryCertificate: true,
+  };
+
+  it('a full profile misses nothing', () => {
+    expect(missingTenantProfileFields(full)).toEqual([]);
+  });
+
+  it('blank, whitespace, zero income and no certificate are missing', () => {
+    expect(
+      missingTenantProfileFields({
+        ...full,
+        phone: '  ',
+        monthlyIncome: '0',
+        hasSalaryCertificate: false,
+      })
+    ).toEqual(['Phone number', 'Monthly income', 'Salary certificate / payslip']);
+  });
+
+  it('the Profile screen uses the shared list, not its own', () => {
+    const src = require('fs')
+      .readFileSync(
+        require('path').resolve(__dirname, '../screens/TenantProfileScreen.tsx'),
+        'utf8'
+      )
+      .replace(/\/\/.*$/gm, '');
+    expect(src).toMatch(/const missingFields = missingTenantProfileFields\(\{/);
+    expect(src).not.toMatch(/missingFields\.push\(/);
+  });
+
+  it('checkTenantProfileCompleteness uses the shared list', () => {
+    const src = require('fs')
+      .readFileSync(require('path').resolve(__dirname, '../utils/profileCompleteness.ts'), 'utf8')
+      .replace(/\/\/.*$/gm, '');
+    const check = src.slice(src.indexOf('export async function checkTenantProfileCompleteness'));
+    expect(check).toMatch(/const missing = missingTenantProfileFields\(\{/);
   });
 });
