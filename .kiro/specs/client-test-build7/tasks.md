@@ -1941,6 +1941,21 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   - [ ] Lifecycle 05 (owner signs → lease active with PDF) green on the
         release APK at the next build gate.
 
+## CT7-074 🟡 "Verify Completed Work" has no back arrow (tenant) — fixed
+
+- **Role:** tenant · **Platform:** all · Found in the regression-test audit
+  (2026-11-21). Breaks the CT7-033 rule (Back on every screen).
+- **Today:** the main view of the maintenance verification screen had no
+  back arrow; only its Approve and Report Issues sub-views did. On iOS the only
+  way out was the swipe.
+- **Fix:** back arrow on its own row above the title, through the shared
+  `goBack` helper (history, else the tenant home).
+- **Acceptance criteria:**
+  - [x] Jest `TenantVerificationBack.test.tsx` (renders the screen): the arrow
+        goes back, or to the tenant home with no history. Fails without the fix.
+  - [ ] Lifecycle 07d (tenant verifies the work) green on the release APK at
+        the next build gate.
+
 ## CT7-073 🟡 Profile badge and dashboard banner still kept two field lists (tenant) — fixed
 
 - **Role:** tenant · **Platform:** all · Found in the regression-test audit
