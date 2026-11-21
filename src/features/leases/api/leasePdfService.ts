@@ -1,10 +1,9 @@
-import * as Print from 'expo-print';
-import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { uploadLeasePDF } from './storageService';
 import { signatureDataUri } from '@/src/shared/utils/storageDataUri';
 import { reportApiError } from '@/src/core/observability/sentry';
+import { printHtmlToFile } from '@/src/shared/utils/printToPdf';
 import { toLocalIsoDate } from '../utils/leaseDateMath';
 
 export interface LeaseData {
@@ -605,10 +604,9 @@ export async function generateAndUploadLeasePDF(
       },
       customClauses
     );
-    const { uri } = await Print.printToFileAsync({
-      html,
-      base64: false,
-    });
+    // CT7-072: through the shared printer helper (time limit + retry, CT7-068/069).
+    // A direct print hung forever when it was the first in the app process.
+    const uri = await printHtmlToFile(html);
 
     console.log('PDF generated at URI:', uri);
 
@@ -631,32 +629,6 @@ export async function generateAndUploadLeasePDF(
   } catch (error) {
     reportApiError(error, 'lease_documents', 'insert');
     console.error('Error generating lease PDF:', error);
-    throw error;
-  }
-}
-
-export async function downloadLeasePDF(leaseDocumentUrl: string, leaseName: string): Promise<void> {
-  try {
-    const isAvailable = await Sharing.isAvailableAsync();
-    if (!isAvailable) {
-      throw new Error('Sharing is not available on this device');
-    }
-
-    const response = await fetch(leaseDocumentUrl);
-    const blob = await response.blob();
-
-    const { uri } = await Print.printToFileAsync({
-      html: '<html><body></body></html>',
-      base64: false,
-    });
-
-    await Sharing.shareAsync(uri, {
-      mimeType: 'application/pdf',
-      dialogTitle: leaseName,
-      UTI: 'com.adobe.pdf',
-    });
-  } catch (error) {
-    console.error('Error downloading lease PDF:', error);
     throw error;
   }
 }

@@ -1916,6 +1916,31 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         with the keyboard up; lifecycle-06 posts a comment with one tap
         (both LC-comments posted; owner inspection steps green).
 
+## CT7-072 🟠 Lease activation could spin forever on a stuck PDF print (owner, tenant) — fixed
+
+- **Role:** owner (signing activates the lease), tenant ("Generate PDF") ·
+  **Platform:** Android · Found in the regression-test audit (2026-11-21), in
+  build 14 and earlier.
+- **Today:** the lease PDF called `Print.printToFileAsync` directly, so it had
+  none of the CT7-068/069 protection: no time limit, no retry, no warm-up. The
+  first print in a fresh app process can hang (CT7-069); when that is the lease
+  PDF, the owner's signing spinner never stops. `withPdfRetry` could not help:
+  a print that never answers never throws.
+- **Fix:** `generateAndUploadLeasePDF` prints through `printHtmlToFile`; both
+  lease screens warm the printer up on mount; `withPdfRetry` stops at a
+  `PrintTimeoutError` (the helper already retried it): two stuck prints end
+  after ~30 s (up to ~35 s with failed prints in between), then "tap Generate
+  PDF". Signature download, upload and database calls keep their own limits. Removed the unused `downloadLeasePDF`
+  (it printed and shared a blank page).
+- **Acceptance criteria:**
+  - [x] Jest (`printToPdf.test.ts`, `leasePdfRetry.test.ts`): no file outside
+        `printToPdf.ts` calls `printToFileAsync`; the lease PDF uses
+        `printHtmlToFile`; both lease screens warm up; a stuck print is not
+        retried again; `executeLease` generates through `withPdfRetry`.
+        5 tests fail without the fix.
+  - [ ] Lifecycle 05 (owner signs → lease active with PDF) green on the
+        release APK at the next build gate.
+
 ## CT7-071 🔴 Any signed-in user could edit a "public" maintenance request (database) — fixed
 
 - **Role:** vendor (any account) · **Platform:** server · Found in the CT7-066

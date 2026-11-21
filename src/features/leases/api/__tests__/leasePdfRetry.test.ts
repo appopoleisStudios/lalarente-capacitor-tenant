@@ -6,6 +6,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { LEASE_PDF_MISSING_MESSAGE, PDF_ATTEMPTS, withPdfRetry } from '../leaseExecutionService';
+import { PrintTimeoutError } from '@/src/shared/utils/printToPdf';
 
 jest.mock('../../../../lib/supabase', () => ({ supabase: {} }));
 jest.mock('../leasePdfService', () => ({ generateAndUploadLeasePDF: jest.fn() }));
@@ -45,6 +46,19 @@ describe('withPdfRetry (CT7-052)', () => {
 
   it('retries more than once by default', () => {
     expect(PDF_ATTEMPTS).toBeGreaterThan(1);
+  });
+
+  it('stops at a stuck print: the printer helper already retried it (CT7-072)', async () => {
+    const generate = jest.fn().mockRejectedValue(new PrintTimeoutError());
+    await expect(withPdfRetry(generate, 3, 0)).resolves.toBeNull();
+    expect(generate).toHaveBeenCalledTimes(1);
+  });
+
+  it('executeLease generates the PDF through withPdfRetry', () => {
+    const src = fs.readFileSync(path.resolve(__dirname, '../leaseExecutionService.ts'), 'utf8');
+    expect(src).toMatch(
+      /let leaseDocumentUrl = await withPdfRetry\(\(\) => generateAndUploadLeasePDF\(/
+    );
   });
 });
 
