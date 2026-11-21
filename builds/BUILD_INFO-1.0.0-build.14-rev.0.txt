@@ -30,12 +30,23 @@ Release gate (CLAUDE.md) — checks passed on this build
     695dd72: 935/935 (119 suites) — every earlier fix's regression test
   ✓ Senior Auditor (Codex gpt-6-astra) review on every PR; findings fixed
     and re-reviewed before merge
-  ✓ Every fix ships with a regression test
+  ✓ Every fix ships with a regression test (Jest, ESLint rule or Maestro
+    flow)
   ✓ Lifecycle chain 01 → 08 on emulator-5554 with this APK, from a clean
     fixture (reset-lifecycle-fixture --apply): 13/13 passed, 2026-11-21
   ✓ Release APK smoke test on emulator-5554: owner, tenant and vendor
     dashboards; sign-out → sign-in — passed
-  ✓ tenant-tabbar-guard.yaml — passed (5 tabs, no Vendor Payments)
+  ✓ Android guards (scripts/run-android-guards.sh, 3-button navigation):
+    7/7 passed, 2026-11-21 — tenant-tabbar-guard (5 tabs, no Vendor
+    Payments), vendor-tabbar-guard, android-lease-sign-guard (CT7-043),
+    android-keyboard-forms-guard (CT7-047), android-sheets-owner/-tenant/
+    -vendor (CT7-046). Sheet steps whose data isn't on the fixture are
+    skipped by those flows (owner insurance claim, tenant arrangement).
+    Test-only fixes found by this gate (no app change, APK unchanged):
+    the keyboard guard had no submitted application to open (the runner now
+    sets one up: lifecycle 01 → 03a), the three sheet guards were not in the
+    runner (added), and android-sheets-vendor tapped the wrong "Add" button
+    (fixed; the app was checked by hand and is correct).
   ✓ CT7-067 check: 6× vendor sign-in → sign-out → tenant sign-in; the tenant
     dashboard showed the tenant's own name and data every time — passed (6/6)
 
@@ -125,8 +136,6 @@ Known open items (not in this build)
   - CT7-069: Android's PDF printing still fails now and then on the first
     print after the app starts; the app warms the printer up and retries,
     so exports succeed (24/24 on the emulator) — a workaround, not a cure.
-  - Some earlier Android layout fixes (CT7-043 to CT7-051) were verified on
-    the emulator by eye; automated regression tests for them are next.
   - Notifications sent before build 13 keep their old date text; new ones
     use the new format.
   - Some older e2e walkthrough flows need updating for the new screens

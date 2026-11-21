@@ -26,6 +26,9 @@ GUARDS=(
   vendor-tabbar-guard        # 6 canonical vendor tabs, no Contracts tab
   android-lease-sign-guard   # CT7-043: tenant + owner can sign on Android
   android-keyboard-forms-guard  # CT7-047: keyboard never covers pop-up form fields/buttons
+  android-sheets-owner       # CT7-046: owner bottom sheets clear of the nav bar
+  android-sheets-tenant      # CT7-046: tenant bottom sheets clear of the nav bar
+  android-sheets-vendor      # CT7-046: vendor bottom sheets clear of the nav bar
 )
 
 run_guard() {
@@ -39,13 +42,23 @@ run_guard() {
     lease_id="$(node scripts/seed-sign-guard-lease.mjs)" || return 1
     extra=(--env LEASE_ID="$lease_id")
   fi
+  if [[ "$name" == android-keyboard-forms-guard ]]; then
+    # Its owner part needs a SUBMITTED application; earlier resets withdraw
+    # them, and without one the guard tested nothing (build 14 gate).
+    node scripts/reset-lifecycle-fixture.mjs --apply >/dev/null || return 1
+    scripts/run-lifecycle-e2e.sh lifecycle-01-search-property lifecycle-02a-viewing-approve \
+      script:scripts/e2e/viewing-happened.mjs lifecycle-02d-viewing-complete \
+      lifecycle-03a-application-submit > "$OUT/$name-setup.log" 2>&1 \
+      || { echo "✗ $name: setup (lifecycle 01 → 03a) failed — see $OUT/$name-setup.log" >&2; return 1; }
+    adb -s "$DEVICE" shell pm clear com.lalarente.app >/dev/null 2>&1
+  fi
   ( cd "$OUT" && maestro --device "$DEVICE" test "$ROOT/.maestro/flows/$name.yaml" \
       --env TENANT_EMAIL="$TENANT_EMAIL" --env TENANT_PASSWORD="$TENANT_PASSWORD" \
       --env OWNER_EMAIL="$OWNER_EMAIL" --env OWNER_PASSWORD="$OWNER_PASSWORD" \
       --env VENDOR_EMAIL="${VENDOR_EMAIL:-}" --env VENDOR_PASSWORD="${VENDOR_PASSWORD:-}" \
       ${extra[@]+"${extra[@]}"} > "$name.log" 2>&1 )
   local status=$?
-  if [[ "$name" == android-lease-sign-guard ]]; then
+  if [[ "$name" == android-lease-sign-guard || "$name" == android-keyboard-forms-guard ]]; then
     # A failed cleanup leaves a live fixture lease behind: that fails the guard.
     if ! node scripts/reset-lifecycle-fixture.mjs --apply > "$OUT/$name-reset.log" 2>&1; then
       echo "✗ $name: fixture reset failed — see $OUT/$name-reset.log" >&2
