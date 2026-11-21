@@ -1928,8 +1928,9 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   a print that never answers never throws.
 - **Fix:** `generateAndUploadLeasePDF` prints through `printHtmlToFile`; both
   lease screens warm the printer up on mount; `withPdfRetry` stops at a
-  `PrintTimeoutError` (the helper already retried it), so the worst case is
-  ~30 s, then "tap Generate PDF". Removed the unused `downloadLeasePDF`
+  `PrintTimeoutError` (the helper already retried it): two stuck prints end
+  after ~30 s (up to ~35 s with failed prints in between), then "tap Generate
+  PDF". Signature download, upload and database calls keep their own limits. Removed the unused `downloadLeasePDF`
   (it printed and shared a blank page).
 - **Acceptance criteria:**
   - [x] Jest (`printToPdf.test.ts`, `leasePdfRetry.test.ts`): no file outside
