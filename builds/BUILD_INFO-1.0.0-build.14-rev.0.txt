@@ -1,0 +1,147 @@
+LaLarente App - Build Information
+==================================
+
+Build Date: 2026-11-21
+Build Type: Client Testing (Alpha)
+
+Version Information:
+  Version:      1.0.0
+  Build Number: 14
+  Revision:     0
+  Full Version: 1.0.0-build.14-rev.0
+
+Android Information:
+  Version Code: 14
+  Version Name: 1.0.0
+  Package:      com.lalarente.app
+  SHA-256:      ff07d4248bab16371cf203eec0434e459921810b098206055351c4bb251088ba
+  Source:       main @ 695dd72 (PRs #248-#276 merged)
+
+Build Configuration:
+  Platform:     Android
+  Build Type:   APK (Release)
+  Build Method: Local Gradle (assembleRelease)
+  Minify:       Enabled
+  Hermes:       Enabled
+
+Release gate (CLAUDE.md) — checks passed on this build
+------------------------------------------------------
+  ✓ CI green on every PR (Lint, Tests, TypeScript); full Jest on main
+    695dd72: 935/935 (119 suites) — every earlier fix's regression test
+  ✓ Senior Auditor (Codex gpt-6-astra) review on every PR; findings fixed
+    and re-reviewed before merge
+  ✓ Every fix ships with a regression test (Jest, ESLint rule or Maestro
+    flow)
+  ✓ Lifecycle chain 01 → 08 on emulator-5554 with this APK, from a clean
+    fixture (reset-lifecycle-fixture --apply): 13/13 passed, 2026-11-21
+  ✓ Release APK smoke test on emulator-5554: owner, tenant and vendor
+    dashboards; sign-out → sign-in — passed
+  ✓ Android guards (scripts/run-android-guards.sh, 3-button navigation):
+    7/7 passed, 2026-11-21 — tenant-tabbar-guard (5 tabs, no Vendor
+    Payments), vendor-tabbar-guard, android-lease-sign-guard (CT7-043),
+    android-keyboard-forms-guard (CT7-047: application Reject prompt and
+    holding-deposit dialog both exercised), android-sheets-owner/-tenant/
+    -vendor (CT7-046). Sheet steps whose data isn't on the fixture are
+    skipped by those flows (owner insurance claim, tenant arrangement).
+    Test-only fixes found by this gate (no app change, APK unchanged):
+    the keyboard guard had no submitted application to open (the runner now
+    sets one up with lifecycle 01 → 02d + setup-application-submitted, and
+    resets the fixture even when setup fails), the three sheet guards were
+    not in the runner (added), and android-sheets-vendor tapped the wrong
+    "Add" button (fixed; the app was checked by hand and is correct).
+  ✓ CT7-067 check: 6× vendor sign-in → sign-out → tenant sign-in; the tenant
+    dashboard showed the tenant's own name and data every time — passed (6/6)
+
+New since build 13
+------------------
+  ✓ CT7-071 (database, security) Any signed-in user could edit a
+    maintenance request marked "public" (status, description, selected
+    vendor). Now only the request's owner, tenant and assigned/selected/
+    invited vendors can edit it; vendors can still view public jobs.
+    Applied to production 2026-11-21 and verified there: a vendor with no
+    part in the request changes 0 rows; tenant and selected vendor still
+    can (#276)
+
+In build 13 (also in this build)
+-------------------------------
+  ✓ CT7-067 Tenant dashboard could show "Welcome back, Tenant" with no home
+    after sign-in. Most likely cause (from the code; reproduced in Jest, not
+    seen again on the device): sign-in did not wait for the login session to
+    be stored, and when that step failed silently every screen loaded with
+    no session. Sign-in now completes only once the session is stored and
+    the profile loaded, and otherwise says "Couldn't finish signing in";
+    session storage can no longer lose the session; the tenant dashboard
+    shows "Couldn't load your dashboard" + Try Again instead of an empty
+    page (#272)
+  ✓ CT7-066 (database) Maintenance requests: a tenant can only create one
+    with a lease in effect on that property, an owner only on a property
+    they own — now enforced by the database, not just the app. Before this,
+    any signed-in tenant or owner could create a request on any property
+    through the API. Applied to production 2026-11-20 and verified (#273)
+  ✓ CT7-070 lifecycle-03a test fix (#270, carried from build 12 record)
+
+Fixes since build 11 (also in build 12)
+---------------------------------------
+Android layout and input
+  ✓ CT7-043 Leases can be signed on Android again (PR #249)
+  ✓ CT7-044 Signature date fits the screen; signature images show (PR #249)
+  ✓ CT7-045 Screens no longer slide under the Android system bars (PR #249)
+  ✓ CT7-046 Bottom sheets/owner modals: last button clear of the nav bar (#251)
+  ✓ CT7-047 Keyboard no longer covers pop-up form fields and buttons (#252)
+  ✓ CT7-048 Bottom tab labels clear of the Android navigation buttons (#253)
+  ✓ CT7-049 Status-bar clock, battery and signal visible on Android (#254)
+  ✓ CT7-050 Tenant "Add Comment" (inspection report) above the keyboard (#255)
+  ✓ CT7-051 Keyboard no longer covers full-screen forms, all roles (#256)
+  ✓ CT7-053 Android alerts keep all their buttons (#258)
+Leases, rent and money
+  ✓ CT7-052 Lease PDF generation is retried when a lease is activated; if it
+    still fails, the owner is told to use "Generate PDF" (#257)
+  ✓ CT7-057 Rent Roll no longer says "Paid" for unpaid rent (#262)
+  ✓ CT7-063 Dashboard "In Arrears" and Rent Roll "Overdue" now agree (#266)
+Navigation
+  ✓ CT7-054 Vendor can open the quote they submitted (#259)
+  ✓ CT7-055 Back from a maintenance request no longer loops (#260)
+  ✓ CT7-056 Owner dashboard Recent Activity rows open their item (#261)
+  ✓ CT7-061 Vendor "View My Jobs" opens the My Jobs list instead of an
+    error (#265)
+Text and dates
+  ✓ CT7-058 Property search with no match says "No properties match" with
+    Clear filters (#263)
+  ✓ CT7-059 No raw values with underscores on screen (#263)
+  ✓ CT7-060 Dates are "19 Nov 2026" everywhere, whatever the phone's
+    language (#264, and the remaining screens in #266)
+  ✓ CT7-062 Viewing times without seconds: "Fri, 20 Nov at 10:00" (#266)
+  ✓ CT7-065 Property Type is a choice (Apartment, House, Townhouse, Cottage,
+    Room, or Other) instead of free text (#266)
+Notifications
+  ✓ CT7-064 Opening Notifications no longer marks everything read; only the
+    notification you tap disappears (#266)
+Maintenance
+  ✓ CT7-066 Report Issue only when the tenant's lease is signed by both and
+    in effect (#266)
+Reports (PDF export)
+  ✓ CT7-068 Server requests can no longer hang forever (30 s limit, 120 s for
+    files/functions; uploads exempt); a failed export reports its real
+    cause; a failed WebView print is retried (#268)
+  ✓ CT7-069 First PDF print after the app starts could hang or fail the
+    export: the printer is now warmed up on Android when an inspection
+    opens, and a stuck print is retried once. Device check: 24/24 exports
+    saved, 16 of them right after a fresh app launch (earlier versions of
+    the fix: 23/24). The Android WebView print step itself still fails now
+    and then; the app works around it rather than removing it (#269)
+Testing
+  ✓ Android lifecycle runner for the release gate (#250)
+  ✓ CT7-070 lifecycle-03a checks the "Submitted" label reliably (#270)
+
+Known open items (not in this build)
+------------------------------------
+  - CT7-069: Android's PDF printing still fails now and then on the first
+    print after the app starts; the app warms the printer up and retries,
+    so exports succeed (24/24 on the emulator) — a workaround, not a cure.
+  - Notifications sent before build 13 keep their old date text; new ones
+    use the new format.
+  - Some older e2e walkthrough flows need updating for the new screens
+    (Report Issue now needs an active lease).
+  - Carried over from build 11: documents bucket public-flagged; lease
+    terminations and payment disputes don't notify yet; push sent from the
+    app, not the server; client and automated tests share test accounts.

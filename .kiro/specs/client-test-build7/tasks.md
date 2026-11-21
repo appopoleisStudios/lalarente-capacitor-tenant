@@ -1936,8 +1936,10 @@ Found while testing on the Android emulator with a real on-screen keyboard.
   - [x] Production dry run with the migration: non-party vendor can still see
         the public request but edits 0 rows; tenant and selected vendor still
         edit (1 row each); nothing persisted.
-  - [ ] Applied to production and re-checked.
-  - [ ] Full lifecycle 01 → 08 green on the next build.
+  - [x] Applied to production 2026-11-21 and re-checked live (rolled-back
+        test): non-party vendor edits 0 rows; tenant and selected vendor 1.
+  - [x] Full lifecycle 01 → 08 green on build 14 (2026-11-21, 13/13, main
+        695dd72).
 
 ## CT7-070 🟡 lifecycle-03a failed on a hidden status label, not an app bug (test) — fixed
 

@@ -71,9 +71,12 @@ appId: com.lalarente.app
     direction: DOWN
     timeout: 15000
     centerElement: true
+# "rightOf"/"below" selectors kept matching the Your Services "Add" and
+# reopened Add Service (build 14 gate). Two "Add" buttons: Service Areas is the
+# second; a wrong tap still fails on the "Add Service Area" check below.
 - tapOn:
     text: "Add"
-    rightOf: ".*Service Areas.*"
+    index: 1
 - extendedWaitUntil:
     visible: "Add Service Area"
     timeout: 10000
