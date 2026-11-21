@@ -17,7 +17,15 @@ const DIRS = ['src', 'app'].map((d) => path.join(ROOT, d));
 // bottom sheets that open with a non-slide animation
 const ALSO_SHEETS = ['src/shared/components/forms/Select.tsx'];
 
-const CLEARS_NAV_BAR = /insets\.bottom|<ModalSheet[\s>]|edges=\{\[[^\]]*'bottom'/;
+// The inset must feed a BOTTOM spacing (paddingTop: insets.bottom doesn't
+// count), or the sheet is a ModalSheet, or a SafeAreaView keeps the bottom edge.
+const CLEARS_NAV_BAR =
+  /\b(paddingBottom|marginBottom|bottom)\s*:[^:]{0,120}?\binsets\.bottom\b|<ModalSheet[\s>]|edges=\{\[[^\]]*'bottom'/;
+
+/** Drop comments, so commented-out code can't satisfy the check. */
+function stripComments(src: string): string {
+  return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+}
 
 function sourceFiles(dir: string): string[] {
   if (!fs.existsSync(dir)) return [];
@@ -50,7 +58,7 @@ function sheets(): { where: string; body: string }[] {
   const out: { where: string; body: string }[] = [];
   for (const file of DIRS.flatMap(sourceFiles)) {
     const rel = path.relative(ROOT, file);
-    const src = fs.readFileSync(file, 'utf8');
+    const src = stripComments(fs.readFileSync(file, 'utf8'));
     for (const { start, body } of modalBlocks(src)) {
       const openTag = body.slice(0, body.indexOf('>') + 1);
       if (/animationType="slide"/.test(openTag) || ALSO_SHEETS.includes(rel)) {
@@ -77,5 +85,13 @@ describe('bottom sheets and slide-up modals clear the Android nav bar (CT7-046)'
     expect(CLEARS_NAV_BAR.test('<View style={styles.sheet}><Button /></View>')).toBe(false);
     expect(CLEARS_NAV_BAR.test("<SafeAreaView edges={['top']}>")).toBe(false);
     expect(CLEARS_NAV_BAR.test("<SafeAreaView edges={['top', 'bottom']}>")).toBe(true);
+    expect(CLEARS_NAV_BAR.test('style={{ paddingTop: insets.bottom }}')).toBe(false);
+    expect(CLEARS_NAV_BAR.test('{ paddingBottom: 0, top: insets.bottom }')).toBe(false);
+    expect(CLEARS_NAV_BAR.test('{ paddingBottom: Math.max(40, insets.bottom + 8) }')).toBe(true);
+    expect(
+      CLEARS_NAV_BAR.test(
+        stripComments('{/* paddingBottom: insets.bottom */}\n// paddingBottom: insets.bottom')
+      )
+    ).toBe(false);
   });
 });

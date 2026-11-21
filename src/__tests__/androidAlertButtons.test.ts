@@ -232,7 +232,11 @@ describe('Android alerts never lose buttons (CT7-053)', () => {
 // shows if its host is mounted once at the root.
 describe('ChoiceSheetHost is mounted at the root (CT7-053)', () => {
   it('app/_layout.tsx renders <ChoiceSheetHost />', () => {
-    const src = fs.readFileSync(path.join(ROOT, 'app/_layout.tsx'), 'utf8');
+    // comments dropped: a commented-out host mounts nothing
+    const src = fs
+      .readFileSync(path.join(ROOT, 'app/_layout.tsx'), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/.*$/gm, '$1');
     expect(src).toMatch(/<ChoiceSheetHost\s*\/>/);
   });
 });

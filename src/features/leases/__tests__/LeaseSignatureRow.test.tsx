@@ -142,7 +142,11 @@ describe('LeaseSignatureRow', () => {
 describe.each(['tenant/screens/TenantLeaseScreen.tsx', 'owner/screens/OwnerLeaseDetailScreen.tsx'])(
   '%s signatures (CT7-044)',
   (file) => {
-    const src = fs.readFileSync(path.resolve(__dirname, '../../', file), 'utf8');
+    // comments dropped: commented-out rows render nothing
+    const src = fs
+      .readFileSync(path.resolve(__dirname, '../../', file), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/.*$/gm, '$1');
 
     it('renders both parties with the shared LeaseSignatureRow', () => {
       expect(src.match(/<LeaseSignatureRow\b/g)?.length).toBe(2);
