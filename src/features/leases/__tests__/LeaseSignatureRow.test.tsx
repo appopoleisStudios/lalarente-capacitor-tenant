@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 /**
  * Tenant "My Lease" (Android): "Signed <date>" ran off the right edge because
  * the tenant's copy of the signature row lacked `flex: 1` on its left column,
@@ -134,3 +136,26 @@ describe('LeaseSignatureRow', () => {
     );
   });
 });
+
+// CT7-044: the tenant screen had its own signature row (date ran off screen,
+// blank image from the public URL). Both lease screens must use the shared row.
+describe.each(['tenant/screens/TenantLeaseScreen.tsx', 'owner/screens/OwnerLeaseDetailScreen.tsx'])(
+  '%s signatures (CT7-044)',
+  (file) => {
+    // comments dropped: commented-out rows render nothing
+    const src = fs
+      .readFileSync(path.resolve(__dirname, '../../', file), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/.*$/gm, '$1');
+
+    it('renders both parties with the shared LeaseSignatureRow', () => {
+      expect(src.match(/<LeaseSignatureRow\b/g)?.length).toBe(2);
+      expect(src).toMatch(/signatureUrl=\{lease\.owner_signature_url\}/);
+      expect(src).toMatch(/signatureUrl=\{lease\.tenant_signature_url\}/);
+    });
+
+    it('never loads a signature from a public URL', () => {
+      expect(src).not.toMatch(/getPublicUrl/);
+    });
+  }
+);

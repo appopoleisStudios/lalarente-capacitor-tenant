@@ -51,3 +51,33 @@ describe('maintenance_requests insert policy (CT7-066)', () => {
     );
   });
 });
+
+// A later migration that drops or redefines the policy or its helper would
+// pass the checks above (they read one file). It must update this test too.
+describe('no later migration changes the CT7-066 insert rule', () => {
+  const { readdirSync } = require('fs');
+  const dir = resolve(__dirname, '../../../../supabase/migrations');
+  const touching = (readdirSync(dir) as string[])
+    .filter((f) => f.endsWith('.sql'))
+    .sort()
+    .filter((f) =>
+      /mr_insert_reporter_must_have_standing|may_report_maintenance/.test(
+        readFileSync(resolve(dir, f), 'utf8').replace(/--.*$/gm, '')
+      )
+    );
+
+  it('the CT7-066 migration is the only one defining it', () => {
+    expect(touching).toEqual(['20261120000001_ct7_066_maintenance_insert_requires_lease.sql']);
+  });
+
+  it('no later migration switches off RLS on maintenance_requests', () => {
+    const later = (readdirSync(dir) as string[])
+      .filter((f) => f.endsWith('.sql') && f > '20261120000001')
+      .filter((f) =>
+        /maintenance_requests\s+(disable|no\s+force)\s+row\s+level\s+security/i.test(
+          readFileSync(resolve(dir, f), 'utf8').replace(/--.*$/gm, '')
+        )
+      );
+    expect(later).toEqual([]);
+  });
+});

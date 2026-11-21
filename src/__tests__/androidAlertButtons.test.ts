@@ -227,3 +227,16 @@ describe('Android alerts never lose buttons (CT7-053)', () => {
     expect(count(`Alert.alert('a')`)).toEqual([null]);
   });
 });
+
+// CT7-053: alerts with more than 3 buttons open the ChoiceSheet, which only
+// shows if its host is mounted once at the root.
+describe('ChoiceSheetHost is mounted at the root (CT7-053)', () => {
+  it('app/_layout.tsx renders <ChoiceSheetHost />', () => {
+    // comments dropped: a commented-out host mounts nothing
+    const src = fs
+      .readFileSync(path.join(ROOT, 'app/_layout.tsx'), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/.*$/gm, '$1');
+    expect(src).toMatch(/<ChoiceSheetHost\s*\/>/);
+  });
+});
