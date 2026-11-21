@@ -18,8 +18,10 @@ jest.mock('../../hooks/useTenantDashboard', () => ({
   useTenantDashboard: jest.fn(),
   useTenantDashboardQueryClient: () => ({ invalidateQueries: jest.fn() }),
 }));
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 jest.mock('expo-linear-gradient', () => ({ LinearGradient: require('react-native').View }));
 jest.mock('react-native-safe-area-context', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { View } = require('react-native');
   return {
     SafeAreaView: View,

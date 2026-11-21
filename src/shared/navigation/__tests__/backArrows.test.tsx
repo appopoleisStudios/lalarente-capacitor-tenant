@@ -37,10 +37,12 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => mockParams,
   useSegments: () => ['(tenant)'],
   // run focus effects like a mount effect
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   useFocusEffect: (cb: () => void) => require('react').useEffect(cb, [cb]),
 }));
 // icons render their name so the arrows can be found and pressed
 jest.mock('@expo/vector-icons', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { Text } = require('react-native');
   return { Ionicons: ({ name }: { name: string }) => <Text>{`icon:${name}`}</Text> };
 });
@@ -70,8 +72,10 @@ jest.mock('@/src/features/notifications/utils/unreadNotifications', () => ({
   notificationRoute: jest.fn(),
 }));
 jest.mock('expo-haptics', () => ({ impactAsync: jest.fn(), ImpactFeedbackStyle: {} }));
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
 jest.mock('react-native-safe-area-context', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { View } = require('react-native');
   return {
     SafeAreaView: View,

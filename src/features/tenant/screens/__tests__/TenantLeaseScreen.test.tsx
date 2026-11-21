@@ -19,6 +19,7 @@ jest.mock('../../utils/profileCompleteness', () => ({
 jest.mock('../../../leases/components/SignatureModal', () => ({
   __esModule: true,
   default: ({ visible }: { visible: boolean }) => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { Text: MockText } = require('react-native');
     return visible ? <MockText testID="signature-modal">signature</MockText> : null;
   },
@@ -39,6 +40,7 @@ jest.mock('../../../leases/api/regenerateLeasePDF', () => ({ regenerateLeasePDF:
 jest.mock('../../../leases/api/leasePdfService', () => ({ generateLeaseHTML: jest.fn() }));
 jest.mock('../../../notifications/api/notificationsApi', () => ({ notificationsApi: {} }));
 jest.mock('react-native-safe-area-context', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { View } = require('react-native');
   return {
     SafeAreaView: View,

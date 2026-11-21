@@ -27,9 +27,11 @@ jest.mock('expo-image-picker', () => ({
   MediaTypeOptions: { Images: 'Images' },
   UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible' },
 }));
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
 // stands in for Google Places: pressing it "picks" a suggestion
 jest.mock('../../components/AddressSearch', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { Pressable } = require('react-native');
   return {
     AddressSearch: ({ onSelect }: { onSelect: (a: object) => void }) => (

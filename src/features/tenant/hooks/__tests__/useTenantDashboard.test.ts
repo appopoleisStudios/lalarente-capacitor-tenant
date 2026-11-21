@@ -288,7 +288,9 @@ describe('profile banner comes from checkTenantProfileCompleteness (CT7-013)', (
 
 describe('TenantDashboardScreen error state (CT7-067)', () => {
   it('shows an error with retry instead of an empty "Tenant" dashboard', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const src = require('fs').readFileSync(
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       require('path').resolve(__dirname, '../../screens/TenantDashboardScreen.tsx'),
       'utf8'
     );
