@@ -260,6 +260,18 @@ export default function TenantVerificationScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
+          {/* CT7-074: the main view had no way back (only its sub-views did).
+              Own row, not absolute: the long centred title wraps over it. */}
+          <TouchableOpacity
+            testID="tenant-verify-back"
+            onPress={handleGoBack}
+            style={styles.backRow}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
+            <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
+          </TouchableOpacity>
           <Text style={styles.title} testID="tenant-verify-title">
             Verify Completed Work
           </Text>
@@ -553,6 +565,10 @@ const styles = StyleSheet.create({
     left: 0,
     top: 0,
     zIndex: 1,
+  },
+  backRow: {
+    alignSelf: 'flex-start',
+    marginBottom: 8,
   },
   title: {
     fontSize: 28,
