@@ -57,9 +57,13 @@ if [[ "$PLATFORM" == android ]]; then
 fi
 # Full chain. The viewing must have happened before the tenant can apply
 # (CT7-032), so 02a is followed by moving it into the past and 02d.
+# db-rules-* check that the DATABASE refuses what the app only hides
+# (CT7-019/030/032), at the point in the chain where each rule applies.
 [[ $# -eq 0 ]] && set -- lifecycle-01-search-property lifecycle-02a-viewing-approve \
+  script:scripts/e2e/db-rules-viewing-open.mjs \
   script:scripts/e2e/viewing-happened.mjs lifecycle-02d-viewing-complete \
-  lifecycle-03a-application-submit lifecycle-04-holding-deposit lifecycle-05-lease-create-sign \
+  lifecycle-03a-application-submit script:scripts/e2e/db-rules-deposit-unpaid.mjs \
+  lifecycle-04-holding-deposit lifecycle-05-lease-create-sign \
   lifecycle-06-inspection lifecycle-07-inspection-issue-maintenance lifecycle-07b-issue-vendor-quote \
   lifecycle-07c-send-po lifecycle-07d-work-closure-verification lifecycle-08-occupied
 PASS=(); FAIL=()
