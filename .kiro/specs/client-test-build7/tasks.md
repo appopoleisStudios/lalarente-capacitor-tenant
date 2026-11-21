@@ -1916,6 +1916,29 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         with the keyboard up; lifecycle-06 posts a comment with one tap
         (both LC-comments posted; owner inspection steps green).
 
+## CT7-071 🔴 Any signed-in user could edit a "public" maintenance request (database) — fixed
+
+- **Role:** vendor (any account) · **Platform:** server · Found in the CT7-066
+  review (2026-11-20), listed as open in BUILD_INFO build 13.
+- **Today:** the UPDATE policy "Request parties can update maintenance
+  requests" included `visibility = 'public'`, so any signed-in user could
+  change status, description, selected vendor, ... of a public request (only
+  tenant/owner/property were protected by the guard trigger).
+  Production dry run (rolled back, 2026-11-21): a vendor with no part in the
+  request edited it (1 row).
+- **Fix:** migration `20261121000001_ct7_071_maintenance_update_parties_only.sql`
+  drops the public clause from USING and WITH CHECK. Viewing public jobs is
+  unchanged. No app flow used it (the vendor-quote `mms_status` bump filters on
+  `vendor_routing`, which nothing sets; production has 0 public requests).
+- **Acceptance criteria:**
+  - [x] Regression test `maintenanceUpdatePolicy.test.ts` (fails without the
+        migration).
+  - [x] Production dry run with the migration: non-party vendor can still see
+        the public request but edits 0 rows; tenant and selected vendor still
+        edit (1 row each); nothing persisted.
+  - [ ] Applied to production and re-checked.
+  - [ ] Full lifecycle 01 → 08 green on the next build.
+
 ## CT7-070 🟡 lifecycle-03a failed on a hidden status label, not an app bug (test) — fixed
 
 - **Role:** tenant · **Platform:** Android · Found in the build 12 release gate
