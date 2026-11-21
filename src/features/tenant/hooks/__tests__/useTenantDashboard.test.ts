@@ -5,6 +5,7 @@ import React from 'react';
 import { paymentsApi } from '../../../properties/api/paymentsApi';
 import { messagesApi } from '../../../messaging/api/messagesApi';
 import { useTenantDashboard } from '../useTenantDashboard';
+import { checkTenantProfileCompleteness } from '../../utils/profileCompleteness';
 import { makeSupabaseMock } from './mockSupabase';
 
 jest.mock('@/src/lib/supabase', () => ({ supabase: { from: jest.fn(), auth: {} } }));
@@ -246,6 +247,52 @@ describe('useTenantDashboard', () => {
       expect(ids[2]).toBe('near3');
       expect(ids).not.toContain('far');
     });
+  });
+});
+
+// CT7-013: the "Complete your profile" banner had its own inline checks (and a
+// mislabelled row), so it stayed after the profile was saved. It must list
+// exactly what the shared checkTenantProfileCompleteness reports.
+describe('profile banner comes from checkTenantProfileCompleteness (CT7-013)', () => {
+  const check = checkTenantProfileCompleteness as jest.Mock;
+
+  it('lists the missing fields the shared check reports', async () => {
+    makeSupabaseMock();
+    check.mockResolvedValueOnce({
+      status: 'ok',
+      complete: false,
+      missing: ['Phone number', 'Proof of address'],
+    });
+    const { result } = renderHook(() => useTenantDashboard('user-1'), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(check).toHaveBeenCalledWith('user-1');
+    expect(result.current.data?.profileMissing).toEqual(['Phone number', 'Proof of address']);
+  });
+
+  it('no banner once the shared check says the profile is complete', async () => {
+    makeSupabaseMock();
+    const { result } = renderHook(() => useTenantDashboard('user-1'), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.profileMissing).toEqual([]);
+  });
+
+  it('no banner when the check itself failed', async () => {
+    makeSupabaseMock();
+    check.mockResolvedValueOnce({ status: 'error', message: 'network' });
+    const { result } = renderHook(() => useTenantDashboard('user-1'), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.profileMissing).toBeUndefined();
+  });
+
+  it('the dashboard banner renders profileMissing and links to Profile', () => {
+    const fs = jest.requireActual('fs') as typeof import('fs');
+    const path = jest.requireActual('path') as typeof import('path');
+    const src = fs
+      .readFileSync(path.resolve(__dirname, '../../screens/TenantDashboardScreen.tsx'), 'utf8')
+      .replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
+    expect(src).toMatch(
+      /\{profileMissing && profileMissing\.length > 0 && \([\s\S]*?Complete Your Profile[\s\S]*?\{profileMissing\.map\(\(label\) =>[\s\S]*?router\.push\('\/\(tenant\)\/profile' as any\)/
+    );
   });
 });
 

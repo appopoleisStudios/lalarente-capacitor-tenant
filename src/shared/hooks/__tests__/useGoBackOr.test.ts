@@ -2,12 +2,16 @@
  * CT7-055: back from a maintenance request detail (a hidden tab, tabs with
  * backBehavior="history") must never lead back into the same request.
  */
-import { renderHook } from '@testing-library/react-native';
+import React from 'react';
+import { fireEvent, render, renderHook } from '@testing-library/react-native';
 import { CommonActions, TabRouter, type TabNavigationState } from '@react-navigation/routers';
 import { useNavigation } from '@react-navigation/native';
 import { useGoBackOr } from '../useGoBackOr';
+import { ScreenHeader } from '../../components/layouts/ScreenHeader';
 
 jest.mock('@react-navigation/native', () => ({ useNavigation: jest.fn() }));
+const mockRouter = { back: jest.fn(), canGoBack: jest.fn(), navigate: jest.fn() };
+jest.mock('expo-router', () => ({ useRouter: () => mockRouter }));
 
 describe('useGoBackOr (CT7-055)', () => {
   const nav = { canGoBack: jest.fn(), goBack: jest.fn(), reset: jest.fn() };
@@ -92,5 +96,80 @@ describe('maintenance detail screens use useGoBackOr (CT7-055 guard)', () => {
     expect(src).toMatch(/useGoBackOr\('maintenance'\)/);
     expect(src).not.toMatch(/router\.back\(\)/);
     expect(src).not.toMatch(/router\.(push|replace|navigate)\(['`]\/\(\w+\)\/maintenance['`]\)/);
+  });
+});
+
+/**
+ * CT7-033: these back arrows used to jump to a fixed screen (dashboard, tab
+ * root) instead of the previous one. They go through the shared goBack helper,
+ * which only uses the fallback when there is no history. The count is every
+ * back arrow in the screen. Post-submit `router.back()` calls in
+ * TenantVerificationScreen and VendorQuoteSubmitScreen are not header back
+ * arrows, so this checks the helper calls, not the absence of router.back().
+ */
+describe('back arrows use the shared goBack helper (CT7-033 guard)', () => {
+  const fs = jest.requireActual('fs') as typeof import('fs');
+  const path = jest.requireActual('path') as typeof import('path');
+  const ROOT = path.resolve(__dirname, '..', '..', '..', '..');
+  const code = (rel: string) =>
+    fs
+      .readFileSync(path.join(ROOT, rel), 'utf8')
+      .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
+  const S = 'src/features';
+  // [screen, fallback passed to goBack, number of back arrows]
+  const SCREENS: [string, string, number][] = [
+    [`${S}/owner/screens/OwnerArrearsManagementScreen.tsx`, `'/(owner)/dashboard'`, 1],
+    [
+      `${S}/owner/screens/OwnerPropertyMaintenanceHistoryScreen.tsx`,
+      '`/(owner)/properties/${propertyId}`',
+      1,
+    ],
+    [`${S}/owner/screens/OwnerRenewalsDashboardScreen.tsx`, `'/(owner)/dashboard'`, 1],
+    [`${S}/privacy/screens/ConsentManagementScreen.tsx`, 'profilePath', 1],
+    [`${S}/tenant/screens/TenantEarlyTerminationScreen.tsx`, `'/(tenant)/lease'`, 2],
+    [`${S}/tenant/screens/TenantPaymentDisputeScreen.tsx`, `'/(tenant)/payments'`, 2],
+    [`${S}/tenant/screens/TenantVerificationScreen.tsx`, `'/(tenant)'`, 1],
+    [
+      `${S}/vendor/screens/VendorNotificationsScreen.tsx`,
+      `from === 'profile' ? '/(vendor)/profile' : '/(vendor)/dashboard'`,
+      1,
+    ],
+    [`${S}/vendor/screens/VendorQuoteSubmitScreen.tsx`, '`/(vendor)/maintenance/${id}`', 1],
+  ];
+
+  it.each(SCREENS)('%s goes back through goBack(router, %s)', (rel, fallback, arrows) => {
+    const src = code(rel);
+    expect(src).toMatch(/import \{ goBack \} from '@\/src\/shared\/navigation\/goBack';/);
+    expect(src.split(`goBack(router, ${fallback})`).length - 1).toBe(arrows);
+  });
+});
+
+describe('ScreenHeader back arrow (CT7-033)', () => {
+  // the header used to call router.back() directly, which no-ops (or leaves
+  // the app) when the screen was opened cold from a notification
+  const router = mockRouter;
+  const pressBack = () =>
+    fireEvent.press(
+      render(
+        React.createElement(ScreenHeader, { title: 'Arrears', backFallback: '/(owner)/dashboard' })
+      ).getByLabelText('Go back')
+    );
+
+  beforeEach(() => jest.clearAllMocks());
+
+  it('with history: returns to the previous screen', () => {
+    router.canGoBack.mockReturnValue(true);
+    pressBack();
+    expect(router.back).toHaveBeenCalledTimes(1);
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('opened cold: goes to the backFallback screen', () => {
+    router.canGoBack.mockReturnValue(false);
+    pressBack();
+    expect(router.navigate).toHaveBeenCalledWith('/(owner)/dashboard');
+    expect(router.back).not.toHaveBeenCalled();
   });
 });
