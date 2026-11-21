@@ -16,8 +16,10 @@ jest.mock('../../hooks/useOwnerDashboard', () => ({
   useOwnerDashboard: () => ({ data: null, loading: true, error: null, refetch: jest.fn() }),
 }));
 jest.mock('expo-haptics', () => ({ impactAsync: jest.fn(), ImpactFeedbackStyle: {} }));
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
 jest.mock('react-native-safe-area-context', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { View } = require('react-native');
   return {
     SafeAreaView: View,

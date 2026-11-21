@@ -13,6 +13,7 @@ jest.mock('react-native-google-places-autocomplete', () => ({
   GooglePlacesAutocomplete: jest.fn(() => null),
 }));
 jest.mock('react-native-maps', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { View } = require('react-native');
   return { __esModule: true, default: View, Marker: View, PROVIDER_GOOGLE: 'google' };
 });

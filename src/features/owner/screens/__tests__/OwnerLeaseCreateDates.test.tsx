@@ -17,6 +17,7 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ applicationId: 'app-1' }),
 }));
 jest.mock('react-native-safe-area-context', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { View } = require('react-native');
   return {
     SafeAreaView: View,
