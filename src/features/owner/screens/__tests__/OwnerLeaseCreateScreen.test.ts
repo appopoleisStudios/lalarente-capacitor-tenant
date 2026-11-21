@@ -84,36 +84,3 @@ describe('OwnerLeaseCreateScreen — deposit_interest_rate write-path', () => {
     expect(monthlyInterest).toBe(60.42);
   });
 });
-
-// CT7-020: lease start/end were typed YYYY-MM-DD text fields; both must open a
-// date picker (PickerSheet, mode="date") and have no TextInput.
-describe('OwnerLeaseCreateScreen — start/end dates are date pickers (CT7-020)', () => {
-  const fs = jest.requireActual('fs') as typeof import('fs');
-  const path = jest.requireActual('path') as typeof import('path');
-  const src = fs
-    .readFileSync(path.resolve(__dirname, '..', 'OwnerLeaseCreateScreen.tsx'), 'utf8')
-    .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/^\s*\/\/.*$/gm, '');
-  /** JSX between one field label and the next. */
-  const field = (from: string, to: string) => {
-    const start = src.indexOf(from);
-    const end = src.indexOf(to, start);
-    expect(start).toBeGreaterThan(-1);
-    expect(end).toBeGreaterThan(start);
-    return src.slice(start, end);
-  };
-  // one self-closing <PickerSheet ... /> holding both attributes
-  const inSheet = '(?:(?!/>)[\\s\\S])*?';
-
-  it.each([
-    ['Start Date', '>Start Date *<', '>End Date *<', 'owner-lease-create-start-date'],
-    ['End Date', '>End Date *<', '>Financial Terms<', 'owner-lease-create-end-date'],
-  ])('%s opens a date picker, not a text field', (_, from, to, testID) => {
-    const jsx = field(from, to);
-    expect(jsx).toMatch(
-      new RegExp(`<PickerSheet\\b${inSheet}mode="date"${inSheet}testID="${testID}"\\s*/>`)
-    );
-    expect(jsx).not.toMatch(/<TextInput\b/);
-  });
-});

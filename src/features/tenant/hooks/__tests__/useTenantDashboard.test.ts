@@ -283,17 +283,7 @@ describe('profile banner comes from checkTenantProfileCompleteness (CT7-013)', (
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.profileMissing).toBeUndefined();
   });
-
-  it('the dashboard banner renders profileMissing and links to Profile', () => {
-    const fs = jest.requireActual('fs') as typeof import('fs');
-    const path = jest.requireActual('path') as typeof import('path');
-    const src = fs
-      .readFileSync(path.resolve(__dirname, '../../screens/TenantDashboardScreen.tsx'), 'utf8')
-      .replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
-    expect(src).toMatch(
-      /\{profileMissing && profileMissing\.length > 0 && \([\s\S]*?Complete Your Profile[\s\S]*?\{profileMissing\.map\(\(label\) =>[\s\S]*?router\.push\('\/\(tenant\)\/profile' as any\)/
-    );
-  });
+  // the rendered banner is covered in screens/__tests__/TenantDashboardScreen.test.tsx
 });
 
 describe('TenantDashboardScreen error state (CT7-067)', () => {

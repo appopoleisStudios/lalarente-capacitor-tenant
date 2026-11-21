@@ -25,10 +25,30 @@ function autocompleteProps() {
 }
 
 it('does not hide the suggestion list (CT7-006)', () => {
-  expect(autocompleteProps()).not.toHaveProperty('listViewDisplayed');
+  // omitted (library default) or explicitly 'auto': shown while there are results
+  expect([undefined, 'auto']).toContain(autocompleteProps().listViewDisplayed);
 });
 
-it('floats the suggestion list over the content below the input (CT7-005)', () => {
-  const list = StyleSheet.flatten(autocompleteProps().styles.listView);
-  expect(list.position).toBe('absolute');
+describe('suggestion list floats below the input, over the map (CT7-005)', () => {
+  const props = () => autocompleteProps().styles;
+
+  it('is taken out of the flow and starts below the input', () => {
+    const { listView, textInput } = props();
+    const list = StyleSheet.flatten(listView);
+    const input = StyleSheet.flatten(textInput);
+    expect(list.position).toBe('absolute');
+    expect(typeof input.height).toBe('number');
+    expect(list.top).toBeGreaterThanOrEqual(input.height);
+  });
+
+  it('stacks above the content after it (zIndex on iOS, elevation on Android)', () => {
+    const { listView, container } = props();
+    const list = StyleSheet.flatten(listView);
+    const box = StyleSheet.flatten(container);
+    // the map and "Selected" card have no zIndex/elevation of their own
+    expect(list.zIndex).toBeGreaterThan(0);
+    expect(list.elevation).toBeGreaterThan(0);
+    expect(box.zIndex).toBeGreaterThan(0);
+    expect(box.elevation).toBeGreaterThan(0);
+  });
 });

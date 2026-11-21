@@ -106,6 +106,8 @@ describe('maintenance detail screens use useGoBackOr (CT7-055 guard)', () => {
  * back arrow in the screen. Post-submit `router.back()` calls in
  * TenantVerificationScreen and VendorQuoteSubmitScreen are not header back
  * arrows, so this checks the helper calls, not the absence of router.back().
+ * One screen per role is also rendered and its arrow pressed in
+ * src/shared/navigation/__tests__/backArrows.test.tsx.
  */
 describe('back arrows use the shared goBack helper (CT7-033 guard)', () => {
   const fs = jest.requireActual('fs') as typeof import('fs');
@@ -139,10 +141,24 @@ describe('back arrows use the shared goBack helper (CT7-033 guard)', () => {
     [`${S}/vendor/screens/VendorQuoteSubmitScreen.tsx`, '`/(vendor)/maintenance/${id}`', 1],
   ];
 
+  // Named handlers must also be wired to the control that calls them.
+  const WIRING: Record<string, RegExp> = {
+    [`${S}/tenant/screens/TenantVerificationScreen.tsx`]:
+      /const handleGoBack = \(\) => goBack\(router, '\/\(tenant\)'\);[\s\S]*onRetry=\{handleGoBack\}/,
+    [`${S}/vendor/screens/VendorNotificationsScreen.tsx`]:
+      /const handleBack = \(\) => \{\s*goBack\(router, [^;]+\);\s*\};[\s\S]*onPress=\{handleBack\}/,
+  };
+  const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
   it.each(SCREENS)('%s goes back through goBack(router, %s)', (rel, fallback, arrows) => {
     const src = code(rel);
     expect(src).toMatch(/import \{ goBack \} from '@\/src\/shared\/navigation\/goBack';/);
-    expect(src.split(`goBack(router, ${fallback})`).length - 1).toBe(arrows);
+    // only calls that run: the whole body of an arrow (`=> goBack(…)`) or a
+    // statement of its own (after `{` or `;`), so `() => false && goBack(…)`
+    // or `if (false) goBack(…)` don't count
+    const executed = new RegExp(`(?:=>|[{;])\\s*goBack\\(router, ${escape(fallback)}\\)`, 'g');
+    expect(src.match(executed) ?? []).toHaveLength(arrows);
+    if (WIRING[rel]) expect(src).toMatch(WIRING[rel]);
   });
 });
 
