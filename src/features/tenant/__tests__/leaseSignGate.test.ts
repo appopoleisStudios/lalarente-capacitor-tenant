@@ -127,3 +127,29 @@ describe('evaluateSignLeaseGate', () => {
     }
   });
 });
+
+// CT7-012: a tenant with an incomplete profile could open the signature modal.
+// The gate above is only useful if the Sign button goes through it.
+describe('TenantLeaseScreen signs only through the gate (CT7-012)', () => {
+  const fs = jest.requireActual('fs') as typeof import('fs');
+  const path = jest.requireActual('path') as typeof import('path');
+  const src = fs
+    .readFileSync(path.resolve(__dirname, '..', 'screens', 'TenantLeaseScreen.tsx'), 'utf8')
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '');
+
+  it('handleSignLease awaits evaluateSignLeaseGate and opens the modal only on "sign"', () => {
+    expect(src).toMatch(
+      /const handleSignLease = async \(\) => \{\s*const decision = await evaluateSignLeaseGate\(\);\s*if \(decision\.action === 'sign'\) \{\s*setShowSignatureModal\(true\);\s*return;\s*\}/
+    );
+  });
+
+  it('nothing else opens the signature modal', () => {
+    expect(src.match(/setShowSignatureModal\(true\)/g)).toHaveLength(1);
+  });
+
+  it('the Sign Lease button calls handleSignLease', () => {
+    expect(src).toMatch(/testID="tenant-lease-sign"[^>]*?onPress=\{handleSignLease\}/);
+  });
+});

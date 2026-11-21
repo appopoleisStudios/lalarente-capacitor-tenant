@@ -24,4 +24,20 @@ describe('Input', () => {
     fireEvent.changeText(getByPlaceholderText('Type'), 'new value');
     expect(handler).toHaveBeenCalledWith('new value');
   });
+
+  // CT7-007: Samsung Pass popped up on every text box. The shared Input opts
+  // out of OS autofill by default; a field that wants autofill passes its own.
+  it('opts out of OS autofill by default (CT7-007)', () => {
+    const field = render(<Input placeholder="Address" />).getByPlaceholderText('Address');
+    expect(field.props.autoComplete).toBe('off');
+    expect(field.props.importantForAutofill).toBe('no');
+  });
+
+  it('an explicit autofill prop overrides the default (CT7-007)', () => {
+    const field = render(
+      <Input placeholder="Email" autoComplete="email" importantForAutofill="yes" />
+    ).getByPlaceholderText('Email');
+    expect(field.props.autoComplete).toBe('email');
+    expect(field.props.importantForAutofill).toBe('yes');
+  });
 });
