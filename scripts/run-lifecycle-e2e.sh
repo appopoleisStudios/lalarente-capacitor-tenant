@@ -70,8 +70,10 @@ PASS=(); FAIL=()
 for name in "$@"; do
   # "script:<path>" runs a Node helper (e.g. moving a viewing into the past)
   if [[ "$name" == script:* ]]; then
-    if LC_PROPERTY_ID="$LC_PROPERTY_ID" node "${name#script:}"; then PASS+=("$name"); else FAIL+=("$name"); fi
-    continue
+    if LC_PROPERTY_ID="$LC_PROPERTY_ID" node "${name#script:}"; then PASS+=("$name"); continue; fi
+    # A helper sets up or checks state the next flows rely on: stop here
+    # instead of running them on the wrong state.
+    FAIL+=("$name"); echo "✗ $name failed — stopping the chain"; break
   fi
   mkdir -p "$OUT/$name"
   # Retry ONLY when the Maestro driver itself crashed (e.g. iOS 26 XCUITest

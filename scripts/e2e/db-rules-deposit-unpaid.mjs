@@ -16,7 +16,7 @@ const owner = await login('OWNER');
 const tenant = await login('TENANT');
 const apps = await get(
   owner,
-  `rental_applications?select=id,status&property_id=eq.${PROPERTY}&tenant_id=eq.${tenant.id}&status=in.(submitted,under_review)&order=created_at.desc&limit=1`
+  `rental_applications?select=id,status,reviewed_at,approved_at&property_id=eq.${PROPERTY}&tenant_id=eq.${tenant.id}&status=in.(submitted,under_review)&order=created_at.desc&limit=1`
 );
 if (apps.length !== 1) throw new Error('setup: no submitted application from the fixture tenant');
 const deposits = await get(
@@ -34,5 +34,20 @@ try {
   });
 } catch (e) {
   console.error(`✗ ${e.message}`);
+  if (res.ok) {
+    // The guard let it through: put the application back as it was.
+    const { status, reviewed_at, approved_at } = apps[0];
+    const r = await call(owner, 'PATCH', `rental_applications?id=eq.${apps[0].id}`, {
+      status,
+      reviewed_at,
+      approved_at,
+    });
+    const back = r.ok && Array.isArray(r.body) && r.body[0]?.status === status;
+    console.error(
+      back
+        ? `  undone: application ${apps[0].id.slice(0, 8)} back to ${status}`
+        : `  ✗ CLEANUP FAILED: application ${apps[0].id} is still approved — reset the fixture`
+    );
+  }
   process.exit(1);
 }
