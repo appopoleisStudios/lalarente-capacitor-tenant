@@ -130,3 +130,10 @@ Before building APK:
   2. Pass the Maestro regression guard `.maestro/flows/tenant-tabbar-guard.yaml` (asserts the 5 canonical tabs exist and NO "Vendor Payments" text/testID is in the navbar). It is wired into `run-e2e-individual.sh` and `run-full-e2e-suite.sh`.
   3. Visually confirm on the iOS simulator (tenancy = tenant profile "Nashin Indraj") that the navbar shows only the 5 canonical tabs.
 - Anything else that renders a "Pay Vendor" entry point belongs inside the Payments money hub, never in the tab bar.
+
+## SDLC rules (AI-native pipeline)
+- **Verify command:** `npm run verify`. It must pass before every commit and PR; paste the result in the PR.
+- **No plan, no code:** non-trivial changes start with `docs/changes/<plane-id>-<slug>/plan.md` (templates in `docs/changes/_template/`).
+- **Bug fixes:** commit a failing test first, then `touch .claude/tests-locked`, fix the code, remove the lock. A Claude Code hook blocks test edits while locked.
+- **PRs:** use the PR template, link the Plane issue, and are reviewed per `REVIEW.md`. Never push to `main`. Senior Auditor (khadeejahdreamcode) approval is required before merge.
+- **When Claude makes the same mistake twice,** add the rule to this file.

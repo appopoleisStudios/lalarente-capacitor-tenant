@@ -1,0 +1,3 @@
+# Required approver for every change on protected branches.
+# The Senior Auditor reviews against REVIEW.md; Claude/Arsalan merge after approval.
+* @khadeejahdreamcode
