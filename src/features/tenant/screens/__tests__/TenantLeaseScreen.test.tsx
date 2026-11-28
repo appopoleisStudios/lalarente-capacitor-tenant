@@ -10,6 +10,7 @@ import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import TenantLeaseScreen from '../TenantLeaseScreen';
 import { supabase } from '@/src/lib/supabase';
 import { checkTenantProfileCompleteness } from '../../utils/profileCompleteness';
+import { uploadSignature } from '../../../leases/api/storageService';
 
 const mockRouter = { push: jest.fn(), back: jest.fn(), replace: jest.fn() };
 // useFocusEffect runs like a mount effect; mockRefocus() replays it the way
@@ -27,9 +28,12 @@ jest.mock('expo-router', () => ({
 jest.mock('../../utils/profileCompleteness', () => ({
   checkTenantProfileCompleteness: jest.fn(),
 }));
+// The latest onSave the screen handed the signature pad (CT7-075 tests).
+let mockSignatureOnSave: ((sig: string) => Promise<void>) | null = null;
 jest.mock('../../../leases/components/SignatureModal', () => ({
   __esModule: true,
-  default: ({ visible }: { visible: boolean }) => {
+  default: ({ visible, onSave }: { visible: boolean; onSave: (s: string) => Promise<void> }) => {
+    mockSignatureOnSave = onSave;
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { Text: MockText } = require('react-native');
     return visible ? <MockText testID="signature-modal">signature</MockText> : null;
@@ -180,6 +184,75 @@ it('CT7-075: shown again after the lease is gone → no stale lease left on scre
     mockRefocus();
   });
 
-  await waitFor(() => expect(screen.queryByTestId('tenant-lease-sign')).toBeNull());
+  await waitFor(() => expect(screen.getByText('No Active Lease')).toBeTruthy());
+  expect(screen.queryByTestId('tenant-lease-sign')).toBeNull();
   expect(screen.queryByText('Sea View')).toBeNull();
+
+  // shown again once the owner sends a lease → straight to it, no error flash
+  (supabase.from as jest.Mock).mockReturnValue(query({ data: LEASE, error: null }));
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-sign')).toBeTruthy());
+  expect(screen.queryByText(/Failed to load lease/)).toBeNull();
+});
+
+it('CT7-075: overlapping reloads — a slow older answer never brings back the old lease', async () => {
+  const oldSigned = {
+    ...LEASE,
+    id: 'lease-old',
+    status: 'active',
+    property: { ...LEASE.property, title: '2B Datura' },
+  };
+  const newPending = {
+    ...LEASE,
+    id: 'lease-new',
+    property: { ...LEASE.property, title: '2A Datura' },
+  };
+  let releaseSlow: (v: unknown) => void = () => {};
+  const slow = new Promise((resolve) => {
+    releaseSlow = resolve;
+  });
+  // first load (mount) is slow and answers with the old lease; the reload is fast
+  (supabase.from as jest.Mock)
+    .mockReturnValueOnce(query(slow))
+    .mockReturnValue(query({ data: newPending, error: null }));
+  const screen = render(<TenantLeaseScreen />);
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByText('2A Datura')).toBeTruthy());
+
+  await act(async () => {
+    releaseSlow({ data: oldSigned, error: null });
+    await slow;
+  });
+  expect(screen.getByText('2A Datura')).toBeTruthy();
+  expect(screen.queryByText('2B Datura')).toBeNull();
+  expect(screen.getByTestId('tenant-lease-sign')).toBeTruthy();
+});
+
+it('CT7-075: a reload that brings another lease closes the signature pad and never signs it', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue({
+    status: 'ok',
+    complete: true,
+    missing: [],
+  });
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+
+  const other = { ...LEASE, id: 'lease-2', property: { ...LEASE.property, title: '2A Datura' } };
+  (supabase.from as jest.Mock).mockReturnValue(query({ data: other, error: null }));
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByText('2A Datura')).toBeTruthy());
+  expect(screen.queryByTestId('signature-modal')).toBeNull();
+
+  // the pad's save handler as of now (the screen re-rendered with lease-2)
+  // must not put the signature on a lease the tenant never opened the pad for
+  await act(async () => {
+    await mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  expect(uploadSignature).not.toHaveBeenCalled();
 });

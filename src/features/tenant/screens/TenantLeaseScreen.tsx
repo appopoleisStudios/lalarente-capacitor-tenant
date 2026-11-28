@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -78,6 +78,14 @@ export default function TenantLeaseScreen() {
   const [error, setError] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
   const [showSignatureModal, setShowSignatureModal] = useState(false);
+  // CT7-075: the lease the signature pad was opened for. A reload can bring a
+  // different lease; a signature only ever goes on the lease the tenant opened
+  // the pad for.
+  const signingLeaseId = useRef<string | null>(null);
+  // CT7-075: reloads can overlap (focus, alerts); only the latest one may
+  // change the screen, so a slow earlier answer can't bring back an old lease.
+  const loadSeq = useRef(0);
+  const shownLeaseId = useRef<string | null>(null);
   // Full lease wording (same render as the signed PDF) so the tenant reads
   // every clause — including ones the owner edited or removed — before signing.
   const [fullLeaseHtml, setFullLeaseHtml] = useState<string | null>(null);
@@ -100,6 +108,8 @@ export default function TenantLeaseScreen() {
         .eq('id', lease.id)
         .single();
       if (fullError || !data) throw fullError ?? new Error('Lease not found');
+      // CT7-075: a reload switched leases meanwhile — don't show old wording
+      if (shownLeaseId.current !== lease.id) return;
       const row = data as any;
       setFullLeaseHtml(
         generateLeaseHTML({
@@ -135,8 +145,9 @@ export default function TenantLeaseScreen() {
   }, []);
 
   const loadActiveLease = async () => {
+    const seq = ++loadSeq.current;
+    const superseded = () => seq !== loadSeq.current;
     try {
-      setError(null);
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -157,11 +168,12 @@ export default function TenantLeaseScreen() {
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
+      if (superseded()) return;
 
       if (leaseError) {
         if (leaseError.code === 'PGRST116') {
           // No active lease found
-          setLease(null);
+          showLease(null);
           setError('no_lease');
         } else {
           throw leaseError;
@@ -172,18 +184,31 @@ export default function TenantLeaseScreen() {
           owner: Lease['owner'] | Lease['owner'][];
         };
         setError(null);
-        setLease({
+        showLease({
           ...(row as unknown as Lease),
           property: unpackRelation(row.property as Lease['property']),
           owner: unpackRelation(row.owner as Lease['owner']),
         });
       }
     } catch (err) {
+      if (superseded()) return;
       console.error('Error loading lease:', err);
       setError(err instanceof Error ? err.message : 'Failed to load lease');
     } finally {
-      setLoading(false);
+      if (!superseded()) setLoading(false);
     }
+  };
+
+  // A different lease than the one on screen: close what was open for the old
+  // one (signature pad, full wording) so nothing acts on the wrong lease.
+  const showLease = (next: Lease | null) => {
+    if ((next?.id ?? null) !== shownLeaseId.current) {
+      shownLeaseId.current = next?.id ?? null;
+      setShowSignatureModal(false);
+      signingLeaseId.current = null;
+      setFullLeaseHtml(null);
+    }
+    setLease(next);
   };
 
   const handleViewDocument = () => {
@@ -282,6 +307,7 @@ export default function TenantLeaseScreen() {
     // rather than opening the signature modal on unknown state.
     const decision = await evaluateSignLeaseGate();
     if (decision.action === 'sign') {
+      signingLeaseId.current = lease?.id ?? null;
       setShowSignatureModal(true);
       return;
     }
@@ -301,6 +327,11 @@ export default function TenantLeaseScreen() {
 
   const handleSignatureSave = async (signatureBase64: string) => {
     if (!lease) return;
+    if (lease.id !== signingLeaseId.current) {
+      setShowSignatureModal(false);
+      Alert.alert('Lease changed', 'This lease was updated. Please review it and sign again.');
+      return;
+    }
 
     try {
       setActionLoading(true);
