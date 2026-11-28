@@ -343,13 +343,13 @@ export default function TenantLeaseScreen() {
 
   const handleSignatureSave = async (signatureBase64: string) => {
     if (!lease) return;
-    if (
-      signingView.current === null ||
-      !isCurrentView(signingView.current) ||
-      lease.status !== 'pending_tenant_signature'
-    ) {
+    const view = signingView.current;
+    const leaseChanged = () => {
       setShowSignatureModal(false);
       Alert.alert('Lease changed', 'This lease was updated. Please review it and sign again.');
+    };
+    if (view === null || !isCurrentView(view) || lease.status !== 'pending_tenant_signature') {
+      leaseChanged();
       return;
     }
 
@@ -358,6 +358,11 @@ export default function TenantLeaseScreen() {
 
       // Upload signature to storage (with automatic retry logic)
       const signatureUrl = await uploadSignature(lease.id, 'tenant', signatureBase64);
+      // CT7-075: a reload may have answered while the signature uploaded
+      if (!isCurrentView(view)) {
+        leaseChanged();
+        return;
+      }
 
       // Update lease with signature (with retry logic for network errors)
       let updateSuccess = false;
@@ -365,15 +370,27 @@ export default function TenantLeaseScreen() {
       const maxRetries = 3;
 
       for (let attempt = 0; attempt < maxRetries; attempt++) {
+        if (!isCurrentView(view)) {
+          leaseChanged();
+          return;
+        }
         try {
-          const { error: updateError } = await supabase
+          // CT7-075: only a lease still waiting for the tenant takes the
+          // signature — the database refuses it if the lease changed meanwhile
+          const { data: signedRows, error: updateError } = await supabase
             .from('leases')
             .update({
               tenant_signature_url: signatureUrl,
               tenant_signed_at: new Date().toISOString(),
               status: 'pending_owner_signature',
             })
-            .eq('id', lease.id);
+            .eq('id', lease.id)
+            .eq('status', 'pending_tenant_signature')
+            .select('id');
+          if (!updateError && Array.isArray(signedRows) && signedRows.length === 0) {
+            leaseChanged();
+            return;
+          }
 
           if (updateError) {
             // Check if it's a network error

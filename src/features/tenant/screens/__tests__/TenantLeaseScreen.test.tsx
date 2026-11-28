@@ -53,7 +53,9 @@ jest.mock('../../../leases/api/storageService', () => ({
   getLeaseDocumentUrl: jest.fn(),
 }));
 jest.mock('../../../leases/api/regenerateLeasePDF', () => ({ regenerateLeasePDF: jest.fn() }));
-jest.mock('../../../leases/api/leasePdfService', () => ({ generateLeaseHTML: jest.fn() }));
+jest.mock('../../../leases/api/leasePdfService', () => ({
+  generateLeaseHTML: jest.fn(() => '<html>lease wording</html>'),
+}));
 jest.mock('../../../notifications/api/notificationsApi', () => ({ notificationsApi: {} }));
 jest.mock('react-native-safe-area-context', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -539,4 +541,83 @@ it('CT7-075: an older reload finishing while a newer one is pending leaves Sign 
     fireEvent.press(screen.getByTestId('tenant-lease-sign'));
   });
   await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+});
+
+// ── CT7-075 SA round 4: the signature write itself ──
+
+/** Like query(), but records every .update(...) and .eq(...) call. */
+function recordingQuery(result: unknown, calls: { update: unknown[]; eq: unknown[][] }) {
+  const q: unknown = new Proxy(
+    {},
+    {
+      get: (_, key) => {
+        if (key === 'then')
+          return (ok: (v: unknown) => unknown, fail: (e: unknown) => unknown) =>
+            Promise.resolve(result).then(ok, fail);
+        if (key === 'update')
+          return (v: unknown) => {
+            calls.update.push(v);
+            return q;
+          };
+        if (key === 'eq')
+          return (...a: unknown[]) => {
+            calls.eq.push(a);
+            return q;
+          };
+        return () => q;
+      },
+    }
+  );
+  return q;
+}
+
+it('CT7-075: a reload answering while the signature uploads → the lease is not updated', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  const upload = deferred<string>();
+  (uploadSignature as jest.Mock).mockReturnValue(upload.promise);
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+
+  const calls = { update: [] as unknown[], eq: [] as unknown[][] };
+  (supabase.from as jest.Mock).mockReturnValue(
+    recordingQuery({ data: SIGNED_SAME, error: null }, calls)
+  );
+  let saving: Promise<void> = Promise.resolve();
+  await act(async () => {
+    saving = mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByText('Already Signed')).toBeTruthy());
+
+  await act(async () => {
+    upload.resolve('signatures/lease-1.png');
+    await saving;
+  });
+  expect(calls.update).toHaveLength(0);
+  expect(alertSpy).toHaveBeenCalledWith('Lease changed', expect.any(String));
+});
+
+it('CT7-075: the signature write only matches a lease still awaiting the tenant; no match → not "signed"', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  (uploadSignature as jest.Mock).mockResolvedValue('signatures/lease-1.png');
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+
+  // the database matched no row: the lease changed on the server meanwhile
+  const calls = { update: [] as unknown[], eq: [] as unknown[][] };
+  (supabase.from as jest.Mock).mockReturnValue(recordingQuery({ data: [], error: null }, calls));
+  await act(async () => {
+    await mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  expect(calls.update).toHaveLength(1);
+  expect(calls.eq).toEqual(
+    expect.arrayContaining([
+      ['id', 'lease-1'],
+      ['status', 'pending_tenant_signature'],
+    ])
+  );
+  expect(alertSpy).toHaveBeenCalledWith('Lease changed', expect.any(String));
+  expect(alertSpy).not.toHaveBeenCalledWith('Success', expect.anything(), expect.anything());
 });
