@@ -418,7 +418,7 @@ it('CT7-075: the "signed" alert reload and a focus reload overlap — the latest
     .find((b) => b.text === 'OK' && b.onPress);
   expect(okButton).toBeTruthy();
 
-  // focus reload first (slow, answers with the stale row), then the alert's reload (fast)
+  // the alert's reload first (slow, answers with the stale row), then a focus reload (fast)
   const slow = deferred();
   const signed = {
     ...LEASE,
@@ -429,10 +429,10 @@ it('CT7-075: the "signed" alert reload and a focus reload overlap — the latest
     .mockReturnValueOnce(query(slow.promise))
     .mockReturnValue(query({ data: signed, error: null }));
   await act(async () => {
-    mockRefocus();
+    okButton!.onPress!();
   });
   await act(async () => {
-    okButton!.onPress!();
+    mockRefocus();
   });
   await waitFor(() => expect(screen.getByText('Signed Lease')).toBeTruthy());
 
@@ -1022,3 +1022,30 @@ it('CT7-075: our signature landed and the owner activated the lease before the r
   expect(alertSpy).not.toHaveBeenCalledWith('Lease changed', expect.any(String));
   expect(notify).not.toHaveBeenCalled();
 }, 15000);
+
+it('CT7-075: "signed" alert OK tapped after the screen moved on → no reload', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  (uploadSignature as jest.Mock).mockResolvedValue('signatures/lease-1.png');
+  (notificationsApi as unknown as { sendNotification: jest.Mock }).sendNotification = jest
+    .fn()
+    .mockResolvedValue(undefined);
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+  await act(async () => {
+    await mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  const ok = alertSpy.mock.calls
+    .filter((c) => c[0] === 'Success')
+    .flatMap((c) => (c[2] as { text: string; onPress?: () => void }[]) ?? [])
+    .find((b) => b.text === 'OK');
+  expect(ok?.onPress).toBeTruthy();
+
+  await act(async () => {
+    mockBlur(); // the tenant left before tapping OK
+  });
+  (supabase.from as jest.Mock).mockClear();
+  await act(async () => {
+    ok!.onPress!();
+  });
+  expect(supabase.from).not.toHaveBeenCalled();
+});

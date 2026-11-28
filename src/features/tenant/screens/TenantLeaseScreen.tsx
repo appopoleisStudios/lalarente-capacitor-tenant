@@ -486,7 +486,8 @@ export default function TenantLeaseScreen() {
         ownerAlreadySigned
           ? 'Lease agreement signed! The lease is now active.'
           : 'Lease agreement signed! Waiting for owner to sign.',
-        [{ text: 'OK', onPress: () => loadActiveLease() }]
+        // the OK may be tapped after the screen moved on: reload only if still current
+        [{ text: 'OK', onPress: () => !stale() && loadActiveLease() }]
       );
     } catch (err: any) {
       console.error('Error signing lease:', err);
