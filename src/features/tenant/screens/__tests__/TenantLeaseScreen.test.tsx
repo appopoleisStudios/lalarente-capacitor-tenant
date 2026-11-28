@@ -607,7 +607,10 @@ it('CT7-075: the signature write only matches a lease still awaiting the tenant;
 
   // the database matched no row: the lease changed on the server meanwhile
   const calls = { update: [] as unknown[], eq: [] as unknown[][] };
-  (supabase.from as jest.Mock).mockReturnValue(recordingQuery({ data: [], error: null }, calls));
+  (supabase.from as jest.Mock)
+    .mockReturnValueOnce(recordingQuery({ data: [], error: null }, calls)) // the update
+    .mockReturnValueOnce(query({ data: [], error: null })) // the check: not our signature
+    .mockReturnValue(query({ data: SIGNED_SAME, error: null })); // the reload
   await act(async () => {
     await mockSignatureOnSave!('data:image/png;base64,AAAA');
   });
@@ -712,4 +715,59 @@ it('CT7-075: signature uploading → a reload starts and FAILS → upload finish
     await saving;
   });
   expect(calls.update).toHaveLength(0);
+});
+
+// ── CT7-075 GitHub SA on e21bfc4: reconciling the signature write ──
+
+it('CT7-075: the check after a no-match save fails → it retries, and finds the signature saved', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  (uploadSignature as jest.Mock).mockResolvedValue('signatures/lease-1.png');
+  (notificationsApi as unknown as { sendNotification: jest.Mock }).sendNotification = jest
+    .fn()
+    .mockResolvedValue(undefined);
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+
+  (supabase.from as jest.Mock)
+    .mockReturnValueOnce(query({ data: [], error: null })) // try 1: no row matched
+    .mockReturnValueOnce(query({ data: null, error: { message: 'Network request failed' } })) // check fails
+    .mockReturnValueOnce(query({ data: [], error: null })) // try 2: no row matched
+    .mockReturnValueOnce(
+      query({
+        data: { status: 'pending_owner_signature', tenant_signature_url: 'signatures/lease-1.png' },
+        error: null,
+      })
+    ); // check: our signature is there
+  await act(async () => {
+    await mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  expect(alertSpy).toHaveBeenCalledWith(
+    'Success',
+    expect.stringMatching(/signed/i),
+    expect.anything()
+  );
+  expect(alertSpy).not.toHaveBeenCalledWith('Lease changed', expect.any(String));
+});
+
+it('CT7-075: the lease really changed → "Lease changed" and the screen reloads it (no old Sign button left)', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  (uploadSignature as jest.Mock).mockResolvedValue('signatures/lease-1.png');
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+
+  (supabase.from as jest.Mock)
+    .mockReturnValueOnce(query({ data: [], error: null })) // no row matched
+    .mockReturnValueOnce(
+      query({
+        data: { status: 'pending_owner_signature', tenant_signature_url: 'other.png' },
+        error: null,
+      })
+    ) // someone else's change
+    .mockReturnValue(query({ data: SIGNED_SAME, error: null })); // the reload
+  await act(async () => {
+    await mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  expect(alertSpy).toHaveBeenCalledWith('Lease changed', expect.any(String));
+  await waitFor(() => expect(screen.getByText('Already Signed')).toBeTruthy());
+  expect(screen.queryByTestId('tenant-lease-sign')).toBeNull();
 });

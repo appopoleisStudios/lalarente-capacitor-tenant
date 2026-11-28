@@ -351,6 +351,8 @@ export default function TenantLeaseScreen() {
     const leaseChanged = () => {
       setShowSignatureModal(false);
       Alert.alert('Lease changed', 'This lease was updated. Please review it and sign again.');
+      // show the lease as it is now, so the out-of-date one can't be signed again
+      loadActiveLease();
     };
     if (view === null || !isCurrentView(view) || lease.status !== 'pending_tenant_signature') {
       leaseChanged();
@@ -394,11 +396,13 @@ export default function TenantLeaseScreen() {
           if (!updateError && Array.isArray(signedRows) && signedRows.length === 0) {
             // No row matched. Either the lease changed, or an earlier try was
             // saved but its answer was lost — then our signature is on it.
-            const { data: persisted } = await supabase
+            const { data: persisted, error: checkError } = await supabase
               .from('leases')
               .select('status, tenant_signature_url')
               .eq('id', lease.id)
               .maybeSingle();
+            // can't tell yet whether our signature landed: retry, don't guess
+            if (checkError) throw checkError;
             const row = Array.isArray(persisted) ? persisted[0] : persisted;
             if (row?.tenant_signature_url === signatureUrl) {
               updateSuccess = true;
