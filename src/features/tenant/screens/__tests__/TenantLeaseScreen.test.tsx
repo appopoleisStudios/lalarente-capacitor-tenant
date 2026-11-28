@@ -993,3 +993,32 @@ it('CT7-075: our signature landed but the lease was cancelled since → not "sig
   expect(alertSpy).toHaveBeenCalledWith('Lease changed', expect.any(String));
   await waitFor(() => expect(screen.getByText('Cancelled Lease')).toBeTruthy());
 }, 15000);
+
+it('CT7-075: our signature landed and the owner activated the lease before the retry → "now active", owner not re-notified', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  (uploadSignature as jest.Mock).mockResolvedValue('signatures/lease-1.png');
+  const notify = jest.fn().mockResolvedValue(undefined);
+  (notificationsApi as unknown as { sendNotification: jest.Mock }).sendNotification = notify;
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+
+  (supabase.from as jest.Mock)
+    .mockReturnValueOnce(query({ data: null, error: { message: 'Network request failed' } })) // try 1: answer lost
+    .mockReturnValueOnce(query({ data: [], error: null })) // try 2: no row awaits the tenant
+    .mockReturnValueOnce(
+      query({
+        data: { status: 'active', tenant_signature_url: 'signatures/lease-1.png' },
+        error: null,
+      })
+    ); // check: ours, and the owner has signed since
+  await act(async () => {
+    await mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  expect(alertSpy).toHaveBeenCalledWith(
+    'Success',
+    expect.stringMatching(/now active/i),
+    expect.anything()
+  );
+  expect(alertSpy).not.toHaveBeenCalledWith('Lease changed', expect.any(String));
+  expect(notify).not.toHaveBeenCalled();
+}, 15000);

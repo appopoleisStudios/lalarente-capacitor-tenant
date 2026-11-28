@@ -389,6 +389,8 @@ export default function TenantLeaseScreen() {
 
       // Update lease with signature (with retry logic for network errors)
       let updateSuccess = false;
+      // set when a lost answer is recovered and the owner has signed since
+      let ownerAlreadySigned = false;
       let lastError: any;
       const maxRetries = 3;
 
@@ -420,12 +422,14 @@ export default function TenantLeaseScreen() {
             // can't tell yet whether our signature landed: retry, don't guess
             if (checkError) throw checkError;
             const row = Array.isArray(persisted) ? persisted[0] : persisted;
-            // ours, and the lease is still waiting for the owner → signed;
-            // anything else (e.g. cancelled since) is reported as changed
+            // ours, and the lease went on from our signature (waiting for the
+            // owner, or the owner has signed since) → signed; anything else
+            // (e.g. cancelled since) is reported as changed
             if (
               row?.tenant_signature_url === signatureUrl &&
-              row?.status === 'pending_owner_signature'
+              (row?.status === 'pending_owner_signature' || row?.status === 'active')
             ) {
+              ownerAlreadySigned = row.status === 'active';
               updateSuccess = true;
               break;
             }
@@ -465,20 +469,25 @@ export default function TenantLeaseScreen() {
         throw lastError || new Error('Failed to update lease after multiple attempts');
       }
 
-      // Notify owner that tenant has signed
-      await notificationsApi
-        .sendNotification({
-          user_id: lease.owner_id,
-          type: 'lease_signed' as any,
-          data: { lease_id: lease.id, property_id: lease.property_id },
-        })
-        .catch(() => {}); // Non-blocking
+      // Notify owner that tenant has signed (not if the owner already signed)
+      if (!ownerAlreadySigned)
+        await notificationsApi
+          .sendNotification({
+            user_id: lease.owner_id,
+            type: 'lease_signed' as any,
+            data: { lease_id: lease.id, property_id: lease.property_id },
+          })
+          .catch(() => {}); // Non-blocking
 
       // the signature landed and the owner is told; a superseded screen shows nothing
       if (stale()) return;
-      Alert.alert('Success', 'Lease agreement signed! Waiting for owner to sign.', [
-        { text: 'OK', onPress: () => loadActiveLease() },
-      ]);
+      Alert.alert(
+        'Success',
+        ownerAlreadySigned
+          ? 'Lease agreement signed! The lease is now active.'
+          : 'Lease agreement signed! Waiting for owner to sign.',
+        [{ text: 'OK', onPress: () => loadActiveLease() }]
+      );
     } catch (err: any) {
       console.error('Error signing lease:', err);
       if (stale()) return;
