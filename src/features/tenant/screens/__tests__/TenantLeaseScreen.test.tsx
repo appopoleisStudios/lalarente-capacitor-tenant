@@ -16,14 +16,22 @@ import { notificationsApi } from '../../../notifications/api/notificationsApi';
 const mockRouter = { push: jest.fn(), back: jest.fn(), replace: jest.fn() };
 // useFocusEffect runs like a mount effect; mockRefocus() replays it the way
 // expo-router does when the (still mounted) tab screen is shown again.
-let mockFocusCallback: (() => void) | null = null;
-const mockRefocus = () => mockFocusCallback?.();
+// mockBlur() runs the effect's cleanup, as when the tenant leaves the screen.
+let mockFocusCallback: (() => (() => void) | void) | null = null;
+let mockBlurCleanup: (() => void) | void;
+const mockRefocus = () => {
+  mockBlurCleanup = mockFocusCallback?.();
+};
+const mockBlur = () => mockBlurCleanup?.();
 jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
-  useFocusEffect: (cb: () => void) => {
+  useFocusEffect: (cb: () => (() => void) | void) => {
     mockFocusCallback = cb;
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    require('react').useEffect(() => cb(), [cb]);
+    require('react').useEffect(() => {
+      mockBlurCleanup = cb();
+      return mockBlurCleanup;
+    }, [cb]);
   },
 }));
 jest.mock('../../utils/profileCompleteness', () => ({
@@ -770,4 +778,22 @@ it('CT7-075: the lease really changed → "Lease changed" and the screen reloads
   expect(alertSpy).toHaveBeenCalledWith('Lease changed', expect.any(String));
   await waitFor(() => expect(screen.getByText('Already Signed')).toBeTruthy());
   expect(screen.queryByTestId('tenant-lease-sign')).toBeNull();
+});
+
+it('CT7-075: leaving the screen during the profile check → coming back opens no pad', async () => {
+  const gate = deferred();
+  (checkTenantProfileCompleteness as jest.Mock).mockReturnValue(gate.promise);
+  const screen = render(<TenantLeaseScreen />);
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-sign')).toBeTruthy());
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('tenant-lease-sign'));
+  });
+  await act(async () => {
+    mockBlur();
+  });
+  await act(async () => {
+    gate.resolve(COMPLETE);
+    await gate.promise;
+  });
+  expect(screen.queryByTestId('signature-modal')).toBeNull();
 });

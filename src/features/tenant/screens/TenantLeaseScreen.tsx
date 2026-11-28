@@ -89,6 +89,14 @@ export default function TenantLeaseScreen() {
   const shownView = useRef(0);
   const reloadPending = useRef(false);
   const [reloading, setReloading] = useState(false);
+  // Ends every pending action for good: an earlier profile check, wording
+  // fetch or signature can never act after this (moves the view on).
+  const invalidatePendingWork = () => {
+    shownView.current += 1;
+    signingView.current = null;
+    setShowSignatureModal(false);
+    setOpeningFullLease(false);
+  };
   const isCurrentView = (view: number) => !reloadPending.current && shownView.current === view;
   // the view the signature pad was opened from
   const signingView = useRef<number | null>(null);
@@ -141,9 +149,11 @@ export default function TenantLeaseScreen() {
   // time it is shown. Loading only on mount kept the lease from the first
   // visit: a tenant who opened My Lease before the owner sent a new lease
   // never saw it, and "Sign Lease Now" opened the old, already-signed one.
+  // Leaving the screen ends whatever was pending on it, like a reload does.
   useFocusEffect(
     useCallback(() => {
       loadActiveLease();
+      return () => invalidatePendingWork();
     }, [])
   );
 
@@ -157,12 +167,8 @@ export default function TenantLeaseScreen() {
     const seq = ++loadSeq.current;
     const superseded = () => seq !== loadSeq.current;
     // A reload invalidates every action started before it, for good — even
-    // if the reload then fails, an earlier profile check, wording fetch or
-    // signature can never act afterwards.
-    shownView.current += 1;
-    signingView.current = null;
-    setShowSignatureModal(false);
-    setOpeningFullLease(false);
+    // if the reload then fails.
+    invalidatePendingWork();
     reloadPending.current = true;
     setReloading(true);
     try {
