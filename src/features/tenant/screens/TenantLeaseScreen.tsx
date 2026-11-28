@@ -78,29 +78,28 @@ export default function TenantLeaseScreen() {
   const [error, setError] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
   const [showSignatureModal, setShowSignatureModal] = useState(false);
-  // CT7-075: the lease the signature pad was opened for. A reload can bring a
-  // different lease; a signature only ever goes on the lease the tenant opened
-  // the pad for.
-  const signingLeaseId = useRef<string | null>(null);
   // CT7-075: reloads can overlap (focus, alerts); only the latest one may
   // change the screen, so a slow earlier answer can't bring back an old lease.
   const loadSeq = useRef(0);
-  const shownLeaseId = useRef<string | null>(null);
-  // While a reload is in flight the lease on screen may be out of date: no
-  // signing or opening its wording until the reload has answered.
+  // Bumped every time a reload puts a lease (or no lease) on screen. An action
+  // (profile check, wording fetch, signature) remembers the view it started
+  // from and only acts if that view is still the one shown and no reload is
+  // pending — so it never acts on a lease that was replaced or changed (e.g.
+  // already signed) meanwhile, even when the id is the same.
+  const shownView = useRef(0);
   const reloadPending = useRef(false);
   const [reloading, setReloading] = useState(false);
-  // True only if `leaseId` is still the lease on screen and no reload is
-  // pending — checked again after every await before acting on a lease.
-  const isCurrentLease = (leaseId: string | null | undefined) =>
-    !!leaseId && !reloadPending.current && shownLeaseId.current === leaseId;
+  const isCurrentView = (view: number) => !reloadPending.current && shownView.current === view;
+  // the view the signature pad was opened from
+  const signingView = useRef<number | null>(null);
   // Full lease wording (same render as the signed PDF) so the tenant reads
   // every clause — including ones the owner edited or removed — before signing.
   const [fullLeaseHtml, setFullLeaseHtml] = useState<string | null>(null);
   const [openingFullLease, setOpeningFullLease] = useState(false);
 
   const openFullLease = async () => {
-    if (!lease || !isCurrentLease(lease.id)) return;
+    const view = shownView.current;
+    if (!lease || !isCurrentView(view)) return;
     setOpeningFullLease(true);
     try {
       const { data, error: fullError } = await supabase
@@ -117,7 +116,7 @@ export default function TenantLeaseScreen() {
         .single();
       if (fullError || !data) throw fullError ?? new Error('Lease not found');
       // CT7-075: a reload switched leases meanwhile — don't show old wording
-      if (!isCurrentLease(lease.id)) return;
+      if (!isCurrentView(view)) return;
       const row = data as any;
       setFullLeaseHtml(
         generateLeaseHTML({
@@ -130,7 +129,7 @@ export default function TenantLeaseScreen() {
     } catch (err) {
       reportApiError(err, 'leases', 'select');
       // an error for a lease that is no longer on screen is not the tenant's concern
-      if (isCurrentLease(lease.id)) Alert.alert('Could not open the lease', 'Please try again.');
+      if (isCurrentView(view)) Alert.alert('Could not open the lease', 'Please try again.');
     } finally {
       setOpeningFullLease(false);
     }
@@ -214,15 +213,13 @@ export default function TenantLeaseScreen() {
     }
   };
 
-  // A different lease than the one on screen: close what was open for the old
-  // one (signature pad, full wording) so nothing acts on the wrong lease.
+  // A reload answered: close what was open for the previous view (signature
+  // pad, full wording) so nothing acts on an out-of-date lease.
   const showLease = (next: Lease | null) => {
-    if ((next?.id ?? null) !== shownLeaseId.current) {
-      shownLeaseId.current = next?.id ?? null;
-      setShowSignatureModal(false);
-      signingLeaseId.current = null;
-      setFullLeaseHtml(null);
-    }
+    shownView.current += 1;
+    setShowSignatureModal(false);
+    signingView.current = null;
+    setFullLeaseHtml(null);
     setLease(next);
   };
 
@@ -320,13 +317,13 @@ export default function TenantLeaseScreen() {
     // can't drift across surfaces even though the two reads happen at
     // different moments. Fails CLOSED on lookup errors: a retryable alert
     // rather than opening the signature modal on unknown state.
-    const leaseId = lease?.id;
-    if (!isCurrentLease(leaseId)) return;
+    const view = shownView.current;
+    if (!lease || !isCurrentView(view)) return;
     const decision = await evaluateSignLeaseGate();
-    // CT7-075: the lease may have been reloaded or replaced during the check
-    if (!isCurrentLease(leaseId)) return;
+    // CT7-075: the lease may have been reloaded or changed during the check
+    if (!isCurrentView(view)) return;
     if (decision.action === 'sign') {
-      signingLeaseId.current = leaseId ?? null;
+      signingView.current = view;
       setShowSignatureModal(true);
       return;
     }
@@ -346,7 +343,11 @@ export default function TenantLeaseScreen() {
 
   const handleSignatureSave = async (signatureBase64: string) => {
     if (!lease) return;
-    if (lease.id !== signingLeaseId.current || !isCurrentLease(lease.id)) {
+    if (
+      signingView.current === null ||
+      !isCurrentView(signingView.current) ||
+      lease.status !== 'pending_tenant_signature'
+    ) {
       setShowSignatureModal(false);
       Alert.alert('Lease changed', 'This lease was updated. Please review it and sign again.');
       return;

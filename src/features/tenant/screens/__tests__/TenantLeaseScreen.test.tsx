@@ -433,3 +433,110 @@ it('CT7-075: the "signed" alert reload and a focus reload overlap — the latest
   expect(screen.getByText('Signed Lease')).toBeTruthy();
   expect(screen.queryByTestId('tenant-lease-sign')).toBeNull();
 });
+
+// ── CT7-075 SA round 3: same lease id, changed lease — pending work is dropped ──
+
+const SIGNED_SAME = {
+  ...LEASE,
+  status: 'pending_owner_signature',
+  property: { ...LEASE.property, title: 'Already Signed' },
+};
+
+it('CT7-075: same lease reloaded as signed during the profile check → no pad', async () => {
+  const gate = deferred();
+  (checkTenantProfileCompleteness as jest.Mock).mockReturnValue(gate.promise);
+  const screen = render(<TenantLeaseScreen />);
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-sign')).toBeTruthy());
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('tenant-lease-sign'));
+  });
+
+  (supabase.from as jest.Mock).mockReturnValue(query({ data: SIGNED_SAME, error: null }));
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByText('Already Signed')).toBeTruthy());
+
+  await act(async () => {
+    gate.resolve(COMPLETE);
+    await gate.promise;
+  });
+  expect(screen.queryByTestId('signature-modal')).toBeNull();
+});
+
+it('CT7-075: same lease reloaded while its wording loads → the old wording is not shown', async () => {
+  const screen = render(<TenantLeaseScreen />);
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-read-full')).toBeTruthy());
+
+  const wording = deferred();
+  (supabase.from as jest.Mock).mockReturnValue(query(wording.promise));
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('tenant-lease-read-full'));
+  });
+  (supabase.from as jest.Mock).mockReturnValue(query({ data: LEASE, error: null }));
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-sign')).toBeTruthy());
+
+  await act(async () => {
+    wording.resolve({ data: LEASE, error: null });
+    await wording.promise;
+  });
+  expect(screen.queryByTestId('tenant-lease-full-close')).toBeNull();
+  expect(alertSpy).not.toHaveBeenCalled();
+});
+
+it('CT7-075: same lease reloaded as signed while the pad is open → pad closes, nothing is signed', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+
+  (supabase.from as jest.Mock).mockReturnValue(query({ data: SIGNED_SAME, error: null }));
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByText('Already Signed')).toBeTruthy());
+  expect(screen.queryByTestId('signature-modal')).toBeNull();
+
+  await act(async () => {
+    await mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  expect(uploadSignature).not.toHaveBeenCalled();
+});
+
+it('CT7-075: an older reload finishing while a newer one is pending leaves Sign blocked', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  const screen = render(<TenantLeaseScreen />);
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-sign')).toBeTruthy());
+
+  const older = deferred();
+  const newer = deferred();
+  (supabase.from as jest.Mock)
+    .mockReturnValueOnce(query(older.promise))
+    .mockReturnValueOnce(query(newer.promise));
+  await act(async () => {
+    mockRefocus();
+  });
+  await act(async () => {
+    mockRefocus();
+  });
+  await act(async () => {
+    older.resolve({ data: LEASE, error: null });
+    await older.promise;
+  });
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('tenant-lease-sign'));
+  });
+  expect(checkTenantProfileCompleteness).not.toHaveBeenCalled();
+  expect(screen.queryByTestId('signature-modal')).toBeNull();
+
+  await act(async () => {
+    newer.resolve({ data: LEASE, error: null });
+    await newer.promise;
+  });
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('tenant-lease-sign'));
+  });
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+});
