@@ -961,3 +961,35 @@ it('CT7-075: save committed but its answer lost, then the tenant leaves → the 
   );
   expect(alertSpy).not.toHaveBeenCalled();
 }, 15000);
+
+it('CT7-075: our signature landed but the lease was cancelled since → not "signed", owner not told, lease reloaded', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  (uploadSignature as jest.Mock).mockResolvedValue('signatures/lease-1.png');
+  const notify = jest.fn().mockResolvedValue(undefined);
+  (notificationsApi as unknown as { sendNotification: jest.Mock }).sendNotification = notify;
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+
+  const cancelled = {
+    ...LEASE,
+    status: 'cancelled',
+    property: { ...LEASE.property, title: 'Cancelled Lease' },
+  };
+  (supabase.from as jest.Mock)
+    .mockReturnValueOnce(query({ data: null, error: { message: 'Network request failed' } })) // try 1: answer lost
+    .mockReturnValueOnce(query({ data: [], error: null })) // try 2: no row awaits the tenant
+    .mockReturnValueOnce(
+      query({
+        data: { status: 'cancelled', tenant_signature_url: 'signatures/lease-1.png' },
+        error: null,
+      })
+    ) // check: ours, but cancelled
+    .mockReturnValue(query({ data: cancelled, error: null })); // the reload
+  await act(async () => {
+    await mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  expect(notify).not.toHaveBeenCalled();
+  expect(alertSpy).not.toHaveBeenCalledWith('Success', expect.anything(), expect.anything());
+  expect(alertSpy).toHaveBeenCalledWith('Lease changed', expect.any(String));
+  await waitFor(() => expect(screen.getByText('Cancelled Lease')).toBeTruthy());
+}, 15000);

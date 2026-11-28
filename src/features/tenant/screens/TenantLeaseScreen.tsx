@@ -420,7 +420,12 @@ export default function TenantLeaseScreen() {
             // can't tell yet whether our signature landed: retry, don't guess
             if (checkError) throw checkError;
             const row = Array.isArray(persisted) ? persisted[0] : persisted;
-            if (row?.tenant_signature_url === signatureUrl) {
+            // ours, and the lease is still waiting for the owner → signed;
+            // anything else (e.g. cancelled since) is reported as changed
+            if (
+              row?.tenant_signature_url === signatureUrl &&
+              row?.status === 'pending_owner_signature'
+            ) {
               updateSuccess = true;
               break;
             }
