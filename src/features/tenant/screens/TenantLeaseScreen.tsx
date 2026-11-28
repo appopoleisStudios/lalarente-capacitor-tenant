@@ -153,7 +153,10 @@ export default function TenantLeaseScreen() {
   useFocusEffect(
     useCallback(() => {
       loadActiveLease();
-      return () => invalidatePendingWork();
+      return () => {
+        invalidatePendingWork();
+        loadSeq.current += 1; // a reload still in flight can no longer land
+      };
     }, [])
   );
 
@@ -360,7 +363,13 @@ export default function TenantLeaseScreen() {
       // show the lease as it is now, so the out-of-date one can't be signed again
       loadActiveLease();
     };
-    if (view === null || !isCurrentView(view) || lease.status !== 'pending_tenant_signature') {
+    // Superseded (a reload or leaving the screen ended it): drop it silently.
+    if (view === null || !isCurrentView(view)) {
+      setShowSignatureModal(false);
+      return;
+    }
+    // The lease on screen no longer awaits the tenant: a real conflict.
+    if (lease.status !== 'pending_tenant_signature') {
       leaseChanged();
       return;
     }
@@ -370,11 +379,8 @@ export default function TenantLeaseScreen() {
 
       // Upload signature to storage (with automatic retry logic)
       const signatureUrl = await uploadSignature(lease.id, 'tenant', signatureBase64);
-      // CT7-075: a reload may have answered while the signature uploaded
-      if (!isCurrentView(view)) {
-        leaseChanged();
-        return;
-      }
+      // CT7-075: superseded while the signature uploaded — drop it silently
+      if (!isCurrentView(view)) return;
 
       // Update lease with signature (with retry logic for network errors)
       let updateSuccess = false;
@@ -382,10 +388,7 @@ export default function TenantLeaseScreen() {
       const maxRetries = 3;
 
       for (let attempt = 0; attempt < maxRetries; attempt++) {
-        if (!isCurrentView(view)) {
-          leaseChanged();
-          return;
-        }
+        if (!isCurrentView(view)) return; // superseded: drop silently
         try {
           // CT7-075: only a lease still waiting for the tenant's signature
           // takes it; if it has left that status meanwhile, no row matches

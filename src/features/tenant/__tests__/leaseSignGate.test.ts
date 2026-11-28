@@ -141,7 +141,7 @@ describe('TenantLeaseScreen signs only through the gate (CT7-012)', () => {
 
   it('handleSignLease awaits evaluateSignLeaseGate and opens the modal only on "sign"', () => {
     expect(src).toMatch(
-      /const handleSignLease = async \(\) => \{[\s\S]*?const decision = await evaluateSignLeaseGate\(\);[\s\S]*?if \(decision\.action === 'sign'\) \{[^}]*?setShowSignatureModal\(true\);\s*return;\s*\}/
+      /const handleSignLease = async \(\) => \{(?:(?!setShowSignatureModal)[\s\S])*?const decision = await evaluateSignLeaseGate\(\);[\s\S]*?if \(decision\.action === 'sign'\) \{[^}]*?setShowSignatureModal\(true\);\s*return;\s*\}/
     );
   });
 

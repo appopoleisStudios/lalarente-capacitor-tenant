@@ -604,7 +604,8 @@ it('CT7-075: a reload answering while the signature uploads → the lease is not
     await saving;
   });
   expect(calls.update).toHaveLength(0);
-  expect(alertSpy).toHaveBeenCalledWith('Lease changed', expect.any(String));
+  // superseded, not a conflict: dropped silently
+  expect(alertSpy).not.toHaveBeenCalledWith('Lease changed', expect.any(String));
 });
 
 it('CT7-075: the signature write only matches a lease still awaiting the tenant; no match → not "signed"', async () => {
@@ -796,4 +797,62 @@ it('CT7-075: leaving the screen during the profile check → coming back opens n
     await gate.promise;
   });
   expect(screen.queryByTestId('signature-modal')).toBeNull();
+});
+
+it('CT7-075: leaving the screen while the signature uploads → no update, no alert, no reload', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  const upload = deferred<string>();
+  (uploadSignature as jest.Mock).mockReturnValue(upload.promise);
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+
+  let saving: Promise<void> = Promise.resolve();
+  await act(async () => {
+    saving = mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  await act(async () => {
+    mockBlur();
+  });
+  (supabase.from as jest.Mock).mockClear();
+  await act(async () => {
+    upload.resolve('signatures/lease-1.png');
+    await saving;
+  });
+  expect(supabase.from).not.toHaveBeenCalled(); // no update, no reload
+  expect(alertSpy).not.toHaveBeenCalled();
+});
+
+it('CT7-075: leaving the screen while a reload is in flight → its late answer changes nothing', async () => {
+  const screen = render(<TenantLeaseScreen />);
+  await waitFor(() => expect(screen.getByText('Sea View')).toBeTruthy());
+
+  const late = deferred();
+  (supabase.from as jest.Mock).mockReturnValue(query(late.promise));
+  await act(async () => {
+    mockRefocus();
+  });
+  await act(async () => {
+    mockBlur();
+  });
+  await act(async () => {
+    late.resolve({ data: NEW, error: null });
+    await late.promise;
+  });
+  expect(screen.queryByText('2A Datura')).toBeNull();
+});
+
+it('CT7-075: the signature pad stays closed until the profile check says "sign"', async () => {
+  const gate = deferred();
+  (checkTenantProfileCompleteness as jest.Mock).mockReturnValue(gate.promise);
+  const screen = render(<TenantLeaseScreen />);
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-sign')).toBeTruthy());
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('tenant-lease-sign'));
+  });
+  expect(screen.queryByTestId('signature-modal')).toBeNull();
+  await act(async () => {
+    gate.resolve(COMPLETE);
+    await gate.promise;
+  });
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
 });
