@@ -131,7 +131,8 @@ export default function TenantLeaseScreen() {
       // an error for a lease that is no longer on screen is not the tenant's concern
       if (isCurrentView(view)) Alert.alert('Could not open the lease', 'Please try again.');
     } finally {
-      setOpeningFullLease(false);
+      // only the request of the view on screen may clear the busy state
+      if (shownView.current === view) setOpeningFullLease(false);
     }
   };
   const [actionLoading, setActionLoading] = useState(false);
@@ -220,6 +221,7 @@ export default function TenantLeaseScreen() {
     setShowSignatureModal(false);
     signingView.current = null;
     setFullLeaseHtml(null);
+    setOpeningFullLease(false);
     setLease(next);
   };
 
@@ -388,6 +390,18 @@ export default function TenantLeaseScreen() {
             .eq('status', 'pending_tenant_signature')
             .select('id');
           if (!updateError && Array.isArray(signedRows) && signedRows.length === 0) {
+            // No row matched. Either the lease changed, or an earlier try was
+            // saved but its answer was lost — then our signature is on it.
+            const { data: persisted } = await supabase
+              .from('leases')
+              .select('status, tenant_signature_url')
+              .eq('id', lease.id)
+              .maybeSingle();
+            const row = Array.isArray(persisted) ? persisted[0] : persisted;
+            if (row?.tenant_signature_url === signatureUrl) {
+              updateSuccess = true;
+              break;
+            }
             leaseChanged();
             return;
           }

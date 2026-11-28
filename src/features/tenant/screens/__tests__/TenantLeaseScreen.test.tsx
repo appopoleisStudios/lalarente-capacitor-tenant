@@ -621,3 +621,67 @@ it('CT7-075: the signature write only matches a lease still awaiting the tenant;
   expect(alertSpy).toHaveBeenCalledWith('Lease changed', expect.any(String));
   expect(alertSpy).not.toHaveBeenCalledWith('Success', expect.anything(), expect.anything());
 });
+
+// ── CT7-075 GitHub SA (khadeejahdreamcode) on 1c850d0 ──
+
+it('CT7-075: first save committed but its answer was lost → retry finds our signature → "signed", not "Lease changed"', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  (uploadSignature as jest.Mock).mockResolvedValue('signatures/lease-1.png');
+  (notificationsApi as unknown as { sendNotification: jest.Mock }).sendNotification = jest
+    .fn()
+    .mockResolvedValue(undefined);
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+
+  (supabase.from as jest.Mock)
+    // try 1: saved on the server, but the answer is lost
+    .mockReturnValueOnce(query({ data: null, error: { message: 'Network request failed' } }))
+    // try 2: no row still awaits the tenant
+    .mockReturnValueOnce(query({ data: [], error: null }))
+    // reconcile: the lease carries our signature
+    .mockReturnValueOnce(
+      query({
+        data: { status: 'pending_owner_signature', tenant_signature_url: 'signatures/lease-1.png' },
+        error: null,
+      })
+    );
+  await act(async () => {
+    await mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  expect(alertSpy).toHaveBeenCalledWith(
+    'Success',
+    expect.stringMatching(/signed/i),
+    expect.anything()
+  );
+  expect(alertSpy).not.toHaveBeenCalledWith('Lease changed', expect.any(String));
+}, 15000);
+
+it('CT7-075: the old lease wording still loading does not block reading the new lease', async () => {
+  (supabase.from as jest.Mock).mockReturnValue(query({ data: OLD, error: null }));
+  const screen = render(<TenantLeaseScreen />);
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-read-full')).toBeTruthy());
+
+  const hung = deferred(); // the old wording request never answers in time
+  (supabase.from as jest.Mock).mockReturnValueOnce(query(hung.promise));
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('tenant-lease-read-full'));
+  });
+
+  (supabase.from as jest.Mock).mockReturnValue(query({ data: NEW, error: null }));
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByText('2A Datura')).toBeTruthy());
+
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('tenant-lease-read-full'));
+  });
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-full-close')).toBeTruthy());
+
+  // the old request answering late neither closes nor replaces it
+  await act(async () => {
+    hung.resolve({ data: OLD, error: null });
+    await hung.promise;
+  });
+  expect(screen.getByTestId('tenant-lease-full-close')).toBeTruthy();
+});
