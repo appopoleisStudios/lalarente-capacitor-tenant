@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { notificationsApi } from '../../notifications/api/notificationsApi';
@@ -118,9 +118,15 @@ export default function TenantLeaseScreen() {
   };
   const [actionLoading, setActionLoading] = useState(false);
 
-  useEffect(() => {
-    loadActiveLease();
-  }, []);
+  // CT7-075: this is a tab screen and stays mounted, so load the lease every
+  // time it is shown. Loading only on mount kept the lease from the first
+  // visit: a tenant who opened My Lease before the owner sent a new lease
+  // never saw it, and "Sign Lease Now" opened the old, already-signed one.
+  useFocusEffect(
+    useCallback(() => {
+      loadActiveLease();
+    }, [])
+  );
 
   // CT7-072: "Generate PDF" prints the lease; the first print in a fresh app
   // process often hangs (CT7-069), so it must not be the lease's
@@ -155,6 +161,7 @@ export default function TenantLeaseScreen() {
       if (leaseError) {
         if (leaseError.code === 'PGRST116') {
           // No active lease found
+          setLease(null);
           setError('no_lease');
         } else {
           throw leaseError;
@@ -164,6 +171,7 @@ export default function TenantLeaseScreen() {
           property: Lease['property'] | Lease['property'][];
           owner: Lease['owner'] | Lease['owner'][];
         };
+        setError(null);
         setLease({
           ...(row as unknown as Lease),
           property: unpackRelation(row.property as Lease['property']),

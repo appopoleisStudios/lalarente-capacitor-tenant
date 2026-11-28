@@ -12,7 +12,18 @@ import { supabase } from '@/src/lib/supabase';
 import { checkTenantProfileCompleteness } from '../../utils/profileCompleteness';
 
 const mockRouter = { push: jest.fn(), back: jest.fn(), replace: jest.fn() };
-jest.mock('expo-router', () => ({ useRouter: () => mockRouter }));
+// useFocusEffect runs like a mount effect; mockRefocus() replays it the way
+// expo-router does when the (still mounted) tab screen is shown again.
+let mockFocusCallback: (() => void) | null = null;
+const mockRefocus = () => mockFocusCallback?.();
+jest.mock('expo-router', () => ({
+  useRouter: () => mockRouter,
+  useFocusEffect: (cb: () => void) => {
+    mockFocusCallback = cb;
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require('react').useEffect(() => cb(), [cb]);
+  },
+}));
 jest.mock('../../utils/profileCompleteness', () => ({
   checkTenantProfileCompleteness: jest.fn(),
 }));
@@ -125,4 +136,50 @@ it('complete profile: the signature modal opens with no alert', async () => {
   const screen = await pressSign();
   expect(alertSpy).not.toHaveBeenCalled();
   expect(screen.getByTestId('signature-modal')).toBeTruthy();
+});
+
+// CT7-075 (client, build 15): the tenant opened My Lease while their old lease
+// was the newest; the owner then sent a new lease. The dashboard said "Sign
+// Lease Now", but My Lease — a tab screen that stays mounted — still showed
+// the old, signed lease with no Sign button, because it loaded only on mount.
+it('CT7-075: shown again after the owner sends a new lease → shows it with the Sign button', async () => {
+  const oldSigned = {
+    ...LEASE,
+    id: 'lease-old',
+    status: 'active',
+    property: { ...LEASE.property, title: '2B Datura' },
+  };
+  const newPending = {
+    ...LEASE,
+    id: 'lease-new',
+    property: { ...LEASE.property, title: '2A Datura' },
+  };
+  (supabase.from as jest.Mock).mockReturnValue(query({ data: oldSigned, error: null }));
+  const screen = render(<TenantLeaseScreen />);
+  await waitFor(() => expect(screen.getByText('2B Datura')).toBeTruthy());
+  expect(screen.queryByTestId('tenant-lease-sign')).toBeNull();
+
+  (supabase.from as jest.Mock).mockReturnValue(query({ data: newPending, error: null }));
+  await act(async () => {
+    mockRefocus();
+  });
+
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-sign')).toBeTruthy());
+  expect(screen.getByText('2A Datura')).toBeTruthy();
+  expect(screen.queryByText('2B Datura')).toBeNull();
+});
+
+it('CT7-075: shown again after the lease is gone → no stale lease left on screen', async () => {
+  const screen = render(<TenantLeaseScreen />);
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-sign')).toBeTruthy());
+
+  (supabase.from as jest.Mock).mockReturnValue(
+    query({ data: null, error: { code: 'PGRST116', message: 'no rows' } })
+  );
+  await act(async () => {
+    mockRefocus();
+  });
+
+  await waitFor(() => expect(screen.queryByTestId('tenant-lease-sign')).toBeNull());
+  expect(screen.queryByText('Sea View')).toBeNull();
 });
