@@ -921,3 +921,43 @@ it('CT7-075: screen moves on while the old save CHECK is pending → no alert, n
   expect(from).not.toHaveBeenCalled();
   expect(screen.getByTestId('signature-modal')).toBeTruthy();
 });
+
+it('CT7-075: save committed but its answer lost, then the tenant leaves → the retry still confirms it and the owner is told, silently', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  (uploadSignature as jest.Mock).mockResolvedValue('signatures/lease-1.png');
+  const notify = jest.fn().mockResolvedValue(undefined);
+  (notificationsApi as unknown as { sendNotification: jest.Mock }).sendNotification = notify;
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+
+  const firstTry = deferred();
+  (supabase.from as jest.Mock)
+    .mockReturnValueOnce(query(firstTry.promise)) // try 1: committed, answer lost
+    .mockReturnValueOnce(query({ data: [], error: null })) // try 2: no row awaits the tenant
+    .mockReturnValueOnce(
+      query({
+        data: { status: 'pending_owner_signature', tenant_signature_url: 'signatures/lease-1.png' },
+        error: null,
+      })
+    ); // check: our signature is there
+
+  let saving: Promise<void> = Promise.resolve();
+  await act(async () => {
+    saving = mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  await act(async () => {
+    firstTry.resolve({ data: null, error: { message: 'Network request failed' } });
+  });
+  await act(async () => {
+    mockBlur(); // the tenant leaves during the retry pause
+  });
+  alertSpy.mockClear();
+  await act(async () => {
+    await saving;
+  });
+
+  expect(notify).toHaveBeenCalledWith(
+    expect.objectContaining({ type: 'lease_signed', user_id: 'owner-1' })
+  );
+  expect(alertSpy).not.toHaveBeenCalled();
+}, 15000);

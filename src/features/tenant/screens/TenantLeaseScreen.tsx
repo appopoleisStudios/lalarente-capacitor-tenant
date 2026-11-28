@@ -393,7 +393,9 @@ export default function TenantLeaseScreen() {
       const maxRetries = 3;
 
       for (let attempt = 0; attempt < maxRetries; attempt++) {
-        if (!isCurrentView(view)) return; // superseded: drop silently
+        // No view check here: once a write may have been sent, finish
+        // confirming it (and tell the owner) even if the tenant left the
+        // screen — only the screen updates below are skipped when superseded.
         try {
           // CT7-075: only a lease still waiting for the tenant's signature
           // takes it; if it has left that status meanwhile, no row matches
