@@ -96,6 +96,7 @@ export default function TenantLeaseScreen() {
     signingView.current = null;
     setShowSignatureModal(false);
     setOpeningFullLease(false);
+    setActionLoading(false);
   };
   const isCurrentView = (view: number) => !reloadPending.current && shownView.current === view;
   // the view the signature pad was opened from
@@ -357,7 +358,11 @@ export default function TenantLeaseScreen() {
   const handleSignatureSave = async (signatureBase64: string) => {
     if (!lease) return;
     const view = signingView.current;
+    // Once superseded (a reload or leaving the screen), this save never
+    // touches the screen again: no alert, reload, pad or busy-state change.
+    const stale = () => view === null || !isCurrentView(view);
     const leaseChanged = () => {
+      if (stale()) return;
       setShowSignatureModal(false);
       Alert.alert('Lease changed', 'This lease was updated. Please review it and sign again.');
       // show the lease as it is now, so the out-of-date one can't be signed again
@@ -417,7 +422,7 @@ export default function TenantLeaseScreen() {
               updateSuccess = true;
               break;
             }
-            leaseChanged();
+            leaseChanged(); // does nothing if superseded meanwhile
             return;
           }
 
@@ -462,11 +467,14 @@ export default function TenantLeaseScreen() {
         })
         .catch(() => {}); // Non-blocking
 
+      // the signature landed and the owner is told; a superseded screen shows nothing
+      if (stale()) return;
       Alert.alert('Success', 'Lease agreement signed! Waiting for owner to sign.', [
         { text: 'OK', onPress: () => loadActiveLease() },
       ]);
     } catch (err: any) {
       console.error('Error signing lease:', err);
+      if (stale()) return;
 
       // Provide user-friendly error messages based on error type
       let errorTitle = 'Signing Failed';
@@ -490,8 +498,10 @@ export default function TenantLeaseScreen() {
 
       Alert.alert(errorTitle, errorMessage, [{ text: 'OK', style: 'default' }]);
     } finally {
-      setActionLoading(false);
-      setShowSignatureModal(false);
+      if (!stale()) {
+        setActionLoading(false);
+        setShowSignatureModal(false);
+      }
     }
   };
 

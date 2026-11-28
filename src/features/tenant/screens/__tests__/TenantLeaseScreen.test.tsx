@@ -856,3 +856,68 @@ it('CT7-075: the signature pad stays closed until the profile check says "sign"'
   });
   await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
 });
+
+// ── CT7-075 GitHub SA on b2945f1: a superseded save never touches the screen ──
+
+async function staleSaveScenario(pendingStep: 'update' | 'check') {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  (uploadSignature as jest.Mock).mockResolvedValue('signatures/lease-1.png');
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+
+  const pending = deferred();
+  const conflict = {
+    data: { status: 'active', tenant_signature_url: 'someone-else.png' },
+    error: null,
+  };
+  const from = supabase.from as jest.Mock;
+  if (pendingStep === 'update') {
+    from
+      .mockReturnValueOnce(query(pending.promise)) // the update, still pending
+      .mockReturnValueOnce(query({ data: NEW, error: null })) // the reload
+      .mockReturnValueOnce(query(conflict)); // the old save's check
+  } else {
+    from
+      .mockReturnValueOnce(query({ data: [], error: null })) // the update: no row
+      .mockReturnValueOnce(query(pending.promise)) // the check, still pending
+      .mockReturnValueOnce(query({ data: NEW, error: null })); // the reload
+  }
+  from.mockReturnValue(query({ data: NEW, error: null }));
+
+  let saving: Promise<void> = Promise.resolve();
+  await act(async () => {
+    saving = mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  // the screen moves on to the new lease and the tenant opens its pad
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByText('2A Datura')).toBeTruthy());
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('tenant-lease-sign'));
+  });
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+  alertSpy.mockClear();
+  from.mockClear();
+
+  await act(async () => {
+    pending.resolve(pendingStep === 'update' ? { data: [], error: null } : conflict);
+    await saving;
+  });
+  return { screen, from };
+}
+
+it('CT7-075: screen moves on while the old save UPDATE is pending → no alert, no reload, new pad stays open', async () => {
+  const { screen, from } = await staleSaveScenario('update');
+  expect(alertSpy).not.toHaveBeenCalled();
+  // only the old save's own check may run — no reload of the screen
+  expect(from.mock.calls.length).toBeLessThanOrEqual(1);
+  expect(screen.getByTestId('signature-modal')).toBeTruthy();
+});
+
+it('CT7-075: screen moves on while the old save CHECK is pending → no alert, no reload, new pad stays open', async () => {
+  const { screen, from } = await staleSaveScenario('check');
+  expect(alertSpy).not.toHaveBeenCalled();
+  expect(from).not.toHaveBeenCalled();
+  expect(screen.getByTestId('signature-modal')).toBeTruthy();
+});
