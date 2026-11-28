@@ -10,15 +10,39 @@ import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import TenantLeaseScreen from '../TenantLeaseScreen';
 import { supabase } from '@/src/lib/supabase';
 import { checkTenantProfileCompleteness } from '../../utils/profileCompleteness';
+import { uploadSignature } from '../../../leases/api/storageService';
+import { notificationsApi } from '../../../notifications/api/notificationsApi';
 
 const mockRouter = { push: jest.fn(), back: jest.fn(), replace: jest.fn() };
-jest.mock('expo-router', () => ({ useRouter: () => mockRouter }));
+// useFocusEffect runs like a mount effect; mockRefocus() replays it the way
+// expo-router does when the (still mounted) tab screen is shown again.
+// mockBlur() runs the effect's cleanup, as when the tenant leaves the screen.
+let mockFocusCallback: (() => (() => void) | void) | null = null;
+let mockBlurCleanup: (() => void) | void;
+const mockRefocus = () => {
+  mockBlurCleanup = mockFocusCallback?.();
+};
+const mockBlur = () => mockBlurCleanup?.();
+jest.mock('expo-router', () => ({
+  useRouter: () => mockRouter,
+  useFocusEffect: (cb: () => (() => void) | void) => {
+    mockFocusCallback = cb;
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require('react').useEffect(() => {
+      mockBlurCleanup = cb();
+      return mockBlurCleanup;
+    }, [cb]);
+  },
+}));
 jest.mock('../../utils/profileCompleteness', () => ({
   checkTenantProfileCompleteness: jest.fn(),
 }));
+// The latest onSave the screen handed the signature pad (CT7-075 tests).
+let mockSignatureOnSave: ((sig: string) => Promise<void>) | null = null;
 jest.mock('../../../leases/components/SignatureModal', () => ({
   __esModule: true,
-  default: ({ visible }: { visible: boolean }) => {
+  default: ({ visible, onSave }: { visible: boolean; onSave: (s: string) => Promise<void> }) => {
+    mockSignatureOnSave = onSave;
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { Text: MockText } = require('react-native');
     return visible ? <MockText testID="signature-modal">signature</MockText> : null;
@@ -37,7 +61,9 @@ jest.mock('../../../leases/api/storageService', () => ({
   getLeaseDocumentUrl: jest.fn(),
 }));
 jest.mock('../../../leases/api/regenerateLeasePDF', () => ({ regenerateLeasePDF: jest.fn() }));
-jest.mock('../../../leases/api/leasePdfService', () => ({ generateLeaseHTML: jest.fn() }));
+jest.mock('../../../leases/api/leasePdfService', () => ({
+  generateLeaseHTML: jest.fn(() => '<html>lease wording</html>'),
+}));
 jest.mock('../../../notifications/api/notificationsApi', () => ({ notificationsApi: {} }));
 jest.mock('react-native-safe-area-context', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -125,4 +151,901 @@ it('complete profile: the signature modal opens with no alert', async () => {
   const screen = await pressSign();
   expect(alertSpy).not.toHaveBeenCalled();
   expect(screen.getByTestId('signature-modal')).toBeTruthy();
+});
+
+// CT7-075 (client, build 15): the tenant opened My Lease while their old lease
+// was the newest; the owner then sent a new lease. The dashboard said "Sign
+// Lease Now", but My Lease — a tab screen that stays mounted — still showed
+// the old, signed lease with no Sign button, because it loaded only on mount.
+it('CT7-075: shown again after the owner sends a new lease → shows it with the Sign button', async () => {
+  const oldSigned = {
+    ...LEASE,
+    id: 'lease-old',
+    status: 'active',
+    property: { ...LEASE.property, title: '2B Datura' },
+  };
+  const newPending = {
+    ...LEASE,
+    id: 'lease-new',
+    property: { ...LEASE.property, title: '2A Datura' },
+  };
+  (supabase.from as jest.Mock).mockReturnValue(query({ data: oldSigned, error: null }));
+  const screen = render(<TenantLeaseScreen />);
+  await waitFor(() => expect(screen.getByText('2B Datura')).toBeTruthy());
+  expect(screen.queryByTestId('tenant-lease-sign')).toBeNull();
+
+  (supabase.from as jest.Mock).mockReturnValue(query({ data: newPending, error: null }));
+  await act(async () => {
+    mockRefocus();
+  });
+
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-sign')).toBeTruthy());
+  expect(screen.getByText('2A Datura')).toBeTruthy();
+  expect(screen.queryByText('2B Datura')).toBeNull();
+});
+
+it('CT7-075: shown again after the lease is gone → no stale lease left on screen', async () => {
+  const screen = render(<TenantLeaseScreen />);
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-sign')).toBeTruthy());
+
+  (supabase.from as jest.Mock).mockReturnValue(
+    query({ data: null, error: { code: 'PGRST116', message: 'no rows' } })
+  );
+  await act(async () => {
+    mockRefocus();
+  });
+
+  await waitFor(() => expect(screen.getByText('No Active Lease')).toBeTruthy());
+  expect(screen.queryByTestId('tenant-lease-sign')).toBeNull();
+  expect(screen.queryByText('Sea View')).toBeNull();
+
+  // shown again once the owner sends a lease → straight to it, no error flash
+  (supabase.from as jest.Mock).mockReturnValue(query({ data: LEASE, error: null }));
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-sign')).toBeTruthy());
+  expect(screen.queryByText(/Failed to load lease/)).toBeNull();
+});
+
+it('CT7-075: overlapping reloads — a slow older answer never brings back the old lease', async () => {
+  const oldSigned = {
+    ...LEASE,
+    id: 'lease-old',
+    status: 'active',
+    property: { ...LEASE.property, title: '2B Datura' },
+  };
+  const newPending = {
+    ...LEASE,
+    id: 'lease-new',
+    property: { ...LEASE.property, title: '2A Datura' },
+  };
+  let releaseSlow: (v: unknown) => void = () => {};
+  const slow = new Promise((resolve) => {
+    releaseSlow = resolve;
+  });
+  // first load (mount) is slow and answers with the old lease; the reload is fast
+  (supabase.from as jest.Mock)
+    .mockReturnValueOnce(query(slow))
+    .mockReturnValue(query({ data: newPending, error: null }));
+  const screen = render(<TenantLeaseScreen />);
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByText('2A Datura')).toBeTruthy());
+
+  await act(async () => {
+    releaseSlow({ data: oldSigned, error: null });
+    await slow;
+  });
+  expect(screen.getByText('2A Datura')).toBeTruthy();
+  expect(screen.queryByText('2B Datura')).toBeNull();
+  expect(screen.getByTestId('tenant-lease-sign')).toBeTruthy();
+});
+
+it('CT7-075: a reload that brings another lease closes the signature pad and never signs it', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue({
+    status: 'ok',
+    complete: true,
+    missing: [],
+  });
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+
+  const other = { ...LEASE, id: 'lease-2', property: { ...LEASE.property, title: '2A Datura' } };
+  (supabase.from as jest.Mock).mockReturnValue(query({ data: other, error: null }));
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByText('2A Datura')).toBeTruthy());
+  expect(screen.queryByTestId('signature-modal')).toBeNull();
+
+  // the pad's save handler as of now (the screen re-rendered with lease-2)
+  // must not put the signature on a lease the tenant never opened the pad for
+  await act(async () => {
+    await mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  expect(uploadSignature).not.toHaveBeenCalled();
+});
+
+// ── CT7-075 SA round 2: nothing acts on a lease while a reload is pending ──
+
+/** A promise the test resolves (or rejects) later. */
+function deferred<T = unknown>() {
+  let resolve: (v: T) => void = () => {};
+  let reject: (e: unknown) => void = () => {};
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
+const OLD = { ...LEASE, id: 'lease-old', property: { ...LEASE.property, title: '2B Datura' } };
+const NEW = { ...LEASE, id: 'lease-new', property: { ...LEASE.property, title: '2A Datura' } };
+const COMPLETE = { status: 'ok', complete: true, missing: [] };
+
+it('CT7-075: while a reload is pending, Sign does nothing (no gate, no pad)', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  const screen = render(<TenantLeaseScreen />);
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-sign')).toBeTruthy());
+
+  const pending = deferred();
+  (supabase.from as jest.Mock).mockReturnValue(query(pending.promise));
+  await act(async () => {
+    mockRefocus();
+  });
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('tenant-lease-sign'));
+  });
+  expect(checkTenantProfileCompleteness).not.toHaveBeenCalled();
+  expect(screen.queryByTestId('signature-modal')).toBeNull();
+
+  // once the reload answers, signing works again
+  await act(async () => {
+    pending.resolve({ data: LEASE, error: null });
+    await pending.promise;
+  });
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('tenant-lease-sign'));
+  });
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+});
+
+it('CT7-075: a profile check that finishes after the lease was replaced opens no pad', async () => {
+  const gate = deferred();
+  (checkTenantProfileCompleteness as jest.Mock).mockReturnValue(gate.promise);
+  (supabase.from as jest.Mock).mockReturnValue(query({ data: OLD, error: null }));
+  const screen = render(<TenantLeaseScreen />);
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-sign')).toBeTruthy());
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('tenant-lease-sign'));
+  });
+
+  (supabase.from as jest.Mock).mockReturnValue(query({ data: NEW, error: null }));
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByText('2A Datura')).toBeTruthy());
+
+  await act(async () => {
+    gate.resolve(COMPLETE);
+    await gate.promise;
+  });
+  expect(screen.queryByTestId('signature-modal')).toBeNull();
+});
+
+it('CT7-075: a slow older reload that fails shows no error over the newer lease', async () => {
+  const slow = deferred();
+  (supabase.from as jest.Mock)
+    .mockReturnValueOnce(query(slow.promise))
+    .mockReturnValue(query({ data: NEW, error: null }));
+  const screen = render(<TenantLeaseScreen />);
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByText('2A Datura')).toBeTruthy());
+
+  await act(async () => {
+    slow.reject(new Error('Network request failed'));
+    await slow.promise.catch(() => {});
+  });
+  expect(screen.getByText('2A Datura')).toBeTruthy();
+  expect(screen.queryByText(/Network request failed|Failed to load lease/)).toBeNull();
+  expect(screen.getByTestId('tenant-lease-sign')).toBeTruthy();
+});
+
+it('CT7-075: the old lease wording failing after a reload raises no alert and shows nothing', async () => {
+  (supabase.from as jest.Mock).mockReturnValue(query({ data: OLD, error: null }));
+  const screen = render(<TenantLeaseScreen />);
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-read-full')).toBeTruthy());
+
+  const wording = deferred();
+  (supabase.from as jest.Mock).mockReturnValue(query(wording.promise));
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('tenant-lease-read-full'));
+  });
+
+  (supabase.from as jest.Mock).mockReturnValue(query({ data: NEW, error: null }));
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByText('2A Datura')).toBeTruthy());
+
+  await act(async () => {
+    wording.resolve({ data: null, error: { message: 'boom' } });
+    await wording.promise;
+  });
+  expect(alertSpy).not.toHaveBeenCalled();
+  expect(screen.queryByTestId('tenant-lease-full-close')).toBeNull();
+});
+
+it('CT7-075: reloading from "No Active Lease" keeps that screen until the answer — no error flash', async () => {
+  (supabase.from as jest.Mock).mockReturnValue(
+    query({ data: null, error: { code: 'PGRST116', message: 'no rows' } })
+  );
+  const screen = render(<TenantLeaseScreen />);
+  await waitFor(() => expect(screen.getByText('No Active Lease')).toBeTruthy());
+
+  const pending = deferred();
+  (supabase.from as jest.Mock).mockReturnValue(query(pending.promise));
+  await act(async () => {
+    mockRefocus();
+  });
+  expect(screen.getByText('No Active Lease')).toBeTruthy();
+  expect(screen.queryByText(/Failed to load lease/)).toBeNull();
+
+  await act(async () => {
+    pending.resolve({ data: NEW, error: null });
+    await pending.promise;
+  });
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-sign')).toBeTruthy());
+});
+
+it('CT7-075: the "signed" alert reload and a focus reload overlap — the latest answer wins', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  (uploadSignature as jest.Mock).mockResolvedValue('signatures/lease-1.png');
+  (notificationsApi as unknown as { sendNotification: jest.Mock }).sendNotification = jest
+    .fn()
+    .mockResolvedValue(undefined);
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+  await act(async () => {
+    await mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  const okButton = alertSpy.mock.calls
+    .flatMap((c) => (c[2] as { text: string; onPress?: () => void }[] | undefined) ?? [])
+    .find((b) => b.text === 'OK' && b.onPress);
+  expect(okButton).toBeTruthy();
+
+  // the alert's reload first (slow, answers with the stale row), then a focus reload (fast)
+  const slow = deferred();
+  const signed = {
+    ...LEASE,
+    status: 'pending_owner_signature',
+    property: { ...LEASE.property, title: 'Signed Lease' },
+  };
+  (supabase.from as jest.Mock)
+    .mockReturnValueOnce(query(slow.promise))
+    .mockReturnValue(query({ data: signed, error: null }));
+  await act(async () => {
+    okButton!.onPress!();
+  });
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByText('Signed Lease')).toBeTruthy());
+
+  await act(async () => {
+    slow.resolve({ data: LEASE, error: null });
+    await slow.promise;
+  });
+  expect(screen.getByText('Signed Lease')).toBeTruthy();
+  expect(screen.queryByTestId('tenant-lease-sign')).toBeNull();
+});
+
+// ── CT7-075 SA round 3: same lease id, changed lease — pending work is dropped ──
+
+const SIGNED_SAME = {
+  ...LEASE,
+  status: 'pending_owner_signature',
+  property: { ...LEASE.property, title: 'Already Signed' },
+};
+
+it('CT7-075: same lease reloaded as signed during the profile check → no pad', async () => {
+  const gate = deferred();
+  (checkTenantProfileCompleteness as jest.Mock).mockReturnValue(gate.promise);
+  const screen = render(<TenantLeaseScreen />);
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-sign')).toBeTruthy());
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('tenant-lease-sign'));
+  });
+
+  (supabase.from as jest.Mock).mockReturnValue(query({ data: SIGNED_SAME, error: null }));
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByText('Already Signed')).toBeTruthy());
+
+  await act(async () => {
+    gate.resolve(COMPLETE);
+    await gate.promise;
+  });
+  expect(screen.queryByTestId('signature-modal')).toBeNull();
+});
+
+it('CT7-075: same lease reloaded while its wording loads → the old wording is not shown', async () => {
+  const screen = render(<TenantLeaseScreen />);
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-read-full')).toBeTruthy());
+
+  const wording = deferred();
+  (supabase.from as jest.Mock).mockReturnValue(query(wording.promise));
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('tenant-lease-read-full'));
+  });
+  (supabase.from as jest.Mock).mockReturnValue(query({ data: LEASE, error: null }));
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-sign')).toBeTruthy());
+
+  await act(async () => {
+    wording.resolve({ data: LEASE, error: null });
+    await wording.promise;
+  });
+  expect(screen.queryByTestId('tenant-lease-full-close')).toBeNull();
+  expect(alertSpy).not.toHaveBeenCalled();
+});
+
+it('CT7-075: same lease reloaded as signed while the pad is open → pad closes, nothing is signed', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+
+  (supabase.from as jest.Mock).mockReturnValue(query({ data: SIGNED_SAME, error: null }));
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByText('Already Signed')).toBeTruthy());
+  expect(screen.queryByTestId('signature-modal')).toBeNull();
+
+  await act(async () => {
+    await mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  expect(uploadSignature).not.toHaveBeenCalled();
+});
+
+it('CT7-075: an older reload finishing while a newer one is pending leaves Sign blocked', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  const screen = render(<TenantLeaseScreen />);
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-sign')).toBeTruthy());
+
+  const older = deferred();
+  const newer = deferred();
+  (supabase.from as jest.Mock)
+    .mockReturnValueOnce(query(older.promise))
+    .mockReturnValueOnce(query(newer.promise));
+  await act(async () => {
+    mockRefocus();
+  });
+  await act(async () => {
+    mockRefocus();
+  });
+  await act(async () => {
+    older.resolve({ data: LEASE, error: null });
+    await older.promise;
+  });
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('tenant-lease-sign'));
+  });
+  expect(checkTenantProfileCompleteness).not.toHaveBeenCalled();
+  expect(screen.queryByTestId('signature-modal')).toBeNull();
+
+  await act(async () => {
+    newer.resolve({ data: LEASE, error: null });
+    await newer.promise;
+  });
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('tenant-lease-sign'));
+  });
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+});
+
+// ── CT7-075 SA round 4: the signature write itself ──
+
+/** Like query(), but records every .update(...) and .eq(...) call. */
+function recordingQuery(result: unknown, calls: { update: unknown[]; eq: unknown[][] }) {
+  const q: unknown = new Proxy(
+    {},
+    {
+      get: (_, key) => {
+        if (key === 'then')
+          return (ok: (v: unknown) => unknown, fail: (e: unknown) => unknown) =>
+            Promise.resolve(result).then(ok, fail);
+        if (key === 'update')
+          return (v: unknown) => {
+            calls.update.push(v);
+            return q;
+          };
+        if (key === 'eq')
+          return (...a: unknown[]) => {
+            calls.eq.push(a);
+            return q;
+          };
+        return () => q;
+      },
+    }
+  );
+  return q;
+}
+
+it('CT7-075: a reload answering while the signature uploads → the lease is not updated', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  const upload = deferred<string>();
+  (uploadSignature as jest.Mock).mockReturnValue(upload.promise);
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+
+  const calls = { update: [] as unknown[], eq: [] as unknown[][] };
+  (supabase.from as jest.Mock).mockReturnValue(
+    recordingQuery({ data: SIGNED_SAME, error: null }, calls)
+  );
+  let saving: Promise<void> = Promise.resolve();
+  await act(async () => {
+    saving = mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByText('Already Signed')).toBeTruthy());
+
+  await act(async () => {
+    upload.resolve('signatures/lease-1.png');
+    await saving;
+  });
+  expect(calls.update).toHaveLength(0);
+  // superseded, not a conflict: dropped silently
+  expect(alertSpy).not.toHaveBeenCalledWith('Lease changed', expect.any(String));
+});
+
+it('CT7-075: the signature write only matches a lease still awaiting the tenant; no match → not "signed"', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  (uploadSignature as jest.Mock).mockResolvedValue('signatures/lease-1.png');
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+
+  // the database matched no row: the lease changed on the server meanwhile
+  const calls = { update: [] as unknown[], eq: [] as unknown[][] };
+  (supabase.from as jest.Mock)
+    .mockReturnValueOnce(recordingQuery({ data: [], error: null }, calls)) // the update
+    .mockReturnValueOnce(query({ data: [], error: null })) // the check: not our signature
+    .mockReturnValue(query({ data: SIGNED_SAME, error: null })); // the reload
+  await act(async () => {
+    await mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  expect(calls.update).toHaveLength(1);
+  expect(calls.eq).toEqual(
+    expect.arrayContaining([
+      ['id', 'lease-1'],
+      ['status', 'pending_tenant_signature'],
+    ])
+  );
+  expect(alertSpy).toHaveBeenCalledWith('Lease changed', expect.any(String));
+  expect(alertSpy).not.toHaveBeenCalledWith('Success', expect.anything(), expect.anything());
+});
+
+// ── CT7-075 GitHub SA (khadeejahdreamcode) on 1c850d0 ──
+
+it('CT7-075: first save committed but its answer was lost → retry finds our signature → "signed", not "Lease changed"', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  (uploadSignature as jest.Mock).mockResolvedValue('signatures/lease-1.png');
+  (notificationsApi as unknown as { sendNotification: jest.Mock }).sendNotification = jest
+    .fn()
+    .mockResolvedValue(undefined);
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+
+  (supabase.from as jest.Mock)
+    // try 1: saved on the server, but the answer is lost
+    .mockReturnValueOnce(query({ data: null, error: { message: 'Network request failed' } }))
+    // try 2: no row still awaits the tenant
+    .mockReturnValueOnce(query({ data: [], error: null }))
+    // reconcile: the lease carries our signature
+    .mockReturnValueOnce(
+      query({
+        data: { status: 'pending_owner_signature', tenant_signature_url: 'signatures/lease-1.png' },
+        error: null,
+      })
+    );
+  await act(async () => {
+    await mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  expect(alertSpy).toHaveBeenCalledWith(
+    'Success',
+    expect.stringMatching(/signed/i),
+    expect.anything()
+  );
+  expect(alertSpy).not.toHaveBeenCalledWith('Lease changed', expect.any(String));
+}, 15000);
+
+it('CT7-075: the old lease wording still loading does not block reading the new lease', async () => {
+  (supabase.from as jest.Mock).mockReturnValue(query({ data: OLD, error: null }));
+  const screen = render(<TenantLeaseScreen />);
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-read-full')).toBeTruthy());
+
+  const hung = deferred(); // the old wording request never answers in time
+  (supabase.from as jest.Mock).mockReturnValueOnce(query(hung.promise));
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('tenant-lease-read-full'));
+  });
+
+  (supabase.from as jest.Mock).mockReturnValue(query({ data: NEW, error: null }));
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByText('2A Datura')).toBeTruthy());
+
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('tenant-lease-read-full'));
+  });
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-full-close')).toBeTruthy());
+
+  // the old request answering late neither closes nor replaces it
+  await act(async () => {
+    hung.resolve({ data: OLD, error: null });
+    await hung.promise;
+  });
+  expect(screen.getByTestId('tenant-lease-full-close')).toBeTruthy();
+});
+
+it('CT7-075: signature uploading → a reload starts and FAILS → upload finishes → the lease is not updated', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  const upload = deferred<string>();
+  (uploadSignature as jest.Mock).mockReturnValue(upload.promise);
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+
+  const calls = { update: [] as unknown[], eq: [] as unknown[][] };
+  let saving: Promise<void> = Promise.resolve();
+  await act(async () => {
+    saving = mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  // the reload fails: nothing new is shown, the old lease stays on screen
+  (supabase.from as jest.Mock).mockReturnValue(
+    recordingQuery({ data: null, error: { message: 'Network request failed' } }, calls)
+  );
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByText(/Failed to load lease/)).toBeTruthy());
+
+  await act(async () => {
+    upload.resolve('signatures/lease-1.png');
+    await saving;
+  });
+  expect(calls.update).toHaveLength(0);
+});
+
+// ── CT7-075 GitHub SA on e21bfc4: reconciling the signature write ──
+
+it('CT7-075: the check after a no-match save fails → it retries, and finds the signature saved', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  (uploadSignature as jest.Mock).mockResolvedValue('signatures/lease-1.png');
+  (notificationsApi as unknown as { sendNotification: jest.Mock }).sendNotification = jest
+    .fn()
+    .mockResolvedValue(undefined);
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+
+  (supabase.from as jest.Mock)
+    .mockReturnValueOnce(query({ data: [], error: null })) // try 1: no row matched
+    .mockReturnValueOnce(query({ data: null, error: { message: 'Network request failed' } })) // check fails
+    .mockReturnValueOnce(query({ data: [], error: null })) // try 2: no row matched
+    .mockReturnValueOnce(
+      query({
+        data: { status: 'pending_owner_signature', tenant_signature_url: 'signatures/lease-1.png' },
+        error: null,
+      })
+    ); // check: our signature is there
+  await act(async () => {
+    await mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  expect(alertSpy).toHaveBeenCalledWith(
+    'Success',
+    expect.stringMatching(/signed/i),
+    expect.anything()
+  );
+  expect(alertSpy).not.toHaveBeenCalledWith('Lease changed', expect.any(String));
+});
+
+it('CT7-075: the lease really changed → "Lease changed" and the screen reloads it (no old Sign button left)', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  (uploadSignature as jest.Mock).mockResolvedValue('signatures/lease-1.png');
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+
+  (supabase.from as jest.Mock)
+    .mockReturnValueOnce(query({ data: [], error: null })) // no row matched
+    .mockReturnValueOnce(
+      query({
+        data: { status: 'pending_owner_signature', tenant_signature_url: 'other.png' },
+        error: null,
+      })
+    ) // someone else's change
+    .mockReturnValue(query({ data: SIGNED_SAME, error: null })); // the reload
+  await act(async () => {
+    await mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  expect(alertSpy).toHaveBeenCalledWith('Lease changed', expect.any(String));
+  await waitFor(() => expect(screen.getByText('Already Signed')).toBeTruthy());
+  expect(screen.queryByTestId('tenant-lease-sign')).toBeNull();
+});
+
+it('CT7-075: leaving the screen during the profile check → coming back opens no pad', async () => {
+  const gate = deferred();
+  (checkTenantProfileCompleteness as jest.Mock).mockReturnValue(gate.promise);
+  const screen = render(<TenantLeaseScreen />);
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-sign')).toBeTruthy());
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('tenant-lease-sign'));
+  });
+  await act(async () => {
+    mockBlur();
+  });
+  await act(async () => {
+    gate.resolve(COMPLETE);
+    await gate.promise;
+  });
+  expect(screen.queryByTestId('signature-modal')).toBeNull();
+});
+
+it('CT7-075: leaving the screen while the signature uploads → no update, no alert, no reload', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  const upload = deferred<string>();
+  (uploadSignature as jest.Mock).mockReturnValue(upload.promise);
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+
+  let saving: Promise<void> = Promise.resolve();
+  await act(async () => {
+    saving = mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  await act(async () => {
+    mockBlur();
+  });
+  (supabase.from as jest.Mock).mockClear();
+  await act(async () => {
+    upload.resolve('signatures/lease-1.png');
+    await saving;
+  });
+  expect(supabase.from).not.toHaveBeenCalled(); // no update, no reload
+  expect(alertSpy).not.toHaveBeenCalled();
+});
+
+it('CT7-075: leaving the screen while a reload is in flight → its late answer changes nothing', async () => {
+  const screen = render(<TenantLeaseScreen />);
+  await waitFor(() => expect(screen.getByText('Sea View')).toBeTruthy());
+
+  const late = deferred();
+  (supabase.from as jest.Mock).mockReturnValue(query(late.promise));
+  await act(async () => {
+    mockRefocus();
+  });
+  await act(async () => {
+    mockBlur();
+  });
+  await act(async () => {
+    late.resolve({ data: NEW, error: null });
+    await late.promise;
+  });
+  expect(screen.queryByText('2A Datura')).toBeNull();
+});
+
+it('CT7-075: the signature pad stays closed until the profile check says "sign"', async () => {
+  const gate = deferred();
+  (checkTenantProfileCompleteness as jest.Mock).mockReturnValue(gate.promise);
+  const screen = render(<TenantLeaseScreen />);
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-sign')).toBeTruthy());
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('tenant-lease-sign'));
+  });
+  expect(screen.queryByTestId('signature-modal')).toBeNull();
+  await act(async () => {
+    gate.resolve(COMPLETE);
+    await gate.promise;
+  });
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+});
+
+// ── CT7-075 GitHub SA on b2945f1: a superseded save never touches the screen ──
+
+async function staleSaveScenario(pendingStep: 'update' | 'check') {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  (uploadSignature as jest.Mock).mockResolvedValue('signatures/lease-1.png');
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+
+  const pending = deferred();
+  const conflict = {
+    data: { status: 'active', tenant_signature_url: 'someone-else.png' },
+    error: null,
+  };
+  const from = supabase.from as jest.Mock;
+  if (pendingStep === 'update') {
+    from
+      .mockReturnValueOnce(query(pending.promise)) // the update, still pending
+      .mockReturnValueOnce(query({ data: NEW, error: null })) // the reload
+      .mockReturnValueOnce(query(conflict)); // the old save's check
+  } else {
+    from
+      .mockReturnValueOnce(query({ data: [], error: null })) // the update: no row
+      .mockReturnValueOnce(query(pending.promise)) // the check, still pending
+      .mockReturnValueOnce(query({ data: NEW, error: null })); // the reload
+  }
+  from.mockReturnValue(query({ data: NEW, error: null }));
+
+  let saving: Promise<void> = Promise.resolve();
+  await act(async () => {
+    saving = mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  // the screen moves on to the new lease and the tenant opens its pad
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByText('2A Datura')).toBeTruthy());
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('tenant-lease-sign'));
+  });
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+  alertSpy.mockClear();
+  from.mockClear();
+
+  await act(async () => {
+    pending.resolve(pendingStep === 'update' ? { data: [], error: null } : conflict);
+    await saving;
+  });
+  return { screen, from };
+}
+
+it('CT7-075: screen moves on while the old save UPDATE is pending → no alert, no reload, new pad stays open', async () => {
+  const { screen, from } = await staleSaveScenario('update');
+  expect(alertSpy).not.toHaveBeenCalled();
+  // only the old save's own check may run — no reload of the screen
+  expect(from.mock.calls.length).toBeLessThanOrEqual(1);
+  expect(screen.getByTestId('signature-modal')).toBeTruthy();
+});
+
+it('CT7-075: screen moves on while the old save CHECK is pending → no alert, no reload, new pad stays open', async () => {
+  const { screen, from } = await staleSaveScenario('check');
+  expect(alertSpy).not.toHaveBeenCalled();
+  expect(from).not.toHaveBeenCalled();
+  expect(screen.getByTestId('signature-modal')).toBeTruthy();
+});
+
+it('CT7-075: save committed but its answer lost, then the tenant leaves → the retry still confirms it and the owner is told, silently', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  (uploadSignature as jest.Mock).mockResolvedValue('signatures/lease-1.png');
+  const notify = jest.fn().mockResolvedValue(undefined);
+  (notificationsApi as unknown as { sendNotification: jest.Mock }).sendNotification = notify;
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+
+  const firstTry = deferred();
+  (supabase.from as jest.Mock)
+    .mockReturnValueOnce(query(firstTry.promise)) // try 1: committed, answer lost
+    .mockReturnValueOnce(query({ data: [], error: null })) // try 2: no row awaits the tenant
+    .mockReturnValueOnce(
+      query({
+        data: { status: 'pending_owner_signature', tenant_signature_url: 'signatures/lease-1.png' },
+        error: null,
+      })
+    ); // check: our signature is there
+
+  let saving: Promise<void> = Promise.resolve();
+  await act(async () => {
+    saving = mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  await act(async () => {
+    firstTry.resolve({ data: null, error: { message: 'Network request failed' } });
+  });
+  await act(async () => {
+    mockBlur(); // the tenant leaves during the retry pause
+  });
+  alertSpy.mockClear();
+  await act(async () => {
+    await saving;
+  });
+
+  expect(notify).toHaveBeenCalledWith(
+    expect.objectContaining({ type: 'lease_signed', user_id: 'owner-1' })
+  );
+  expect(alertSpy).not.toHaveBeenCalled();
+}, 15000);
+
+it('CT7-075: our signature landed but the lease was cancelled since → not "signed", owner not told, lease reloaded', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  (uploadSignature as jest.Mock).mockResolvedValue('signatures/lease-1.png');
+  const notify = jest.fn().mockResolvedValue(undefined);
+  (notificationsApi as unknown as { sendNotification: jest.Mock }).sendNotification = notify;
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+
+  const cancelled = {
+    ...LEASE,
+    status: 'cancelled',
+    property: { ...LEASE.property, title: 'Cancelled Lease' },
+  };
+  (supabase.from as jest.Mock)
+    .mockReturnValueOnce(query({ data: null, error: { message: 'Network request failed' } })) // try 1: answer lost
+    .mockReturnValueOnce(query({ data: [], error: null })) // try 2: no row awaits the tenant
+    .mockReturnValueOnce(
+      query({
+        data: { status: 'cancelled', tenant_signature_url: 'signatures/lease-1.png' },
+        error: null,
+      })
+    ) // check: ours, but cancelled
+    .mockReturnValue(query({ data: cancelled, error: null })); // the reload
+  await act(async () => {
+    await mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  expect(notify).not.toHaveBeenCalled();
+  expect(alertSpy).not.toHaveBeenCalledWith('Success', expect.anything(), expect.anything());
+  expect(alertSpy).toHaveBeenCalledWith('Lease changed', expect.any(String));
+  await waitFor(() => expect(screen.getByText('Cancelled Lease')).toBeTruthy());
+}, 15000);
+
+it('CT7-075: our signature landed and the owner activated the lease before the retry → "now active", owner not re-notified', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  (uploadSignature as jest.Mock).mockResolvedValue('signatures/lease-1.png');
+  const notify = jest.fn().mockResolvedValue(undefined);
+  (notificationsApi as unknown as { sendNotification: jest.Mock }).sendNotification = notify;
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+
+  (supabase.from as jest.Mock)
+    .mockReturnValueOnce(query({ data: null, error: { message: 'Network request failed' } })) // try 1: answer lost
+    .mockReturnValueOnce(query({ data: [], error: null })) // try 2: no row awaits the tenant
+    .mockReturnValueOnce(
+      query({
+        data: { status: 'active', tenant_signature_url: 'signatures/lease-1.png' },
+        error: null,
+      })
+    ); // check: ours, and the owner has signed since
+  await act(async () => {
+    await mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  expect(alertSpy).toHaveBeenCalledWith(
+    'Success',
+    expect.stringMatching(/now active/i),
+    expect.anything()
+  );
+  expect(alertSpy).not.toHaveBeenCalledWith('Lease changed', expect.any(String));
+  expect(notify).not.toHaveBeenCalled();
+}, 15000);
+
+it('CT7-075: "signed" alert OK tapped after the screen moved on → no reload', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  (uploadSignature as jest.Mock).mockResolvedValue('signatures/lease-1.png');
+  (notificationsApi as unknown as { sendNotification: jest.Mock }).sendNotification = jest
+    .fn()
+    .mockResolvedValue(undefined);
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+  await act(async () => {
+    await mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  const ok = alertSpy.mock.calls
+    .filter((c) => c[0] === 'Success')
+    .flatMap((c) => (c[2] as { text: string; onPress?: () => void }[]) ?? [])
+    .find((b) => b.text === 'OK');
+  expect(ok?.onPress).toBeTruthy();
+
+  await act(async () => {
+    mockBlur(); // the tenant left before tapping OK
+  });
+  (supabase.from as jest.Mock).mockClear();
+  await act(async () => {
+    ok!.onPress!();
+  });
+  expect(supabase.from).not.toHaveBeenCalled();
 });

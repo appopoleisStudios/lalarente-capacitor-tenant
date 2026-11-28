@@ -1916,6 +1916,26 @@ Found while testing on the Android emulator with a real on-screen keyboard.
         with the keyboard up; lifecycle-06 posts a comment with one tap
         (both LC-comments posted; owner inspection steps green).
 
+## CT7-075 🔴 Tenant can't sign a new lease: "Sign Lease Now" opens the old one (tenant) — fixed
+
+- **Reported:** client, build 15, 2026-11-28 — "Application sent and approved.
+  Lease cannot be signed. Not editable. Cannot move from this point."
+- **Today (build 15):** the dashboard said "Lease Agreement Ready — 2A Datura —
+  Sign Lease Now", but My Lease showed the tenant's earlier lease (2B Datura,
+  signed 21 Nov) with no Sign button. My Lease is a tab screen that stays
+  mounted and loaded the lease only on mount, so a tenant who had opened it
+  before the owner sent the new lease kept seeing the old one until the app
+  was restarted. Database and lease were fine: a fresh start on emulator-5554
+  with the build 15 APK showed 2A Datura with "Sign Lease Agreement".
+- **Fix:** `TenantLeaseScreen` reloads the lease every time it is shown
+  (`useFocusEffect`), and clears a lease that is no longer there.
+- **Workaround on build 15:** close the app fully and reopen it.
+- **Tests:** `TenantLeaseScreen.test.tsx` — shown again after the owner sends
+  a new lease → new lease with the Sign button; shown again after the lease is
+  gone → no stale lease. Both fail without the fix.
+- **Related:** the client's tenant account still holds an _active_ lease on
+  the test fixture property 2B Datura from E2E runs (CT7-039, shared accounts).
+
 ## CT7-072 🟠 Lease activation could spin forever on a stuck PDF print (owner, tenant) — fixed
 
 - **Role:** owner (signing activates the lease), tenant ("Generate PDF") ·

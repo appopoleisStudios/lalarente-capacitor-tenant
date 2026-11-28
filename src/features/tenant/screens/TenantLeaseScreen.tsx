@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { notificationsApi } from '../../notifications/api/notificationsApi';
@@ -78,13 +78,37 @@ export default function TenantLeaseScreen() {
   const [error, setError] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
   const [showSignatureModal, setShowSignatureModal] = useState(false);
+  // CT7-075: reloads can overlap (focus, alerts); only the latest one may
+  // change the screen, so a slow earlier answer can't bring back an old lease.
+  const loadSeq = useRef(0);
+  // Bumped every time a reload puts a lease (or no lease) on screen. An action
+  // (profile check, wording fetch, signature) remembers the view it started
+  // from and only acts if that view is still the one shown and no reload is
+  // pending — so it never acts on a lease that was replaced or changed (e.g.
+  // already signed) meanwhile, even when the id is the same.
+  const shownView = useRef(0);
+  const reloadPending = useRef(false);
+  const [reloading, setReloading] = useState(false);
+  // Ends every pending action for good: an earlier profile check, wording
+  // fetch or signature can never act after this (moves the view on).
+  const invalidatePendingWork = () => {
+    shownView.current += 1;
+    signingView.current = null;
+    setShowSignatureModal(false);
+    setOpeningFullLease(false);
+    setActionLoading(false);
+  };
+  const isCurrentView = (view: number) => !reloadPending.current && shownView.current === view;
+  // the view the signature pad was opened from
+  const signingView = useRef<number | null>(null);
   // Full lease wording (same render as the signed PDF) so the tenant reads
   // every clause — including ones the owner edited or removed — before signing.
   const [fullLeaseHtml, setFullLeaseHtml] = useState<string | null>(null);
   const [openingFullLease, setOpeningFullLease] = useState(false);
 
   const openFullLease = async () => {
-    if (!lease) return;
+    const view = shownView.current;
+    if (!lease || !isCurrentView(view)) return;
     setOpeningFullLease(true);
     try {
       const { data, error: fullError } = await supabase
@@ -100,6 +124,8 @@ export default function TenantLeaseScreen() {
         .eq('id', lease.id)
         .single();
       if (fullError || !data) throw fullError ?? new Error('Lease not found');
+      // CT7-075: a reload switched leases meanwhile — don't show old wording
+      if (!isCurrentView(view)) return;
       const row = data as any;
       setFullLeaseHtml(
         generateLeaseHTML({
@@ -111,16 +137,29 @@ export default function TenantLeaseScreen() {
       );
     } catch (err) {
       reportApiError(err, 'leases', 'select');
-      Alert.alert('Could not open the lease', 'Please try again.');
+      // an error for a lease that is no longer on screen is not the tenant's concern
+      if (isCurrentView(view)) Alert.alert('Could not open the lease', 'Please try again.');
     } finally {
-      setOpeningFullLease(false);
+      // only the request of the view on screen may clear the busy state
+      if (shownView.current === view) setOpeningFullLease(false);
     }
   };
   const [actionLoading, setActionLoading] = useState(false);
 
-  useEffect(() => {
-    loadActiveLease();
-  }, []);
+  // CT7-075: this is a tab screen and stays mounted, so load the lease every
+  // time it is shown. Loading only on mount kept the lease from the first
+  // visit: a tenant who opened My Lease before the owner sent a new lease
+  // never saw it, and "Sign Lease Now" opened the old, already-signed one.
+  // Leaving the screen ends whatever was pending on it, like a reload does.
+  useFocusEffect(
+    useCallback(() => {
+      loadActiveLease();
+      return () => {
+        invalidatePendingWork();
+        loadSeq.current += 1; // a reload still in flight can no longer land
+      };
+    }, [])
+  );
 
   // CT7-072: "Generate PDF" prints the lease; the first print in a fresh app
   // process often hangs (CT7-069), so it must not be the lease's
@@ -129,8 +168,14 @@ export default function TenantLeaseScreen() {
   }, []);
 
   const loadActiveLease = async () => {
+    const seq = ++loadSeq.current;
+    const superseded = () => seq !== loadSeq.current;
+    // A reload invalidates every action started before it, for good — even
+    // if the reload then fails.
+    invalidatePendingWork();
+    reloadPending.current = true;
+    setReloading(true);
     try {
-      setError(null);
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -151,10 +196,12 @@ export default function TenantLeaseScreen() {
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
+      if (superseded()) return;
 
       if (leaseError) {
         if (leaseError.code === 'PGRST116') {
           // No active lease found
+          showLease(null);
           setError('no_lease');
         } else {
           throw leaseError;
@@ -164,18 +211,30 @@ export default function TenantLeaseScreen() {
           property: Lease['property'] | Lease['property'][];
           owner: Lease['owner'] | Lease['owner'][];
         };
-        setLease({
+        setError(null);
+        showLease({
           ...(row as unknown as Lease),
           property: unpackRelation(row.property as Lease['property']),
           owner: unpackRelation(row.owner as Lease['owner']),
         });
       }
     } catch (err) {
+      if (superseded()) return;
       console.error('Error loading lease:', err);
       setError(err instanceof Error ? err.message : 'Failed to load lease');
     } finally {
-      setLoading(false);
+      if (!superseded()) {
+        reloadPending.current = false;
+        setReloading(false);
+        setLoading(false);
+      }
     }
+  };
+
+  // A reload answered: drop the previous lease's wording with it.
+  const showLease = (next: Lease | null) => {
+    setFullLeaseHtml(null);
+    setLease(next);
   };
 
   const handleViewDocument = () => {
@@ -272,8 +331,13 @@ export default function TenantLeaseScreen() {
     // can't drift across surfaces even though the two reads happen at
     // different moments. Fails CLOSED on lookup errors: a retryable alert
     // rather than opening the signature modal on unknown state.
+    const view = shownView.current;
+    if (!lease || !isCurrentView(view)) return;
     const decision = await evaluateSignLeaseGate();
+    // CT7-075: the lease may have been reloaded or changed during the check
+    if (!isCurrentView(view)) return;
     if (decision.action === 'sign') {
+      signingView.current = view;
       setShowSignatureModal(true);
       return;
     }
@@ -293,28 +357,85 @@ export default function TenantLeaseScreen() {
 
   const handleSignatureSave = async (signatureBase64: string) => {
     if (!lease) return;
+    const view = signingView.current;
+    // Once superseded (a reload or leaving the screen), this save never
+    // touches the screen again: no alert, reload, pad or busy-state change.
+    const stale = () => view === null || !isCurrentView(view);
+    const leaseChanged = () => {
+      if (stale()) return;
+      setShowSignatureModal(false);
+      Alert.alert('Lease changed', 'This lease was updated. Please review it and sign again.');
+      // show the lease as it is now, so the out-of-date one can't be signed again
+      loadActiveLease();
+    };
+    // Superseded (a reload or leaving the screen ended it): drop it silently.
+    if (view === null || !isCurrentView(view)) {
+      setShowSignatureModal(false);
+      return;
+    }
+    // The lease on screen no longer awaits the tenant: a real conflict.
+    if (lease.status !== 'pending_tenant_signature') {
+      leaseChanged();
+      return;
+    }
 
     try {
       setActionLoading(true);
 
       // Upload signature to storage (with automatic retry logic)
       const signatureUrl = await uploadSignature(lease.id, 'tenant', signatureBase64);
+      // CT7-075: superseded while the signature uploaded — drop it silently
+      if (!isCurrentView(view)) return;
 
       // Update lease with signature (with retry logic for network errors)
       let updateSuccess = false;
+      // set when a lost answer is recovered and the owner has signed since
+      let ownerAlreadySigned = false;
       let lastError: any;
       const maxRetries = 3;
 
       for (let attempt = 0; attempt < maxRetries; attempt++) {
+        // No view check here: once a write may have been sent, finish
+        // confirming it (and tell the owner) even if the tenant left the
+        // screen — only the screen updates below are skipped when superseded.
         try {
-          const { error: updateError } = await supabase
+          // CT7-075: only a lease still waiting for the tenant's signature
+          // takes it; if it has left that status meanwhile, no row matches
+          const { data: signedRows, error: updateError } = await supabase
             .from('leases')
             .update({
               tenant_signature_url: signatureUrl,
               tenant_signed_at: new Date().toISOString(),
               status: 'pending_owner_signature',
             })
-            .eq('id', lease.id);
+            .eq('id', lease.id)
+            .eq('status', 'pending_tenant_signature')
+            .select('id');
+          if (!updateError && Array.isArray(signedRows) && signedRows.length === 0) {
+            // No row matched. Either the lease changed, or an earlier try was
+            // saved but its answer was lost — then our signature is on it.
+            const { data: persisted, error: checkError } = await supabase
+              .from('leases')
+              .select('status, tenant_signature_url')
+              .eq('id', lease.id)
+              .maybeSingle();
+            // can't tell yet whether our signature landed: retry, don't guess
+            if (checkError) throw checkError;
+            const row = Array.isArray(persisted) ? persisted[0] : persisted;
+            // ours, and the lease went on from our signature (waiting for the
+            // owner, or the owner has signed since) → signed; anything else
+            // (e.g. cancelled since) is reported as changed
+            if (
+              row?.tenant_signature_url === signatureUrl &&
+              (row?.status === 'pending_owner_signature' || row?.status === 'active')
+            ) {
+              ownerAlreadySigned = row.status === 'active';
+              updateSuccess = true;
+              break;
+            }
+            leaseChanged(); // does nothing if superseded meanwhile
+            return;
+          }
 
           if (updateError) {
             // Check if it's a network error
@@ -348,20 +469,29 @@ export default function TenantLeaseScreen() {
         throw lastError || new Error('Failed to update lease after multiple attempts');
       }
 
-      // Notify owner that tenant has signed
-      await notificationsApi
-        .sendNotification({
-          user_id: lease.owner_id,
-          type: 'lease_signed' as any,
-          data: { lease_id: lease.id, property_id: lease.property_id },
-        })
-        .catch(() => {}); // Non-blocking
+      // Notify owner that tenant has signed (not if the owner already signed)
+      if (!ownerAlreadySigned)
+        await notificationsApi
+          .sendNotification({
+            user_id: lease.owner_id,
+            type: 'lease_signed' as any,
+            data: { lease_id: lease.id, property_id: lease.property_id },
+          })
+          .catch(() => {}); // Non-blocking
 
-      Alert.alert('Success', 'Lease agreement signed! Waiting for owner to sign.', [
-        { text: 'OK', onPress: () => loadActiveLease() },
-      ]);
+      // the signature landed and the owner is told; a superseded screen shows nothing
+      if (stale()) return;
+      Alert.alert(
+        'Success',
+        ownerAlreadySigned
+          ? 'Lease agreement signed! The lease is now active.'
+          : 'Lease agreement signed! Waiting for owner to sign.',
+        // the OK may be tapped after the screen moved on: reload only if still current
+        [{ text: 'OK', onPress: () => !stale() && loadActiveLease() }]
+      );
     } catch (err: any) {
       console.error('Error signing lease:', err);
+      if (stale()) return;
 
       // Provide user-friendly error messages based on error type
       let errorTitle = 'Signing Failed';
@@ -385,8 +515,10 @@ export default function TenantLeaseScreen() {
 
       Alert.alert(errorTitle, errorMessage, [{ text: 'OK', style: 'default' }]);
     } finally {
-      setActionLoading(false);
-      setShowSignatureModal(false);
+      if (!stale()) {
+        setActionLoading(false);
+        setShowSignatureModal(false);
+      }
     }
   };
 
@@ -738,7 +870,7 @@ export default function TenantLeaseScreen() {
                 testID="tenant-lease-read-full"
                 style={styles.readFullButton}
                 onPress={openFullLease}
-                disabled={openingFullLease}
+                disabled={openingFullLease || reloading}
               >
                 {openingFullLease ? (
                   <ActivityIndicator color={RSA.green} />
@@ -751,9 +883,12 @@ export default function TenantLeaseScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 testID="tenant-lease-sign"
-                style={[styles.primaryButton, actionLoading && styles.buttonDisabled]}
+                style={[
+                  styles.primaryButton,
+                  (actionLoading || reloading) && styles.buttonDisabled,
+                ]}
                 onPress={handleSignLease}
-                disabled={actionLoading}
+                disabled={actionLoading || reloading}
               >
                 {actionLoading ? (
                   <ActivityIndicator color="#FFF" />
