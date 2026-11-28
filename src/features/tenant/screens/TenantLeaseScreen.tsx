@@ -86,13 +86,21 @@ export default function TenantLeaseScreen() {
   // change the screen, so a slow earlier answer can't bring back an old lease.
   const loadSeq = useRef(0);
   const shownLeaseId = useRef<string | null>(null);
+  // While a reload is in flight the lease on screen may be out of date: no
+  // signing or opening its wording until the reload has answered.
+  const reloadPending = useRef(false);
+  const [reloading, setReloading] = useState(false);
+  // True only if `leaseId` is still the lease on screen and no reload is
+  // pending — checked again after every await before acting on a lease.
+  const isCurrentLease = (leaseId: string | null | undefined) =>
+    !!leaseId && !reloadPending.current && shownLeaseId.current === leaseId;
   // Full lease wording (same render as the signed PDF) so the tenant reads
   // every clause — including ones the owner edited or removed — before signing.
   const [fullLeaseHtml, setFullLeaseHtml] = useState<string | null>(null);
   const [openingFullLease, setOpeningFullLease] = useState(false);
 
   const openFullLease = async () => {
-    if (!lease) return;
+    if (!lease || !isCurrentLease(lease.id)) return;
     setOpeningFullLease(true);
     try {
       const { data, error: fullError } = await supabase
@@ -109,7 +117,7 @@ export default function TenantLeaseScreen() {
         .single();
       if (fullError || !data) throw fullError ?? new Error('Lease not found');
       // CT7-075: a reload switched leases meanwhile — don't show old wording
-      if (shownLeaseId.current !== lease.id) return;
+      if (!isCurrentLease(lease.id)) return;
       const row = data as any;
       setFullLeaseHtml(
         generateLeaseHTML({
@@ -121,7 +129,8 @@ export default function TenantLeaseScreen() {
       );
     } catch (err) {
       reportApiError(err, 'leases', 'select');
-      Alert.alert('Could not open the lease', 'Please try again.');
+      // an error for a lease that is no longer on screen is not the tenant's concern
+      if (isCurrentLease(lease.id)) Alert.alert('Could not open the lease', 'Please try again.');
     } finally {
       setOpeningFullLease(false);
     }
@@ -147,6 +156,8 @@ export default function TenantLeaseScreen() {
   const loadActiveLease = async () => {
     const seq = ++loadSeq.current;
     const superseded = () => seq !== loadSeq.current;
+    reloadPending.current = true;
+    setReloading(true);
     try {
       const {
         data: { user },
@@ -195,7 +206,11 @@ export default function TenantLeaseScreen() {
       console.error('Error loading lease:', err);
       setError(err instanceof Error ? err.message : 'Failed to load lease');
     } finally {
-      if (!superseded()) setLoading(false);
+      if (!superseded()) {
+        reloadPending.current = false;
+        setReloading(false);
+        setLoading(false);
+      }
     }
   };
 
@@ -305,9 +320,13 @@ export default function TenantLeaseScreen() {
     // can't drift across surfaces even though the two reads happen at
     // different moments. Fails CLOSED on lookup errors: a retryable alert
     // rather than opening the signature modal on unknown state.
+    const leaseId = lease?.id;
+    if (!isCurrentLease(leaseId)) return;
     const decision = await evaluateSignLeaseGate();
+    // CT7-075: the lease may have been reloaded or replaced during the check
+    if (!isCurrentLease(leaseId)) return;
     if (decision.action === 'sign') {
-      signingLeaseId.current = lease?.id ?? null;
+      signingLeaseId.current = leaseId ?? null;
       setShowSignatureModal(true);
       return;
     }
@@ -327,7 +346,7 @@ export default function TenantLeaseScreen() {
 
   const handleSignatureSave = async (signatureBase64: string) => {
     if (!lease) return;
-    if (lease.id !== signingLeaseId.current) {
+    if (lease.id !== signingLeaseId.current || !isCurrentLease(lease.id)) {
       setShowSignatureModal(false);
       Alert.alert('Lease changed', 'This lease was updated. Please review it and sign again.');
       return;
@@ -777,7 +796,7 @@ export default function TenantLeaseScreen() {
                 testID="tenant-lease-read-full"
                 style={styles.readFullButton}
                 onPress={openFullLease}
-                disabled={openingFullLease}
+                disabled={openingFullLease || reloading}
               >
                 {openingFullLease ? (
                   <ActivityIndicator color={RSA.green} />
@@ -790,9 +809,12 @@ export default function TenantLeaseScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 testID="tenant-lease-sign"
-                style={[styles.primaryButton, actionLoading && styles.buttonDisabled]}
+                style={[
+                  styles.primaryButton,
+                  (actionLoading || reloading) && styles.buttonDisabled,
+                ]}
                 onPress={handleSignLease}
-                disabled={actionLoading}
+                disabled={actionLoading || reloading}
               >
                 {actionLoading ? (
                   <ActivityIndicator color="#FFF" />

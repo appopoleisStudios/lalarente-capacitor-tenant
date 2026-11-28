@@ -11,6 +11,7 @@ import TenantLeaseScreen from '../TenantLeaseScreen';
 import { supabase } from '@/src/lib/supabase';
 import { checkTenantProfileCompleteness } from '../../utils/profileCompleteness';
 import { uploadSignature } from '../../../leases/api/storageService';
+import { notificationsApi } from '../../../notifications/api/notificationsApi';
 
 const mockRouter = { push: jest.fn(), back: jest.fn(), replace: jest.fn() };
 // useFocusEffect runs like a mount effect; mockRefocus() replays it the way
@@ -255,4 +256,180 @@ it('CT7-075: a reload that brings another lease closes the signature pad and nev
     await mockSignatureOnSave!('data:image/png;base64,AAAA');
   });
   expect(uploadSignature).not.toHaveBeenCalled();
+});
+
+// ── CT7-075 SA round 2: nothing acts on a lease while a reload is pending ──
+
+/** A promise the test resolves (or rejects) later. */
+function deferred<T = unknown>() {
+  let resolve: (v: T) => void = () => {};
+  let reject: (e: unknown) => void = () => {};
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
+const OLD = { ...LEASE, id: 'lease-old', property: { ...LEASE.property, title: '2B Datura' } };
+const NEW = { ...LEASE, id: 'lease-new', property: { ...LEASE.property, title: '2A Datura' } };
+const COMPLETE = { status: 'ok', complete: true, missing: [] };
+
+it('CT7-075: while a reload is pending, Sign does nothing (no gate, no pad)', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  const screen = render(<TenantLeaseScreen />);
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-sign')).toBeTruthy());
+
+  const pending = deferred();
+  (supabase.from as jest.Mock).mockReturnValue(query(pending.promise));
+  await act(async () => {
+    mockRefocus();
+  });
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('tenant-lease-sign'));
+  });
+  expect(checkTenantProfileCompleteness).not.toHaveBeenCalled();
+  expect(screen.queryByTestId('signature-modal')).toBeNull();
+
+  // once the reload answers, signing works again
+  await act(async () => {
+    pending.resolve({ data: LEASE, error: null });
+    await pending.promise;
+  });
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('tenant-lease-sign'));
+  });
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+});
+
+it('CT7-075: a profile check that finishes after the lease was replaced opens no pad', async () => {
+  const gate = deferred();
+  (checkTenantProfileCompleteness as jest.Mock).mockReturnValue(gate.promise);
+  (supabase.from as jest.Mock).mockReturnValue(query({ data: OLD, error: null }));
+  const screen = render(<TenantLeaseScreen />);
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-sign')).toBeTruthy());
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('tenant-lease-sign'));
+  });
+
+  (supabase.from as jest.Mock).mockReturnValue(query({ data: NEW, error: null }));
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByText('2A Datura')).toBeTruthy());
+
+  await act(async () => {
+    gate.resolve(COMPLETE);
+    await gate.promise;
+  });
+  expect(screen.queryByTestId('signature-modal')).toBeNull();
+});
+
+it('CT7-075: a slow older reload that fails shows no error over the newer lease', async () => {
+  const slow = deferred();
+  (supabase.from as jest.Mock)
+    .mockReturnValueOnce(query(slow.promise))
+    .mockReturnValue(query({ data: NEW, error: null }));
+  const screen = render(<TenantLeaseScreen />);
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByText('2A Datura')).toBeTruthy());
+
+  await act(async () => {
+    slow.reject(new Error('Network request failed'));
+    await slow.promise.catch(() => {});
+  });
+  expect(screen.getByText('2A Datura')).toBeTruthy();
+  expect(screen.queryByText(/Network request failed|Failed to load lease/)).toBeNull();
+  expect(screen.getByTestId('tenant-lease-sign')).toBeTruthy();
+});
+
+it('CT7-075: the old lease wording failing after a reload raises no alert and shows nothing', async () => {
+  (supabase.from as jest.Mock).mockReturnValue(query({ data: OLD, error: null }));
+  const screen = render(<TenantLeaseScreen />);
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-read-full')).toBeTruthy());
+
+  const wording = deferred();
+  (supabase.from as jest.Mock).mockReturnValue(query(wording.promise));
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('tenant-lease-read-full'));
+  });
+
+  (supabase.from as jest.Mock).mockReturnValue(query({ data: NEW, error: null }));
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByText('2A Datura')).toBeTruthy());
+
+  await act(async () => {
+    wording.resolve({ data: null, error: { message: 'boom' } });
+    await wording.promise;
+  });
+  expect(alertSpy).not.toHaveBeenCalled();
+  expect(screen.queryByTestId('tenant-lease-full-close')).toBeNull();
+});
+
+it('CT7-075: reloading from "No Active Lease" keeps that screen until the answer — no error flash', async () => {
+  (supabase.from as jest.Mock).mockReturnValue(
+    query({ data: null, error: { code: 'PGRST116', message: 'no rows' } })
+  );
+  const screen = render(<TenantLeaseScreen />);
+  await waitFor(() => expect(screen.getByText('No Active Lease')).toBeTruthy());
+
+  const pending = deferred();
+  (supabase.from as jest.Mock).mockReturnValue(query(pending.promise));
+  await act(async () => {
+    mockRefocus();
+  });
+  expect(screen.getByText('No Active Lease')).toBeTruthy();
+  expect(screen.queryByText(/Failed to load lease/)).toBeNull();
+
+  await act(async () => {
+    pending.resolve({ data: NEW, error: null });
+    await pending.promise;
+  });
+  await waitFor(() => expect(screen.getByTestId('tenant-lease-sign')).toBeTruthy());
+});
+
+it('CT7-075: the "signed" alert reload and a focus reload overlap — the latest answer wins', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  (uploadSignature as jest.Mock).mockResolvedValue('signatures/lease-1.png');
+  (notificationsApi as unknown as { sendNotification: jest.Mock }).sendNotification = jest
+    .fn()
+    .mockResolvedValue(undefined);
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+  await act(async () => {
+    await mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  const okButton = alertSpy.mock.calls
+    .flatMap((c) => (c[2] as { text: string; onPress?: () => void }[] | undefined) ?? [])
+    .find((b) => b.text === 'OK' && b.onPress);
+  expect(okButton).toBeTruthy();
+
+  // focus reload first (slow, answers with the stale row), then the alert's reload (fast)
+  const slow = deferred();
+  const signed = {
+    ...LEASE,
+    status: 'pending_owner_signature',
+    property: { ...LEASE.property, title: 'Signed Lease' },
+  };
+  (supabase.from as jest.Mock)
+    .mockReturnValueOnce(query(slow.promise))
+    .mockReturnValue(query({ data: signed, error: null }));
+  await act(async () => {
+    mockRefocus();
+  });
+  await act(async () => {
+    okButton!.onPress!();
+  });
+  await waitFor(() => expect(screen.getByText('Signed Lease')).toBeTruthy());
+
+  await act(async () => {
+    slow.resolve({ data: LEASE, error: null });
+    await slow.promise;
+  });
+  expect(screen.getByText('Signed Lease')).toBeTruthy();
+  expect(screen.queryByTestId('tenant-lease-sign')).toBeNull();
 });
