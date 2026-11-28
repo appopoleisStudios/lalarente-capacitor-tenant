@@ -156,6 +156,13 @@ export default function TenantLeaseScreen() {
   const loadActiveLease = async () => {
     const seq = ++loadSeq.current;
     const superseded = () => seq !== loadSeq.current;
+    // A reload invalidates every action started before it, for good — even
+    // if the reload then fails, an earlier profile check, wording fetch or
+    // signature can never act afterwards.
+    shownView.current += 1;
+    signingView.current = null;
+    setShowSignatureModal(false);
+    setOpeningFullLease(false);
     reloadPending.current = true;
     setReloading(true);
     try {
@@ -214,14 +221,9 @@ export default function TenantLeaseScreen() {
     }
   };
 
-  // A reload answered: close what was open for the previous view (signature
-  // pad, full wording) so nothing acts on an out-of-date lease.
+  // A reload answered: drop the previous lease's wording with it.
   const showLease = (next: Lease | null) => {
-    shownView.current += 1;
-    setShowSignatureModal(false);
-    signingView.current = null;
     setFullLeaseHtml(null);
-    setOpeningFullLease(false);
     setLease(next);
   };
 
@@ -377,8 +379,8 @@ export default function TenantLeaseScreen() {
           return;
         }
         try {
-          // CT7-075: only a lease still waiting for the tenant takes the
-          // signature — the database refuses it if the lease changed meanwhile
+          // CT7-075: only a lease still waiting for the tenant's signature
+          // takes it; if it has left that status meanwhile, no row matches
           const { data: signedRows, error: updateError } = await supabase
             .from('leases')
             .update({

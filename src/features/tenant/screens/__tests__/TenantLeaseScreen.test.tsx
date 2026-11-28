@@ -685,3 +685,31 @@ it('CT7-075: the old lease wording still loading does not block reading the new 
   });
   expect(screen.getByTestId('tenant-lease-full-close')).toBeTruthy();
 });
+
+it('CT7-075: signature uploading → a reload starts and FAILS → upload finishes → the lease is not updated', async () => {
+  (checkTenantProfileCompleteness as jest.Mock).mockResolvedValue(COMPLETE);
+  const upload = deferred<string>();
+  (uploadSignature as jest.Mock).mockReturnValue(upload.promise);
+  const screen = await pressSign();
+  await waitFor(() => expect(screen.getByTestId('signature-modal')).toBeTruthy());
+
+  const calls = { update: [] as unknown[], eq: [] as unknown[][] };
+  let saving: Promise<void> = Promise.resolve();
+  await act(async () => {
+    saving = mockSignatureOnSave!('data:image/png;base64,AAAA');
+  });
+  // the reload fails: nothing new is shown, the old lease stays on screen
+  (supabase.from as jest.Mock).mockReturnValue(
+    recordingQuery({ data: null, error: { message: 'Network request failed' } }, calls)
+  );
+  await act(async () => {
+    mockRefocus();
+  });
+  await waitFor(() => expect(screen.getByText(/Failed to load lease/)).toBeTruthy());
+
+  await act(async () => {
+    upload.resolve('signatures/lease-1.png');
+    await saving;
+  });
+  expect(calls.update).toHaveLength(0);
+});
